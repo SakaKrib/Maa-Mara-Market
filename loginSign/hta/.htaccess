@@ -1,0 +1,16 @@
+import http.server
+import socketserver
+
+class MyHTTPRequestHandler(http.server.SimpleHTTPRequestHandler):
+    def guess_type(self, path):
+        # This will be used to correctly infer the mime type of .js files.
+        if path.endswith(".js"):
+            return "application/javascript"
+        return super().guess_type(path)
+
+PORT = 8000
+Handler = MyHTTPRequestHandler
+
+with socketserver.TCPServer(("", PORT), Handler) as httpd:
+    print(f"Serving at port {PORT}")
+    httpd.serve_forever()
