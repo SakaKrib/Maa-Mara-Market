@@ -1,5 +1,6 @@
 from django.shortcuts import render, get_object_or_404, redirect
 from .models import Category, Item
+from django.views.generic import ListView
 
 
 def static(request):
@@ -35,6 +36,19 @@ def item_detail(request, pk):
     return render(request, 'items/item_detail.html', {'item': item})
 
 
+class HomeView(ListView):
+    model = Item
+    template_name = "index.html"
+
+def checkout(request):
+    return render(request, "check_out.html")    
+
+
+def products(request):
+    context = {
+        'items': Item.objects.all()
+    }
+    return render(request, "products.html", context)
 
 
 
