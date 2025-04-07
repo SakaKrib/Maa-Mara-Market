@@ -3,8 +3,7 @@ from django.urls import path
 from . import views
 
 urlpatterns = [
-    path('', views.index, name="home"),
-    path('', views.static, ),
+    path('static/', views.static, ),
     path('contact/', views.contact, name="contact"),
     path('about/', views.about, name="about"),
     path('donate/', views.donate, name="donate"),
@@ -12,6 +11,5 @@ urlpatterns = [
     path('policy/', views.returnPolicy, name="policy"),
     path('register/', views.register, name="register"),
     path('login/', views.login, name="login"),
-
-
+    path('', views.home_view, name='home'),  # Point the home URL to the home_view
 ]

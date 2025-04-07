@@ -71,6 +71,17 @@
 
 
         </div>
+
+        <div class="cart-logo"><ion-icon name="cart-outline"></ion-icon><span class="integer">0</span></div>
+        <style>
+            .cart-logo{
+                position:fixed;color: red;font-size: 2rem;right: 5%; top: 6%;z-index: 1000;background-color: #ffffffc5;width: 100px;height: 50px;text-align: center;padding: 20px 10px;border-radius: 100px;
+            }
+            .integer{
+                padding: 0.5px auto;right: 30px;position: absolute;border-radius: 100px;height: 20px;width: 20px;font-size: 1rem;top: 3%; background-color: rgba(255, 0, 0, 0.445);color: #fff;text-align: center;
+            }
+          
+        </style>
         
     </header>
 
@@ -125,7 +136,7 @@
             <nav class="left-window">
                 <div class="account"><a href="#">Account</a></div>
                 <div class="vouchers"><a href="#">Vouchers</a></div>
-                <div class="invite"><a href="#">Invite</a></div>
+                <div class="invite"><a href="{% url 'category_list' %}">Invite</a></div>
                 <div class="offers"><a href="#">Special Offers</a></div>
                 <div class="offers"><a href="#">Vendor Dashboard</a></div>
                 <div class="Favourite"><a href="#">Favourite <span id="count">0</span> </a></div>
@@ -147,53 +158,83 @@
 
 
 <!----------------middle/window-->
+
+
         <div class="middle_window">
+            
 
-        <li class="department">Categories<span class="dropdown_arrow"><ion-icon name="chevron-down-outline"></ion-icon></span>
+        <nav class="all"><div class="department">Categories<span class="dropdown_arrow"><ion-icon name="chevron-down-outline"></ion-icon></span></nav>
+            <style>
+                 div.department:hover{
+                    background-color: rgb(238, 126, 126);
+                 }
+                 div.department{
+                    background-color: rgb(182, 170, 104);
+                }
+                .dropdwn {
+                    display: none;
+                }
+        
+                .department {
+                    cursor: pointer;
+                }
+        
+                .dropdwn.show {
+                    display: grid;background-color: aliceblue;grid-template-rows: auto;min-height: 300px;
+                }
+                .category-name{
+                    text-decoration: none;font-family: jayb;display: inline-flex;line-height: 20px;width: 200px;background-color: transparent;margin: -20px;
+                }
+                .category-name:hover{
+                    color: gray;
+                }
+                .category_container{
+                    position: relative;width: 200px;height: fit-content;display: inline-block;
+                }
+                .cart-icon{
+                    position: sticky;top: 0;margin: 0 0 0 100px;
+                }
+        
+            </style>
 
-        <div class="dropdwn">
-        <ul>
-            <li class="category">
-                <a href="#">Home Decor</a>
-                <a href="#">Kitchen</a>
-                <a href="#">Fashion&Design</a>
-                <a href="#">Baskets</a>
-                <a href="#">Clothes</a>
-                <a href="#">Carpet</a>
-                <a href="#">Lamps</a>
-                <a href="#">Candles</a>
-                <a href="#">Bargains</a>
-                <a href="#">Furnitures</a>
-                <a href="#">Mirror</a>
-                <a href="#">Masks</a>
-                <a href="#">Sculptures</a>
-                <a href="#">Cosmetics</a>
-                <a href="#">soapstones</a>
-                <a href="#">Kangas</a>
-                <a href="#">kikoi</a>
-                <a href="#">Shoes</a>
-                <a href="#">Maasai Blanket</a>
-                <a href="#">Ornaments</a>
-                <a href="#">Postcards</a>
-                <a href="#">Books</a>
-                <a href="#">Phone Stands</a>
-                <a href="#">Laptop Stands</a>
-                <a href="#">kitenge</a>
-            </li>
-        </ul></div></li>
-
-        <div class="home_img">
-            <img src="products/afican hut.jpg" alt="">
-        </div>
+                <div class="dropdwn">
+                                
+                    {% for category in categories %}
+                        
+                        <nav class="category_container"><a class="category-name" href="#">{{ category.name }}</a></nav>
+                        <p>{{ category.item.count }}</p>
+                    
+                    {% endfor %}
+                </div>
+            
+            <script>
+                document.addEventListener('DOMContentLoaded', function () {
+                    var department = document.querySelector('.department');
+                    var dropdown = document.querySelector('.dropdwn');
+        
+                    department.addEventListener('click', function () {
+                        dropdown.classList.toggle('show');
+                    });
+        
+                    // Close the dropdown if clicking outside of it
+                    document.addEventListener('click', function (event) {
+                        if (!department.contains(event.target) && !dropdown.contains(event.target)) {
+                            dropdown.classList.remove('show');
+                        }
+                    });
+                });
+            </script>
+            
+            <div class="category_nav">
     
 
-        <li>Trending</li>
-        <li>special offers</li>
-        <li>Best sellers</li>
-        <li>Play and Win</li>
-        <li>Shop Quick</li>
+        <div>Trending</div>
+        <div>special offers</div>
+        <div>Best sellers</div>
+        <div>Play and Win</div>
+        <div>Shop Quick</div>
     
-    </div>
+        </nav></div></div>
 
 
 <!-------top-main-nav-bar-start----->
@@ -533,6 +574,10 @@
      
         </div>
 
+    
+
+        
+
 <!---------------seperator window on preoduct-list-->
 
 
@@ -540,11 +585,43 @@
 
         </div>
 
+        
+
         <div class="animation_text">
             <h1>
                 welcome! <span>African handcrafted</span>
             </h1>
             <h2>Shop with us. . . </h2>
+            </div>
+            <!---new arrivals------------>
+            <style>
+                .page_title h1{
+                    font-family: jaka;background-color: gold;border-bottom: 0.1px solid black;padding: 5px;border-radius: 10px; height: fit-content;position: absolute;
+                }
+            </style>
+            <div class="new_arrival">
+                <div class="page_title">
+                    <h1>NEW ARRIVALS</h1>
+                </div>
+                {% for item in items %}
+                <div class="content" >
+                   
+                    <a class="details" href="{% url 'item_detail' pk=item.pk %}">
+                    <img src="{{ item.image.url }}" alt=""></a>
+                    <!------------------------------love--icon----------------------------------------->
+            
+                    <span class="love"><ion-icon name="heart"></ion-icon></span>
+                    <p class="item_name">{{ item.name }}</p>
+                    <div class="price_list"><h1>Ksh.</h1><h1 class="price"> {{ item.price }} </h1></div><h2>3,017/-</h2>
+                   <button class="pluscart"> Add to Cart</button>
+                    <!--------------------------------iconstarchecked-------------------------------->
+            
+                    <span class="rates"><ion-icon name="star"></ion-icon></span>
+                    <span class="rates"><ion-icon name="star"></ion-icon></span>
+                    <span class="rates"><ion-icon name="star"></ion-icon></span>
+                    <span class="rates"><ion-icon name="star"></ion-icon></span>
+                    <span class="rates"><ion-icon name="star-half-outline"></ion-icon></span>
+                 </div>{% endfor %}</div>
             </div>
         
 
@@ -556,17 +633,28 @@
             <h2>Global <span>shipping</span><span class="txt">Guaranteed!</span></h2>
         </div>
 
-        
-
-      
-
     </main>
+
+    <footer>
+        <div class="footer-container">
+
+        </div>
+    </footer>
+    <style>
+        .footer-container{
+            width: 100%; height: 40vh;background-color: rgba(10, 10, 92, 0.411); margin: 0 0 0 -18px;      
+        }
+    </style>
 
 
     <script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
 <script nomodule src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js"></script>
 
     <script src="{% static 'js.js' %}"></script>
+    <script >
+        
+
+    </script>
     
  </body>
 </html>

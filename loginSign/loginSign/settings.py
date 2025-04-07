@@ -41,6 +41,7 @@ INSTALLED_APPS = [
     'backend', 
     'loginSign',
     'items',
+    'rest_framework',
 ]
 
 MIDDLEWARE = [

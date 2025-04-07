@@ -2,6 +2,18 @@ from django.shortcuts import render, redirect
 from django.contrib.auth.models import User, auth
 from django.contrib import messages
 from django.contrib.auth import authenticate, login
+from items.views import HomeView
+
+# backend/views.py
+from items.models import Item  # Import the Item model from the items app
+from items.models import Category
+
+def home_view(request):
+    items = Item.objects.all()  # Fetch all items
+    categories = Category.objects.all()  # Fetch all categories
+    return render(request, 'index.html', {'items': items, 'categories': categories})  # Pass both items and categories to the template
+
+
 
 # Create your views here.
 

@@ -12,31 +12,20 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Add Item</title>
+    <title>category</title>
 </head>
 <body>
     <div class="cart-icon"><ion-icon name="cart-outline"></ion-icon><span class="number">0</span></div>            
 
 
-    {% for item in items %}
-    <div class="content" >
+    {% for category in categories %}
+    <div class="category" >
        
-        <a class="details" href="">
-        <img src="{{ Item.image.url }}" alt=""></a>
-        <!------------------------------love--icon----------------------------------------->
-
-        <span class="love"><ion-icon name="heart"></ion-icon></span>
-        <p class="item_name">{{ item.name }}</p>
-        <div class="price_list"><h1>Ksh.</h1><h1 class="price"> {{ item.price }} </h1></div><h2>3,017/-</h2>
-       <button class="pluscart"> Add to Cart</button>
-        <!--------------------------------iconstarchecked-------------------------------->
-
-        <span class="rates"><ion-icon name="star"></ion-icon></span>
-        <span class="rates"><ion-icon name="star"></ion-icon></span>
-        <span class="rates"><ion-icon name="star"></ion-icon></span>
-        <span class="rates"><ion-icon name="star"></ion-icon></span>
-        <span class="rates"><ion-icon name="star-half-outline"></ion-icon></span>
-     </div>{% endfor %}</div>
+       
+        <p class="item_name">{{ category.name }}</p>
+        <p class="item-number-in-category">{{ category.item.count }}</p>
+        
+ {% endfor %}</div>
 </body>
 </html>
 

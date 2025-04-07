@@ -27,17 +27,21 @@ def category_detail(request, pk):
 # List view for all items
 def item_list(request):
     items = Item.objects.all()
-    return render(request, 'items/item_list.html', {'items': items})
+    categories = Category.objects.all()
+    return render(request, 'items/item_list.html', {'items': items, 'categories': categories})
 
 # Detail view for a single item
 def item_detail(request, pk):
     item = get_object_or_404(Item, pk=pk)
+    related_items = Item.objects.filter(category=item.category).exclude(pk=pk)[0:10]
+
    
-    return render(request, 'items/item_detail.html', {'item': item})
+    return render(request, 'items/item_detail.html', {'item': item, 'related_items': related_items})
 
 
 class HomeView(ListView):
     model = Item
+    model = Category
     template_name = "index.html"
 
 def checkout(request):

@@ -5,27 +5,47 @@ from django.conf import settings
 # Create your models here.
 
 
+
 CATEGORY_CHOICES = (
-    (' KTN', ' kitchen'),
-    (' FSHN', ' Fashion'),
-    (' HMEDCO', ' Home Decor'),
-    (' PHNSTD', ' Phone stand'),
-    (' LTPS', ' Laptop stand'),
-    (' BSKT', ' Baskets'),
-    (' FTRS', ' Furnitures'),
-    (' MIR', ' Mirror'),
-    (' MSK', ' Masks'),
-    (' ONAMNT', ' Ornamemts'),
-    (' SCPT', ' Sculptures'),
-    (' KKOI', ' Kikoi'),
-    (' BNKT', ' Blankets'),
-    (' JWY', ' Jewelry'),
+  (' Home Decor', ' Home Decor'),
+  (' kitchen', ' kitchen', ),
+  
+  (' Fashion-men', 'Men Shoe', ),
+  (' Fashion-men', 'Men Shirt'),
+  (' Fashion-men', 'Men T-Shirt'),
+  (' Fashion-children', ' Men Hat / cap'),
+  (' Fashion-men', 'Men Trouser'),
+  
+  (' Fashion-women', ' Women Shoe '),
+  (' Fashion-women', ' Women Shirt'),
+  (' Fashion-women', ' Women T-Shirt'),
+  (' Fashion-children', ' Women Hat / cap'),
+  
+  (' Fashion-women', ' Women Trouser'),
+  (' Fashion-children', ' Children Shoe'),
+  (' Fashion-children', ' Children Shirt'),
+  (' Fashion-children', ' Children T-Shirt'),
+  (' Fashion-children', ' Children Touser'),
+  (' Fashion-children', ' Children Hat / cap'),
+  
+  (' Phone stand', ' Phone stand'),
+  (' Laptop stand', ' Laptop stand'),
+  (' Baskets', ' Baskets'),
+  (' Furnitures', ' Furnitures'),
+  (' Mirror', ' Mirror'),
+  (' Masks', ' Masks'),
+  (' Ornamemts', ' Ornamemts'),
+  (' Sculptures', ' Sculptures'),
+  (' Kikoi', ' Kikoi'),
+  (' Blankets', ' Blankets'),
+  (' Jewelery', ' Jewelery'),
+  ( ' Carpet', ' Carpet')
 )
 
 LABEL_CHOICES = (
-    (' ', ' primary'),
-    (' ', ' secondary'),
-    (' ', ' danger'),
+  (' p', ' primary'),
+  (' s', ' secondary'),
+  (' d', ' danger'),
 )
 
 class Category(models.Model):
@@ -46,25 +66,14 @@ class Item(models.Model):
     price = models.IntegerField(blank=False,) 
     in_stock = models.IntegerField() 
     created_by = models.ForeignKey(User, related_name='items', on_delete=models.CASCADE)
-    label = models.CharField(choices=LABEL_CHOICES, max_length=1)
+    #label = models.CharField(choices=LABEL_CHOICES, max_length=1)
     created_at = models.DateTimeField(auto_now_add=True)
+    slug = models.SlugField
 
     def __str__(self):
         return self.name
 
-class OrderItem(models.Model):
-    Item = models.ForeignKey(Item, on_delete=models.CASCADE)
 
-    def __str__(self):
-        return self.name
 
-class Order(models.Model):
-    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
-    items =models.ManyToManyField(OrderItem)
-    start_date = models.DateField(auto_now_add=True)
-    orderd_date = models.DateTimeField()
-    ordered = models.BooleanField(default=False)
 
-    def __str__(self):
-        return self.name
 

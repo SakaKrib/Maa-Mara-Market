@@ -15,23 +15,53 @@
                     position: absolute;padding: 5px 20px;font-family: jayb;background-color:#e8f0f86b ;width: 100%;color: black;border-radius: 10px;
                 }
                 .detail-image{
-                    display: grid;grid-template-columns: 500px 500px;border-bottom: 1px solid black;padding: 5%;
+                    display: grid;border-bottom: 1px solid black;padding: 5%;
                 }
                 img{
                     width: 800px;height: 60vh;margin: 10px 0 0 0;padding: 5px;border-radius: 15px;
                 }
                 .other-details{
-                    display: block;position: absolute;top: 115px; right: 5%;line-height: 20px;border-radius: 15px;background-color: #f2fdff;padding: 10px 20px;width: 800px;height: 58vh;
+                    display: block;position: absolute;top: 115px; right: 4%;line-height: 20px;border-radius: 15px;background-color: #f2fdff;padding: 10px 20px;width: 800px;height: 58vh;
                 }
+                .item-name{
+                    font-family: jayb;padding: 5px 10px;
+                }
+                .item_description{
+                    margin-top: 150px; font-size: 1rem;
+                }
+                .item_card button{
+                    position: absolute;width: 200px;height: 50px;right: 30%;border-radius: 15px;border: none;background-color:  rgb(80, 156, 255);font-family: jayb;color: #fff;
+                }
+                .item_card button:hover{
+                    background-color: #8cc9d4b0;cursor: pointer;color: #05778b;
+                }
+                .category{
+                    position: absolute;background-color: #05778b;color: gold;font-size: 0.9rem;right: 50%;border-radius: 10px;height: fit-content;width: fit-content;top: 6.5%;padding: 3px 5px;color: #fff;
+                }
+                .price_list{
+                    margin: 0 0 0 -50px;
+                }
+                .vendor_info button{
+                    position: absolute;width: 200px;height: 50px;right: 5%;border-radius: 15px;border: none;background-color:  rgb(243, 129, 121);font-family: jayb;color: #fff;  
+                }
+                .vendor_info button:hover{
+                    background-color: #d6ba6ea1;color: #226681;cursor: pointer;
+                }
+                .item_instock{
+                    border: 0.1px solid black;width: fit-content;padding: 5px 5px;border-radius: 5px;
+                }
+                
             </style>
         <img src="{{ item.image.url }}" alt="{{ item.name }}"></div>
         <!------------------------------love--icon----------------------------------------->
-        <div class="other-details"><span class="love-item"><ion-icon name="heart"></ion-icon></span>
-        <p class="item_name">{{ item.name }}</p>
+        <div class="other-details"><section class="love-item"><ion-icon name="heart"></ion-icon></section>
+        <p class="item_name"><h1 class="item-name">{{ item.name }}</h1></p>
+        <p class="category">{{ item.category}}</p>
         <p class="item_description">Item Description: <br>{{ item.description }}</p>
         <div class="price_list"><h1>Ksh.</h1><h1 class="price">{{ item.price }}</h1></div>
         <div class="item_instock">In Stock: <br><h1>{{ item.in_stock }}</h1></div>
-        <button class="pluscart">Add to Cart</button>
+        <div class="buttons"><a href="{% url 'add_to_cart' pk=item.pk %}"><button class="pluscart">Add to Cart</button></a>
+        <div class="vendor_info"><button>About Vendor</button></div></div>
         <!--------------------------------iconstarchecked-------------------------------->
         <span class="rates"><ion-icon name="star"></ion-icon></span>
         <span class="rates"><ion-icon name="star"></ion-icon></span>
@@ -40,8 +70,44 @@
         <span class="rates"><ion-icon name="star-half-outline"></ion-icon></span></div>
     </div>
 
+
+    <!---related items------------>
+    <style>
+        .page_title h1{
+            font-family: jaka;background-color: gold;border-bottom: 0.1px solid black;padding: 5px;border-radius: 10px; height: fit-content;position: absolute;
+        }
+        .details img{
+            aspect-ratio: 1/1;width: 100%;height: 230px;margin: -12px 0 0 -5px;border-top-left-radius: 18px;border-top-right-radius: 18px;
+        
+        }
+    </style>
+    <div class="new_arrival">
+        <div class="page_title">
+            <h1>RELATED ITEMS</h1>
+        </div>
+       
+        {% for item in related_items %}
+        <div class="content" >
+           
+            <a class="details" href="{% url 'item_detail' pk=item.pk %}">
+            <img src="{{ item.image.url }}" alt=""></a>
+            <!------------------------------love--icon----------------------------------------->
+    
+            <span class="love"><ion-icon class="heart-icon" name="heart"></ion-icon></span>
+            <p class="item_name">{{ item.name }}</p>
+            <div class="price_list"><h1>Ksh.</h1><h1 class="price"> {{ item.price }} </h1></div><h2>3,017/-</h2>
+           <button class="pluscart"> Add to Cart</button>
+            <!--------------------------------iconstarchecked-------------------------------->
+    
+            <span class="rates"><ion-icon name="star"></ion-icon></span>
+            <span class="rates"><ion-icon name="star"></ion-icon></span>
+            <span class="rates"><ion-icon name="star"></ion-icon></span>
+            <span class="rates"><ion-icon name="star"></ion-icon></span>
+            <span class="rates"><ion-icon name="star-half-outline"></ion-icon></span></div>
+            {% endfor %}
+            
     <script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
     <script nomodule src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js"></script>
-   
+   <script src="{% static 'js.js' %}"></script>
 </body>
 </html>

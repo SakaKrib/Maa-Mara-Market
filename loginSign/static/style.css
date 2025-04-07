@@ -30,9 +30,8 @@ body{
     display: block;
     background: #fff;
     justify-content: center;
-    width: 100%;
-    padding: 0;
     overflow: wrap;
+    position: relative;
 }
 
 .header_text{
@@ -1009,7 +1008,7 @@ i{
     right: 55px;
     font-size: 1.5rem;
     color: red;
-    position: absolute;
+    position: sticky;
     margin:15px ;
     cursor: pointer;
     padding: 5px;
@@ -1190,112 +1189,80 @@ button.clear{
 
 .middle_window{
     justify-content: center;
-    display: inline;
+    display: inline-flex;
     position: absolute;
     margin: 25px 0 0 370px;
     width: 550px;
     border: 1px solid black;
     height: inherit;
     font-family: jayb;
-    padding: 20px 0;
+    padding: 10px 20px;
     border-radius: 2rem;
     box-shadow: 2px 2px 5px;
     border: none;
     transform: translateX(5px);
     z-index: 100;
+    width: fit-content;
+    
 
 }
+.all{
+    border-bottom: 0.1px solid rgb(209, 212, 21);
+    display: flex;
+    background-color: transparent;
+    border-radius: 15px;
+    padding: 5px;
+}
+.category_nav div:hover{
+    background-color: #3f5155;
+    transition: 0.3s;
+}
 
-.middle_window li{
+.category_nav div{
+    justify-content: center;
+    display: inline-flex;
+    margin: 25px 0 0 370px;
+    width: 550px;
+    border: 1px solid black;
+    height: inherit;
+    font-family: jayb;
+    padding: 10px 20px;
+    border-radius: 2rem;
+    box-shadow: 2px 2px 5px;
+    border: none;
+    transform: translateX(5px);
+    z-index: 100;
+    width: fit-content; 
+}
+ .middle_window{
+    background-color: #b9d3cf3a;
+}
+
+.middle_window div{
     list-style: none;
     text-decoration: none;
-    line-height: 80px;
+    line-height: 30px;
     justify-content: center;
-    font-size: 0.7rem;
-    margin: 0 0 0 50px;
+    font-size: 1rem;
+    margin: 0 0 0 10px;
+    padding: 5px 50px;
+    color: #ffd;
+    background-color: rgba(128, 128, 128, 0.534);
     z-index: 100;
+    border-radius: 10px;
     width: fit-content;
-}
-
-.middle_window li:hover{
-   color: #8d8888; 
-   cursor:  pointer;
-   background-color: #ffffff81;
-   width: 150px;
-   border-radius: 2rem;
-   padding: 10px;
-   margin: 0 0 0 50px;
-}
-
-.department:hover .dropdwn{
-    position: relative;
-    left: -20px;
-    top: -110px;
-    border-radius: 20px;
-    display: block;
-    transition: 1s;
-    transition-timing-function: ease-in-out;
-    width: 100px;
-
+    height: fit-content;
+    cursor: pointer;
+    
 }
 
 
-.dropdwn ul li{
-    width: 300px;
-    height: inherit;
-    display: block;
-    box-shadow: 2px 2px -50px;
-    justify-content: center;
-    translate: 90px;
-    background-color: rgb(255, 255, 255);
-    z-index: 100;
-    margin: 50px 0 0 50px;
-    border-radius: 5px;
-    position: absolute;
-    line-height: 40px;
-}
+
+
 
 /*----------- logog admin pics------*/
 
 
-.home_img{
-    position: absolute;
-    display: flex;
-    justify-content: center;
-    align-items: flex-end;
-    display: none;
-}
-
-.home_img img{
-    aspect-ratio: 1/1;
-    justify-content: flex-end;
-    width: 300px;
-    margin: 500px 0 0 1200px;
-    top: 0;
-    position: absolute;
-}
-
-
-.dropdwn ul li:hover{
-    background-color: rgb(253, 253, 253);
-    color: black;
-}
-
-.dropdwn ul li a{
-    line-height: 30px;
-    font-family: jayb;
-    font-size: 0.7rem;
-    margin: 5px ;
-    z-index: 99;
-    font-weight: 200 ;
-    display: inline-block;
-    text-decoration: none;
-    color: #3a3838;
-}
-
-.dropdwn{
-    display: none ;
-}
 
 
 .toggle span{
@@ -1487,6 +1454,22 @@ button.clear{
     border-radius: 15px;
     background-color: #f2fdff;
     transition: 0.5s;
+
+}
+
+.new_arrival{
+    display: flex;
+    margin: 185px 0 0 30px;
+    flex-wrap: wrap;
+    position: relative;
+    width: 90%;
+    border: none;
+    padding: 50px;
+    border-radius: 15px;
+    background-color: #f2fdff;
+    transition: 0.5s;
+    height: 100vh;
+    top: 0k;
 
 }
 
@@ -1734,6 +1717,17 @@ span.trash{
 
 }
 
+.content-details{
+    width: 300px;
+    height: 500px;
+    margin: 100px 0 60px 30px;
+    box-shadow: 1px 1px 10px black;
+    border-radius: 15px;
+    flex-wrap: wrap;
+    font-family: jayb;
+    
+}
+
 .content img{
     width: 200px;
     border-top-left-radius: 10px;
@@ -1745,7 +1739,7 @@ span.trash{
 .content p{
     font-size: 0.9rem;
     font-family: jayb;
-    color: #a89e0c;
+    padding: -10px 5px;
 }
 
 .content h1{
@@ -1809,7 +1803,7 @@ span.rates{
 span.love{
     color: #f7f0b5;
     position: absolute;
-    padding-top: 20px;
+    top: 10px;
     padding-right: 3px;
     font-size: 1.7rem;
     z-index: 99;
