@@ -1,0 +1,34 @@
+{% load static %}
+
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>{{ Item.name }}</title>
+        <link rel="stylesheet" href="{% static 'style.css' %}">
+    </head>
+    <body>
+        
+<!-- add_item.html -->
+<!DOCTYPE html>
+<html>
+<head>
+    <title>category</title>
+</head>
+<body>
+    <div class="cart-icon"><ion-icon name="cart-outline"></ion-icon><span class="number">0</span></div>            
+
+
+    {% for category in categories %}
+    <div class="category" >
+       
+       
+        <p class="item_name">{{ category.name }}</p>
+        <p class="item-number-in-category">{{ category.item.count }}</p>
+        
+ {% endfor %}</div>
+</body>
+</html>
+
+        
+    </body>
+</html>

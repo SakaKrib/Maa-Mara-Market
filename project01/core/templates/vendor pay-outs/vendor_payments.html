@@ -1,0 +1,25 @@
+<table class="table">
+    <thead>
+        <tr>
+            <th>Vendor</th>
+            <th>Total Earnings</th>
+            <th>Payment Method</th>
+            <th>Action</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for vendor in vendors %}
+        <tr>
+            <td>{{ vendor.company_name }}</td>
+            <td>{{ vendor.total_earnings }}</td>
+            <td>{{ vendor.payment_method }}</td>
+            <td>
+                <form method="post" action="{% url 'pay_vendor' vendor.id %}">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-primary">Pay Now</button>
+                </form>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>

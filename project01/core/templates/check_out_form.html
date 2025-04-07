@@ -1,0 +1,324 @@
+{% extends "base.html" %}
+{% block content %}
+    <style>
+.body_view {
+    font-family: Arial, sans-serif;
+    background-color: #f2f2f2;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    height: 100vh;
+    margin: 0;
+}
+
+@media screen and (max-width: 475px) {
+    body {
+        width: 100%;
+        display: block;
+        margin: 0;
+        padding: 0;
+    }
+    .cart-summary{
+        width: 50%;
+        position: relative;
+        justify-content: center;
+    }
+    .checkout-form {
+        max-width: 100%;
+        justify-content: center;
+        margin: auto;
+        padding: 10px;
+    }
+    .checkout-form {
+        width: 100%;
+        padding: 10px;
+    }
+    .checkout-form input[type="radio"], .checkout-form input[type="checkbox"] {
+        width: auto;
+        position: relative;
+        right: 0;
+    }
+    table, th, td {
+        width: 100%;
+        display: table;
+        text-align: center;
+        box-sizing: border-box;
+        font-size: 0.75rem;
+        position: relative;
+        left: -13px;
+    }
+    th, td {
+        width: auto;
+        display: table-cell;
+        padding: 10px;
+    }
+    img {
+        width: 20px;
+        aspect-ratio: 1/1;
+    }
+}
+
+.checkout-form {
+    background-color: #fff;
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    width: 80%;
+    margin: auto;
+    grid-column: 1 / 2;
+}
+
+.checkout-form h2 {
+    margin-bottom: 20px;
+}
+
+.form-group {
+    margin-bottom: 15px;
+}
+
+.checkout-form label {
+    display: block;
+    margin-bottom: 5px;
+    margin-left: 10px;
+}
+
+.checkout-form input[type="text"],
+.checkout-form input[type="email"] {
+    width: calc(100% - 22px); /* Adjust width to account for padding and border */
+    padding: 10px;
+    border: 0.2px solid rgba(0, 0, 255, 0.521);
+    border-radius: 5px;
+    outline: none;
+}
+
+.checkout-form input[type="radio"] {
+    width: 10%;
+    position: relative;
+    right: 80%;
+    margin-top: -8px;
+}
+
+.checkout-form input[type="checkbox"] {
+    width: 10%;
+    position: relative;
+    right: 95%;
+    margin-top: -8px;
+}
+
+.checkout-form input[type="text"]:focus,
+.checkout-form input[type="email"]:focus {
+    border-color: #007bff;
+    box-shadow: 0 0 5px rgba(0, 123, 255, 0.5);
+}
+
+.checkout-form button {
+    width: 100%;
+    padding: 10px;
+    background-color: #4CAF50;
+    color: #fff;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+.checkout-form button:hover {
+    background-color: #45a049;
+    width: max-content;
+}
+
+.form-check {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.cart-summary {
+    background-color: #fff;
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    width: 90%;
+    margin: auto;
+    top: -18%;
+    left: -5%;
+    grid-column: 2 / 3;
+    position: relative;
+}
+
+table {
+    width: 100%;
+    margin-bottom: 20px;
+    border-collapse: collapse;
+    box-sizing: border-box;
+}
+
+tbody {
+    flex-wrap: wrap;
+}
+
+th, td {
+    padding: 10px;
+    border: 1px solid #ddd;
+    text-align: center;
+    box-sizing: border-box;
+
+}
+
+th {
+    background-color: #f2f2f2;
+}
+
+img {
+    width: 50px;
+    aspect-ratio: 1/1;
+}
+
+.total-container {
+    margin-top: 20px;
+    text-align: center;
+}
+
+.total-container h1 {
+    font-size: 24px;
+}
+
+.review-cart-btn {
+    width: 100%;
+    padding: 10px;
+    background-color: #007bff;
+    color: #fff;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    margin-top: 20px;
+    text-align: center;
+    text-decoration: none;
+}
+
+.review-cart-btn:hover {
+    background-color: #0056b3;
+    color: #fff;
+    text-decoration: none;
+}
+
+.checkout-ttle {
+    font-weight: 500;
+    text-shadow: 1px 1px 1px;
+    overflow-wrap: break-word;
+}
+
+.discount {
+    background-color: rgba(255, 0, 0, 0.603);
+    border-radius: 5px;
+    color: #fff;
+}
+.messages{
+    position: absolute;
+}
+
+    </style>
+    <div class="body_view">
+    {% if messages %}
+        {% for message in messages %}
+        <div class="alert alert-warning">
+            <strong>Warning!</strong> {{ message }}
+          </div>
+         
+        {% endfor %}
+        {% endif %}
+
+    <div class="checkout-form">
+        <h2 class="checkout-ttle">Checkout</h2>
+        <form  method="post">
+            {% csrf_token %}
+            <div class="form-group">
+                <label for="address">Street Address</label>
+                {{ form.street_address }}
+            </div>
+            <div class="form-group">
+                <label for="address-2">Address 2 (optional)</label>
+                {{ form.appartment_address }}
+            </div>
+            <div class="form-group">
+                <label for="country">Country</label>
+                {{ form.country }}
+            </div>
+            <div class="form-group">
+                <label for="city">City</label>
+                {{ form.city }}
+            </div>
+            <div class="form-group">
+                <label for="ZIP">Zip Code</label>
+                {{ form.ZIP }}
+            </div>
+            <div class="form-group">
+                <h3>Payment Options</h3>
+                {% for value, name in form.fields.payment_option.choices %}
+                    <div class="form-check">
+                        <label for="{{ value }}">{{ name }}</label>
+                        <input type="radio" id="{{ value }}" name="payment_option" value="{{ value }}" required>
+                    </div>
+                {% endfor %}
+            </div>
+            <div class="form-group form-check">
+                <label for="same_billing_address">Shipping address is the same as billing address</label>
+                {{ form.same_billing_address }}
+            </div>
+            <div class="form-group form-check">
+                <label for="save_info">Save information for next time</label>
+                {{ form.save_info }}
+            </div>
+            <div class="form-group">
+                <button type="submit" class="btn btn-primary">Place Order</button>
+            </div>
+            
+        </form>
+    </div>
+
+
+
+
+    <div class="cart-summary">
+        <h2>Cart Summary</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Image</th>
+                    <th>Name</th>
+                    <th>Quantity</th>
+                    <th>Price</th>
+                    <th>Total</th>
+                </tr>
+            </thead>
+            <tbody class="item-body">
+                
+                {% for item in order.items.all %}
+                <tr>
+                    <td><img src="{{ item.item.image.url }}" alt="{{ item.item.name }}"></td>
+                    <td>{{ item.item.name }}</td>
+                    <td>{{ item.quantity }}</td>
+                    <td>
+                        {% if item.item.discount_price %}
+                        {{ item.item.discount_price }} <del class="discount">{{ item.item.price }}/-</del>
+                    </td>
+                    <td>{{ item.get_total_discount }}</td>
+                        {% else %}
+                        {{ item.item.price }}
+                    </td>
+                    <td>{{ item.get_total_item_price }}</td>
+                        {% endif %}
+                </tr>
+                {% endfor %}
+            
+            </tbody>
+        </table>
+        <div class="total-container">
+            <h1>Total: Ksh. {{ order.get_total }}</h1>
+
+        </div>
+        <a href="{% url 'order:cart_view' %}" class="review-cart-btn">Review Cart</a>
+    </div>
+
+        </div>
+    </div></div>
+{% endblock %}
+

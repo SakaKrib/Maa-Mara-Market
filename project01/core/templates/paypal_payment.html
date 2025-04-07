@@ -1,0 +1,99 @@
+{% extends "base.html" %}
+{% block content %}
+   {% block head %} PayPal payment method Integration  {% endblock %}
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            background-color: #f4f4f4;
+        }
+        h1 {
+            color: #333;
+        }
+        button {
+            background-color: #0070ba;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+            border-radius: 5px;
+            width: 400px;
+        }
+        button:hover {
+            background-color: #005ea6;
+        }
+    </style>
+</head>
+<body>
+    <h1>Pay with PayPal</h1>
+    <!-- Custom PayPal Button -->
+    <button id="paypal-button">Pay with PayPal</button>
+    <div id="paypal-button-container" style="display: none; width: 400px;"></div>
+
+    <!-- Include the PayPal JavaScript SDK -->
+    <script src="https://www.paypal.com/sdk/js?client-id=AcuaQaOMkFZJ0weHXtrsTOM2AOBf3CFtJzkWjjOIhQlsX7xnJdFvH8GBgQRyF1QroOH4bExVYw2kYrH5"></script>
+
+    <!-- Script to handle the PayPal payment process -->
+    <script>
+        // Fetch exchange rate from a live API
+        let exchangeRateKSHtoUSD;
+
+        fetch('https://api.exchangerate-api.com/v4/latest/KES') // Replace with your preferred API
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP error! Status: ${response.status}`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                exchangeRateKSHtoUSD = data.rates.USD; // Extract the USD rate
+                console.log(`Live Exchange Rate (KSH to USD): ${exchangeRateKSHtoUSD}`);
+            })
+            .catch(error => {
+                console.error('Error fetching exchange rate:', error);
+
+                // Fallback exchange rate
+                exchangeRateKSHtoUSD = 0.0075; // Example fallback rate
+                console.log(`Using fallback rate: ${exchangeRateKSHtoUSD}`);
+            });
+
+        // Handle PayPal button click
+        document.getElementById('paypal-button').addEventListener('click', function() {
+            document.getElementById('paypal-button-container').style.display = 'block';
+
+            const orderTotalKSH = parseFloat('{{ order.get_total|escapejs }}'); // Order total in KSH
+            if (!exchangeRateKSHtoUSD) {
+                alert('Unable to fetch the exchange rate. Please try again later.');
+                return;
+            }
+
+            const orderTotalUSD = (orderTotalKSH * exchangeRateKSHtoUSD).toFixed(2); // Convert to USD
+            console.log(`Order Total: ${orderTotalKSH} KSH => ${orderTotalUSD} USD`);
+
+            paypal.Buttons({
+                createOrder: function(data, actions) {
+                    return actions.order.create({
+                        purchase_units: [{
+                            amount: {
+                                currency_code: 'USD', // Set to USD
+                                value: orderTotalUSD // Pass the converted amount
+                            }
+                        }]
+                    });
+                },
+                onApprove: function(data, actions) {
+                    return actions.order.capture().then(function(details) {
+                        alert('Transaction completed by ' + details.payer.name.given_name + '. Order ID: ' + details.id);
+                    });
+                }
+            }).render('#paypal-button-container');
+        });
+    </script>
+{% endblock %}

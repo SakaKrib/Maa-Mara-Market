@@ -1,0 +1,1027 @@
+{% load static %}
+
+
+
+<!DOCTYPE html>
+<html>
+    
+<head>
+    <title>Maa Mara Market</title>
+        
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        
+
+
+
+    <link rel="stylesheet" href="{% static 'style.css' %}">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    
+    
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+
+</head>
+
+ <body >
+
+
+
+        <!-----header-start------>
+    
+    <header>
+        <div class="header_text">
+        
+        <div class="logo_name">
+            <a href="#">Maa Mara 
+                <span class="other-name">Market</span></a>
+        </div>
+
+        <!-----right-nav-barstart------>
+
+        <div class="right_navbar">
+
+            
+
+        </div>
+
+        <!--------- header-navstart-------->
+
+        <div class="header_nav">
+
+            <nav class="main_nav_right">
+                {% if request.user.is_authenticated %}
+                <div >
+                    <form action="{% url 'auth:logout' %}" method="POST">
+                        {% csrf_token %}
+                        <button class="logout" type="submit">Logout</button>
+                    </form>
+                </div>
+                    
+                {% else %}
+                <div class="Sign-Up_btn"><a href="{% url 'auth:login' %}">Login</a>
+                <a href="{% url 'auth:register' %}">Sign-Up</a></div>
+                    
+                    <!-- Check if user has a profile picture -->
+                    {% if user.profile.profile_picture %}
+                        <a href="#"><img src="{{ user.profile.profile_picture.url }}" alt="Profile Picture" class="profile-picture"></a>
+                    {% else %}
+                        <a href="#"><span class="profile"><ion-icon name="person-outline"></ion-icon></span></a>
+                    {% endif %}
+                {% endif %}
+            </nav>
+            
+            
+            <style>
+                .profile-picture{
+                    position: absolute;
+                    margin: 5px 0 0 0px;
+                    width: 50px;
+                    height: 50px;
+                    border-radius: 50px;
+                    background-color: #fff;
+                    box-shadow: 1px 1px 5px;
+                    color: #5e5a5a;
+                    padding: auto;
+                    right: 25px;
+                    top: 5px;
+                }
+                .logout{
+                    position: relative;
+                    width: fit-content;
+                    margin: 5px 0 0 0px;
+                    border-radius: 2rem;
+                    background-color: rgb(226, 148, 58);
+                    height: auto;
+                    padding: 0.6rem 2rem;
+                    border: none;
+                    font-size: 0.9rem;
+                    top: 5px;
+                    text-decoration: none;
+                    left: 80%;
+                    cursor: pointer;
+                    color: #ffd;
+                    font-weight: 400;
+                }
+                header{
+                    background-color: rgba(94, 141, 141, 0.164);
+                    
+                }
+                .Sign-Up_btn{
+                    display: flex;
+                    justify-content: space-evenly;
+                    width: 300px;
+                    left: 90%;
+                    margin-left: 60%;
+                }
+                .Sign-Up_btn a:hover{
+                    background-color: rgba(6, 76, 180, 0.322);
+                    color: #fff;
+                    
+                }
+                .Sign-Up_btn a {
+                    position: relative;
+                    width: fit-content;
+                    margin: 5px 0 0 0px;
+                    border-radius: 2rem;
+                    background-color: rgba(55, 8, 226, 0.548);
+                    height: auto;
+                    padding: 0.6rem 2rem;
+                    border: none;
+                    font-size: 0.9rem;
+                    top: 5px;
+                    text-decoration: none;
+                    left: 80%;
+                    cursor: pointer;
+                    color: #ffd;
+                    font-weight: 400;
+                    z-index: 1000;
+                }
+                /* Media queries for screens with a maximum width of 475px */
+        @media screen and (max-width: 780px) {
+         
+        body, html{
+            margin: 0;
+            width: 100%;
+            overflow-x: hidden;
+            }
+          header {
+            padding: 10px 15px;
+            width: 100%;
+            height: 90px;
+          }
+          .logo_name{
+            margin: 10px 0 0 0;
+          }
+          .logo_name a {
+            font-size: 1.5rem;
+          }
+        .logo_name span {
+            font-size: 1.5rem;
+          }
+
+          .container {
+            padding: 10px;
+          }
+
+          .logout a, .Sign-Up_btn a {
+            padding: 0.4rem 1.5rem;
+            font-size: 0.8rem;
+            right: 20%;
+            margin: 10px 0 0 0;
+          }
+
+          h1 {
+            font-size: 1.5em;
+          }
+
+          p {
+            font-size: 1em;
+          }
+
+          .cart-logo {
+            width: 80px;
+            height: 40px;
+            padding: 10px;
+            bottom: 0;
+            position: fixed;
+            background-color: #ffffffc5;
+          }
+
+          .integer {
+            height: 15px;
+            width: 15px;
+            font-size: 0.8rem;
+          }
+          .middle_window{
+            margin: 50% 0 0 7%;
+            display: block;
+            justify-content: center;
+            align-content: center;
+            width: 330px;
+            padding: 50px 10px;
+            box-shadow: none;
+            background-color: rgb(44, 34, 34);
+          }
+          .middle_window div{
+            width: 150px;
+            justify-content: center;
+            margin: 0 0 0 0;
+            background-color: black;
+            color: #fff;
+          }
+          .middle_window.active{
+            position: relative;
+            
+            
+          }
+          div{
+            font-size: 0.8rem;
+            justify-content: center;
+          }
+          .category_nav{
+            font-size: 0.8rem;
+            justify-content: center;
+            padding: 0 20px;
+            left: 0;
+            position: relative;
+            
+          }
+          div .department{
+            width: fit-content;
+            height: 50px;
+            justify-content: center;
+          }
+
+          .cart-logo {
+            margin: 0 0 0 100px;
+          }
+          .colour_background ul li{ 
+            display: block;
+            margin: 0%;
+          }
+          a .category-name {
+            width: 100%;
+            line-height: 0%;
+            margin: 0 0 0 5px;
+          }
+          .category_container{
+            line-height: 10px;
+            list-style: decimal;
+          }
+          .dropdwn{
+            display: block;
+          }
+        }
+            </style>
+            
+        </div>
+
+        <div class="cart-logo">
+            <a href="#" class="left"><span class="person"><ion-icon name="person-outline"></ion-icon></span></a>
+            <a href="#" class="side"><span><ion-icon name="heart"></ion-icon></span></a>
+            <a href="#" class="center"><span class="home"><ion-icon name="home-outline"></ion-icon></span></a>
+            <a href="{% url 'order:cart_view' %}" class="right"><span class="cart"><ion-icon name="cart-outline"></ion-icon></span><span class="integer">{{ cart_item_count }}</span></a>
+        </div>
+
+       
+        
+
+<style>
+    @media screen and (min-width: 2038px) {
+        body{
+            max-width: 100%;
+            position: relative;
+            overflow-x: hidden;
+            margin: 0% 0 0 -2px;
+            padding: 0 5px;
+        }
+
+        header{
+            max-width: 100%;
+            position: relative;
+        }
+        .cart-logo{
+            position: relative;
+            right: 5%;
+            margin: 20px 0 0 0;
+
+        }
+    }
+    @media screen and (min-width: 780px) {
+        body{
+            width: 100%;
+        }
+        header{
+            width: 100%;
+        }
+        a.left span{
+            display: none;
+        } 
+        a.center span{
+            display: none;
+        }
+        .cart-logo{
+            display: inline-flex;
+            justify-content: space-between;
+        }
+        .integer{
+            position: relative;
+            left: 80px;
+            max-width: fit-content;
+            margin: 8px ;
+        }
+    }
+
+
+
+
+
+.cart-logo a {
+    text-decoration: none;
+    color: inherit;
+    display: flex;
+    align-items: center;
+}
+
+.cart-logo ion-icon {
+    font-size: 24px;
+    margin-right: 5px;
+}
+
+.cart-logo .integer {
+    font-size: 18px;
+    background-color: red;
+    color: white;
+    border-radius: 50%;
+    padding: 0 8px;
+    margin-left: 5px;
+}
+
+            .cart-logo{
+                color: red;font-size: 2rem;right: 5%; top: 0%;z-index: 1000;width: 100px;height: 50px;text-align: center;padding: 20px 10px;border-radius: 100px;transition: transform 1s ease;position:absolute;
+            }
+            .integer{
+                padding: 0.5px auto;right: 30px;position: absolute;border-radius: 100px;height: 20px;width: 20px;font-size: 1rem;top: 3%; background-color: rgba(255, 0, 0, 0.445);color: #fff;text-align: center;
+            }
+          
+        </style>
+        
+    </header>
+
+        <!------- aside start------>
+
+
+    <aside class="navigation">
+
+
+
+        <nav class="colour_background">
+            <div>
+                <ul>
+                    <li id="nav_name">
+            <li> <a href=" "><span class="ionicicon"><ion-icon name="home-outline"></ion-icon></span>Home</a></li>
+        <!-----contact us----->
+
+             <li class="call_us"> <a href="{% url 'auth:contact' %}"><span class="ionicicon"><ion-icon name="call-outline"></ion-icon></span>Contact Us</a></li>
+
+                 <li> <a href="{% url 'auth:about' %}"><span class="ionicicon"><ion-icon name="heart-circle-outline"></ion-icon></span>About Us</a></li>
+               
+
+                    <li> <a href="{% url 'vendor:vendor_dashboard' %}"><span class="ionicicon"><ion-icon name="heart-circle-outline"></ion-icon></span>Donate</a></li>
+
+                        <li> <a href=" {% url 'shop:chat_app' %} "><span class="ionicicon"><ion-icon name="flame-outline"></ion-icon></span>Hot Deals</a></li>
+
+                            <li> <a href="{% url 'shop:item_list' %}"><span class="ionicicon"><ion-icon name="people-outline"></ion-icon></span>Community</a></li>
+
+                                <li><a href="#"><span class="ionicicon"><ion-icon name="airplane-outline"></ion-icon></span>Return Policy</a></li>
+                    </li>
+                </ul>
+            </div>
+            
+        </nav>
+
+    </aside>
+        <!-------------messeges-->
+<div class="position-absolute">{% if messages %}
+    {% for message in messages %}
+    <div class="alert alert-{{ message.tags }}" role="alert">
+        {{ message }}
+      </div>
+    {% endfor %}
+    {% endif %}
+
+
+
+          <!---- main start-->
+
+
+    <main class=".main">
+        <!-----------------toggle-bar-->
+
+        <div class="toggle">
+            <span><ion-icon name="menu-outline"></ion-icon></span>
+            
+        </div>
+
+<!------------------------left- window-->
+        <div class="left_window">
+            <nav class="left-window">
+                <div class="account"><a href="#">Account</a></div>
+                <div class="vouchers"><a href="#">Vouchers</a></div>
+                <div class="invite"><a href="{% url 'shop:category_list' %}">Invite</a></div>
+                <div class="offers"><a href="#">Special Offers</a></div>
+                <div class="dashboard"><a href=" {% url 'vendor:register_vendor' %} ">Vendor Dashboard</a></div>
+                <div class="Favourite"><a href="#">Favourite <span id="count">0</span> </a></div>
+            </nav>
+        </div>
+
+<!--------------------------------------create a container for liked products/ favourtes container-->
+
+        <div class="Favourite_container">
+            <h2>favourtes</h2>
+           <!--<div class="favContainer"><div class="product_in_fav_list">
+            <div class="image"><img src="f06/placematts.jpg" alt=""></div>
+        ----------product description--------------
+            <div class="product_name"><p>Raffia Placemats</p></div>
+         </div><h1 class="ksh">KSH.1,750</h1></div>---->
+            <button class="clear">Clear all</button>
+        </div>
+
+
+
+<!----------------middle/window-->
+
+
+        <div class="middle_window">
+            
+
+        <nav class="all"><div class="department">Categories<span class="dropdown_arrow"><ion-icon name="chevron-down-outline"></ion-icon></span></nav>
+            <style>
+                .middle_window{
+                    position: relative;
+                }
+                 div.department:hover{
+                    background-color: rgb(238, 126, 126);
+                 }
+                 div.department{
+                    background-color: rgb(182, 170, 104);
+                }
+                .dropdwn {
+                    display: none;
+                }
+        
+                .department {
+                    cursor: pointer;
+                }
+        
+                .dropdwn.show {
+                    display: grid;background-color: aliceblue;grid-template-rows: auto;min-height: 300px;
+                }
+                .category-name{
+                    text-decoration: none;font-family: jayb;display: inline-flex;line-height: 20px;width: 200px;background-color: transparent;margin: -20px;
+                }
+                .category-name:hover{
+                    color: gray;
+                }
+                .category_container{
+                    position: relative;width: 200px;height: fit-content;display: inline-block;
+                }
+                
+
+                @media screen and (max-width: 780px){
+
+                  
+                    
+                    div.department:hover {
+                        background-color: rgb(238, 126, 126);
+                    }
+
+                    div.department {
+                        background-color: rgb(19, 165, 250);
+                        font-size: 1.8rem;
+                        margin: 0 0 0 5px;
+                    }
+
+                    .dropdwn {
+                        display: none;
+                    }
+
+                    .department {
+                        cursor: pointer;
+                    }
+
+                    .dropdwn.show {
+                        display: flex;
+                        background-color: aliceblue;
+                        margin: 0 0 0 55px;
+                        position: relative;
+                    }
+
+                    .category-name {
+                        text-decoration: none;
+                        font-family: jayb;
+                        margin: 20px 0 0 0px;
+                        width: fit-content;
+                        
+                    }
+
+                    .category-name:hover {
+                        color: gray;
+                    }
+
+                    .category_container {
+                        position: relative;
+                        width: 200px;
+                        height: fit-content;
+                        line-height: 0%;
+                        margin: 0 0 0 0;
+                        
+                    }
+                    main{
+                    width: 100%;
+                    justify-content: center;}
+
+                    .page_title h1{
+                        position: relative;
+                        top: 0;
+                        padding: 30px;
+                    }
+
+                    .content{
+                        width: 200px;
+                        height: 400px;
+                        margin: 10% 0 20px 10px;
+                        justify-content: flex-start;
+                    }
+                    .content img{
+                        width: 200px;
+                        aspect-ratio: 1/1;
+                    }
+                    .content p a{
+                        font-size: 1rem;
+                        position: relative;
+                        height: fit-content;
+                        color: black;
+                        
+                    }
+                    .content h1{
+                        position: relative;
+                        font-size: 0.5px;
+                        top: -105px;
+                        right: -30px;
+                        display: flex;
+                        width: 100%;
+                        font-family: jayb;
+                    }
+                    .content a button{
+                        width: 90%;
+                        top: 75px;
+                        position: relative;
+                        left: 0;
+                        z-index: 200;
+                        margin: 0 0 0 10px;
+                        border-radius: 5px;
+                        color: #ffd;
+                        justify-content: center;
+                    }
+                    .discount h1{
+                        color: red;
+                        top: -55px;
+                        right: 90px;
+                    }
+                    .save_upto{
+                        top: -20px;
+                    }
+                    .productlist{
+                        justify-content: center;
+                        width: 100%;
+                        padding: 50px 50px;
+                        margin: 0 0 0 -50px;
+                    }
+                    .rates{
+                        position: relative;
+                        display: inline-flex;
+                        top: -307px;
+                    }
+
+                    .price_list{
+                        font-family: jaka;
+
+                    }
+
+                    .cart-logo .left {
+                        order: 1;
+                        margin: 0;
+                        padding: auto;
+                    }
+
+                    .cart-logo .center {
+                        order: 2;
+                        margin: 0 auto;
+                        padding: auto;
+                    }
+
+                    .cart-logo .right {
+                        order: 4;
+                        padding: auto;
+                    }
+                    .cart-logo .side {
+                        order: 3;
+                        padding: auto;
+                    }
+                    .integer{
+                        margin: -3px 0 0 0;
+                        right: 5px;
+                        height: 20px;
+                        border-radius: 50%;
+                        text-align: center;
+                        align-items: flex-end;
+                        padding-top: -5px;
+                        width: fit-content;
+                        padding-right: -20px;
+                    }
+                    .cart-logo {
+                        display: flex;
+                        justify-content: space-around; /* or space-evenly */
+                        align-items: center;
+                        padding: 0 0; /* Add padding as needed */
+                        width: 100%;
+                        bottom: 0%;
+                        top: auto;
+                        background-color: #ffffff;
+                        border-radius: 1px;
+                        right: 0%;
+                    }
+
+                    .cart-logo .left,
+                    .cart-logo .center,
+                    .cart-logo .right,
+                    .cart-logo .side{
+                        margin: 0 5px; /* Adjust margin as needed */
+                    }
+                   
+
+
+
+
+
+                    
+                }
+
+
+
+
+            </style>
+
+                <div class="dropdwn">
+                                
+                    {% for category in categories %}
+                        
+                        <nav class="category_container"><a class="category-name" href="{% url 'shop:category_detail' slug=category.slug %}">{{ category.name }}</a></nav>
+                        <p>{{ category.item.count }}</p>
+                    
+                    {% endfor %}
+                </div>
+            
+       
+            
+            <div class="category_nav">
+    
+
+        <div>Trending</div>
+        <div>special offers</div>
+        <div>Best sellers</div>
+        <div>Play and Win</div>
+        <div>Shop Quick</div>
+    
+        </nav></div></div>
+
+
+<!-------top-main-nav-bar-start----->
+
+
+        <div class="top_navbar">
+
+            <nav>
+                    <div class="topbar">
+                    
+            <!-----------products-->            
+
+                <div class="prod-acts"><i class="bi bi-p-circle-fill"></i><span >Products</span> </div>
+            <!--------------promotions-->
+                          
+             <div class="Promotions"><i class="bi bi-award-fill"></i><span >Promotions</span></div> 
+
+            <!--------------services-->   
+
+                <div class="Services"><i class="bi bi-gear-wide-connected"></i><span >Services</span></div> 
+
+               <!----------shop-->
+
+               <div class="Shop"><i class="bi bi-bag-fill"></i><span >Shop</span></div>
+
+               <!---------sell---->
+
+               <div class="sell"><i class="bi bi-currency-exchange"></i><span >Sell</span></div>
+
+
+               <!----------ship-->
+              
+             <div class="shipping"><i class="bi bi-truck"></i><span >Shipping</span></div>
+
+                    </div>
+                
+                
+            </nav></div>
+
+             <!-------add product for sale on the product list and categories-->
+               
+             <div class="sell_container">
+
+                <form action="">
+                    <div class="form_container">
+
+                <div class="image_input">
+
+                    <input  type="file" >
+
+                </div>
+
+                <div class="item_name">
+
+                    <input type="text" placeholder="Enter product name">
+
+                </div>
+
+                <div class="item_category">
+
+                    <input type="text" placeholder="kitchen, home decor, carpet, Lamps...">
+
+                </div>
+
+                <div class="item_description">
+
+                    <input type="text" placeholder="product description">
+
+                </div>
+
+                <div class="item_price" >
+
+                    <input type="number" placeholder="product price (ksh.)">
+
+                </div>
+
+                <div class="sell-btn">
+
+                    <button>Post New Product</button>
+
+                </div>
+                    </div>
+                </form>
+
+               </div>
+                
+                
+            
+
+
+        <!---------------------------product-align-start------------------------->
+        
+        
+
+        <div class="animation_text">
+            <h1>
+                welcome! <span>African handcrafted</span>
+            </h1>
+            <h2>Shop with us. . . </h2>
+            </div>
+            <!---new arrivals------------>
+            <style>
+                .page_title h1{
+                    font-family: jaka;background-color: gold;border-bottom: 0.1px solid black;padding: 5px ;border-radius: 10px; height: fit-content;position: absolute; left: 50px;
+                }
+                .content h2{
+                    color: black;text-decoration: none;position: absolute;margin: -20px 0 0 0;
+                }
+                .discount{
+                    position: absolute;margin: -10% 0 0 90px ; color: red;width: 100px;height: fit-content;
+                }
+                .content p a{
+                    text-decoration: none;max-height: 25px;cursor: pointer;color: black;width: 100%;margin: 0 0 0 0;position: relative;
+                }
+                .content button{width: 200px;height: 25px;border-radius: 2rem;font-size: 0.9rem;border: none;background-color: rgb(80, 156, 255); position: absolute;bottom: 5%;color: #ffffff;}
+                
+                .price_list{font-size: 0.5rem;justify-content: space-between;flex-wrap: wrap;position: relative;width: 150px;margin: 100px 0 0 0;padding: 0 20px;
+                }
+                .rate{
+                    position: absolute;margin: 0 0 10px 50px;padding: 10px;color: gold;
+                }
+                .save_upto{
+                    background-color: rgba(255, 136, 0, 0.781);border-radius: 10px;width: fit-content;height: fit-content;position: absolute;margin: 55px 0 0 80px;padding: 1px 3px;font-size: 0.9rem;
+                }
+                .content h2{
+                    height: fit-content;
+                }
+            </style>
+            <div class="productlist">
+                <div class="page_title">
+                    <h1>NEW ARRIVALS</h1>
+                </div>
+                {% for item in items %}
+                <div class="content" >
+                   
+                    <a class="details" href="{% url 'shop:item_detail' slug=item.slug %}">
+                    <img src="{{ item.image.url }}" alt=""></a>
+                    <!------------------------------love--icon----------------------------------------->
+            
+                    <span class="love"><ion-icon name="heart"></ion-icon></span>
+                    <p class="item_name"><a href="{% url 'shop:item_detail' slug=item.slug %}">{{ item.name }}</a></p>
+                    <h2>
+                        {% if item.discount_price %}
+
+                        <div class="save_upto">-{{item.get_save_upto}}/- </div>
+
+                        <del class="discount"><div class="price_list"><h1 class="original-price"> {{ item.price }}/- </h1></div></del>
+
+                        <div class="price_list"><h1 class="price">ksh. {{item.discount_price}} </h1></div>
+                        
+                        {% else %}
+                        <div class="price_list"><h1 class="price">ksh. {{ item.price }} </h1></div>
+                        {% endif %}
+                    </h2>
+                     <!-- Add to Cart Button -->
+                       <a href="{% url 'shop:item_detail' slug=item.slug %}"> <button>Add to Cart</button></a>
+    
+                    
+                    
+                    
+    <!-------------------------iconstarchecked-------------------------------->
+            <div class="rate">
+                    <span class="rates"><ion-icon name="star"></ion-icon></span>
+                    <span class="rates"><ion-icon name="star"></ion-icon></span>
+                    <span class="rates"><ion-icon name="star"></ion-icon></span>
+                    <span class="rates"><ion-icon name="star"></ion-icon></span>
+                    <span class="rates"><ion-icon name="star-half-outline"></ion-icon></span>
+                 </div></div>{% endfor %}</div>
+                
+
+            
+        
+
+        <!-----------image--sky-->
+
+    
+       <div class="sky_img ">
+            <span class="plane"><ion-icon name="airplane"></ion-icon></span>
+            <h2>Global <span>shipping</span><span class="txt">Guaranteed!</span></h2>
+        </div>
+
+    </main>
+
+    <!---footer start-->
+
+
+    <footer>
+        <div class="footer-container">
+            <div class="footer-grid">
+                <!-- Contact Section -->
+                <div class="footer-column">
+                    <h3>Contact Us</h3>
+                    <ul>
+                        <li><i class="fas fa-comments"></i> <a href="#">Message Us</a></li>
+                        <li><i class="fas fa-envelope"></i> <a href="mailto:info@yourwebsite.com">Email Us</a></li>
+                        <li><i class="fas fa-phone"></i> <a href="#">Contact Us</a></li>
+                    </ul>
+                </div>
+    
+                <!-- Links Section -->
+                <div class="footer-column">
+                    <h3>About</h3>
+                    <ul>
+                        <li><i class="fas fa-users"></i> <a href="#">Community</a></li>
+                        <li><i class="fas fa-info-circle"></i> <a href="#">About Us</a></li>
+                    </ul>
+                </div>
+    
+                <!-- Support Section -->
+                <div class="footer-column">
+                    <h3>Support</h3>
+                    <ul>
+                        <li><i class="fas fa-heart"></i> <a href="#">Donate</a></li>
+                        <li><i class="fas fa-hands-helping"></i> <a href="#">Support</a></li>
+                    </ul>
+                </div>
+    
+                <!-- Social Media Section -->
+                <div class="footer-column">
+                    <h3>Follow Us</h3>
+                    <ul>
+                        <li><i class="fab fa-whatsapp"></i> <a href="#">WhatsApp</a></li>
+                        <li><i class="fab fa-twitter"></i> <a href="#">X (Twitter)</a></li>
+                    </ul>
+                </div>
+            </div>
+            <p>&copy; 2025 Maa Mara Market. All rights reserved.</p>
+        </div>
+    </footer>
+    
+    <style>
+        .footer-container {
+            width: 100%;
+            background: linear-gradient(90deg, rgba(10, 10, 92, 0.8), rgba(30, 30, 150, 0.8));
+            color: white;
+            padding: 20px;
+            margin: 0 0 0 -15px;
+        }
+    
+        .footer-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 20px;
+            text-align: left;
+        }
+    
+        .footer-column h3 {
+            font-family: Arial, sans-serif;
+            font-size: 18px;
+            margin-bottom: 10px;
+        }
+    
+        .footer-column ul {
+            list-style: none;
+            padding: 0;
+        }
+    
+        .footer-column ul li {
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+        }
+    
+        .footer-column ul li i {
+            margin-right: 8px;
+        }
+    
+        .footer-column ul a {
+            text-decoration: none;
+            color: white;
+            transition: color 0.3s;
+        }
+    
+        .footer-column ul a:hover {
+            color: lightblue;
+        }
+    
+        p {
+            text-align: center;
+            font-size: 14px;
+            margin-top: 20px;
+        }
+    </style>
+    
+    
+    
+    
+
+
+
+
+    <!---footer end-->
+    <script>
+       /*/const cartLogo = document.querySelector('.cart-logo');
+        const targetContainer = document.querySelector('.productlist');
+        const targetContainerRect = targetContainer.getBoundingClientRect();
+    
+        window.addEventListener('scroll', () => {
+          const targetPosition = targetContainer.getBoundingClientRect().top;
+    
+          // Check if the cart logo reaches the target container
+          if (targetPosition <= 20) {
+            cartLogo.style.position = 'absolute'; // Make it relative to the container
+            cartLogo.style.top = '0%'; // Stick to the top of the container
+            cartLogo.style.right = '4%'; // Reset 'right'
+            cartLogo.style.background = 'none';
+            targetContainer.appendChild(cartLogo); // Append to the container
+          } else {
+            // Reset to fixed position while scrolling
+            if (cartLogo.parentElement !== document.body) {
+              document.body.appendChild(cartLogo);
+              cartLogo.style.position = 'fixed';
+              cartLogo.style.top = '0%';
+              cartLogo.style.right = '4%';
+              
+            }
+          }
+        });/*/
+
+
+        //dropdown for category containers
+        document.addEventListener('DOMContentLoaded', function () {
+                    var department = document.querySelector('.department');
+                    var dropdown = document.querySelector('.dropdwn');
+        
+                    department.addEventListener('click', function () {
+                        dropdown.classList.toggle('show');
+                    });
+        
+                    // Close the dropdown if clicking outside of it
+                    document.addEventListener('click', function (event) {
+                        if (!department.contains(event.target) && !dropdown.contains(event.target)) {
+                            dropdown.classList.remove('show');
+                        }
+                    });
+                });
+      </script>
+    
+
+
+
+
+    <script src="{% static 'js.js' %}"></script>
+    
+    <script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
+    <script nomodule src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js"></script>
+    
+
+    
+ </body>
+</html>
