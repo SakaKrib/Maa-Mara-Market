@@ -1,0 +1,10 @@
+<!DOCTYPE html>
+<html>
+<body>
+  <h2>Price Change Approved</h2>
+  <p>Hello {{ vendor.username }},</p>
+  <p>Your request to change the price of <strong>{{ item.name }}</strong> to <strong>{{ price_request.new_price }}</strong> has been approved.</p>
+  <p>The item is now updated with the new price.</p>
+  <p><a href="/vendor/items/{{ item.id }}/">View Item</a></p>
+</body>
+</html>

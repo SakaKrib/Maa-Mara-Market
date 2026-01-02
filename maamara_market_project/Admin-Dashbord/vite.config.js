@@ -1,0 +1,23 @@
+import { defineConfig } from 'vite';
+import react from '@vitejs/plugin-react'; // or vue/svelte/etc
+import path from "path";
+
+export default defineConfig({
+  plugins: [react()],
+  resolve: {
+    alias: {
+      "@": path.resolve(__dirname, "src"),
+    },
+  },
+  server: {
+    host: '127.0.0.1', // 👈 This sets the frontend to use 127.0.0.1
+    port: 5173,
+    proxy: {
+      '/api': {
+        target: 'http://localhost:8000', // your backend server
+        changeOrigin: true,
+      }
+    }
+  }
+});
+

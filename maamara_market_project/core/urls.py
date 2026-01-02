@@ -1,0 +1,67 @@
+from django.urls import path
+from . import views  # Make sure views.py exists
+from .Serializer import *
+from .views import *
+from rest_framework.routers import DefaultRouter
+from .Referal import *
+
+router = DefaultRouter()
+
+
+urlpatterns = [
+    path('', views.home, name='home'),  # Replace with your actual view
+    path('api/activity-logs/', get_activity_logs, name='activity-logs'),
+    # path('api/notifications/', AllVendorNotificationsView.as_view(), name='get_user_notifications'),
+     path('api/notifications/', AllNotificationsView.as_view(), name='get_user_notifications'),
+
+    path('api/notifications/<int:notification_id>/mark_seen/', mark_notification_seen, name='mark-notification-seen'),
+
+    path("api/vendor-notifications/", vendor_notifications, name="vendor-notifications"),
+
+    #filter item
+    path('api/filtered-items/', filtered_items, name='item-query_list'),
+
+    #chat view
+    path('api/chat-user-data/', views.user_data, name='chat_user_data'),
+    path("api/items/<int:item_id>/reviews/", ReviewViewSet.as_view(
+         {'get': 'list'}
+     ), name="item-reviews"),
+    path("reactions/", ReactionViewSet.as_view(
+        {'get': 'list'}
+    ), name="create-reaction"),
+
+
+    # Fetch activity logs for a specific item
+    path('api/activity-logs-item/-item', ActivityLogViewSet.as_view({'get': 'list'}), name='activity-logs-for-item'),
+
+    # Delete a single log
+    path('api/activity-logs-item/<int:pk>/delete/', ActivityLogViewSet.as_view({'delete': 'delete_single_log'}), name='delete-single-log'),
+
+    # Clear all logs for a specific item
+    path('api/activity-logs-item/clear-item-logs/', ActivityLogViewSet.as_view({'delete': 'clear_item_logs'}), name='clear-item-logs'),
+
+    # Clear all logs (admin/testing)
+    path('api/activity-logs-item/clear-all-logs/', ActivityLogViewSet.as_view({'delete': 'clear_all_logs'}), name='clear-all-logs'),
+
+    # referals wallet and voucher
+    path("api/referrals-link/", get_referral_link, name="get-referral-link"),
+    path("api/referrals-track/", track_referral, name="track-referral"),
+     path("api/user/account/", UserAccountView.as_view(), name="user-account"),
+    path("api/user/update/", UpdateProfileView.as_view(), name="user-update"),
+    path("api/user-profile/", user_account_view, name="user-update"),
+
+    # visitor activity logs
+    path("api/user-visitor-notifications/", get_notifications, name="notification-logs"),
+    path("api/user-visitor-activity/", get_activity, name="activity-logs-user-visitor"),
+
+    # sectin url
+    path('api/hierarchy/', HierarchicalDataView.as_view(), name='hierarchy'),
+
+    # subcategory item fetch
+    path("api/subcategory/<int:subcategory_id>/products/", products_by_subcategory),
+
+    # item an category url
+    path('api/categories-with-items/', CategoryListWithItems.as_view(), name='categories-with-items'),
+    path('api/items/details/<int:pk>/', ItemDetailView.as_view(), name='item-detail'),
+
+]

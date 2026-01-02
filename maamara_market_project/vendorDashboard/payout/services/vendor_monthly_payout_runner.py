@@ -1,0 +1,166 @@
+from datetime import date
+from dateutil.relativedelta import relativedelta
+from django.utils import timezone
+
+from django.conf import settings
+
+from vendorDashboard.payout.services.payment_processors import (
+    call_mpesa_b2c,
+    call_paypal_payout,
+    call_bank_transfer,
+)
+
+from vendorDashboard.models import Vendor, VendorPayout
+from vendorDashboard.payout.services.payment_processors import payment_processors
+from vendorDashboard.views import get_vendor_earnings  # assuming your current function lives here
+from rest_framework.permissions import IsAdminUser
+from rest_framework.decorators import permission_classes,api_view
+from rest_framework.response import Response
+from collections import defaultdict
+
+
+# =========================
+# 🚀 API Endpoint generate
+# =========================
+
+@api_view(["POST"])
+@permission_classes([IsAdminUser])
+def generate_monthly_payouts(request):
+    today = timezone.now().date()
+    start_date = today.replace(day=1)
+    end_date = (start_date + relativedelta(months=1)) - relativedelta(days=1)
+
+    summary = {
+        "period": f"{start_date} → {end_date}",
+        "generated": [],
+        "errors": [],
+    }
+
+    active_vendors = Vendor.objects.filter(is_active=True)
+    for vendor in active_vendors:
+
+        vendor_data = {
+            "id": vendor.id,
+            "company_name": vendor.company_name,
+            "email": vendor.email,
+            "MpesaNo": vendor.mpesa_number,
+            "PaypalEmail": vendor.paypal_email,
+            "BankAccountNo": vendor.bank_account_number,
+            "BankAccountName": vendor.bank_account_name,
+        }
+        try:
+            result = get_vendor_earnings(vendor, start_date, end_date)
+            payout = result["payout"]
+            summary["generated"].append({
+                "vendor": vendor_data,  # full vendor info here
+                "amount": float(payout.amount),
+                "reference": payout.reference,
+                "payment_method": vendor.payment_method,
+                "payout_status": payout.paid,
+            })
+
+        except Exception as e:
+            summary["errors"].append({
+                "vendor": vendor.company_name,
+                "error": str(e),
+            })
+
+    # Group payouts by payment method
+    grouped = defaultdict(list)
+    for item in summary["generated"]:
+        grouped[item["payment_method"]].append(item)
+
+    summary["generated"] = dict(grouped)
+    summary["status"] = "generated"
+
+    return Response(summary)
+
+
+
+# =========================
+# 🚀 API Endpoint group
+# =========================
+
+@api_view(["POST"])
+@permission_classes([IsAdminUser])
+def process_payouts_by_group(request):
+    today = timezone.now().date()
+    start_date = today.replace(day=1)
+    end_date = (start_date + relativedelta(months=1)) - relativedelta(days=1)
+
+    payment_method = request.data.get("payment_method")
+
+    if payment_method:
+        payout_results = payment_processors(start_date, end_date, payment_method=payment_method)
+        summary = {
+            "results": {
+                payment_method: payout_results.get("results", [])
+            },
+            "status": "completed",
+            "period": f"{start_date} → {end_date}"
+        }
+    else:
+        groups = ["BANK_TRANSFER", "PAYPAL", "MOBILE_MONEY"]
+        summary = {"results": {}}
+        for group in groups:
+            payout_results = payment_processors(start_date, end_date, payment_method=group)
+            summary["results"][group] = payout_results.get("results", [])
+        summary["status"] = "completed"
+        summary["period"] = f"{start_date} → {end_date}"
+
+    return Response(summary)
+
+
+
+# =========================
+# 🚀 API Endpoint single
+# =========================
+
+@api_view(["POST"])
+@permission_classes([IsAdminUser])
+def pay_single_vendor_payout(request, reference):
+    try:
+        payout = VendorPayout.objects.get(reference=reference)
+    except VendorPayout.DoesNotExist:
+        return Response({"error": "Payout reference not found."}, status=404)
+
+    if payout.paid:
+        return Response({"message": "Payout already paid."}, status=200)
+
+    vendor = payout.vendor
+    amount = payout.amount
+    method = vendor.payment_method
+
+    # Load gateway configs
+    mpesa_config = settings.PAYMENT_GATEWAYS.get("mpesa", {})
+    paypal_config = settings.PAYMENT_GATEWAYS.get("paypal", {})
+
+    try:
+        if method == "MOBILE_MONEY":
+            response = call_mpesa_b2c(vendor, amount, mpesa_config)
+        elif method == "PAYPAL":
+            response = call_paypal_payout(vendor.paypal_email, amount, paypal_config)
+        elif method == "BANK_TRANSFER":
+            response = call_bank_transfer(vendor.bank_account_number, amount)
+        else:
+            return Response({"error": f"Unknown payment method: {method}"}, status=400)
+
+        if response.get("success"):
+            
+            return Response({
+                "message": f"Payout successfully processed via {method}.",
+                "reference": payout.reference,
+                "amount": float(amount),
+                "response": response,
+            })
+
+        else:
+            return Response({
+                "error": response.get("error", "Payment failed."),
+                "response": response,
+            }, status=400)
+
+    except Exception as e:
+        return Response({
+            "error": f"Exception during payment: {str(e)}"
+        }, status=500)

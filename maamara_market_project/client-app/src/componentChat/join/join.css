@@ -1,0 +1,71 @@
+.joinOuterContainer{
+    display: flex;
+    justify-content: center;
+    text-align: center;
+    height: 100vh;
+    align-items: center;
+    background-color: #aa9b9bb9;
+}
+
+
+
+.joinInnerContainer{
+    width: 30%;
+    padding: 50px 50px;
+    background-color: #1a1a1d;
+    margin: 0;
+    height: fit-content;
+    border-radius: 20px;
+    line-height: 100px;
+}
+
+.joinInput{
+    border-radius: 0;
+    padding: 15px 5px;
+    min-width: 100%;
+    margin: 25px 0 0 -10px;
+    font-size: 1rem;
+    outline: none;
+}
+
+.profilePicture {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+}
+
+.heading{
+    color: #ffffffa6;
+    font-size: 2rem;
+    padding-bottom: 10px;
+    border-bottom: 2px solid #fff;
+    width: 100%;
+
+
+}
+
+.button{
+    color: #fff !important;
+    text-transform: uppercase;
+    text-decoration: none;
+    background-color: #2979ff;
+    padding-top: 20px;
+    padding-bottom: 20px;
+    border-radius: 5px;
+    display: inline-block;
+    border: none;
+    width: 100%;
+    
+}
+
+/* User info section */
+.userInfo {
+    margin-top: 20px;
+    text-align: left;
+    font-size: 14px;
+    color: #fffbfb; /* Medium gray text */
+  }
+  
+  .userInfo p {
+    margin: 5px 0; /* Space between lines */
+  }
