@@ -1,9 +1,0 @@
-from oder.models import Order
-
-def cart_item_count(request):
-    if request.user.is_authenticated:
-        qs = Order.objects.filter(user=request.user, status='pending')
-        if qs.exists():
-            return {'cart_item_count': qs[0].items.count()}
-    return {'cart_item_count': 0}
-
