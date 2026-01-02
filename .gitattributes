@@ -1,0 +1,12 @@
+*.zip filter=lfs diff=lfs merge=lfs -text
+path/to/largefile1 filter=lfs diff=lfs merge=lfs -text
+path/to/largefile2 filter=lfs diff=lfs merge=lfs -text
+path/to/largefile3 filter=lfs diff=lfs merge=lfs -text
+path/to/largefile4 filter=lfs diff=lfs merge=lfs -text
+path/to/largefile5 filter=lfs diff=lfs merge=lfs -text
+path/to/largefile6 filter=lfs diff=lfs merge=lfs -text
+path/to/largefile7 filter=lfs diff=lfs merge=lfs -text
+path/to/largefile8 filter=lfs diff=lfs merge=lfs -text
+path/to/largefile9 filter=lfs diff=lfs merge=lfs -text
+path/to/largefile10 filter=lfs diff=lfs merge=lfs -text
+path/to/largefile11 filter=lfs diff=lfs merge=lfs -text
