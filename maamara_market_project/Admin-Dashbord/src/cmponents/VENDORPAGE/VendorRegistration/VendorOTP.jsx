@@ -8,6 +8,9 @@ import {
 } from "../../../../components/ui/input-otp";
 import { Button } from "../../../../components/ui/button";
 import api from "../../../../src/Services/Api";
+import Snackbar from "@mui/material/Snackbar";
+import Alert from "@mui/material/Alert";
+import Maamara from "../../../assets/Logo/Maamara.jpg";
 
 const OTPVerification = () => {
   const location = useLocation();
@@ -16,20 +19,23 @@ const OTPVerification = () => {
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
   const [resending, setResending] = useState(false);
-  const [error, setError] = useState("");
-  const [success, setSuccess] = useState("");
   const [timer, setTimer] = useState(0);
 
-  // ✅ Extract email from location.state (passed from previous form)
+  // Snackbar state
+  const [snackbar, setSnackbar] = useState({
+    open: false,
+    severity: "success", // "success" | "error"
+    message: "",
+  });
+
   useEffect(() => {
     if (location.state?.email) {
       setEmail(location.state.email);
     } else {
-      setError("Email is missing. Please go back and register again.");
+      openSnackbar("error", "Email is missing. Please go back and register again.");
     }
   }, [location.state]);
 
-  // ⏳ Countdown timer
   useEffect(() => {
     let interval = null;
     if (timer > 0) {
@@ -40,17 +46,22 @@ const OTPVerification = () => {
     return () => clearInterval(interval);
   }, [timer]);
 
-  const handleVerify = async () => {
-    setError("");
-    setSuccess("");
+  const openSnackbar = (severity, message) => {
+    setSnackbar({ open: true, severity, message });
+  };
 
+  const handleSnackbarClose = () => {
+    setSnackbar((prev) => ({ ...prev, open: false }));
+  };
+
+  const handleVerify = async () => {
     if (!email) {
-      setError("Email is missing. Please go back and register again.");
+      openSnackbar("error", "Email is missing. Please go back and register again.");
       return;
     }
 
     if (otp.length !== 6) {
-      setError("Please enter a 6-digit OTP.");
+      openSnackbar("error", "Please enter a 6-digit OTP.");
       return;
     }
 
@@ -61,79 +72,113 @@ const OTPVerification = () => {
         otp,
       });
 
-      setSuccess(response.data.message || "OTP verified successfully!");
+      openSnackbar("success", response.data.message || "OTP verified successfully!");
       setOtp("");
-      // redirect after success
-      navigate("/vendor-success-page");
+      // Redirect after success with a small delay so snackbar shows
+      setTimeout(() => navigate("/vendor-success-page"), 1500);
     } catch (err) {
-      setError(err.response?.data?.message || "Verification failed.");
+      openSnackbar("error", err.response?.data?.message || "Verification failed.");
     } finally {
       setLoading(false);
     }
   };
 
   const handleResend = async () => {
-    setError("");
-    setSuccess("");
     setResending(true);
 
     try {
       const response = await api.post("/api/resend-otp-vendor/", { email });
-      setSuccess(response.data.message || "OTP resent successfully!");
+      openSnackbar("success", response.data.message || "OTP resent successfully!");
       setTimer(600); // 10 minutes timer
     } catch (err) {
-      setError(err.response?.data?.message || "Failed to resend OTP.");
+      openSnackbar("error", err.response?.data?.message || "Failed to resend OTP.");
     } finally {
       setResending(false);
     }
   };
 
   return (
-    <div className="w-full h-screen bg-muted flex judtify-center items-center">
-    <div className="max-w-md lg:w-fit mx-auto p-4 border rounded shadow relative top-10">
-      <div className="flex flex-col mt-2 mb-2 justify-center items-center">
-      <h2 className="text-xl font-semibold mb-4">Verify Your Vendor OTP</h2>
+    <div className="fixed inset-0 bg-gray-100 flex items-center justify-center z-50">
+      
+      <div className="bg-white p-6 rounded-lg shadow-lg w-full max-w-sm relative">
+        <div className="flex justify-center mb-4">
+          <div className="flex gap-4 items-center">
+            <img src={Maamara} alt="maamara-logo" className="w-5 h-5" />
+            <h2 className="text-lg font-semibold">Maamara Market</h2>
+          </div>
+        </div>
+        <h2 className="text-lg font-semibold mb-6 text-center">Verify Your Vendor OTP</h2>
 
-      {email && <p className="mb-3 text-gray-600">📩 Sent to: {email}</p>}
-      {error && <p className="text-red-600 mb-2">{error}</p>}
-      {success && <p className="text-green-600 mb-2">{success}</p>}
-    
-      <InputOTP maxLength={6} value={otp} onChange={setOtp}>
-        <InputOTPGroup>
-          <InputOTPSlot index={0} />
-          <InputOTPSlot index={1} />
-          <InputOTPSlot index={2} />
-        </InputOTPGroup>
-        <InputOTPSeparator />
-        <InputOTPGroup>
-          <InputOTPSlot index={3} />
-          <InputOTPSlot index={4} />
-          <InputOTPSlot index={5} />
-        </InputOTPGroup>
-      </InputOTP>
+        {email && <p className="mb-3 text-gray-600 text-center">📩 Sent to: {email}</p>}
+
+        <InputOTP
+          maxLength={6}
+          value={otp}
+          onChange={setOtp}
+          className="flex justify-center gap-3 max-w-xs mx-auto select-none rounded-xl"
+        >
+          <InputOTPGroup>
+            <InputOTPSlot
+              index={0}
+              className="w-12 h-20 text-2xl text-center rounded-xl border border-gray-300 shadow-sm focus:outline-none focus:border-blue-600 focus:ring-1 focus:ring-blue-600 transition"
+            />
+            <InputOTPSlot
+              index={1}
+              className="w-12 h-20 text-2xl text-center rounded-xl border border-gray-300 shadow-sm focus:outline-none focus:border-blue-600 focus:ring-1 focus:ring-blue-600 transition"
+            />
+            <InputOTPSlot
+              index={2}
+              className="w-12 h-20 text-2xl text-center rounded-xl border border-gray-300 shadow-sm focus:outline-none focus:border-blue-600 focus:ring-1 focus:ring-blue-600 transition"
+            />
+          </InputOTPGroup>
+          <InputOTPSeparator />
+          <InputOTPGroup>
+            <InputOTPSlot
+              index={3}
+              className="w-12 h-20 text-2xl text-center rounded-xl border border-gray-300 shadow-sm focus:outline-none focus:border-blue-600 focus:ring-1 focus:ring-blue-600 transition"
+            />
+            <InputOTPSlot
+              index={4}
+              className="w-12 h-20 text-2xl text-center rounded-xl border border-gray-300 shadow-sm focus:outline-none focus:border-blue-600 focus:ring-1 focus:ring-blue-600 transition"
+            />
+            <InputOTPSlot
+              index={5}
+              className="w-12 h-20 text-2xl text-center rounded-xl border border-gray-300 shadow-sm focus:outline-none focus:border-blue-600 focus:ring-1 focus:ring-blue-600 transition"
+            />
+          </InputOTPGroup>
+        </InputOTP>
+
+        <Button onClick={handleVerify} disabled={loading || otp.length !== 6} className="mt-6 w-full">
+          {loading ? "Verifying..." : "Verify OTP"}
+        </Button>
+
+        <Button
+          variant="outline"
+          onClick={handleResend}
+          disabled={resending || timer > 0}
+          className="mt-4 w-full"
+        >
+          {timer > 0 ? `Resend OTP in ${timer}s` : resending ? "Resending..." : "Resend OTP"}
+        </Button>
+
+        {/* Snackbar for notifications */}
+        <Snackbar
+          open={snackbar.open}
+          autoHideDuration={6000}
+          onClose={handleSnackbarClose}
+          anchorOrigin={{ vertical: "top", horizontal: "right" }}
+        >
+          <Alert
+            onClose={handleSnackbarClose}
+            severity={snackbar.severity}
+            sx={{ width: "100%" }}
+            elevation={6}
+            variant="filled"
+          >
+            {snackbar.message}
+          </Alert>
+        </Snackbar>
       </div>
-
-      <Button
-        onClick={handleVerify}
-        disabled={loading || otp.length !== 6}
-        className="mt-4 w-full"
-      >
-        {loading ? "Verifying..." : "Verify OTP"}
-      </Button>
-
-      <Button
-        variant="outline"
-        onClick={handleResend}
-        disabled={resending || timer > 0}
-        className="mt-4 w-full"
-      >
-        {timer > 0
-          ? `Resend OTP in ${timer}s`
-          : resending
-          ? "Resending..."
-          : "Resend OTP"}
-      </Button>
-    </div>
     </div>
   );
 };

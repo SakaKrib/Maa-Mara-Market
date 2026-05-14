@@ -152,15 +152,19 @@ class OrderSerializer(serializers.ModelSerializer):
 # serializers.py
 
 
+
 class TransactionSerializer(serializers.ModelSerializer):
+    txid = serializers.SerializerMethodField()
     order_id = serializers.SerializerMethodField()
     vendor_name = serializers.SerializerMethodField()
     items = serializers.SerializerMethodField()
+    amount = serializers.SerializerMethodField()
 
     class Meta:
         model = Transaction
         fields = [
             "id",
+            "txid",
             "mpesa_receipt_number",
             "phone_number",
             "amount",
@@ -171,27 +175,40 @@ class TransactionSerializer(serializers.ModelSerializer):
             "items",
         ]
 
+    # ✅ Transaction ID (VERY IMPORTANT FOR UI)
+    def get_txid(self, obj):
+        return (
+            obj.mpesa_receipt_number
+            or obj.paypal_transaction_id
+            or obj.account_reference
+            or f"TX-{obj.id}"
+        )
+
     def get_order_id(self, obj):
         return obj.order.id if obj.order else None
 
+    # ✅ Safer vendor resolution
     def get_vendor_name(self, obj):
-        """
-        Return the vendor name from the first item in the order.
-        """
+        if obj.vendor:
+            return getattr(obj.vendor, "business_name", None) or getattr(obj.vendor, "username", None)
+
         if obj.order:
             first_item = obj.order.items.first()
             if first_item and first_item.item and first_item.item.vendor:
-                return first_item.item.vendor.username
-        return None
+                return getattr(first_item.item.vendor, "username", None)
+
+        return "Unknown"
+
+    # ✅ Ensure frontend-safe number
+    def get_amount(self, obj):
+        return float(obj.amount)
 
     def get_items(self, obj):
-        """
-        Return details for all items in the order including quantity sold and remaining quantity.
-        """
         if not obj.order:
             return []
 
         items_data = []
+
         for order_item in obj.order.items.all():
             item = order_item.item
             if not item:
@@ -200,9 +217,14 @@ class TransactionSerializer(serializers.ModelSerializer):
             items_data.append({
                 "id": item.id,
                 "name": item.name,
-                "price": str(item.price),
+                "price": float(item.price),
                 "image": item.image.url if item.image else None,
-                "quantity_sold": order_item.item.in_stock,  # computed from the order item
-                "remaining_qty": item.in_stock,        # stock or current quantity
+
+                # ✅ FIXED
+                "quantity_sold": order_item.quantity,
+
+                # ✅ current stock
+                "remaining_qty": item.in_stock,
             })
+
         return items_data

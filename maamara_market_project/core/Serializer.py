@@ -7,6 +7,7 @@ from rest_framework.response import Response
 from shop.models import Review, Reaction
 from .models import Profile
 from ReactSerializers.models import Offer
+from rest_framework import generics
 
 
 
@@ -265,6 +266,15 @@ def get_activity_logs(request):
     return Response(serializer.data)
 
 
+#______________________
+
+# ORGANIC
+#_____________________
+class OrganicItemsView(generics.ListAPIView):
+    serializer_class = ItemSerializer
+
+    def get_queryset(self):
+        return Item.objects.filter(is_organic=True, available=True)
 
 
 #______________________
@@ -298,3 +308,10 @@ class UserSerializer(serializers.ModelSerializer):
             profile.save()
 
         return instance
+
+
+# calendar serializer
+class CalendarEventSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CalendarEvent
+        fields = ["id", "title", "start", "end", "all_day"]

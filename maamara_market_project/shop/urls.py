@@ -78,4 +78,7 @@ urlpatterns = [
     path('api/wishlist/add/<int:pk>/', WishlistAPIView.as_view(), name='wishlist-item'),  # POST
     path('api/wishlist/remove/<int:pk>/', WishlistAPIView.as_view(), name='wishlist-remove'),  # DELETE
 
+    # vendor ratings
+    path('api/rate-V/<int:vendor_id>/rate/', VendorRatingView.as_view(), name='vendor-rate'),
+
 ]

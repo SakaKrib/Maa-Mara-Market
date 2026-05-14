@@ -116,8 +116,8 @@ const LoginForm = () => {
   };
 
   return (
-    <Box sx={{backgroundColor:colors.primary[500], color:colors.gray[100]}} width={"100%"}>
-    <Container maxWidth="xs" sx={{ border: '.1px solid', padding: '1em', position: 'relative', top: '50px', backgroundColor:colors.primary[500] }}>
+    <Box sx={{backgroundColor:colors.primary[500], color:colors.gray[100]}} width={"100%"} minHeight={'100vh'}>
+    <Container maxWidth="xs" sx={{ border: '.1px solid', padding: '1em', position: 'relative', top: '50px', backgroundColor:colors.primary[500], minHeight:'100%' }}>
       
       <Box
         sx={{
@@ -125,7 +125,7 @@ const LoginForm = () => {
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',
-          justifyContent: 'center'
+          justifyContent: 'center',
         }}
       >
         <Typography variant="h3" component="h1" gutterBottom mb={2}>
@@ -163,7 +163,7 @@ const LoginForm = () => {
             variant="contained"
             fullWidth
             disabled={loading}
-            sx={{ mt: 5, backgroundColor: colors.primary[600] }}
+            sx={{ mt: 5, backgroundColor: colors.gray[100], color: colors.gray[900] }}
           >
             {loading ? <CircularProgress size={24} /> : 'Login'}
           </Button>

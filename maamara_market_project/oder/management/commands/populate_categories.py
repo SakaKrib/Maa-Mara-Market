@@ -154,6 +154,11 @@ class Command(BaseCommand):
 
             self._create_categories_and_subcategories(data, dept_obj)
 
+        # 3️⃣ Inorganic section (catch-all for non-organic items)
+        inorganic_section, created = Section.objects.get_or_create(name="inorganic")
+        if created:
+            self.stdout.write(self.style.SUCCESS("[Inorganic] Section created as catch-all for non-organic items"))
+
     def _create_categories_and_subcategories(self, data, dept_obj):
         """Helper to avoid repetition"""
         categories = data.get("categories", [])

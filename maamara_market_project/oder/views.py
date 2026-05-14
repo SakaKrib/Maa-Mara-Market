@@ -13,10 +13,15 @@ from .models import Transaction
 from .Serializers import TransactionSerializer
 from core.models import Wallet, Voucher
 from .Serializers import OrderSerializer
+from ReactSerializers.models import SizeStock,ColorVariant
+from django.db import models
+from django.db.models import Sum
+from ReactSerializers.models import Item, AgeVariant, ColorVariant, SizeStock, Shoe, Length, Weight
+from django.db.models import Prefetch
 
 import bleach
 
-from .models import Item, OderItem, Order
+from .models import OderItem, Order
 from vendorDashboard.models import ReturnRequest
 from core.Serializer import ItemSerializer
 from decimal import Decimal, InvalidOperation
@@ -29,18 +34,47 @@ import uuid
 User = get_user_model()
 
 # custom authentication
+# class IsAuthenticatedOrVisitor(BasePermission):
+#     def has_permission(self, request, view):
+#         if request.user and request.user.is_authenticated:
+#             return True
+#         token = request.COOKIES.get("visitorAccessToken")
+#         if token:
+#             try:
+#                 validated = JWTAuthentication().get_validated_token(token)
+#                 return validated.get("visitor", False) is True
+#             except (InvalidToken, TokenError):
+#                 return False
+#         return False
+
 class IsAuthenticatedOrVisitor(BasePermission):
     def has_permission(self, request, view):
+        # Check Django auth
         if request.user and request.user.is_authenticated:
             return True
-        token = request.COOKIES.get("visitorAccessToken")
-        if token:
+        
+        # Check visitor token
+        visitor_token = request.COOKIES.get("visitorAccessToken")
+        if visitor_token:
             try:
-                validated = JWTAuthentication().get_validated_token(token)
-                return validated.get("visitor", False) is True
+                validated = JWTAuthentication().get_validated_token(visitor_token)
+                if validated.get("visitor", False):
+                    return True
             except (InvalidToken, TokenError):
-                return False
+                pass
+        
+        # Optionally check user access token
+        access_token = request.COOKIES.get("accessToken")
+        if access_token:
+            try:
+                validated = JWTAuthentication().get_validated_token(access_token)
+                # Could verify user claims here if needed
+                return True
+            except (InvalidToken, TokenError):
+                pass
+
         return False
+
 
 # -------------------------------
 # Sanitizer
@@ -218,45 +252,129 @@ def get_cart_view(request):
 # -------------------------------
 # Add tom cart
 # -------------------------------
-
 @api_view(["POST"])
 @permission_classes([IsAuthenticatedOrVisitor])
 def add_to_cart_api(request, pk):
     """
     Add an item to the user's or visitor's cart.
-    Uses persistent visitorId cookie for guest carts.
+    Handles all variations (color, size, age, length, weight, shoe) and freezes price_at_purchase.
     """
 
-    # 🔹 Sanitize incoming item ID
+    # Sanitize incoming item ID
     pk = sanitize(pk)
     item = get_object_or_404(Item, pk=pk)
 
-    # 🔹 Determine if request is from a logged-in user or visitor
+    # Determine if request is from a logged-in user or visitor
     if request.user and request.user.is_authenticated:
         user = request.user
         visitor_id = None
         actor_type = "user"
         actor_name = user.username
     else:
-        # ✅ Use persistent visitorId cookie
         visitor_id = request.COOKIES.get("visitorId")
         if not visitor_id:
-            # fallback: create a new visitorId
             visitor_id = str(uuid.uuid4())
-
         user = None
         actor_type = "visitor"
         actor_name = f"Guest ({visitor_id[:8]})"
 
-    # 🔹 Create or get cart item
-    cart_item, created = OderItem.objects.get_or_create(
+    # Get quantity from request body (default to 1)
+    requested_qty = request.data.get("quantity", 1)
+    try:
+        requested_qty = int(requested_qty)
+        if requested_qty < 1:
+            requested_qty = 1
+    except (ValueError, TypeError):
+        requested_qty = 1
+
+    # --- Get selected variations ---
+    variant_id = request.data.get("variant_id")
+    size_id = request.data.get("size_id")
+    age_variant_id = request.data.get("age_variant_id")
+    length_id = request.data.get("length_id")
+    weight_id = request.data.get("weight_id")
+    shoe_id = request.data.get("shoe_id")
+
+    variant = get_object_or_404(ColorVariant, pk=variant_id) if variant_id else None
+    size_stock = get_object_or_404(SizeStock, pk=size_id) if size_id else None
+    age_variant = get_object_or_404(AgeVariant, pk=age_variant_id) if age_variant_id else None
+    length = get_object_or_404(Length, pk=length_id) if length_id else None
+    weight = get_object_or_404(Weight, pk=weight_id) if weight_id else None
+    shoe = get_object_or_404(Shoe, pk=shoe_id) if shoe_id else None
+
+    # --- Determine available stock based on variation ---
+    if size_stock:
+        available_stock = size_stock.quantity_in_stock
+    elif age_variant:
+        available_stock = age_variant.quantity_in_stock
+    elif variant:
+        available_stock = variant.sizes.aggregate(total=models.Sum('quantity_in_stock'))['total'] or 0
+    elif shoe:
+        available_stock = len(shoe.shoe_size)  # simple approximation, can adjust
+    else:
+        available_stock = SizeStock.objects.filter(item=item, variant__isnull=True).aggregate(
+            total=models.Sum('quantity_in_stock')
+        )['total'] or 0
+
+    # fallback to item.in_stock if no variation stocks found
+    if available_stock == 0 and item.in_stock:
+        available_stock = item.in_stock
+
+    # --- Fetch existing cart item ---
+    # Get active pending order first
+    order = Order.objects.filter(user=user, visitor_id=visitor_id, status="pending").first()
+
+    cart_item_qs = OderItem.objects.filter(
         item=item,
         user=user,
         visitor_id=visitor_id,
         status="pending",
+        order=order,  # ✅ Only look in current pending order
+        color_variant=variant if variant else None,
+        size_stock=size_stock if size_stock else None,
+        age_variant=age_variant if age_variant else None,
+        selected_length=str(length.value) + " " + length.unit if length else None,
+        selected_weight=str(weight.value) + " " + weight.unit if weight else None,
+        shoe_size=shoe.shoe_size if shoe else None,
     )
 
-    # 🔹 Create or get pending order
+    if cart_item_qs.exists():
+        cart_item = cart_item_qs.first()
+        new_quantity = cart_item.quantity + requested_qty
+        created = False
+    else:
+        # Create new cart item instance
+        cart_item = OderItem(
+            item=item,
+            user=user,
+            visitor_id=visitor_id,
+            status="pending",
+            quantity=requested_qty,
+            price_at_purchase=item.get_current_price(),
+            color_variant=variant if variant else None,
+            size_stock=size_stock if size_stock else None,
+            age_variant=age_variant if age_variant else None,
+            selected_length=str(length.value) + " " + length.unit if length else None,
+            selected_weight=str(weight.value) + " " + weight.unit if weight else None,
+            shoe_size=shoe.shoe_size if shoe else None,
+        )
+        new_quantity = requested_qty
+        created = True  
+
+
+    # --- Validate stock availability ---
+    current_qty = cart_item.quantity if not created else 0
+    if new_quantity > available_stock:
+        return Response({
+            "success": False,
+            "error": f"Cannot add {requested_qty} item(s). Only {available_stock - current_qty} left in stock."
+        }, status=400)
+
+    # --- Save cart item ---
+    cart_item.quantity = new_quantity
+    cart_item.save()
+
+    # --- Create or get pending order ---
     order, order_created = Order.objects.get_or_create(
         user=user,
         visitor_id=visitor_id,
@@ -264,41 +382,12 @@ def add_to_cart_api(request, pk):
         defaults={"ordered_date": timezone.now()},
     )
 
-    # 🔹 Update quantity if item already exists in the order
-    if order.items.filter(id=cart_item.id).exists():
-        cart_item.quantity += 1
-        cart_item.save()
-        message = "Item quantity updated in cart"
-    else:
-        # Instead of order.items.add(cart_item) (invalid), set FK on cart_item
+    # Link cart item to order
+    if not cart_item.order:
         cart_item.order = order
         cart_item.save()
-        message = "Item added to cart"
 
-    # 🔹 Handle exchange scenario for logged-in users
-    exchange_info = None
-    if user and "exchange_return_id" in request.session:
-        return_id = sanitize(request.session.get("exchange_return_id"))
-        try:
-            return_request = ReturnRequest.objects.get(id=return_id, customer=user)
-            original_item = return_request.item
-            original_price = original_item.get_final_price()
-            replacement_price = item.price
-            difference = replacement_price - original_price
-
-            request.session["exchange"] = {
-                "return_id": return_id,
-                "replacement_item_id": item.id,
-                "original_price": float(original_price),
-                "replacement_price": float(replacement_price),
-                "difference": float(difference),
-            }
-            exchange_info = request.session["exchange"]
-            del request.session["exchange_return_id"]
-        except ReturnRequest.DoesNotExist:
-            pass
-
-    # create response activity logs (unchanged)
+    # --- Activity logs ---
     ActivityLog.objects.create(
         user=user,
         actor_type=actor_type,
@@ -316,7 +405,7 @@ def add_to_cart_api(request, pk):
         description=f"{actor_name} added '{item.name}' to cart.",
         related_url=f"/item/{item.id}/"
     )
-    
+
     for admin in User.objects.filter(is_staff=True):
         ActivityLog.objects.create(
             user=admin,
@@ -325,19 +414,19 @@ def add_to_cart_api(request, pk):
             item=item,
             description=f"{actor_name} added '{item.name}' to their cart.",
             related_url=f"/admin-item/vendorDashboard/items/{item.id}/"
-        )   
+        )
 
-    # 🔹 Build response
+    # --- Build response ---
+    message = "Item added to cart" if created else "Item quantity updated in cart"
     response = Response({
         "success": True,
         "message": sanitize(message),
         "order_id": order.id,
         "cart_item_id": cart_item.id,
-        "exchange": exchange_info,
-        "visitor_id": visitor_id  # return visitorId for frontend persistence
+        "visitor_id": visitor_id
     })
 
-    # 🔹 Set visitorId cookie if not set
+    # Set visitorId cookie for guests
     if not request.COOKIES.get("visitorId") and not user:
         response.set_cookie(
             "visitorId",
@@ -359,35 +448,45 @@ def add_to_cart_api(request, pk):
 @permission_classes([IsAuthenticatedOrVisitor])
 def remove_from_cart_api(request, pk):
     """
-    Remove an item from the user's or visitor's cart.
+    Remove an item or a specific variation from the user's or visitor's cart.
+    Supports size, color, age, length, weight, and shoe variations.
     """
 
-    # 🔹 Sanitize incoming item ID
+    # -----------------------------
+    # Sanitize incoming item ID
+    # -----------------------------
     pk = sanitize(pk)
     item = get_object_or_404(Item, pk=pk)
 
-    # 🔹 Determine if request is from logged-in user or visitor
+    # -----------------------------
+    # Determine if request is from logged-in user or visitor
+    # -----------------------------
     if request.user and request.user.is_authenticated:
         user = request.user
         visitor_id = None
         actor_type = "user"
         actor_name = user.username
     else:
-        # ✅ Use persistent visitorId cookie
         visitor_id = request.COOKIES.get("visitorId")
         if not visitor_id:
-            # fallback: try access token (optional)
-            try:
-                token = sanitize(request.COOKIES.get("visitorAccessToken"))
-                validated = JWTAuthentication().get_validated_token(token)
-                visitor_id = sanitize(str(validated.get("visitor_id") or validated.get("jti")))
-            except (InvalidToken, TokenError):
-                return Response({"error": "Invalid or expired visitor token"}, status=401)
+            visitor_id = str(uuid.uuid4())
         user = None
         actor_type = "visitor"
         actor_name = f"Guest ({visitor_id[:8]})"
 
-    # 🔹 Find active order
+    # -----------------------------
+    # Get variations from request
+    # -----------------------------
+    selected_color = request.data.get("selected_color")
+    selected_size = request.data.get("selected_size")
+    selected_age_group = request.data.get("selected_age_group")
+    selected_length = request.data.get("selected_length")
+    selected_weight = request.data.get("selected_weight")
+    selected_shoe_size = request.data.get("selected_shoe_size")
+
+    # -----------------------------
+    # Find active order
+    # -----------------------------
     order_qs = Order.objects.filter(
         user=user,
         visitor_id=visitor_id,
@@ -395,26 +494,39 @@ def remove_from_cart_api(request, pk):
     )
     if not order_qs.exists():
         return Response({"success": False, "message": sanitize("You do not have an active order")})
-
     order = order_qs.first()
 
-    # 🔹 Find the cart item linked to the order
-    cart_item = OderItem.objects.filter(
+    # -----------------------------
+    # Find cart item with exact variation
+    # -----------------------------
+    cart_item_qs = OderItem.objects.filter(
         item=item,
         user=user,
         visitor_id=visitor_id,
         status="pending",
-        order=order  # Ensure it's linked to the current order
-    ).first()
+        order=order,
+        color_variant=selected_color,       # should be ColorVariant instance
+        size_stock=selected_size,           # should be SizeStock instance
+        age_variant=selected_age_group,     # should be AgeVariant instance
+        selected_length=selected_length,    # string, e.g. "30 cm"
+        selected_weight=selected_weight,    # string, e.g. "2 kg"
+        shoe_size=selected_shoe_size        # string, e.g. "42"
+    )
 
-    if not cart_item:
-        return Response({"success": False, "message": sanitize("This item does not exist in the cart")})
 
-    # 🔹 Remove the item from the order by clearing the FK
-    cart_item.order = None
-    cart_item.save()
+    if not cart_item_qs.exists():
+        return Response({"success": False, "message": sanitize("This item or selected variation does not exist in the cart")})
 
-    # create response activity logs
+    cart_item = cart_item_qs.first()
+
+    # -----------------------------
+    # Delete the cart item
+    # -----------------------------
+    cart_item.delete()
+
+    # -----------------------------
+    # Log user/visitor activity
+    # -----------------------------
     ActivityLog.objects.create(
         user=user,
         actor_type=actor_type,
@@ -424,6 +536,21 @@ def remove_from_cart_api(request, pk):
         related_url=f"/item-client/{item.id}/"
     )
 
+    # Log vendor activity
+    vendor = getattr(item, 'vendor', None)
+    if vendor:
+        vendor_user = getattr(vendor, 'user', None)  # Adjust if your Vendor model has 'user' field
+        if vendor_user:
+            ActivityLog.objects.create(
+                user=vendor_user,
+                actor_type='vendor_notification',
+                action="cart_item_removed_notification",
+                item=item,
+                description=f"{actor_name} removed '{item.name}' from their cart.",
+                related_url=f"/vendor-dashboard/items/{item.id}/"
+            )
+
+    # Log vendor info as actor for frontend reference
     ActivityLog.objects.create(
         user=user,
         actor_type='vendor',
@@ -432,7 +559,8 @@ def remove_from_cart_api(request, pk):
         description=f"{actor_name} removed '{item.name}' from cart.",
         related_url=f"/item/{item.id}/"
     )
-    
+
+    # Log admin activities
     for admin in User.objects.filter(is_staff=True):
         ActivityLog.objects.create(
             user=admin,
@@ -441,10 +569,30 @@ def remove_from_cart_api(request, pk):
             item=item,
             description=f"{actor_name} removed '{item.name}' from their cart.",
             related_url=f"/admin-item/vendorDashboard/items/{item.id}/"
-        )   
+        )
 
-    return Response({"success": True, "message": sanitize("Item removed from cart")})
+    # -----------------------------
+    # Return response
+    # -----------------------------
+    response = Response({
+        "success": True,
+        "message": sanitize("Item removed from cart"),
+        "order_id": order.id,
+        "visitor_id": visitor_id
+    })
 
+    # Set visitorId cookie if not set
+    if not request.COOKIES.get("visitorId") and not user:
+        response.set_cookie(
+            "visitorId",
+            visitor_id,
+            httponly=True,
+            secure=False,  # Set True in production
+            samesite="Lax",
+            max_age=30*24*3600,  # 30 days
+        )
+
+    return response
 
 
 # -------------------------------
@@ -455,6 +603,7 @@ def remove_from_cart_api(request, pk):
 def update_cart_quantity(request, pk):
     """
     Update the quantity of an item in the cart for either a logged-in user or a visitor.
+    Handles item variations (color, size, age, weight, length, shoe size) and stock checks.
     """
 
     # 🔹 Sanitize item ID
@@ -468,70 +617,98 @@ def update_cart_quantity(request, pk):
         actor_type = "user"
         actor_name = user.username
     else:
-        # ✅ Use persistent visitorId cookie
         visitor_id = request.COOKIES.get("visitorId")
         if not visitor_id:
-            # fallback: try access token
-            try:
-                token = sanitize(request.COOKIES.get("visitorAccessToken"))
-                validated = JWTAuthentication().get_validated_token(token)
-                visitor_id = sanitize(str(validated.get("visitor_id") or validated.get("jti")))
-            except (InvalidToken, TokenError):
-                return Response({"error": "Invalid or expired visitor token"}, status=401)
+            visitor_id = str(uuid.uuid4())
         user = None
         actor_type = "visitor"
         actor_name = f"Guest ({visitor_id[:8]})"
 
-    # 🔹 Find active pending order for user/visitor
-    order_qs = Order.objects.filter(
+    # 🔹 Get item variations from request (can be None for base items)
+    selected_color = request.data.get("selected_color")
+    selected_size = request.data.get("selected_size")
+    selected_age_group = request.data.get("selected_age_group")
+    selected_length = request.data.get("selected_length")
+    selected_weight = request.data.get("selected_weight")
+    selected_shoe_size = request.data.get("selected_shoe_size")
+
+    # 🔹 Find active pending order
+    order, order_created = Order.objects.get_or_create(
         user=user,
         visitor_id=visitor_id,
-        status="pending"
+        status="pending",
+        defaults={"ordered_date": timezone.now()}
     )
-    if not order_qs.exists():
-        return Response({"success": False, "message": sanitize("You do not have an active order")}, status=404)
 
-    order = order_qs.first()
-
-    # 🔹 Find the cart item linked to this order
+    # 🔹 Find the correct cart item
     cart_item = OderItem.objects.filter(
         item=item,
         user=user,
         visitor_id=visitor_id,
         status="pending",
-        order=order
+        order=order,
+        color_variant=selected_color,       # should be ColorVariant instance
+        size_stock=selected_size,           # should be SizeStock instance
+        age_variant=selected_age_group,     # should be AgeVariant instance
+        selected_length=selected_length,    # string, e.g. "30 cm"
+        selected_weight=selected_weight,    # string, e.g. "2 kg"
+        shoe_size=selected_shoe_size        # string, e.g. "42"
     ).first()
+
 
     if not cart_item:
         return Response({"success": False, "message": sanitize("Item not found in cart")}, status=404)
 
-    # 🔹 Sanitize action input
+    # 🔹 Sanitize action
     action = sanitize(request.data.get("action", ""))
+    if action not in ["increase", "decrease"]:
+        return Response({"success": False, "message": sanitize("Invalid action")}, status=400)
 
+    # 🔹 Determine available stock
+    available_stock = 0
+    if selected_size:
+        size_stock_obj = get_object_or_404(SizeStock, pk=selected_size)
+        available_stock = size_stock_obj.quantity_in_stock
+    elif selected_color:
+        variant_obj = get_object_or_404(ColorVariant, pk=selected_color)
+        available_stock = variant_obj.sizes.aggregate(total=models.Sum('quantity_in_stock'))['total'] or 0
+    else:
+        # Base item without variations
+        available_stock = SizeStock.objects.filter(item=item, variant__isnull=True).aggregate(
+            total=models.Sum('quantity_in_stock')
+        )['total'] or item.in_stock or 0
+
+    # 🔹 Perform quantity update
     if action == "increase":
+        if cart_item.quantity + 1 > available_stock:
+            return Response({
+                "success": False,
+                "message": f"Cannot add more. Only {available_stock} left in stock."
+            }, status=400)
         cart_item.quantity += 1
-        cart_item.save()
         message = "Item quantity increased"
+
     elif action == "decrease":
         if cart_item.quantity > 1:
             cart_item.quantity -= 1
-            cart_item.save()
             message = "Item quantity decreased"
         else:
-            # Remove cart item entirely if quantity goes below 1
-            cart_item.order = None  # detach from order before delete, if needed
+            # Remove cart item entirely if quantity drops below 1
             cart_item.delete()
             message = "Item removed from cart"
             return Response({
                 "success": True,
                 "message": sanitize(message),
                 "item_id": item.id,
-                "quantity": 0
+                "quantity": 0,
+                "order_total": order.get_total()
             })
-    else:
-        return Response({"success": False, "message": sanitize("Invalid action")}, status=400)
 
-    # create response activity logs
+    # 🔹 Update price_at_purchase
+    cart_item.price_at_purchase = item.discount_price or item.get_item_final_price()
+    cart_item.save()
+
+    # 🔹 Log activity
     ActivityLog.objects.create(
         user=user,
         actor_type=actor_type,
@@ -564,10 +741,9 @@ def update_cart_quantity(request, pk):
         "success": True,
         "message": sanitize(message),
         "item_id": item.id,
-        "quantity": cart_item.quantity
+        "quantity": cart_item.quantity,
+        "order_total": order.get_total()
     })
-
-
 
 
 #fetch cusromer
@@ -651,5 +827,45 @@ def vendor_orders_combined(request):
         "pending": OrderSerializer(pending, many=True, context={"vendor": vendor}).data,
         "completed": OrderSerializer(completed, many=True, context={"vendor": vendor}).data
     })
+
+
+
+# admin user transaction
+@api_view(["GET"])
+@permission_classes([IsAuthenticated, IsAdminUser])
+def admin_transactions(request):
+    """
+    Return transactions belonging to the logged-in admin's vendor
+    """
+
+    try:
+        # 🔑 Get vendor linked to logged-in admin
+        vendor = getattr(request.user, "vendor", None)
+
+        if not vendor:
+            return Response(
+                {"error": "No vendor associated with this admin"},
+                status=403
+            )
+
+        # ⚡ Optimized queryset (IMPORTANT)
+        transactions = (
+            Transaction.objects
+            .filter(vendor=vendor)
+            .select_related("vendor", "order")
+            .prefetch_related(
+                Prefetch("order__items", queryset=OderItem.objects.select_related("item__vendor"))
+            )
+            .order_by("-created_at")[:50]  # limit for dashboard
+        )
+
+        serializer = TransactionSerializer(transactions, many=True)
+        return Response(serializer.data)
+
+    except Exception as e:
+        return Response(
+            {"error": f"Failed to fetch transactions: {str(e)}"},
+            status=500
+        )
 
 

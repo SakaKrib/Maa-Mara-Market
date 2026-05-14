@@ -11,6 +11,7 @@ import MegaMenu from "./WomenCat";
 import MegaMenuMen from "./MenCat";
 import MegaMenuChildren from "./ChildrenCat";
 import HoverCategoryMenu from "./SideNavBar";
+import Maamara from "../../../../../assets/Logo/Maamara.jpg"
 
 
 
@@ -110,9 +111,18 @@ const HeaderTop = () => {
           
           <div className="left bg-white-500 mb-10">
             <div className="container">
-            <div className="logo xxs:-mt-20 xxs:relative xxs:-top-10 lg:mt-0 lg:top-0">
-              <a href="#"><span className="circle"></span> Maa <span className="it-name">Mara</span> <span className="mkrt">Market</span></a>
+            <div className="flex items-center gap-2 w-full p-2">
+              <img src={Maamara} alt="maamara-logo" className="w-[50px] h-[50px] rounded-full ring p-1 ring-1 ring-green-500 xxs:-mt-20 xxs:relative xxs:-top-10 lg:mt-0 lg:top-0 z-[1000]" />
+            <div className="logo xxs:-mt-20 xxs:relative xxs:-top-10 lg:mt-0 lg:top-0 ">
+              <a href="#"> Maa <span className="it-name">Mara</span> <span className="mkrt">Market</span></a>
             </div>
+            {isFixed && (
+              <div className="transition-all duration-300 w-full p-4">
+                <SearchBar />
+              </div>
+            )}
+            </div>
+
             <nav className="mobile-hide flex justify-between w-full">
               <ul className="flexitem second-links ">
                 <li><a href="#">Home</a></li>

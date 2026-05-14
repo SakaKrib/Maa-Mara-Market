@@ -6,9 +6,10 @@ export default function AdvertBlogs() {
   const { blogs, loading, error } = usePopularBlogs();
   const navigate = useNavigate();
 
-  if (loading) return <p>Loading popular blogs...</p>;
-  if (error) return <p>Error loading blogs.</p>;
-  if (!blogs.length) return <p>No popular blogs yet.</p>;
+  if (loading || error || !blogs?.length) {
+    return null;
+  }
+  
 
   // ⭐ Only show the first blog
   const blog = blogs[0];

@@ -6,8 +6,11 @@ import {
   InputOTPSlot,
   InputOTPSeparator
 } from "./ui/input-otp"
+import Snackbar from '@mui/material/Snackbar'
+import Alert from '@mui/material/Alert'
 import { Button } from "./ui/button"
 import { baseUrl } from "../src/cmponents/Constant/Constant"
+import Maamara from "../src/assets/Logo/Maamara.jpg"
 
 // 🍪 Helper to read CSRF token from cookies
 const getCookie = (name) => {
@@ -21,12 +24,15 @@ const OTPModal = ({ email, onVerify, expiresAt }) => {
   const [otp, setOtp] = useState("")
   const [loading, setLoading] = useState(false)
   const [resending, setResending] = useState(false)
-  const [error, setError] = useState("")
-  const [success, setSuccess] = useState("")
   const [timer, setTimer] = useState(0)
   const [csrfToken, setCsrfToken] = useState("")
 
-  // ✅ Fetch CSRF token on mount
+  const [snackbar, setSnackbar] = useState({
+    open: false,
+    severity: "success",
+    message: ""
+  })
+
   useEffect(() => {
     const fetchCsrf = async () => {
       try {
@@ -40,12 +46,8 @@ const OTPModal = ({ email, onVerify, expiresAt }) => {
     fetchCsrf()
   }, [])
 
-  // ✅ Initialize countdown timer from backend expiry timestamp
   useEffect(() => {
-    console.log("[Timer Effect] expiresAt:", expiresAt)
-
     if (!expiresAt) {
-      console.log("[Timer Effect] No expiresAt. Using fallback 90s.")
       setTimer(90)
       return
     }
@@ -64,24 +66,22 @@ const OTPModal = ({ email, onVerify, expiresAt }) => {
 
   const handleVerify = async () => {
     if (otp.length !== 6) {
-      setError("Please enter a 6-digit OTP.")
+      setSnackbar({ open: true, severity: "error", message: "Please enter a 6-digit OTP." })
       return
     }
     if (timer <= 0) {
-      setError("OTP has expired. Please request a new one.")
+      setSnackbar({ open: true, severity: "error", message: "OTP has expired. Please request a new one." })
       return
     }
     if (!csrfToken) {
-      setError("CSRF token missing. Please refresh and try again.")
+      setSnackbar({ open: true, severity: "error", message: "CSRF token missing. Please refresh and try again." })
       return
     }
 
     setLoading(true)
-    setError("")
-    setSuccess("")
+    setSnackbar({ open: false, severity: "success", message: "" })
 
     try {
-      console.log("[Verify OTP] Sending:", { email, otp })
       const response = await axios.post(
         `${baseUrl}/api/verify-otp/`,
         { email, otp },
@@ -89,15 +89,14 @@ const OTPModal = ({ email, onVerify, expiresAt }) => {
       )
 
       if (response.data?.success) {
-        setSuccess("✅ OTP verified successfully!")
+        setSnackbar({ open: true, severity: "success", message: "✅ OTP verified successfully!" })
         setOtp("")
         onVerify()
       } else {
-        setError(response.data?.message || "Invalid OTP. Please try again.")
+        setSnackbar({ open: true, severity: "error", message: response.data?.message || "Invalid OTP. Please try again." })
       }
-    } catch (err) {
-      console.error("[Verify OTP] Error:", err)
-      setError("Something went wrong. Please try again.")
+    } catch {
+      setSnackbar({ open: true, severity: "error", message: "Something went wrong. Please try again." })
     } finally {
       setLoading(false)
     }
@@ -105,15 +104,13 @@ const OTPModal = ({ email, onVerify, expiresAt }) => {
 
   const handleResend = async () => {
     if (!csrfToken) {
-      setError("CSRF token missing. Please refresh and try again.")
+      setSnackbar({ open: true, severity: "error", message: "CSRF token missing. Please refresh and try again." })
       return
     }
     setResending(true)
-    setError("")
-    setSuccess("")
+    setSnackbar({ open: false, severity: "success", message: "" })
 
     try {
-      console.log("[Resend OTP] Sending request for:", email)
       const response = await axios.post(
         `${baseUrl}/api/resend-otp/`,
         { email },
@@ -121,7 +118,7 @@ const OTPModal = ({ email, onVerify, expiresAt }) => {
       )
 
       if (response.data?.success) {
-        setSuccess("📨 A new OTP has been sent to your email.")
+        setSnackbar({ open: true, severity: "success", message: "📨 A new OTP has been sent to your email." })
         setOtp("")
 
         if (response.data.expires_at) {
@@ -133,42 +130,69 @@ const OTPModal = ({ email, onVerify, expiresAt }) => {
           setTimer(90)
         }
       } else {
-        setError(response.data?.message || "Failed to resend OTP.")
+        setSnackbar({ open: true, severity: "error", message: response.data?.message || "Failed to resend OTP." })
       }
-    } catch (err) {
-      console.error("[Resend OTP] Error:", err)
-      setError("Something went wrong. Please try again.")
+    } catch {
+      setSnackbar({ open: true, severity: "error", message: "Something went wrong. Please try again." })
     } finally {
       setResending(false)
     }
   }
 
+  const handleSnackbarClose = () => {
+    setSnackbar(prev => ({ ...prev, open: false }))
+  }
+
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white p-6 rounded shadow-md w-full max-w-sm">
-        <h2 className="text-lg font-semibold mb-4">Verify OTP</h2>
+    <div className="fixed inset-0 bg-opacity-50 flex items-center justify-center z-50 bg-black/30">
+      <div className="bg-white p-6 rounded-lg shadow-lg w-full max-w-sm">
+        <div className="flex justify-center mb-4">
+          <div className="flex gap-4 items-center">
+            <img src={Maamara} alt="maamara-logo" className="w-5 h-5" />
+            <h2 className="text-lg font-semibold">Maamara Market</h2>
+          </div>
+        </div>
+        
 
-        {error && <p className="text-red-600 mb-2">{error}</p>}
-        {success && <p className="text-green-600 mb-2">{success}</p>}
+        <h2 className="text-lg font-semibold mb-6 text-center">Verify OTP</h2>
 
-        <InputOTP maxLength={6} value={otp} onChange={setOtp}>
+      <div className="w-full">
+        <InputOTP maxLength={6} value={otp} onChange={setOtp} className="flex justify-center gap-3 max-w-xs mx-auto select-none rounded-xl">
           <InputOTPGroup>
-            <InputOTPSlot index={0} />
-            <InputOTPSlot index={1} />
-            <InputOTPSlot index={2} />
+            <InputOTPSlot
+              index={0}
+              className="w-12 h-20 text-2xl text-center rounded-xl border border-gray-300 shadow-sm focus:outline-none focus:border-blue-600 focus:ring-1 focus:ring-blue-600 transition"
+            />
+            <InputOTPSlot
+              index={1}
+              className="w-12 h-20 text-2xl text-center rounded-xl border border-gray-300 shadow-sm focus:outline-none focus:border-blue-600 focus:ring-1 focus:ring-blue-600 transition"
+            />
+            <InputOTPSlot
+              index={2}
+              className="w-12 h-20 text-2xl text-center rounded-xl border border-gray-300 shadow-sm focus:outline-none focus:border-blue-600 focus:ring-1 focus:ring-blue-600 transition"
+            />
           </InputOTPGroup>
           <InputOTPSeparator />
           <InputOTPGroup>
-            <InputOTPSlot index={3} />
-            <InputOTPSlot index={4} />
-            <InputOTPSlot index={5} />
+            <InputOTPSlot
+              index={3}
+              className="w-12 h-20 text-2xl text-center rounded-xl border border-gray-300 shadow-custom focus:outline-none focus:border-blue-600 focus:ring-1 focus:ring-blue-600 transition"
+            />
+            <InputOTPSlot
+              index={4}
+              className="w-12 h-20 text-2xl text-center rounded-xl border border-gray-300 shadow-sm focus:outline-none focus:border-blue-600 focus:ring-1 focus:ring-blue-600 transition"
+            />
+            <InputOTPSlot
+              index={5}
+              className="w-12 h-20 text-2xl text-center rounded-xl border border-gray-300 shadow-sm focus:outline-none focus:border-blue-600 focus:ring-1 focus:ring-blue-600 transition"
+            />
           </InputOTPGroup>
         </InputOTP>
 
         <Button
           onClick={handleVerify}
           disabled={loading || otp.length !== 6 || timer <= 0}
-          className="mt-4 w-full"
+          className="mt-6 w-full"
         >
           {loading ? "Verifying..." : timer <= 0 ? "OTP Expired" : "Verify OTP"}
         </Button>
@@ -187,6 +211,24 @@ const OTPModal = ({ email, onVerify, expiresAt }) => {
               : "Resend OTP"}
           </Button>
         </div>
+        </div>
+
+        <Snackbar
+          open={snackbar.open}
+          autoHideDuration={6000}
+          onClose={handleSnackbarClose}
+          anchorOrigin={{ vertical: "top", horizontal: "right" }}
+        >
+          <Alert
+            onClose={handleSnackbarClose}
+            severity={snackbar.severity}
+            sx={{ width: "100%" }}
+            elevation={6}
+            variant="filled"
+          >
+            {snackbar.message}
+          </Alert>
+        </Snackbar>
       </div>
     </div>
   )

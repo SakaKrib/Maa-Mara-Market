@@ -7,7 +7,7 @@ const Filter = ({ onFilterChange }) => {
   const navigate = useNavigate();
 
   const [filters, setFilters] = useState({
-    type: '',
+    section: '',
     department: '',
     category: '',
     size: '',
@@ -53,11 +53,20 @@ const Filter = ({ onFilterChange }) => {
   return (
     <div className="mt-12 flex flex-col md:flex-row md:justify-between gap-6 flex-wrap">
       <div className="flex flex-wrap gap-4 md:gap-6">
-        <select name="type" value={filters.type} onChange={handleChange} className="py-2 px-3 rounded-2xl text-sm font-medium bg-gray-100 ring-1 ring-gray-300">
-          <option value="">Type</option>
-          <option value="physical">Physical</option>
-          <option value="antique">Antique</option>
-        </select>
+
+        {/* section */}
+        <select
+            name="section"             
+            value={filters.section}     
+            onChange={handleChange}
+            className="py-2 px-3 rounded-2xl text-sm font-medium bg-gray-100 ring-1 ring-gray-300"
+          >
+            <option value="">Section</option>
+            <option value="general">General</option>  
+            <option value="inorganic">Inorganic</option>   
+            <option value="organic">Organic</option>    
+          </select>
+
 
         <select name="department" value={filters.department} onChange={handleChange} className="py-2 px-3 rounded-2xl text-sm font-medium bg-gray-100 ring-1 ring-gray-300">
           <option value="">Department</option>

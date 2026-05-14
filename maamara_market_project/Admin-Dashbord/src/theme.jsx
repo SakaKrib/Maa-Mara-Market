@@ -11,7 +11,7 @@ export const tokens = (mode) => ({
           200: "#c2c2c2",
           300: "#a3a3a3",
           400: "#858585",
-          500: "#666666",
+          500: "#c2c2c2",
           600: "#525252",
           700: "#3d3d3d",
           800: "#292929",
@@ -145,7 +145,7 @@ export const tokens = (mode) => ({
     : {
         // light mode (same additions)
         gray: {
-          1000: "#2a2185",
+          100: "#2a2185",
           100: "#141414",
           200: "#292929",
           300: "#3d3d3d",
@@ -161,7 +161,7 @@ export const tokens = (mode) => ({
           200: "#080b12",
           300: "#0c101b",
           400: "#f2f0f0",
-          500: "#141b2d",
+          500: "#e0e0e0",
           600: "#f5f5f5",
           700: "#727681",
           800: "#a1a4ab",
@@ -341,18 +341,27 @@ export const ColourModeContext = createContext({
 
 
 export const useMode = () => {
-  const [mode, setMode] = useState('dark')
+  const [mode, setMode] = useState(
+    localStorage.getItem("theme") || "dark"
+  );
 
+  useEffect(() => {
+    localStorage.setItem("theme", mode);
+  }, [mode]);
 
+  const colorMode = useMemo(
+    () => ({
+      toggleColorMode: () =>
+        setMode((prev) => (prev === "light" ? "dark" : "light")),
 
-const colorMode = useMemo(
-  () => ({
-    toggleColorMode: () => 
-      setMode((prev) => (prev === 'light' ? 'dark' : 'light')),
-  }),
-  []
-)
-const theme = useMemo(() => createTheme(themeSettings(mode)), [mode]);
+      // ✅ ADD THESE
+      setLightMode: () => setMode("light"),
+      setDarkMode: () => setMode("dark"),
+    }),
+    []
+  );
 
-return [theme, colorMode];
-}
+  const theme = useMemo(() => createTheme(themeSettings(mode)), [mode]);
+
+  return [theme, colorMode];
+};

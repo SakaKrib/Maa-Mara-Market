@@ -29,6 +29,12 @@ from vendorDashboard.models import SoldItem
 from vendorDashboard.models import Vendor
 from .capture_order import get_paypal_access_token
 from django.contrib.auth import get_user_model
+from django.core.mail import EmailMultiAlternatives
+from django.template.loader import render_to_string
+from django.utils import timezone
+from django.shortcuts import get_object_or_404
+from ReactSerializers.models import ColorVariant,SizeStock,AgeVariant,Length,Weight
+from django.db import models
 import time
 
 
@@ -56,159 +62,159 @@ logger = logging.getLogger(__name__)
 @transaction.atomic
 def checkout_view(request):
     """
-    Handles checkout — creates or updates order, billing, payment, and items.
+    Checkout API: creates or updates order, billing, payment, and items.
     """
     serializer = CheckoutSerializer(data=request.data)
     if not serializer.is_valid():
-        logger.warning(f"❌ Invalid checkout data: {serializer.errors}")
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     data = serializer.validated_data
     user = request.user if request.user.is_authenticated else None
     visitor_id = request.COOKIES.get("visitorId")
+    if not visitor_id and not user:
+        visitor_id = str(uuid.uuid4())  # fallback visitorId
 
-    # 🧭 1️⃣ Retrieve existing pending order or create new
-    order = Order.objects.select_related("billing_address", "payment").filter(
-        user=user if user else None,
-        visitor_id=visitor_id if not user else None,
-        status="pending"
-    ).first()
+    # ----------------------------
+    # 1️⃣ Retrieve or create pending order
+    # ----------------------------
+    order, created_order = Order.objects.get_or_create(
+        user=user,
+        visitor_id=None if user else visitor_id,
+        status="pending",
+        defaults={"ordered_date": timezone.now()}
+    )
 
-    # 🧾 2️⃣ Billing handling
-    if not order:
-        billing = BillingAddress.objects.create(
-            user=user,
-            visitor_id=visitor_id,
-            first_name=data["first_name"],
-            last_name=data["last_name"],
-            phone=data["phone"],
-            email=data["email"],
-            street_address=data["street_address"],
-            appartment_address=data.get("appartment_address", ""),
-            city=data["city"],
-            state=data.get("state", ""),
-            country=data["country"],
-            zip=data["zip"],
-        )
+    # ----------------------------
+    # 2️⃣ Create or update billing address
+    # ----------------------------
+    billing_data = {
+        "first_name": data["first_name"],
+        "last_name": data["last_name"],
+        "phone": data["phone"],
+        "email": data["email"],
+        "street_address": data["street_address"],
+        "appartment_address": data.get("appartment_address", ""),
+        "city": data["city"],
+        "state": data.get("state", ""),
+        "country": data["country"],
+        "zip": data["zip"],
+    }
 
+    if not order.billing_address:
+        billing = BillingAddress.objects.create(user=user, visitor_id=None if user else visitor_id, **billing_data)
+        order.billing_address = billing
+    else:
+        billing = order.billing_address
+        for key, value in billing_data.items():
+            setattr(billing, key, value)
+        billing.save()
+    order.save()
+
+    # ----------------------------
+    # 3️⃣ Create or update payment
+    # ----------------------------
+    payment_method = data.get("payment_method", "Mpesa")
+    if not order.payment:
         payment = Payment.objects.create(
             user=user,
-            visitor_id=visitor_id,
-            payment_method=data["payment_method"],
+            visitor_id=None if user else visitor_id,
+            payment_method=payment_method,
             amount=0,
-            status="pending",
+            status="pending"
         )
-
-        order = Order.objects.create(
-            user=user,
-            visitor_id=visitor_id,
-            ordered_date=timezone.now(),
-            billing_address=billing,
-            payment=payment,
-            status="pending",
-        )
+        order.payment = payment
     else:
-        # 🔁 Update or create billing address
-        if not order.billing_address:
-            billing = BillingAddress.objects.create(
-                user=user,
-                visitor_id=visitor_id,
-                first_name=data["first_name"],
-                last_name=data["last_name"],
-                phone=data["phone"],
-                email=data["email"],
-                street_address=data["street_address"],
-                appartment_address=data.get("appartment_address", ""),
-                city=data["city"],
-                state=data.get("state", ""),
-                country=data["country"],
-                zip=data["zip"],
-            )
-            order.billing_address = billing
-            order.save()
-        else:
-            billing = order.billing_address
-            billing.first_name = data["first_name"]
-            billing.last_name = data["last_name"]
-            billing.phone = data["phone"]
-            billing.email = data["email"]
-            billing.street_address = data["street_address"]
-            billing.appartment_address = data.get("appartment_address", "")
-            billing.city = data["city"]
-            billing.state = data.get("state", "")
-            billing.country = data["country"]
-            billing.zip = data["zip"]
-            billing.save()
+        payment = order.payment
+        payment.payment_method = payment_method
+        payment.save()
+    order.save()
 
-        # 💳 Payment handling
-        if not order.payment:
-            payment = Payment.objects.create(
-                user=user,
-                visitor_id=visitor_id,
-                payment_method=data["payment_method"],
-                amount=0,
-                status="pending",
-            )
-            order.payment = payment
-            order.save()
-        else:
-            payment = order.payment
-            payment.payment_method = data["payment_method"]
-            payment.save()
+    # ----------------------------
+    # 4️⃣ Create or update customer
+    # ----------------------------
+    customer_data = {
+        "full_name": f"{data['first_name']} {data['last_name']}",
+        "first_name": data['first_name'],
+        "last_name": data['last_name'],
+        "email": data['email'],
+        "phone_number": data['phone'],
+        "billing_address": billing,
+        "vendor": None,  # optional
+    }
+    if user:
+        customer, _ = Customer.objects.update_or_create(user=user, defaults=customer_data)
+    else:
+        customer, _ = Customer.objects.update_or_create(visitor_id=visitor_id, defaults=customer_data)
+    order.customer = customer
+    order.save()
 
-    # 🧍 3️⃣ Create or update Customer
-    # customer, created = Customer.objects.update_or_create(
-    #     user=user if user else None,
-    #     visitor_id=visitor_id if not user else None,
-    #     defaults={
-    #         "first_name": data["first_name"],
-    #         "last_name": data["last_name"],
-    #         "email": data["email"],
-    #         "phone_number": data["phone"],
-    #         #"billing_address": billing,
-    #     },
-    # )
-
-    # 🛒 4️⃣ Sync order items (no total calculation here anymore)
+    # ----------------------------
+    # 5️⃣ Sync order items
+    # ----------------------------
     items_payload = data.get("items", [])
     current_ids = [i["id"] for i in items_payload]
+    # Remove any items not in this payload
     order.items.exclude(item_id__in=current_ids).delete()
+
+    total_amount = Decimal("0.00")
 
     for item_data in items_payload:
         item_id = item_data.get("id")
         quantity = int(item_data.get("quantity", 1))
+        variant_id = item_data.get("variant_id")
+        size_id = item_data.get("size_id")
 
         try:
             item = Item.objects.get(id=item_id)
         except Item.DoesNotExist:
-            logger.warning(f"⚠️ Item {item_id} not found. Skipping.")
-            continue
+            continue  # skip missing items
+
+        variant = None
+        size_stock = None
+        if size_id:
+            size_stock = get_object_or_404(SizeStock, pk=size_id)
+            available_stock = size_stock.quantity_in_stock
+        elif variant_id:
+            variant = get_object_or_404(ColorVariant, pk=variant_id)
+            available_stock = variant.sizes.aggregate(total=models.Sum('quantity_in_stock'))['total'] or 0
+        else:
+            available_stock = item.in_stock or 0
+
+        if quantity > available_stock:
+            return Response({
+                "success": False,
+                "error": f"Cannot add {quantity} of '{item.name}'. Only {available_stock} in stock."
+            }, status=400)
 
         order_item, created = OderItem.objects.get_or_create(
             order=order,
             item=item,
             user=user,
-            visitor_id=visitor_id,
-            defaults={"quantity": quantity},
+            visitor_id=None if user else visitor_id,
+            defaults={
+                "quantity": quantity,
+                "price_at_purchase": item.get_item_final_price(),
+            }
         )
-
         if not created:
             order_item.quantity = quantity
+            order_item.price_at_purchase = item.get_item_final_price()
             order_item.save()
 
-    # 🚨 5️⃣ Fail-safe
-    if not order.billing_address or not order.payment:
-        logger.error(f"🚨 Incomplete order {order.id}: Missing billing or payment")
-        return Response(
-            {"detail": "Order is incomplete. Missing billing or payment information."},
-            status=status.HTTP_400_BAD_REQUEST
-        )
+        total_amount += order_item.get_final_price()
 
-    # 📨 6️⃣ Response
+    # ----------------------------
+    # 6️⃣ Update payment amount
+    # ----------------------------
+    payment.amount = total_amount
+    payment.save()
+
+    # ----------------------------
+    # 7️⃣ Response
+    # ----------------------------
     response_data = OrderResponseSerializer(order).data
     response_data["order_id"] = order.id
 
-    logger.info(f"✅ Checkout successful for visitor {visitor_id} | order={order.id}")
     return Response(response_data, status=status.HTTP_201_CREATED)
 
 
@@ -685,8 +691,51 @@ def paypal_webhook(request):
                         )
                         sold_item.save()
                         logger.info(f"🛒 SoldItem created for item {order_item.item.name} (qty: {order_item.quantity})")
+
+                        # --- SEND EMAIL TO VENDOR ---
+                        vendor_user = getattr(order_item.item.vendor, "user", None)
+                        weight = order_item.item.weight
+                        if vendor_user and vendor_user.email:
+                            subject = f"🎉 Your item '{order_item.item.name}' has been purchased!"
+                            from_email = "no-reply@maamaramarket.com"
+                            to_email = [vendor_user.email]
+
+                            # Build variant details
+                            variants = []
+                            if hasattr(order_item, "selected_size") and order_item.selected_size:
+                                variants.append(f"Size: {order_item.selected_size}")
+                            if hasattr(order_item, "selected_color") and order_item.selected_color:
+                                variants.append(f"Color: {order_item.selected_color}")
+                            if hasattr(order_item, "custom_length") and order_item.custom_length:
+                                variants.append(f"Length: {order_item.custom_length}")
+                            variant_text = ", ".join(variants) if variants else "No variants selected"
+
+                            price = order_item.price_at_purchase or order_item.item.price
+                            total_amount = price * order_item.quantity
+
+                            html_content = render_to_string(
+                                "emails/item_sold.html",
+                                {
+                                    "vendor": vendor_user,
+                                    "item": order_item.item,
+                                    "quantity": order_item.quantity,
+                                    "variants": variant_text,
+                                    "price_at_purchase": price,
+                                    "total_amount": total_amount,
+                                    "weight": weight,
+                                    "order": order,
+                                    "current_year": timezone.now().year,
+                                }
+                            )
+
+                            email = EmailMultiAlternatives(subject, "", from_email, to_email)
+                            email.attach_alternative(html_content, "text/html")
+                            email.send()
+                            logger.info(f"📧 Email sent to vendor {vendor_user.username} for item {order_item.item.name} with variants: {variant_text}")
+
                     except Exception as e:
-                        logger.error(f"❌ Failed to create SoldItem for {order_item.item.name}: {e}")
+                        logger.error(f"❌ Failed to create SoldItem or send email for {order_item.item.name}: {e}")
+
 
                 
 
@@ -713,11 +762,36 @@ def paypal_webhook(request):
 
                     if customer_email:
                         subject = f"🧾 Invoice for Your Order #{order.id}"
+
+                        # Build detailed item list
+                        items_details = ""
+                        for oi in order.items.all():
+                            item = oi.item
+                            variants = []
+                            if hasattr(oi, "selected_size") and oi.selected_size:
+                                variants.append(f"Size: {oi.selected_size}")
+                            if hasattr(oi, "selected_color") and oi.selected_color:
+                                variants.append(f"Color: {oi.selected_color}")
+                            if hasattr(oi, "custom_length") and oi.custom_length:
+                                variants.append(f"Length: {oi.custom_length}")
+                            variant_text = ", ".join(variants) if variants else "No variants"
+
+                            price = oi.price_at_purchase or oi.get_final_price()
+                            total_price = price * oi.quantity
+
+                            items_details += (
+                                f"- {item.name} ({variant_text})\n"
+                                f"  Quantity: {oi.quantity}\n"
+                                f"  Price per item: ${price:.2f}\n"
+                                f"  Total: ${total_price:.2f}\n\n"
+                            )
+
                         message = (
                             f"Hello {order.billing_address.first_name if order.billing_address else order.user.first_name},\n\n"
                             f"Thank you for your purchase!\n\n"
-                            f"Order ID: #{order.id}\n"
-                            f"Total Amount: {amount} {currency}\n"
+                            f"Order ID: #{order.id}\n\n"
+                            f"Items:\n{items_details}"
+                            f"Order Total: ${order.get_total():.2f}\n"
                             f"Payment Method: PayPal\n"
                             f"Transaction ID: {paypal_order_id}\n\n"
                             f"You can view your full order details here:\n"

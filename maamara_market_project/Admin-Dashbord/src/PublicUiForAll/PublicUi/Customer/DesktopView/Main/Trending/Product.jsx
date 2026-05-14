@@ -62,7 +62,19 @@ const TrendingProducts = () => {
   const { wishlist, addToWishlist, removeFromWishlist } = useWishlistContext();
 
   const navigate = useNavigate();
-  console.log("wishlist:", wishlist);
+  // console.log("wishlist:", wishlist);
+
+
+  // handle update the stock for new item
+  const updateItemStock = (itemId, newStock) => {
+    setItems((prev) =>
+      prev.map((it) =>
+        it.id === itemId
+          ? { ...it, in_stock: newStock }
+          : it
+      )
+    );
+  };
 
  
 
@@ -116,9 +128,11 @@ const TrendingProducts = () => {
     <div className="py-10 px-4 md:px-10 bg-white">
       <div className="max-w-7xl mx-auto">
         {/* Section Heading */}
+        {featuredOfferItem || items && (
         <div className="mb-6 text-center">
           <h2 className="text-2xl md:text-3xl font-bold text-gray-800">Trending Products</h2>
         </div>
+        )}
 
         {/* Featured Offer Item */}
         {featuredOfferItem && (
@@ -197,7 +211,7 @@ const TrendingProducts = () => {
                   key={item.id}
                   className="border rounded-lg shadow-sm hover:shadow-md transition duration-300 bg-white"
                 >
-                  <div className="relative" onClick={() => handleItemClick(item.id)}>
+                  <div className="relative cursor-pointer" onClick={() => handleItemClick(item.id)}>
                     <img
                       src={item.image || `${baseUrl}${item.image}`}
                       alt={item.name}
@@ -267,7 +281,18 @@ const TrendingProducts = () => {
                     </div>
 
                     <div>
-                      <AddToCartButton itemId={item.id} />
+                      {/* add to cart btn and stock management */}
+                    <AddToCartButton
+                      itemId={item.id}
+                      quantity={1}
+                      availableStock={item.in_stock}
+                      remainingStock={item.in_stock}
+                      disabled={item.in_stock === 0}
+                      onAddSuccess={(newStock) => {
+                        updateItemStock(item.id, newStock);
+                      }}
+                    />
+
                     </div>
                   </div>
                 </div>

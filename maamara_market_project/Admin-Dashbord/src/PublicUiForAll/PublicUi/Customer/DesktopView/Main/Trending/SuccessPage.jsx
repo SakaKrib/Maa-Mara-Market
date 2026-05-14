@@ -43,7 +43,7 @@ export default function PaymentSuccess() {
           ⚠️ No order data found — redirecting to home...
         </p>
         <button
-          onClick={() => navigate("/")}
+          onClick={() => (window.location.href = "/")}
           className="px-6 py-3 rounded-full bg-green-600 text-white hover:bg-green-700"
         >
           Go Home
@@ -144,7 +144,7 @@ export default function PaymentSuccess() {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.9 }}
-        onClick={() => navigate("/")}
+        onClick={() => (window.location.href = "/")}
         className="mt-10 px-8 py-3 rounded-full bg-green-600 text-white font-medium shadow-md hover:bg-green-700 transition z-10"
       >
         Continue Shopping

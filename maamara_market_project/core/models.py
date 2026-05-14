@@ -13,6 +13,7 @@ from ReactSerializers.models import Item
 
 class Profile(models.Model):
     user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    visitor_id = models.CharField(max_length=64, blank=True, null=True, unique=True) 
     customer = models.OneToOneField("oder.Customer", on_delete=models.CASCADE, null=True, blank=True)
     profile_picture = models.ImageField(upload_to='profile_pictures/', blank=True, null=True)
     date_of_birth = models.DateField(blank=True, null=True)
@@ -36,6 +37,7 @@ class Profile(models.Model):
 class Wallet(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
     balance = models.IntegerField(default=0)
+    visitor_id = models.CharField(max_length=64, blank=True, null=True, unique=True) 
     earned_coins = models.IntegerField(default=0)
     redeem_limit = models.IntegerField(default=20000)  # Max coins a user can redeem at once
     min_redeemable = models.IntegerField(default=20000)  # Minimum required for redemption
@@ -80,6 +82,7 @@ class Wallet(models.Model):
 
 class Referral(models.Model):
     referrer = models.ForeignKey(User, on_delete=models.CASCADE, related_name="referrals")
+    visitor_id = models.CharField(max_length=64, blank=True, null=True, unique=True) 
     invited_user = models.ForeignKey(User, on_delete=models.CASCADE, null=True, blank=True, related_name="invited_by")
     referral_code = models.CharField(max_length=20, unique=True)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -112,6 +115,7 @@ class Referral(models.Model):
 
 class Voucher(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
+    visitor_id = models.CharField(max_length=64, blank=True, null=True, unique=True) 
     name = models.CharField(max_length=255, blank=False, null=False, default="Default Voucher")  # Database default value
     code = models.CharField(max_length=20, unique=True)
     discount = models.CharField(max_length=100)
@@ -149,6 +153,7 @@ class Voucher(models.Model):
 
 class SupportMessage(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)  # ✅ Link message to specific user
+    visitor_id = models.CharField(max_length=64, blank=True, null=True, unique=True) 
     name = models.CharField(max_length=255)
     email = models.EmailField()
     message = models.TextField()
@@ -250,6 +255,7 @@ class ActivityLog(models.Model):
 
 # NOTIFICATIONS MODEL
 class Notification(models.Model):
+    visitor_id = models.CharField(max_length=64, blank=True, null=True, unique=True) 
     user = models.ForeignKey(User, on_delete=models.CASCADE, null=True, blank=True, related_name='notifications')
     visitor_id = models.CharField(max_length=100, null=True, blank=True)
     title = models.CharField(max_length=255, blank=True, null=True, default="")  # ✅ Add this
@@ -264,3 +270,22 @@ class Notification(models.Model):
         return f"Notification for {self.user.username}: {self.title}"
 
 
+# calendar
+class CalendarEvent(models.Model):
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="calendar_events"
+    )
+    title = models.CharField(max_length=200)
+    start = models.DateTimeField()
+    end = models.DateTimeField(blank=True, null=True)
+    all_day = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["start"]
+
+    def __str__(self):
+        return f"{self.title} ({self.start.date()})"

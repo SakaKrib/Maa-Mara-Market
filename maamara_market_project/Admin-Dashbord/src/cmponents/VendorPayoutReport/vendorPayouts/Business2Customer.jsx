@@ -32,9 +32,12 @@ export default function AdminPayoutTriggerPayment() {
     const vendor = payout.vendor_details || payout.vendor || {};
     const { payment_method, reference, amount } = payout;
 
+    const phone = vendor.MpesaNo || vendor.mpesa_no || "";
+    console.log("phone", phone)
+
     switch (payment_method) {
       case "MOBILE_MONEY":
-        navigate("mpesa-payment/single-vendor", { state: { reference, amount, vendor } });
+        navigate("mpesa-payment/single-vendor", { state: { reference, amount, vendor, phone } });
         break;
       case "PAYPAL":
         navigate("paypal-payment/single-vendor", { state: { reference, amount, vendor } });

@@ -9,6 +9,8 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from 'recharts';
+import { useTheme } from '@mui/material';
+import { tokens } from '../../theme';
 
 // ✅ Sample data
 const data = [
@@ -22,6 +24,9 @@ const data = [
 ];
 
 const CustomAreaChart = () => {
+
+  const theme = useTheme();
+    const colors = tokens(theme.palette.mode);
   return (
     <div style={{ width: '100%', height: 300 }}>
       <ResponsiveContainer width="100%" height="100%">

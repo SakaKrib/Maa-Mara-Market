@@ -6,6 +6,11 @@ import { Label } from "./ui/label"
 import OTPModal from "./OtpModal"
 import { baseUrl } from "../src/cmponents/Constant/Constant";
 import { useNavigate } from "react-router-dom";
+import Maamara from "../src/assets/Logo/Maamara.jpg";
+import Snackbar from '@mui/material/Snackbar'
+import Alert from '@mui/material/Alert'
+
+
 
 // 🧠 Helper to read cookie
 const getCookie = (name) => {
@@ -47,6 +52,13 @@ const RegistrationForm = () => {
       .catch(err => console.error("CSRF fetch error:", err))
   }, [])
 
+  // Replace old message & error state with snackbar state:
+  const [snackbar, setSnackbar] = useState({
+    open: false,
+    severity: "success", // "success" | "error"
+    message: ""
+  });
+
   const handleChange = (e) => {
     const { name, value } = e.target
     setFormData(prev => ({ ...prev, [name]: value }))
@@ -73,85 +85,121 @@ const RegistrationForm = () => {
 
       if (response.ok && data.success) {
         setMessage(data.message)
+        setSnackbar({ open: true, severity: "success", message: data.message })
         setOtpSent(true)
         setExpiryTime(data.expires_at)  // ✅ store expiry time
       } else {
-        setError(data.message || "Registration failed.")
+        const errorMsg = data.message || "Registration failed."
+        setError(errorMsg)
+        setSnackbar({ open: true, severity: "error", message: errorMsg })
       }
     } catch (err) {
       console.error("Registration error:", err)
-      setError("Something went wrong. Please try again.")
+      const errorMsg = "Something went wrong. Please try again."
+      setError(errorMsg)
+      setSnackbar({ open: true, severity: "error", message: errorMsg })
     } finally {
       setLoading(false)
     }
   }
 
+  // Handle close/open snackbar
+  const handleSnackbarClose = () => {
+    setSnackbar(prev => ({ ...prev, open: false }));
+  }
+
   return (
     <>
-      <Card className="max-w-md mx-auto mt-10">
-        <CardHeader>
-          <CardTitle>Register</CardTitle>
-        </CardHeader>
-
-        <CardContent>
-          {message && <p className="text-green-600 mb-4">{message}</p>}
-          {error && <p className="text-red-600 mb-4">{error}</p>}
-
-          {!otpSent ? (
-            <form onSubmit={handleSubmit} className="space-y-4">
-              {[
-                { label: "First Name", name: "First_name" },
-                { label: "Surname", name: "Sur_name" },
-                { label: "Username", name: "username" },
-                { label: "Email", name: "email", type: "email" },
-                { label: "Password", name: "password", type: "password" },
-                { label: "Confirm Password", name: "password2", type: "password" },
-                { label: "Referral Code (optional)", name: "referral_code" }
-              ].map(({ label, name, type = "text" }) => (
-                <div key={name}>
-                  <Label htmlFor={name}>{label}</Label>
-                  <Input
-                    id={name}
-                    name={name}
-                    type={type}
-                    value={formData[name]}
-                    onChange={handleChange}
-                    required={name !== "referral_code"}
-                  />
-                </div>
-              ))}
-
-              <Button type="submit" disabled={loading || !csrfToken} className="w-full">
-                {loading ? "Registering..." : "Register"}
-              </Button>
-            </form>
-          ) : (
-            <p className="text-sm text-muted-foreground">
-              ✅ OTP has been sent to your email. Please check your inbox to verify your account.
-            </p>
-          )}
-        </CardContent>
-
-        {otpSent && (
-          <div className="mt-1">
-            <OTPModal
-              email={formData.email}
-              expiresAt={expiryTime}  // ⏳ pass expiry to modal
-              onVerify={() => {
-                setOtpSent(false)
-                setMessage("🎉 Account verified successfully!")
-                navigate("/customer-login")
-              }}
-            />
+      <div>
+        <div className="flex justify-center">
+          <div className="flex gap-4 items-center">
+            <img src={Maamara} alt="maamara-logo" className="w-[20px] h-[20px]" />
+            <h2 className="text-lg">Maamara Market</h2>
           </div>
-        )}
+        </div>
+        <Card className="max-w-md mx-auto mt-10">
+          <CardHeader>
+            <CardTitle>Register</CardTitle>
+          </CardHeader>
 
-        <CardFooter>
-          <p className="text-xs text-muted-foreground">
-            MaamaraMarket.com All rights reserved. <a href="/login" className="underline">Terms & Policies</a>.
-          </p>
-        </CardFooter>
-      </Card>
+          <CardContent>
+            {message && <p className="text-green-600 mb-4">{message}</p>}
+            {error && <p className="text-red-600 mb-4">{error}</p>}
+
+            {!otpSent ? (
+              <form onSubmit={handleSubmit} className="space-y-4">
+                {[
+                  { label: "First Name", name: "First_name" },
+                  { label: "Surname", name: "Sur_name" },
+                  { label: "Username", name: "username" },
+                  { label: "Email", name: "email", type: "email" },
+                  { label: "Password", name: "password", type: "password" },
+                  { label: "Confirm Password", name: "password2", type: "password" },
+                  { label: "Referral Code (optional)", name: "referral_code" }
+                ].map(({ label, name, type = "text" }) => (
+                  <div key={name}>
+                    <Label htmlFor={name}>{label}</Label>
+                    <Input
+                      id={name}
+                      name={name}
+                      type={type}
+                      value={formData[name]}
+                      onChange={handleChange}
+                      required={name !== "referral_code"}
+                    />
+                  </div>
+                ))}
+
+                <Button type="submit" disabled={loading || !csrfToken} className="w-full">
+                  {loading ? "Registering..." : "Register"}
+                </Button>
+              </form>
+            ) : (
+              <p className="text-sm text-muted-foreground">
+                ✅ OTP has been sent to your email. Please check your inbox to verify your account.
+              </p>
+            )}
+          </CardContent>
+
+          {otpSent && (
+            <div className="mt-1">
+              <OTPModal
+                email={formData.email}
+                expiresAt={expiryTime}  // ⏳ pass expiry to modal
+                onVerify={() => {
+                  setOtpSent(false)
+                  setMessage("🎉 Account verified successfully!")
+                  navigate("/customer-login")
+                }}
+              />
+            </div>
+          )}
+
+          <CardFooter>
+            <p className="text-xs text-muted-foreground">
+              MaamaraMarket.com All rights reserved. <a href="/login" className="underline">Terms & Policies</a>.
+            </p>
+          </CardFooter>
+        </Card>
+
+        {/* MUI Snackbar */}
+        <Snackbar
+          open={snackbar.open}
+          autoHideDuration={6000}
+          onClose={handleSnackbarClose}
+          anchorOrigin={{ vertical: "top", horizontal: "right" }}
+        >
+          <Alert
+            onClose={handleSnackbarClose}
+            severity={snackbar.severity}
+            sx={{ width: "100%" }}
+            elevation={6}
+            variant="filled"
+          >
+            {snackbar.message}
+          </Alert>
+        </Snackbar>
+      </div>
     </>
   )
 }

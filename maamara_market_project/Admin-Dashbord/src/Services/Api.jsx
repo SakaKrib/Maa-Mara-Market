@@ -61,7 +61,12 @@ api.interceptors.response.use(
         const newAccessToken = refreshResponse.data?.access || null;
 
         // If we got a new access token, attach it
+        // if (newAccessToken) {
+        //   originalRequest.headers["Authorization"] = `Bearer ${newAccessToken}`;
+        // }
+
         if (newAccessToken) {
+          api.defaults.headers.common["Authorization"] = `Bearer ${newAccessToken}`;
           originalRequest.headers["Authorization"] = `Bearer ${newAccessToken}`;
         }
 

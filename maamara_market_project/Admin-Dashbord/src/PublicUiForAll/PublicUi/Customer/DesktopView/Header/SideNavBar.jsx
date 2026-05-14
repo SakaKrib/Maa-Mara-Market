@@ -13,9 +13,10 @@ export default function HoverCategoryMenu() {
     navigate('/filter-category')
   }
 
-  if (loading) return <div>Loading categories...</div>;
-  if (error) return <div>Error loading categories</div>;
-  if (!data?.sections) return <div>No data found</div>;
+  if (loading) return null;
+  if (error) return null;
+  if (!data?.sections) return null;
+
 
   const departmentalSection =
     data.sections.find((s) =>

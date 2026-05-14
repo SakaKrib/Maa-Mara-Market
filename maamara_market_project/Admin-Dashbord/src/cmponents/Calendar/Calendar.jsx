@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import FullCalendar from "@fullcalendar/react";
 import { formatDate } from "@fullcalendar/core";
 import dayGridPlugin from "@fullcalendar/daygrid";
@@ -19,68 +19,94 @@ import {
   TextField,
   DialogActions,
   Button,
+  FormControlLabel,
+  Checkbox,
 } from "@mui/material";
 import Header from "../../Header/Header";
 import { tokens } from "../../theme";
+import useCalendarEvents from "./CalendarHook";
 
 const Calendar = () => {
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
   const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
 
-  const [currentEvents, setCurrentEvents] = useState([]);
+  // Hook provides events + API functions
+  const { events: currentEvents, addEvent, deleteEvent } = useCalendarEvents();
+
+  // Modal state
   const [openDialog, setOpenDialog] = useState(false);
   const [newEventTitle, setNewEventTitle] = useState("");
-  const [selectedInfo, setSelectedInfo] = useState(null);
+  const [eventStart, setEventStart] = useState(null);
+  const [eventEnd, setEventEnd] = useState(null);
+  const [allDay, setAllDay] = useState(false);
 
-  // 🔹 Load events from Local Storage when component mounts
-  useEffect(() => {
-    const storedEvents = localStorage.getItem("calendarEvents");
-    if (storedEvents) {
-      setCurrentEvents(JSON.parse(storedEvents));
-    }
-  }, []);
+  // --- Helper to check valid Date ---
+  const isValidDate = (d) => d instanceof Date && !isNaN(d);
 
-  // 🔹 Save events to Local Storage whenever they change
-  useEffect(() => {
-    localStorage.setItem("calendarEvents", JSON.stringify(currentEvents));
-  }, [currentEvents]);
-
-  // Open modal when date is selected
+  // --- Handle date click or selection ---
   const handleDateClick = (selected) => {
-    setSelectedInfo(selected);
+    const startDate = selected.start || selected.date;
+    const endDate = selected.end || startDate;
+
+    if (!startDate) {
+      console.error("No start date provided by FullCalendar", selected);
+      return;
+    }
+
+    setEventStart(startDate);
+    setEventEnd(endDate);
+    setAllDay(selected.allDay || false);
+    setNewEventTitle("");
     setOpenDialog(true);
   };
 
-  // Add event to calendar + state
-  const handleAddEvent = () => {
-    if (newEventTitle && selectedInfo) {
-      const calendarApi = selectedInfo.view.calendar;
-      calendarApi.unselect();
-
-      const newEvent = {
-        id: `${selectedInfo.startStr}-${newEventTitle}`,
-        title: newEventTitle,
-        start: selectedInfo.startStr,
-        end: selectedInfo.endStr,
-        allDay: selectedInfo.allDay,
-      };
-
-      calendarApi.addEvent(newEvent);
-      setCurrentEvents((prev) => [...prev, newEvent]);
-
+  // --- Add event via hook ---
+  const handleAddEvent = async () => {
+    if (!newEventTitle || !isValidDate(eventStart) || (!isValidDate(eventEnd) && !allDay)) {
+      alert("Please enter a title, start date, and end date (unless all-day event)");
+      return;
+    }
+  
+    const start = allDay
+      ? eventStart.toISOString().split("T")[0]
+      : eventStart.toISOString();
+  
+    const end = allDay
+      ? (eventEnd || eventStart).toISOString().split("T")[0]
+      : (eventEnd || eventStart).toISOString();
+  
+    const newEvent = {
+      title: newEventTitle,
+      start,
+      end,
+      allDay,
+    };
+  
+    try {
+      await addEvent(newEvent); // sends to backend
+  
+      // Reset modal
       setNewEventTitle("");
+      setEventStart(null);
+      setEventEnd(null);
+      setAllDay(false);
       setOpenDialog(false);
+    } catch (err) {
+      console.error(err);
+      alert("Failed to add event. Please try again.");
     }
   };
 
-  // Handle deleting an event
-  const handleEventClick = (selected) => {
+  // --- Delete event via hook ---
+  const handleEventClick = async (selected) => {
     if (window.confirm(`Are you sure you want to delete '${selected.event.title}'?`)) {
-      selected.event.remove();
-      setCurrentEvents((prev) =>
-        prev.filter((event) => event.id !== selected.event.id)
-      );
+      try {
+        await deleteEvent(selected.event.id);
+      } catch (err) {
+        console.error(err);
+        alert("Failed to delete event. Please try again.");
+      }
     }
   };
 
@@ -88,18 +114,9 @@ const Calendar = () => {
     <Box
       m="20px 0"
       padding="1em 1.5em"
-      sx={{
-        width: {
-          xs: "calc(100% - 80px)",
-          sm: "calc(100% - 80px)",
-          md: "calc(100% - 80px)",
-        },
-      }}
+      sx={{ width: { xs: "calc(100% - 80px)", sm: "calc(100% - 80px)", md: "calc(100% - 80px)" } }}
     >
-      <Header
-        title="Calendar"
-        subtitle="Full Calendar For Interactive Events & Functions"
-      />
+      <Header title="Calendar" subtitle="Full Calendar For Interactive Events & Functions" />
 
       <Box display="flex" flexDirection={isMobile ? "column" : "row"} gap={2}>
         {/* Sidebar */}
@@ -128,7 +145,7 @@ const Calendar = () => {
               <ListItem
                 key={event.id}
                 sx={{
-                  backgroundColor: colors.greenAccent[500],
+                  backgroundColor: colors.greenAccent[800],
                   margin: "10px 0",
                   borderRadius: "4px",
                   color: colors.gray[100],
@@ -138,11 +155,10 @@ const Calendar = () => {
                   primary={event.title}
                   secondary={
                     <Typography variant="body2" color={colors.gray[100]}>
-                      {formatDate(event.start, {
-                        year: "numeric",
-                        month: "short",
-                        day: "numeric",
-                      })}
+                      {formatDate(event.start, { year: "numeric", month: "short", day: "numeric" })}
+                      {event.end && !event.allDay
+                        ? ` - ${formatDate(event.end, { year: "numeric", month: "short", day: "numeric" })}`
+                        : ""}
                     </Typography>
                   }
                 />
@@ -164,14 +180,20 @@ const Calendar = () => {
                 : "dayGridMonth,timeGridWeek,timeGridDay,listMonth",
             }}
             initialView="dayGridMonth"
-            editable={true}
-            selectable={true}
-            selectMirror={true}
-            dayMaxEvents={true}
+            editable
+            selectable
+            selectMirror
+            dayMaxEvents
             select={handleDateClick}
-            dateClick={handleDateClick} 
+            dateClick={handleDateClick}
             eventClick={handleEventClick}
             events={currentEvents}
+            dayCellDidMount={(info) => {
+              // 🎨 Apply theme color to day borders
+              info.el.style.borderColor = colors.gray[500]; 
+              info.el.style.borderWidth = "1px";
+              info.el.style.borderStyle = "solid";
+            }}
           />
         </Box>
       </Box>
@@ -189,7 +211,31 @@ const Calendar = () => {
             variant="outlined"
             value={newEventTitle}
             onChange={(e) => setNewEventTitle(e.target.value)}
-            color={colors.gray[100]}
+          />
+          <TextField
+            margin="dense"
+            label="Start Date"
+            type="datetime-local"
+            fullWidth
+            variant="outlined"
+            value={eventStart ? new Date(eventStart).toISOString().slice(0,16) : ""}
+            onChange={(e) => setEventStart(new Date(e.target.value))}
+            sx={{ mt: 2 }}
+          />
+          <TextField
+            margin="dense"
+            label="End Date"
+            type="datetime-local"
+            fullWidth
+            variant="outlined"
+            value={eventEnd ? new Date(eventEnd).toISOString().slice(0,16) : ""}
+            onChange={(e) => setEventEnd(new Date(e.target.value))}
+            sx={{ mt: 2 }}
+          />
+          <FormControlLabel
+            control={<Checkbox checked={allDay} onChange={(e) => setAllDay(e.target.checked)} />}
+            label="All Day Event"
+            sx={{ mt: 2 }}
           />
         </DialogContent>
         <DialogActions>

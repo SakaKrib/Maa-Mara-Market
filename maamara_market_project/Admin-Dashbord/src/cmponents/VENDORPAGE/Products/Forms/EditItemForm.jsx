@@ -2093,7 +2093,7 @@ if (data.shipping_dimension_data) {
           onClose={() => setToast({ ...toast, open: false })}
           severity={toast.severity}
           variant="filled"
-          sx={{ width: "100%", backgroundColor:colors.gray[100] }}
+          sx={{ width: "100%" }}
         >
           {toast.message}
         </Alert>

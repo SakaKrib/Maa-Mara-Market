@@ -47,8 +47,9 @@ class VendorItemRequestCreateView(generics.CreateAPIView):
         subject = f"New Vendor Item Request: {item_request.name}"
         from_email = settings.DEFAULT_FROM_EMAIL
         to_email = [settings.EMAIL_HOST_USER]
+        current_year = timezone.now().year
 
-        context = {"vendor": vendor, "item": item_request, "user": self.request.user}
+        context = {"vendor": vendor, "item": item_request, "user": self.request.user, "current_year": current_year}
 
         html_content = render_to_string("emails/vendor_item_request.html", context)
         text_content = (
@@ -262,9 +263,11 @@ def approve_request(request, pk):
             url=f"/vendors-dashboard/vendor/requests/{item_request.id}/",
         )
 
+        current_year = timezone.now().year
+
         # 🔹 Send email
         subject = f"Your Item Request '{item_request.name}' Was Denied"
-        context = {"item": item_request, "vendor": item_request.vendor}
+        context = {"item": item_request, "vendor": item_request.vendor, "current_year": current_year}
         html_content = render_to_string("emails/item_request_denied.html", context)
         text_content = f"Sorry, your item request '{item_request.name}' was denied."
         email = EmailMultiAlternatives(subject, text_content, settings.DEFAULT_FROM_EMAIL, [vendor_email])
@@ -386,6 +389,8 @@ class CreatePriceChangeRequestView(APIView):
             reason=reason   # <-- include reason here
         )
 
+        current_year = timezone.now().year
+
         # Activity Log
         for admin in User.objects.filter(is_superuser=True):
             ActivityLog.objects.create(
@@ -420,7 +425,8 @@ class CreatePriceChangeRequestView(APIView):
             subject = f"Price Change Request for {item.name}"
             html_content = render_to_string(
                 "emails/price_change_request.html",
-                {"admin": admin, "item": item, "price_request": price_request, "vendor": request.user}
+                {"admin": admin, "item": item, "price_request": price_request, "vendor": request.user,
+                "current_year": current_year,}
             )
             text_content = strip_tags(html_content)
             email = EmailMultiAlternatives(subject, text_content, settings.DEFAULT_FROM_EMAIL, [admin.email])
@@ -463,6 +469,8 @@ class ApprovePriceChangeRequestView(APIView):
         price_request.approved_by = request.user
         price_request.save()
 
+        current_year = timezone.now().year
+        
         # Activity Log
         for admin in User.objects.filter(is_staff=True):
             ActivityLog.objects.create(
@@ -501,7 +509,7 @@ class ApprovePriceChangeRequestView(APIView):
         # Optional: Email notification to Vendor
         html_content = render_to_string(
             "emails/vendor_price_change_approved.html",
-            {"vendor": price_request.requested_by, "item": item, "price_request": price_request, 'current_year': timezone.now().year}
+            {"vendor": price_request.requested_by, "item": item, "price_request": price_request, "current_year": current_year,}
         )
         text_content = strip_tags(html_content)
         email = EmailMultiAlternatives(

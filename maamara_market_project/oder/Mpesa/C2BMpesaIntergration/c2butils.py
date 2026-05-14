@@ -163,6 +163,10 @@ def stk_push(request):
 # ----------------------
 
 logger = logging.getLogger(__name__)
+from django.core.mail import EmailMultiAlternatives
+from django.template.loader import render_to_string
+from django.utils import timezone
+
 
 @api_view(["POST"])
 @permission_classes([AllowAny])
@@ -294,13 +298,53 @@ def stk_callback(request):
                 for order_item in order.items.all():
                     vendor_user = getattr(order_item.item.vendor, "user", None)
                     if vendor_user:
+                        # Build variant info
+                        variants = []
+                        if hasattr(order_item, "selected_size") and order_item.selected_size:
+                            variants.append(f"Size: {order_item.selected_size}")
+                        if hasattr(order_item, "selected_color") and order_item.selected_color:
+                            variants.append(f"Color: {order_item.selected_color}")
+                        if hasattr(order_item, "custom_length") and order_item.custom_length:
+                            variants.append(f"Length: {order_item.custom_length}")
+                        variant_text = ", ".join(variants) if variants else "No variants selected"
+
+                        # price = getattr(order_item, "price_at_purchase", order_item.item.price)
+                        price = order_item.item.price
+                        total_amount = price * order_item.quantity
+
+                        # Notifications
                         Notification.objects.create(
                             user=vendor_user,
                             title="🎉 Item Purchased!",
-                            message=f"Your item '{order_item.item.name}' has just been purchased by {actor_name}.",
-                            url=f"/vendors-dashboard/vendor/orders/{order.id}/"
+                            message=f"Your item '{order_item.item.name}' ({variant_text}) was purchased by {actor_name}.",
+                            url=f"/vendors-dashboard/vendor/orders/{order.id}"
                         )
-                        logger.info(f"📢 Vendor {vendor_user.username} notified")
+
+                        # Send email
+                        if vendor_user.email:
+                            weight_obj = getattr(order_item.item, "weight", None)
+                            weight = f"{weight_obj.value} {weight_obj.unit}" if weight_obj else "N/A"
+                            context = {
+                                "vendor": vendor_user.first_name,
+                                "item": order_item.item,
+                                "quantity": order_item.quantity,
+                                "variants": variant_text,
+                                "price_at_purchase": price,
+                                "total_amount": total_amount,
+                                "weight": weight,
+                                "order": order,
+                                "current_year": timezone.now().year,
+                            }
+                            html_content = render_to_string("emails/item_purchased.html", context)
+                            subject = f"🎉 Your item '{order_item.item.name}' has been purchased!"
+                            from_email = "no-reply@maamaramarket.com"
+                            to_email = [vendor_user.email]
+                            msg = EmailMultiAlternatives(subject, "", from_email, to_email)
+                            msg.attach_alternative(html_content, "text/html")
+                            msg.send()
+                            logger.info(f"📧 Item purchased email sent to {vendor_user.email} with variants: {variant_text}")
+
+        
 
                 # --- 👤 Notify Customer/User ---
                 if order.user:

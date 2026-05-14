@@ -1,6 +1,6 @@
 from django.db import models
 from django.contrib.auth.models import User
-from ReactSerializers.models import Item
+from ReactSerializers.models import Item, ColorVariant, AgeVariant, SizeStock
 from django.shortcuts import reverse
 from django.conf import settings
 from django_countries.fields import CountryField
@@ -136,6 +136,39 @@ class OderItem(models.Model):
     )
     item = models.ForeignKey(Item, on_delete=models.CASCADE)
     user = models.ForeignKey(User, on_delete=models.CASCADE, null=True, blank=True)
+
+    # 🔥 ADD THESE
+    color_variant = models.ForeignKey(
+        ColorVariant,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True
+    )
+
+    size_stock = models.ForeignKey(
+        SizeStock,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True
+    )
+
+    age_variant = models.ForeignKey(
+        AgeVariant,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True
+    )
+    
+    selected_weight = models.CharField(max_length=50, null=True, blank=True)
+
+
+    selected_length = models.CharField(max_length=50, null=True, blank=True)
+
+    price_at_purchase = models.DecimalField(max_digits=10, decimal_places=2)
+
+    shoe_size = models.CharField(max_length=50, null=True, blank=True)
+
+
     visitor_id = models.CharField(max_length=255, null=True, blank=True)
     quantity = models.IntegerField(default=1)
     refunded = models.BooleanField(default=False)
@@ -427,6 +460,7 @@ class Order(models.Model):
 
 # card
 class Card(models.Model):
+    visitor_id = models.CharField(max_length=64, blank=True, null=True, unique=True) 
     brand = models.CharField(max_length=32, null=True, blank=True)
     last_digits = models.CharField(max_length=4, null=True, blank=True)
     type = models.CharField(max_length=16, null=True, blank=True)
@@ -461,6 +495,7 @@ class Transaction(models.Model):
 
     category = models.CharField(max_length=50, choices=CATEGORY_CHOICES, null=True, blank=True)
 
+    visitor_id = models.CharField(max_length=64, blank=True, null=True, unique=True) 
 
     transaction_type = models.CharField(max_length=15, choices=TRANSACTION_TYPES)
 

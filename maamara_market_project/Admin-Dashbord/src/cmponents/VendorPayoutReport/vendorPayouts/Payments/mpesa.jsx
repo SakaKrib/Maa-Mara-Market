@@ -8,16 +8,17 @@ import {
   Alert,
   useTheme,
 } from "@mui/material";
-import { useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { tokens } from "../../../../theme";
 import MpesaLogo from "../../../../assets/partnaship/mpesaLogo.png";
-import api from "../../../../Services/Api"; // ✅ axios instance
+import api from "../../../../Services/Api";
 
-export default function MpesaB2CPayment({ phone = "", onSuccess }) {
+export default function MpesaB2CPayment({ onSuccess }) {
   const location = useLocation();
-  const { reference, amount, vendor } = location.state || {};
+  const navigate = useNavigate();
+  const { reference, amount, vendor, phone } = location.state || {};
 
-  const initialPhone = vendor?.mpesa_phone || phone || "";
+  const initialPhone = vendor?.mpesa_number || phone || "";
   const initialAmount = amount || "";
   const vendorName = vendor?.company_name || vendor?.name || "Vendor";
 
@@ -30,17 +31,14 @@ export default function MpesaB2CPayment({ phone = "", onSuccess }) {
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
 
-  // ✅ Normalize Kenyan phone numbers into 2547XXXXXXXX
   const normalizePhone = (phone) => {
     if (!phone) return "";
-    let p = phone.replace(/\D/g, ""); // remove non-digits
-
+    let p = phone.replace(/\D/g, "");
     if (p.startsWith("07")) return "254" + p.slice(1);
     if (p.startsWith("7")) return "254" + p;
     if (p.startsWith("+254")) return p.replace("+", "");
     if (p.startsWith("254")) return p;
-
-    return p; // fallback
+    return p;
   };
 
   const handlePhoneChange = (e) => {
@@ -83,6 +81,31 @@ export default function MpesaB2CPayment({ phone = "", onSuccess }) {
 
       setMessage(res.data.message || "✅ Payment initiated successfully.");
       if (onSuccess) onSuccess(res.data);
+
+      // ✅ Connect to Django backend WebSocket
+      const wsProtocol = window.location.protocol === "https:" ? "wss" : "ws";
+      const wsHost = "127.0.0.1:8000";
+      const wsUrl = `${wsProtocol}://${wsHost}/ws/payout/${reference}/`;
+      console.log("Connecting to WS:", wsUrl);
+
+      const ws = new WebSocket(wsUrl);
+
+      ws.onopen = () => console.log("WebSocket connected!");
+      ws.onmessage = (event) => {
+        const data = JSON.parse(event.data);
+        console.log("WS message received:", data);
+
+        if (data.type === "payout_message") {
+          // ✅ Pass payout data to success page
+          ws.close();
+          navigate(`vendor-payouts/success/${reference}`, {
+            state: { payout: data },
+          });
+        }
+      };
+
+      ws.onerror = (err) => console.error("WebSocket error:", err);
+      ws.onclose = () => console.log("WebSocket closed");
     } catch (err) {
       console.error(err);
       setError(err.response?.data?.error || "Something went wrong.");
@@ -142,23 +165,14 @@ export default function MpesaB2CPayment({ phone = "", onSuccess }) {
           sx={{
             mt: 2,
             backgroundColor: colors.greenAccent[700],
-            "&:hover": { backgroundColor: colors.gray[900] },
+            "&:hover": { backgroundColor: colors.greenAccent[800] },
           }}
         >
           {loading ? <CircularProgress size={24} /> : "Send Payment"}
         </Button>
 
-        {message && (
-          <Alert severity="success" sx={{ mt: 2 }}>
-            {message}
-          </Alert>
-        )}
-
-        {error && (
-          <Alert severity="error" sx={{ mt: 2 }}>
-            {error}
-          </Alert>
-        )}
+        {message && <Alert severity="success" sx={{ mt: 2 }}>{message}</Alert>}
+        {error && <Alert severity="error" sx={{ mt: 2 }}>{error}</Alert>}
       </Box>
     </Box>
   );

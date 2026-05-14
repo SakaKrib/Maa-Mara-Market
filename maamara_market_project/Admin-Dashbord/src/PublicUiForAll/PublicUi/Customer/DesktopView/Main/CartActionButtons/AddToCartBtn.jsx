@@ -1,4 +1,3 @@
-// AddToCartButton.jsx
 import React, { useState } from "react";
 import api from "../../../../../../Services/Api";
 import { baseUrl } from "../../../../../../cmponents/Constant/Constant";
@@ -7,59 +6,95 @@ import Snackbar from "@mui/material/Snackbar";
 import MuiAlert from "@mui/material/Alert";
 import { useCartContext } from "../CartHook/cart";
 
-
 const Alert = React.forwardRef(function Alert(props, ref) {
   return <MuiAlert elevation={6} ref={ref} variant="filled" {...props} />;
 });
 
-const AddToCartButton = ({ itemId }) => {
-  const [toast, setToast] = useState({
-    open: false,
-    message: "",
-    severity: "success",
-  });
+const AddToCartButton = ({
+  itemId,
+  quantity,
+  variantId = null,
+  sizeId = null,
+  availableStock,
+  remainingStock,
+  disabled = false,
+}) => {
+  const [adding, setAdding] = useState(false);
+  const [toast, setToast] = useState({ open: false, message: "", severity: "success" });
 
-  
-  const {refreshCart} = useCartContext();
-  const handleClose = () => {
-    setToast((prev) => ({ ...prev, open: false }));
-  };
+  // Use your cart context to refresh cart contents after adding
+  const { refreshCart } = useCartContext();
 
+  // Close the Snackbar
+  const handleClose = () => setToast(prev => ({ ...prev, open: false }));
+
+  // Handle the Add to Cart button click
   const handleAddToCart = async () => {
+    // Check if no stock available
+    if (availableStock === 0) {
+      setToast({ open: true, message: "This item is out of stock.", severity: "error" });
+      return;
+    }
+    // Check if requested quantity exceeds stock
+    if (quantity > availableStock) {
+      setToast({ open: true, message: `Only ${availableStock} item(s) left in stock.`, severity: "error" });
+      return;
+    }
+    if (adding) return; // Prevent double clicks
+
     try {
+      setAdding(true);
       const res = await api.post(
         `${baseUrl}/api/cart/add/${itemId}/`,
-        {},
-        { withCredentials: true } // ✅ ensure cookies are sent
+        { quantity, variant_id: variantId, size_id: sizeId },
+        { withCredentials: true }
       );
+      // Refresh the cart context after success
       refreshCart();
-
-      setToast({
-        open: true,
-        message: res.data.message || "Item added to cart!",
-        severity: "success",
-      });
-      
+      setToast({ open: true, message: res.data.message || "Item added to cart!", severity: "success" });
     } catch (error) {
-      console.error(error.response || error);
       setToast({
         open: true,
-        message: error.response?.data?.error || "Invalid item. Please try again.",
+        message: error.response?.data?.error || "Stock changed. Please refresh and try again.",
         severity: "error",
       });
+    } finally {
+      setAdding(false);
     }
   };
+
+  // Disable button if:
+  // - disabled prop passed
+  // - currently adding
+  // - quantity exceeds available stock
+  // - no stock available
+  const isButtonDisabled =
+    disabled || adding || quantity > availableStock || availableStock === 0;
+
+  // Button text logic, including special text for last item
+  const buttonText = adding
+    ? "Adding..."
+    : availableStock === 0
+    ? "Out of Stock"
+    : quantity > availableStock
+    ? "Not Enough Stock"
+    : remainingStock === 0
+    ? "Last Item!"
+    : "Add to Cart";
 
   return (
     <>
       <button
+        type="button"
         onClick={handleAddToCart}
-        className="ring-1 rounded-full px-4 py-2 hover:text-gray-500 hover:bg-blue-200"
+        disabled={isButtonDisabled}
+        className={`ring-1 rounded-full px-4 py-2 hover:text-gray-500 hover:bg-blue-200 ${
+          isButtonDisabled ? "opacity-50 cursor-not-allowed" : ""
+        }`}
       >
-        <CartIcon fontSize="small" /> Add to Cart
+        <CartIcon fontSize="small" /> {buttonText}
       </button>
 
-      {/* Snackbar Toast */}
       <Snackbar
         open={toast.open}
         autoHideDuration={4000}
@@ -72,6 +107,12 @@ const AddToCartButton = ({ itemId }) => {
       </Snackbar>
     </>
   );
+};
+
+// Default props for optional props
+AddToCartButton.defaultProps = {
+  quantity: 1,
+  disabled: false,
 };
 
 export default AddToCartButton;

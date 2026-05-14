@@ -128,16 +128,20 @@ def mpesa_result(request):
             # ---------------------------------------------------------
             # Create Transaction Log
             # ---------------------------------------------------------
-            Transaction.objects.create(
-                transaction_type="B2C",
-                mpesa_receipt_number=transaction_id,
-                phone_number=payout.vendor.mpesa_number,
-                amount=amount,
-                account_reference=conversation_id,
-                status="Completed" if success else "Failed",
-                raw_data=data,
-                payout=payout,
-            )
+            if Transaction.objects.filter(mpesa_receipt_number=transaction_id).exists():
+                logger.info(f"🟡 Duplicate M-Pesa receipt ignored: {transaction_id}")
+            else:
+                Transaction.objects.create(
+                    transaction_type="B2C",
+                    mpesa_receipt_number=transaction_id,
+                    phone_number=payout.vendor.mpesa_number,
+                    amount=amount,
+                    account_reference=conversation_id,
+                    status="Completed" if success else "Failed",
+                    raw_data=data,
+                    payout=payout,
+                    vendor=payout.vendor,
+                )
             logger.info(f"🧾 Created Transaction record for {conversation_id}")
 
             # ---------------------------------------------------------
@@ -179,8 +183,12 @@ def mpesa_result(request):
             # ---------------------------------------------------------
             # ⭐⭐⭐ WEBSOCKET BROADCAST HERE ⭐⭐⭐
             # ---------------------------------------------------------
+            # WebSocket broadcast to frontend
             channel_layer = get_channel_layer()
             group_name = f"payout_{payout.reference}"
+
+            # Include vendor info in the event
+            vendor_name = getattr(payout.vendor, "company_name", None) or getattr(payout.vendor, "name", "Vendor")
 
             event = {
                 "type": "payout_message",
@@ -188,16 +196,15 @@ def mpesa_result(request):
                 "reference": payout.reference,
                 "amount": amount,
                 "transaction_id": transaction_id,
+                "vendor": vendor_name,
                 "message": (
-                    f"Payout of KES {amount} was successful."
+                    f"Payout of KES {amount} completed successfully."
                     if success else
                     f"Payout failed: {result_desc}"
                 ),
             }
-
             async_to_sync(channel_layer.group_send)(group_name, event)
-
-            logger.info(f"📡 WebSocket broadcast sent to group {group_name}: {event}")
+            logger.info(f"📡 WebSocket broadcast sent to {group_name}: {event}")
 
     except Exception as e:
         logger.error(f"🔥 Error processing B2C callback: {e}")

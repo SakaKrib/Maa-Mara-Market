@@ -1,5 +1,7 @@
 import React, { useEffect } from 'react';
 import { IonIcon } from '@ionic/react';
+import { useContext } from "react";
+import { ColourModeContext } from '../../../theme';
 import {
   closeOutline,
   homeOutline,
@@ -26,6 +28,8 @@ import { tokens } from '../../../theme';
 import { Link } from 'react-router-dom';
 import AttachMoneyIcon from '@mui/icons-material/AttachMoney';
 import { useAuth } from '../../Auth/AuthContext/Context';
+import { color } from 'framer-motion';
+
 
 
 const NavBar = () => {
@@ -33,6 +37,7 @@ const NavBar = () => {
   useDashboardInteractions();
   const theme = useTheme();
   const colors = tokens(theme.palette.mode)
+  const colorMode = useContext(ColourModeContext);
 
 
  
@@ -92,8 +97,8 @@ const NavBar = () => {
           <IonIcon icon={closeOutline} />
         </Box>
         <ul>
-          <li>
-            <Link to="/dashboard">
+          <li className=''>
+            <Link to="/admin-dashboard">
               <span className="icon"><IonIcon icon={homeOutline} /></span>
               <span className="title">Admin Dashboard</span>
             </Link>
@@ -159,18 +164,33 @@ const NavBar = () => {
 
                 <h2>Appearance and Theme</h2>
 
-                  <li className="has-child theme-li">
-                    <span className='theme'>Theme Selector <IonIcon className="icon-small" icon={chevronDownOutline} /></span>
+                  <li className="has-child theme-li" style={{color:colors.gray[100]}}>
+                    <span className='theme text-sm'>Theme Selector <IonIcon className="icon-small" icon={chevronDownOutline} /></span>
                     <ul className="content theme-content" style={{'--primary-theme': colors.gray[100], '--green-col': colors.greenAccent[500], '--lihover-col': colors.gray[900],
                       '--bg-color': colors.primary[400]
                     }}>
-                      <li className="light list"><a href="#"><IonIcon icon={sunnyOutline} />Light Mode</a></li>
-                      <li className="dark"><a href="#"><IonIcon icon={moon} />Night Mode</a></li>
-                    </ul>
+                     <li className="light list">
+                      <a href="#" onClick={(e) => {
+                        e.preventDefault();
+                        colorMode.setLightMode();   // ☀️ force light
+                      }}>
+                        <IonIcon icon={sunnyOutline} /> Light Mode
+                      </a>
+                    </li>
+
+                    <li className="dark">
+                      <a href="#" onClick={(e) => {
+                        e.preventDefault();
+                        colorMode.setDarkMode();    // 🌙 force dark
+                      }}>
+                        <IonIcon icon={moon} /> Night Mode
+                      </a>
+                    </li>
+                      </ul>
                   </li>
 
-                  <li className="has-child layout-li">
-                    <span className='layout'>Screen Layout <IonIcon className="icon-small" icon={chevronDownOutline} /></span>
+                  <li className="has-child layout-li" style={{color:colors.gray[100]}}>
+                    <span className='layout text-sm'>Screen Layout <IonIcon className="icon-small" icon={chevronDownOutline} /></span>
                     <ul className="content layout-content" style={{'--primary-theme': colors.gray[100], '--green-col': colors.greenAccent[500], '--lihover-col': colors.gray[900], '--bg-color': colors.primary[400]}}>
                       <li className="rich"><a href="#"><IonIcon icon={tabletPortraitSharp} />Landscape Mode</a></li>
                       <li><a href="#"><IonIcon icon={tabletLandscapeSharp} />Portrait Mode</a></li>

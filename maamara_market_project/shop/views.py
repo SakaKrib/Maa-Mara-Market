@@ -766,4 +766,98 @@ class WishlistAPIView(APIView):
         else:
             return Response({"success": False, "message": "Item not found in wishlist"}, status=404)
 
-    
+
+
+# vendor ratings
+import uuid
+
+class VendorRatingView(APIView):
+    permission_classes = [AllowAny]
+
+    def post(self, request, vendor_id):
+        try:
+            vendor = Vendor.objects.get(id=vendor_id)
+        except Vendor.DoesNotExist:
+            return Response({"error": "Vendor not found"}, status=status.HTTP_404_NOT_FOUND)
+
+        data = request.data.copy()
+        data['vendor'] = vendor.id
+
+        user = request.user if request.user.is_authenticated else None
+
+        # Handle visitor identification for anonymous users
+        visitor_key = request.COOKIES.get("visitorId")
+        if not visitor_key and not user:
+            # generate a random UUID for visitor
+            visitor_key = str(uuid.uuid4())
+        
+        # Check if user/visitor has already rated
+        if user:
+            rating, created = VendorRating.objects.update_or_create(
+                vendor=vendor,
+                user=user,
+                defaults={
+                    'quality': data.get('quality', 0),
+                    'communication': data.get('communication', 0),
+                    'shipping': data.get('shipping', 0),
+                    'comment': data.get('comment', "")
+                }
+            )
+        else:
+            existing_rating = VendorRating.objects.filter(vendor=vendor, user_id=visitor_key).first()
+            if existing_rating:
+                return Response({"error": "Visitor has already rated this shop."}, status=status.HTTP_400_BAD_REQUEST)
+            rating = VendorRating.objects.create(
+                vendor=vendor,
+                quality=data.get('quality', 0),
+                communication=data.get('communication', 0),
+                shipping=data.get('shipping', 0),
+                comment=data.get('comment', ""),
+                user_id=visitor_key
+            )
+
+        serializer = VendorRatingSerializer(rating)
+        response = Response(serializer.data, status=status.HTTP_201_CREATED)
+        
+        # If visitor, set the cookie so they cannot rate again
+        if not user:
+            response.set_cookie("visitor_id", visitor_key, max_age=60*60*24*365)  # 1 year
+        return response
+
+    def get(self, request, vendor_id):
+        """
+        Return average ratings for a vendor + total review count + comments
+        """
+        try:
+            vendor = Vendor.objects.get(id=vendor_id)
+        except Vendor.DoesNotExist:
+            return Response({"error": "Vendor not found"}, status=status.HTTP_404_NOT_FOUND)
+
+        ratings = VendorRating.objects.filter(vendor=vendor)
+        count = ratings.count()
+        avg_quality = ratings.aggregate(avg=models.Avg('quality'))['avg'] or 0
+        avg_communication = ratings.aggregate(avg=models.Avg('communication'))['avg'] or 0
+        avg_shipping = ratings.aggregate(avg=models.Avg('shipping'))['avg'] or 0
+
+        # Serialize comments (optional: only non-empty comments)
+        comments = [
+            {
+                "user": r.user.username if r.user else "Visitor",
+                "quality": r.quality,
+                "communication": r.communication,
+                "shipping": r.shipping,
+                "comment": r.comment,
+                "created_at": r.created_at,
+            }
+            for r in ratings if r.comment
+        ]
+
+        return Response({
+            "average_ratings": {
+                "quality": round(avg_quality, 1),
+                "communication": round(avg_communication, 1),
+                "shipping": round(avg_shipping, 1)
+            },
+            "review_count": count,
+            "comments": comments  # include the comments here
+        }, status=status.HTTP_200_OK)

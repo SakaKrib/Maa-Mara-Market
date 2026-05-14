@@ -35,7 +35,12 @@ from .Serializers import ItemSerializers
 from rest_framework.permissions import IsAuthenticated
 import json
 from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
+from django.template.loader import render_to_string
 import bleach
+import logging
+from urllib.parse import urlparse, unquote
+
+logger = logging.getLogger(__name__)
 
 
 
@@ -91,7 +96,7 @@ class VendorItemViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated, IsVendor]
 
     def get_queryset(self):
-        print("Fetching items for vendor (user):", self.request.user)
+        logger.info("Fetching items for vendor")
         return Item.objects.filter(created_by=self.request.user)
 
     def get_serializer(self, *args, **kwargs):
@@ -113,9 +118,9 @@ class VendorItemViewSet(viewsets.ModelViewSet):
                 ] and isinstance(value, str):
                     try:
                         decoded[key] = json.loads(value)
-                        print(f"✅ Decoded {key}:", decoded[key])
+                        logger.info("Decoded %s successfully", key)
                     except json.JSONDecodeError:
-                        print(f"⚠️ Failed to decode {key}")
+                        logger.warning("Failed to decode %s", key)
                         decoded[key] = []
                 else:
                     decoded[key] = sanitize(value)
@@ -133,10 +138,10 @@ class VendorItemViewSet(viewsets.ModelViewSet):
             for attr, val in data.items():
                 setattr(related_obj, attr, sanitize(val))
             related_obj.save()
-            print(f"✅ Updated {field_name}:", related_obj)
+            logger.info("Updated %s", field_name)
         else:
             new_obj = model.objects.create(item=item, **{k: sanitize(v) for k, v in data.items()})
-            print(f"✅ Created new {field_name}:", new_obj)
+            logger.info("Created new %s", field_name)
 
     def _handle_shoe(self, item, data):
         if not data:
@@ -151,7 +156,7 @@ class VendorItemViewSet(viewsets.ModelViewSet):
         for shoe_id in list(existing_shoes.keys()):
             if shoe_id not in new_ids:
                 existing_shoes[shoe_id].delete()
-                print(f"🗑️ Deleted shoe ID: {shoe_id}")
+                logger.info("Deleted shoe ID: %s", shoe_id)
 
         # Update or create
         for s in data:
@@ -162,15 +167,13 @@ class VendorItemViewSet(viewsets.ModelViewSet):
                 for attr, val in sanitized_s.items():
                     setattr(shoe_instance, attr, val)
                 shoe_instance.save()
-                print("✅ Updated shoe:", shoe_instance)
+                logger.info("Updated shoe instance")
             else:
-                new_shoe = Shoe.objects.create(item=item, **sanitized_s)
-                print("✅ Created new shoe:", new_shoe)
-
-                
+                Shoe.objects.create(item=item, **sanitized_s)
+                logger.info("Created new shoe instance")
 
     def _update_nested(self, items_data, existing_qs, model, parent_field, nested_field=None):
-        print("🔄 Updating nested data for model:", model.__name__)
+        logger.info("Updating nested data for model: %s", model.__name__)
         existing_ids = [obj.id for obj in existing_qs]
         new_ids = [item.get("id") for item in items_data if item.get("id")]
 
@@ -178,7 +181,7 @@ class VendorItemViewSet(viewsets.ModelViewSet):
         for old_id in existing_ids:
             if old_id not in new_ids:
                 model.objects.filter(id=old_id).delete()
-                print(f"🗑️ Deleted old {model.__name__} with ID:", old_id)
+                logger.info("Deleted old %s with ID: %s", model.__name__, old_id)
 
         # Update or create
         for idx, item_data in enumerate(items_data):
@@ -186,7 +189,7 @@ class VendorItemViewSet(viewsets.ModelViewSet):
             obj_id = item_data.get("id")
             sanitized_data = {k: sanitize(v) for k, v in item_data.items()}
 
-            # 🔥 handle variant image upload (only for ColorVariant)
+            # Handle variant image upload (only for ColorVariant)
             if model.__name__ == "ColorVariant":
                 image_file = (
                     self.request.FILES.get(f"variants[{idx}][image]") or
@@ -200,7 +203,7 @@ class VendorItemViewSet(viewsets.ModelViewSet):
                 for attr, val in sanitized_data.items():
                     setattr(obj, attr, val)
                 obj.save()
-                print(f"✅ Updated {model.__name__} with ID:", obj_id)
+                logger.info("Updated %s with ID: %s", model.__name__, obj_id)
 
                 if nested_field and nested_data:
                     self._update_nested(
@@ -211,21 +214,21 @@ class VendorItemViewSet(viewsets.ModelViewSet):
                     )
             else:
                 new_obj = model.objects.create(**{parent_field: self._current_item}, **sanitized_data)
-                print(f"✅ Created new {model.__name__}:", new_obj)
+                logger.info("Created new %s", model.__name__)
                 if nested_field and nested_data:
                     for nested_item in nested_data:
                         SizeStock.objects.create(
                             variant=new_obj,
                             **{k: sanitize(v) for k, v in nested_item.items()}
                         )
-                        print("✅ Created nested SizeStock:", nested_item)
+                        logger.info("Created nested SizeStock")
 
     # -------------------------------
     # Create / Update
     # -------------------------------
     @transaction.atomic
     def perform_create(self, serializer):
-        print("Creating new item for user:", self.request.user)
+        logger.info("Creating new item")
         validated = serializer.validated_data
 
         variants_data = validated.pop("variants", [])
@@ -236,64 +239,47 @@ class VendorItemViewSet(viewsets.ModelViewSet):
         shoe_data = validated.pop("shoe_input", None)
         shipping_dimension_data = validated.pop("shipping_dimension_data", None)
         offer_data = validated.pop("offer", None) 
-
 
         item = serializer.save(created_by=self.request.user)
         self._current_item = item
-        print("Created item:", item)
+        logger.info("Item created successfully")
 
         self._handle_shoe(item, shoe_data)
         self._handle_dimension(item, Weight, weight_data, "weight")
         self._handle_dimension(item, Length, length_data, "length")
         self._handle_dimension(item, ShippingDimension, shipping_dimension_data, "shipping_dimension")
 
-        # Handle offer creation
         if offer_data:
-            # Adjust this depending on your Offer model and relation
-            # Example assumes an Offer model with FK to item:
             Offer.objects.create(item=item, **{k: sanitize(v) for k, v in offer_data.items()})
-            print("✅ Created offer:", offer_data)
+            logger.info("Created offer")
 
         for i, variant_data in enumerate(variants_data):
             sizes_data = variant_data.pop("sizes", [])
-
             variant_image = (
                 self.request.FILES.get(f"variants[{i}][image]") or
                 self.request.FILES.get(f"variant_image_{i}")
             )
             if variant_image:
                 variant_data["image"] = variant_image
-
-
-        for i, variant_data in enumerate(variants_data):
-            sizes_data = variant_data.pop("sizes", [])
-
-            variant_image = (
-                self.request.FILES.get(f"variants[{i}][image]") or
-                self.request.FILES.get(f"variant_image_{i}")
-            )
-            if variant_image:
-                variant_data["image"] = variant_image
-
             variant_data = {k: sanitize(v) for k, v in variant_data.items()}
             variant = ColorVariant.objects.create(item=item, **variant_data)
-            print("Created color variant:", variant)
+            logger.info("Created color variant")
 
             for size_data in sizes_data:
                 SizeStock.objects.create(variant=variant, **{k: sanitize(v) for k, v in size_data.items()})
-                print(f"Created size stock for variant {variant.id}:", size_data)
+                logger.info("Created size stock for variant")
 
         for size_data in size_only_data:
             SizeStock.objects.create(item=item, **{k: sanitize(v) for k, v in size_data.items()})
-            print("Created size-only stock:", size_data)
+            logger.info("Created size-only stock")
 
         for kids_data in kids_sizes_data:
             AgeVariant.objects.create(item=item, **{k: sanitize(v) for k, v in kids_data.items()})
-            print("Created kids size variant:", kids_data)
+            logger.info("Created kids size variant")
 
     @transaction.atomic
     def perform_update(self, serializer):
-        print("Updating item for user:", self.request.user)
+        logger.info("Updating item")
         validated = serializer.validated_data
 
         variants_data = validated.pop("variants", [])
@@ -304,31 +290,28 @@ class VendorItemViewSet(viewsets.ModelViewSet):
         shoe_data = validated.pop("shoe_input", None)
         shipping_dimension_data = validated.pop("shipping_dimension_data", None)
         offer_data = validated.pop("offer", None) 
-        print("Offer data in validated:", offer_data)
 
         item = serializer.save()
         self._current_item = item
-        print("Updated item:", item)
+        logger.info("Item updated successfully")
 
         self._handle_shoe(item, shoe_data)
         self._handle_dimension(item, Weight, weight_data, "weight")
         self._handle_dimension(item, Length, length_data, "length")
         self._handle_dimension(item, ShippingDimension, shipping_dimension_data, "shipping_dimension")
 
-         # Handle offer update or create
         if offer_data:
             offer_obj = getattr(item, 'offer', None)
             if offer_obj:
                 for key, val in offer_data.items():
                     setattr(offer_obj, key, sanitize(val))
                 offer_obj.save()
-                print(f"✅ Updated offer: {offer_obj}")
+                logger.info("Updated offer")
             else:
                 Offer.objects.create(item=item, **{k: sanitize(v) for k, v in offer_data.items()})
-                print("✅ Created new offer:", offer_data)
+                logger.info("Created new offer")
 
-
-        # ✅ now also handles variant images
+        # Handle variant and nested updates
         self._update_nested(
             variants_data,
             item.variants.all(),
@@ -348,7 +331,6 @@ class VendorItemViewSet(viewsets.ModelViewSet):
             AgeVariant,
             parent_field="item"
         )
-
 
 
 
@@ -593,50 +575,41 @@ import os, requests
 @api_view(['POST'])
 @permission_classes([IsAuthenticated, IsAdminUser])
 def approve_vendor(request, vendor_request_id):
-    print("🚀 Vendor approval endpoint hit with ID:", vendor_request_id)
+    logger.info("Vendor approval endpoint hit")
 
     # 🧭 Fetch the vendor request
     try:
         vendor_request = VendorRequest.objects.get(id=vendor_request_id)
     except VendorRequest.DoesNotExist:
+        logger.warning("Vendor request not found")
         return Response({'error': 'Vendor request not found.'}, status=404)
 
     if vendor_request.status != 'verified':
+        logger.warning("Vendor is not verified yet")
         return Response({'error': 'Vendor is not verified yet.'}, status=400)
 
     user = vendor_request.user
     vendor_data = vendor_request.vendor_data or {}
 
-  
     # ✅ BRAND HANDLING
-    from urllib.parse import urlparse, unquote
-
     brand_instance = None
     brand_data = vendor_data.pop("brand", None)
     vendor_logo_path = vendor_data.get("vendor_company_logo")
     decoded_path = unquote(vendor_logo_path) if vendor_logo_path else None
 
-    print("📥 Incoming brand data:", brand_data)
-    print("📸 Incoming vendor logo path:", vendor_logo_path)
-    print("🗂 FILES:", request.FILES)
-
     if brand_data:
         name = sanitize(brand_data.get("name", "")).strip()
         description = sanitize(brand_data.get("description", ""))
 
-        if not name:
-            print("⚠️ Brand name is empty, skipping brand creation")
-        else:
+        if name:
             brand_instance, created = Brand.objects.get_or_create(
                 name=name,
                 defaults={"description": description}
             )
 
-             # Save the raw brand JSON data to vendor_request.brand_data here:
+            # Save the raw brand JSON data
             vendor_request.brand_object = brand_data
             vendor_request.save(update_fields=["brand_object"])
-            print("Brand instance used for items:", brand_instance)
-
 
             if description and brand_instance.description != description:
                 brand_instance.description = description
@@ -644,9 +617,7 @@ def approve_vendor(request, vendor_request_id):
 
             logo_file = request.FILES.get("vendor_company_logo") or request.FILES.get("brand_logo")
             if logo_file:
-                print(f"✅ Saving uploaded logo file: {logo_file.name}")
                 brand_instance.logo.save(logo_file.name, logo_file, save=True)
-
             elif decoded_path and (not brand_instance.logo or not brand_instance.logo.name):
                 try:
                     parsed_url = urlparse(decoded_path)
@@ -654,38 +625,21 @@ def approve_vendor(request, vendor_request_id):
                     if decoded_path.startswith("/media"):
                         relative_path = decoded_path.replace("/media/", "", 1)
                         file_path = os.path.join(settings.MEDIA_ROOT, relative_path)
-
                         if os.path.exists(file_path):
-                            print(f"✅ Found local logo file: {file_path}")
                             with open(file_path, "rb") as f:
                                 brand_instance.logo.save(os.path.basename(file_path), File(f), save=True)
-                        else:
-                            print(f"⚠️ Local logo file not found: {file_path}")
 
                     elif parsed_url.scheme in ["http", "https"]:
-                        print(f"🌐 Downloading logo from URL: {decoded_path}")
                         response = requests.get(decoded_path, timeout=10)
                         if response.status_code == 200:
                             filename = os.path.basename(parsed_url.path)
                             brand_instance.logo.save(filename, ContentFile(response.content), save=True)
-                            print("✅ Logo downloaded and saved")
-                        else:
-                            print(f"⚠️ Failed to download logo (status {response.status_code})")
-
-                    else:
-                        print(f"⚠️ Unsupported logo path format: {decoded_path}")
 
                 except Exception as e:
-                    print(f"❌ Error attaching vendor_company_logo: {e}")
-
-            print(f"🏁 Brand {'created' if created else 'updated'}: {brand_instance.name}")
-
-
-
-
+                    logger.error("Error attaching vendor_company_logo", exc_info=True)
 
     # 🧹 Clean vendor data
-    for field in [ 'social_media_links', 'item_list', 'item_pdf']:
+    for field in ['social_media_links', 'item_list', 'item_pdf']:
         vendor_data.pop(field, None)
 
     for field in ['profile_picture', 'vendor_company_logo']:
@@ -696,9 +650,8 @@ def approve_vendor(request, vendor_request_id):
 
     # 🧪 Check item list
     item_list = vendor_request.item_list or []
-    print("📦 Item list from request:", item_list)
-
     if not item_list:
+        logger.warning("No item data provided")
         return Response({'error': 'No item data provided or invalid format.'}, status=400)
 
     # 🏪 Create Vendor
@@ -708,7 +661,6 @@ def approve_vendor(request, vendor_request_id):
 
     for item in item_list:
         try:
-            # Normalize keys
             normalized_item = {k.lower(): v for k, v in item.items()}
 
             # SECTION / DEPARTMENT / CATEGORY
@@ -730,28 +682,23 @@ def approve_vendor(request, vendor_request_id):
             if subcategory_name:
                 subcategory, _ = SubCategory.objects.get_or_create(name=subcategory_name, defaults={'category': category})
 
-            # BRAND per item (optional)
             brand = None
             brand_name = sanitize(item.get('brand')) if item.get('brand') else None
             if brand_name:
                 brand, _ = Brand.objects.get_or_create(name=brand_name)
             else:
-                brand = brand_instance  # 👈 fallback to vendor brand
+                brand = brand_instance
 
-            # IMAGE
             raw_path = item.get('image')
             relative_path = raw_path.lstrip('/').removeprefix('media/') if raw_path else None
 
-            # NAME
             name = sanitize(item.get('name') or "")
             if not name:
-                print(f"⚠️ Skipping item with no name: {item}")
                 continue
 
             slug = slugify(name) + "-" + str(user.id)
             image_hash = hashlib.sha256(slug.encode('utf-8')).hexdigest()
 
-            # ✅ Create item
             created_item = Item.objects.create(
                 name=name,
                 section=section,
@@ -768,9 +715,9 @@ def approve_vendor(request, vendor_request_id):
                 item_attribute=sanitize(item.get('item_attribute') or ""),
                 gender_based=sanitize(item.get('shoe_gender', 'none')),
                 children_size_based_age=sanitize(item.get('kids_sizes', 'none')),
-                is_organic=item.get('is_organic', False),
                 manufactured_date=item.get('manufactured_date'),
                 expiry_date=item.get('expiry_date'),
+                is_organic=item.get('is_organic', False),
                 is_fresh_food=item.get('is_fresh_food', False),
                 created_by=user,
                 vendor=vendor,
@@ -778,7 +725,6 @@ def approve_vendor(request, vendor_request_id):
                 image_hash=image_hash,
                 image=relative_path,
                 percentage_discount=item.get('percentage_discount', 0)
-
             )
 
             shipping_data = item.get("shipping_dimension", {})
@@ -793,29 +739,23 @@ def approve_vendor(request, vendor_request_id):
                     weight_unit=shipping_data.get("weight_unit", "kg")
                 )
 
-
-
-            # ✅ Color variants
             for cv in item.get('color_variants', []):
                 color = sanitize(cv.get('color'))
                 if color:
                     ColorVariant.objects.create(item=created_item, color=color)
 
-            # ✅ Size variants
             for sz in item.get('size_stock', []):
                 size = sanitize(sz.get('size'))
                 quantity = sz.get('quantity_in_stock', 0)
                 if size:
                     SizeStock.objects.create(item=created_item, size=size, quantity_in_stock=quantity)
 
-            # ✅ Age variants
             for av in item.get('age_variants', []):
                 age_group = sanitize(av.get('age_group'))
                 quantity = av.get('quantity_in_stock', 0)
                 if age_group:
                     AgeVariant.objects.create(item=created_item, age_group=age_group, quantity_in_stock=quantity)
 
-            # ✅ Optional weight & length
             if item.get('weight'):
                 try:
                     Weight.objects.create(
@@ -823,8 +763,8 @@ def approve_vendor(request, vendor_request_id):
                         value=item['weight']['value'],
                         unit=sanitize(item['weight'].get('unit', 'kg'))
                     )
-                except Exception as e:
-                    print(f"⚠️ Error saving weight for {created_item.name}: {e}")
+                except Exception:
+                    logger.warning("Error saving weight", exc_info=True)
 
             if item.get('length'):
                 try:
@@ -833,43 +773,58 @@ def approve_vendor(request, vendor_request_id):
                         value=item['length']['value'],
                         unit=sanitize(item['length'].get('unit', 'cm'))
                     )
-                except Exception as e:
-                    print(f"⚠️ Error saving length for {created_item.name}: {e}")
+                except Exception:
+                    logger.warning("Error saving length", exc_info=True)
 
             created_items.append(created_item.id)
-            print(f"✅ Created item: {created_item.name} (ID {created_item.id})")
 
-        except Exception as e:
-            traceback.print_exc()  # 🧪 Print full error details
-            print(f"❌ Error processing item '{item.get('name')}': {e}")
-            continue
+        except Exception:
+            traceback.print_exc()
+            logger.error("Error processing an item", exc_info=True)
 
-    # 🏁 Update vendor request
     vendor_request.status = 'approved'
     vendor_request.save()
 
-    # 📩 Send email
+    user_first_name = user.first_name or user.username
+    dashboard_url = "https://yourdomain.com/vendor-dashboard"
+    total_items = len(created_items)
+    current_year = timezone.now().year
+
     subject = 'Vendor Registration Approved'
-    text_content = f'Dear {user.first_name},\n\nYour vendor registration has been approved.\nYou can now access your vendor dashboard.\n\nBest regards,\nTeam'
-    html_content = f"""
-    <html><body>
-    <p>Dear {user.first_name},</p>
-    <p><strong>Congratulations!</strong> Your vendor registration has been <span style="color:green;">approved</span>.</p>
-    <p>You can now access your <a href="https://yourdomain.com/vendor-dashboard">vendor dashboard</a>.</p>
-    <br><p>Warm regards,<br><strong>Your Team</strong></p>
-    </body></html>
+    html_content = render_to_string(
+        "emails/vendor_approval.html",
+        {
+            "user_first_name": user_first_name,
+            "dashboard_url": dashboard_url,
+            "total_items": total_items,
+            "current_year": current_year
+        }
+    )
+
+    text_content = f"""
+    Dear {user_first_name},
+
+    Congratulations! Your vendor registration has been approved.
+
+    You can now access your vendor dashboard here: {dashboard_url}
+
+    Total items created: {total_items}
+
+    — Maamara Market System Notification
     """
+
     email = EmailMultiAlternatives(subject, text_content, settings.DEFAULT_FROM_EMAIL, [user.email])
     email.attach_alternative(html_content, "text/html")
     email.send()
 
-    # 📝 Log activity
     log_activity(
         user=request.user,
         actor_type='admin',
         action='approved_vendor',
-        description=f"Admin '{request.user.username}' approved vendor for user '{vendor.user.username}'"
+        description=f"Admin approved vendor for user '{vendor.user.username}'"
     )
+
+    logger.info("Vendor approved successfully with %d items created", total_items)
 
     return Response({
         'message': 'Vendor approved, items created, email sent.',
@@ -892,28 +847,20 @@ def deny_vendor(request, vendor_request_id):
     vendor_request.status = 'denied'
     vendor_request.save()
 
-    # Prepare HTML email
+    # Prepare email
     user = vendor_request.user
     subject = 'Vendor Registration Denied'
+    current_year = timezone.now().year
 
-    text_content = 'Your vendor registration has been denied.'  # fallback
-    html_content = f"""
-    <html>
-    <body style="font-family: Arial, sans-serif; line-height: 1.6;">
-        <p>Dear {user.first_name},</p>
-        <p>We regret to inform you that your <strong>vendor registration</strong> has been 
-        <span style="color: red;"><strong>denied</strong></span>.</p>
+    text_content = f"Dear {user.first_name},\n\nYour vendor registration has been denied.\n\n— Maamara Market System Notification"
 
-        <p>This may be due to missing, inaccurate, or insufficient information provided during the verification process.</p>
-
-        <p>If you believe this was a mistake or would like to discuss further, feel free to 
-        <a href="https://yourdomain.com/contact-support">contact our support team</a>.</p>
-
-        <br>
-        <p>Best regards,<br><strong>Admin Team<br>@MaaMaraMarket</strong></p>
-    </body>
-    </html>
-    """
+    html_content = render_to_string(
+        "emails/vendor_denial.html",
+        {
+            "user_first_name": user.first_name,
+            "current_year": current_year
+        }
+    )
 
     email = EmailMultiAlternatives(
         subject=subject,
@@ -925,6 +872,7 @@ def deny_vendor(request, vendor_request_id):
     email.send()
 
     return Response({'message': 'Vendor denied and user notified via email.'})
+
 
 
 # vendor profile:

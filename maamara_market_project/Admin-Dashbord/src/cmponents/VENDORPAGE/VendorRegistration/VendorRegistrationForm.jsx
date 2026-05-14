@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -284,7 +284,8 @@ if (data.payment_method === "MOBILE_MONEY") {
   
 
  
-
+// local storage key
+const LOCAL_STORAGE_KEY = "vendorFormData";
 
 export default function VendorForm() {
   // const isAllowed = useCustomerAccessGuard();
@@ -293,6 +294,8 @@ export default function VendorForm() {
   //define counries
   const countries = getNames();
     const [open, setOpen] = useState(false);
+    const fileInputRef = useRef(null);
+
 
 
         // Snackbar state
@@ -307,6 +310,9 @@ export default function VendorForm() {
   };
 
   const navigate = useNavigate();
+  // form data
+  const formData = new FormData();
+
 
   // useState for form data management
   const [usePdf, setUsePdf] = useState(true); // to toggle between PDF and item list
@@ -404,9 +410,24 @@ useEffect(() => {
   useEffect(() => {
     console.log("Form Errors: ", form.formState.errors);
   }, [form.formState.errors]);
+
+
+  // Helper: save all fields to localStorage whenever formData changes
+  useEffect(() => {
+    localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(formData));
+  }, [formData]);
+
+  useEffect(() => {
+    localStorage.setItem("vendorItems", JSON.stringify(items));
+  }, [items]);
+
+  const handleChange = (name, value) => {
+    setFormData((prev) => ({ ...prev, [name]: value }));
+  };
   
 
   const handleAddItem = () => {
+
     // Validate that all necessary fields are filled
     if (!itemFields.name || !itemFields.description || !itemFields.price) return;
   
@@ -422,6 +443,11 @@ useEffect(() => {
   
     // Reset the item input fields
     setItemFields({ name: "", description: "", price: "", image: null });
+
+     // ✅ Reset the file input visually
+  if (fileInputRef.current) {
+    fileInputRef.current.value = "";
+  }
   };
   
 
@@ -443,8 +469,9 @@ useEffect(() => {
 
 // -------------------- onSubmit --------------------
 const onSubmit = async (data) => {
+
   try {
-    const formData = new FormData();
+   
 
     // Destructure all fields including files
     const {
@@ -541,19 +568,64 @@ const onSubmit = async (data) => {
       setSnackbarSeverity("success");
       setSnackbarMessage("Vendor request submitted successfully!");
       setSnackbarOpen(true);
+
+      // hide snackbar after 3 seconds
+    setTimeout(() => {
+      setSnackbarOpen(false);
+    }, 3000);
+
     } else {
       console.error("Failed submission:", response.data);
       setSnackbarSeverity("error");
-        setSnackbarMessage("Submission failed: " + JSON.stringify(response.data));
+        setSnackbarMessage("Submission failed: Please check you Network and try again! ");
         setSnackbarOpen(true);
+        setTimeout(() => setSnackbarOpen(false), 3000);
     }
-  } catch (error) {
-    console.error("Submission error:", error.response?.data || error.message);
+  }  catch (error) {
+    const status = error.response?.status;
+
+    if (status === 401) {
+      try {
+        // 🔁 Retry once
+        response = await api.post(`${baseUrl}/api/vendor-request/`, formData, {
+          withCredentials: true,
+          headers: { "Content-Type": "multipart/form-data" },
+        });
+      } catch (retryError) {
+        // ❌ Still 401 after retry → show message and redirect
+        if (retryError.response?.status === 401) {
+          setSnackbarSeverity("error");
+          setSnackbarMessage("Session expired. Redirecting to login...");
+          setSnackbarOpen(true);
+    
+          setTimeout(() => {
+            setSnackbarOpen(false);
+            // Save current location so user can return after login
+            if (location) {
+              navigate("/customer-login", { state: { from: location.pathname } });
+            } else {
+              navigate("/customer-login");
+            }
+          }, 6000);
+          return; // stop execution
+        }
+    
+        // Other retry errors
+        console.error("Retry error:", retryError.response?.data || retryError.message);
+        setSnackbarSeverity("error");
+        setSnackbarMessage("Something went wrong. Please try again.");
+        setSnackbarOpen(true);
+        setTimeout(() => setSnackbarOpen(false), 3000);
+        return;
+      }
+    } else {
+      // ✅ Non-401 errors
+      console.error("Submission error:", error.response?.data || error.message);
       setSnackbarSeverity("error");
-      setSnackbarMessage(
-        "Something went wrong: " + JSON.stringify(error.response?.data || error.message)
-      );
+      setSnackbarMessage("Something went wrong. Please try again.");
       setSnackbarOpen(true);
+      setTimeout(() => setSnackbarOpen(false), 3000);
+    }
   }
 };
 
@@ -675,7 +747,7 @@ const onSubmit = async (data) => {
             Handmade (inorganic)
           </SelectItem>
           <SelectItem id="product_type_both" value="both">
-            Both (handmade & inorganic)
+            Both (handmade & organic)
           </SelectItem>
         </SelectContent>
       </Select>
@@ -1111,9 +1183,9 @@ const onSubmit = async (data) => {
                 />
 
                 <Textarea placeholder="Description" value={itemFields.description} onChange={(e) => setItemFields({ ...itemFields, description: e.target.value })} />
-                <Input type="file" onChange={(e) => setItemFields({ ...itemFields, image: e.target.files?.[0] })} />
+                <Input type="file" ref={fileInputRef} onChange={(e) => setItemFields({ ...itemFields, image: e.target.files?.[0] })} />
               </div>
-              <Button type="button" onClick={handleAddItem}>➕ Add Item</Button>
+              <Button className='mt-4' type="button" onClick={handleAddItem}>➕ Add Item</Button>
             </div>
 
             {items.length > 0 && (
@@ -1155,6 +1227,7 @@ const onSubmit = async (data) => {
   autoHideDuration={4000}
   onClose={handleCloseSnackbar}
   anchorOrigin={{ vertical: "top", horizontal: "right" }}
+  style={{ zIndex: 9999 }}
 >
   <MuiAlert
     onClose={handleCloseSnackbar}

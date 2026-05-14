@@ -33,7 +33,7 @@ CSRF_TRUSTED_ORIGINS = [
 CORS_ALLOW_CREDENTIALS = True
 
 # Session & Cookie Settings
-SESSION_COOKIE_AGE = 360  # 1 hour
+# SESSION_COOKIE_AGE = 360   # 1 hour
 SESSION_EXPIRE_AT_BROWSER_CLOSE = True
 
 SESSION_COOKIE_SAMESITE = 'Lax'
@@ -140,7 +140,7 @@ from datetime import timedelta
 SIMPLE_JWT = {
     'ALGORITHM': 'HS256',
     'SIGNING_KEY': SECRET_KEY,
-    # "ACCESS_TOKEN_LIFETIME": timedelta(minutes=5),  # Match your cookie
+    "ACCESS_TOKEN_LIFETIME": timedelta(minutes=5),  # Match your cookie
     "REFRESH_TOKEN_LIFETIME": timedelta(days=30),
     # Optional:
     "ROTATE_REFRESH_TOKENS": True,
@@ -248,10 +248,10 @@ PAYMENT_GATEWAYS = {
             "initiator_name": env("MPESA_INITIATOR_NAME", default=""),
             "short_code": env("MPESA_SHORT_CODE", default=""),
             "security_credential": env("MPESA_SECURITY_CREDENTIAL", default=""),  # DON'T set this here, generate dynamically!
-            "url": env("MPESA_URL", default="https://sandbox.safaricom.co.ke/mpesa/b2c/v1/paymentrequest"),
+            "url": env("MPESA_URL", default="https://sandbox.safaricom.co.ke/mpesa/b2c/v3/paymentrequest"),
             # "result_url": env("MPESA_RESULT_URL", default="http://127.0.0.1:8000/mpesa/result"),
             # "timeout_url": env("MPESA_TIMEOUT_URL", default="http://127.0.0.1:8000/mpesa/timeout")
-            "initiator_password": env("MPESA_INITIATOR_PASSWORD", default="Safaricom123!"),  # use env here too
+            "initiator_password": env("MPESA_INITIATOR_PASSWORD", default="Safaricom123!!"),  # use env here too
             "certificate_path": env("MPESA_CERTIFICATE_PATH", default="/full/path/to/SandboxCertificate.pem"),
             "result_url": "https://nonvalued-alberta-overexpectantly.ngrok-free.dev/mpesa/result",
             "timeout_url": "https://nonvalued-alberta-overexpectantly.ngrok-free.dev/mpesa/timeout",
@@ -316,8 +316,15 @@ PAYMENT_GATEWAYS = {
 EXCHANGE_RATE_API_URL = env("EXCHANGE_RATE_API_URL", default="https://open.er-api.com/v6/latest/USD")
 
 
+# OPEN AI API
+OPENAI_API_KEY = env("OPENAI_API_KEY")
+
+print("this is open ai key", OPENAI_API_KEY)
+
+
 # EasyPost API Key
 EASYPOST_API_KEY = env("EASYPOST_API_KEY", default="")
+
 
 # Default sender/warehouse address
 EASYPOST_FROM_ADDRESS = {

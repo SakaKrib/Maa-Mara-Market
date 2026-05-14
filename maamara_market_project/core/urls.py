@@ -4,6 +4,8 @@ from .Serializer import *
 from .views import *
 from rest_framework.routers import DefaultRouter
 from .Referal import *
+from .SearchEngine import search_items
+from .Open_Ai import AIChatAPIView
 
 router = DefaultRouter()
 
@@ -24,10 +26,12 @@ urlpatterns = [
     #chat view
     path('api/chat-user-data/', views.user_data, name='chat_user_data'),
     path("api/items/<int:item_id>/reviews/", ReviewViewSet.as_view(
-         {'get': 'list'}
+         {'get': 'list',
+          'post': 'create'}
      ), name="item-reviews"),
-    path("reactions/", ReactionViewSet.as_view(
-        {'get': 'list'}
+    path("api/reactions/", ReactionViewSet.as_view(
+        {'get': 'list',
+         'post': 'create'}
     ), name="create-reaction"),
 
 
@@ -64,4 +68,15 @@ urlpatterns = [
     path('api/categories-with-items/', CategoryListWithItems.as_view(), name='categories-with-items'),
     path('api/items/details/<int:pk>/', ItemDetailView.as_view(), name='item-detail'),
 
+    # search engene
+    path('api/search-items/', search_items, name='search_items'),
+
+    # open api url
+    path('api/ai-chat/', AIChatAPIView.as_view(), name='ai-chat'),
+
+    #organic products page
+    path('api/organic-items/', OrganicItemsView.as_view(), name='organic-items'),
+
+    # calendar url
+    path("api/calendar-events/", UserCalendarEventsView.as_view(), name="user-calendar-events"),
 ]

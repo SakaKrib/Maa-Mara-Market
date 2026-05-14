@@ -3,6 +3,7 @@ import Kales from "../../../../../../../assets/organicFood/kales.jpeg";
 import Chocolate from "../../../../../../../assets/organicFood/chocolate.jpeg";
 import Fruits from "../../../../../../../assets/organicFood/fruits.jpeg";
 import Coffee from "../../../../../../../assets/organicFood/coffee.jpeg";
+import { useNavigate } from "react-router-dom";
 
 const images = [
   Kales,
@@ -16,6 +17,7 @@ const slideDuration = 6000; // 6 seconds
 export default function OrganicSlideshow() {
   const [current, setCurrent] = useState(0);
   const timeoutRef = useRef(null);
+  const navigate = useNavigate();
 
   useEffect(() => {
     timeoutRef.current = setTimeout(() => {
@@ -43,7 +45,7 @@ export default function OrganicSlideshow() {
 
           {/* Button appears on hover */}
           <button
-            onClick={() => alert("Shop Organic clicked!")} // Replace with your action or link
+            onClick={() => navigate("/organic")}
             className="opacity-0 group-hover:opacity-100 transition-opacity duration-300 absolute bottom-8 left-1/2 transform -translate-x-1/2 bg-green-700 text-white px-6 py-2 rounded shadow-lg hover:bg-green-800"
           >
             Shop Organic

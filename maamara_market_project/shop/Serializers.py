@@ -7,6 +7,12 @@ from core.models import Profile
 
 
 
+class VendorRatingSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = VendorRating
+        fields = ['id', 'vendor', 'user', 'quality', 'communication', 'shipping', 'comment', 'created_at']
+        read_only_fields = ['id', 'user', 'created_at']
+
 # chat serializer
 class ChatFileSerializer(serializers.ModelSerializer):
     class Meta:

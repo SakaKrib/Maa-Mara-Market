@@ -23,7 +23,7 @@ class BrandSerializer(serializers.ModelSerializer):
         model = Brand
         fields = ["id", "name", "description", "logo"]
 
-        
+
 
 
 
@@ -375,6 +375,15 @@ class ItemSerializers(serializers.ModelSerializer):
         
         # ✅ Extract brand if passed
 
+        # Assign section based on is_organic flag
+        is_organic = validated_data.get('is_organic', False)
+
+        section_name = 'organic' if is_organic else 'inorganic'
+        section_obj, _ = Section.objects.get_or_create(name__iexact=section_name)
+
+        validated_data['section'] = section_obj
+
+
 
         item = Item.objects.create( **validated_data)
 
@@ -446,6 +455,16 @@ class ItemSerializers(serializers.ModelSerializer):
         in_offer = validated_data.pop("in_offer", instance.in_offer)
         shipping_data = validated_data.pop("shipping_dimension_data", None)
         discount_price = validated_data.pop("discount_price", instance.discount_price)
+
+
+        # Assign section based on is_organic flag
+        is_organic = validated_data.get('is_organic', instance.is_organic)
+
+        section_name = 'organic' if is_organic else 'inorganic'
+        section_obj = Section.objects.get(name__iexact=section_name)
+
+        validated_data['section'] = section_obj
+
 
         # ✅ Update primitive fields
         for attr, value in validated_data.items():

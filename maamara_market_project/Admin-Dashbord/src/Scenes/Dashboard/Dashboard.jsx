@@ -29,6 +29,7 @@ import relativeTime from 'dayjs/plugin/relativeTime';
 import { useToast } from '../../../components/ui/toast';
 import VendorApprovalPanel from '../../cmponents/VENDORPAGE/VendorRegistration/HandleApproveDeny';
 import { Unsubscribe } from '@mui/icons-material';
+import { useAuth } from '../../cmponents/Auth/AuthContext/Context';
 
 
 dayjs.extend(relativeTime);
@@ -37,6 +38,11 @@ const Dashboard = () => {
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
   const { toast } = useToast();
+  const {user} = useAuth();
+
+  const userName = user.username
+
+
 
   const [selectedListView, setSelectedListView] = useState('activities');
   const [activityLogs, setActivityLogs] = useState([]);
@@ -150,8 +156,8 @@ const Dashboard = () => {
       xs:" 0"
     }, maxWidth: "100%" }}>
       {/* Header */}
-      <Box display="flex" justifyContent="space-between" flexWrap="wrap" alignItems="center" mb={2}>
-        <Header title="Dashboard" subtitle="Welcome William" />
+      <Box display="flex" justifyContent="space-between" flexWrap="wrap" alignItems="center" mb={4} sx={{p:4}}>
+        <Header title="" subtitle={`Welcome ${userName || "Welcome"}`} />
         <Button
           sx={{
             backgroundColor: colors.primary[600],
@@ -233,7 +239,7 @@ const Dashboard = () => {
         mt={3}
       >
         {/* Revenue */}
-        <Box bgcolor={colors.primary[500]} p={2} borderRadius="0.5em">
+        <Box bgcolor={colors.primary[600]} p={2} borderRadius="0.5em">
           <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
             <Box>
               <Typography variant="h6" fontWeight={600} color={colors.gray[100]}>
@@ -263,7 +269,7 @@ const Dashboard = () => {
             >
               Recent Activities <span className='relative left-0 top-0 px-3 rounded-full' style={{
                 backgroundColor: selectedListView === 'activities' ? colors.greenAccent[500] : colors.gray[100],
-                color: colors.primary[900],
+                color: colors.gray[100],
                 fontSize: '12px',
                 padding: '2px 8px',
                 borderRadius: '999px',
@@ -349,7 +355,7 @@ const Dashboard = () => {
 
             {selectedListView === 'transactions' &&
               (vendor_transaction.length ? vendor_transaction.map((transaction, i) => (
-                <Box key={i} display="flex" justifyContent="space-between" alignItems="center" py={1} borderBottom={`1px solid ${colors.primary[400]}`}>
+                <Box key={i} display="flex" justifyContent="space-between" alignItems="center" py={1} borderBottom={`1px solid ${colors.primary[500]}`}>
                   <Box>
                     <Typography color={colors.gray[100]}>{transaction.txid}</Typography>
                     <Typography color={colors.gray[100]}>{transaction.user}</Typography>

@@ -116,6 +116,10 @@ import VendorOrdersPage from "./cmponents/Hooks/Order/OrderPage";
 import SalesReportPage from "./cmponents/VENDORPAGE/Home/Orders/SalesRegister";
 import SingleItemProfileNotif from "./cmponents/VENDORPAGE/VendorSections/NotificationPages/SingleItemProfileNotif";
 import SubcategoryProducts from "./PublicUiForAll/PublicUi/Customer/DesktopView/Header/subcategoryListItem";
+import SearchResultsPage from "./PublicUiForAll/PublicUi/Navigations/Search/NavIcons/ResustsPage";
+import OrganicPage from "./PublicUiForAll/PublicUi/Customer/DesktopView/Main/Trending/OrganicAdvert/OrganicPage";
+import MpesaPayoutSuccess from "./cmponents/VendorPayoutReport/vendorPayouts/Payments/PayoutSuccess";
+import PayoutSuccess from "./cmponents/VendorPayoutReport/vendorPayouts/Payments/PayoutSuccess";
 function AppContent() {
   const { isAuthenticated, loading } = useAuth();
   const [theme, colorMode] = useMode();
@@ -204,6 +208,9 @@ function AppContent() {
 
               {/* other routes */}
 
+              {/* search engine */}
+               <Route path="list" element={<SearchResultsPage />} />
+
               <Route path="customer-login" element={<LoginPage />} />
                 <Route path="register" element={<RegisterPage />} />
                 <Route path="checkout-page" element={<CheckoutPage />} />
@@ -215,6 +222,9 @@ function AppContent() {
 
                 {/* cart page */}
                 <Route path="shopping-cart" element={<CartPage />} />
+
+                {/* organic pge */}
+                <Route path="/organic" element={<OrganicPage />} />
 
                 {/* returns */}
                 <Route path="request-returns" element={<RequestReturnForm />} />
@@ -271,7 +281,11 @@ function AppContent() {
               <Route path="vendor-payout/payment-trigger/bank-transfer-payment-group" element={<BankTransferBulkPayment />} />
 
               {/* successpage payout */}
-              <Route path="payout/success/:reference" element={<SuccessPage />} />
+              {/* <Route path="payout/success/:reference" element={<SuccessPage />} /> */}
+
+              {/* payout success page */}
+              <Route path="vendor-payout/payment-trigger/mpesa-payment/single-vendor/vendor-payouts/success/:reference" element={<PayoutSuccess />} />
+              
 
 
               {/* chat */}

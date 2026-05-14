@@ -102,27 +102,48 @@ from django.db import models
 from django.core.validators import MinValueValidator, MaxValueValidator
 
 class Review(models.Model):
-    # Assuming Item is defined in 'ReactSerializers' app
-    item = models.ForeignKey('ReactSerializers.Item', related_name='reviews', on_delete=models.CASCADE)
-    user = models.ForeignKey(User, related_name='reviews', on_delete=models.CASCADE)
+    item = models.ForeignKey(
+        'ReactSerializers.Item',
+        related_name='reviews',
+        on_delete=models.CASCADE
+    )
+    user = models.ForeignKey(
+        User,
+        null=True,
+        blank=True,
+        related_name='reviews',
+        on_delete=models.CASCADE
+    )
     rating = models.IntegerField(
-        default=1,  # Default to 1 instead of 0
+        default=1,
         validators=[MinValueValidator(1), MaxValueValidator(5)]
-    )  # 1-5 star ratings
+    )
     review_text = models.TextField()
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        return f'Review by {self.user.username} for {self.item.name}'
+        username = self.user.username if self.user else "Visitor"
+        return f'Review by {username} for {self.item.name}'
 
     class Meta:
         verbose_name = 'Review'
         verbose_name_plural = 'Reviews'
 
 
+
 class Reaction(models.Model):
-    review = models.ForeignKey('Review', related_name='reactions', on_delete=models.CASCADE)
-    user = models.ForeignKey(User, related_name='reactions', on_delete=models.CASCADE)
+    review = models.ForeignKey(
+        'Review',
+        related_name='reactions',
+        on_delete=models.CASCADE
+    )
+    user = models.ForeignKey(
+        User,
+        null=True,
+        blank=True,
+        related_name='reactions',
+        on_delete=models.CASCADE
+    )
     reaction_type = models.CharField(
         max_length=10,
         choices=[('like', 'Like'), ('dislike', 'Dislike'), ('laugh', 'Laugh'), ('angry', 'Angry')]
@@ -134,7 +155,31 @@ class Reaction(models.Model):
         verbose_name_plural = 'Reactions'
 
     def __str__(self):
-        return f'{self.reaction_type} reaction by {self.user.username} for review {self.review.id}'
+        username = self.user.username if self.user else "Visitor"
+        return f'{self.reaction_type} reaction by {username} for review {self.review.id}'
+
+
+
+from django.db import models
+from django.contrib.auth import get_user_model
+
+User = get_user_model()
+
+class VendorRating(models.Model):
+    vendor = models.ForeignKey('vendorDashboard.Vendor', on_delete=models.CASCADE, related_name='ratings')
+    user = models.ForeignKey(User, null=True, blank=True, on_delete=models.SET_NULL)
+    
+    quality = models.PositiveSmallIntegerField(default=0)
+    communication = models.PositiveSmallIntegerField(default=0)
+    shipping = models.PositiveSmallIntegerField(default=0)
+    comment = models.TextField(blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ('vendor', 'user')  # one rating per user per vendor
+
+    def __str__(self):
+        return f"{self.vendor.username} rating by {self.user.username if self.user else 'Visitor'}"
 
 
 

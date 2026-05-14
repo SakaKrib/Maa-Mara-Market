@@ -15,6 +15,7 @@ import requests
 import time
 from django.utils.timezone import datetime
 import random
+from vendorDashboard.payout.services.generatePermcert import generate_security_credential
 # from oder.Mpesa.C2BMpesaIntergration.c2butils import get_mpesa_token
 
 # def get_mpesa_access_token(mpesa_config):
@@ -93,35 +94,35 @@ def get_mpesa_token():
 # ============================================================
 # 2️⃣  GENERATE SECURITY CREDENTIAL
 # ============================================================
-def generate_security_credential(initiator_password, cert_path):
-    """
-    Encrypt the initiator password using Safaricom's public key certificate.
-    Works with both PEM and DER certificate formats.
-    Returns a Base64 encoded SecurityCredential.
-    """
-    try:
-        with open(cert_path, "rb") as cert_file:
-            cert_data = cert_file.read()
+# def generate_security_credential(initiator_password, cert_path):
+#     """
+#     Encrypt the initiator password using Safaricom's public key certificate.
+#     Works with both PEM and DER certificate formats.
+#     Returns a Base64 encoded SecurityCredential.
+#     """
+#     try:
+#         with open(cert_path, "rb") as cert_file:
+#             cert_data = cert_file.read()
 
-        try:
-            # Try loading as PEM first
-            certificate = x509.load_pem_x509_certificate(cert_data)
-        except ValueError:
-            # If PEM fails, load as DER (Safaricom .cer is DER)
-            certificate = x509.load_der_x509_certificate(cert_data)
+#         try:
+#             # Try loading as PEM first
+#             certificate = x509.load_pem_x509_certificate(cert_data)
+#         except ValueError:
+#             # If PEM fails, load as DER (Safaricom .cer is DER)
+#             certificate = x509.load_der_x509_certificate(cert_data)
 
-        public_key = certificate.public_key()
+#         public_key = certificate.public_key()
 
-        encrypted_bytes = public_key.encrypt(
-            initiator_password.encode("utf-8"),
-            padding.PKCS1v15()
-        )
+#         encrypted_bytes = public_key.encrypt(
+#             initiator_password.encode("utf-8"),
+#             padding.PKCS1v15()
+#         )
 
-        return base64.b64encode(encrypted_bytes).decode("utf-8")
+#         return base64.b64encode(encrypted_bytes).decode("utf-8")
 
-    except Exception as e:
-        logger.error(f"❌ Security credential generation failed: {e}")
-        raise
+#     except Exception as e:
+#         logger.error(f"❌ Security credential generation failed: {e}")
+#         raise
 
 
 # ============================================================
@@ -195,7 +196,7 @@ def call_mpesa_b2c(vendor, amount, mpesa_config):
             "SecurityCredential": security_credential,
             "CommandID": command_id,
             "Amount": int(amount),
-            "PartyA": "600992",
+            "PartyA": "600997",
             "PartyB": recipient,
             "Remarks": "ok",
             "QueueTimeOutURL": mpesa_b2c_config.get("timeout_url"),

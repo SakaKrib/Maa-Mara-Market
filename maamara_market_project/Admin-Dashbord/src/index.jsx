@@ -6,7 +6,6 @@ import ErrorBoundary from './ErrorBoundary/ErrorBoundary';
 import { AuthProvider } from './cmponents/Auth/AuthContext/Context';
 import "./main.css";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { ReactQueryDevtools } from "@tanstack/react-query-devtools"; // optional but useful
 
 // ✅ Create a QueryClient instance
 const queryClient = new QueryClient();
@@ -21,11 +20,10 @@ root.render(
           <AuthProvider>
             <App />
           </AuthProvider>
-
-          {/* Optional devtools for debugging react-query */}
-          <ReactQueryDevtools initialIsOpen={false} />
+          {/* ReactQueryDevtools removed */}
         </QueryClientProvider>
       </BrowserRouter>
     </ErrorBoundary>
   </React.StrictMode>
 );
+

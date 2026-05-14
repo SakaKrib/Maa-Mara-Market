@@ -9,10 +9,10 @@ const Banners = () => {
   const theme = useTheme();
   const colors = tokens(theme.palette.mode)
 
-  if (loading) return <p>Loading banners...</p>;
-  if (error) return <p>❌ Failed to load banners.</p>;
-  if (!Array.isArray(banners) || banners.length === 0)
-    return <p>No banners available.</p>;
+  if (loading || error || !Array.isArray(banners) || banners.length === 0) {
+    return null;
+  }
+  
 
   return (
     <div className="banners">

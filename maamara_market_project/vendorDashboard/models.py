@@ -166,17 +166,24 @@ class Vendor(models.Model):
 
     
 # vendor request save temoralily
+
+
 class VendorRequest(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
     vendor_data = models.JSONField()  # All form fields
     item_pdf = models.FileField(upload_to='vendor_items/', null=True, blank=True)
     item_list = models.JSONField(null=True, blank=True)  # If not using PDF
     brand_object = models.JSONField(null=True, blank=True)  # If not using PDF
-    status = models.CharField(max_length=10, choices=[('pending', 'Pending'), ('verified', 'Verified'), ('approved', 'Approved'), ('rejected', 'Rejected')], default='pending')
+    status = models.CharField(max_length=10, choices=[
+        ('pending', 'Pending'),
+        ('verified', 'Verified'),
+        ('approved', 'Approved'),
+        ('rejected', 'Rejected')],
+        default='pending'
+    )
     otp = models.CharField(max_length=6, null=True, blank=True, unique=True)
     date_submitted = models.DateTimeField(auto_now_add=True)
     seen = models.BooleanField(default=False)
-
 
     OTP_EXPIRY_MINUTES = 3  # OTP valid duration
 
@@ -184,6 +191,9 @@ class VendorRequest(models.Model):
         if not self.item_pdf and not self.item_list:
             raise ValidationError("Either item PDF or item list must be provided.")
 
+    # ---------------------------
+    # OTP Generation & Email
+    # ---------------------------
     def generate_otp(self):
         while True:
             otp = f"{random.randint(0, 999999):06d}"
@@ -194,8 +204,6 @@ class VendorRequest(models.Model):
         self.status = 'pending'
         self.save(update_fields=['otp', 'date_submitted', 'status'])
         self.send_otp_email()
-
-        #notify admin
         return otp
 
     def send_otp_email(self):
@@ -204,17 +212,33 @@ class VendorRequest(models.Model):
 
         html_content = f"""
         <html>
-        <body style="font-family: Arial, sans-serif; line-height: 1.6;">
-            <p>Dear {self.user.first_name},</p>
-            <p>Thank you for registering as a vendor on <strong>Maamaramarket</strong>.</p>
-            <p>Your One-Time Password (OTP) for verification is:</p>
-            <p style="font-size: 24px; font-weight: bold; color: #2c3e50;">{self.otp}</p>
-            <p>This OTP is valid for a limited time. Please enter it in the application to continue your registration process.</p>
-            <br>
-            <p>If you did not request this OTP, please ignore this email.</p>
-            <br>
-            <p>Best regards,<br><strong>Maamaramarket Team</strong></p>
-        </body>
+          <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; background-color: #f9f9f9; margin: 0; padding: 0;">
+            <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f9f9f9; padding: 20px 0;">
+              <tr>
+                <td align="center">
+                  <table width="600" cellpadding="0" cellspacing="0" style="background-color: #fff; border-radius: 8px; overflow: hidden; border: 1px solid #e0e0e0;">
+                    <tr>
+                      <td style="padding: 20px;">
+                        <h2 style="color: #264653;">Hi {self.user.first_name},</h2>
+                        <p>Thank you for registering as a vendor on <strong>MaaMaraMarket</strong>.</p>
+                        <p>Your One-Time Password (OTP) for verification is:</p>
+                        <div style="display: flex; justify-content: center; align-items: center;">
+                          <p style="font-size: 24px; font-weight: bold; color: #2a9d8f; margin: 20px 0; display: flex; justify-content: center; background-color: rgba(170, 216, 247, 0.315); width: fit-content; padding: 5px 5px;">
+                            {self.otp}
+                          </p>
+                        </div>
+                        <p>Please enter this code within <strong>{self.OTP_EXPIRY_MINUTES} minutes</strong> to continue your registration.</p>
+                        <br>
+                        <p>If you did not request this OTP, please ignore this email.</p>
+                        <br>
+                        <p>Best regards,<br><strong>MaaMaraMarket Team</strong></p>
+                      </td>
+                    </tr>
+                  </table>
+                </td>
+              </tr>
+            </table>
+          </body>
         </html>
         """
 
@@ -226,11 +250,11 @@ class VendorRequest(models.Model):
         )
         email.attach_alternative(html_content, "text/html")
         email.send()
-        
 
-
+    # ---------------------------
+    # OTP Verification
+    # ---------------------------
     def verify_otp(self, input_otp):
-        
         if self.otp != input_otp:
             return False, "Invalid OTP"
 
@@ -248,7 +272,9 @@ class VendorRequest(models.Model):
         user = self.user
         vendor_email = user.email
 
-        # ✅ Send HTML confirmation email to vendor
+        # ---------------------------
+        # Send HTML confirmation email to vendor
+        # ---------------------------
         subject_vendor = 'Vendor Registration Verified'
         text_content_vendor = (
             f"Hi {user.username},\n\n"
@@ -258,14 +284,27 @@ class VendorRequest(models.Model):
         )
         html_content_vendor = f"""
         <html>
-        <body style="font-family: Arial, sans-serif; line-height: 1.6;">
-            <p>Hi {user.first_name or user.username},</p>
-            <p>🎉 <strong>Congratulations!</strong> Your vendor registration has been successfully verified.</p>
-            <p>You’ll receive another email when your request is fully approved by our team.</p>
-            <p>Thank you for choosing <strong>MaaMaraMarket</strong>!</p>
-            <br>
-            <p>Best regards,<br><strong>MaaMaraMarket Team</strong></p>
-        </body>
+          <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; background-color: #f9f9f9; margin: 0; padding: 0;">
+            <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f9f9f9; padding: 20px 0;">
+              <tr>
+                <td align="center">
+                  <table width="600" cellpadding="0" cellspacing="0" style="background-color: #fff; border-radius: 8px; overflow: hidden; border: 1px solid #e0e0e0;">
+                    <tr>
+                      <td style="padding: 20px;">
+                        <h2 style="color: #264653;">Hi {user.first_name or user.username},</h2>
+                        <p>🎉 <strong>Congratulations!</strong> Your vendor registration has been successfully verified.</p>
+                        <p>You’ll receive another email when your request is fully approved by our team.</p>
+                        <br>
+                        <p>Thank you for choosing <strong>MaaMaraMarket</strong>!</p>
+                        <br>
+                        <p>Best regards,<br><strong>MaaMaraMarket Team</strong></p>
+                      </td>
+                    </tr>
+                  </table>
+                </td>
+              </tr>
+            </table>
+          </body>
         </html>
         """
 
@@ -278,7 +317,9 @@ class VendorRequest(models.Model):
         vendor_email_obj.attach_alternative(html_content_vendor, "text/html")
         vendor_email_obj.send()
 
-        # ✅ Send HTML notification email to admin
+        # ---------------------------
+        # Send HTML notification email to admin
+        # ---------------------------
         subject_admin = '✅ New Verified Vendor Request'
         text_content_admin = (
             f"Vendor {user.username} ({vendor_email}) has verified their registration OTP. "
@@ -286,13 +327,25 @@ class VendorRequest(models.Model):
         )
         html_content_admin = f"""
         <html>
-        <body style="font-family: Arial, sans-serif; line-height: 1.6;">
-            <p>Admin,</p>
-            <p><strong>{user.username}</strong> (<a href="mailto:{vendor_email}">{vendor_email}</a>) has successfully verified their OTP.</p>
-            <p>Please <a href="https://yourdomain.com/admin/vendor-requests/{self.id}/">review and approve</a> their vendor request at your earliest convenience.</p>
-            <br>
-            <p>Regards,<br><strong>MaaMaraMarket System</strong></p>
-        </body>
+          <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; background-color: #f9f9f9; margin: 0; padding: 0;">
+            <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f9f9f9; padding: 20px 0;">
+              <tr>
+                <td align="center">
+                  <table width="600" cellpadding="0" cellspacing="0" style="background-color: #fff; border-radius: 8px; overflow: hidden; border: 1px solid #e0e0e0;">
+                    <tr>
+                      <td style="padding: 20px;">
+                        <p>Admin,</p>
+                        <p><strong>{user.username}</strong> (<a href="mailto:{vendor_email}">{vendor_email}</a>) has successfully verified their OTP.</p>
+                        <p>Please <a href="https://yourdomain.com/admin/vendor-requests/{self.id}/">review and approve</a> their vendor request at your earliest convenience.</p>
+                        <br>
+                        <p>Regards,<br><strong>MaaMaraMarket System</strong></p>
+                      </td>
+                    </tr>
+                  </table>
+                </td>
+              </tr>
+            </table>
+          </body>
         </html>
         """
 
@@ -305,7 +358,7 @@ class VendorRequest(models.Model):
         admin_email_obj.attach_alternative(html_content_admin, "text/html")
         admin_email_obj.send()
 
-        #notify admin 
+        # Notify admin via system notifications
         admin_users = User.objects.filter(is_staff=True)
         Notification.objects.bulk_create([
             Notification(
@@ -319,14 +372,10 @@ class VendorRequest(models.Model):
         ])
 
         return True, "OTP verified successfully"
-   
 
-
-    #resend an check otp
-    
-
-    # ... your existing methods
-
+    # ---------------------------
+    # OTP Expiry & Resend
+    # ---------------------------
     def otp_is_expired(self):
         if not self.otp:
             return True
@@ -335,13 +384,13 @@ class VendorRequest(models.Model):
 
     def resend_otp(self):
         if not self.otp or self.otp_is_expired():
-            # Generate and send a new OTP
             new_otp = self.generate_otp()
             return True, f"New OTP sent: {new_otp}"
         else:
             expiry_time = self.date_submitted + timedelta(minutes=self.OTP_EXPIRY_MINUTES)
             seconds_left = (expiry_time - timezone.now()).total_seconds()
-            return False, f"OTP still valid. Please wait {int(seconds_left)} seconds before resending." 
+            return False, f"OTP still valid. Please wait {int(seconds_left)} seconds before resending."
+
 
 
     

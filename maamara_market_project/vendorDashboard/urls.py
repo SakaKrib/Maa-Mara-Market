@@ -1,6 +1,6 @@
 from django.urls import path
 from . import views  # Make sure views.py exists
-from .requests import *
+from .VendorRequests import *
 from .views import AdminPayoutAPIView, monthly_sales_report
 from .payout.services.vendor_monthly_payout_runner import process_payouts_by_group, pay_single_vendor_payout, generate_monthly_payouts
 from .calback import *

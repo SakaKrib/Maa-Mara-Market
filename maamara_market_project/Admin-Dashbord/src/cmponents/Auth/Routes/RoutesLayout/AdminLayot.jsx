@@ -13,8 +13,8 @@ const AdminLayout = () => {
     <ProtectedRoute requiredRole="admin">
       <HeaderTop />
       <NavBar />
-      <div className="content-vite" style={{backgroundColor:colors.primary[500]}}>
-        <Box className="main-dashboard" sx={{ backgroundColor: colors.primary[500], margin: '90px 0 0 0', height:'100%'}}>
+      <div className="content-vite" >
+        <Box className="main-dashboard" sx={{ backgroundColor: colors.primary[500], margin: '90px 0 0 0', maxHeight:'100%'}}>
           <Outlet />
         </Box>
       </div>

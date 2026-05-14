@@ -10,13 +10,13 @@ from django.http import JsonResponse
 from vendorDashboard.views import get_monthly_vendor_report
 from vendorDashboard.views import get_month_range, get_vendor_earnings
 from rest_framework.permissions import IsAuthenticated, AllowAny, IsAdminUser
-from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.csrf import csrf_exempt, csrf_protect
 from django.forms.models import model_to_dict
 from django.http import JsonResponse
 from datetime import date
 from calendar import monthrange
 from rest_framework import generics
-from django.contrib.auth.models import User
+
 from core.models import Profile
 from .models import Item
 from django.db.models import Sum, Count
@@ -40,12 +40,12 @@ from datetime import timezone as dt_timezone ,datetime, timedelta
 from django.views.decorators.http import require_POST
 from collections import OrderedDict
 import calendar
+from core.mergeVisitortoUserData import merge_visitor_data_to_user
 
 
 import logging
 from django.http import JsonResponse
 from django.shortcuts import render
-from django.contrib.auth.models import User
 from django.db import IntegrityError, transaction
 from django.utils.timezone import now
 from datetime import timedelta
@@ -54,6 +54,7 @@ from django.utils.crypto import get_random_string
 from core.models import *
 from django.contrib import messages
 from django.contrib.auth.hashers import make_password
+from django.template.loader import render_to_string
 import bleach
 import re
 User = get_user_model()
@@ -496,6 +497,7 @@ class vendorItemViewset(viewsets.ReadOnlyModelViewSet):
 
 # Configure logging
 
+
 @permission_classes([AllowAny])
 @csrf_protect
 @transaction.atomic
@@ -503,10 +505,12 @@ def register(request):
     if request.method != 'POST':
         return JsonResponse({"success": False, "message": "Method not allowed"}, status=405)
 
+    # Helper to sanitize POST input
     def sanitize_post(field_name):
         value = request.POST.get(field_name)
         return bleach.clean(value) if value else None
 
+    # Get and sanitize fields
     referral_code = sanitize_post("referral_code")
     firstname = sanitize_post("First_name")
     lastname = sanitize_post("Sur_name")
@@ -515,11 +519,12 @@ def register(request):
     password = sanitize_post("password")
     password2 = sanitize_post("password2")
 
+    # Validate required fields
     if not all([firstname, lastname, username, email, password, password2]):
         return JsonResponse({"success": False, "message": "All fields are required!"}, status=400)
 
     if password != password2:
-        return JsonResponse({"success": False, "message": "Incorrect password. Password did not match!"}, status=400)
+        return JsonResponse({"success": False, "message": "Passwords do not match!"}, status=400)
 
     if User.objects.filter(email=email).exists():
         return JsonResponse({"success": False, "message": "Email already in use!"}, status=400)
@@ -527,18 +532,19 @@ def register(request):
     if User.objects.filter(username=username).exists():
         return JsonResponse({"success": False, "message": "Username already exists!"}, status=400)
 
+    # Generate OTP
     otp = get_random_string(length=6, allowed_chars='0123456789')
     now = timezone.now()
-
-    # Define OTP expiry duration (e.g. 3 minutes)
     otp_expiry_minutes = 3
     expires_at = (now + timedelta(minutes=otp_expiry_minutes)).isoformat()
 
-    # Clear old pending registration if exists
+    # Clear old pending registration
     PendingRegistration.objects.filter(email=email).delete()
 
+    # Hash password
     hashed_password = make_password(password)
 
+    # Save pending registration
     PendingRegistration.objects.create(
         email=email,
         username=username,
@@ -550,14 +556,28 @@ def register(request):
         otp_sent_at=now
     )
 
-    send_mail(
-        subject='Your Maa Mara Market OTP Code',
-        message=f'Hi {firstname},\n\nWelcome to Maa Mara Market! Your One-Time Password is: {otp}\n\nPlease enter this code to complete your registration.\n\nCheers,\nMaa Mara Team',
-        from_email=None,
-        recipient_list=[email],
-        fail_silently=False,
+    # Render HTML email
+    html_content = render_to_string(
+        "emails/registration_otp.html",
+        {
+            "first_name": firstname,
+            "otp": otp,
+            "otp_expiry_minutes": otp_expiry_minutes
+        }
     )
 
+    # Send HTML email
+    subject = "Your Maa Mara Market OTP Code"
+    email_message = EmailMultiAlternatives(
+        subject=subject,
+        body=f"Hi {firstname}, your OTP is {otp}",  # fallback plain text
+        from_email=None,
+        to=[email],
+    )
+    email_message.attach_alternative(html_content, "text/html")
+    email_message.send(fail_silently=False)
+
+    # Log activity
     log_activity(
         user=None,
         actor_type='user',
@@ -565,6 +585,16 @@ def register(request):
         description=f"User '{username}' initiated registration with email '{email}'",
         related_url=None
     )
+
+    # Log for all superusers/admins
+    for admin in User.objects.filter(is_superuser=True):
+        log_activity(
+            user=admin,
+            actor_type='admin',
+            action='registration_initiated',
+            description=f"Registration initiated for username '{username}' with email '{email}'",
+            related_url=None
+        )
 
     return JsonResponse({
         "success": True,
@@ -586,6 +616,8 @@ def verify_otp_register_otp(request):
     email = sanitize_and_validate(request.data.get("email"), lower=True)
     entered_otp = sanitize_and_validate(str(request.data.get("otp", "")))
 
+    visitor_id = request.COOKIES.get("visitorId") or request.data.get("visitorId")
+
     if not email or not entered_otp:
         return Response({"success": False, "message": "Email and OTP are required."}, status=400)
 
@@ -600,7 +632,7 @@ def verify_otp_register_otp(request):
     if entered_otp != pending.otp_code:
         return Response({"success": False, "message": "Incorrect OTP."}, status=400)
 
-    # Create user
+    # Create the user
     user = User.objects.create(
         username=pending.username,
         email=pending.email,
@@ -611,29 +643,33 @@ def verify_otp_register_otp(request):
 
     Wallet.objects.get_or_create(user=user, defaults={"balance": 0, "earned_coins": 0})
 
+    # Merge visitor data
+    if visitor_id:
+        merge_visitor_data_to_user(user, visitor_id)
+
     referral_tracked = False
     voucher_generated = False
 
     # Handle referral
     if pending.referral_code:
-        referrer = Referral.objects.filter(referral_code=pending.referral_code).first()
-        if referrer:
+        referrer_obj = Referral.objects.filter(referral_code=pending.referral_code).first()
+        if referrer_obj:
             referral, _ = Referral.objects.get_or_create(
-                referrer=referrer.referrer,
+                referrer=referrer_obj.referrer,
                 referral_code=pending.referral_code
             )
             if referral.invited_user is None:
                 referral.invited_user = user
                 referral.save()
 
-                wallet_referrer, _ = Wallet.objects.get_or_create(user=referrer.referrer)
+                wallet_referrer, _ = Wallet.objects.get_or_create(user=referrer_obj.referrer)
                 wallet_referrer.earned_coins += 50
                 wallet_referrer.update_balance()
                 wallet_referrer.total_coins_into_kes()
                 wallet_referrer.save()
 
                 Voucher.objects.create(
-                    user=referrer.referrer,
+                    user=referrer_obj.referrer,
                     code=f"WELCOME-{uuid.uuid4().hex[:8]}",
                     discount="10% off",
                     expiry_date=timezone.now() + timedelta(days=30)
@@ -643,33 +679,54 @@ def verify_otp_register_otp(request):
                 voucher_generated = True
 
                 log_activity(
-                    user=referrer.referrer,
+                    user=referrer_obj.referrer,
                     actor_type='user',
                     action='referral_rewarded',
-                    description=f"Referrer '{referrer.referrer.username}' rewarded for inviting '{user.username}'",
+                    description=f"Referrer '{referrer_obj.referrer.username}' rewarded for inviting '{user.username}'",
                     related_url="/referrals"
                 )
 
-    # Cleanup
+    # Cleanup pending registration
     pending.delete()
 
-    if user:
-        log_activity(
-            user=user,
-            actor_type='user',
-            action='otp_verified',
-            description='User verified OTP',
-            related_url='/...'
-        )
-    else:
-        log_activity(
-            user=None,
-            actor_type='guest',
-            action='otp_verified',
-            description=f"Guest user verified OTP for {email}",
-            related_url='/...'
-        )
+    # Send HTML welcome email
+    html_content = render_to_string(
+        "emails/registration_verification.html",
+        {
+            "first_name": user.first_name,
+            "username": user.username,
+            "dashboard_url": "https://yourdomain.com/dashboard"
+        }
+    )
 
+    subject = "Your Maa Mara Market Account is Verified!"
+    email_message = EmailMultiAlternatives(
+        subject=subject,
+        body=f"Hi {user.first_name}, your account has been verified!",  # fallback text
+        from_email=None,
+        to=[user.email],
+    )
+    email_message.attach_alternative(html_content, "text/html")
+    email_message.send(fail_silently=False)
+
+    # Log activities
+    log_activity(
+        user=user,
+        actor_type='user',
+        action='otp_verified',
+        description='User verified OTP',
+        related_url='/dashboard'
+    )
+
+    # Log for all superusers (admins)
+    for admin in User.objects.filter(is_superuser=True):
+        log_activity(
+            user=admin,
+            actor_type='admin',
+            action='user_registered',
+            description=f"New user registered: {user.username}",
+            related_url=f"/admin/users/{user.id}/change/"
+        )
 
     return Response({
         "success": True,
@@ -701,16 +758,25 @@ def resend_otp_register_otp(request):
     pending.otp_sent_at = now
     pending.save()
 
-    try:
-        send_mail(
-            subject="Your New OTP Code",
-            message=f"Hi {bleach.clean(pending.first_name)},\n\nYour new OTP is: {new_otp}\nIt will expire in 3 minutes.\n\nIf you did not request this, ignore this message.",
-            from_email=None,
-            recipient_list=[email],
-            fail_silently=False
-        )
-    except Exception:
-        return Response({"success": False, "message": "Failed to send OTP email."}, status=500)
+    # Send HTML email
+    html_content = render_to_string(
+        "emails/resend_otp.html",
+        {
+            "first_name": pending.first_name,
+            "otp": new_otp,
+            "otp_expiry_minutes": 3
+        }
+    )
+
+    subject = "Your New OTP Code"
+    email_message = EmailMultiAlternatives(
+        subject=subject,
+        body=f"Hi {pending.first_name}, your new OTP is {new_otp}",  # fallback text
+        from_email=None,
+        to=[email],
+    )
+    email_message.attach_alternative(html_content, "text/html")
+    email_message.send(fail_silently=False)
 
     log_activity(
         user=None,

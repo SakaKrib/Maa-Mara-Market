@@ -3,6 +3,7 @@ import useItems from "../../../../ItemHook/ItemHook";
 import { useEffect, useState, useRef } from "react";
 import { useParams } from "react-router-dom";
 import ReviewSection from "../Review";
+import AddToCartButton from "../CartActionButtons/AddToCartBtn";
 
 const allowedColors = [
   "blue", "brown", "orange", "turquise", "yellow",
@@ -21,9 +22,38 @@ const SingleItem = () => {
 
   const availableStock =
   selectedSize?.quantity_in_stock ??
-  selectedVariant?.sizes?.reduce((sum, s) => sum + s.quantity_in_stock, 0) ??
-  item?.in_stock ?? 0;
+  (Array.isArray(selectedVariant?.sizes)
+    ? selectedVariant.sizes.reduce((sum, s) => sum + s.quantity_in_stock, 0)
+    : null) ??
+  item?.in_stock ??
+  0;
 
+
+  console.log("availableStock:", availableStock, "quantity:", quantity);
+
+
+  //avalable stock left as you add to the the qty
+  const remainingStock = Math.max(availableStock - quantity, 0);
+
+// fetch item details
+  const fetchItemDetails = async () => {
+    try {
+      const res = await api.get(`${baseUrl}/api/items/${itemId}/`);
+      if (res.data) {
+        setItem(res.data);
+  
+        // Reset variant and size selection on refresh, if needed
+        if (res.data.variants && res.data.variants.length > 0) {
+          setSelectedVariant(res.data.variants[0]);
+          setSelectedSize(null);
+          setSelectedImage(null);
+        }
+      }
+    } catch (error) {
+      console.error("Failed to fetch item details:", error);
+    }
+  };
+  
 
   // arrow buttons config
   const rightRef = useRef(null);
@@ -94,7 +124,7 @@ const SingleItem = () => {
       sizeId: selectedSize?.id,
       quantity
     };
-    console.log("Form submitted:", formData);
+    // console.log("Form submitted:", formData);
   };
 
   if (loading) return <div>Loading...</div>;
@@ -103,6 +133,13 @@ const SingleItem = () => {
   const previewImages = item.images?.length > 0 ? item.images : [item.image];
   const availableColors = item.variants.map((v) => v.color.toLowerCase());
   const mainImageSrc = selectedImage || selectedSize?.image || selectedVariant?.image || item.image;
+
+  // monitor add to cart button
+  const isDisabled =
+  quantity > availableStock ||
+  availableStock === 0 ||
+  (selectedVariant?.sizes?.length > 0 && !selectedSize);
+
 
   return (
     <div className="px-4 md:px-8 lg:px-16 xl:px-32 2xl:px-64 flex flex-col lg:flex-row gap-16 mt-10 " style={{maxHeight: '90vh', overflowY:'auto'}}>
@@ -268,20 +305,44 @@ const SingleItem = () => {
 
     <div className="w-96 flex justify-between items-center">
       <p className="text-sm whitespace-nowrap inline relative top-4">
-        Only{" "}
-        <span className={`font-medium ${availableStock < 5 ? "text-red-500" : "text-green-500"}`}>
-          {availableStock}
-        </span>{" "}
-        left in stock
-      </p>
+      {remainingStock > 0 ? (
+        <>
+          Only{" "}
+          <span className={`font-medium ${remainingStock < 5 ? "text-red-500" : "text-green-500"}`}>
+            {remainingStock}
+          </span>{" "}
+          left in stock
+        </>
+      ) : (
+        <span className="font-medium text-red-600">This is the last item in stock!</span>
+      )}
+    </p>
+
+
+      {/* size check */}
+      {selectedVariant?.sizes?.length > 0 && !selectedSize && (
+        <p className="text-sm text-red-500">
+          Please select a size
+        </p>
+      )}
+
 
       {/* Submit Button */}
-      <button
-        type="submit"
-        className="w-36 text-sm rounded ring-1 py-2 px-4 secondary-button h-fit"
-      >
-        Add to cart
-      </button>
+      <AddToCartButton
+        itemId={item.id}
+        quantity={quantity}
+        variantId={selectedVariant?.id}
+        sizeId={selectedSize?.id}
+        availableStock={availableStock}
+        remainingStock={remainingStock}
+        disabled={isDisabled}
+        onAddSuccess={() => {
+          fetchCart();        // refresh cart context
+          fetchItemDetails(); // refresh item stock and details
+        }}
+      />
+
+
     </div>
   </div>
 
@@ -310,9 +371,25 @@ const SingleItem = () => {
         </div>
 
         <div className="text-sm mt-6">
-          <div className="font-medium mb-4">More Info</div>
-          <p>Lorem ipsum dolor sit amet consectetur adipisicing elit. Animi ipsam est laudantium, blanditiis suscipit iure id libero aliquam qui porro facilis fuga, voluptate excepturi impedit velit quam vitae corrupti consequatur.</p>
+          <div className="font-medium mb-4">Returns</div>
+
+          {item?.is_returnable ? (
+            <p>
+              This item is eligible for return. If you receive a damaged, defective, or incorrect product,
+              you may request a return within the allowed return period after delivery. The product must
+              remain unused, in its original packaging, and in the same condition you received it.
+              Refunds or replacements will be processed after inspection.
+            </p>
+          ) : (
+            <p>
+              This item is non-returnable. Due to hygiene, customization, or product nature, we cannot
+              accept returns or exchanges once the order has been delivered. Please review product
+              details carefully before purchasing. If the item arrives damaged or incorrect, you may
+              still contact support within 24 hours of delivery for assistance. <br /> <p className="flex gap-2">For more info read our <p className="underline text-blue-500">return policy</p>
+            </p></p>
+          )}
         </div>
+
         <div>
         <ReviewSection item={item} />
         </div>

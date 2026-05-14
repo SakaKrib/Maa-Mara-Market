@@ -28,6 +28,7 @@ from rest_framework import status
 from rest_framework_simplejwt.authentication import JWTAuthentication
 from rest_framework_simplejwt.exceptions import InvalidToken, TokenError
 from vendorDashboard.models import Vendor
+from core.mergeVisitortoUserData import merge_visitor_data_to_user
 from django.contrib.auth.hashers import check_password
 import bleach
 from datetime import timedelta
@@ -124,11 +125,14 @@ class HybridCheckAuthView(APIView):
 
 logger = logging.getLogger("ReactSerializers.users")
 
+@csrf_exempt
 @permission_classes([AllowAny])
 @require_http_methods(["POST"])
-@csrf_protect
 def login_view(request):
     logger.info("🔐 Login attempt received")
+
+    # Get visitor_id from cookie or POST data (adjust according to your frontend)
+    visitor_id = request.COOKIES.get("visitorId") or request.POST.get("visitorId")
 
     identifier = request.POST.get("username")  # Can be username or email
     password = request.POST.get("password")
@@ -148,6 +152,9 @@ def login_view(request):
         refresh = RefreshToken.for_user(user)
         access_token = str(refresh.access_token)
         refresh_token = str(refresh)
+
+         # Merge visitor data after login
+        merge_visitor_data_to_user(user, visitor_id)
 
         incomplete_profile = not all([
             getattr(user.profile, "profile_picture", None),
@@ -173,7 +180,7 @@ def login_view(request):
 
 
         # Set JWT cookies
-        response.set_cookie("accessToken", access_token, httponly=True, secure=False, samesite='Lax', max_age=360)
+        response.set_cookie("accessToken", access_token, httponly=True, secure=False, samesite='Lax', max_age=300)
         response.set_cookie("refreshToken", refresh_token, httponly=True, secure=False, samesite='Lax', max_age=2592000)
         return response
 
@@ -206,7 +213,7 @@ def login_view(request):
             }
         })
 
-        response.set_cookie("accessToken", access_token, httponly=True, secure=False, samesite='Lax', max_age=360)
+        response.set_cookie("accessToken", access_token, httponly=True, secure=False, samesite='Lax', max_age=300)
         response.set_cookie("refreshToken", refresh_token, httponly=True, secure=False, samesite='Lax', max_age=2592000)
         return response
 
@@ -326,89 +333,66 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.exceptions import TokenError
 from rest_framework.permissions import IsAuthenticated
 from django.contrib.auth import get_user_model
+from django.utils.decorators import method_decorator
 
 User = get_user_model()
+@method_decorator(csrf_exempt, name="dispatch")
 class CookieRefreshView(APIView):
     permission_classes = [AllowAny]
 
     def post(self, request):
-        # Check for logged-in user refresh token
-        user_refresh_token = request.COOKIES.get("refreshToken")
-        # Check for visitor refresh token
-        visitor_refresh_token = request.COOKIES.get("visitorRefreshToken")
+        user_refresh = request.COOKIES.get("refreshToken")
+        visitor_refresh = request.COOKIES.get("visitorRefreshToken")
 
-        # ------------------------
-        # Logged-in user refresh
-        # ------------------------
-        if user_refresh_token:
+        # -------- USER --------
+        if user_refresh:
             try:
-                refresh = RefreshToken(user_refresh_token)
+                refresh = RefreshToken(user_refresh)
                 user_id = refresh["user_id"]
-                user = User.objects.get(id=user_id)
 
-                # Issue new access and refresh tokens
                 new_access = str(refresh.access_token)
-                new_refresh = str(RefreshToken.for_user(user))
 
                 response = Response({"accessToken": new_access})
-
-                # Set cookies
                 response.set_cookie(
                     "accessToken",
                     new_access,
                     httponly=True,
-                    secure=False,   # 🔒 True in production
-                    samesite="Lax", # 🔒 "None" in production
-                    max_age=60,     # 1 minute for access token
-                    path="/",
-                )
-                response.set_cookie(
-                    "refreshToken",
-                    new_refresh,
-                    httponly=True,
                     secure=False,
                     samesite="Lax",
-                    max_age=30 * 24 * 3600,  # 30 days
+                    max_age=3600,
                     path="/",
                 )
                 return response
 
-            except (TokenError, User.DoesNotExist):
-                return Response({"error": "Invalid user refresh token"}, status=401)
+            except TokenError:
+                return Response({"error": "Invalid user refresh"}, status=401)
 
-        # ------------------------
-        # Visitor refresh
-        # ------------------------
-        elif visitor_refresh_token:
+        # -------- VISITOR --------
+        if visitor_refresh:
             try:
-                refresh = RefreshToken(visitor_refresh_token)
-                if "visitor" not in refresh or "visitor_id" not in refresh:
-                    return Response({"error": "Invalid visitor token"}, status=401)
+                refresh = RefreshToken(visitor_refresh)
 
-                # Issue new short-lived access token for visitor
+                if refresh.get("visitor") is not True:
+                    return Response({"error": "Not a visitor token"}, status=401)
+
                 access = AccessToken()
                 access["visitor"] = True
-                access["visitor_id"] = refresh["visitor_id"]  # ✅ Persist visitor ID
-                access.set_exp(lifetime=timedelta(days=30))  # Short-lived access
+                access["visitor_id"] = refresh["visitor_id"]
+                access.set_exp(timedelta(days=30))
 
                 response = Response({"visitor_access": str(access)})
-
-                # Set access token cookie
                 response.set_cookie(
                     "visitorAccessToken",
                     str(access),
                     httponly=True,
-                    secure=False,   # 🔒 True in production
-                    samesite="Lax", # 🔒 "None" in production
-                    max_age=30 * 24 * 3600,    
+                    secure=False,
+                    samesite="Lax",
+                    max_age=30 * 24 * 3600,
                     path="/",
                 )
                 return response
 
-            except (TokenError, InvalidToken):
-                return Response({"error": "Invalid visitor refresh token"}, status=401)
+            except TokenError:
+                return Response({"error": "Invalid visitor refresh"}, status=401)
 
-        # ------------------------
-        # No token found
-        # ------------------------
-        return Response({"error": "No refresh token found"}, status=401)
+        return Response({"error": "No refresh token"}, status=401)

@@ -17,6 +17,7 @@ import bleach
 from oder.views import IsAuthenticatedOrVisitor
 from .CategorySerializers import SectionSerializerCat, CategorySerializerCat
 from django.db.models import Prefetch
+from oder.views import IsAuthenticatedOrVisitor
 
 from rest_framework import generics
 
@@ -60,9 +61,10 @@ class AllNotificationsView(APIView):
 def filtered_items(request):
     items = Item.objects.all()
 
-    item_type = sanitize(request.GET.get('type', ''))
-    if item_type:
-        items = items.filter(item_attribute__iexact=item_type)
+    # Changed from 'type' to 'section' filter
+    section = sanitize(request.GET.get('section', ''))
+    if section:
+        items = items.filter(section__name__iexact=section)
 
     department = sanitize(request.GET.get('department', ''))
     if department:
@@ -106,6 +108,7 @@ def filtered_items(request):
             item[k] = sanitize(v)
 
     return Response(data)
+
 
 
 
@@ -168,13 +171,23 @@ def products_by_subcategory(request, subcategory_id):
 # Review viewset
 # -------------------------------
 class ReviewViewSet(viewsets.ModelViewSet):
-    queryset = Review.objects.all()
     serializer_class = ReviewSerializer
-    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
-    
+    permission_classes = [IsAuthenticatedOrVisitor]
+
+    def get_queryset(self):
+        item_id = self.kwargs.get("item_id")
+        return Review.objects.filter(item_id=item_id).order_by("-created_at")
 
     def perform_create(self, serializer):
-        serializer.save(user=self.request.user)
+        item_id = self.kwargs.get('item_id')
+
+        if self.request.user.is_authenticated:
+            serializer.save(user=self.request.user, item_id=item_id)
+        else:
+            serializer.save(user=None, item_id=item_id)
+
+
+
 
 # -------------------------------
 # Reaction viewset
@@ -182,10 +195,29 @@ class ReviewViewSet(viewsets.ModelViewSet):
 class ReactionViewSet(viewsets.ModelViewSet):
     queryset = Reaction.objects.all()
     serializer_class = ReactionSerializer
-    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+    permission_classes = [IsAuthenticatedOrVisitor]
 
     def perform_create(self, serializer):
-        serializer.save(user=self.request.user)
+        user = self.request.user if self.request.user.is_authenticated else None
+        review_id = self.request.data.get("review")
+        reaction_type = self.request.data.get("reaction_type")
+
+        # Ensure review exists
+        try:
+            review = Review.objects.get(id=review_id)
+        except Review.DoesNotExist:
+            raise serializers.ValidationError({"review": "Review does not exist."})
+
+        # Check if user/visitor already reacted
+        existing = Reaction.objects.filter(review=review, user=user)
+        if existing.exists():
+            # Update existing reaction
+            existing.update(reaction_type=reaction_type)
+        else:
+            # Create new reaction
+            serializer.save(review=review, user=user, reaction_type=reaction_type)
+
+
 
 # -------------------------------
 # User data endpoint
@@ -454,3 +486,18 @@ def get_activity(request):
 
     serializer = ActivityLogSerializer(activities, many=True)
     return Response({"results": serializer.data})
+
+
+
+# calendar view
+class UserCalendarEventsView(generics.ListCreateAPIView):
+    serializer_class = CalendarEventSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        # Only return events for the logged-in user
+        return CalendarEvent.objects.filter(user=self.request.user)
+
+    def perform_create(self, serializer):
+        # Assign the logged-in user when creating an event
+        serializer.save(user=self.request.user)

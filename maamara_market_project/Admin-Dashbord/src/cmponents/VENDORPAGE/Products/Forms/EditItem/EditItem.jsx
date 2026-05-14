@@ -289,7 +289,7 @@ const EditItem = ({ vendor, item }) => {
       // ✅ Offers
       in_offer: false,
       offer: {
-        discount_percentage: 0,
+        discount_percentage: 1,
         start_date: "",
         end_date: "",
       },
@@ -402,18 +402,19 @@ const EditItem = ({ vendor, item }) => {
         // ✅ Offer handling
         in_offer: item.in_offer ?? false,
         offer: item.offer
-          ? {
-              discount_percentage: item.offer.discount_percentage
-                ? Number(item.offer.discount_percentage)
-                : 0,
-              start_date: item.offer.start_date || "",
-              end_date: item.offer.end_date || "",
-            }
-          : {
-              discount_percentage: 0,
-              start_date: "",
-              end_date: "",
-            },
+        ? {
+            discount_percentage: item.offer.discount_percentage
+              ? Number(item.offer.discount_percentage)
+              : 1,  // ✅ set minimum 1
+            start_date: item.offer.start_date || "",
+            end_date: item.offer.end_date || "",
+          }
+        : {
+            discount_percentage: 1, // ✅ set minimum 1
+            start_date: "",
+            end_date: "",
+          },
+
       });
     }
   

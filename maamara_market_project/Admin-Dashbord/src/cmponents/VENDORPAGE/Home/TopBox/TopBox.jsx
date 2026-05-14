@@ -1,3 +1,4 @@
+import { useState } from "react";
 import "./TopBox.css";
 import { useCustomerSocket } from "../../../../cmponents/Hooks/Customer/CustomerHook";
 import { useTheme } from "@mui/material";
@@ -20,6 +21,9 @@ const TopBox = () => {
   const { customers, connected } = useCustomerSocket();
   const theme = useTheme()
   const colors = tokens(theme.palette.mode)
+
+  // hover state
+  const [hoveredId, setHoveredId] = useState(null);
 
   return (
     <div className="topbox">
@@ -44,18 +48,25 @@ const TopBox = () => {
             const bgColor = getColorForLetter(initials[0]);
 
             return (
-              <div className="listItem hover:bg-gray-700 p-2 rounded-full cursor-pointer" key={customer.id} >
+              <div className="listItem rounded-full cursor-pointer" key={customer.id}
+              onMouseEnter={() => setHoveredId(customer.id)}
+              onMouseLeave={() => setHoveredId(null)}
+              style={{
+                color: colors.gray[100],padding:'5px',borderBottom:`1px solid ${colors.gray[800]}`,
+                backgroundColor:
+                  hoveredId === customer.id ? colors.primary[900] : colors.gray[900]
+              }} >
                 <div className="user">
                   {customer.profile_picture ? (
                     <img
                       src={customer.profile_picture}
                       alt={fullName || "No name"}
-                      className="w-11 h-11 rounded-full border border-gray-200 object-cover"
+                      className="w-11 h-11 rounded-full object-cover" style={{border: `1px solid ${colors.gray[100]}`}}
                     />
                   ) : (
                     <div
-                      className="w-11 h-11 flex items-center justify-center rounded-full text-white font-bold text-base uppercase border border-gray-200"
-                      style={{ color: bgColor }}
+                      className="w-11 h-11 flex items-center justify-center rounded-full font-bold text-base uppercase "
+                      style={{ color: bgColor, border: `1px solid ${colors.gray[100]}` }}
                     >
                       {initials}
                     </div>
@@ -75,7 +86,7 @@ const TopBox = () => {
             );
           })
         ) : (
-          <p>No customers yet</p>
+          <p style={{color:colors.gray[100]}}>No customers yet</p>
         )}
       </div>
     </div>
