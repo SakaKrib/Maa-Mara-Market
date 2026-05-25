@@ -159,12 +159,12 @@ const SalesReportPage = () => {
                 borderColor: colors.gray[700],
               },
               "& .MuiDataGrid-columnHeaders": {
-                backgroundColor: colors.primary[800],
+                backgroundColor: colors.primary[600],
                 color: colors.gray[100],
                 borderBottom: `1px solid ${colors.gray[700]}`,
               },
               "& .MuiDataGrid-footerContainer": {
-                backgroundColor: colors.primary[800],
+                backgroundColor: colors.primary[600],
                 borderTop: `1px solid ${colors.gray[700]}`,
                 color: colors.gray[100],
               },

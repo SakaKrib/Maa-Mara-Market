@@ -54,11 +54,11 @@ const VendorDashboardNav = () => {
         <ul>
           <li>
             
-              <span className="icon">
+              {/* <span className="icon">
                 <IonIcon icon={personOutline}/>
-              </span>
-              <span className="flex relative -mt-4 p-2" style={{color:colors.goldAccent[400]}}>
-                Welcome <strong className="absolute top-6  justify-center" style={{color:colors.purpleAccent[500]}}>{UserName}</strong>
+              </span> */}
+              <span className="flex relative mt-4 p-2 close user-name  " style={{color:colors.goldAccent[900]}}>
+                Welcome <strong className=" top-6  justify-center" style={{color:colors.purpleAccent[500]}}>{UserName}</strong>
               </span>
             
           </li>

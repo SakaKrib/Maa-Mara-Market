@@ -22,6 +22,7 @@ import { useForm } from "react-hook-form";
 import { organicAttributes, inorganicAttributes } from "./itemattribute";
 import { Controller } from "react-hook-form";
 import Switch from "@mui/material/Switch";
+import { color } from "framer-motion";
 
  // adjust path as needed
 
@@ -234,6 +235,7 @@ import Switch from "@mui/material/Switch";
 const ItemAddNew = ({ initialItem, vendorId, itemId, onSave, vendor }) => {
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
+  console.log('this is vendor', vendor)
 
   const [selectedDepartment, setSelectedDepartment] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("");
@@ -276,23 +278,41 @@ const ItemAddNew = ({ initialItem, vendorId, itemId, onSave, vendor }) => {
  // define department and category based on vendor product type
  const [activeData, setActiveData] = useState(null);
 
- useEffect(() => {
-   if (!vendor?.vendor_data?.product_type) return;
- 
-   if (vendor.vendor_data.product_type === "organic") {
-     setActiveData(organicDepartmentMap);
-     setValue("section", "Organic");
-   } else if (vendor.vendor_data.product_type === "inorganic") {
-     setActiveData(departmentMap);
-     setValue("section", "Departmental");
-   } else if (vendor.vendor_data.product_type === "both") {
-     const selectedMap =
-       selectedSection === "organic" ? organicDepartmentMap : departmentMap;
-     setActiveData(selectedMap);
-     setValue("section", selectedSection === "organic" ? "Organic" : "Departmental");
-   }
- }, [vendor?.vendor_data?.product_type, selectedSection, setValue]);
- 
+//  gett vendor data
+const getProductType = (vendor) => {
+  return (
+    vendor?.product_type ||
+    vendor?.vendor_data?.product_type ||
+    null
+  );
+};
+
+useEffect(() => {
+  const productType = getProductType(vendor);
+
+  if (!productType) return;
+
+  if (productType === "organic") {
+    setActiveData(organicDepartmentMap);
+    setValue("section", "Organic");
+  } 
+  else if (productType === "inorganic") {
+    setActiveData(departmentMap);
+    setValue("section", "Departmental");
+  } 
+  else if (productType === "both") {
+    const selectedMap =
+      selectedSection === "organic"
+        ? organicDepartmentMap
+        : departmentMap;
+
+    setActiveData(selectedMap);
+    setValue(
+      "section",
+      selectedSection === "organic" ? "Organic" : "Departmental"
+    );
+  }
+}, [vendor, selectedSection, setValue]);
  
  
    //reset form inputs when togle for both
@@ -488,7 +508,7 @@ const ItemAddNew = ({ initialItem, vendorId, itemId, onSave, vendor }) => {
   
       // separate
       <Form {...form}>
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 px-2 py-6">
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 px-2 py-6 custom-scroll-form">
       <div >
 
         
@@ -558,7 +578,8 @@ const ItemAddNew = ({ initialItem, vendorId, itemId, onSave, vendor }) => {
                   {...field}
                   value={field.value}
                   disabled
-                  className="rounded p-2 bg-gray-600 text-center outline-none"
+                  className="rounded p-2  text-center outline-none"
+                  style={{color:colors.gray[100], backgroundColor:colors.primary[600]}}
                 />
               </FormControl>
               <FormMessage />
@@ -885,7 +906,8 @@ const ItemAddNew = ({ initialItem, vendorId, itemId, onSave, vendor }) => {
                         <select
                           {...field}
                           value={field.value ?? ""}
-                          className="w-full rounded p-2 bg-gray-600 text-white"
+                          className="w-full rounded p-2"
+                          style={{color:colors.gray[100], backgroundColor:colors.primary[600]}}
                         >
                           <option value="">Select attribute</option>
                           {attributes.map((attr) => (
@@ -1696,7 +1718,7 @@ const ItemAddNew = ({ initialItem, vendorId, itemId, onSave, vendor }) => {
                     <Checkbox
                       checked={field.value}
                       onCheckedChange={field.onChange}
-                      style={{backgroundColor:colors.gray[400]}}
+                      style={{backgroundColor:colors.primary[600]}}
                     />
                   </FormControl>
                   <FormLabel className="text-base">Mark item as on Offer</FormLabel>
@@ -2068,7 +2090,7 @@ const ItemAddNew = ({ initialItem, vendorId, itemId, onSave, vendor }) => {
         
     
     
-            <Button type="submit" className="bg-white text-black px-4 mb-10 mt-10 " style={{ backgroundColor:colors.gray[100]}}>
+            <Button type="submit" className=" px-4 mb-10 mt-10 " style={{ backgroundColor:colors.gray[100], color:colors.gray[900]}}>
               Save Changes
             </Button>
             </div>

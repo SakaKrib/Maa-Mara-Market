@@ -1,22 +1,24 @@
 // hooks/useItems.js
 import { useEffect, useState } from 'react';
-import { baseUrl } from '../../../cmponents/Constant/Constant';
 
 const formatItem = (item) => {
-  const originalPrice = item.discount > 0
-    ? (item.price / (1 - item.discount / 100)).toFixed(0)
-    : item.price;
+  const originalPrice =
+    item.discount > 0
+      ? (item.price / (1 - item.discount / 100)).toFixed(0)
+      : item.price;
 
   return {
     ...item,
-    formattedPrice: `KES ${item.price.toLocaleString()}`,
-    formattedOriginalPrice: item.discount > 0 ? `KES ${Number(originalPrice).toLocaleString()}` : null,
+    formattedPrice: `KES ${Number(item.price).toLocaleString()}`,
+    formattedOriginalPrice:
+      item.discount > 0
+        ? `KES ${Number(originalPrice).toLocaleString()}`
+        : null,
     hasDiscount: item.discount > 0,
   };
 };
 
-// ✅ Allow optional itemId to fetch a single item or list
-const useItems = (initialUrl = `${baseUrl}/api/items/`) => {
+const useItems = (initialUrl = `/api/items/`) => {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [nextUrl, setNextUrl] = useState(null);
@@ -25,20 +27,34 @@ const useItems = (initialUrl = `${baseUrl}/api/items/`) => {
   const fetchItems = async (url) => {
     try {
       setLoading(true);
+
       const res = await fetch(url, {
-        headers: { "Content-Type": "application/json" },
+        method: "GET",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+        },
       });
+
+      if (!res.ok) {
+        throw new Error(`HTTP error! status: ${res.status}`);
+      }
+
       const data = await res.json();
 
-      console.log(data);
+      // ✅ support both paginated and raw list
+      const results = Array.isArray(data) ? data : (data.results || []);
 
-      const formattedItems = (data.results || []).map(formatItem);
+      const formattedItems = results.map(formatItem);
+
       setItems(formattedItems);
-      setNextUrl(data.next);
-      setPrevUrl(data.previous);
+      setNextUrl(data.next || null);
+      setPrevUrl(data.previous || null);
     } catch (error) {
       console.error("Error fetching items:", error);
       setItems([]);
+      setNextUrl(null);
+      setPrevUrl(null);
     } finally {
       setLoading(false);
     }

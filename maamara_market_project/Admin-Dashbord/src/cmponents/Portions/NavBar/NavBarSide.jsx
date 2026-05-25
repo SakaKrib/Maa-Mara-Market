@@ -19,7 +19,8 @@ import {
   refreshCircleSharp,
   statsChartOutline,
   chevronDownOutline,
-  calendarOutline
+  calendarOutline,
+  clipboardOutline
 } from 'ionicons/icons';
 import "../../../index.css"
 import useDashboardInteractions from '../../../interaction';
@@ -221,7 +222,7 @@ const NavBar = () => {
           {/* returns */}
           <li>
             <Link to="customer-requests">
-              <span className="icon"><IonIcon icon={calendarOutline} /></span>
+              <span className="icon"><IonIcon icon={clipboardOutline} /></span>
               <span className="title">customer Requests</span>
             </Link>
           </li>

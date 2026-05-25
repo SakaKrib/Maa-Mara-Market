@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import api from "../../../Services/Api"; // Adjust the path
+import api from "../../../Services/Api";
 import dayjs from "dayjs";
 
 export default function useNewBlogs() {
@@ -9,13 +9,21 @@ export default function useNewBlogs() {
   useEffect(() => {
     const fetchNewBlogs = async () => {
       try {
-        const res = await api.get("/api/blogs/"); // Fetch all blogs
+        const res = await api.get("/api/blogs/");
         const blogs = res.data.results || [];
+
+        // ✅ Step 1: only approved blogs
+        const approvedBlogs = blogs.filter(
+          (b) => b.approved === true
+        );
 
         const oneWeekAgo = dayjs().subtract(7, "day");
 
-        const newBlogs = blogs.filter(
-          (b) => dayjs(b.created_at).isAfter(oneWeekAgo) && !b.seen_by_admin
+        // ✅ Step 2: apply "new blogs" logic only on approved ones
+        const newBlogs = approvedBlogs.filter(
+          (b) =>
+            dayjs(b.created_at).isAfter(oneWeekAgo) &&
+            !b.seen_by_admin
         );
 
         setNewBlogCount(newBlogs.length);

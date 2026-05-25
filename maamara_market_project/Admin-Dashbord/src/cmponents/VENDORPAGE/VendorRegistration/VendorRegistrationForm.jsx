@@ -587,7 +587,7 @@ const onSubmit = async (data) => {
     if (status === 401) {
       try {
         // 🔁 Retry once
-        response = await api.post(`${baseUrl}/api/vendor-request/`, formData, {
+        response = await api.post(`/api/vendor-request/`, formData, {
           withCredentials: true,
           headers: { "Content-Type": "multipart/form-data" },
         });

@@ -118,7 +118,7 @@ const SuccessPage = ({ reference }) => {
             fontWeight: "bold",
             "&:hover": { backgroundColor: colors.greenAccent[500] },
           }}
-          onClick={() => (window.location.href = "/dashboard")}
+          onClick={() => (window.location.href = "/admin-dashboard")}
         >
           Go to Dashboard
         </Button>

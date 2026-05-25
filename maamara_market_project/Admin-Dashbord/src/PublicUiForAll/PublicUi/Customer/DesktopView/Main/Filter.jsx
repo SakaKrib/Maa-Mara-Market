@@ -1,136 +1,185 @@
-import React, { useState, useEffect } from 'react';
-import { useSearchParams, useLocation, useNavigate } from 'react-router-dom';
+import React, { useState, useEffect, useCallback } from "react";
+import { useSearchParams, useLocation, useNavigate } from "react-router-dom";
+import api from "../../../../../Services/Api";
 
 const Filter = ({ onFilterChange }) => {
   const [searchParams] = useSearchParams();
   const location = useLocation();
   const navigate = useNavigate();
 
-  const [filters, setFilters] = useState({
-    section: '',
-    department: '',
-    category: '',
-    size: '',
-    color: '',
-    minPrice: '',
-    maxPrice: '',
-    sort: '',
+  /* ================= OPTIONS ================= */
+  const [filterOptions, setFilterOptions] = useState({
+    sections: [],
+    departments: [],
+    categories: [],
+    sizes: [],
+    colors: [],
+    brands: [],
   });
 
-  const categoryOptions = [
-    "Gift Bundles", "Back to School", "Holiday Decor", "Aquariums & Accessories",
-    "Grooming & Care", "Pet Toys", "Sportswear", "Camping & Hiking",
-    "Outdoor Gear", "Fitness Equipment", "Car Accessories", "Educational",
-    "Kids' Furniture", "Baby Gear", "Toys & Games", "Fragrances",
-    "Makeup", "Haircare", "Skincare", "Lighting", "Bedding & Bath",
-    "Kitchen & Dining", "Home Decor", "Furniture", "Accessories", "Shoes",
-    "Kids & Baby Wear", "Women's Clothing", "Men's Clothing"
-  ];
+  /* ================= FILTER STATE ================= */
+  const [filters, setFilters] = useState({
+    section: "",
+    department: "",
+    category: "",
+    size: "",
+    color: "",
+    minPrice: "",
+    maxPrice: "",
+    sort: "",
+  });
 
-  const updateURLParams = (name, value) => {
-    const params = new URLSearchParams(location.search);
-    if (value) {
-      params.set(name, value);
-    } else {
-      params.delete(name);
-    }
-    navigate({ search: params.toString() });
-  };
+  const [loading, setLoading] = useState(false);
 
+  /* ================= FETCH OPTIONS ================= */
+  useEffect(() => {
+    const fetchOptions = async () => {
+      try {
+        setLoading(true);
+
+        const res = await api.get("/api/filter-options/");
+        const data = res.data;
+
+        setFilterOptions({
+          sections: data.sections || [],
+          departments: data.departments || [],
+          categories: data.categories || [],
+          sizes: data.sizes || [],
+          colors: data.colors || [],
+          brands: data.brands || [],
+        });
+
+      } catch (err) {
+        console.error("Filter options error:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchOptions();
+  }, []);
+
+  /* ================= INIT FROM URL ================= */
+  useEffect(() => {
+    setFilters({
+      section: searchParams.get("section") || "",
+      department: searchParams.get("department") || "",
+      category: searchParams.get("category") || "",
+      size: searchParams.get("size") || "",
+      color: searchParams.get("color") || "",
+      minPrice: searchParams.get("minPrice") || "",
+      maxPrice: searchParams.get("maxPrice") || "",
+      sort: searchParams.get("sort") || "",
+    });
+  }, [searchParams]);
+
+  /* ================= UPDATE URL ================= */
+  const updateURL = useCallback(
+    (updated) => {
+      const params = new URLSearchParams(location.search);
+
+      Object.entries(updated).forEach(([key, value]) => {
+        if (value) params.set(key, value);
+        else params.delete(key);
+      });
+
+      navigate({ search: params.toString() }, { replace: true });
+    },
+    [location.search, navigate]
+  );
+
+  /* ================= HANDLE CHANGE ================= */
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFilters((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
-    updateURLParams(name, value);
+
+    const updated = { ...filters, [name]: value };
+
+    setFilters(updated);
+    updateURL(updated);
   };
 
+  /* ================= SEND TO PARENT ================= */
   useEffect(() => {
-    onFilterChange(filters);
-  }, [filters]);
+    const cleaned = Object.fromEntries(
+      Object.entries(filters).filter(([_, v]) => v)
+    );
+
+    onFilterChange(cleaned);
+  }, [filters, onFilterChange]);
+
+  /* ================= SAFE RENDER HELPERS ================= */
+  const renderOptions = (list) =>
+    list.map((item) => {
+      // supports both: "string" OR {id, name}
+      const value = typeof item === "object" ? item.name : item;
+      const key = typeof item === "object" ? item.id : item;
+
+      return (
+        <option key={key} value={value}>
+          {value}
+        </option>
+      );
+    });
 
   return (
     <div className="mt-12 flex flex-col md:flex-row md:justify-between gap-6 flex-wrap">
+
+      {/* LEFT FILTERS */}
       <div className="flex flex-wrap gap-4 md:gap-6">
 
-        {/* section */}
-        <select
-            name="section"             
-            value={filters.section}     
-            onChange={handleChange}
-            className="py-2 px-3 rounded-2xl text-sm font-medium bg-gray-100 ring-1 ring-gray-300"
-          >
-            <option value="">Section</option>
-            <option value="general">General</option>  
-            <option value="inorganic">Inorganic</option>   
-            <option value="organic">Organic</option>    
-          </select>
+        {/* SECTION */}
+        <select name="section" value={filters.section} onChange={handleChange} disabled={loading}
+          className="py-2 px-3 rounded-2xl text-sm bg-gray-100 ring-1 ring-gray-300">
+          <option value="">Section</option>
+          {renderOptions(filterOptions.sections)}
+        </select>
 
-
-        <select name="department" value={filters.department} onChange={handleChange} className="py-2 px-3 rounded-2xl text-sm font-medium bg-gray-100 ring-1 ring-gray-300">
+        {/* DEPARTMENT */}
+        <select name="department" value={filters.department} onChange={handleChange} disabled={loading}
+          className="py-2 px-3 rounded-2xl text-sm bg-gray-100 ring-1 ring-gray-300">
           <option value="">Department</option>
-          <option value="home-decor">Home Decor</option>
-          <option value="fashion">Fashion</option>
-          <option value="art">Art</option>
-          <option value="kitchen">Kitchen</option>
+          {renderOptions(filterOptions.departments)}
         </select>
 
-        <select name="category" value={filters.category} onChange={handleChange} className="py-2 px-3 rounded-2xl text-sm font-medium bg-gray-100 ring-1 ring-gray-300">
+        {/* CATEGORY */}
+        <select name="category" value={filters.category} onChange={handleChange} disabled={loading}
+          className="py-2 px-3 rounded-2xl text-sm bg-gray-100 ring-1 ring-gray-300">
           <option value="">Category</option>
-          {categoryOptions.map((category) => (
-            <option key={category} value={category}>{category}</option>
-          ))}
+          {renderOptions(filterOptions.categories)}
         </select>
 
-        <select name="size" value={filters.size} onChange={handleChange} className="py-2 px-3 rounded-2xl text-sm font-medium bg-gray-100 ring-1 ring-gray-300">
+        {/* SIZE */}
+        <select name="size" value={filters.size} onChange={handleChange} disabled={loading}
+          className="py-2 px-3 rounded-2xl text-sm bg-gray-100 ring-1 ring-gray-300">
           <option value="">Size</option>
-          <option value="xs">XS</option>
-          <option value="s">S</option>
-          <option value="m">M</option>
-          <option value="l">L</option>
-          <option value="xl">XL</option>
-          <option value="xxl">XXL</option>
-          <option value="oversize">Oversize</option>
+          {renderOptions(filterOptions.sizes)}
         </select>
 
-        <select name="color" value={filters.color} onChange={handleChange} className="py-2 px-3 rounded-2xl text-sm font-medium bg-gray-100 ring-1 ring-gray-300">
+        {/* COLOR */}
+        <select name="color" value={filters.color} onChange={handleChange} disabled={loading}
+          className="py-2 px-3 rounded-2xl text-sm bg-gray-100 ring-1 ring-gray-300">
           <option value="">Color</option>
-          <option value="blue">Blue</option>
-          <option value="green">Green</option>
-          <option value="red">Red</option>
-          <option value="white">White</option>
-          <option value="black">Black</option>
-          <option value="yellow">Yellow</option>
-          <option value="orange">Orange</option>
-          <option value="pink">Pink</option>
-          <option value="maroon">Maroon</option>
-          <option value="multicolor">Multicolor</option>
-          <option value="beige">Beige</option>
-          <option value="turquoise">Turquoise</option>
+          {renderOptions(filterOptions.colors)}
         </select>
 
-        <input
-          type="number"
-          name="minPrice"
+        {/* MIN PRICE */}
+        <input type="number" name="minPrice" value={filters.minPrice} onChange={handleChange}
           placeholder="Min Price"
-          value={filters.minPrice}
-          onChange={handleChange}
-          className="text-sm rounded-2xl pl-3 py-2 w-24 ring-1 ring-gray-300 bg-white"
+          className="text-sm rounded-2xl pl-3 py-2 w-28 ring-1 ring-gray-300 bg-white"
         />
 
-        <input
-          type="number"
-          name="maxPrice"
+        {/* MAX PRICE */}
+        <input type="number" name="maxPrice" value={filters.maxPrice} onChange={handleChange}
           placeholder="Max Price"
-          value={filters.maxPrice}
-          onChange={handleChange}
-          className="text-sm rounded-2xl pl-3 py-2 w-24 ring-1 ring-gray-300 bg-white"
+          className="text-sm rounded-2xl pl-3 py-2 w-28 ring-1 ring-gray-300 bg-white"
         />
       </div>
 
+      {/* SORT */}
       <div className="flex items-center">
-        <select name="sort" value={filters.sort} onChange={handleChange} className="py-2 px-3 rounded-2xl text-sm font-medium bg-gray-100 ring-1 ring-gray-300">
+        <select name="sort" value={filters.sort} onChange={handleChange}
+          className="py-2 px-3 rounded-2xl text-sm bg-gray-100 ring-1 ring-gray-300">
+
           <option value="">Sort By</option>
           <option value="low-high">Price: Low to High</option>
           <option value="high-low">Price: High to Low</option>
@@ -138,6 +187,7 @@ const Filter = ({ onFilterChange }) => {
           <option value="oldest">Oldest First</option>
         </select>
       </div>
+
     </div>
   );
 };

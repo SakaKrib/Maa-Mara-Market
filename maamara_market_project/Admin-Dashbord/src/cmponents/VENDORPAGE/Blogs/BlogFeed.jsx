@@ -13,9 +13,18 @@ export default function BlogFeed() {
     const fetchPosts = async () => {
       try {
         setLoading(true);
+  
         const res = await api.get("api/blogs/");
-        console.log(res);
-        setPosts(res.data?.results || []);
+  
+        const blogs = res.data?.results || [];
+  
+        // ✅ Only approved blogs
+        const approvedBlogs = blogs.filter(
+          (post) => post.approved === true
+        );
+  
+        setPosts(approvedBlogs);
+  
       } catch (err) {
         console.error("Error fetching blogs:", err);
         setError("Failed to load blog posts. Please try again later.");
@@ -27,18 +36,20 @@ export default function BlogFeed() {
     fetchPosts();
   }, []);
 
-  if (loading) return <p>Loading blogs...</p>;
-  if (error) return <p style={{ color: "red" }}>{error}</p>;
-  if (posts.length === 0) return <p>No blogs available at the moment.</p>;
+  if (loading) return <p className="container mt-10">Loading blogs...</p>;
+  if (error) return <p className="container mt-10" style={{ color: "red" }}>{error}</p>;
+  if (posts.length === 0) return <p className="container mt-10">No blogs available at the moment.</p>;
 
   return (
     <div className="w-full container">
         <h4 className="border-b ">Blogs</h4>
-    <div className="flex gap-2 mt-4  max-w-7xl mx-auto">
-      {posts.map(post => (
-        <BlogCard key={post.id} post={post} />
-      ))}
-    </div>
+        <div className="max-w-7xl mx-auto mt-4 flex flex-wrap gap-4">
+          {posts.map((post) => (
+            <div key={post.id} className="w-full md:w-[calc(50%-8px)]">
+              <BlogCard post={post} />
+            </div>
+          ))}
+        </div>
     <div className="w-[100%]">
     <PopularBlogs  post={posts}/>
     </div>

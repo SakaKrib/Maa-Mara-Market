@@ -15,9 +15,9 @@ const VendorLayout = () => {
     <HeaderTop />
       <VendorDashboardNav />
       <div className="content-vite" style={{backgroundColor:colors.primary[500]}}>
-        <Box className="main-dashboard" sx={{ backgroundColor: colors.primary[500], margin: '90px 0 0 0', height:'100%' }}>
-          <Outlet />
-        </Box>
+        <div className="main-dashboard" sx={{ backgroundColor: colors.primary[500], margin: '90px 0 0 0', height:'100%' }}>
+          <Outlet  />
+        </div>
       </div>
   </ProtectedRoute>
 )};

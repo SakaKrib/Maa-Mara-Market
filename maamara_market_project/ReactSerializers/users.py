@@ -1,38 +1,32 @@
-from django.contrib.auth import authenticate, login as auth_login
-from django.http import JsonResponse
-from django.views.decorators.csrf import csrf_exempt, ensure_csrf_cookie, csrf_protect
-from django.middleware.csrf import get_token
-from core.models import Profile  # Adjust based on your actual model
+import uuid
 import logging
-from django.views.decorators.http import require_http_methods
-logger = logging.getLogger(__name__)
-from rest_framework_simplejwt.tokens import AccessToken, RefreshToken
-from django.core.exceptions import ObjectDoesNotExist
-from django.views.decorators.http import require_http_methods
-from django.http import JsonResponse
-from rest_framework import serializers
+
+from datetime import timedelta
+
+from django.contrib.auth import authenticate, login as auth_login
 from django.contrib.auth.models import User
+from django.contrib.auth.hashers import check_password
+from django.shortcuts import redirect
+from django.http import JsonResponse
+from django.utils.text import slugify
+from django.views.decorators.csrf import csrf_exempt, ensure_csrf_cookie
+from django.views.decorators.http import require_http_methods
+from django.middleware.csrf import get_token
+from django.utils.decorators import method_decorator
+
+from rest_framework import status
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.permissions import AllowAny, IsAuthenticated
-from rest_framework import status
-from django.contrib.auth import authenticate
-from rest_framework.authtoken.models import Token
-import json
-from django.utils.decorators import method_decorator
 from rest_framework.decorators import permission_classes
-from django.contrib.auth import login
-from rest_framework.views import APIView
-from rest_framework.response import Response
-from rest_framework import status
+
+from rest_framework_simplejwt.tokens import AccessToken, RefreshToken
 from rest_framework_simplejwt.authentication import JWTAuthentication
 from rest_framework_simplejwt.exceptions import InvalidToken, TokenError
+
+from core.models import Profile
 from vendorDashboard.models import Vendor
 from core.mergeVisitortoUserData import merge_visitor_data_to_user
-from django.contrib.auth.hashers import check_password
-import bleach
-from datetime import timedelta
-import uuid
 
 logger = logging.getLogger(__name__)
 
@@ -180,8 +174,9 @@ def login_view(request):
 
 
         # Set JWT cookies
-        response.set_cookie("accessToken", access_token, httponly=True, secure=False, samesite='Lax', max_age=300)
-        response.set_cookie("refreshToken", refresh_token, httponly=True, secure=False, samesite='Lax', max_age=2592000)
+        response.set_cookie("accessToken", access_token, httponly=True, secure=False, samesite='Lax',  max_age=5 * 60,
+        path="/",)
+        response.set_cookie("refreshToken", refresh_token, httponly=True, secure=False, samesite='Lax', max_age=2592000, path="/")
         return response
 
     # --- Fallback to Vendor table ---
@@ -220,85 +215,208 @@ def login_view(request):
     return JsonResponse({"success": False, "error": "Invalid credentials"}, status=401)
 
 
+
+# google login success (fix frontend url in production, hide it in .env)
+from django.shortcuts import redirect
+from django.contrib.auth import login
+from django.contrib.auth.models import User
+from django.utils.text import slugify
+from allauth.socialaccount.models import SocialAccount
+from rest_framework_simplejwt.tokens import RefreshToken
+import logging
+
+logger = logging.getLogger(__name__)
+
+def google_login_success(request):
+
+    # ❌ DO NOT RELY ON request.user
+    # instead always pull SocialAccount directly
+    try:
+        social = SocialAccount.objects.get(provider="google", user=request.user)
+    except SocialAccount.DoesNotExist:
+        return redirect("http://127.0.0.1:5173/unauthorized")
+
+    extra = social.extra_data
+
+    # 🔑 PRIMARY IDENTITY (BEST): Google UID
+    google_uid = social.uid  # "sub"
+    email = extra.get("email")
+
+    first_name = extra.get("given_name", "") or ""
+    last_name = extra.get("family_name", "") or ""
+
+    if not email:
+        return redirect("http://127.0.0.1:5173/unauthorized")
+
+    logger.info(f"Google UID: {google_uid}")
+    logger.info(f"Google Email: {email}")
+
+    # ================================
+    # 🔥 1. FIND EXISTING USER (EMAIL FIRST)
+    # ================================
+    user = User.objects.filter(email=email).first()
+
+    # ================================
+    # 🔥 2. CREATE USER ONLY IF NOT EXISTS
+    # ================================
+    if not user:
+        base_username = slugify(email.split("@")[0])
+        username = base_username
+        counter = 1
+
+        while User.objects.filter(username=username).exists():
+            username = f"{base_username}{counter}"
+            counter += 1
+
+        user = User.objects.create_user(
+            username=username,
+            email=email,
+            first_name=first_name,
+            last_name=last_name,
+        )
+
+    # ================================
+    # 🔥 3. LINK SOCIAL ACCOUNT PROPERLY
+    # ================================
+    if social.user != user:
+        social.user = user
+        social.save()
+
+    # ================================
+    # 🔥 4. UPDATE MISSING INFO ONLY
+    # ================================
+    updated = False
+
+    if first_name and not user.first_name:
+        user.first_name = first_name
+        updated = True
+
+    if last_name and not user.last_name:
+        user.last_name = last_name
+        updated = True
+
+    if updated:
+        user.save()
+
+    # ================================
+    # 🔐 5. LOGIN PROPER BACKEND
+    # ================================
+    login(
+        request,
+        user,
+        backend="django.contrib.auth.backends.ModelBackend"
+    )
+
+    # ================================
+    # 🔥 6. JWT TOKENS
+    # ================================
+    refresh = RefreshToken.for_user(user)
+
+    # ================================
+    # 🔥 7. REDIRECT (YOUR FRONTEND)
+    # ================================
+    response = redirect("http://127.0.0.1:5173/login/auth-success")
+
+    response.set_cookie(
+        "accessToken",
+        str(refresh.access_token),
+        httponly=True,
+        samesite="Lax",
+        max_age=5 * 60,
+        path="/",
+    )
+
+    response.set_cookie(
+        "refreshToken",
+        str(refresh),
+        httponly=True,
+        samesite="Lax",
+        max_age=2592000,
+        path="/"
+    )
+
+    return response
+
+
+
 # create acces tokens for visitors
-import uuid
-from datetime import timedelta
-from rest_framework.views import APIView
-from rest_framework.response import Response
-from rest_framework_simplejwt.tokens import RefreshToken, AccessToken
 
 class VisitorTokenView(APIView):
-    authentication_classes = []  # No authentication needed
-    permission_classes = []      # Allow any user
+    authentication_classes = []
+    permission_classes = [AllowAny]
 
     def get(self, request):
-        # 🔹 Check for logged-in user tokens first
-        existingUserAccessToken = request.COOKIES.get("accessToken")
-        existingUserRefreshToken = request.COOKIES.get("refreshToken")
 
-        if existingUserAccessToken and existingUserRefreshToken:
-
+        # ---------------------------------------------------
+        # 1. If user is logged in → DO NOT create visitor
+        # ---------------------------------------------------
+        if request.COOKIES.get("accessToken") and request.COOKIES.get("refreshToken"):
             return Response({
-                "message": "User tokens already exist — skipping visitor token creation"
+                "message": "Authenticated user detected — visitor not created"
             })
 
-        # 🔹 Check if visitor tokens already exist
-        existing_access = request.COOKIES.get("visitorAccessToken")
+        # ---------------------------------------------------
+        # 2. If visitor already exists → reuse it
+        # ---------------------------------------------------
         existing_id = request.COOKIES.get("visitorId")
+        existing_refresh = request.COOKIES.get("visitorRefreshToken")
 
-        if existing_access and existing_id:
+        if existing_id and existing_refresh:
             return Response({
-                "message": "Visitor token already exists",
+                "message": "Visitor already exists",
                 "visitor_id": existing_id
             })
 
-        # 🔹 Generate a new unique visitor ID
+        # ---------------------------------------------------
+        # 3. Create new visitor identity
+        # ---------------------------------------------------
         visitor_id = str(uuid.uuid4())
 
-        # 🔹 Create refresh token for visitor
         refresh = RefreshToken()
-        refresh['visitor'] = True
-        refresh['visitor_id'] = visitor_id
-        refresh.set_exp(lifetime=timedelta(days=30))  # Refresh valid 30 days
+        refresh["visitor"] = True
+        refresh["visitor_id"] = visitor_id
 
-        # 🔹 Create access token
-        access = AccessToken()
-        access['visitor'] = True
-        access['visitor_id'] = visitor_id
-        access.set_exp(lifetime=timedelta(days=30))  # Access valid 30 days
+        access = refresh.access_token
+        access["visitor"] = True
+        access["visitor_id"] = visitor_id
 
-        # 🔹 Build response
+        # ---------------------------------------------------
+        # 4. Response (NO TOKEN LEAK IN JSON)
+        # ---------------------------------------------------
         response = Response({
-            'visitor_access': str(access),
-            'visitor_refresh': str(refresh),
-            'visitor_id': visitor_id
+            "message": "Visitor created",
+            "visitor_id": visitor_id
         })
 
-        # 🔹 Set cookies for visitor
+        # ---------------------------------------------------
+        # 5. Cookies (secure + consistent)
+        # ---------------------------------------------------
+        cookie_options = {
+            "httponly": True,
+            "secure": False,  # set True in production (HTTPS)
+            "samesite": "Lax",
+            "path": "/",
+        }
+
         response.set_cookie(
-            'visitorAccessToken',
+            "visitorAccessToken",
             str(access),
-            httponly=True,
-            secure=False,    # True in production
-            samesite='Lax',  # 'None' in production
-            max_age=30 * 24 * 3600
-        )
-        response.set_cookie(
-            'visitorRefreshToken',
-            str(refresh),
-            httponly=True,
-            secure=False,
-            samesite='Lax',
-            max_age=30 * 24 * 3600
-        )
-        response.set_cookie(
-            'visitorId',
-            visitor_id,
-            httponly=True,
-            secure=False,
-            samesite='Lax',
             max_age=30 * 24 * 3600,
-            path='/',
+            **cookie_options
+        )
+
+        response.set_cookie(
+            "visitorRefreshToken",
+            str(refresh),
+            max_age=30 * 24 * 3600,
+            **cookie_options
+        )
+
+        response.set_cookie(
+            "visitorId",
+            visitor_id,
+            max_age=30 * 24 * 3600,
+            **cookie_options
         )
 
         return response
@@ -334,9 +452,8 @@ from rest_framework_simplejwt.exceptions import TokenError
 from rest_framework.permissions import IsAuthenticated
 from django.contrib.auth import get_user_model
 from django.utils.decorators import method_decorator
-
 User = get_user_model()
-@method_decorator(csrf_exempt, name="dispatch")
+
 class CookieRefreshView(APIView):
     permission_classes = [AllowAny]
 
@@ -348,24 +465,28 @@ class CookieRefreshView(APIView):
         if user_refresh:
             try:
                 refresh = RefreshToken(user_refresh)
-                user_id = refresh["user_id"]
 
-                new_access = str(refresh.access_token)
+                new_access = refresh.access_token
 
-                response = Response({"accessToken": new_access})
+                response = Response({"message": "refreshed"})
+
                 response.set_cookie(
                     "accessToken",
-                    new_access,
+                    str(new_access),
                     httponly=True,
                     secure=False,
                     samesite="Lax",
-                    max_age=3600,
+                    max_age=5 * 60,
                     path="/",
                 )
+
                 return response
 
             except TokenError:
-                return Response({"error": "Invalid user refresh"}, status=401)
+                response = Response({"error": "Invalid user refresh"}, status=401)
+                response.delete_cookie("accessToken")
+                response.delete_cookie("refreshToken")
+                return response
 
         # -------- VISITOR --------
         if visitor_refresh:
@@ -373,26 +494,30 @@ class CookieRefreshView(APIView):
                 refresh = RefreshToken(visitor_refresh)
 
                 if refresh.get("visitor") is not True:
-                    return Response({"error": "Not a visitor token"}, status=401)
+                    raise TokenError("Not a visitor token")
 
-                access = AccessToken()
-                access["visitor"] = True
-                access["visitor_id"] = refresh["visitor_id"]
-                access.set_exp(timedelta(days=30))
+                new_access = refresh.access_token
+                new_access["visitor"] = True
+                new_access["visitor_id"] = refresh["visitor_id"]
 
-                response = Response({"visitor_access": str(access)})
+                response = Response({"message": "visitor refreshed"})
+
                 response.set_cookie(
                     "visitorAccessToken",
-                    str(access),
+                    str(new_access),
                     httponly=True,
                     secure=False,
                     samesite="Lax",
                     max_age=30 * 24 * 3600,
                     path="/",
                 )
+
                 return response
 
             except TokenError:
-                return Response({"error": "Invalid visitor refresh"}, status=401)
+                response = Response({"error": "Invalid visitor refresh"}, status=401)
+                response.delete_cookie("visitorAccessToken")
+                response.delete_cookie("visitorRefreshToken")
+                return response
 
         return Response({"error": "No refresh token"}, status=401)

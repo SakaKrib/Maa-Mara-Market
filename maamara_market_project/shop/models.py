@@ -34,6 +34,10 @@ class Banner(models.Model):
     background_color = models.CharField(max_length=20, blank=True, null=True, help_text="Hex or Tailwind color")
     image_hash = models.CharField(max_length=64, editable=False, unique=True, default='', null=True, blank=True) 
 
+    # admin field approve
+    is_approved = models.BooleanField(default=False)
+    approved_at = models.DateTimeField(null=True, blank=True)
+
     # Visibility settings
     is_active = models.BooleanField(default=True)
     start_date = models.DateTimeField(default=timezone.now)
@@ -51,21 +55,14 @@ class Banner(models.Model):
         return f"Banner: {self.title} ({self.vendor})"
 
     def save(self, *args, **kwargs):
-        # Auto-set call_to_action_url if linked to item
-        if self.item and not self.call_to_action_url:
-            self.call_to_action_url = f"/product/{self.item.pk}/"
-
-        # Automatically set end_date to 30 days after start_date if not set
         if not self.end_date:
             self.end_date = self.start_date + timedelta(days=30)
 
-        # Auto-set active
-        self.is_active = True  # 👈 force active on save    
+        # only activate if approved
+        self.is_active = self.is_approved
 
-        # Calculate and set image hash
         new_hash = self._calculate_image_hash()
         if new_hash:
-            # Prevent duplicate image upload
             if Banner.objects.filter(image_hash=new_hash).exclude(pk=self.pk).exists():
                 raise ValueError("🚫 This image is already used in another banner.")
             self.image_hash = new_hash
@@ -166,20 +163,68 @@ from django.contrib.auth import get_user_model
 User = get_user_model()
 
 class VendorRating(models.Model):
-    vendor = models.ForeignKey('vendorDashboard.Vendor', on_delete=models.CASCADE, related_name='ratings')
-    user = models.ForeignKey(User, null=True, blank=True, on_delete=models.SET_NULL)
-    
-    quality = models.PositiveSmallIntegerField(default=0)
-    communication = models.PositiveSmallIntegerField(default=0)
-    shipping = models.PositiveSmallIntegerField(default=0)
+    vendor = models.ForeignKey(
+        'vendorDashboard.Vendor',
+        on_delete=models.CASCADE,
+        related_name='ratings'
+    )
+
+    # Authenticated user rating
+    user = models.ForeignKey(
+        User,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name='vendor_ratings'
+    )
+
+    # Visitor rating (for anonymous users)
+    visitor_id = models.CharField(
+        max_length=255,
+        null=True,
+        blank=True
+    )
+
+    # Rating fields (1–5 scale)
+    quality = models.PositiveSmallIntegerField(
+        default=0,
+        validators=[MinValueValidator(1), MaxValueValidator(5)]
+    )
+
+    communication = models.PositiveSmallIntegerField(
+        default=0,
+        validators=[MinValueValidator(1), MaxValueValidator(5)]
+    )
+
+    shipping = models.PositiveSmallIntegerField(
+        default=0,
+        validators=[MinValueValidator(1), MaxValueValidator(5)]
+    )
+
     comment = models.TextField(blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        unique_together = ('vendor', 'user')  # one rating per user per vendor
+        constraints = [
+            # One rating per logged-in user per vendor
+            models.UniqueConstraint(
+                fields=['vendor', 'user'],
+                name='unique_vendor_user_rating'
+            ),
+            # One rating per visitor per vendor
+            models.UniqueConstraint(
+                fields=['vendor', 'visitor_id'],
+                name='unique_vendor_visitor_rating'
+            ),
+        ]
+
+    def average_rating(self):
+        values = [self.quality, self.communication, self.shipping]
+        valid = [v for v in values if v > 0]
+        return round(sum(valid) / len(valid), 1) if valid else 0
 
     def __str__(self):
-        return f"{self.vendor.username} rating by {self.user.username if self.user else 'Visitor'}"
+        return f"{self.vendor} rating by {self.user or self.visitor_id or 'Unknown'}"
 
 
 

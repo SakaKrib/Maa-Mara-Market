@@ -10,6 +10,8 @@ from rest_framework import generics
 from .Serializers import BrandSerializer
 from ReactSerializers.models import Brand
 from rest_framework.views import APIView
+from vendorDashboard.models import VendorItemRequest
+from vendorDashboard.serializers import VendorItemRequestSerializer
 from rest_framework import status
 from rest_framework.decorators import action
 from .Serializers import BlogPostSerializer
@@ -18,8 +20,10 @@ from oder.views import IsAuthenticatedOrVisitor
 from django.shortcuts import get_object_or_404
 from django.db import transaction
 from django.db.models import F
+from django.db.models import Avg, Q, Count
+from oder.Base import IsVendor
 import uuid
-import bleach
+import bleach # type: ignore
 
 
 # -------------------------------
@@ -142,7 +146,7 @@ def products_view(request):
       - sortBy (Default | Product Name | Price | Brand)
       - perPage (default=10)
     """
-    queryset = Item.objects.all()
+    queryset = Item.objects.filter(in_stock__gt=0, available=True)
 
     # --- Filtering ---
     if sections := request.GET.get("sections"):
@@ -210,27 +214,31 @@ def products_view(request):
 
 # banner
 class BannerViewSet(viewsets.ModelViewSet):
-    queryset = Banner.objects.all()
     serializer_class = BannerSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.IsAuthenticated, IsVendor]
 
     def get_queryset(self):
-        # Vendors can only see their banners
-        return Banner.objects.filter(user=self.request.user)
+        # Vendors can only see their own banners
+        return Banner.objects.filter(
+            vendor__user=self.request.user
+        )
         
     
 
 # list all banners
 class BannerListView(generics.ListAPIView):
-    """
-    Returns all active banners ordered by display_order and created_at.
-    """
     serializer_class = BannerSerializer
     permission_classes = [permissions.AllowAny]
 
     def get_queryset(self):
+        now = timezone.now()
+
         return Banner.objects.filter(
-            is_active=True
+            is_approved=True,
+            is_active=True,
+            start_date__lte=now,
+        ).filter(
+            models.Q(end_date__isnull=True) | models.Q(end_date__gte=now)
         ).order_by("display_order", "-created_at")
     
 
@@ -261,10 +269,18 @@ class BlogPostViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.AllowAny]
 
     def get_queryset(self):
-        qs = BlogPost.objects.select_related('user', 'vendor').prefetch_related('comments_blog', 'reactions_blog')
-        if self.request.method == "GET" and not self.request.user.is_authenticated:
-            return qs.filter(approved=True)
-        return qs
+        qs = BlogPost.objects.select_related(
+            'user', 'vendor'
+        ).prefetch_related(
+            'comments_blog', 'reactions_blog'
+        )
+
+        # Admins can see everything
+        if self.request.user.is_staff and self.request.user.is_superuser:
+            return qs
+
+        # Everyone else only sees approved blogs
+        return qs.filter(approved=True)
 
     def perform_create(self, serializer):
         vendor = getattr(self.request.user, "vendor", None)
@@ -523,7 +539,85 @@ class AdminBlogApprovalViewSet(viewsets.ModelViewSet):
         return Response({
             "detail": f"Blog '{blog.title}' has been approved."
         })    
+    
+#Admin approve Banner
+class AdminBannerApprovalViewSet(viewsets.ModelViewSet):
+    """
+    Admin: approve/reject banners
+    """
+    serializer_class = BannerSerializer
+    permission_classes = [permissions.IsAdminUser]
 
+    def get_queryset(self):
+        return Banner.objects.filter(
+            is_approved=False
+        ).select_related("vendor", "item").order_by("-created_at")
+
+    # =========================
+    # APPROVE
+    # =========================
+    @action(detail=True, methods=["post"])
+    def approve(self, request, pk=None):
+        banner = self.get_object()
+
+        banner.is_approved = True
+        banner.is_active = True
+        banner.approved_at = timezone.now()
+        banner.save()
+
+        if banner.vendor and banner.vendor.user:
+            Notification.objects.create(
+                user=banner.vendor.user,
+                title="Banner Approved",
+                message=f"Your banner '{banner.title}' was approved.",
+                url=f"/vendor/banners/{banner.id}/"
+            )
+
+        ActivityLog.objects.create(
+            user=request.user,
+            actor_type="admin",
+            action="banner_approved",
+            item=banner.item,
+            description=f"Approved banner '{banner.title}'",
+            related_url=f"/banners/{banner.id}/"
+        )
+
+        return Response({"detail": "Banner approved."}, status=status.HTTP_200_OK)
+
+    # =========================
+    # REJECT (CLEAN LIKE BLOG)
+    # =========================
+    @action(detail=True, methods=["post"])
+    def reject(self, request, pk=None):
+        banner = self.get_object()
+        reason = request.data.get("reason", "")
+
+        title = banner.title
+
+        # 👉 BEST PRACTICE: delete rejected banners
+        banner.delete()
+
+        if banner.vendor and banner.vendor.user:
+            Notification.objects.create(
+                user=banner.vendor.user,
+                title="Banner Rejected",
+                message=f"Your banner '{title}' was rejected."
+                        + (f" Reason: {reason}" if reason else ""),
+                url="/vendor/banners/"
+            )
+
+        ActivityLog.objects.create(
+            user=request.user,
+            actor_type="admin",
+            action="banner_rejected",
+            item=banner.item,
+            description=f"Rejected banner '{title}'."
+                        + (f" Reason: {reason}" if reason else ""),
+            related_url="/banners/"
+        )
+
+        return Response({"detail": "Banner rejected."}, status=status.HTTP_200_OK)
+    
 
 #popular blogs
 class PopularBlogPostsViewSet(viewsets.ViewSet):
@@ -531,10 +625,10 @@ class PopularBlogPostsViewSet(viewsets.ViewSet):
     Return blogs ordered by total engagement (comments + reactions)
     """
     def list(self, request):
-        qs = BlogPost.objects.annotate(
+        qs = BlogPost.objects.filter(approved=True).annotate(
             total_comments=Count('comments_blog'),
             total_reactions=Count('reactions_blog'),
-        ).order_by('-total_comments', '-total_reactions')[:1]  # top 10
+        ).order_by('-total_comments', '-total_reactions')[:1]
 
         serializer = BlogPostSerializer(qs, many=True)
         return Response(serializer.data)
@@ -778,86 +872,356 @@ class VendorRatingView(APIView):
         try:
             vendor = Vendor.objects.get(id=vendor_id)
         except Vendor.DoesNotExist:
-            return Response({"error": "Vendor not found"}, status=status.HTTP_404_NOT_FOUND)
-
-        data = request.data.copy()
-        data['vendor'] = vendor.id
+            return Response({"error": "Vendor not found"}, status=404)
 
         user = request.user if request.user.is_authenticated else None
 
-        # Handle visitor identification for anonymous users
-        visitor_key = request.COOKIES.get("visitorId")
-        if not visitor_key and not user:
-            # generate a random UUID for visitor
-            visitor_key = str(uuid.uuid4())
-        
-        # Check if user/visitor has already rated
+        # -----------------------
+        # AUTHENTICATED USER FLOW
+        # -----------------------
         if user:
             rating, created = VendorRating.objects.update_or_create(
                 vendor=vendor,
                 user=user,
                 defaults={
-                    'quality': data.get('quality', 0),
-                    'communication': data.get('communication', 0),
-                    'shipping': data.get('shipping', 0),
-                    'comment': data.get('comment', "")
+                    "quality": request.data.get("quality", 0),
+                    "communication": request.data.get("communication", 0),
+                    "shipping": request.data.get("shipping", 0),
+                    "comment": request.data.get("comment", "")
                 }
             )
+
+        # -----------------------
+        # VISITOR FLOW (FIXED)
+        # -----------------------
         else:
-            existing_rating = VendorRating.objects.filter(vendor=vendor, user_id=visitor_key).first()
-            if existing_rating:
-                return Response({"error": "Visitor has already rated this shop."}, status=status.HTTP_400_BAD_REQUEST)
+            visitor_id = request.COOKIES.get("visitor_id")
+
+            if not visitor_id:
+                visitor_id = str(uuid.uuid4())
+
+            existing = VendorRating.objects.filter(
+                vendor=vendor,
+                visitor_id=visitor_id
+            ).first()
+
+            if existing:
+                return Response(
+                    {"error": "You already rated this vendor"},
+                    status=400
+                )
+
             rating = VendorRating.objects.create(
                 vendor=vendor,
-                quality=data.get('quality', 0),
-                communication=data.get('communication', 0),
-                shipping=data.get('shipping', 0),
-                comment=data.get('comment', ""),
-                user_id=visitor_key
+                visitor_id=visitor_id,
+                quality=request.data.get("quality", 0),
+                communication=request.data.get("communication", 0),
+                shipping=request.data.get("shipping", 0),
+                comment=request.data.get("comment", "")
             )
 
         serializer = VendorRatingSerializer(rating)
-        response = Response(serializer.data, status=status.HTTP_201_CREATED)
-        
-        # If visitor, set the cookie so they cannot rate again
+        response = Response(serializer.data, status=201)
+
         if not user:
-            response.set_cookie("visitor_id", visitor_key, max_age=60*60*24*365)  # 1 year
+            response.set_cookie(
+                "visitor_id",
+                visitor_id,
+                max_age=60 * 60 * 24 * 365
+            )
+
         return response
 
     def get(self, request, vendor_id):
-        """
-        Return average ratings for a vendor + total review count + comments
-        """
         try:
             vendor = Vendor.objects.get(id=vendor_id)
         except Vendor.DoesNotExist:
-            return Response({"error": "Vendor not found"}, status=status.HTTP_404_NOT_FOUND)
+            return Response({"error": "Vendor not found"}, status=404)
 
         ratings = VendorRating.objects.filter(vendor=vendor)
-        count = ratings.count()
-        avg_quality = ratings.aggregate(avg=models.Avg('quality'))['avg'] or 0
-        avg_communication = ratings.aggregate(avg=models.Avg('communication'))['avg'] or 0
-        avg_shipping = ratings.aggregate(avg=models.Avg('shipping'))['avg'] or 0
 
-        # Serialize comments (optional: only non-empty comments)
-        comments = [
-            {
-                "user": r.user.username if r.user else "Visitor",
-                "quality": r.quality,
-                "communication": r.communication,
-                "shipping": r.shipping,
-                "comment": r.comment,
-                "created_at": r.created_at,
-            }
-            for r in ratings if r.comment
-        ]
+        aggregated = ratings.aggregate(
+            avg_quality=Avg("quality"),
+            avg_communication=Avg("communication"),
+            avg_shipping=Avg("shipping"),
+        )
+
+        comments = ratings.exclude(comment__isnull=True).exclude(comment="")
 
         return Response({
             "average_ratings": {
-                "quality": round(avg_quality, 1),
-                "communication": round(avg_communication, 1),
-                "shipping": round(avg_shipping, 1)
+                "quality": round(aggregated["avg_quality"] or 0, 1),
+                "communication": round(aggregated["avg_communication"] or 0, 1),
+                "shipping": round(aggregated["avg_shipping"] or 0, 1),
             },
-            "review_count": count,
-            "comments": comments  # include the comments here
-        }, status=status.HTTP_200_OK)
+            "review_count": ratings.count(),
+            "comments": [
+                {
+                    "user": r.user.username if r.user else "Visitor",
+                    "quality": r.quality,
+                    "communication": r.communication,
+                    "shipping": r.shipping,
+                    "comment": r.comment,
+                    "created_at": r.created_at,
+                }
+                for r in comments
+            ]
+        })
+    
+
+
+# unified vendor review api
+class VendorReviewsUnifiedView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        # =========================
+        # GET LOGGED-IN VENDOR
+        # =========================
+        vendor = getattr(request.user, "vendor", None)
+
+        if not vendor:
+            return Response(
+                {"error": "You are not registered as a vendor"},
+                status=403
+            )
+
+        # =========================
+        # 1. ITEM REVIEWS (ONLY VENDOR ITEMS)
+        # =========================
+        item_reviews_qs = Review.objects.select_related("item", "user").filter(
+            item__vendor=vendor  # 🔥 KEY FILTER
+        ).annotate(
+            likes=Count("reactions", filter=Q(reactions__reaction_type="like")),
+            dislikes=Count("reactions", filter=Q(reactions__reaction_type="dislike")),
+            laughs=Count("reactions", filter=Q(reactions__reaction_type="laugh")),
+            angries=Count("reactions", filter=Q(reactions__reaction_type="angry")),
+        )
+
+        item_reviews = [
+            {
+                "id": r.id,
+                "itemName": r.item.name,
+                "user": r.user.username if r.user else "Visitor",
+                "rating": r.rating,
+                "comment": r.review_text,
+                "date": r.created_at,
+                "reactions": {
+                    "like": r.likes,
+                    "dislike": r.dislikes,
+                    "laugh": r.laughs,
+                    "angry": r.angries,
+                }
+            }
+            for r in item_reviews_qs
+        ]
+
+        # =========================
+        # 2. VENDOR REVIEWS (ONLY THIS VENDOR)
+        # =========================
+        vendor_ratings_qs = VendorRating.objects.select_related("user").filter(
+            vendor=vendor
+        )
+
+        vendor_reviews = [
+            {
+                "id": r.id,
+                "vendorName": vendor.company_name if hasattr(vendor, "company_name") else str(vendor),
+                "user": r.user.username if r.user else "Visitor",
+                "rating": round((r.quality + r.communication + r.shipping) / 3, 1),
+                "comment": r.comment,
+                "date": r.created_at,
+            }
+            for r in vendor_ratings_qs
+            if r.comment
+        ]
+
+        # =========================
+        # 3. VENDOR RATES (SUMMARY)
+        # =========================
+        vendor_rates = [
+            {
+                "id": r.id,
+                "user": r.user.username if r.user else "Visitor",
+                "stars": round((r.quality + r.communication + r.shipping) / 3, 1),
+            }
+            for r in vendor_ratings_qs
+        ]
+
+        # =========================
+        # RESPONSE
+        # =========================
+        return Response({
+            "itemReviews": item_reviews,
+            "vendorReviews": vendor_reviews,
+            "vendorRates": vendor_rates,
+        })  
+    
+
+#vendor control post review requests    
+class VendorBannerViewSet(viewsets.ModelViewSet):
+    serializer_class = BannerSerializer
+    permission_classes = [permissions.IsAuthenticated, IsVendor]
+
+    def get_queryset(self):
+        return Banner.objects.filter(
+            vendor=self.request.user.vendor,
+            is_active=True
+        ).order_by("-created_at")
+
+    def perform_update(self, serializer):
+        instance = serializer.save()
+
+        # reset approval on edit
+        instance.is_approved = False
+        instance.approved_at = None
+        instance.save()
+
+    def destroy(self, request, *args, **kwargs):
+        banner = self.get_object()
+        banner.is_active = False
+        banner.save()
+
+        return Response(
+            {"detail": "Banner deactivated (soft deleted)"},
+            status=status.HTTP_200_OK
+        )
+    
+
+#blog   
+class VendorBlogViewSet(viewsets.ModelViewSet):
+    serializer_class = BlogPostSerializer
+    permission_classes = [permissions.IsAuthenticated, IsVendor]
+
+    def get_queryset(self):
+        return BlogPost.objects.filter(
+            vendor=self.request.user.vendor
+        ).order_by("-created_at")
+
+    def perform_update(self, serializer):
+        instance = serializer.save()
+
+        instance.approved = False
+        instance.save()
+
+    def destroy(self, request, *args, **kwargs):
+        blog = self.get_object()
+        blog.delete()
+
+        return Response(
+            {"detail": "Blog deleted"},
+            status=status.HTTP_200_OK
+        )
+    
+
+# price history    
+class VendorItemRequestViewSet(viewsets.ModelViewSet):
+    serializer_class = VendorItemRequestSerializer
+    permission_classes = [permissions.IsAuthenticated, IsVendor]
+
+    def get_queryset(self):
+        return VendorItemRequest.objects.filter(
+            vendor=self.request.user.vendor
+        ).order_by("-created_at")
+
+    def perform_update(self, serializer):
+        instance = self.get_object()
+
+        if instance.status == "approved":
+            raise PermissionDenied("Cannot edit approved request")
+
+        serializer.save()
+
+    def destroy(self, request, *args, **kwargs):
+        obj = self.get_object()
+
+        if obj.status == "approved":
+            return Response(
+                {"detail": "Cannot delete approved request"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        obj.delete()
+        return Response(
+            {"detail": "Deleted"},
+            status=status.HTTP_200_OK
+        )
+    
+
+#Timeline view   
+from rest_framework.views import APIView
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
+
+
+class VendorHistoryTimelineView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        vendor = getattr(request.user, "vendor", None)
+
+        if not vendor:
+            return Response([])
+
+        # ======================
+        # BANNERS
+        # ======================
+        banners = Banner.objects.filter(vendor=vendor)
+
+        banner_list = [
+            {
+                "id": b.id,
+                "type": "banners",
+                "title": b.title,
+                "description": b.subtitle or "",
+                "status": "approved" if b.is_approved else "pending",
+                "created_at": b.created_at,
+            }
+            for b in banners
+        ]
+
+        # ======================
+        # BLOGS
+        # ======================
+        blogs = BlogPost.objects.filter(vendor=vendor)
+
+        blog_list = [
+            {
+                "id": b.id,
+                "type": "blogs",
+                "title": b.title,
+                "description": b.content,
+                "status": "approved" if b.approved else "pending",
+                "created_at": b.created_at,
+            }
+            for b in blogs
+        ]
+
+        # ======================
+        # ITEM REQUESTS
+        # ======================
+        items = VendorItemRequest.objects.filter(vendor=vendor)
+
+        item_list = [
+            {
+                "id": i.id,
+                "type": "prices",
+                "title": i.name,
+                "description": i.description,
+                "status": i.status,
+                "created_at": i.created_at,
+            }
+            for i in items
+        ]
+
+        # ======================
+        # MERGE + SORT
+        # ======================
+        timeline = banner_list + blog_list + item_list
+
+        timeline.sort(
+            key=lambda x: x["created_at"] or "",
+            reverse=True
+        )
+
+        return Response(timeline)

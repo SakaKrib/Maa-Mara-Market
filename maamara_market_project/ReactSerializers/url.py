@@ -25,7 +25,7 @@ urlpatterns = [
     #vendor profile
     path("api/vendor-profile/single-page/", VendorProfileView.as_view(), name="vendor-profile"),
     path("api/vendor-update-profile/<int:pk>/", VendorUpdateProfile.as_view(), name="vendor-profile-update"),
-
+    
     
     path('api/token/refresh/', CookieRefreshView.as_view(), name='refresh'),
     #visitor token
@@ -38,15 +38,15 @@ urlpatterns = [
     path('api/profile/', ProfileView.as_view(), name='profile'),
     path('api/check-auth/', HybridCheckAuthView.as_view()),
     path('api/logout/',logout_view),
+
+    # google login
+    path("google/success/", google_login_success),
     
     # item stats
     path('api/item-stats/', vendor_item_stats),
     path("api/vendor-item-growth/", vendor_item_growth_stats, name="vendor-item-growth"),
 
-    path('api/callback/',google_login_callback),
-    path('api/accounts/',include('allauth.urls')),
-    path('api/google/validate_token/',validate_google_token),
-
+    
     #vendor item update
     path(
     'api/item-post/update/',

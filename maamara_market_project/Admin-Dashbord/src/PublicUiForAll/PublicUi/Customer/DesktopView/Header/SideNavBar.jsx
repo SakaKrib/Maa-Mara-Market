@@ -1,22 +1,19 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useCategories } from "./SectionHook";
-import { Link } from "react-router-dom";
 
 export default function HoverCategoryMenu() {
   const { data, loading, error } = useCategories();
-  const [hoverDept, setHoverDept] = useState(null);
-  const [hoverCat, setHoverCat] = useState(null);
   const navigate = useNavigate();
 
+  const [activeDept, setActiveDept] = useState(null);
+  const [activeCat, setActiveCat] = useState(null);
+
   const handlecategoryclick = () => {
-    navigate('/filter-category')
-  }
+    navigate("/filter-category");
+  };
 
-  if (loading) return null;
-  if (error) return null;
-  if (!data?.sections) return null;
-
+  if (loading || error || !data?.sections) return null;
 
   const departmentalSection =
     data.sections.find((s) =>
@@ -26,96 +23,129 @@ export default function HoverCategoryMenu() {
   const departments = departmentalSection?.departments || [];
 
   return (
-    <div className="dtp-menu">
-      <ul className="second-links w-full">
+    <div style={{ width: "100%", position:'absolute' }} className="bg-gray-100">
+      <ul style={{ listStyle: "none", padding: 0 }}>
 
-        {/* STATIC FILTER OPTION */}
-        <li className="relative cursor-pointer" onClick={handlecategoryclick}>
-         
-            <div className="icon-large"><i className="ri-user-6-line"></i></div>
-           Filter Categories
-          
+        {/* FILTER */}
+        <li
+          style={{ cursor: "pointer", padding: "10px", textAlign: "center" }}
+          className="hover:underline-blue-500"
+          onClick={handlecategoryclick}
+        >
+          <i className="ri-user-6-line"></i> Filter Categories
         </li>
 
-        {/* TOP LEVEL LABEL */}
-        <li className="bg-gray-200 w-full mt-2 items-center">
-          <span className="">
-            <div className="icon-large"><i className="ri-menu-line"></i></div>
-            Departments
-          </span>
+        {/* HEADER */}
+        <li style={{ background: "#eee", padding: "10px", textAlign: "center" }}>
+          <i className="ri-menu-line"></i> Departments
         </li>
 
-        {/* ----------------------------- */}
-        {/*        DEPARTMENTS LEVEL      */}
-        {/* ----------------------------- */}
+        {/* ================= DEPARTMENTS ================= */}
         {departments.map((dept) => (
           <li
             key={dept.id}
-            className="has-child flex flex-col w-full "
-            onMouseEnter={() => setHoverDept(dept.id)}
-            onMouseLeave={() => {
-              setHoverDept(null);
-              setHoverCat(null);
+            style={{ position: "relative", textAlign: "center" }}
+            onMouseEnter={() => {
+              setActiveDept(dept.id);
+              setActiveCat(true);
             }}
           >
-            <span className="cat-label">
-              <div className="icon-large"><i className="ri-building-line"></i></div>
-              {dept.name}
-              <div className="icon-small"><i className="ri-arrow-right-s-line"></i></div>
-            </span>
+            {/* DEPARTMENT */}
+            <div style={{ padding: "10px", cursor: "pointer" }}>
+              <i className="ri-building-line"></i> {dept.name}
+            </div>
 
-            {/* CATEGORY DROPDOWN */}
-            {hoverDept === dept.id && dept.categories?.length > 0 && (
-              <ul className="hover-submenu">
-
-                <h4 className="mobile-hide text-lg">{dept.name}</h4>
-
-                {dept.categories.map((cat) => (
-                  <li
-                    key={cat.id}
-                    onMouseEnter={() => setHoverCat(cat.id)}
-                    onMouseLeave={() => setHoverCat(null)}
-                    className="has-child w-full"
-                  >
-                    <span className="cat-label">
-                      {cat.name}
-                      <div className="icon-small"><i className="ri-arrow-right-s-line"></i></div>
-                    </span>
-
-                    {/* SUBCATEGORY LEVEL */}
-                    {hoverCat === cat.id && cat.subcategories?.length > 0 && (
-                      <ul
-                      className="
-                        hover-submenu second-level
-                        
-                      "
+            {/* ================= CATEGORY PANEL ================= */}
+            {activeDept === dept.id && (
+              <div
+                style={{
+                  position: "absolute",
+                  top: 0,
+                  left: "100%",
+                  background: "#fff",
+                  border: "1px solid #ddd",
+                  zIndex: 1000,
+                  display: "flex",            // ✅ KEY FIX
+                  minWidth: "600px",          // wider horizontal menu
+                }}
+                onMouseLeave={() => {
+                  setActiveDept(null);
+                  setActiveCat(null);
+                }}
+              >
+                {/* CATEGORY LIST */}
+                <ul
+                  style={{
+                    listStyle: "none",
+                    margin: 0,
+                    padding: 0,
+                    display: "flex",         // ✅ horizontal categories
+                    gap: "20px",
+                  }}
+                >
+                  {dept.categories?.map((cat) => (
+                    <li
+                      key={cat.id}
+                      style={{
+                        position: "relative",
+                        padding: "10px",
+                        cursor: "pointer",
+                        width: "max-content",
+                      }}
+                      onMouseEnter={() => setActiveCat(cat.id)}
                     >
-                      <h4 className="mobile-hide text-lg col-span-2 mb-2 ">{cat.name}</h4>
-                      <div className="columns-5
-                        gap-4
-                        min-h-[350px]
-                        overflow-hidden
-                        w-full
-                        -right-4
-                        p-2">
-                    
-                      {cat.subcategories.map((sub) => (
-                        <li key={sub.id} className="w-full mb-1">
-                          <button
-                            className="text-left hover:underline w-max"
-                            onClick={() => navigate(`/subcategory/${sub.id}/products`)}
+                      <div className="w-fit">{cat.name}</div>
+
+                      {/* ================= SUBCATEGORY PANEL ================= */}
+                      {activeCat === cat.id && (
+                        <div
+                          style={{
+                            position: "absolute",
+                            top: "100%",
+                            left: 0,
+                            background: "#fff",
+                            border: "1px solid #ddd",
+                            zIndex: 1100,
+                            minWidth: "200px",
+                            padding: "10px",
+                          }}
+                          onMouseLeave={() => setActiveCat(null)}
+                        >
+                          <ul
+                            style={{
+                              listStyle: "none",
+                              margin: 0,
+                              padding: 0,
+                              display: "flex",   // ✅ horizontal subcategories
+                              flexDirection: "column",
+                              gap: "6px",
+                            }}
                           >
-                            {sub.name}
-                          </button>
-                        </li>
-                      ))}
-                      </div>
-                    </ul>
-                    
-                    )}
-                  </li>
-                ))}
-              </ul>
+                            {cat.subcategories?.map((sub) => (
+                              <li key={sub.id}>
+                                <button
+                                  style={{
+                                    width: "100%",
+                                    textAlign: "left",
+                                    background: "none",
+                                    border: "none",
+                                    cursor: "pointer",
+                                  }}
+                                  onClick={() =>
+                                    navigate(`/subcategory/${sub.id}/products`)
+                                  }
+                                >
+                                  {sub.name}
+                                </button>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              </div>
             )}
           </li>
         ))}

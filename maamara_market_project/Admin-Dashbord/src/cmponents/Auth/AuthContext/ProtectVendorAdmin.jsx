@@ -8,7 +8,7 @@ function HomeRedirectWrapper({ children }) {
 
   useEffect(() => {
     if (isAuthenticated) {
-      if (user.role === "admin") navigate("/dashboard", { replace: true });
+      if (user.role === "admin") navigate("/admin-dashboard", { replace: true });
       else if (user.role === "vendor") navigate("/vendors-dashboard", { replace: true });
     }
   }, [isAuthenticated, user, navigate]);

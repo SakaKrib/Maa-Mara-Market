@@ -391,10 +391,10 @@ nav .fly-item{
 
 .dtp-menu > ul > li > a,
 .dtp-menu > ul > li {
-    font-size: var(--font-small);height: 46px;text-align: center;
+    font-size: var(--font-small);height: 46px;text-align: center;display: flex;justify-content: center;
 }
 .dtp-menu ul li {
-    justify-content: space-between;
+    justify-content: center;
 }
 
 /* search css

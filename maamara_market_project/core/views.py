@@ -13,13 +13,19 @@ from shop.models import  Review, Reaction
 from rest_framework.parsers import MultiPartParser, FormParser
 from core.Serializer import *
 from .UserVisitorSerializers import *
-import bleach
+import bleach # type: ignore
 from oder.views import IsAuthenticatedOrVisitor
 from .CategorySerializers import SectionSerializerCat, CategorySerializerCat
 from django.db.models import Prefetch
 from oder.views import IsAuthenticatedOrVisitor
-
+from django.core.mail import send_mail
 from rest_framework import generics
+from django.utils.timezone import now
+from datetime import timedelta
+from django.core.mail import EmailMultiAlternatives
+from django.template.loader import render_to_string           
+from datetime import datetime
+from django.core.paginator import Paginator
 
 
 
@@ -56,58 +62,191 @@ class AllNotificationsView(APIView):
 # -------------------------------
 # Filter items
 # -------------------------------
-@api_view(['GET'])
+# @api_view(['GET'])
+# @permission_classes([AllowAny])
+# def filtered_items(request):
+#     items = Item.objects.all()
+
+#     section = request.GET.get('section', '').strip()
+#     if section:
+#         items = items.filter(section__name__iexact=section)
+
+#     department = request.GET.get('department', '').strip()
+#     if department:
+#         items = items.filter(department__name__iexact=department)
+
+#     category = request.GET.get('category', '').strip()
+#     if category:
+#         items = items.filter(category__name__iexact=category)
+
+#     min_price = request.GET.get('minPrice')
+#     if min_price:
+#         items = items.filter(price__gte=min_price)
+
+#     max_price = request.GET.get('maxPrice')
+#     if max_price:
+#         items = items.filter(price__lte=max_price)
+
+#     size = request.GET.get('size', '').strip()
+#     if size:
+#         items = items.filter(sizes__icontains=size)
+
+#     color = request.GET.get('color', '').strip()
+#     if color:
+#         items = items.filter(colors__icontains=color)
+
+#     sort = request.GET.get('sort', '').strip()
+#     if sort == 'low-high':
+#         items = items.order_by('price')
+#     elif sort == 'high-low':
+#         items = items.order_by('-price')
+#     elif sort == 'newest':
+#         items = items.order_by('-created_at')
+#     elif sort == 'oldest':
+#         items = items.order_by('created_at')
+
+#     paginator = PageNumberPagination()
+#     paginator.page_size = 15
+
+#     paginated_items = paginator.paginate_queryset(items, request)
+#     serializer = ItemSerializer(paginated_items, many=True)
+
+#     return paginator.get_paginated_response(serializer.data)
+
+
+# filter hompage for options
+@api_view(["GET"])
+@permission_classes([AllowAny])
+def filter_options(request):
+
+    sections = Section.objects.values("id", "name").distinct()
+    departments = Department.objects.values("id", "name").distinct()
+    categories = Category.objects.values("id", "name").distinct()
+
+    # =========================
+    # FIXED SIZES (RELATION SAFE)
+    # =========================
+    sizes_set = set()
+
+    items = Item.objects.all().only("kids_sizes")
+
+    for item in items:
+        ks = item.kids_sizes
+
+        # CASE 1: ManyToMany / RelatedManager
+        if hasattr(ks, "all"):
+            for obj in ks.all():
+                sizes_set.add(str(obj))
+
+        # CASE 2: list / JSON
+        elif isinstance(ks, list):
+            sizes_set.update(ks)
+
+        # CASE 3: single value (FK or string)
+        elif ks not in [None, ""]:
+            sizes_set.add(str(ks))
+
+    sizes = [{"id": s, "name": s} for s in sorted(sizes_set)]
+
+    # =========================
+    # COLORS SAFE
+    # =========================
+    colors_set = set()
+
+    if "color" in [f.name for f in Item._meta.get_fields()]:
+        for c in Item.objects.values_list("color", flat=True):
+            if c:
+                colors_set.add(c)
+
+    colors = [{"id": c, "name": c} for c in sorted(colors_set)]
+
+    # =========================
+    # RESPONSE
+    # =========================
+    return Response({
+        "sections": list(sections),
+        "departments": list(departments),
+        "categories": list(categories),
+        "sizes": sizes,
+        "colors": colors,
+    })
+
+
+
+# filter hompage items
+@api_view(["GET"])
 @permission_classes([AllowAny])
 def filtered_items(request):
-    items = Item.objects.all()
+    items = Item.objects.filter(in_stock__gt=0, available=True)
+    # ======================
+    # FILTERS
+    # ======================
 
-    # Changed from 'type' to 'section' filter
-    section = sanitize(request.GET.get('section', ''))
+    section = request.GET.get("section")
+    department = request.GET.get("department")
+    category = request.GET.get("category")
+
+    size = request.GET.get("size")
+    color = request.GET.get("color")
+
+    min_price = request.GET.get("minPrice")
+    max_price = request.GET.get("maxPrice")
+
+    # ---- relations ----
     if section:
         items = items.filter(section__name__iexact=section)
 
-    department = sanitize(request.GET.get('department', ''))
     if department:
         items = items.filter(department__name__iexact=department)
 
-    category = sanitize(request.GET.get('category', ''))
     if category:
         items = items.filter(category__name__iexact=category)
 
-    min_price = request.GET.get('minPrice')
+    # ---- attributes ----
+    if size:
+        items = items.filter(size__iexact=size)
+
+    if color:
+        items = items.filter(color__iexact=color)
+
+    # ---- price ----
     if min_price:
         items = items.filter(price__gte=min_price)
 
-    max_price = request.GET.get('maxPrice')
     if max_price:
         items = items.filter(price__lte=max_price)
 
-    sort = sanitize(request.GET.get('sort', ''))
-    if sort == 'low-high':
-        items = items.order_by('price')
-    elif sort == 'high-low':
-        items = items.order_by('-price')
-    elif sort == 'newest':
-        items = items.order_by('-created_at')
-    elif sort == 'oldest':
-        items = items.order_by('created_at')
+    # ======================
+    # SORTING
+    # ======================
+    sort = request.GET.get("sort")
 
-    size = sanitize(request.GET.get('size', ''))
-    if size:
-        items = [item for item in items if size in item.sizes]
+    if sort == "low-high":
+        items = items.order_by("price")
+    elif sort == "high-low":
+        items = items.order_by("-price")
+    elif sort == "newest":
+        items = items.order_by("-created_at")
+    elif sort == "oldest":
+        items = items.order_by("created_at")
 
-    color = sanitize(request.GET.get('color', ''))
-    if color:
-        items = [item for item in items if color in item.colors]
+    # ======================
+    # PAGINATION
+    # ======================
+    page = int(request.GET.get("page", 1))
+    page_size = int(request.GET.get("page_size", 15))
 
-    serializer = ItemSerializer(items, many=True)
-    data = serializer.data
-    # Sanitize string fields in serialized items
-    for item in data:
-        for k, v in item.items():
-            item[k] = sanitize(v)
+    paginator = Paginator(items, page_size)
+    page_obj = paginator.get_page(page)
 
-    return Response(data)
+    serializer = ItemSerializer(page_obj.object_list, many=True)
+
+    return Response({
+        "results": serializer.data,
+        "count": paginator.count,
+        "next": page_obj.has_next(),
+        "previous": page_obj.has_previous(),
+    })
 
 
 
@@ -501,3 +640,158 @@ class UserCalendarEventsView(generics.ListCreateAPIView):
     def perform_create(self, serializer):
         # Assign the logged-in user when creating an event
         serializer.save(user=self.request.user)
+
+#email tracking view
+from django.contrib.auth import get_user_model
+
+User = get_user_model()
+
+@api_view(["POST"])
+@permission_classes([IsAuthenticated, IsAdminUser])
+def send_email(request):
+    to = request.data.get("to")
+    subject = request.data.get("subject")
+    message = request.data.get("message")
+
+    attachments = request.FILES.getlist("attachments")
+
+    try:
+        from_email = settings.DEFAULT_FROM_EMAIL
+
+        # 🔥 LOOK UP USER BY EMAIL
+        user = User.objects.filter(email=to).first()
+
+        # 🧠 derive name safely
+        if user:
+            to_name = user.get_full_name() or user.username
+        else:
+            to_name = "Valued User"
+
+        html_content = render_to_string("emails/compose_email.html", {
+            "subject": subject,
+            "message": message,
+
+            # ✨ AUTO PERSONALISED DATA
+            "to_email": to,
+            "to_name": to_name,
+
+            "company_name": getattr(settings, "COMPANY_NAME", "My Company"),
+            "year": datetime.now().year,
+        })
+
+        email = EmailMultiAlternatives(
+            subject=subject,
+            body=message,
+            from_email=from_email,
+            to=[to],
+        )
+
+        email.attach_alternative(html_content, "text/html")
+
+        for file in attachments:
+            email.attach(file.name, file.read(), file.content_type)
+
+        email.send()
+
+        EmailLog.objects.create(
+            recipient=to,
+            subject=subject,
+            message=message,
+            status="sent",
+            type="compose"
+        )
+
+        return Response({"success": True})
+
+    except Exception as e:
+        EmailLog.objects.create(
+            recipient=to,
+            subject=subject,
+            message=message,
+            status="failed",
+            type="compose"
+        )
+
+        return Response({"success": False, "error": str(e)}, status=500)
+
+#email stats
+@api_view(["GET"])
+@permission_classes([IsAuthenticated, IsAdminUser])
+def email_stats(request):
+    today = now().date()
+    start_this_month = today.replace(day=1)
+    start_last_month = (start_this_month - timedelta(days=1)).replace(day=1)
+
+    total_sent = EmailLog.objects.filter(status="sent").count()
+
+    this_month = EmailLog.objects.filter(
+        status="sent",
+        created_at__date__gte=start_this_month
+    ).count()
+
+    last_month = EmailLog.objects.filter(
+        status="sent",
+        created_at__date__gte=start_last_month,
+        created_at__date__lt=start_this_month
+    ).count()
+
+    today_sent = EmailLog.objects.filter(
+        status="sent",
+        created_at__date=today
+    ).count()
+
+    failed = EmailLog.objects.filter(status="failed").count()
+
+    growth = 0
+    if last_month > 0:
+        growth = ((this_month - last_month) / last_month) * 100
+
+    return Response({
+        "total": total_sent + failed,
+        "sent": total_sent,
+        "failed": failed,
+        "this_month": this_month,
+        "last_month": last_month,
+        "today": today_sent,
+        "growth": round(growth, 2)
+    })
+
+
+
+# fetch user to sed them email
+@api_view(["GET"])
+@permission_classes([IsAuthenticated, IsAdminUser])
+def users_list(request):
+    users = User.objects.all().values(
+        "id",
+        "username",
+        "email",
+        "first_name",
+        "last_name"
+    )
+
+    return Response(list(users))
+
+
+# email list view
+@api_view(["GET"])
+@permission_classes([IsAuthenticated, IsAdminUser])
+def email_list(request):
+    status = request.GET.get("status")  # sent, failed, received, all
+
+    emails = EmailLog.objects.all().order_by("-created_at")
+
+    if status and status != "all":
+        emails = emails.filter(status=status)
+
+    data = list(emails.values(
+        "id",
+        "recipient",
+        "subject",
+        "message", 
+        "status",
+        "type",
+        "created_at"
+    ))
+
+    return Response(data)

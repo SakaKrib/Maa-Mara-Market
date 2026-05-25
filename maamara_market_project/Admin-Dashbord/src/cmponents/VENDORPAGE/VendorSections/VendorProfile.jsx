@@ -527,7 +527,7 @@ useEffect(() => {
           className="p-4 rounded-md"
           style={{
             color: colors.gray[100],
-            backgroundColor: colors.gray[700],
+            backgroundColor: colors.primary[600],
           }}
         >
           <h2 className="text-lg md:text-xl mb-4">Performance Chart</h2>

@@ -1,88 +1,17 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useTheme } from "@mui/material";
 import { tokens } from "../../../../theme";
-
-const sampleReviews = {
-  itemReviews: [
-    {
-      id: 1,
-      itemName: "Handmade Wool Carpet",
-      user: "Alice Johnson",
-      rating: 4,
-      comment: "Beautiful carpet, but shipping took a bit long.",
-      date: "2025-11-15",
-    },
-    {
-      id: 2,
-      itemName: "Giraffe Lampshade",
-      user: "Bob Smith",
-      rating: 5,
-      comment: "Amazing quality and fast delivery!",
-      date: "2025-11-20",
-    },
-    {
-      id: 3,
-      itemName: "Ceramic Mug",
-      user: "Emily Davis",
-      rating: 3,
-      comment: "Nice design but a little fragile.",
-      date: "2025-11-25",
-    },
-  ],
-
-  vendorReviews: [
-    {
-      id: 1,
-      vendorName: "John Doe (MaaMara Market Vendor)",
-      user: "Cathy Lee",
-      rating: 5,
-      comment: "Very responsive and good communication. Will buy again.",
-      date: "2025-11-12",
-    },
-    {
-      id: 2,
-      vendorName: "John Doe (MaaMara Market Vendor)",
-      user: "David Brown",
-      rating: 3,
-      comment: "Vendor was okay but packaging could be better.",
-      date: "2025-11-18",
-    },
-    {
-      id: 3,
-      vendorName: "John Doe (MaaMara Market Vendor)",
-      user: "Sarah Wilson",
-      rating: 4,
-      comment: "Great prices and timely delivery.",
-      date: "2025-11-22",
-    },
-  ],
-
-  vendorRates: [
-    {
-      id: 1,
-      user: "Cathy Lee",
-      stars: 5,
-    },
-    {
-      id: 2,
-      user: "David Brown",
-      stars: 3,
-    },
-    {
-      id: 3,
-      user: "Sarah Wilson",
-      stars: 4,
-    },
-    {
-      id: 4,
-      user: "Mark Taylor",
-      stars: 2,
-    },
-  ],
-};
+import api from "../../../../Services/Api"; // adjust path
 
 const ReviewsPage = () => {
   const [currentTab, setCurrentTab] = useState("itemReviews");
+  const [reviews, setReviews] = useState({
+    itemReviews: [],
+    vendorReviews: [],
+    vendorRates: [],
+  });
+  const [loading, setLoading] = useState(true);
+
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
 
@@ -92,6 +21,38 @@ const ReviewsPage = () => {
 
   const renderStars = (count) =>
     "★".repeat(count) + "☆".repeat(5 - count);
+
+  // ✅ FETCH FROM BACKEND
+  useEffect(() => {
+    const fetchReviews = async () => {
+      try {
+        setLoading(true);
+
+        const res = await api.get("/api/vendor-reviews/");
+
+        setReviews({
+          itemReviews: res.data.itemReviews || [],
+          vendorReviews: res.data.vendorReviews || [],
+          vendorRates: res.data.vendorRates || [],
+        });
+
+      } catch (err) {
+        console.error("Failed to fetch reviews:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchReviews();
+  }, []);
+
+  if (loading) {
+    return (
+      <div style={{ padding: 24, color: colors.gray[100] }}>
+        Loading reviews...
+      </div>
+    );
+  }
 
   return (
     <div style={{ padding: 24, color: colors.gray[100], fontFamily: "Arial, sans-serif" }}>
@@ -107,8 +68,8 @@ const ReviewsPage = () => {
           marginBottom: 24,
           borderRadius: 8,
           overflow: "hidden",
-          backgroundColor: colors.primary[400],
-          boxShadow: `0 0 6px ${colors.primary[500]}`,
+          backgroundColor: colors.greenAccent[900],
+          boxShadow: `0 0 6px ${colors.primary[600]}`,
         }}
       >
         {["itemReviews", "vendorReviews", "vendorRates"].map((tabKey) => {
@@ -117,6 +78,7 @@ const ReviewsPage = () => {
             vendorReviews: "Vendor Reviews",
             vendorRates: "Vendor Rates",
           };
+
           const isActive = currentTab === tabKey;
 
           return (
@@ -127,8 +89,12 @@ const ReviewsPage = () => {
                 flex: 1,
                 padding: "12px 0",
                 border: "none",
-                backgroundColor: isActive ? colors.primary[500] : colors.primary[700],
-                borderBottom: isActive ? `1px solid ${colors.primary[100]}` : "1px solid transparent",
+                backgroundColor: isActive
+                  ? colors.primary[600]
+                  : colors.greenAccent[900],
+                borderBottom: isActive
+                  ? `1px solid ${colors.primary[100]}`
+                  : "1px solid transparent",
                 color: isActive ? colors.greenAccent[100] : colors.gray[500],
                 fontWeight: isActive ? "bold" : "normal",
                 cursor: "pointer",
@@ -145,7 +111,7 @@ const ReviewsPage = () => {
       <div>
         {currentTab === "vendorRates" && (
           <ul style={{ listStyle: "none", padding: 0, margin: 0 }}>
-            {sampleReviews.vendorRates.map(({ id, user, stars }) => (
+            {reviews.vendorRates.map(({ id, user, stars }) => (
               <li
                 key={id}
                 style={{
@@ -153,10 +119,8 @@ const ReviewsPage = () => {
                   borderRadius: 8,
                   padding: 16,
                   marginBottom: 12,
-                  backgroundColor: colors.primary[700],
-                  
+                  backgroundColor: colors.primary[600],
                 }}
-                className="shadow"
               >
                 <strong>{user}</strong> rated:{" "}
                 <span style={{ color: "#ffd700", fontSize: 20 }}>
@@ -164,7 +128,8 @@ const ReviewsPage = () => {
                 </span>
               </li>
             ))}
-            {sampleReviews.vendorRates.length === 0 && (
+
+            {reviews.vendorRates.length === 0 && (
               <p>No vendor rates found.</p>
             )}
           </ul>
@@ -172,14 +137,14 @@ const ReviewsPage = () => {
 
         {(currentTab === "itemReviews" || currentTab === "vendorReviews") && (
           <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-            {sampleReviews[currentTab].map((review) => (
+            {reviews[currentTab].map((review) => (
               <div
                 key={review.id}
                 style={{
                   border: `1px solid ${colors.primary[500]}`,
                   borderRadius: 8,
                   padding: 16,
-                  backgroundColor: colors.primary[700],
+                  backgroundColor: colors.primary[600],
                 }}
               >
                 {currentTab === "itemReviews" && (
@@ -187,6 +152,7 @@ const ReviewsPage = () => {
                     Item: {review.itemName}
                   </p>
                 )}
+
                 {currentTab === "vendorReviews" && (
                   <p style={{ fontWeight: "bold", marginBottom: 4 }}>
                     Vendor: {review.vendorName}
@@ -218,7 +184,7 @@ const ReviewsPage = () => {
               </div>
             ))}
 
-            {sampleReviews[currentTab].length === 0 && (
+            {reviews[currentTab].length === 0 && (
               <p>No reviews found.</p>
             )}
           </div>

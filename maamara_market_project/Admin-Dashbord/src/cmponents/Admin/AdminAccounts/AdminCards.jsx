@@ -75,7 +75,7 @@ export default function PaymentsOverview({ date = "", cards = null }) {
           value={selectedDate}
           onChange={handleDateChange}
           className="px-3 py-2 border rounded-md"
-          style={{ backgroundColor: colors.gray[300] }}
+          style={{ backgroundColor: colors.primary[600] }}
         />
       </div>
 
@@ -84,7 +84,7 @@ export default function PaymentsOverview({ date = "", cards = null }) {
           <div
             key={c.id}
             className="card bg-white shadow-md rounded-lg overflow-hidden"
-            style={{ color: colors.gray[100], backgroundColor: colors.gray[600] }}
+            style={{ color: colors.gray[100], backgroundColor: colors.primary[600] }}
           >
             <div className="top flex items-center justify-between px-6 py-4 border-b">
               <div className="left flex items-center gap-3">

@@ -9,6 +9,7 @@ import { useNavigate } from "react-router-dom";
 import Maamara from "../src/assets/Logo/Maamara.jpg";
 import Snackbar from '@mui/material/Snackbar'
 import Alert from '@mui/material/Alert'
+import { Eye, EyeOff } from "lucide-react"
 
 
 
@@ -108,6 +109,9 @@ const RegistrationForm = () => {
     setSnackbar(prev => ({ ...prev, open: false }));
   }
 
+  // set see password hide password
+  const [showPassword, setShowPassword] = useState(false)
+
   return (
     <>
       <div>
@@ -129,26 +133,48 @@ const RegistrationForm = () => {
             {!otpSent ? (
               <form onSubmit={handleSubmit} className="space-y-4">
                 {[
-                  { label: "First Name", name: "First_name" },
-                  { label: "Surname", name: "Sur_name" },
-                  { label: "Username", name: "username" },
-                  { label: "Email", name: "email", type: "email" },
-                  { label: "Password", name: "password", type: "password" },
-                  { label: "Confirm Password", name: "password2", type: "password" },
-                  { label: "Referral Code (optional)", name: "referral_code" }
-                ].map(({ label, name, type = "text" }) => (
-                  <div key={name}>
-                    <Label htmlFor={name}>{label}</Label>
-                    <Input
-                      id={name}
-                      name={name}
-                      type={type}
-                      value={formData[name]}
-                      onChange={handleChange}
-                      required={name !== "referral_code"}
-                    />
-                  </div>
-                ))}
+                    { label: "First Name", name: "First_name" },
+                    { label: "Surname", name: "Sur_name" },
+                    { label: "Username", name: "username" },
+                    { label: "Email", name: "email", type: "email" },
+                    { label: "Password", name: "password" },
+                    { label: "Confirm Password", name: "password2" },
+                    { label: "Referral Code (optional)", name: "referral_code" }
+                  ].map(({ label, name, type = "text" }) => (
+                    <div key={name}>
+                      <Label htmlFor={name}>{label}</Label>
+
+                      {(name === "password" || name === "password2") ? (
+                        <div className="relative">
+                          <Input
+                            id={name}
+                            name={name}
+                            type={showPassword ? "text" : "password"}
+                            value={formData[name]}
+                            onChange={handleChange}
+                            required={name !== "referral_code"}
+                          />
+
+                          <button
+                            type="button"
+                            onClick={() => setShowPassword((prev) => !prev)}
+                            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                          >
+                            {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                          </button>
+                        </div>
+                      ) : (
+                        <Input
+                          id={name}
+                          name={name}
+                          type={type}
+                          value={formData[name]}
+                          onChange={handleChange}
+                          required={name !== "referral_code"}
+                        />
+                      )}
+                    </div>
+                  ))}
 
                 <Button type="submit" disabled={loading || !csrfToken} className="w-full">
                   {loading ? "Registering..." : "Register"}

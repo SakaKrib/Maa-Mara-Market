@@ -29,7 +29,7 @@ const SingleItem = () => {
   0;
 
 
-  console.log("availableStock:", availableStock, "quantity:", quantity);
+
 
 
   //avalable stock left as you add to the the qty
@@ -71,6 +71,8 @@ const SingleItem = () => {
         rightRef.current.scrollBy({ top: -100, behavior: "smooth" });
       }
     };
+
+    
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);

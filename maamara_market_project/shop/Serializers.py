@@ -296,6 +296,7 @@ class BlogPostSerializer(serializers.ModelSerializer):
             'image',
             'video',
             'item',
+            'approved',
             'created_at',
             'comments',
             'reactions',

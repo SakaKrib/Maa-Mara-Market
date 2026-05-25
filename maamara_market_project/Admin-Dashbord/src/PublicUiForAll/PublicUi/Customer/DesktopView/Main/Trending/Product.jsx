@@ -100,16 +100,16 @@ const TrendingProducts = () => {
   };
 
   useEffect(() => {
-    fetchItems(`${baseUrl}/api/items/`);
+    fetchItems(`/api/items/`);
   }, []);
 
   // ✅ Fixed parameter naming: use 'id' instead of 'itemId'
   const handleItemClick = async (id) => {
     try {
-      await api.get(`${baseUrl}/api/items/${id}/`, {
+      await api.get(`/api/items/${id}/`, {
         method: 'GET',
         headers: { 'Content-Type': 'application/json' },
-        credentials: 'include', // to send cookies for visitor_id
+        withCredentials: true
       });
     } catch (err) {
       console.error("Failed to increment view:", err);

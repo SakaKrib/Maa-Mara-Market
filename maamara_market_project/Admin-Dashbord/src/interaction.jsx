@@ -9,6 +9,7 @@ const useDashboardInteractions = () => {
     const navigationLinks = document.querySelectorAll('.navigate-bar li');
     const main = document.querySelector('.main-dashboard');
     const toggleB = document.querySelector('.toggle');
+    const ShowUserName = document.querySelector('.user-name');
     const navigation = document.querySelector('.navigate-bar');
     const wrapNav = document.querySelector('.nav-container');
     const headerTop = document.querySelector('.header-top');
@@ -21,6 +22,8 @@ const useDashboardInteractions = () => {
     const settings =  document.querySelector('.config');
     console.log(settings)
     const toolkit = document.querySelector('.settings');
+    // hovermenu stick
+    const HoverMenu = document.querySelector('.has-child');
 
     // Highlight active navigation link
     function activeLink() {
@@ -41,6 +44,7 @@ const useDashboardInteractions = () => {
         headerTop?.classList.toggle('active');
         settings?.classList.toggle('active');
         toolkit?.classList.toggle('active');
+        ShowUserName?.classList.toggle('active');
 
       };
     }
@@ -83,6 +87,7 @@ const useDashboardInteractions = () => {
         main?.classList.remove('active');
         headerTop?.classList.remove('active');
         settings?.classList.remove('active');
+        ShowUserName?.classList.remove('active');
         toolkit?.classList.toggle('active');
 
       });
@@ -136,6 +141,9 @@ const useDashboardInteractions = () => {
       lightBtn?.classList.add('active');
       document.querySelectorAll('.iconBox').forEach((icon) => icon.classList.remove('active'));
     }
+
+
+    
 
     // Cleanup
     return () => {

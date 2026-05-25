@@ -79,5 +79,15 @@ urlpatterns = [
     # order fetch api
     path('api/combined-orders/', vendor_orders_combined, name='get_orders'),
 
+    # Sales dshboard stats
+    path('api/sales/stats/', dashboard_stats),
+    # stats page for admin
+    path("api/admin/dashboard/vendor-sales/", vendor_sales),
+    # monthly revenue ststistics
+    path("api/revenue-analytics/", vendor_sales),
+    
+    # api for 
+    path("api/admin-transactions/", admin_transactions),
+
 
 ]

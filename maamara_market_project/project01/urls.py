@@ -33,7 +33,8 @@ urlpatterns = [
     path('', include('shop.urls')),
     path('', include('vendorDashboard.urls')),
     path('', include('ReactSerializers.url')),
-    path('', index_view, name="index")
+    path('', index_view, name="index"),
+    path("accounts/", include("allauth.urls")),
     
 
     

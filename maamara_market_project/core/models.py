@@ -8,6 +8,7 @@ from django.db.models.signals import post_save
 import uuid
 from django.utils import timezone
 from ReactSerializers.models import Item 
+from datetime import date, timedelta
 
 
 
@@ -119,7 +120,9 @@ class Voucher(models.Model):
     name = models.CharField(max_length=255, blank=False, null=False, default="Default Voucher")  # Database default value
     code = models.CharField(max_length=20, unique=True)
     discount = models.CharField(max_length=100)
-    expiry_date = models.DateField()
+    expiry_date = models.DateField(
+    default=date.today() + timedelta(days=30)
+)
     redeemed = models.BooleanField(default=False)
     active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -289,3 +292,21 @@ class CalendarEvent(models.Model):
 
     def __str__(self):
         return f"{self.title} ({self.start.date()})"
+    
+
+#email model
+
+
+class EmailLog(models.Model):
+    STATUS_CHOICES = [
+        ("sent", "Sent"),
+        ("failed", "Failed"),
+        ("received", "Received"),
+    ]
+
+    recipient = models.EmailField()
+    subject = models.CharField(max_length=255)
+    message = models.TextField(blank=True, null=True)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES)
+    type = models.CharField(max_length=50, default="manual")  # compose, system, etc
+    created_at = models.DateTimeField(auto_now_add=True) 

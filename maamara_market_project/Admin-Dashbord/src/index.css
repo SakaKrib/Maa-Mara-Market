@@ -114,6 +114,10 @@
   background-color: transparent;
 }
 
+.css-1fmimf0{
+  background-color: transparent;
+}
+
 @media screen and (max-width: 680px) {
   #dashboard-root{
     max-width: 90%;padding: 1em 1em;
@@ -121,10 +125,45 @@
 }
 
 
+
+
 .MuiBox-root.css-1ch34on{
   background-color: transparent;
 }
 
+
+/* custom scroll bar */
+/* ===== FORM SCROLL CONTAINER ===== */
+.custom-scroll-form {
+  max-height: 80vh;
+  overflow-y: auto;
+  padding-right: 10px;
+}
+
+/* ===== THICK SCROLLBAR (Chrome, Edge) ===== */
+.custom-scroll-form::-webkit-scrollbar {
+  width: 12px;
+}
+
+.custom-scroll-form::-webkit-scrollbar-track {
+  background: #1e1e2f; /* adjust to theme */
+  border-radius: 10px;
+}
+
+.custom-scroll-form::-webkit-scrollbar-thumb {
+  background: #888;
+  border-radius: 10px;
+}
+
+.custom-scroll-form::-webkit-scrollbar-thumb:hover {
+  background: #aaa;
+}
+
+/* ===== Firefox ===== */
+.custom-scroll-form {
+  scrollbar-width: auto;
+  scrollbar-color: #888 #1e1e2f;
+}
 /* admin css*/
 /* **************react .css start ************** */
 
@@ -390,9 +429,9 @@ body, html{
 .header{
   position: relative;font-family: pop-bold;border: 1px solid gold;padding: 2px 2px;border-radius: 5px;width: auto;font-size: 1.3rem;color: var(--span-color);
 }
-.header-top{
-  width: calc(100% - 80px);left: 80px;transition: .4s ease;
-}
+/* .header-top{
+  width: calc(100% - 80px);left: 80px;transition: .4s ease;height: 60px;
+} */
 
 .header-top.active{
   width: calc(100% - 300px);left: 300px;
@@ -406,14 +445,20 @@ body, html{
 }
 
 .header-top{
-  position: fixed;width: calc(100% - 300px);z-index: 100;right: 0;border: none;height: fit-content;margin-bottom: 2em;padding: 1em 1em;
+  position: fixed;width: calc(100% - 80px);z-index: 100;right: 0;border: none;height: fit-content;margin-bottom: 2em;padding: 1em 1em;left: 80px;transition: .4s ease;z-index: 5;
 }
 
 .mkt{
   font-family: jaka;color: rgb(37, 167, 37);font-weight: bold;
 }
 
-
+/*  user name hide show */
+.user-name{
+  visibility: hidden;transform: translateX(-100px);
+}
+.user-name.active{
+  visibility: visible;transform: translateX(10px);transition: visibility 1s transform 2s;display: flex;gap: 10px;
+}
 /* ***************====navigation====************ */
 
 .nav-container{
@@ -481,7 +526,6 @@ body, html{
 .navigate-bar ul li .icon{
   position: relative;display: block;min-width: 60px;height: 60px;line-height: 60px;text-align: center;
 }
-
 .navigate-bar ul li .icon ion-icon{
   font-size: 1.5rem;position: relative;
 }
@@ -574,7 +618,7 @@ body, html{
 /* ************======main ====== ********* */
 
 .main-dashboard{
-  position: relative;width: calc(100% - 80px);left: 80px;max-height: 100vh;background-color: var(--white);transition: 0.5s;margin-top: 8em;z-index: 0;visibility: visible;opacity: 1;
+  position: relative;width: calc(100% - 80px);left: 80px;min-height: 100%;background-color: var(--white);transition: 0.5s;margin-top: 6em;z-index: 0;visibility: visible;opacity: 1;
 }
 .main-dashboard.active{
   width: calc(100% - 300px);left: 300px;z-index: 0;
@@ -607,15 +651,13 @@ body, html{
 .search .mobile-hide {
   position: absolute;top: 1px;padding: .58em 1em;right: 1px;background-color: var(--greener);color: var(--white-in-black);border: none;cursor: pointer;color: var(--white-in-white);
 }
-.search .mobile-hide:hover{
-  background-color: var(--gray);
-}
+
 .search :where(ion-icon){
   position: absolute;top: 0;left: 10px;font-size: 1.2rem;
 }
 
 .users{
-  position: relative;width: 60px;height: 60px;border-radius: 50%;overflow: hidden;cursor: pointer;
+  position: relative;width: 60px;height: 60px;border-radius: 50%;overflow: hidden;cursor: pointer;display: flex;align-items: center;
 }
 
 .users img{

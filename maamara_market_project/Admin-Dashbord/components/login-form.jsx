@@ -5,11 +5,12 @@ import { Card, CardContent } from "./ui/card"
 import { Input } from "./ui/input"
 import { Label } from "./ui/label"
 import { baseUrl } from "../src/cmponents/Constant/Constant"
-import { useNavigate, useLocation } from "react-router-dom"
+import { useNavigate, useLocation, Link } from "react-router-dom"
 import { useAuth } from "../src/cmponents/Auth/AuthContext/Context"
 import Maamara from "../src/assets/Logo/Maamara.jpg"
 import Snackbar from '@mui/material/Snackbar'
 import Alert from '@mui/material/Alert'
+import { Eye, EyeOff } from "lucide-react"
 
 // Helper: Get CSRF token from cookie
 const getCookie = (name) => {
@@ -25,6 +26,9 @@ export function LoginForm({ className, ...props }) {
   const [error, setError] = useState("")
   const [csrfToken, setCsrfToken] = useState("")
   const [loading, setLoading] = useState(false)
+
+  // set see password hide password
+  const [showPassword, setShowPassword] = useState(false)
 
   const location = useLocation()
   const navigate = useNavigate()
@@ -154,23 +158,87 @@ export function LoginForm({ className, ...props }) {
                     onChange={(e) => setUsername(e.target.value)}
                     required
                   />
+
+                 
                 </div>
 
                 <div className="flex flex-col gap-2">
                   <div className="flex items-center">
                     <Label htmlFor="password">Password</Label>
-                    <a href="#" className="ml-auto text-sm underline-offset-2 hover:underline">
+                    <Link to='/forgot-password' className="ml-auto text-sm underline-offset-2 hover:underline">
                       Forgot your password?
-                    </a>
+                    </Link>
                   </div>
+                  
+                  {/* password board */}
+                  <div className="relative">
                   <Input
                     id="password"
-                    type="password"
+                    type={showPassword ? "text" : "password"}
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     required
                   />
+
+                   {/* Eye Icon */}
+                   <button
+                      type="button"
+                      onClick={() => setShowPassword((prev) => !prev)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-600"
+                    >
+                      {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                    </button>
+                  </div>
+
                 </div>
+
+                {/* google login */}
+                {/* Google Login Button */}
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="w-full flex items-center justify-center gap-2"
+                    onClick={() => {
+                      // optional: store redirect after login
+                      sessionStorage.setItem("postLoginRedirect", from)
+
+                      // redirect to Django Google auth
+                      window.location.href = `${baseUrl}/accounts/google/login/`
+                    }}
+                  >
+                    <svg width="18" height="18" viewBox="0 0 48 48">
+                      <path
+                        fill="#FFC107"
+                        d="M43.611 20.083H42V20H24v8h11.303C33.658 32.659 29.271 36 24 36
+                        c-6.627 0-12-5.373-12-12s5.373-12 12-12
+                        c3.059 0 5.842 1.154 7.957 3.043l5.657-5.657
+                        C34.046 6.053 29.268 4 24 4 12.955 4 4 12.955 4 24
+                        s8.955 20 20 20 20-8.955 20-20c0-1.341-.138-2.651-.389-3.917z"
+                      />
+                      <path
+                        fill="#FF3D00"
+                        d="M6.306 14.691l6.571 4.819C14.655 16.108 18.961 12 24 12
+                        c3.059 0 5.842 1.154 7.957 3.043l5.657-5.657
+                        C34.046 6.053 29.268 4 24 4 16.318 4 9.656 8.337 6.306 14.691z"
+                      />
+                      <path
+                        fill="#4CAF50"
+                        d="M24 44c5.166 0 9.86-1.977 13.409-5.192l-6.19-5.238
+                        C29.211 35.091 26.715 36 24 36
+                        c-5.254 0-9.657-3.657-11.284-8.583l-6.54 5.025
+                        C9.505 39.556 16.227 44 24 44z"
+                      />
+                      <path
+                        fill="#1976D2"
+                        d="M43.611 20.083H42V20H24v8h11.303
+                        c-1.11 3.109-3.41 5.615-6.094 7.19l.002-.001
+                        6.19 5.238C36.971 39.205 44 34 44 24
+                        c0-1.341-.138-2.651-.389-3.917z"
+                      />
+                    </svg>
+
+                    Continue with Google
+                  </Button>
 
                 <Button type="submit" className="w-full" disabled={loading}>
                   {loading ? "Logging in..." : "Login"}

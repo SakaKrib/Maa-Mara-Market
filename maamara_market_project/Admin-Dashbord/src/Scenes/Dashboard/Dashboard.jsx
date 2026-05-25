@@ -30,6 +30,9 @@ import { useToast } from '../../../components/ui/toast';
 import VendorApprovalPanel from '../../cmponents/VENDORPAGE/VendorRegistration/HandleApproveDeny';
 import { Unsubscribe } from '@mui/icons-material';
 import { useAuth } from '../../cmponents/Auth/AuthContext/Context';
+import { useEmailStats } from '../../cmponents/Hooks/Emails/DashboardEmailHook';
+import EmailPanel from '../../cmponents/AdminPages/Notifications/EmailListing';
+import useDashboardStats from '../../cmponents/Hooks/StockInventory/SalesStats';
 
 
 dayjs.extend(relativeTime);
@@ -42,6 +45,16 @@ const Dashboard = () => {
 
   const userName = user.username
 
+  // fetch sales data for stats
+  const { stats, loading } = useDashboardStats();
+
+   // email stat fuction
+   const emailStats = useEmailStats();
+   // email filter list
+   const [openEmailPanel, setOpenEmailPanel] = useState(false);
+   const [filter, setFilter] = useState("sent");
+   // open email 
+
 
 
   const [selectedListView, setSelectedListView] = useState('activities');
@@ -51,9 +64,25 @@ const Dashboard = () => {
   const [progress, setProgress] = useState(0);
   const [increase, setIncrease] = useState("+0%");
 
+  // transaction variables
+  const [transactions, setTransactions] = useState([]);
+  const [transactionSummary, setTransactionSummary] = useState(null);
+
   const lastNotificationIdRef = useRef(null);
 
   const navigate = useNavigate();
+
+  // revenue fetch funtions
+  const [analytics, setAnalytics] = useState({
+    total_revenue: 0,
+    monthly_revenue: [],
+  });
+  
+  useEffect(() => {
+    api.get("/api/revenue-analytics/").then((res) => {
+      setAnalytics(res.data);
+    });
+  }, []);
 
   useEffect(() => {
     fetchUnseenCount();
@@ -71,11 +100,36 @@ const Dashboard = () => {
 
   const markAsSeen = async (id) => {
     try {
-      await api.post(`${baseUrl}/api/notifications/${id}/mark_seen/`);
+      await api.post(`/api/notifications/${id}/mark_seen/`);
     } catch (err) {
       console.error("Failed to mark notification as seen", err);
     }
   };
+
+  // function to fetch transactions
+  useEffect(() => {
+    const fetchTransactions = async () => {
+      try {
+        const res = await api.get("/api/admin-transactions/");
+  
+        setTransactions(res.data?.results || []);
+        setTransactionSummary(res.data?.summary || {
+          total_transactions: 0,
+          total_revenue: 0,
+        });
+  
+      } catch (err) {
+        console.error("Failed to load transactions", err);
+        setTransactions([]);
+        setTransactionSummary({
+          total_transactions: 0,
+          total_revenue: 0,
+        });
+      }
+    };
+  
+    fetchTransactions();
+  }, []);
 
   const handleNotificationClick = async (notification) => {
     // Navigate to the target page
@@ -118,7 +172,7 @@ const Dashboard = () => {
 
   const fetchActivityLogs = async () => {
     try {
-      const response = await api.get(`${baseUrl}/api/activity-logs/`);
+      const response = await api.get(`/api/activity-logs/`);
       setActivityLogs(response.data || []);
     } catch (error) {
       console.error("Failed to fetch activity logs", error);
@@ -127,7 +181,7 @@ const Dashboard = () => {
 
   const fetchNotifications = async () => {
     try {
-      const response = await api.get(`${baseUrl}/api/notifications/`);
+      const response = await api.get(`/api/notifications/`);
       const data = response.data || [];
 
       if (data.length > 0 && data[0].id !== lastNotificationIdRef.current) {
@@ -143,6 +197,9 @@ const Dashboard = () => {
       console.error("Failed to fetch notifications", error);
     }
   };
+
+ 
+  
 
   
 
@@ -187,25 +244,57 @@ const Dashboard = () => {
     alignItems: "stretch",   // ensure equal card height
   }}
 >
-  <Box bgcolor={colors.primary[600]} p={2} borderRadius="0.5em" display="flex">
-    <StatBox
-      title="12,831"
-      subtitle="Emails Sent"
-      progress="0.75"
-      increase="+24%"
-      icon={<EmailIcon sx={{ color: colors.greenAccent[600], fontSize: 24 }} />}
-    />
-  </Box>
+    <Box
+      bgcolor={colors.primary[600]}
+      p={2}
+      borderRadius="0.5em"
+      display="flex"
+      sx={{ cursor: "pointer" }}
+      onClick={() => {
+        setFilter("sent");
+        setOpenEmailPanel(true);
+      }}
+    >
+      <StatBox
+        title={emailStats.total.toLocaleString()}
+        subtitle="Emails Sent"
+        progress={
+          emailStats.last_month
+            ? Math.min(emailStats.this_month / emailStats.last_month, 1)
+            : 0
+        }
+        increase={`${emailStats.growth}%`}
+        icon={<EmailIcon />}
+      />
+    </Box>
 
-  <Box bgcolor={colors.primary[600]} p={2} borderRadius="0.5em" display="flex">
-    <StatBox
-      title="123,631"
-      subtitle="Sales"
-      progress="1.5"
-      increase="+44%"
-      icon={<PointOfSaleIcon sx={{ color: colors.greenAccent[600], fontSize: 24 }} />}
-    />
-  </Box>
+    <Link to='sales-stats'>
+      <Box
+        bgcolor={colors.primary[600]}
+        p={2}
+        borderRadius="0.5em"
+        display="flex"
+      >
+        <StatBox
+          title={`${Number(stats.total_sales).toLocaleString()}`}
+          subtitle="Sales"
+          progress={
+            stats.total_orders > 0
+              ? stats.completed_orders / stats.total_orders
+              : 0
+          }
+          increase={`${stats.total_orders} Orders`}
+          icon={
+            <PointOfSaleIcon
+              sx={{
+                color: colors.greenAccent[600],
+                fontSize: 24,
+              }}
+            />
+          }
+        />
+      </Box>
+    </Link>
 
 <Link to="vendor-requests">
   <Box bgcolor={colors.primary[600]} p={2} borderRadius="0.5em" display="flex">
@@ -239,36 +328,49 @@ const Dashboard = () => {
         mt={3}
       >
         {/* Revenue */}
-        <Box bgcolor={colors.primary[600]} p={2} borderRadius="0.5em">
+       <Link to={'sales-Analytics'}>
+       <Box
+          sx={{ cursor: "pointer" }}
+          bgcolor={colors.primary[600]}
+          p={2}
+          borderRadius="0.5em"
+        >
           <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
             <Box>
               <Typography variant="h6" fontWeight={600} color={colors.gray[100]}>
                 Revenue Generated
               </Typography>
+
               <Typography variant="h5" fontWeight="bold" color={colors.greenAccent[500]}>
-                KES 100,023
+                KES
+                {analytics.total_revenue
+                  ? Number(analytics.total_revenue).toLocaleString()
+                  : 0}
               </Typography>
             </Box>
+
             <IconButton>
               <DownloadOutlinedIcon sx={{ fontSize: 26, color: colors.greenAccent[500] }} />
             </IconButton>
           </Box>
-          <Box component={Link} to="/dashboard/line-chart">
-            <LineChart isDashboard />
+
+          <Box  >
+            <LineChart showSummary={false} data={analytics.monthly_revenue} isDashboard />
           </Box>
         </Box>
+       </Link>
 
         {/* Activities / Notifications / Transactions */}
         <Box>
           <Box display="flex" justifyContent="space-between" mb={2}>
             <Typography
               fontSize="18px"
-              color={selectedListView === 'activities' ? colors.greenAccent[500] : colors.gray[100]} 
+              color={selectedListView === 'activities' ? colors.greenAccent[700] : colors.gray[100]} 
               sx={{ cursor: 'pointer', flex: 1, textAlign: 'center' }}
               onClick={() => setSelectedListView('activities')}
             >
               Recent Activities <span className='relative left-0 top-0 px-3 rounded-full' style={{
-                backgroundColor: selectedListView === 'activities' ? colors.greenAccent[500] : colors.gray[100],
+                backgroundColor: selectedListView === 'activities' ? colors.greenAccent[900] : colors.gray[900],
                 color: colors.gray[100],
                 fontSize: '12px',
                 padding: '2px 8px',
@@ -280,7 +382,7 @@ const Dashboard = () => {
             <Typography
               fontSize="24px"
               position={'relative'}
-              color={selectedListView === 'notifications' ? colors.greenAccent[500] : colors.gray[100]}
+              color={selectedListView === 'notifications' ? colors.greenAccent[700] : colors.gray[100]}
               sx={{ cursor: 'pointer', flex: 1, textAlign: 'center' }}
               onClick={() => setSelectedListView('notifications')}
             >
@@ -295,19 +397,33 @@ const Dashboard = () => {
 
             <Typography
               fontSize="18px"
-              position={'relative'}
-              color={selectedListView === 'transactions' ? colors.greenAccent[500] : colors.gray[100]}
-              sx={{ cursor: 'pointer', flex: 1, textAlign: 'center' }}
-              onClick={() => setSelectedListView('transactions')}
+              position="relative"
+              color={
+                selectedListView === "transactions"
+                  ? colors.greenAccent[700]
+                  : colors.gray[100]
+              }
+              sx={{ cursor: "pointer", flex: 1, textAlign: "center" }}
+              onClick={() => setSelectedListView("transactions")}
             >
-              Transactions <span className='relative left-0 top-0 px-3 rounded-full' style={{
-                backgroundColor: selectedListView === 'transactions' ? colors.greenAccent[500] : colors.gray[100],
-                color: colors.primary[900],
-                fontSize: '12px',
-                padding: '2px 8px',
-                borderRadius: '999px',
-                lineHeight: 1,
-                }}>{vendor_transaction.length}</span>
+              Transactions{" "}
+
+              <span
+                className="relative left-0 top-0 px-3 rounded-full"
+                style={{
+                  backgroundColor:
+                    selectedListView === "transactions"
+                      ? colors.greenAccent[900]
+                      : colors.gray[900],
+                  color: colors.gray[100],
+                  fontSize: "12px",
+                  padding: "2px 8px",
+                  borderRadius: "999px",
+                  lineHeight: 1,
+                }}
+              >
+                {(transactions || []).length}
+              </span>
             </Typography>
           </Box>
           <Box
@@ -353,30 +469,54 @@ const Dashboard = () => {
               )) : <Typography color={colors.gray[300]}>No new notifications.</Typography>)
             }
 
-            {selectedListView === 'transactions' &&
-              (vendor_transaction.length ? vendor_transaction.map((transaction, i) => (
-                <Box key={i} display="flex" justifyContent="space-between" alignItems="center" py={1} borderBottom={`1px solid ${colors.primary[500]}`}>
-                  <Box>
-                    <Typography color={colors.gray[100]}>{transaction.txid}</Typography>
-                    <Typography color={colors.gray[100]}>{transaction.user}</Typography>
-                  </Box>
-                  <Box textAlign="right">
-                    <Typography color={colors.gray[100]}>{transaction.date}</Typography>
+              {selectedListView === "transactions" &&
+                (transactions.length ? (
+                  transactions.map((transaction, i) => (
                     <Box
-                      component="span"
-                      bgcolor={colors.greenAccent[500]}
-                      px={1.5}
-                      py={0.5}
-                      borderRadius="4px"
-                      fontWeight="600"
-                      display="inline-block"
+                      key={transaction.id || i}
+                      display="flex"
+                      justifyContent="space-between"
+                      alignItems="center"
+                      py={1}
+                      borderBottom={`1px solid ${colors.primary[600]}`}
                     >
-                      ${transaction.cost}
+                      {/* LEFT SIDE */}
+                      <Box>
+                        <Typography color={colors.gray[100]}>
+                          TX: {transaction.txid || transaction.id}
+                        </Typography>
+
+                        <Typography color={colors.gray[300]}>
+                          {transaction.user?.username || "Unknown User"}
+                        </Typography>
+                      </Box>
+
+                      {/* RIGHT SIDE */}
+                      <Box textAlign="right">
+                        <Typography color={colors.gray[300]}>
+                          {new Date(transaction.created_at).toLocaleString()}
+                        </Typography>
+
+                        <Box
+                          component="span"
+                          bgcolor={colors.greenAccent[900]}
+                          px={1.5}
+                          py={0.5}
+                          borderRadius="4px"
+                          fontWeight="600"
+                          display="inline-block"
+                          sx={{ color: colors.gray[100] }}
+                        >
+                          ${Number(transaction.amount || 0).toLocaleString()}
+                        </Box>
+                      </Box>
                     </Box>
-                  </Box>
-                </Box>
-              )) : <Typography color={colors.gray[300]}>No transactions found.</Typography>)
-            }
+                  ))
+                ) : (
+                  <Typography color={colors.gray[300]}>
+                    No transactions found.
+                  </Typography>
+                ))}
           </Box>
         </Box>
       </Box>
@@ -388,16 +528,22 @@ const Dashboard = () => {
         gap={2}
         mt={3}
       >
-        <Box component={Link} to="/dashboard/pie-chart" bgcolor={colors.primary[600]} p={2} borderRadius="0.5em">
+        <Box component={Link} to="pie-chart" bgcolor={colors.primary[600]} sx={{cursor:'pointer'}} p={2} borderRadius="0.5em">
           <PieGraph isDashboard />
         </Box>
-        <Box component={Link} to="/dashboard/bar-chart" bgcolor={colors.primary[600]} p={2} borderRadius="0.5em">
+        <Box component={Link} to="bar-chart" bgcolor={colors.primary[600]} sx={{cursor:'pointer'}} p={2} borderRadius="0.5em">
           <BarChart isDashboard />
         </Box>
       </Box>
       {/* <Box>
         <VendorApprovalPanel/>
       </Box> */}
+
+    <EmailPanel
+      open={openEmailPanel}
+      onClose={() => setOpenEmailPanel(false)}
+      filter={filter}
+    />
     </Box>
   );
 };

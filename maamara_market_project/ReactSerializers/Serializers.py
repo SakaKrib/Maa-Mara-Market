@@ -14,7 +14,7 @@ from django.shortcuts import get_object_or_404
 from rest_framework import status
 from rest_framework.views import APIView
 from core.Serializer import ReviewSerializer
-import bleach
+import bleach # type: ignore
 
 
 # --- Brand Serializer ---

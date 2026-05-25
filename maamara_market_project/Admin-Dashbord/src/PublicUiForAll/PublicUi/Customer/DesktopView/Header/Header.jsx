@@ -1,4 +1,4 @@
-import React, {useState, useEffect} from "react";
+import React, {useState, useEffect, useRef} from "react";
 import "../../../../PublicUi/maamara.css"; // Optional: your styles here
 import SearchBar from "../../../Navigations/Search/Search";
 import NavIcons from "../../../Navigations/Search/NavIcons/NavIcon";
@@ -23,6 +23,15 @@ const HeaderTop = () => {
   const navigate = useNavigate()
   const { newBlogCount, loading } = useNewBlogs();
 
+  // close open departments menu
+  const [open, setOpen] = useState(false);
+  const wrapperRef = useRef(null);
+
+  // toggle menu
+  const toggleMenu = () => {
+    setOpen((prev) => !prev);
+  };
+
   useEffect(() => {
     const handleScroll = () => {
       if (window.scrollY > 100) {
@@ -34,6 +43,19 @@ const HeaderTop = () => {
 
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
+
+  // click to department container
+  // close when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (wrapperRef.current && !wrapperRef.current.contains(event.target)) {
+        setOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
   return (
@@ -170,18 +192,19 @@ const HeaderTop = () => {
       <div className="container">
         <div className="wrapper flexitem">
           <div className="left">
-            <div className="dpt-cat has-child relative">
-              <div className="dpt-head ">
-                <div className="main-text">All Departments</div>
-                <div className="mini-text mobile-hide">Total 1003 products</div>
-                <a href="#" className="dpt-trigger mobile-hide">
-                  <i className="ri-menu-3-line ri-xl"></i>
-                </a>
-              </div>
-              {/* category dropdown */}
-              <HoverCategoryMenu/>
+          <div className="dpt-cat relative" ref={wrapperRef}>
+            <div className="dpt-head cursor-pointer" onClick={toggleMenu}>
+              <div className="main-text">Departments & Categories</div>
+              <div className="mini-text mobile-hide">Total 1003 products</div>
 
+              <div className="dpt-trigger mobile-hide">
+                <i className="ri-menu-3-line ri-xl"></i>
+              </div>
             </div>
+
+            {/* dropdown ONLY controlled by click */}
+            {open && <HoverCategoryMenu />}
+          </div>
           </div>
 
           <div className="right">

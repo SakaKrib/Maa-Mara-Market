@@ -90,7 +90,7 @@ export default function VendorProfileSheet({ vendor = {}, onSave }) {
   return (
     <Sheet>
       <SheetTrigger asChild>
-        <Button variant="outline">Edit Profile</Button>
+        <Button style={{color:colors.gray[100], backgroundColor:colors.blueAccent[700]}} variant="outline">Edit Profile</Button>
       </SheetTrigger>
 
       <SheetContent

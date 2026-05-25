@@ -1,5 +1,6 @@
 from rest_framework.permissions import BasePermission
 
+
 import requests
 from django.conf import settings
 from functools import lru_cache
@@ -22,3 +23,12 @@ def get_usd_to_kes_rate():
     except Exception as e:
         print(f"Error fetching exchange rate: {e}")
     return 140.0  # fallback rate
+
+# security check for vendor
+class IsVendor(BasePermission):
+    def has_permission(self, request, view):
+        return (
+            request.user
+            and request.user.is_authenticated
+            and hasattr(request.user, "vendor")
+        )

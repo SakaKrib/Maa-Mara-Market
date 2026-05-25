@@ -111,7 +111,7 @@ const PayoutsPage = () => {
         renderCell: (params) => (
           <span
             style={{
-              color: params.value ? colors.greenAccent[500] : colors.yellowAccent[700],
+              color: params.value ? colors.greenAccent[500] : colors.redAccent[700],
               fontWeight: "600",
             }}
           >
@@ -154,7 +154,7 @@ const PayoutsPage = () => {
           pageSize={5}
           rowsPerPageOptions={[5]}
           sx={{
-            backgroundColor: colors.primary[500],
+            backgroundColor: colors.primary[600],
             color: colors.gray[100],
             borderRadius: "12px",
           }}
@@ -179,7 +179,7 @@ const PayoutsPage = () => {
           pageSize={6}
           rowsPerPageOptions={[6, 12, 100]}
           sx={{
-            backgroundColor: colors.primary[800],
+            backgroundColor: colors.primary[600],
             color: colors.gray[100],
             borderRadius: "12px",
           }}

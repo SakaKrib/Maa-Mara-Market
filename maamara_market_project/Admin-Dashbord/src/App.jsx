@@ -120,6 +120,15 @@ import SearchResultsPage from "./PublicUiForAll/PublicUi/Navigations/Search/NavI
 import OrganicPage from "./PublicUiForAll/PublicUi/Customer/DesktopView/Main/Trending/OrganicAdvert/OrganicPage";
 import MpesaPayoutSuccess from "./cmponents/VendorPayoutReport/vendorPayouts/Payments/PayoutSuccess";
 import PayoutSuccess from "./cmponents/VendorPayoutReport/vendorPayouts/Payments/PayoutSuccess";
+import AuthSuccess from "./cmponents/Auth/AdminLogin/Auth-Success-Check";
+import ResetPassword from "./cmponents/Auth/AdminLogin/ResetLink";
+import ForgotPassword from "./cmponents/Auth/AdminLogin/RecorverPasword";
+import SalesPage from "./cmponents/Admin/AdminAccounts/Reports/SalesStatsPage";
+import RevenueGrowthCard from "./cmponents/AdminPages/Notifications/Transactions/AdminTransactionGrowthTrack";
+import VendorSuccessPage from "./cmponents/VENDORPAGE/VendorRegistration/VendorSuccessPage";
+import CreateItemModal from "./cmponents/AdminPages/Notifications/ApproveCreatedItem";
+import AdminBannerApprovalPage from "./cmponents/Admin/ApproveBanner/aprroveBanner";
+
 function AppContent() {
   const { isAuthenticated, loading } = useAuth();
   const [theme, colorMode] = useMode();
@@ -202,13 +211,18 @@ function AppContent() {
 
                 {/* Route for subcategory products */}
                 <Route path="subcategory/:id/products" element={<SubcategoryProducts />} />
+
+                {/* Route for unified auth check for normal login and google */}
+                <Route path="login/auth-success" element={<AuthSuccess />} />
+
+               
                
 
               </Route>
 
               {/* other routes */}
 
-              {/* search engine */}
+            {/* search engine */}
                <Route path="list" element={<SearchResultsPage />} />
 
               <Route path="customer-login" element={<LoginPage />} />
@@ -245,6 +259,16 @@ function AppContent() {
                 }
               />
 
+              {/* vendor success page */}
+              <Route path="vendor-success-page" element={ <VendorSuccessPage/>}/>
+
+
+               {/* reset link */}
+               <Route path="/reset-password/:uid/:token" element={<ResetPassword />} />
+
+                {/* forgot password btn */}
+                <Route path="/forgot-password" element={<ForgotPassword />} />
+
               {/* Protected Admin Routes */}
               <Route path="/admin-dashboard/*" element={<ProtectedRoute requiredRole="admin"><AdminLayout /></ProtectedRoute>}>
               <Route index element={<Dashboard />} />
@@ -252,9 +276,9 @@ function AppContent() {
               <Route path="vendor-payout" element={<PaymentReport />} />
               <Route path="faq" element={<FAQ />} />
               <Route path="calendar" element={<Calendar />} />
-              <Route path="dashboard/bar-chart" element={<Bar />} />
-              <Route path="dashboard/line-chart" element={<Line />} />
-              <Route path="dashboard/pie-chart" element={<Pie />} />
+              <Route path="bar-chart" element={<Bar />} />
+              <Route path="line-chart" element={<Line />} />
+              <Route path="pie-chart" element={<Pie />} />
               <Route path="vendors/:vendorId" element={<Single />} />
               <Route path="vendor/create-items/requests" element={<VendorItemCreateRequests />} />
               <Route path="vendor-requests" element={<UiForVendorRequest />} />
@@ -266,6 +290,12 @@ function AppContent() {
 
               {/* returns for approval */}
               <Route path="customer-requests" element={<CustomerToAdminRequests />} />
+
+              {/* vendor create new item */}
+              <Route path="vendor/create-item/:requestId" element={<CreateItemModal />} />
+
+               {/* vendor create new item */}
+               <Route path="approve-banner" element={<AdminBannerApprovalPage />} />
 
               {/* generate payouts */}
               <Route path="vendor-payout/payment-trigger" element={<AdminPayoutTriggerPayment />} />
@@ -286,7 +316,12 @@ function AppContent() {
               {/* payout success page */}
               <Route path="vendor-payout/payment-trigger/mpesa-payment/single-vendor/vendor-payouts/success/:reference" element={<PayoutSuccess />} />
               
+              
+              {/* sales stats page */}
+              <Route path="sales-Analytics" element={<SalesPage />} />
 
+              {/* Transaction Growth */}
+              <Route path="admin-dashboard/sales-Analytics/transaction-growth-track" element={<RevenueGrowthCard />} />
 
               {/* chat */}
               <Route path="join-chat" element={<Join />} />

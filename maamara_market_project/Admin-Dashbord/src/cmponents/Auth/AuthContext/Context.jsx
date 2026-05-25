@@ -40,15 +40,7 @@ export const AuthProvider = ({ children }) => {
         setGlobalAccessToken(data.access);
       }
 
-      // ✅ Only redirect authenticated admins/vendors
-      // if (data.isAuthenticated && data.user?.role) {
-      //   const role = data.user.role;
-      //   if (role === 'admin' && window.location.pathname === '/') {
-      //     navigate('/dashboard', { replace: true });
-      //   } else if (role === 'vendor' && window.location.pathname === '/') {
-      //     navigate('/vendors-dashboard', { replace: true });
-      //   }
-      // }
+      
 
     } catch (error) {
       console.error("❌ Auth check failed:", error);
@@ -92,6 +84,8 @@ export const AuthProvider = ({ children }) => {
         setUser(null);
         setAccessToken(null);
         setGlobalAccessToken(null);
+
+        window.location.href = '/login'
       }
     } catch (error) {
       console.error("❌ Logout error:", error);

@@ -12,11 +12,12 @@ const CustomerToAdminRequests = () => {
     <Box
     
       sx={{
-        backgroundColor: colors.primary[400],
+        backgroundColor: colors.primary[600],
         borderRadius: "12px",
         padding: "20px",
         boxShadow: 2,
-        mt: '10px'
+        mt: '10px',
+        margin: '20px 20px 10px 20px'
       }}
       
     >
@@ -26,6 +27,7 @@ const CustomerToAdminRequests = () => {
           borderBottom: `2px solid ${colors.gray[700]}`,
           marginBottom: "20px",
           paddingBottom: "10px",
+          padding: '20px'
         }}
       >
         <Typography

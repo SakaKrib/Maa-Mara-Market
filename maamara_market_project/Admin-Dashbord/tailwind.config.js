@@ -9,7 +9,7 @@ export default {
 	theme: {
 	  extend: {
 		boxShadow: {
-		  custom: '0 7px 24px #0e3941',
+			custom: '0 7px 24px rgba(0, 0, 0, 0.08)',
 		},
 		screens: {
 		  'xxs': '320px',

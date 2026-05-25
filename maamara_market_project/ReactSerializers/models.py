@@ -216,6 +216,22 @@ class Item(models.Model):
         blank=True,
         help_text="Only required if category = Coffee"
     )
+
+    # prevent direct price change
+    def save(self, *args, **kwargs):
+        if self.pk:
+            old = Item.objects.get(pk=self.pk)
+
+            # Detect price change
+            if old.price != self.price:
+                # Only allow if explicitly flagged from approval flow
+                if not getattr(self, "_allow_price_update", False):
+                    raise ValidationError(
+                        "Direct price changes are not allowed. Use PriceChangeRequest approval flow."
+                    )
+
+        super().save(*args, **kwargs)
+
     # get vendor price without markup
     def get_item_final_price_for_vendor(self):
         """Returns the price including 7% markup."""
@@ -506,6 +522,15 @@ class Offer(models.Model):
     def __str__(self):
         return f"Offer for {self.item.name} ({self.discount_percentage}% off)"
 
+
+# track price change
+class ItemPriceHistory(models.Model):
+    item = models.ForeignKey(Item, on_delete=models.CASCADE)
+    old_price = models.DecimalField(max_digits=10, decimal_places=2)
+    new_price = models.DecimalField(max_digits=10, decimal_places=2)
+    changed_by = models.ForeignKey(User, null=True, on_delete=models.SET_NULL)
+    reason = models.TextField(null=True, blank=True)
+    changed_at = models.DateTimeField(auto_now_add=True)
 
 # shipping dimensions
 class ShippingDimension(models.Model):

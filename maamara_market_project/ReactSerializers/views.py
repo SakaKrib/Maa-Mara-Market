@@ -41,7 +41,8 @@ from django.views.decorators.http import require_POST
 from collections import OrderedDict
 import calendar
 from core.mergeVisitortoUserData import merge_visitor_data_to_user
-
+from oder.Base import IsVendor
+from oder.views import IsAuthenticatedOrVisitor
 
 import logging
 from django.http import JsonResponse
@@ -55,7 +56,7 @@ from core.models import *
 from django.contrib import messages
 from django.contrib.auth.hashers import make_password
 from django.template.loader import render_to_string
-import bleach
+import bleach # type: ignore
 import re
 User = get_user_model()
 
@@ -107,7 +108,7 @@ def sanitize_and_validate(value, pattern=None, lower=False):
 # -------------------------------
 # Vendor net payout API
 # -------------------------------
-@permission_classes([IsSuperUser])
+@permission_classes([IsSuperUser, IsAdminUser])
 def vendor_net_payout_api(request):
     data = []
 
@@ -156,7 +157,7 @@ def vendor_net_payout_api(request):
 # Vendor payout history API
 # -------------------------------
 @api_view(["GET"])
-@permission_classes([IsAuthenticated])
+@permission_classes([IsAuthenticated, IsVendor ])
 def vendor_payout_history_api(request):
     user = request.user
     if not hasattr(user, "vendor"):
@@ -189,7 +190,7 @@ def vendor_payout_history_api(request):
 # Vendor recent payouts API
 # -------------------------------
 @api_view(["GET"])
-@permission_classes([IsSuperUser])
+@permission_classes([IsSuperUser, IsAdminUser])
 def vendor_recent_payouts_api(request):
     user = request.user
     try:
@@ -247,7 +248,7 @@ class ProfileView(APIView):
 # Vendor item stats API
 # -------------------------------
 @api_view(['GET'])
-@permission_classes([IsAuthenticated])
+@permission_classes([IsAuthenticated, IsVendor])
 def vendor_item_stats(request):
     user = request.user
 
@@ -307,72 +308,22 @@ def vendor_item_stats(request):
 # views.py or serializers.py
 
 
-@login_required
-def google_login_callback(request):
-    user = request.user
-
-    # Sanitize user info (just in case for logging/debug)
-    username = bleach.clean(user.username) if hasattr(user, 'username') else 'Unknown'
-
-    social_accounts = SocialAccount.objects.filter(user=user)
-    print("social account for user", social_accounts)
-
-    social_account = social_accounts.first()
-
-    if not social_account:
-        print("no social account")
-        return redirect(
-            'http://localhost:5173/login/callback/?error=' + bleach.clean("NoSocialAccount")
-        )
-
-    token = SocialToken.objects.filter(account=social_account, account__provider='google').first()
-
-    if token:
-        print('Google token found', bleach.clean(token.token))
-        refresh = RefreshToken.for_user(user)
-        access_token = bleach.clean(str(refresh.access_token))
-        return redirect(f'http://localhost:5173/login/callback/?access_token={access_token}')
-    else:
-        print("no token found")
-        return redirect(
-            f'http://localhost:5173/login/callback/?error=' + bleach.clean("NoGoogleToken")
-        )
-
-
-def validate_google_token(request):
-    if request.method == 'POST':
-        try:
-            data = _json.loads(request.body)
-            google_access_token = data.get('access_token')
-
-            # Sanitize the token before logging or using it
-            sanitized_token = bleach.clean(google_access_token) if google_access_token else None
-            print(sanitized_token)
-
-            if not sanitized_token:
-                return JsonResponse({"detail": "Access token is missing"}, status=400)
-            
-            return JsonResponse({"valid": "true"})
-        except _json.JSONDecodeError:
-            return JsonResponse({"detail": "Invalid JSON"}, status=400)
-    
-    return JsonResponse({"detail": "Method not allowed"}, status=405)
-
-
 
 #fetch item for customer  
 from django.db.models import F
-
-@permission_classes([permissions.AllowAny])
+@permission_classes([IsAuthenticatedOrVisitor])
 class ItemViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = ItemSerializer
 
     def get_queryset(self):
-        return Item.objects.filter(available=True, in_stock__gt=0)
+        return Item.objects.filter(
+            available=True,
+            in_stock__gt=0
+        )
 
     def retrieve(self, request, *args, **kwargs):
         item = self.get_object()
-        
+
         # --- Identify user or visitor ---
         if request.user.is_authenticated:
             user = request.user
@@ -381,100 +332,108 @@ class ItemViewSet(viewsets.ReadOnlyModelViewSet):
             actor_name = user.username
         else:
             user = None
-            visitor_id = request.COOKIES.get("visitorId")
-            if visitor_id:
-                actor_type = "visitor"
-                actor_name = f"Guest ({visitor_id[:8]})"
-            else:
-                visitor_id = str(uuid.uuid4())
-                actor_type = "visitor"
-                actor_name = f"Guest ({visitor_id[:8]})"
+            visitor_id = request.COOKIES.get("visitorId")  # ✅ CONSISTENT
 
-        # --- Skip views, logs, notifications if viewer is the vendor who owns the item ---
-        if item.vendor and item.vendor.user and item.vendor.user == request.user:
+            if not visitor_id:
+                visitor_id = str(uuid.uuid4())
+
+            actor_type = "visitor"
+            actor_name = f"Guest ({visitor_id[:8]})"
+
+        # --- Skip vendor self-view ---
+        if item.vendor and item.vendor.user_id == getattr(request.user, "id", None):
             response = Response(self.get_serializer(item).data, status=status.HTTP_200_OK)
-            if not request.COOKIES.get("visitor_id") and not user:
-                response.set_cookie("visitor_id", visitor_id, max_age=60*60*24*30)  # 30 days
+
+            if not request.COOKIES.get("visitorId") and not user:
+                response.set_cookie(
+                    "visitorId",  # ✅ CONSISTENT
+                    visitor_id,
+                    max_age=60 * 60 * 24 * 30
+                )
+
             return response
 
         # --- Prevent duplicate views ---
-        already_viewed = ItemView.objects.filter(
-            item=item, user=user, visitor_id=visitor_id
-        ).exists()
+        if user:
+            already_viewed = ItemView.objects.filter(
+                item=item,
+                user=user
+            ).exists()
+        else:
+            already_viewed = ItemView.objects.filter(
+                item=item,
+                visitor_id=visitor_id
+            ).exists()
 
         if not already_viewed:
-            ItemView.objects.create(item=item, user=user, visitor_id=visitor_id)
+            ItemView.objects.create(
+                item=item,
+                user=user,
+                visitor_id=visitor_id
+            )
 
-            # --- Only increment views and notify if viewer is NOT the vendor ---
-            if not (item.vendor and item.vendor.user and item.vendor.user == request.user):
-                # ✅ Increment views
-                Item.objects.filter(pk=item.pk).update(views=F("views") + 1)
-                item.refresh_from_db(fields=['views'])
-                
-                # --- Notify vendor ---
-                if item.vendor and item.vendor.user:
-                    Notification.objects.create(
-                        user=item.vendor.user,
-                        title="New Item View",
-                        message=f"Your item '{item.name}' was just viewed.",
-                        url=f"/vendors-dashboard/vendor/items/{item.id}/item"
-                    )
-                    
-                # --- Notify admins ---
-                admins = User.objects.filter(is_superuser=True)
-                for admin in admins:
-                    Notification.objects.create(
-                        user=admin,
-                        title="Vendor Item Viewed",
-                        message=f"Item '{item.name}' (Vendor: {item.vendor.company_name}) was viewed.",
-                        url=f"/admin-dasboard/items/{item.id}/"
-                    )
-                    print(f"📢 Admin {admin.username} notified")
+            # --- Increment views ---
+            Item.objects.filter(pk=item.pk).update(
+                views=F("views") + 1
+            )
+            item.refresh_from_db(fields=["views"])
 
-                # --- Log activity ---
-                ActivityLog.objects.create(
-                    user=user,
-                    actor_type=actor_type,
-                    action="item_viewed",
-                    item=item,
-                    description=f"You viewed '{item.name}'.",
-                    related_url=f"/item-client/{item.id}/item"
+            # --- Notify vendor ---
+            if item.vendor and item.vendor.user:
+                Notification.objects.create(
+                    user=item.vendor.user,
+                    title="New Item View",
+                    message=f"Your item '{item.name}' was just viewed.",
+                    url=f"/vendors-dashboard/vendor/items/{item.id}/item"
                 )
 
-                if item.vendor and item.vendor.user:
-                    ActivityLog.objects.create(
-                        user=item.vendor.user,
-                        actor_type='vendor',
-                        action="item_viewed",
-                        item=item,
-                        description=f"{actor_name} viewed '{item.name}'.",
-                        related_url=f"/item/{item.id}/item"
-                    )
+                ActivityLog.objects.create(
+                    user=item.vendor.user,
+                    actor_type="vendor",
+                    action="item_viewed",
+                    item=item,
+                    description=f"{actor_name} viewed '{item.name}'.",
+                    related_url=f"/item/{item.id}/item"
+                )
 
-                for admin in User.objects.filter(is_staff=True):
-                    ActivityLog.objects.create(
-                        user=admin,
-                        actor_type="admin",
-                        action="item_viewed",
-                        item=item,
-                        description=f"{actor_name} viewed '{item.name}'.",
-                        related_url=f"/admin-item/vendorDashboard/items/{item.id}/"
-                    )
+            # --- Notify admins ---
+            for admin in User.objects.filter(is_staff=True):
+                Notification.objects.create(
+                    user=admin,
+                    title="Vendor Item Viewed",
+                    message=f"Item '{item.name}' was viewed.",
+                    url=f"/admin-dashboard/items/{item.id}/"
+                )
 
-        # --- Prepare response ---
-        response = Response(self.get_serializer(item).data, status=status.HTTP_200_OK)
+                ActivityLog.objects.create(
+                    user=admin,
+                    actor_type="admin",
+                    action="item_viewed",
+                    item=item,
+                    description=f"{actor_name} viewed '{item.name}'.",
+                    related_url=f"/admin-item/vendorDashboard/items/{item.id}/"
+                )
 
-        # --- Ensure visitor_id cookie is set ---
-        if not request.COOKIES.get("visitor_id"):
-            response.set_cookie("visitor_id", visitor_id, max_age=60*60*24*30)  # 30 days
+        # --- Response ---
+        response = Response(
+            self.get_serializer(item).data,
+            status=status.HTTP_200_OK
+        )
+
+        # --- Ensure visitorId cookie is set ---
+        if not request.COOKIES.get("visitorId") and visitor_id:
+            response.set_cookie(
+                "visitorId",
+                visitor_id,
+                max_age=60 * 60 * 24 * 30
+            )
 
         return response
-    
 
 #__________________________________
 #vendor items fetch
 #__________________________________
-@permission_classes([permissions.IsAuthenticated])
+@permission_classes([permissions.IsAuthenticated, IsVendor])
 class vendorItemViewset(viewsets.ReadOnlyModelViewSet):
     serializer_class = ItemSerializer
 
@@ -796,6 +755,7 @@ def resend_otp_register_otp(request):
 
 # vendor update profile
 # ✅ Update vendor (with nested brand)
+@permission_classes([IsAuthenticated, IsVendor])
 class VendorUpdateProfile(APIView):
     """
     API endpoint to retrieve and update Vendor profile (partial or full)

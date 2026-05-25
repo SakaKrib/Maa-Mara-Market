@@ -72,6 +72,13 @@ urlpatterns = [
     # sakes report url
     path('api/monthly-sales-report/', monthly_sales_report, name='monthly_sales_report'),
 
+    # draft item api
+    path(
+        "api/vendor-item-create-requests/<int:pk>/save-draft/",
+        save_vendor_item_draft,
+        name="vendor-item-draft"
+    ),
+
 ]
 
 

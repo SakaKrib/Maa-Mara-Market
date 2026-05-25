@@ -36,9 +36,10 @@ from rest_framework.permissions import IsAuthenticated
 import json
 from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
 from django.template.loader import render_to_string
-import bleach
+import bleach # type: ignore
 import logging
 from urllib.parse import urlparse, unquote
+from oder.Base import IsVendor
 
 logger = logging.getLogger(__name__)
 
@@ -52,7 +53,7 @@ def sanitize(value):
 
 
 class VendorItemCreateView(APIView):
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.IsAuthenticated, IsVendor]
 
     def post(self, request):
         serializer = VendorItemSerializer(data=request.data)
@@ -63,16 +64,6 @@ class VendorItemCreateView(APIView):
 
 
 
-# item update
-from rest_framework.permissions import BasePermission
-
-class IsVendor(BasePermission):
-    """
-    Allows access only to users who have a related Vendor profile.
-    """
-
-    def has_permission(self, request, view):
-        return request.user.is_authenticated and hasattr(request.user, 'vendor')
 
 
 
@@ -82,7 +73,7 @@ class IsVendor(BasePermission):
 # -------------------------------
 class VendorProfileView(generics.RetrieveAPIView):
     serializer_class = VendorSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.IsAuthenticated, IsVendor]
 
     def get_object(self):
         return Vendor.objects.get(user=self.request.user)
@@ -836,7 +827,7 @@ def approve_vendor(request, vendor_request_id):
 
 # deny vendor
 @api_view(['POST'])
-@permission_classes([IsAuthenticated])
+@permission_classes([IsAuthenticated, IsAdminUser])
 def deny_vendor(request, vendor_request_id):
     try:
         vendor_request = VendorRequest.objects.get(id=vendor_request_id)
@@ -877,7 +868,7 @@ def deny_vendor(request, vendor_request_id):
 
 # vendor profile:
 @api_view(['GET'])
-@permission_classes([IsAuthenticated])
+@permission_classes([IsAuthenticated, IsVendor])
 def get_vendor_profile(request):
     try:
         vendor = Vendor.objects.get(user=request.user)

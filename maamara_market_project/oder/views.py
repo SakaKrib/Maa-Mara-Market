@@ -18,8 +18,12 @@ from django.db import models
 from django.db.models import Sum
 from ReactSerializers.models import Item, AgeVariant, ColorVariant, SizeStock, Shoe, Length, Weight
 from django.db.models import Prefetch
+from datetime import timedelta
+from django.db.models import Sum, Count
+from django.db.models.functions import TruncMonth
+from .Base import IsVendor
 
-import bleach
+import bleach # type: ignore
 
 from .models import OderItem, Order
 from vendorDashboard.models import ReturnRequest
@@ -74,6 +78,10 @@ class IsAuthenticatedOrVisitor(BasePermission):
                 pass
 
         return False
+    
+
+
+ 
 
 
 # -------------------------------
@@ -798,7 +806,7 @@ def transaction_totals(request):
 
 # fetch pending and complete orders
 @api_view(["GET"])
-@permission_classes([IsAuthenticated])
+@permission_classes([IsAuthenticated, IsVendor])
 def vendor_orders_combined(request):
     user = request.user
 
@@ -834,38 +842,192 @@ def vendor_orders_combined(request):
 @api_view(["GET"])
 @permission_classes([IsAuthenticated, IsAdminUser])
 def admin_transactions(request):
-    """
-    Return transactions belonging to the logged-in admin's vendor
-    """
 
-    try:
-        # 🔑 Get vendor linked to logged-in admin
-        vendor = getattr(request.user, "vendor", None)
-
-        if not vendor:
-            return Response(
-                {"error": "No vendor associated with this admin"},
-                status=403
+    transactions_qs = (
+        Transaction.objects
+        .select_related("vendor", "order")
+        .prefetch_related(
+            Prefetch(
+                "order__items",
+                queryset=OderItem.objects.select_related("item")
             )
-
-        # ⚡ Optimized queryset (IMPORTANT)
-        transactions = (
-            Transaction.objects
-            .filter(vendor=vendor)
-            .select_related("vendor", "order")
-            .prefetch_related(
-                Prefetch("order__items", queryset=OderItem.objects.select_related("item__vendor"))
-            )
-            .order_by("-created_at")[:50]  # limit for dashboard
         )
+        .order_by("-created_at")[:50]
+    )
 
-        serializer = TransactionSerializer(transactions, many=True)
-        return Response(serializer.data)
+    serializer = TransactionSerializer(transactions_qs, many=True)
 
-    except Exception as e:
-        return Response(
-            {"error": f"Failed to fetch transactions: {str(e)}"},
-            status=500
+    summary = Transaction.objects.aggregate(
+        total_transactions=Count("id"),
+        total_revenue=Sum("amount")
+    )
+
+    return Response({
+        "summary": {
+            "total_transactions": summary["total_transactions"] or 0,
+            "total_revenue": float(summary["total_revenue"] or 0),
+        },
+        "results": serializer.data
+    })
+# admin dashboard transaction track
+
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def revenue_growth(request):
+
+    vendor = getattr(request.user, "vendor", None)
+
+    if not vendor:
+        return Response({"error": "No vendor"}, status=403)
+
+    now = timezone.now()
+
+    # 📅 TIME PERIODS
+    this_week_start = now - timedelta(days=7)
+    prev_week_start = now - timedelta(days=14)
+
+    this_month_start = now.replace(day=1)
+    last_month_start = (this_month_start - timedelta(days=1)).replace(day=1)
+
+    # 💰 WEEKLY REVENUE
+    this_week = Transaction.objects.filter(
+        vendor=vendor,
+        created_at__gte=this_week_start
+    ).aggregate(total=Sum("amount"))["total"] or 0
+
+    prev_week = Transaction.objects.filter(
+        vendor=vendor,
+        created_at__gte=prev_week_start,
+        created_at__lt=this_week_start
+    ).aggregate(total=Sum("amount"))["total"] or 0
+
+    # 💰 MONTHLY REVENUE (for dashboard cards)
+    this_month = Transaction.objects.filter(
+        vendor=vendor,
+        created_at__gte=this_month_start
+    ).aggregate(total=Sum("amount"))["total"] or 0
+
+    last_month = Transaction.objects.filter(
+        vendor=vendor,
+        created_at__gte=last_month_start,
+        created_at__lt=this_month_start
+    ).aggregate(total=Sum("amount"))["total"] or 0
+
+    # 📊 GROWTH CALCULATION (safe)
+    def calc_growth(current, previous):
+        if previous == 0:
+            return 100 if current > 0 else 0
+        return ((current - previous) / previous) * 100
+
+    weekly_growth = calc_growth(this_week, prev_week)
+    monthly_growth = calc_growth(this_month, last_month)
+
+    return Response({
+        "weekly": {
+            "this_week": float(this_week),
+            "previous_week": float(prev_week),
+            "growth": round(weekly_growth, 2),
+            "trend": "up" if weekly_growth >= 0 else "down"
+        },
+        "monthly": {
+            "this_month": float(this_month),
+            "last_month": float(last_month),
+            "growth": round(monthly_growth, 2),
+            "trend": "up" if monthly_growth >= 0 else "down"
+        }
+    })
+
+# get total dashboard stats
+@api_view(['GET'])
+@permission_classes([IsAuthenticated, IsAdminUser])
+def dashboard_stats(request):
+    completed_orders = Order.objects.filter(status='completed')
+
+    total_sales = sum(order.get_total() for order in completed_orders)
+
+    total_orders = completed_orders.count()
+
+    return Response({
+        "total_sales": total_sales,
+        "total_orders": total_orders,
+    })
+
+
+# vendors sales
+@api_view(["GET"])
+@permission_classes([IsAuthenticated, IsAdminUser])
+def vendor_sales(request):
+    items = OderItem.objects.select_related("item", "item__vendor")
+
+    vendors = {}
+
+    for i in items:
+        vendor = i.item.vendor.company_name if i.item.vendor else "Unknown"
+        item_name = i.item.name
+
+        if vendor not in vendors:
+            vendors[vendor] = {
+                "vendor_name": vendor,
+                "items": {}
+            }
+
+        if item_name not in vendors[vendor]["items"]:
+            vendors[vendor]["items"][item_name] = {
+                "item_name": item_name,
+                "qty_sold": 0,
+                "total_qty": getattr(i.item, "stock_qty", 0),
+            }
+
+        vendors[vendor]["items"][item_name]["qty_sold"] += i.quantity
+
+    # convert dict → list
+    result = []
+    for vendor in vendors.values():
+        vendor["items"] = list(vendor["items"].values())
+        result.append(vendor)
+
+    return Response(result)
+
+
+# Admin Dashbord monthly sales
+
+@api_view(["GET"])
+@permission_classes([IsAuthenticated, IsAdminUser])
+def revenue_area_chart(request):
+    """
+    Monthly revenue + orders analytics for dashboard charts
+    """
+
+    # Optional: support vendor filtering later
+    queryset = Order.objects.all()
+
+    # 🔥 FIX 1: safe status matching
+    queryset = queryset.filter(status__iexact="completed")
+
+    # 🔥 FIX 2: remove bad data
+    queryset = queryset.exclude(
+        ordered_date__isnull=True
+    )
+
+    data = (
+        queryset
+        .annotate(month=TruncMonth("ordered_date"))
+        .values("month")
+        .annotate(
+            revenue=Sum("updated_total_price"),
+            orders=Count("id")
         )
+        .order_by("month")
+    )
 
+    formatted = [
+        {
+            # frontend-friendly
+            "month": item["month"].strftime("%b") if item["month"] else "Unknown",
+            "revenue": float(item["revenue"] or 0),
+            "orders": int(item["orders"] or 0),
+        }
+        for item in data
+    ]
 
+    return Response(formatted)

@@ -31,7 +31,7 @@ export default function VendorApprovalPanel() {
 
   const fetchVendorRequests = async () => {
     try {
-      const response = await api.get(`${baseUrl}/api/vendor/requests?status=verified`);
+      const response = await api.get(`/api/vendor/requests?status=verified`);
       setVendorRequests(response.data);
     } catch (error) {
       toast({
@@ -77,7 +77,7 @@ export default function VendorApprovalPanel() {
   const handleDeny = async (id) => {
     setLoading(true);
     try {
-      await api.post(`${baseUrl}/api/vendor/deny/${id}/`);
+      await api.post(`/api/vendor/deny/${id}/`);
       toast({
         title: 'Vendor Denied',
         description: 'Vendor request has been denied.',
@@ -109,9 +109,9 @@ export default function VendorApprovalPanel() {
 
   return (
     <div className="space-y-4 p-4" style={{ height: 'fit-content' }}>
-      <div style={{ backgroundColor: colors.primary[800], height: 'fit-content' }}>
+      <div style={{ backgroundColor: colors.primary[500], height: 'fit-content' }}>
         {vendorRequests.length === 0 ? (
-          <p className="text-gray-600">No approved vendor requests found.</p>
+          <p className="p-4" style={{color:colors.gray[100]}}>No approved vendor requests found.</p>
         ) : (
           vendorRequests.map((vendor, index) => (
             <Card key={vendor.id ?? index} style={{ backgroundColor: colors.gray[800], border: 'none' }}>

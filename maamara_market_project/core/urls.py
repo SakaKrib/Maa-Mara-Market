@@ -6,6 +6,7 @@ from rest_framework.routers import DefaultRouter
 from .Referal import *
 from .SearchEngine import search_items
 from .Open_Ai import AIChatAPIView
+from core.PasswordRecovery import *
 
 router = DefaultRouter()
 
@@ -22,6 +23,8 @@ urlpatterns = [
 
     #filter item
     path('api/filtered-items/', filtered_items, name='item-query_list'),
+    # filter options
+    path("api/filter-options/", filter_options),
 
     #chat view
     path('api/chat-user-data/', views.user_data, name='chat_user_data'),
@@ -50,7 +53,7 @@ urlpatterns = [
     # referals wallet and voucher
     path("api/referrals-link/", get_referral_link, name="get-referral-link"),
     path("api/referrals-track/", track_referral, name="track-referral"),
-     path("api/user/account/", UserAccountView.as_view(), name="user-account"),
+    path("api/user/account/", UserAccountView.as_view(), name="user-account"),
     path("api/user/update/", UpdateProfileView.as_view(), name="user-update"),
     path("api/user-profile/", user_account_view, name="user-update"),
 
@@ -79,4 +82,16 @@ urlpatterns = [
 
     # calendar url
     path("api/calendar-events/", UserCalendarEventsView.as_view(), name="user-calendar-events"),
+
+    # reset forgotten password
+    path("api/password-reset/", RequestPasswordReset.as_view()),
+    path("api/password-reset-confirm/<uidb64>/<token>/", ResetPasswordConfirm.as_view()),
+
+    # sending viewing emails
+    path("api/email/send/", send_email),
+    path("api/email/stats/", email_stats),
+    # email list view
+    path("api/email/list/", email_list),
+    # fetch user to send emails
+    path("api/email-users/", users_list)
 ]
