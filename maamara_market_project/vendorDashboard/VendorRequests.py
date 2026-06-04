@@ -468,7 +468,7 @@ def approve_request(request, pk):
             actor_type="vendor",
             action="item_request_denied",
             description=f"Your item request '{item_request.name}' was denied by admin.",
-            related_url=f"/vendor/items/requests/{item_request.id}/",
+            related_url=f"/vendors-dashboard/vendor/items/requests/{item_request.id}/",
         )
 
         Notification.objects.create(

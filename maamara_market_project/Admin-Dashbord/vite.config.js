@@ -1,6 +1,7 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react'; // or vue/svelte/etc
 import path from "path";
+import { baseUrl } from './src/cmponents/Constant/Constant';
 
 export default defineConfig({
   plugins: [react()],
@@ -14,7 +15,7 @@ export default defineConfig({
     port: 5173,
     proxy: {
       '/api': {
-        target: 'http://localhost:8000', // your backend server
+        target: baseUrl, // your backend server
         changeOrigin: true,
       }
     }

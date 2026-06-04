@@ -185,7 +185,12 @@ class BannerSerializer(serializers.ModelSerializer):
             "title",
             "subtitle",
             "image",
-            "call_to_action_url",
+
+            # CTA system (NEW)
+            "cta_type",
+            "cta_item",
+            "cta_url",
+
             "background_color",
             "is_active",
             "start_date",
@@ -198,10 +203,18 @@ class BannerSerializer(serializers.ModelSerializer):
         # Assign vendor automatically from logged-in user
         validated_data["vendor"] = self.context["request"].user.vendor
 
-        # Automatically set URL using item's primary key
         item = validated_data.get("item")
-        if item and not validated_data.get("call_to_action_url"):
-            validated_data["call_to_action_url"] = f"/product/{item.pk}/"  # <-- use PK
+
+        # ==============================
+        # CTA LOGIC (NEW SYSTEM)
+        # ==============================
+        if item:
+            validated_data["cta_type"] = "item"
+            validated_data["cta_item"] = item
+            validated_data["cta_url"] = None
+        else:
+            validated_data["cta_type"] = "external"
+            validated_data["cta_item"] = None
 
         return super().create(validated_data)
 

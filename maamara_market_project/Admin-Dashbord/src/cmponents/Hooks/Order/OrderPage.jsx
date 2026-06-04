@@ -56,12 +56,12 @@ const VendorOrdersPage = () => {
               p={2}
               mb={2}
               sx={{
-                backgroundColor: colors.primary[700],
+                backgroundColor: colors.primary[600],
                 borderRadius: "10px",
               }}
             >
               <div className="flex justify-between items center">
-              <Typography variant="h6" style={{color:colors.goldAccent[500]}}>Order # {order.id}</Typography>
+              <Typography variant="h6" style={{color:colors.blueAccent[500]}}>Order # {order.id}</Typography>
 
               <Typography sx={{ mt: 1 }}>
                 <strong>Total for Vendor:</strong>{" "}
@@ -96,7 +96,7 @@ const VendorOrdersPage = () => {
           borderRadius: "12px",
         }}
       >
-        <Typography variant="h5" mb={2} color={colors.blueAccent[400]}>
+        <Typography variant="h5" mb={2} color={colors.blueAccent[500]}>
           Completed Orders
         </Typography>
 

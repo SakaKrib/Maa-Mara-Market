@@ -128,6 +128,10 @@ import RevenueGrowthCard from "./cmponents/AdminPages/Notifications/Transactions
 import VendorSuccessPage from "./cmponents/VENDORPAGE/VendorRegistration/VendorSuccessPage";
 import CreateItemModal from "./cmponents/AdminPages/Notifications/ApproveCreatedItem";
 import AdminBannerApprovalPage from "./cmponents/Admin/ApproveBanner/aprroveBanner";
+import SingleBannerPage from "./cmponents/VENDORPAGE/VendorSections/NotificationPages/SingleBannerPage";
+import VendorBannerManager from "./cmponents/VENDORPAGE/VendorSections/NotificationPages/SingleBannerPage";
+import VendorBlogManagerNotification from "./cmponents/VENDORPAGE/VendorSections/NotificationPages/BlogsSinglePage";
+import SearchGlobalResultsPage from "./cmponents/SearchPage/SearchResultsPage";
 
 function AppContent() {
   const { isAuthenticated, loading } = useAuth();
@@ -323,6 +327,9 @@ function AppContent() {
               {/* Transaction Growth */}
               <Route path="admin-dashboard/sales-Analytics/transaction-growth-track" element={<RevenueGrowthCard />} />
 
+              {/* search global results route */}
+              <Route path="search/global-results" element={<SearchGlobalResultsPage />} />
+
               {/* chat */}
               <Route path="join-chat" element={<Join />} />
               <Route path="chat" element={<Chat />} />
@@ -377,9 +384,15 @@ function AppContent() {
                 <Route path="sales/report" element={<SalesReportPage />} />
 
                 {/* NOTIFICATION ROUTES */}
-                <Route path="vendor/items/:id/item" element={<SingleItemProfileNotif />} />
+                <Route path="vendor/items/:id" element={<SingleItemProfileNotif />} />
 
+                {/* banners single page */}
+                <Route path="vendor/banners/:id" element={<VendorBannerManager />} />
 
+                {/* blogs signle page */}
+                <Route path="vendor/blogs/:id" element={<VendorBlogManagerNotification />} />
+
+                <Route path="search/global-results" element={<SearchGlobalResultsPage />} />
                 
               </Route>
 

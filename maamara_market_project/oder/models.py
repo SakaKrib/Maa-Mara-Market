@@ -321,7 +321,7 @@ class Order(models.Model):
             final_price = max(0, total - deduction)
 
             # ✅ Update Wallet Balance
-            wallet.balance -= deduction * wallet.POINTS_TO_KES_RATIO
+            wallet.balance = float(wallet.balance) - float(deduction) * float(wallet.POINTS_TO_KES_RATIO)
             wallet.save()
 
         # ✅ Apply Voucher Discount
@@ -396,10 +396,10 @@ class Order(models.Model):
         cubic_side = Decimal(math.pow(float(total_volume), 1/3)) if total_volume > 0 else Decimal("0")
 
         return {
-            "length": round(cubic_side, 2),
-            "width": round(cubic_side, 2),
-            "height": round(cubic_side, 2),
-            "weight": round(total_weight, 2)
+            "length": float(round(cubic_side, 2)),
+            "width": float(round(cubic_side, 2)),
+            "height": float(round(cubic_side, 2)),
+            "weight": float(round(total_weight, 2))
         }
     
     # to address

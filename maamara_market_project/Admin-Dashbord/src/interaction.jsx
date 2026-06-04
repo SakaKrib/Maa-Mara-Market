@@ -58,6 +58,7 @@ const useDashboardInteractions = () => {
             wrapNav?.classList.remove('active');
             headerTop?.classList.toggle('active');
             toolkit?.classList.toggle('active');
+            ShowUserName?.classList.toggle('active');
 
           };
       }

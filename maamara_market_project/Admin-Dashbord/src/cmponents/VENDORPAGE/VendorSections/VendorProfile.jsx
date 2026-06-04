@@ -210,7 +210,7 @@ useEffect(() => {
   
 
   return (
-    <div className="flex gap-2 p-2 w-[100%] lg:w-full flex-wrap flex-col sm:w-[calc(100%-80px)] xxs:w-[calc(100%-80px)] md:relative xxs:top-1 sm:top-10 md:top-10 md:flex-col lg:flex-row" style={{ maxHeight:'165vh', overflowY:'hidden'}}>
+    <div className="flex gap-2 p-2 w-[100%] lg:w-full flex-wrap flex-col sm:w-[calc(100%-80px)] xxs:w-[calc(100%-80px)] md:relative xxs:top-1 sm:top-10 md:top-10 md:flex-col lg:flex-row" style={{ maxHeight:'165vh', overflowY:'hidden', backgroundColor:colors.primary[500]}}>
       
         
       {/* LEFT SIDE (Vendor Info + Chart) */}

@@ -3,7 +3,8 @@ from rest_framework import serializers
 from .models import OderItem, Order, BillingAddress, Payment, Transaction
 from ReactSerializers.models import Item
 from core.Serializer import ItemSerializer
-import bleach
+import bleach # type: ignore
+from decimal import Decimal
 
 
 # ✅ Helper sanitizer
@@ -49,14 +50,32 @@ class PaymentSerializer(serializers.ModelSerializer):
     
 
 
+class BaseSerializer(serializers.ModelSerializer):
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        return self._convert_decimals(data)
+
+    def _convert_decimals(self, obj):
+        if isinstance(obj, list):
+            return [self._convert_decimals(i) for i in obj]
+
+        if isinstance(obj, dict):
+            return {k: self._convert_decimals(v) for k, v in obj.items()}
+
+        if isinstance(obj, Decimal):
+            return float(obj)
+
+        return obj
+    
 # ✅ OrderItem Serializer
 class OrderItemSerializer(serializers.ModelSerializer):
-    item = ItemSerializer(read_only=True)  # nested item details
+    item = ItemSerializer(read_only=True)
+
     total_item_price = serializers.SerializerMethodField()
     total_discount = serializers.SerializerMethodField()
     amount_saved = serializers.SerializerMethodField()
     final_price = serializers.SerializerMethodField()
-    final_price_for_vendor = serializers.SerializerMethodField()  # ADD THIS
+    final_price_for_vendor = serializers.SerializerMethodField()
 
     class Meta:
         model = OderItem
@@ -75,24 +94,54 @@ class OrderItemSerializer(serializers.ModelSerializer):
             "total_discount",
             "amount_saved",
             "final_price",
-            "final_price_for_vendor",  # ADD THIS
+            "final_price_for_vendor",
         ]
 
+    # =========================
+    # ULTRA SAFE CONVERTER
+    # =========================
+    def to_float(self, value):
+        if isinstance(value, Decimal):
+            return float(value)
+
+        if isinstance(value, dict):
+            return {k: self.to_float(v) for k, v in value.items()}
+
+        if isinstance(value, (list, tuple)):
+            return [self.to_float(v) for v in value]
+
+        if value is None:
+            return 0.0
+
+        try:
+            return float(value)
+        except (TypeError, ValueError):
+            return 0.0
+
+    # =========================
+    # FIX: FORCE CLEAN NESTED ITEM TOO
+    # =========================
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        return self.to_float(data)
+
+    # =========================
+    # FIELD METHODS
+    # =========================
     def get_total_item_price(self, obj):
-        return obj.get_total_item_price()
+        return self.to_float(obj.get_total_item_price())
 
     def get_total_discount(self, obj):
-        return obj.get_total_discount()
+        return self.to_float(obj.get_total_discount())
 
     def get_amount_saved(self, obj):
-        return obj.get_amount_saved()
+        return self.to_float(obj.get_amount_saved())
 
     def get_final_price(self, obj):
-        return obj.get_final_price()
+        return self.to_float(obj.get_final_price())
 
     def get_final_price_for_vendor(self, obj):
-        return obj.get_final_price_for_vendor()  # call your model method
-
+        return self.to_float(obj.get_final_price_for_vendor())
 
 
 # ✅ Order Serializer
@@ -120,33 +169,62 @@ class OrderSerializer(serializers.ModelSerializer):
             "total_for_vendor",
         ]
 
+    # -----------------------
+    # SAFE DECIMAL CONVERTER
+    # -----------------------
+    def to_float(self, value):
+        if isinstance(value, Decimal):
+            return float(value)
+        return value
+
+    # -----------------------
+    # ITEMS (FILTERED BY VENDOR)
+    # -----------------------
     def get_items(self, obj):
         vendor = self.context.get("vendor")
-        if not vendor:
-            # fallback: return all items if no vendor in context
-            order_items = obj.order_items.all()
-        else:
+
+        if vendor:
             order_items = obj.order_items.filter(item__vendor=vendor)
+        else:
+            order_items = obj.order_items.all()
+
         return OrderItemSerializer(order_items, many=True).data
 
+    # -----------------------
+    # TOTAL
+    # -----------------------
     def get_total(self, obj):
-        return obj.get_total()
+        return self.to_float(obj.get_total())
 
+    # -----------------------
+    # FINAL TOTAL
+    # -----------------------
     def get_final_total(self, obj):
-        return obj.final_total_of_cart()
+        return self.to_float(obj.final_total_of_cart())
 
+    # -----------------------
+    # TOTAL QTY
+    # -----------------------
     def get_total_qty(self, obj):
         return obj.get_total_qty()
 
+    # -----------------------
+    # TOTAL FOR VENDOR
+    # -----------------------
     def get_total_for_vendor(self, obj):
         vendor = self.context.get("vendor")
+
         if not vendor:
-            return None
+            return 0.0
 
         order_items = obj.order_items.filter(item__vendor=vendor)
-        total = sum(item.get_final_price_for_vendor() for item in order_items)
-        return int(round(total))
 
+        total = sum(
+            float(item.get_final_price_for_vendor())
+            for item in order_items
+        )
+
+        return float(total)
 
 # fetch transaction for vendor
 # serializers.py

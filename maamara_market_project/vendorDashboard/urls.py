@@ -4,8 +4,12 @@ from .VendorRequests import *
 from .views import AdminPayoutAPIView, monthly_sales_report
 from .payout.services.vendor_monthly_payout_runner import process_payouts_by_group, pay_single_vendor_payout, generate_monthly_payouts
 from .calback import *
+from . GlobalSearchEngine import GlobalSearchView
 urlpatterns = [
     path('', views.dashboard, name='vendor-dashboard'),  # Replace with your actual view
+
+    # search engine, global
+    path("api/search-all/", GlobalSearchView.as_view(), name="global-search"),
 
     # requests
     # Vendor creates request

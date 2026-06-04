@@ -95,7 +95,7 @@ class Department(models.Model):
     
 
 class Category(models.Model):
-    name = models.CharField(max_length=50)
+    name = models.CharField(max_length=50, unique=True)
     department = models.ForeignKey(Department, related_name='categories', on_delete=models.CASCADE)
 
     def __str__(self):
@@ -382,7 +382,7 @@ class SizeStock(models.Model):
     class Meta:
         constraints = [
             models.CheckConstraint(
-                check=(
+                condition=(
                     models.Q(item__isnull=False, variant__isnull=True) |
                     models.Q(item__isnull=True, variant__isnull=False)
                 ),

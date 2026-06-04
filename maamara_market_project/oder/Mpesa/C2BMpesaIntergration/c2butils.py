@@ -172,7 +172,7 @@ from django.utils import timezone
 @permission_classes([AllowAny])
 def stk_callback(request):
     data = request.data
-    logger.info("✅ STK Callback Received: %s", data)
+    logger.debug("STK callback received")
 
     stk_callback_data = data.get("Body", {}).get("stkCallback", {})
     checkout_request_id = stk_callback_data.get("CheckoutRequestID")
@@ -342,7 +342,10 @@ def stk_callback(request):
                             msg = EmailMultiAlternatives(subject, "", from_email, to_email)
                             msg.attach_alternative(html_content, "text/html")
                             msg.send()
-                            logger.info(f"📧 Item purchased email sent to {vendor_user.email} with variants: {variant_text}")
+                            logger.info(
+                                "Purchase email sent to vendor %s",
+                                vendor_user.id,
+                            )
 
         
 
@@ -354,7 +357,7 @@ def stk_callback(request):
                         message=f"Thank you for your purchase! Your order #{order.id} is confirmed.",
                         url=f"/orders/{order.id}/"
                     )
-                    logger.info(f"📩 User {order.user.username} notified")
+                    logger.info("User %s notified", order.user.id)
 
                 # --- 🧑‍💼 Notify Admin(s) ---
                 for admin in User.objects.filter(is_superuser=True):
@@ -364,7 +367,7 @@ def stk_callback(request):
                         message=f"Order #{order.id} (Total: KES {amount}) for {actor_name} has been completed.",
                         url=f"/admin-dashboard/admin-item/orders/{order.id}/"
                     )
-                    logger.info(f"🗂️ Admin {admin.username} notified")
+                    logger.info("Admin %s notified", admin.id)
 
                 # --- 🪵 Log Activities ---
                 ActivityLog.objects.create(
@@ -398,7 +401,7 @@ def stk_callback(request):
         logger.warning("⚠️ Duplicate transaction detected for %s", mpesa_receipt)
 
     except Exception as e:
-        logger.error(f"❌ Error in STK callback: {e}")
+        logger.exception("Error processing STK callback")
 
     # ✅ Always return success to Safaricom
     return Response({"ResultCode": 0, "ResultDesc": "Accepted"})

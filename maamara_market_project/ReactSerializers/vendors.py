@@ -341,9 +341,8 @@ def convert_decimal(obj):
         return float(obj)
     return obj
 
-
-@parser_classes([MultiPartParser, FormParser, JSONParser])
 @api_view(['POST'])
+@parser_classes([MultiPartParser, FormParser, JSONParser])
 @permission_classes([IsAuthenticated])
 def submit_vendor_request(request):
     user = request.user

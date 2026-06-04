@@ -44,16 +44,19 @@ const StockSummaryBox = () => {
 
       <div className="space-y-2">
         {/* LOW STOCK */}
+        {critical.length > 0 && (
         <div className="row ">
           <div className="status low-stock">
             <span className="dot red_dot blinking"></span>
-            <span className="text-red-400 text-sm">
+            
+              <span className="text-sm" style={{color:colors.redAccent[500]}}>
               Low Stock ({critical.length})
             </span>
-            <span className="blinking text-[10px] bg-red-900 font-semibold p-1">
+           
+            <span className="blinking text-[10px] bg-red-800 font-semibold p-1 text-gray-200" >
               Critical
             </span>
-            <p className="text-xs text-gray-500 restock">
+            <p className="text-xs  restock" style={{color:colors.gray[100]}}>
               please restock ASAP!
             </p>
           </div>
@@ -63,9 +66,10 @@ const StockSummaryBox = () => {
           >
             View
           </button>
-        </div>
+        </div> ) }
 
         {/* 10–20 STOCK */}
+      {range10to20 > 0 &&(
         <div className="row">
           <div className="status mid-stock">
             <span className="dot yellow"></span>
@@ -79,9 +83,10 @@ const StockSummaryBox = () => {
           >
             View
           </button>
-        </div>
+        </div>)}
 
         {/* 20–30 STOCK */}
+        {range20to30 > 0 && (
         <div className="row">
           <div className="status mid-high-stock">
             <span className="dot blue"></span>
@@ -95,9 +100,10 @@ const StockSummaryBox = () => {
           >
             View
           </button>
-        </div>
+        </div>)}
 
         {/* 50+ STOCK */}
+      {above50 > 0 && (
         <div className="row">
           <div className="status high-stock">
             <span className="dot green"></span>
@@ -111,7 +117,7 @@ const StockSummaryBox = () => {
           >
             View
           </button>
-        </div>
+        </div>)}
       </div>
 
       {/* ---------- USE EXTERNAL MODAL ---------- */}

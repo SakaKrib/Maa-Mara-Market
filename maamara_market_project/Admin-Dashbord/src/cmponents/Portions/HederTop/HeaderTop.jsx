@@ -25,6 +25,7 @@ import api from '../../../Services/Api';
 import { sunnyOutline, moon } from "ionicons/icons";
 import { useContext } from "react";
 import { ColourModeContext } from "../../../theme";
+import SearchBarForVendorAdmin from "../../SearchPage/GlobalSearchPage";
 
 const HeaderTop = () => {
   useDashboardInteractions();
@@ -81,8 +82,12 @@ const [imageFile, setImageFile] = useState(null);
   const [profile, setProfile] = useState(null);
   const csrfToken = useCsrfToken();
 
-  const userProfile = profile?.profile;
-
+  const profilePicture =
+  profile?.profile?.profile_picture
+    ? profile.profile.profile_picture.startsWith("http")
+      ? profile.profile.profile_picture
+      : `${baseUrl}${profile.profile.profile_picture}`
+    : "/default-avatar.png";
 
 
   const handleImageChange = async (e) => {
@@ -236,46 +241,97 @@ const [imageFile, setImageFile] = useState(null);
  
 
   return (
-    <Box className="header-top" sx={{ backgroundColor: colors.primary[600], width:{
-      md:"calc(100% - 80px)"
-    } }}>
-      <Box className="topbar sm:w-full">
-        <Box className="toggle">
+      <Box
+      className="header-top"
+      sx={{
+        backgroundColor: colors.primary[600],
+        width: {
+          xs: "100%",
+          md: "calc(100% - 80px)",
+        },
+        px: {
+          xs: 1,
+          sm: 2,
+          md: 3,
+        },
+        zIndex: {
+          xs: 99
+        }
+      }}
+    >
+      <Box
+        className="topbar sm:w-full"
+        sx={{
+          display: "flex",
+          alignItems: "center",
+          gap: {
+            xs: 1,
+            sm: 1.5,
+            md: 2,
+          },
+          width: "100%",
+        }}
+      >
+        <Box
+          className="toggle"
+          sx={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent:'center',
+            fontSize: {
+              xs: "20px",
+              sm: "24px",
+              md: "28px",
+            },
+          }}
+        >
           <IonIcon icon={menuOutline} />
         </Box>
 
-        <Box className="title-head" style={{ '--span-color': colors.gray[100] }}>
+        <Box
+          className="title-head"
+          style={{ "--span-color": colors.gray[100] }}
+          sx={{
+            fontSize: {
+              xs: "0.8rem",
+              sm: "0.95rem",
+              md: "1.1rem",
+            },
+            whiteSpace: "nowrap",
+            flexShrink: 0,
+          }}
+        >
           <span className="header">
             Maa <strong>Mara</strong><span className="mkt">Market</span>
           </span>
         </Box>
 
-        <Box style={{ '--placeholder-color': colors.gray[100] }}>
-          <form className="search">
-            <label htmlFor="search">
-              <input
-                type="text"
-                placeholder="search here"
-                id="search"
-                style={{
-                  backgroundColor: colors.primary[500],
-                  color: colors.gray[100],
-                  border: `1px solid ${colors.primary[500]}`,
-                  padding: ' 0 30px'
-                }}
-              />
-              <IonIcon className="search-icon" icon={searchOutline} style={{color:colors.gray[100]}}/>
-            </label>
-            <button className="primary-button mobile-hide" type="submit">search</button>
-            <button className="desktop-hide none" type="submit">
-              <span className="icon-large press">
-                <IonIcon icon={searchOutline} />
-              </span>
-            </button>
-          </form>
+        <Box
+          sx={{
+            flex: 1,
+            minWidth: 0,
+            mx: {
+              xs: 0.5,
+              sm: 1,
+              md: 2,
+            },
+          }}
+          style={{ "--placeholder-color": colors.gray[100] }}
+        >
+          <SearchBarForVendorAdmin />
         </Box>
 
-        <Box sx={{ mb: '1.5em' }}>
+        <Box
+          sx={{
+            mb: "1.5em",
+            display: {
+              xs: "none",
+              sm: "none",
+              md: "none",
+              lg: "block",
+            },
+          }}
+        >
           <LogoutButton />
         </Box>
 
@@ -288,13 +344,21 @@ const [imageFile, setImageFile] = useState(null);
             }}
             sx={{ cursor: "pointer" }}
           >
-            <Avatar
-              src={
-                previewImage ||
-                userProfile?.profile_picture ||
-                "/default-avatar.png"
-              }
+           <Avatar
+              src={previewImage || profilePicture}
               alt="User Profile"
+              sx={{
+                width: {
+                  xs: 34,
+                  sm: 38,
+                  md: 42,
+                },
+                height: {
+                  xs: 34,
+                  sm: 38,
+                  md: 42,
+                },
+              }}
             />
 
             {/* hidden file input */}
@@ -317,7 +381,13 @@ const [imageFile, setImageFile] = useState(null);
                   top: "50%",
                   left: "50%",
                   transform: "translate(-50%, -50%)",
-                  width: { xs: "90%", sm: 420 },
+                  width: {
+                    xs: "95%",
+                    sm: "90%",
+                    md: 420,
+                  },
+                  maxHeight: "90vh",
+                  overflowY: "auto",
                   bgcolor: colors.primary[600],
                   borderRadius: "16px",
                   boxShadow: 24,
@@ -343,15 +413,17 @@ const [imageFile, setImageFile] = useState(null);
                 {/* ================= AVATAR ================= */}
                 <Box display="flex" justifyContent="center" mb={2}>
                 <Avatar
-                  src={
-                    previewImage ||
-                    profile?.profile?.profile_picture ||
-                    "/default-avatar.png"
-                  }
+                  src={previewImage || profilePicture}
                   onClick={() => fileInputRef.current.click()}
                   sx={{
-                    width: 80,
-                    height: 80,
+                    width: {
+                      xs: 70,
+                      sm: 80,
+                    },
+                    height: {
+                      xs: 70,
+                      sm: 80,
+                    },
                     border: `2px solid ${colors.primary[400]}`,
                     cursor: "pointer",
                   }}

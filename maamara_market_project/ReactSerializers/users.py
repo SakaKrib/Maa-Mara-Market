@@ -3,7 +3,7 @@ import logging
 
 from datetime import timedelta
 
-from django.contrib.auth import authenticate, login as auth_login
+from django.contrib.auth import authenticate, login as auth_login, logout
 from django.contrib.auth.models import User
 from django.contrib.auth.hashers import check_password
 from django.shortcuts import redirect
@@ -18,7 +18,7 @@ from rest_framework import status
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.permissions import AllowAny, IsAuthenticated
-from rest_framework.decorators import permission_classes
+from rest_framework.decorators import permission_classes, api_view
 
 from rest_framework_simplejwt.tokens import AccessToken, RefreshToken
 from rest_framework_simplejwt.authentication import JWTAuthentication
@@ -27,6 +27,13 @@ from rest_framework_simplejwt.exceptions import InvalidToken, TokenError
 from core.models import Profile
 from vendorDashboard.models import Vendor
 from core.mergeVisitortoUserData import merge_visitor_data_to_user
+
+
+
+
+
+from django.contrib.auth import get_user_model
+
 
 logger = logging.getLogger(__name__)
 
@@ -317,6 +324,13 @@ def google_login_success(request):
     # ================================
     response = redirect("http://127.0.0.1:5173/login/auth-success")
 
+
+    # 🔥 DELETE VISITOR TOKENS / SESSION
+    response.delete_cookie("visitorAccessToken")
+    response.delete_cookie("visitorRefreshToken")
+    response.delete_cookie("visitorId")
+    response.delete_cookie("user_sessionid")
+
     response.set_cookie(
         "accessToken",
         str(refresh.access_token),
@@ -423,37 +437,36 @@ class VisitorTokenView(APIView):
 
 
 
-
-
-
-
-from django.contrib.auth import logout
-from django.http import JsonResponse
-
+# logout view
+@api_view(["POST"])
 @permission_classes([IsAuthenticated])
 @require_http_methods(["POST"])
 def logout_view(request):
-    # Log out the user from Django session
+
+    # 1. Django session logout
     logout(request)
 
-    # Prepare response
+    # 2. Blacklist refresh token (if using SimpleJWT blacklist)
+    refresh_token = request.COOKIES.get("refreshToken")
+
+    if refresh_token:
+        try:
+            token = RefreshToken(refresh_token)
+            token.blacklist()
+        except TokenError:
+            pass
+
+    # 3. Response
     response = JsonResponse({"message": "Logged out successfully"})
 
-    # Remove JWT cookies
-    response.delete_cookie('accessToken')
-    response.delete_cookie('refreshToken')
+    # 4. Correct cookie deletion (ONLY path/domain allowed)
+    response.delete_cookie("accessToken", path="/")
+    response.delete_cookie("refreshToken", path="/")
 
     return response
 
-from rest_framework.views import APIView
-from rest_framework.response import Response
-from rest_framework_simplejwt.tokens import RefreshToken
-from rest_framework_simplejwt.exceptions import TokenError
-from rest_framework.permissions import IsAuthenticated
-from django.contrib.auth import get_user_model
-from django.utils.decorators import method_decorator
-User = get_user_model()
 
+User = get_user_model()
 class CookieRefreshView(APIView):
     permission_classes = [AllowAny]
 
@@ -465,6 +478,9 @@ class CookieRefreshView(APIView):
         if user_refresh:
             try:
                 refresh = RefreshToken(user_refresh)
+
+                if refresh.payload.get("token_type") != "refresh":
+                    return Response({"error": "Invalid token type"}, status=401)
 
                 new_access = refresh.access_token
 
@@ -482,7 +498,7 @@ class CookieRefreshView(APIView):
 
                 return response
 
-            except TokenError:
+            except (TokenError, InvalidToken):
                 response = Response({"error": "Invalid user refresh"}, status=401)
                 response.delete_cookie("accessToken")
                 response.delete_cookie("refreshToken")
@@ -493,12 +509,12 @@ class CookieRefreshView(APIView):
             try:
                 refresh = RefreshToken(visitor_refresh)
 
-                if refresh.get("visitor") is not True:
+                if not refresh.payload.get("visitor"):
                     raise TokenError("Not a visitor token")
 
                 new_access = refresh.access_token
                 new_access["visitor"] = True
-                new_access["visitor_id"] = refresh["visitor_id"]
+                new_access["visitor_id"] = refresh.payload.get("visitor_id")
 
                 response = Response({"message": "visitor refreshed"})
 
@@ -514,7 +530,7 @@ class CookieRefreshView(APIView):
 
                 return response
 
-            except TokenError:
+            except (TokenError, InvalidToken):
                 response = Response({"error": "Invalid visitor refresh"}, status=401)
                 response.delete_cookie("visitorAccessToken")
                 response.delete_cookie("visitorRefreshToken")

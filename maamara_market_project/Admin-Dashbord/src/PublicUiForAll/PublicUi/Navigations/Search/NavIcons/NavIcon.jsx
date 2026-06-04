@@ -9,6 +9,7 @@ import { useCartContext } from "../../../Customer/DesktopView/Main/CartHook/cart
 import { useWishlistContext } from "../../../../../cmponents/Hooks/WishListHook/Wishlist";
 import WishlistModal from "../../WishlistModal/WishlistModal";
 import { useAuth } from "../../../../../cmponents/Auth/AuthContext/Context";
+import api from '../../../../../Services/Api'
 
 const NavIcons = () => {
   const [isProfileOpen, setIsProfileOpen] = useState(false);
@@ -49,10 +50,40 @@ const NavIcons = () => {
     setIsProfileOpen((prev) => !prev);
   };
 
-  const handleLogout = () => {
-    logout();
-    setIsProfileOpen(false);
-    navigate("/customer-login");
+  const handleLogout = async () => {
+    try {
+      // 1. Call backend logout endpoint (clears JWT cookies + blacklists refresh token)
+      await api.post(
+        "/api/logout/",
+        {},
+        {
+          withCredentials: true,
+        }
+      );
+  
+      // 2. Clear frontend auth state
+      logout(); // from AuthContext
+  
+      // 3. Close dropdown
+      setIsProfileOpen(false);
+  
+      // 4. Clear UI storage (if you use any)
+      localStorage.clear();
+      sessionStorage.clear();
+  
+      // 5. Force clean navigation
+      navigate("/customer-login", { replace: true });
+    } catch (err) {
+      console.error("Logout failed:", err);
+  
+      // Fallback: still log user out locally
+      logout();
+      setIsProfileOpen(false);
+      localStorage.clear();
+      sessionStorage.clear();
+  
+      navigate("/customer-login", { replace: true });
+    }
   };
 
   return (

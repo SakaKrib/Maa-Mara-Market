@@ -100,47 +100,61 @@ const NavBar = () => {
         <ul>
           <li className=''>
             <Link to="/admin-dashboard">
-              <span className="icon"><IonIcon icon={homeOutline} /></span>
-              <span className="title">Admin Dashboard</span>
+              <span className='flex'>
+                <span className="icon"><IonIcon icon={homeOutline} /></span>
+                <span className="title">Admin Dashboard</span>
+              </span>
             </Link>
           </li>
           <li>
             <Link to="Accounts/">
-              <span className="icon"><IonIcon icon={keyOutline} /></span>
-              <span className="title">Accounts</span>
+              <span className='flex'>
+                <span className="icon"><IonIcon icon={keyOutline} /></span>
+                <span className="title">Accounts</span>
+              </span>
             </Link>
           </li>
           <li>
             <Link to="vendors">
-              <span className="icon"><IonIcon icon={peopleOutline} /></span>
-              <span className="title">Vendors</span>
+              <span className='flex'>
+                <span className="icon"><IonIcon icon={peopleOutline} /></span>
+                <span className="title">Vendors</span>
+              </span>
             </Link>
           </li>
           <li>
             <Link to="vendor-payout">
-              <span className="icon"><AttachMoneyIcon/></span>
-              <span className="title">Payouts</span>
+              <span className='flex'>
+                <span className="icon"><AttachMoneyIcon/></span>
+                <span className="title">Payouts</span>
+              </span>
             </Link>
           </li>
           <li>
             <Link to="join-chat">
-              <span className="icon"><IonIcon icon={chatboxOutline} /></span>
-              <span className="title">Message</span>
+              <span className='flex'>
+                <span className="icon"><IonIcon icon={chatboxOutline} /></span>
+                <span className="title">Message</span>
+              </span>
             </Link>
           </li>
           <li>
             <Link to="faq">
-              <span className="icon"><IonIcon icon={helpOutline} /></span>
-              <span className="title">Help &  FAQ</span>
+              <span className='flex'>
+                <span className="icon"><IonIcon icon={helpOutline} /></span>
+                <span className="title">Help &  FAQ</span>
+              </span>
             </Link>
           </li>
 
           {/* Settings Section */}
           <li className="has-child">
-            <a href="#" className='config'>
-              <span className="icon"><IonIcon icon={settingsOutline} /></span>
-              <span className="title">Settings</span>
-            </a>
+             <span className="config flex">
+                <span className="icon">
+                  <IonIcon icon={settingsOutline} />
+                </span>
+                <span className="title">Settings</span>
+            </span>
             <Box className="settings" sx={{
               backgroundColor: colors.primary[100]
             }} style={{'--primary-theme': colors.gray[100], '--green-col': colors.greenAccent[500], '--lihover-col': colors.gray[900],
@@ -151,17 +165,17 @@ const NavBar = () => {
             
                 <h2>General Settings</h2>
   
-                  <li><a href="#">Manage Accounts</a></li>
-                  <li><a href="#">Timezone & Locale</a></li>
-                  <li><a href="#">Contact Info</a></li>
-                  <li><a href="#">Save Credentials</a></li>
+                  <li><span>Manage Accounts</span></li>
+                  <li><span>Timezone & Locale</span></li>
+                  <li><span>Contact Info</span></li>
+                  <li><span>Save Credentials</span></li>
 
                 <h2>User Management</h2>
 
-                  <li><a href="#">Roles & Permissions</a></li>
-                  <li><a href="#">Change Passwords</a></li>
-                  <li><a href="#">Secure Login Sessions</a></li>
-                  <li><a href="#">Report an Issue</a></li>
+                  <li><span>Roles & Permissions</span></li>
+                  <li><span>Change Passwords</span></li>
+                  <li><span>Secure Login Sessions</span></li>
+                  <li><span>Report an Issue</span></li>
 
                 <h2>Appearance and Theme</h2>
 
@@ -171,21 +185,21 @@ const NavBar = () => {
                       '--bg-color': colors.primary[400]
                     }}>
                      <li className="light list">
-                      <a href="#" onClick={(e) => {
+                      <span onClick={(e) => {
                         e.preventDefault();
-                        colorMode.setLightMode();   // ☀️ force light
+                        colorMode.setLightMode();
                       }}>
                         <IonIcon icon={sunnyOutline} /> Light Mode
-                      </a>
+                      </span>
                     </li>
 
                     <li className="dark">
-                      <a href="#" onClick={(e) => {
+                      <span onClick={(e) => {
                         e.preventDefault();
-                        colorMode.setDarkMode();    // 🌙 force dark
+                        colorMode.setDarkMode();
                       }}>
                         <IonIcon icon={moon} /> Night Mode
-                      </a>
+                      </span>
                     </li>
                       </ul>
                   </li>
@@ -193,64 +207,71 @@ const NavBar = () => {
                   <li className="has-child layout-li" style={{color:colors.gray[100]}}>
                     <span className='layout text-sm'>Screen Layout <IonIcon className="icon-small" icon={chevronDownOutline} /></span>
                     <ul className="content layout-content" style={{'--primary-theme': colors.gray[100], '--green-col': colors.greenAccent[500], '--lihover-col': colors.gray[900], '--bg-color': colors.primary[400]}}>
-                      <li className="rich"><a href="#"><IonIcon icon={tabletPortraitSharp} />Landscape Mode</a></li>
-                      <li><a href="#"><IonIcon icon={tabletLandscapeSharp} />Portrait Mode</a></li>
+                      <li className="rich"><span><IonIcon icon={tabletPortraitSharp} />Landscape Mode</span></li>
+                      <li><span><IonIcon icon={tabletLandscapeSharp} />Portrait Mode</span></li>
                     </ul>
                   </li>
 
                 <h2>System Configurations</h2>
-                  <li><a href="#">Maintenance Mode <IonIcon className="icon-small" icon={chevronDownOutline} /></a></li>
-                  <li><a href="#">Database Backups <IonIcon className="icon-small" icon={chevronDownOutline} /></a></li>
+                  <li><span>Maintenance Mode <IonIcon className="icon-small" icon={chevronDownOutline} /></span></li>
+                  <li><span>Database Backups <IonIcon className="icon-small" icon={chevronDownOutline} /></span></li>
               </ul>
             </Box>
           </li>
 
           <li>
-            <a href="#">
+            <span className='flex'>
               <span className="icon"><IonIcon icon={logOutOutline} onClick={logout} /></span>
               <span className="title">Sign-Out</span>
-            </a>
+            </span>
           </li>
 
           <li>
             <Link to="calendar">
+             <span className='flex'>
               <span className="icon"><IonIcon icon={calendarOutline} /></span>
               <span className="title">Calendar</span>
+             </span>
             </Link>
           </li>
 
           {/* returns */}
           <li>
             <Link to="customer-requests">
-              <span className="icon"><IonIcon icon={clipboardOutline} /></span>
-              <span className="title">customer Requests</span>
+              <span className='flex'>
+                <span className="icon"><IonIcon icon={clipboardOutline} /></span>
+                <span className="title">customer Requests</span>
+              </span>
             </Link>
           </li>
 
           {/* Bottom Section */}
           <Box className="bottom">
+           
             <li>
-              <a href="#">
-                <span className="icon">
-                  <IonIcon icon={mailSharp} /><span className="fly-item">0</span>
-                </span>
-                <span className="title">E-mails</span>
-              </a>
-            </li>
-            <li>
-              <a href="#">
+              <span className='flex'>
                 <span className="icon">
                   <IonIcon icon={refreshCircleSharp} /><span className="fly-item">5</span>
                 </span>
                 <span className="title">Updates</span>
-              </a>
+              </span>
             </li>
             <li>
-              <Link to="/item-update-post">
-                <span className="icon"><IonIcon icon={statsChartOutline} /></span>
-                <span className="title">Insights</span>
-              </Link>
+              <span className='flex'>
+                <span className="icon">
+                  <IonIcon icon={mailSharp} /><span className="fly-item">0</span>
+                </span>
+                <span className="title">E-mails</span>
+              </span>
             </li>
+            {/* <li>
+              <Link to="/item-update-post">
+                <span className='flex'>
+                  <span className="icon"><IonIcon icon={statsChartOutline} /></span>
+                  <span className="title">Insights</span>
+                </span>
+              </Link>
+            </li> */}
           </Box>
         </ul>
       </Box>

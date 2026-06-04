@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import api from "../../../Services/Api";
 
@@ -28,12 +27,13 @@ const BannerAdd = () => {
   const [subtitle, setSubtitle] = useState("");
   const [backgroundColor, setBackgroundColor] = useState("#ffffff");
   const [image, setImage] = useState(null);
-  const [selectedItem, setSelectedItem] = useState(null);
 
-  // ✅ Loading state
+  // CTA SYSTEM
+  const [ctaType, setCtaType] = useState("item");
+  const [ctaItem, setCtaItem] = useState("");
+
   const [submitting, setSubmitting] = useState(false);
 
-  // ✅ Snackbar State
   const [snackbar, setSnackbar] = useState({
     open: false,
     message: "",
@@ -46,41 +46,27 @@ const BannerAdd = () => {
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
 
-  // =========================
-  // DEFAULT ITEM
-  // =========================
   useEffect(() => {
     if (items.length > 0) {
-      setSelectedItem(items[0].id);
+      setCtaItem(items[0].id);
     }
   }, [items]);
 
-  // =========================
-  // CLOSE SNACKBAR
-  // =========================
   const handleCloseSnackbar = () => {
-    setSnackbar((prev) => ({
-      ...prev,
-      open: false,
-    }));
+    setSnackbar((prev) => ({ ...prev, open: false }));
   };
 
-  // =========================
-  // HANDLE SUBMIT
-  // =========================
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    // ✅ Prevent multiple clicks
     if (submitting) return;
 
-    if (!selectedItem) {
+    if (ctaType === "item" && !ctaItem) {
       setSnackbar({
         open: true,
-        message: "❌ No product selected. Please select a product.",
+        message: "❌ Please select a product",
         severity: "error",
       });
-
       return;
     }
 
@@ -91,44 +77,42 @@ const BannerAdd = () => {
     formData.append("title", title);
     formData.append("subtitle", subtitle);
     formData.append("background_color", backgroundColor);
-    formData.append("item", selectedItem);
+
+    // CTA FIX (clean backend match)
+    formData.append("cta_type", ctaType);
+    formData.append("cta_item", ctaType === "item" ? ctaItem : "");
+    formData.append("cta_url", "");
 
     if (image instanceof File) {
       formData.append("image", image);
     }
 
     try {
-      const response = await api.post(
-        "/vendor/banners/",
-        formData,
-        {
-          headers: {
-            "Content-Type": "multipart/form-data",
-          },
-
-          withCredentials: true,
-        }
-      );
+      const response = await api.post("/api/vendor/banners/", formData, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+        withCredentials: true,
+      });
 
       if (response.status === 201) {
-        // ✅ Success snackbar
         setSnackbar({
           open: true,
           message: "✅ Banner Created Successfully",
           severity: "success",
         });
 
-        // ✅ Reset form
+        // reset
         setTitle("");
         setSubtitle("");
         setBackgroundColor("#ffffff");
         setImage(null);
-        setSelectedItem(items.length > 0 ? items[0].id : null);
+        setCtaType("item");
+        setCtaItem(items.length > 0 ? items[0].id : "");
       }
     } catch (error) {
       console.error(error);
 
-      // ✅ Error snackbar
       setSnackbar({
         open: true,
         message:
@@ -144,9 +128,7 @@ const BannerAdd = () => {
   return (
     <div
       className="flex justify-center items-center"
-      style={{
-        color: colors.gray[100],
-      }}
+      style={{ color: colors.gray[100] }}
     >
       <Card
         className="w-max max-w-lg shadow-lg"
@@ -162,172 +144,82 @@ const BannerAdd = () => {
         </CardHeader>
 
         <CardContent>
-          <form
-            onSubmit={handleSubmit}
-            className="space-y-4"
-          >
-            {/* TITLE */}
-            <div>
-              <Label htmlFor="title">
-                Title
-              </Label>
+          <form onSubmit={handleSubmit} className="space-y-4">
 
+            <div>
+              <Label>Title</Label>
               <Input
-                id="title"
-                placeholder="Enter banner title"
                 value={title}
-                onChange={(e) =>
-                  setTitle(e.target.value)
-                }
+                onChange={(e) => setTitle(e.target.value)}
                 required
-                style={{
-                  color: colors.gray[100],
-                  backgroundColor:
-                    colors.primary[500],
-                }}
               />
             </div>
 
-            {/* SUBTITLE */}
             <div>
-              <Label htmlFor="subtitle">
-                Subtitle
-              </Label>
-
+              <Label>Subtitle</Label>
               <Input
-                id="subtitle"
-                placeholder="Enter banner subtitle"
                 value={subtitle}
-                onChange={(e) =>
-                  setSubtitle(e.target.value)
-                }
-                style={{
-                  color: colors.gray[100],
-                  backgroundColor:
-                    colors.primary[500],
-                }}
+                onChange={(e) => setSubtitle(e.target.value)}
               />
             </div>
 
-            {/* SELECT PRODUCT */}
             <div>
-              <Label htmlFor="selectedItem">
-                Select Product
-              </Label>
-
+              <Label>CTA Type</Label>
               <select
-                id="selectedItem"
-                className="w-full p-2 rounded border"
+                value={ctaType}
+                onChange={(e) => setCtaType(e.target.value)}
+                className="w-full p-2 rounded"
                 style={{
-                  backgroundColor:
-                    colors.primary[500],
-
+                  backgroundColor: colors.primary[500],
                   color: colors.gray[100],
                 }}
-                value={selectedItem || ""}
-                onChange={(e) =>
-                  setSelectedItem(
-                    Number(e.target.value)
-                  )
-                }
-                required
               >
-                <option value="">
-                  -- Select a product --
-                </option>
-
-                {items.length > 0 ? (
-                  items.map((item) => (
-                    <option
-                      key={item.id}
-                      value={item.id}
-                    >
-                      {item.name}
-                    </option>
-                  ))
-                ) : (
-                  <option disabled>
-                    No products available
-                  </option>
-                )}
+                <option value="item">Product</option>
+                <option value="external">External Link</option>
               </select>
             </div>
 
-            {/* IMAGE */}
-            <div>
-              <Label htmlFor="image">
-                Banner Image
-              </Label>
-
-              <Input
-                id="image"
-                type="file"
-                accept="image/*"
-                onChange={(e) =>
-                  setImage(e.target.files[0])
-                }
-                required
-                style={{
-                  backgroundColor:
-                    colors.primary[500],
-                  color: colors.gray[100],
-                }}
-              />
-
-              {image && (
-                <p className="text-xs mt-1">
-                  📎 {image.name}
-                </p>
-              )}
-            </div>
-
-            {/* COLOR */}
-            <div>
-              <Label htmlFor="color">
-                Background Color
-              </Label>
-
-              <div className="flex items-center gap-2">
-                <Input
-                  id="color"
-                  type="color"
-                  className="w-16 h-12 cursor-pointer"
-                  value={backgroundColor}
-                  onChange={(e) =>
-                    setBackgroundColor(
-                      e.target.value
-                    )
-                  }
-                />
-
-                <span className="text-sm">
-                  {backgroundColor}
-                </span>
+            {ctaType === "item" && (
+              <div>
+                <Label>Select Product</Label>
+                <select
+                  value={ctaItem}
+                  onChange={(e) => setCtaItem(e.target.value)}
+                  className="w-full p-2 rounded"
+                >
+                  <option value="">-- Select --</option>
+                  {items.map((item) => (
+                    <option key={item.id} value={item.id}>
+                      {item.name}
+                    </option>
+                  ))}
+                </select>
               </div>
+            )}
+
+            <div>
+              <Label>Image</Label>
+              <Input
+                type="file"
+                onChange={(e) => setImage(e.target.files[0])}
+                required
+              />
             </div>
 
-            {/* SUBMIT BUTTON */}
-            <Button
-              type="submit"
-              disabled={submitting}
-              className="w-full text-white font-bold"
-              style={{
-                backgroundColor:
-                  colors.greenAccent[500],
-                opacity: submitting ? 0.8 : 1,
-                cursor: submitting
-                  ? "not-allowed"
-                  : "pointer",
-              }}
-            >
+            <div>
+              <Label>Background Color</Label>
+              <Input
+                type="color"
+                value={backgroundColor}
+                onChange={(e) => setBackgroundColor(e.target.value)}
+              />
+            </div>
+
+            <Button type="submit" disabled={submitting} className="w-full">
               {submitting ? (
-                <div className="flex items-center justify-center gap-2">
-                  <CircularProgress
-                    size={18}
-                    color="inherit"
-                  />
-                  Creating Banner...
-                </div>
+                <>
+                  <CircularProgress size={18} /> Creating...
+                </>
               ) : (
                 "Create Banner"
               )}
@@ -336,29 +228,13 @@ const BannerAdd = () => {
         </CardContent>
       </Card>
 
-      {/* =========================
-          SNACKBAR
-      ========================= */}
       <Snackbar
         open={snackbar.open}
         autoHideDuration={4000}
         onClose={handleCloseSnackbar}
-        anchorOrigin={{
-          vertical: "top",
-          horizontal: "right",
-        }}
+        anchorOrigin={{ vertical: "top", horizontal: "right" }}
       >
-        <Alert
-          onClose={handleCloseSnackbar}
-          severity={snackbar.severity}
-          variant="filled"
-          elevation={6}
-          sx={{
-            width: "100%",
-            borderRadius: "10px",
-            fontWeight: "bold",
-          }}
-        >
+        <Alert severity={snackbar.severity} variant="filled">
           {snackbar.message}
         </Alert>
       </Snackbar>

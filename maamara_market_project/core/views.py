@@ -26,6 +26,8 @@ from django.core.mail import EmailMultiAlternatives
 from django.template.loader import render_to_string           
 from datetime import datetime
 from django.core.paginator import Paginator
+import random
+import string
 
 
 
@@ -385,15 +387,7 @@ def user_data(request):
 
 
 # notifications
-@api_view(["GET"])
-@permission_classes([IsAuthenticated])
-def vendor_notifications(request):
-    user = request.user
-    if hasattr(user, "vendor"):  # ✅ Ensure user is a vendor
-        notifications = Notification.objects.filter(user=user).order_by("-created_at")
-        serializer = NotificationSerializer(notifications, many=True)
-        return Response(serializer.data)
-    return Response({"detail": "Not a vendor"}, status=403)
+
 
 
 
@@ -440,6 +434,25 @@ class ActivityLogViewSet(viewsets.ModelViewSet):
 # get & update userprofile
 # -------------------------------
 
+def generate_voucher_code(prefix="VOUCH", length=8, max_attempts=10):
+    """
+    Generate a unique voucher code.
+
+    Format example: VOUCH-8F3K2L9Q
+    """
+
+    chars = string.ascii_uppercase + string.digits
+
+    for _ in range(max_attempts):
+        random_part = ''.join(random.choices(chars, k=length))
+        code = f"{prefix}-{random_part}"
+
+        # Ensure uniqueness in DB
+        if not Voucher.objects.filter(code=code).exists():
+            return code
+
+    raise Exception("Failed to generate unique voucher code after multiple attempts.")
+
 class UserAccountView(APIView):
     permission_classes = [IsAuthenticated]
 
@@ -452,7 +465,17 @@ class UserAccountView(APIView):
         # Ensure related records exist
         wallet, _ = Wallet.objects.get_or_create(user=user)
         referral, _ = Referral.objects.get_or_create(referrer=user)
-        voucher, _ = Voucher.objects.get_or_create(user=user)
+        if (
+            user.order_set.filter(status="completed").count() >= 5
+            and not Voucher.objects.filter(user=user, active=True).exists()
+        ):
+            Voucher.objects.create(
+                user=user,
+                code=generate_voucher_code(),
+                active=True
+            )
+
+        voucher = Voucher.objects.filter(user=user, active=True).first()    
 
          # ✅ Only get completed orders
         completed_orders = (

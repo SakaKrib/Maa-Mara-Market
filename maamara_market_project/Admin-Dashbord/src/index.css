@@ -126,7 +126,6 @@
 
 
 
-
 .MuiBox-root.css-1ch34on{
   background-color: transparent;
 }
@@ -470,10 +469,10 @@ body, html{
 .navigate-bar.active .icon-large{
   visibility: visible;opacity: 1;transition: transform 1s, opacity .1s, visibility 1s;
 }
-.navigate-bar ul li a .title:not(ion-icon, .settings li a){
+.navigate-bar ul li span .title:not(ion-icon, .settings li a){
   display: none;
 }
-.navigate-bar.nav.active ul li a .title{
+.navigate-bar.nav.active ul li span .title{
   display: block;position: relative;font-size: 15px;
 } 
 .nav-container .icon-large:hover{
@@ -495,7 +494,7 @@ body, html{
 
 /* navigation bottom*/
 .nav-container .bottom{
-  position: relative;top: 200px;
+  position: relative;top: 140px;margin-top: 20px;
 }
 .nav-container .bottom ul li{
   display: block;
@@ -506,7 +505,8 @@ body, html{
 }
 
 .navigate-bar ul li:not(.settings li, li:nth-child(1)):hover ,
-.navigate-bar ul li.hovered:not(.settings li, li:nth-child(1)){
+.navigate-bar ul li.hovered:not(.settings li, li:nth-child(1)),
+.navigate-bar .bottom li:hover{
   background-color: var(--lihover-col);
 }
 
@@ -514,8 +514,8 @@ body, html{
   margin-bottom: 40px;
 }
 
-.nav-container ul li a{
-  position: relative;display: block;width: 100%;display: flex;text-decoration: none;color: var(--primary-theme);top: 5px;
+.nav-container ul li {
+  position: relative;width: 100%;display: flex;text-decoration: none;color: var(--primary-theme);top: 5px;
 }
 
 .navigate-bar ul li:hover a:not(.navigate-bar .settings li a),
@@ -530,7 +530,9 @@ body, html{
   font-size: 1.5rem;position: relative;
 }
 
-.navigate-bar ul li a .title{
+
+
+.navigate-bar ul li span .title{
   position: relative;display: block;padding: 0 10px;height: 60px;line-height: 50px;text-align: start;white-space: nowrap;
 }
 
@@ -556,8 +558,8 @@ body, html{
   content: "";position: absolute;right: 0;top: -50px;width: 50px;height: 50px;background-color: transparent;border-radius: 50px;box-shadow: 35px 35px 0 10px var(--white);pointer-events: none;
 }
 
-.navigate-bar ul li:hover a::after:not(.settings li a),
-.navigate-bar ul li.hovered a::after:not(.settings li a){
+.navigate-bar ul li:hover span::after:not(.settings li a),
+.navigate-bar ul li.hovered span::after:not(.settings li a){
   content: "";position: absolute;right: 0;bottom: -50px;width: 50px;height: 50px;background-color: transparent;border-radius: 50px;box-shadow: 35px -35px 0 10px var(--white);pointer-events: none;
 }
 /* ************======side menus during hovering ====== ********* */
@@ -609,6 +611,8 @@ body, html{
   content: '';box-shadow: none;
 }
 
+.nav-container
+
 .navigate-bar .settings li a{
   display: block;box-shadow: none;color: var(--h2-text-col);
 }
@@ -618,7 +622,7 @@ body, html{
 /* ************======main ====== ********* */
 
 .main-dashboard{
-  position: relative;width: calc(100% - 80px);left: 80px;min-height: 100%;background-color: var(--white);transition: 0.5s;margin-top: 6em;z-index: 0;visibility: visible;opacity: 1;
+  position: relative;width: calc(100% - 80px);left: 80px;min-height: 100%;transition: 0.5s;margin-top: 6em;z-index: 0;visibility: visible;opacity: 1;
 }
 .main-dashboard.active{
   width: calc(100% - 300px);left: 300px;z-index: 0;
@@ -629,7 +633,7 @@ body, html{
 }
 
 .toggle{
-  position: relative;top: 0;width: 60px;height: 60px;background-color: var(--blue-color);display: flex;justify-content: center;align-items: center;font-size: 2.5rem;cursor: pointer;
+  position: relative;top: 0;width: 60px;height: 60px;background-color: var(--blue-color);display: flex;justify-content: center;align-items: center;cursor: pointer;z-index: 1;
 }
 
 .header-top form.search{
@@ -646,14 +650,14 @@ body, html{
   width: 100%;height: 40px;border-radius: 40px;padding: 5px 40px;outline: none;border: 1px solid var(--black1);font-size: 18px;position: relative;background-color: var(--gray2);outline: var(--gray2);color: var(--white-in-black);
 }
 .search label input::placeholder{
-  color: var(--placeholder-color);font-size: 0.9rem;
+  color: var(--placeholder-color);font-size: 0.9rem;padding: 0 10px;
 }
 .search .mobile-hide {
   position: absolute;top: 1px;padding: .58em 1em;right: 1px;background-color: var(--greener);color: var(--white-in-black);border: none;cursor: pointer;color: var(--white-in-white);
 }
 
 .search :where(ion-icon){
-  position: absolute;top: 0;left: 10px;font-size: 1.2rem;
+  position: absolute;top: 0;left: 10px;font-size: 1.2rem;align-items: baseline;
 }
 
 .users{
@@ -1141,7 +1145,7 @@ body, html{
       position: absolute;font-size: 1em;right: 0px;top: 0;padding: 1em .7em;width: 35px;height: 40px;display: flex;justify-content: center;align-items: center;z-index: 1000;background-color: var(--blue);border-radius: 50%;
   }
   .header-top form.search button{
-      position: absolute;padding: .5em 0;border-radius: 50%;
+      position: absolute;padding: .8em 0;border-radius: 50%;
   }
   .main-dashboard, .main-dashboard.active{
       position: relative;width: 100%;left: 80px;

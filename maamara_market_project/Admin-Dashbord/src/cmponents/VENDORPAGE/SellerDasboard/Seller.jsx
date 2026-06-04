@@ -15,6 +15,7 @@ import { useMonthlySales } from "../ChartBox/ChartData/HomeChartData/SalesReport
 import { useVendorItemGrowthStats } from "../../Hooks/ItemStats/VendorItemStats";
 import { useVendorPendingOrdersStats } from "../../Hooks/ItemStats/PendingOrderStat";
 import StockSummaryBox from "../Products/Inventory/StockSummary";
+import { color } from "framer-motion";
 
 const Home = ({ vendor_id }) => {
   const vendorStats = useVendorStatsBox({ vendorId: vendor_id });
@@ -26,7 +27,7 @@ const Home = ({ vendor_id }) => {
   const colors = tokens(theme.palette.mode);
   
   return (
-    <div>
+    <div style={{backgroundColor:colors.primary[500]}}>
       <div className="w-full flex items-center p-2 top-3 relative">
         <span className="text-2xl ml-auto px-4 text-gray-100">
           <VendorNotifications />
@@ -96,7 +97,7 @@ const Home = ({ vendor_id }) => {
     </div>
      {/* go to shop */}
       <div className="b-20 p-4" style={{position:"fixed",display:'flex',bottom:'0', justifyContent:'center', alignItems:'center', width:'100%'}}>
-        <a href="/"> <button className="bg-white p-2 rounded-full hover:bg-gray-400 hover:text-gray-100 ">Go To Shop</button></a>
+        <a href="/"> <button className=" p-2 rounded-full" style={{backgroundColor:colors.gray[100], '&:hover':{color:colors.gray[900], backgroundColor:colors.primary[600]}, color:colors.gray[900]}}>Go To Shop</button></a>
       </div>
       </div>
   );

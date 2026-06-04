@@ -260,11 +260,10 @@ class ActivityLog(models.Model):
 class Notification(models.Model):
     visitor_id = models.CharField(max_length=64, blank=True, null=True, unique=True) 
     user = models.ForeignKey(User, on_delete=models.CASCADE, null=True, blank=True, related_name='notifications')
-    visitor_id = models.CharField(max_length=100, null=True, blank=True)
     title = models.CharField(max_length=255, blank=True, null=True, default="")  # ✅ Add this
     message = models.TextField()
     seen = models.BooleanField(default=False)
-    url = models.URLField(null=True, blank=True)  # <- Add this!
+    url = models.CharField(max_length=500, null=True, blank=True)  # <- Add this!
     is_read = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
     vendor_request = models.ForeignKey('vendorDashboard.VendorRequest', on_delete=models.CASCADE, null=True, blank=True)

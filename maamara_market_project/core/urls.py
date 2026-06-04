@@ -11,6 +11,7 @@ from core.PasswordRecovery import *
 router = DefaultRouter()
 
 
+
 urlpatterns = [
     path('', views.home, name='home'),  # Replace with your actual view
     path('api/activity-logs/', get_activity_logs, name='activity-logs'),
@@ -19,7 +20,7 @@ urlpatterns = [
 
     path('api/notifications/<int:notification_id>/mark_seen/', mark_notification_seen, name='mark-notification-seen'),
 
-    path("api/vendor-notifications/", vendor_notifications, name="vendor-notifications"),
+    
 
     #filter item
     path('api/filtered-items/', filtered_items, name='item-query_list'),

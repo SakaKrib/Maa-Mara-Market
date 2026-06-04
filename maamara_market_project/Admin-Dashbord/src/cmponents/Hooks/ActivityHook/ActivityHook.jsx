@@ -1,79 +1,181 @@
-import { useEffect, useState, useRef } from "react";
-import api from "../../../../src/Services/Api"; 
+import { useEffect, useState, useRef, useCallback } from "react";
+import api from "../../../../src/Services/Api";
 import { useAuth } from "../../Auth/AuthContext/Context";
 
 export const useVendorActivityLogs = () => {
   const { user } = useAuth();
+
   const [activityLogs, setActivityLogs] = useState([]);
-  const [loading, setLoading] = useState(true);   // show loading only first time
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const intervalRef = useRef(null);
 
-  // First full fetch (shows loading)
-  const initialFetch = async () => {
-    if (!user) return;
+  const wsRef = useRef(null);
+  const reconnectRef = useRef(null);
 
-    try {
-      const response = await api.get("/api/activity-logs/", {
-        withCredentials: true,
-      });
+  // -----------------------------
+  // FILTER ONLY THIS VENDOR
+  // -----------------------------
+  const filterVendorLogs = useCallback(
+    (logs = []) => {
+      if (!user) return [];
 
-      const vendorLogs = (response.data || []).filter((log) => {
+      return logs.filter((log) => {
         if (log.actor_role !== "vendor") return false;
         if (!log.user) return false;
 
         const logUserId =
-          typeof log.user === "object" ? log.user.id : log.user;
+          typeof log.user === "object"
+            ? log.user.id
+            : log.user;
 
         return logUserId === user.id;
       });
+    },
+    [user]
+  );
+
+  // -----------------------------
+  // INITIAL FETCH
+  // -----------------------------
+  const initialFetch = useCallback(async () => {
+    if (!user) return;
+
+    try {
+      const response = await api.get(
+        "/api/activity-logs/",
+        { withCredentials: true }
+      );
+
+      const vendorLogs = filterVendorLogs(
+        response.data || []
+      );
 
       setActivityLogs(vendorLogs);
       setError(null);
     } catch (err) {
-      console.error("Failed to fetch activity logs:", err);
+      console.error(
+        "Failed to fetch activity logs:",
+        err
+      );
       setError(err);
     } finally {
-      setLoading(false); // only first time
+      setLoading(false);
     }
-  };
+  }, [user, filterVendorLogs]);
 
-  // Silent background refresh (no loading state)
-  const backgroundRefresh = async () => {
+  // -----------------------------
+  // WEBSOCKET
+  // -----------------------------
+  const connectWebSocket = useCallback(() => {
     if (!user) return;
 
-    try {
-      const response = await api.get("/api/activity-logs/", {
-        withCredentials: true,
-      });
+    const protocol =
+      window.location.protocol === "https:"
+      ? "wss"
+      : "ws";
 
-      const vendorLogs = (response.data || []).filter((log) => {
-        if (log.actor_role !== "vendor") return false;
-        if (!log.user) return false;
+    const ws = new WebSocket(
+      `${protocol}://127.0.0.1:8000/ws/activity-logs/`
+    );
 
-        const logUserId =
-          typeof log.user === "object" ? log.user.id : log.user;
+    wsRef.current = ws;
 
-        return logUserId === user.id;
-      });
+    ws.onopen = () => {
+      console.log("✅ Activity WS connected");
+    };
 
-      setActivityLogs(vendorLogs); // silent update
-    } catch (err) {
-      console.error("Background update failed:", err);
-    }
-  };
+    ws.onmessage = (event) => {
+      try {
+        const data = JSON.parse(event.data);
 
+        if (
+          data.type !== "activity_logs_update"
+        ) {
+          return;
+        }
+
+        const incoming = filterVendorLogs(
+          data.logs || []
+        );
+
+        setActivityLogs((prev) => {
+          const merged = [
+            ...incoming,
+            ...prev,
+          ];
+
+          // remove duplicates
+          const unique = merged.filter(
+            (log, index, arr) =>
+              index ===
+              arr.findIndex(
+                (l) => l.id === log.id
+              )
+          );
+
+          return unique
+            .sort(
+              (a, b) =>
+                new Date(b.timestamp) -
+                new Date(a.timestamp)
+            )
+            .slice(0, 100);
+        });
+      } catch (err) {
+        console.error(
+          "WS parse error:",
+          err
+        );
+      }
+    };
+
+    ws.onclose = () => {
+      console.log(
+        "❌ Activity WS disconnected"
+      );
+
+      reconnectRef.current =
+        setTimeout(() => {
+          connectWebSocket();
+        }, 3000);
+    };
+
+    ws.onerror = (err) => {
+      console.error(
+        "Activity WS error:",
+        err
+      );
+      ws.close();
+    };
+  }, [user, filterVendorLogs]);
+
+  // -----------------------------
+  // LIFECYCLE
+  // -----------------------------
   useEffect(() => {
     if (!user) return;
 
-    // First fetch (shows spinner)
     initialFetch();
+    connectWebSocket();
 
-    // Background refresh every 60 seconds (no loading, no flashing)
-    intervalRef.current = setInterval(backgroundRefresh, 60000);
+    return () => {
+      clearTimeout(
+        reconnectRef.current
+      );
 
-    return () => clearInterval(intervalRef.current);
-  }, [user]);
+      if (wsRef.current) {
+        wsRef.current.close();
+      }
+    };
+  }, [
+    user,
+    initialFetch,
+    connectWebSocket,
+  ]);
 
-  return { activityLogs, loading, error };
+  return {
+    activityLogs,
+    loading,
+    error,
+  };
 };

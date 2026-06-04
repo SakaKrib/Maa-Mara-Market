@@ -21,6 +21,8 @@ const SingleItemProfileNotif = () => {
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
 
+  console.log('this is id', id)
+
   // State for item details and loading indicator
   const [item, setItem] = useState(null);
   const [loading, setLoading] = useState(true);

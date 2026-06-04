@@ -1,45 +1,78 @@
-import { useState, useEffect } from "react";
-import api from "../../../Services/Api";
+import { useEffect, useRef, useState } from "react";
+
 export function useVendorOrdersCombined() {
+  const wsRef = useRef(null);
+  const reconnectAttempt = useRef(0);
+  const reconnectTimeout = useRef(null);
+
   const [pending, setPending] = useState([]);
   const [completed, setCompleted] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  useEffect(() => {
-    let isMounted = true;
-    let intervalId = null;
+  const connect = () => {
+    const WS_URL = "ws://127.0.0.1:8000/ws/vendor-orders/";
 
-    async function fetchOrders() {
+    const ws = new WebSocket(WS_URL);
+    wsRef.current = ws;
+
+    ws.onopen = () => {
+      reconnectAttempt.current = 0;
+      setError(null);
+    };
+
+    ws.onmessage = (event) => {
       try {
-        const res = await api.get("api/combined-orders/",{
-            withCredentials: true
-        });
-        if (!isMounted) return;
+        const data = JSON.parse(event.data);
 
-        setPending(res.data.pending || []);
-        setCompleted(res.data.completed || []);
-        setError(null);
+        if (data?.type === "orders_update") {
+          setPending(data.pending || []);
+          setCompleted(data.completed || []);
+          setLoading(false);
+          setError(null);
+        }
       } catch (err) {
-        if (isMounted) setError(err);
-      } finally {
-        if (isMounted) setLoading(false);
+        setError(err);
       }
-    }
+    };
 
-    // initial fetch
-    fetchOrders();
+    ws.onerror = (err) => {
+      setError(err);
+      setLoading(false);
+    };
 
-    // refresh every 30 seconds
-    intervalId = setInterval(() => {
-      fetchOrders();
-    }, 30000); // 30 sec
+    ws.onclose = () => {
+      wsRef.current = null;
+
+      // basic exponential backoff reconnect (safe production pattern)
+      const timeout = Math.min(1000 * 2 ** reconnectAttempt.current, 30000);
+      reconnectAttempt.current += 1;
+
+      reconnectTimeout.current = setTimeout(() => {
+        connect();
+      }, timeout);
+    };
+  };
+
+  useEffect(() => {
+    connect();
 
     return () => {
-      isMounted = false;
-      if (intervalId) clearInterval(intervalId);
+      if (reconnectTimeout.current) {
+        clearTimeout(reconnectTimeout.current);
+      }
+
+      if (wsRef.current) {
+        wsRef.current.close();
+        wsRef.current = null;
+      }
     };
   }, []);
 
-  return { pending, completed, loading, error };
+  return {
+    pending,
+    completed,
+    loading,
+    error,
+  };
 }

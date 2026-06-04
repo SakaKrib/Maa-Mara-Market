@@ -30,7 +30,13 @@ class Banner(models.Model):
     title = models.CharField(max_length=255, help_text="Banner headline")
     subtitle = models.CharField(max_length=500, blank=True, null=True, help_text="Optional tagline")
     image = models.ImageField(upload_to="banners/", help_text="Upload a banner image (recommended 16:9 ratio)", null=True, blank=True)
-    call_to_action_url = models.URLField(blank=True, null=True, help_text="Optional link to product or page")
+    cta_type = models.CharField(choices=[
+        ("item", "Item"),
+        ("external", "External URL"),
+    ], default="item")
+
+    cta_item = models.ForeignKey(Item, null=True, blank=True, on_delete=models.SET_NULL)
+    cta_url = models.URLField(null=True, blank=True)
     background_color = models.CharField(max_length=20, blank=True, null=True, help_text="Hex or Tailwind color")
     image_hash = models.CharField(max_length=64, editable=False, unique=True, default='', null=True, blank=True) 
 

@@ -804,37 +804,7 @@ def transaction_totals(request):
     return Response(data)
 
 
-# fetch pending and complete orders
-@api_view(["GET"])
-@permission_classes([IsAuthenticated, IsVendor])
-def vendor_orders_combined(request):
-    user = request.user
 
-    # Make sure the user is authenticated
-    if not user.is_authenticated:
-        return Response({"detail": "Authentication required"}, status=401)
-
-    # Ensure the user is actually a vendor
-    if not hasattr(user, "vendor"):
-        return Response({"detail": "User is not a vendor"}, status=403)
-
-    vendor = user.vendor
-
-    orders = (
-        Order.objects
-        .filter(order_items__item__vendor=vendor)
-        .prefetch_related("order_items__item")
-        .distinct()
-        .order_by("-id")
-    )
-
-    pending = orders.filter(status="pending")
-    completed = orders.filter(status="completed")
-
-    return Response({
-        "pending": OrderSerializer(pending, many=True, context={"vendor": vendor}).data,
-        "completed": OrderSerializer(completed, many=True, context={"vendor": vendor}).data
-    })
 
 
 

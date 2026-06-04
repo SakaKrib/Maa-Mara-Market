@@ -35,7 +35,7 @@ from django.utils import timezone
 from django.shortcuts import get_object_or_404
 from ReactSerializers.models import ColorVariant,SizeStock,AgeVariant,Length,Weight
 from django.db import models
-import time
+import time, datetime
 
 
 @api_view(["POST"])
@@ -478,7 +478,6 @@ import requests
 
 
 logger = logging.getLogger(__name__)
-
 def send_paypal_invoice(order):
     token = get_paypal_access_token()
     url = "https://api.sandbox.paypal.com/v2/invoicing/invoices"
@@ -497,11 +496,33 @@ def send_paypal_invoice(order):
     first_name = getattr(billing, "first_name", "Customer") if billing else "Customer"
     last_name = getattr(billing, "last_name", "") if billing else ""
 
-    currency_code = getattr(order, "currency", "USD")  # Adjust if order has no currency field
+    currency_code = getattr(order, "currency", "USD")
+
+    invoice_number = f"INV-{order.id}-{int(time.time())}"
+    invoice_date = datetime.date.today().isoformat()
+
+    # Build items safely
+    items = []
+    for order_item in order.items.all():
+        try:
+            items.append({
+                "name": getattr(order_item.item, "name", "Item"),
+                "quantity": str(order_item.quantity),
+                "unit_amount": {
+                    "currency_code": currency_code,
+                    "value": f"{order_item.get_final_price():.2f}",
+                },
+            })
+        except Exception:
+            logger.warning(f"Skipping invalid order item in order {order.id}")
+
+    if not items:
+        raise ValueError(f"Order {order.id} has no valid items to invoice")
 
     payload = {
         "detail": {
-            "invoice_number": f"INV-{order.id}-{int(time.time())}",
+            "invoice_number": invoice_number,
+            "invoice_date": invoice_date,
             "currency_code": currency_code,
             "note": "Thank you for your purchase!",
             "terms_and_conditions": "Payment received via PayPal.",
@@ -521,20 +542,10 @@ def send_paypal_invoice(order):
                 }
             }
         ],
-        "items": [
-            {
-                "name": order_item.item.name,
-                "quantity": str(order_item.quantity),
-                "unit_amount": {
-                    "currency_code": currency_code,
-                    "value": f"{order_item.get_final_price():.2f}",
-                },
-            }
-            for order_item in order.items.all()  # or order.order_items.all() depending on your model
-        ],
+        "items": items,
     }
 
-    logger.info(f"Sending PayPal invoice payload for order {order.id}")
+    logger.info(f"Creating PayPal invoice for order_id={order.id}, invoice={invoice_number}")
 
     headers = {
         "Content-Type": "application/json",
@@ -548,49 +559,53 @@ def send_paypal_invoice(order):
 
         try:
             invoice = response.json()
-            logger.info(f"PayPal invoice creation response: {invoice}")
         except ValueError:
-            logger.error(f"Invalid JSON response from PayPal: {response.text}")
+            logger.error(
+                f"PayPal invalid JSON response for order_id={order.id}, "
+                f"status={response.status_code}"
+            )
             raise
 
-        # If response lacks 'id', try fetching invoice details using href
-        if "id" not in invoice:
-            if isinstance(invoice, dict) and "href" in invoice:
-                invoice_url = invoice["href"]
-                logger.info(f"Invoice creation returned link only, attempting GET {invoice_url}")
-                get_resp = requests.get(invoice_url, headers=headers, timeout=30)
-                get_resp.raise_for_status()
-                invoice = get_resp.json()
-                logger.info(f"Fetched full invoice: {invoice}")
-                if "id" not in invoice:
-                    raise ValueError("Fetched invoice response missing 'id'")
-            else:
-                raise ValueError("Failed to create PayPal invoice with valid ID.")
+        invoice_id = invoice.get("id")
+        if not invoice_id:
+            logger.error(
+                f"PayPal invoice missing ID for order_id={order.id}, response_keys={list(invoice.keys())}"
+            )
+            raise ValueError("Failed to create PayPal invoice (missing id)")
 
-        invoice_id = invoice["id"]
+        logger.info(f"PayPal invoice created successfully invoice_id={invoice_id}")
 
         # Step 2: Send invoice email
         send_url = f"{url}/{invoice_id}/send"
         send_response = requests.post(send_url, headers=headers, timeout=30)
         send_response.raise_for_status()
-        logger.info(f"PayPal invoice email sent successfully for invoice {invoice_id}")
+
+        logger.info(
+            f"PayPal invoice sent successfully order_id={order.id}, invoice_id={invoice_id}"
+        )
 
         return invoice
 
     except requests.exceptions.HTTPError as err:
+        response = err.response
+
+        error_detail = None
         try:
-            error_detail = response.json()
+            if response is not None:
+                error_detail = response.json()
         except Exception:
-            error_detail = response.text
-        logger.error(f"PayPal invoice creation failed: {response.status_code} {error_detail}")
+            error_detail = response.text if response is not None else "No response"
+
+        logger.error(
+            f"PayPal HTTP error order_id={order.id}, "
+            f"status={getattr(response, 'status_code', None)}, "
+            f"error={error_detail}"
+        )
         raise
 
     except Exception as e:
-        logger.error(f"Unexpected error sending PayPal invoice: {e}")
+        logger.exception(f"Unexpected error sending PayPal invoice order_id={order.id}: {e}")
         raise
-
-
-  
 
 
 
@@ -612,7 +627,7 @@ def paypal_webhook(request):
     """
     try:
         raw_body = request.body
-        logger.info("✅ PayPal Webhook Received: %s", raw_body.decode("utf-8"))
+        logger.info("📩 PayPal webhook received")
 
         # Parse JSON payload
         try:
@@ -628,7 +643,7 @@ def paypal_webhook(request):
 
         event_type = (data.get("event_type") or "").upper()
         resource = data.get("resource", {})
-        logger.info(f"🔔 Webhook Event: {event_type}")
+        logger.info("🔔 PayPal event received | event_type=%s", event_type)
 
         # Only process relevant events
         relevant_events = {
@@ -655,7 +670,13 @@ def paypal_webhook(request):
         currency = resource.get("amount", {}).get("currency_code", "USD")
         payer_email = resource.get("payer", {}).get("email_address")
 
-        logger.info(f"💳 PayPal payment {paypal_order_id}: {status} ({amount} {currency})")
+        logger.info(
+            "💳 PayPal payment update | order_id=%s | status=%s | amount=%s %s",
+            paypal_order_id,
+            status,
+            amount,
+            currency,
+        )
 
         # Avoid duplicates
         existing_payment = Payment.objects.filter(transaction_id=paypal_order_id).first()
@@ -690,7 +711,12 @@ def paypal_webhook(request):
                             quantity=order_item.quantity,
                         )
                         sold_item.save()
-                        logger.info(f"🛒 SoldItem created for item {order_item.item.name} (qty: {order_item.quantity})")
+                        logger.info(
+                            "🛒 SoldItem created | order_id=%s | item=%s | qty=%s",
+                            order.id,
+                            order_item.item.name,
+                            order_item.quantity,
+                        )
 
                         # --- SEND EMAIL TO VENDOR ---
                         vendor_user = getattr(order_item.item.vendor, "user", None)
@@ -731,10 +757,18 @@ def paypal_webhook(request):
                             email = EmailMultiAlternatives(subject, "", from_email, to_email)
                             email.attach_alternative(html_content, "text/html")
                             email.send()
-                            logger.info(f"📧 Email sent to vendor {vendor_user.username} for item {order_item.item.name} with variants: {variant_text}")
+                            logger.info(
+                                "📧 Vendor email sent | vendor=%s | item=%s",
+                                vendor_user.username,
+                                order_item.item.name,
+                            )
 
                     except Exception as e:
-                        logger.error(f"❌ Failed to create SoldItem or send email for {order_item.item.name}: {e}")
+                        logger.error(
+                            "❌ Order item processing failed | order_id=%s | item=%s",
+                            order.id,
+                            order_item.item.name,
+                        )
 
 
                 
@@ -743,7 +777,7 @@ def paypal_webhook(request):
                 try:
                     if not getattr(order, "paypal_invoice_id", None):
                         invoice = send_paypal_invoice(order)
-                        logger.info(f"📧 PayPal Invoice sent: {invoice.get('id')}")
+                        logger.info("💳 PayPal invoice created | order_id=%s", order.id)
                         order.paypal_invoice_id = invoice.get('id')  # You must add this field to Order model
                         order.save(update_fields=['paypal_invoice_id'])
                 except Exception as e:
@@ -808,7 +842,10 @@ def paypal_webhook(request):
                             fail_silently=False,
                         )
 
-                        logger.info(f"📧 Invoice email sent to {customer_email} for Order #{order.id}")
+                        logger.info(
+                            "📧 Customer invoice email sent | order_id=%s",
+                            order.id,
+                        )
                     else:
                         logger.warning(f"⚠️ No email found for Order #{order.id}, invoice not sent.")
                 except Exception as email_err:
@@ -855,29 +892,7 @@ def paypal_webhook(request):
                 logger.info(f"✅ Order #{order.id} marked as completed via webhook")
 
             # --- Extract card info if available ---
-            card_info = None
-            payment_source = resource.get("payment_source") or {}
-            card_data = payment_source.get("card")
-            if isinstance(card_data, dict) and card_data.get("brand"):
-                card_info = {
-                    "capture_id": resource.get("id"),
-                    "brand": card_data.get("brand"),
-                    "last_digits": card_data.get("last_digits"),
-                    "type": card_data.get("type"),
-                }
-
-            saved_card = None
-            if card_info:
-                saved_card, _ = Card.objects.update_or_create(
-                    capture_id=card_info["capture_id"],
-                    defaults={
-                        "brand": card_info["brand"],
-                        "last_digits": card_info["last_digits"],
-                        "type": card_info["type"],
-                    }
-                )
-                logger.info(f"💳 Card info saved: {card_info}")
-
+           
             # -------------------------------------------------------
             # 💾 Save Transaction(s) for Each Vendor
             # -------------------------------------------------------
@@ -900,10 +915,7 @@ def paypal_webhook(request):
                                 "status": status,
                                 "payer_email": payer_email,
                                 "raw_data": data,
-                                "card": saved_card,
-                                "card_brand": getattr(saved_card, "brand", None),
-                                "card_type": getattr(saved_card, "type", None),
-                                "last_4_digits": getattr(saved_card, "last_digits", None),
+                                
                             },
                         )
                     logger.info(f"✅ Transaction(s) {tx.paypal_transaction_id} created or updated successfully")
@@ -920,10 +932,7 @@ def paypal_webhook(request):
                             "payer_email": payer_email,
                             "raw_data": data,
                             "payment": payment,
-                            "card": saved_card,
-                            "card_brand": getattr(saved_card, "brand", None),
-                            "card_type": getattr(saved_card, "type", None),
-                            "last_4_digits": getattr(saved_card, "last_digits", None),
+                            
                         },
                     )
                     logger.info(f"✅ Transaction {tx.paypal_transaction_id} (no vendor) created or updated successfully")

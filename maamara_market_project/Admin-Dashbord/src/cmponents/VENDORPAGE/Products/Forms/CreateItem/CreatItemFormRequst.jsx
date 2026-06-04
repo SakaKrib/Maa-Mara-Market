@@ -437,7 +437,7 @@ const CreateItemFromRequest = ({  vendorId, itemId, onSave, vendor, item }) => {
     
         // 📨 Save draft
         const response = await api.put(
-          `${baseUrl}/api/vendor-requests/${vendorRequestId}/save-draft/`,
+          `api/vendor-requests/${vendorRequestId}/save-draft/`,
           { draft_item: formattedItem },
           { withCredentials: true }
         );

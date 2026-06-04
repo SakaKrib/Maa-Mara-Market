@@ -4,6 +4,12 @@ from rest_framework.routers import DefaultRouter
 
 router = DefaultRouter()
 
+# register banner url
+router.register(r'banners', BannerViewSet, basename='banners')
+router.register(r'vendor-blogs', BlogPostViewSet, basename='vendor-blogs')
+
+# vendor view set url
+
 router.register(
     r"api/moderation/banners",
     AdminBannerApprovalViewSet,
@@ -15,8 +21,22 @@ router.register(
 # VENDOR OWNED RESOURCES
 # =========================
 router.register(r"vendor/banners", VendorBannerViewSet, basename="vendor-banners")
-router.register(r"vendor/blogs", VendorBlogViewSet, basename="vendor-blogs")
+router.register(r"vendor/blogs", VendorBlogViewSet, basename="vendorBlogs")
 router.register(r"vendor/items", VendorItemRequestViewSet, basename="vendor-items")
+
+
+
+vendor_blog_list = VendorBlogViewSet.as_view({
+    'get': 'list',
+    'post': 'create'
+})
+
+vendor_blog_detail = VendorBlogViewSet.as_view({
+    'get': 'retrieve',
+    'put': 'update',
+    'patch': 'partial_update',
+    'delete': 'destroy'
+})
 
 
 # =========================
@@ -57,6 +77,14 @@ admin_blog_approve = AdminBlogApprovalViewSet.as_view({
 
 urlpatterns = [
     path("", include(router.urls)),
+
+    # vendor blog urls
+    path("api/vendor/blogs/", vendor_blog_list, name="vendor-blog-list"),
+    path("api/vendor/blogs/<int:pk>/", vendor_blog_detail, name="vendor-blog-detail"),
+
+
+    # show banners
+    path("api/vendor/banners/<int:pk>/", banner_detail, name="banner-detail"),
 
     path(
         "api/vendor/history/timeline/",

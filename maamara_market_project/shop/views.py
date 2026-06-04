@@ -22,6 +22,7 @@ from django.db import transaction
 from django.db.models import F
 from django.db.models import Avg, Q, Count
 from oder.Base import IsVendor
+from rest_framework.exceptions import PermissionDenied
 import uuid
 import bleach # type: ignore
 
@@ -249,14 +250,106 @@ class BannerListView(generics.ListAPIView):
 
 # fetch barnd serializer
 @api_view(["GET"])
-@permission_classes([AllowAny])
+@permission_classes([IsAuthenticated, IsVendor])
 def list_brands(request):
     brands = Brand.objects.all()
     serializer = BrandSerializer(brands, many=True, context={'request': request})
     return Response(serializer.data)  
 
+ 
 
+# show banner details
 
+@api_view(["GET", "PATCH", "PUT", "DELETE"])
+@permission_classes([IsAuthenticated])
+def banner_detail(request, pk):
+
+    # ================= SAFE LOOKUP (FIX #1) =================
+    try:
+        banner = Banner.objects.get(pk=pk, vendor=request.user.vendor)
+    except Banner.DoesNotExist:
+        return Response(
+            {"detail": "Banner not found"},
+            status=status.HTTP_404_NOT_FOUND
+        )
+
+    # ================= GET =================
+    if request.method == "GET":
+        serializer = BannerSerializer(banner)
+        return Response(serializer.data)
+
+    # ================= UPDATE (PATCH / PUT) =================
+    if request.method in ["PATCH", "PUT"]:
+
+        data = request.data.copy()
+
+        # ================= CTA SAFETY FIX =================
+        # Ensure only one CTA mode is used
+        cta_type = data.get("cta_type", banner.cta_type)
+
+        if cta_type == "item":
+            data["cta_url"] = None
+            # if frontend sends item, map correctly
+            if "cta_item" in data and data["cta_item"] == "":
+                data["cta_item"] = None
+
+        elif cta_type == "external":
+            data["cta_item"] = None
+
+        serializer = BannerSerializer(
+            banner,
+            data=data,
+            partial=(request.method == "PATCH")
+        )
+
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    # ================= DELETE =================
+    if request.method == "DELETE":
+        banner.delete()
+        return Response(
+            {"detail": "Banner deleted successfully"},
+            status=status.HTTP_204_NO_CONTENT
+        )
+
+# vendor blog viewset
+class VendorBlogViewSet(viewsets.ModelViewSet):
+    serializer_class = BlogPostSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    # 🔒 Vendor only sees their own blogs
+    def get_queryset(self):
+        user = self.request.user
+
+        if not hasattr(user, "vendor") or not user.vendor:
+            return BlogPost.objects.none()
+
+        return BlogPost.objects.filter(vendor=user.vendor).select_related(
+            "user", "vendor"
+        )
+
+    # 🔒 Only vendors can create blogs under their account
+    def perform_create(self, serializer):
+        user = self.request.user
+
+        if not hasattr(user, "vendor") or not user.vendor:
+            raise PermissionDenied("Only vendors can create blogs")
+
+        serializer.save(user=user, vendor=user.vendor)
+
+    # 🔒 HARD SECURITY: block access to other vendor blogs
+    def get_object(self):
+        obj = super().get_object()
+        user = self.request.user
+
+        if not hasattr(user, "vendor") or obj.vendor != user.vendor:
+            raise PermissionDenied("You can only access your own blogs")
+
+        return obj  
 # blog views
 
 from rest_framework import viewsets, status, permissions
@@ -404,7 +497,7 @@ class BlogPostViewSet(viewsets.ModelViewSet):
                     user=vendor.user,
                     title="New Reaction on Your Blog",
                     message=f"Your blog '{post.title}' received a new reaction ({reaction_type}) from {request.user.username}.",
-                    url=f"/vendor/blogs/{post.id}/"
+                    url=f"/vendors-dashboard/vendor/blogs/{post.id}/"
                 )
                 print(f"📢 Vendor {vendor.user.username} notified")
 
@@ -465,7 +558,7 @@ class BlogPostViewSet(viewsets.ModelViewSet):
                     user=vendor.user,
                     title="Reaction Removed from Your Blog",
                     message=f"A reaction ({reaction_type}) was removed from your blog '{post.title}'.",
-                    url=f"/vendor/blogs/{post.id}/"
+                    url=f"/vendors-dashboard/vendor/blogs/{post.id}/"
                 )
                 print(f"📢 Vendor {vendor.user.username} notified of removed reaction")
 
@@ -523,7 +616,7 @@ class AdminBlogApprovalViewSet(viewsets.ModelViewSet):
                 user=blog.vendor.user,
                 title="Your blog was approved",
                 message=f"Your blog '{blog.title}' has been approved by admin.",
-                url=f"/vendor/blogs/{blog.id}/"
+                url=f"/vendors-dashboard/vendor/blogs/{blog.id}/"
             )
 
         # Log admin activity
@@ -570,7 +663,7 @@ class AdminBannerApprovalViewSet(viewsets.ModelViewSet):
                 user=banner.vendor.user,
                 title="Banner Approved",
                 message=f"Your banner '{banner.title}' was approved.",
-                url=f"/vendor/banners/{banner.id}/"
+                url=f"/vendors-dashboard/vendor/banners/{banner.id}/"
             )
 
         ActivityLog.objects.create(
@@ -603,7 +696,7 @@ class AdminBannerApprovalViewSet(viewsets.ModelViewSet):
                 title="Banner Rejected",
                 message=f"Your banner '{title}' was rejected."
                         + (f" Reason: {reason}" if reason else ""),
-                url="/vendor/banners/"
+                url="/vendors-dashboard/vendor/banners/"
             )
 
         ActivityLog.objects.create(
@@ -1070,14 +1163,16 @@ class VendorBannerViewSet(viewsets.ModelViewSet):
         ).order_by("-created_at")
 
     def perform_update(self, serializer):
-        instance = serializer.save()
-
-        # reset approval on edit
-        instance.is_approved = False
-        instance.approved_at = None
-        instance.save()
+        """
+        Update banner WITHOUT changing approval status.
+        Approval remains exactly as it was before edit.
+        """
+        serializer.save()
 
     def destroy(self, request, *args, **kwargs):
+        """
+        Soft delete: deactivate banner instead of removing it.
+        """
         banner = self.get_object()
         banner.is_active = False
         banner.save()
@@ -1099,10 +1194,8 @@ class VendorBlogViewSet(viewsets.ModelViewSet):
         ).order_by("-created_at")
 
     def perform_update(self, serializer):
-        instance = serializer.save()
-
-        instance.approved = False
-        instance.save()
+        # ❌ DO NOT reset approval on edit anymore
+        serializer.save()
 
     def destroy(self, request, *args, **kwargs):
         blog = self.get_object()
