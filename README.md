@@ -1,6 +1,6 @@
 # MAA MARA ECOMMERCE
 
-
+An internet marketplace for beautiful handmade items
 
 ## Getting started
 
