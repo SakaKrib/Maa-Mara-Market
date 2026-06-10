@@ -26,12 +26,9 @@ DEBUG = True
 
 FRONTEND_URL = env("FRONTEND_URL")
 
-ALLOWED_HOSTS = [
-    "127.0.0.1",
-    "localhost",
-    "192.168.8.194",
-    "nonvalued-alberta-overexpectantly.ngrok-free.dev",
-]
+# The domains this Django site is allowed to serve. It is specified as a string
+# of comma-separated URLs in .env
+ALLOWED_HOSTS = env("ALLOWED_HOSTS").strip(",").split(",")
 
 # =========================================================
 # APPLICATIONS
@@ -127,7 +124,7 @@ DATABASES = {
         "NAME": "maamara_db",
         "USER": "maamara_user",
         "PASSWORD": "maamaram@1",
-        "HOST": "localhost",
+        "HOST": "db",
         "PORT": "5432",
     }
 }
@@ -231,7 +228,7 @@ SESSION_ENGINE = "django.contrib.sessions.backends.db"
 CHANNEL_LAYERS = {
     "default": {
         "BACKEND": "channels_redis.core.RedisChannelLayer",
-        "CONFIG": {"hosts": [("127.0.0.1", 6379)]},
+        "CONFIG": {"hosts": [("redis", 6379)]},
     }
 }
 
@@ -253,7 +250,8 @@ CELERY_BEAT_SCHEDULE = {
 # =========================================================
 
 STATIC_URL = "static/"
-STATICFILES_DIRS = [BASE_DIR / "static"]
+STATICFILES_DIRS = [BASE_DIR / "Admin-Dashboard" / "dist"]
+STATIC_ROOT = BASE_DIR / "static/"
 
 MEDIA_URL = "/media/"
 MEDIA_ROOT = os.path.join(BASE_DIR, "media")

@@ -4,6 +4,7 @@ import path from "path";
 import { baseUrl } from './src/cmponents/Constant/Constant';
 
 export default defineConfig({
+  base: "/static/"
   plugins: [react()],
   resolve: {
     alias: {
@@ -11,7 +12,7 @@ export default defineConfig({
     },
   },
   server: {
-    host: '127.0.0.1', // 👈 This sets the frontend to use 127.0.0.1
+    host: '127.0.0.1', // This sets the frontend to use 127.0.0.1
     port: 5173,
     proxy: {
       '/api': {
