@@ -247,7 +247,7 @@ CELERY_BEAT_SCHEDULE = {
 # =========================================================
 
 STATIC_URL = "static/"
-STATICFILES_DIRS = [BASE_DIR / "Admin-Dashboard" / "dist"]
+STATICFILES_DIRS = [BASE_DIR / "Admin-Dashbord" / "dist"]
 STATIC_ROOT = BASE_DIR / "static/"
 
 MEDIA_URL = "/media/"
