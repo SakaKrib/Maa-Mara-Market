@@ -1,0 +1,282 @@
+time="2026-06-11T14:41:44Z" level=warning msg="The \"om\" variable is not set. Defaulting to a blank string."
+time="2026-06-11T14:41:44Z" level=warning msg="The \"n\" variable is not set. Defaulting to a blank string."
+ Image maamara_market_project-maamaramarket Building 
+#1 [internal] load local bake definitions
+#1 reading from stdin 666B done
+#1 DONE 0.0s
+
+#2 [internal] load build definition from Dockerfile
+#2 transferring dockerfile: 1.90kB done
+#2 WARN: FromAsCasing: 'as' and 'FROM' keywords' casing do not match (line 21)
+#2 DONE 0.0s
+
+#3 [internal] load metadata for docker.io/library/python:3.14.5-slim
+#3 ...
+
+#4 [internal] load metadata for docker.io/library/node:current-alpine3.23
+#4 DONE 0.6s
+
+#3 [internal] load metadata for docker.io/library/python:3.14.5-slim
+#3 DONE 0.6s
+
+#5 [internal] load .dockerignore
+#5 transferring context: 420B done
+#5 DONE 0.0s
+
+#6 [frontend_builder 1/7] FROM docker.io/library/node:current-alpine3.23@sha256:144769ec3f32e8ee36b3cfde91e82bee25d9367b20f31a151f3f7eea3a2a8541
+#6 resolve docker.io/library/node:current-alpine3.23@sha256:144769ec3f32e8ee36b3cfde91e82bee25d9367b20f31a151f3f7eea3a2a8541 0.0s done
+#6 DONE 0.0s
+
+#7 [pip_deps 1/7] FROM docker.io/library/python:3.14.5-slim@sha256:c845af9399020c7e562969a13689e929074a10fd057acd1b1fad06a2fb068e97
+#7 resolve docker.io/library/python:3.14.5-slim@sha256:c845af9399020c7e562969a13689e929074a10fd057acd1b1fad06a2fb068e97 0.0s done
+#7 DONE 0.0s
+
+#8 [internal] load build context
+#8 transferring context: 74.68kB 0.1s done
+#8 DONE 0.1s
+
+#9 [frontend_builder 2/7] RUN mkdir /frontend
+#9 CACHED
+
+#10 [frontend_builder 3/7] WORKDIR /frontend
+#10 CACHED
+
+#11 [pip_deps 5/7] COPY ./django_pip_req_server.txt /app/
+#11 CACHED
+
+#12 [pip_deps 7/7] RUN pip install channels[daphne]==4.3.2 channels_redis==4.3.0
+#12 CACHED
+
+#13 [pip_deps 3/7] WORKDIR /app
+#13 CACHED
+
+#14 [pip_deps 6/7] RUN pip install --no-cache-dir -r django_pip_req_server.txt
+#14 CACHED
+
+#15 [stage-2 4/9] COPY --from=pip_deps /usr/local/bin/ /usr/local/bin/
+#15 CACHED
+
+#16 [pip_deps 2/7] RUN mkdir /app
+#16 CACHED
+
+#17 [stage-2 3/9] COPY --from=pip_deps /usr/local/lib/python3.14/site-packages/ /usr/local/lib/python3.14/site-packages/
+#17 CACHED
+
+#18 [stage-2 2/9] RUN useradd -m -r appuser &&     mkdir /app &&     chown -R appuser /app
+#18 CACHED
+
+#19 [pip_deps 4/7] RUN pip install --upgrade pip
+#19 CACHED
+
+#20 [stage-2 5/9] WORKDIR /app
+#20 CACHED
+
+#21 [stage-2 6/9] COPY --chown=appuser:appuser . .
+#21 ...
+
+#22 [frontend_builder 4/7] COPY . .
+#22 DONE 0.3s
+
+#21 [stage-2 6/9] COPY --chown=appuser:appuser . .
+#21 DONE 0.3s
+
+#23 [frontend_builder 5/7] WORKDIR Admin-Dashbord/
+#23 DONE 0.0s
+
+#24 [frontend_builder 6/7] RUN npm ci
+#24 6.616 npm warn deprecated node-domexception@1.0.0: Use your platform's native DOMException instead
+#24 6.919 npm warn deprecated @emotion/style@0.8.0: Please use `@emotion/styled` package
+#24 13.10 npm warn deprecated core-js@3.18.3: core-js@<3.23.3 is no longer maintained and not recommended for usage due to the number of issues. Because of the V8 engine whims, feature detection in old core-js versions could cause a slowdown up to 100x even if nothing is polyfilled. Some versions have web compatibility issues. Please, upgrade your dependencies to the actual version of core-js.
+#24 21.22 
+#24 21.22 added 695 packages, and audited 696 packages in 21s
+#24 21.22 
+#24 21.22 159 packages are looking for funding
+#24 21.22   run `npm fund` for details
+#24 21.22 
+#24 21.22 1 critical severity vulnerability
+#24 21.22 
+#24 21.22 To address all issues (including breaking changes), run:
+#24 21.22   npm audit fix --force
+#24 21.22 
+#24 21.22 Run `npm audit` for details.
+#24 21.23 npm warn allow-scripts 5 packages have install scripts not yet covered by allowScripts:
+#24 21.23 npm warn allow-scripts   @mui/x-telemetry@8.20.0 (postinstall: node ./esm/postinstall/index.js)
+#24 21.23 npm warn allow-scripts   @parcel/watcher@2.5.6 (install: node scripts/build-from-source.js)
+#24 21.23 npm warn allow-scripts   core-js@3.18.3 (postinstall: node -e "try{require('./postinstall')}catch(e){}")
+#24 21.23 npm warn allow-scripts   core-js-pure@3.49.0 (postinstall: node -e "try{require('./postinstall')}catch(e){}")
+#24 21.23 npm warn allow-scripts   esbuild@0.27.7 (postinstall: node install.js)
+#24 21.23 npm warn allow-scripts
+#24 21.23 npm warn allow-scripts Run `npm approve-scripts --allow-scripts-pending` to review, or `npm approve-scripts <pkg>` to allow.
+#24 DONE 33.4s
+
+#25 [frontend_builder 7/7] RUN npm run build
+#25 1.431 
+#25 1.431 > client-app@0.0.0 build
+#25 1.431 > vite build
+#25 1.431 
+#25 1.778 vite v7.3.5 building client environment for production...
+#25 2.278 transforming...
+#25 4.014 
+#25 4.014 ../font/LibreBaskerville-Regular.ttf referenced in ../font/LibreBaskerville-Regular.ttf didn't resolve at build time, it will remain unchanged to be resolved at runtime
+#25 4.014 
+#25 4.014 ../font/ProtestRevolution-Regular.ttf referenced in ../font/ProtestRevolution-Regular.ttf didn't resolve at build time, it will remain unchanged to be resolved at runtime
+#25 4.014 
+#25 4.014 ../font/Allison-Regular.ttf referenced in ../font/Allison-Regular.ttf didn't resolve at build time, it will remain unchanged to be resolved at runtime
+#25 4.014 
+#25 4.014 ../font/Poppins/Poppins-Italic.ttf referenced in ../font/Poppins/Poppins-Italic.ttf didn't resolve at build time, it will remain unchanged to be resolved at runtime
+#25 4.014 
+#25 4.014 ../font/Poppins/Poppins-Regular.ttf referenced in ../font/Poppins/Poppins-Regular.ttf didn't resolve at build time, it will remain unchanged to be resolved at runtime
+#25 4.014 
+#25 4.014 ../font/Poppins/Poppins-Bold.ttf referenced in ../font/Poppins/Poppins-Bold.ttf didn't resolve at build time, it will remain unchanged to be resolved at runtime
+#25 4.988 
+#25 4.988 font/LibreBaskerville-Regular.ttf referenced in font/LibreBaskerville-Regular.ttf didn't resolve at build time, it will remain unchanged to be resolved at runtime
+#25 4.988 
+#25 4.988 ../../font/ProtestRevolution-Regular.ttf referenced in ../../font/ProtestRevolution-Regular.ttf didn't resolve at build time, it will remain unchanged to be resolved at runtime
+#25 4.988 
+#25 4.988 ../../font/Allison-Regular.ttf referenced in ../../font/Allison-Regular.ttf didn't resolve at build time, it will remain unchanged to be resolved at runtime
+#25 4.988 
+#25 4.988 ../../font/Poppins/Poppins-Italic.ttf referenced in ../../font/Poppins/Poppins-Italic.ttf didn't resolve at build time, it will remain unchanged to be resolved at runtime
+#25 4.988 
+#25 4.988 ../../font/Poppins/Poppins-Regular.ttf referenced in ../../font/Poppins/Poppins-Regular.ttf didn't resolve at build time, it will remain unchanged to be resolved at runtime
+#25 4.988 
+#25 4.988 ../../font/Poppins/Poppins-Bold.ttf referenced in ../../font/Poppins/Poppins-Bold.ttf didn't resolve at build time, it will remain unchanged to be resolved at runtime
+#25 31.72 ✓ 16929 modules transformed.
+#25 33.20 rendering chunks...
+#25 35.91 computing gzip size...
+#25 36.24 dist/index.html                                                    0.72 kB │ gzip:     0.39 kB
+#25 36.24 dist/assets/wellfargo-CDwIrHSF.jpeg                                4.45 kB
+#25 36.24 dist/assets/master-card-lOL7KJuM.png                               5.06 kB
+#25 36.24 dist/assets/fedex-cdmXewUH.png                                     5.77 kB
+#25 36.24 dist/assets/chocolate-CtgPvqF1.jpeg                                7.43 kB
+#25 36.24 dist/assets/DHL-CqzJyAsg.png                                       7.55 kB
+#25 36.24 dist/assets/fruits-CazEbqFR.jpeg                                  10.42 kB
+#25 36.24 dist/assets/coffee-Damepd9i.jpeg                                  14.27 kB
+#25 36.24 dist/assets/kales-BgQPX-t3.jpeg                                   14.38 kB
+#25 36.24 dist/assets/visa-D_WsC38z.png                                     15.44 kB
+#25 36.24 dist/assets/paypal-CwhTKcYm.png                                   47.58 kB
+#25 36.24 dist/assets/mpesaLogo-Dmte0Llf.png                                63.62 kB
+#25 36.24 dist/assets/nativity-VtUGcED1.jpg                                124.87 kB
+#25 36.24 dist/assets/Screenshot_20250703_020022_Instagram-DXCobUHl.jpg    212.87 kB
+#25 36.24 dist/assets/girrafe lampshade-DnTZPTzI.jpg                       254.38 kB
+#25 36.24 dist/assets/jani soap-sdKGc1Er.jpg                               255.43 kB
+#25 36.24 dist/assets/afican hut-D5oG6KtP.jpg                              276.14 kB
+#25 36.24 dist/assets/Maamara-CdEDBIx4.jpg                                 299.84 kB
+#25 36.24 dist/assets/baobab-BW-aBYGB.jpg                                  352.47 kB
+#25 36.24 dist/assets/placematts-CS59tb0X.jpg                              468.77 kB
+#25 36.24 dist/assets/set buskets-BpAixywb.jpg                             484.93 kB
+#25 36.24 dist/assets/kuba wall hanging-D2SlGJte.jpg                       543.88 kB
+#25 36.24 dist/assets/Screenshot_20250703_020105_Instagram-9uIUs4Xx.jpg    572.48 kB
+#25 36.24 dist/assets/Screenshot_20250703_015956_Instagram-B5Kp1wAO.jpg    632.06 kB
+#25 36.24 dist/assets/Screenshot_20250703_015944_Instagram-zhz8G3lr.jpg    672.52 kB
+#25 36.24 dist/assets/20241126_140823-B-mVXJq7.jpg                       3,698.69 kB
+#25 36.24 dist/assets/index-CIVxZWMq.css                                   236.52 kB │ gzip:    60.85 kB
+#25 36.24 dist/assets/p-D7bSXQD3-CT-lYBZj.js                                 0.42 kB │ gzip:     0.30 kB
+#25 36.24 dist/assets/p-Sh0ICmPV-Bz_-NzZY.js                                 0.61 kB │ gzip:     0.43 kB
+#25 36.24 dist/assets/p-DIE4pXMl-D4gObIiS.js                                 0.96 kB │ gzip:     0.51 kB
+#25 36.24 dist/assets/p-D6Ynv7Xh-BEH6lT9i.js                                 1.20 kB │ gzip:     0.60 kB
+#25 36.24 dist/assets/p-C4t5ymfq-0nAvHYxM.js                                 1.56 kB │ gzip:     0.78 kB
+#25 36.24 dist/assets/p-D5Ubpm7D-C_jV2tZq.js                                 4.80 kB │ gzip:     2.12 kB
+#25 36.24 dist/assets/p-C1aScSTo-DmRZdel3.js                                10.32 kB │ gzip:     3.00 kB
+#25 36.24 dist/assets/index-DUK05zUY.js                                  5,057.13 kB │ gzip: 1,448.98 kB
+#25 36.24 
+#25 36.24 (!) Some chunks are larger than 500 kB after minification. Consider:
+#25 36.24 - Using dynamic import() to code-split the application
+#25 36.24 - Use build.rollupOptions.output.manualChunks to improve chunking: https://rollupjs.org/configuration-options/#output-manualchunks
+#25 36.24 - Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
+#25 36.24 ✓ built in 34.42s
+#25 DONE 36.6s
+
+#26 [stage-2 7/9] COPY --from=frontend_builder --chown=appuser:appuser /frontend/Admin-Dashbord/dist Admin-Dashbord/dist
+#26 DONE 0.1s
+
+#27 [stage-2 8/9] COPY --from=frontend_builder /frontend/Admin-Dashbord/dist/index.html templates/index.html
+#27 DONE 0.0s
+
+#28 [stage-2 9/9] RUN chmod +x /app/entrypoint.prod.sh
+#28 DONE 0.2s
+
+#29 exporting to image
+#29 exporting layers
+#29 exporting layers 1.3s done
+#29 exporting manifest sha256:173ec6d783eb15bc611b6a337f5af1bc2360cd1ca9d623b2075fc6f17af16072 done
+#29 exporting config sha256:ae408d40f36092edb24509d8a4a404779740adc875ff47fd838eb2dda9c28f7a done
+#29 exporting attestation manifest sha256:a87a9fd901a8ab285e63bd34b52496a0e41dd2d19d3b36bb8580b084069ccde5 done
+#29 exporting manifest list sha256:c4de024d8e48986b1a03848745f80d946a2430afd4dbb1e504af41cbfbf38448 done
+#29 naming to docker.io/library/maamara_market_project-maamaramarket:latest done
+#29 unpacking to docker.io/library/maamara_market_project-maamaramarket:latest
+#29 unpacking to docker.io/library/maamara_market_project-maamaramarket:latest 0.6s done
+#29 DONE 2.0s
+
+#30 resolving provenance for metadata file
+#30 DONE 0.0s
+ Image maamara_market_project-maamaramarket Built 
+ Container maamara_market_project-redis-1 Running 
+ Container maamara_market_project-db-1 Running 
+ Container maamaramarket Recreate 
+ Container maamaramarket Recreated 
+ Container maamara_market_project-proxy-1 Running 
+Attaching to db-1, proxy-1, redis-1, maamaramarket
+ Container maamaramarket Starting 
+ Container maamaramarket Started 
+maamaramarket  | 
+maamaramarket  | 39 static files copied to '/app/static', 416 unmodified.
+maamaramarket  | System check identified some issues:
+maamaramarket  | 
+maamaramarket  | WARNINGS:
+maamaramarket  | ?: settings.ACCOUNT_AUTHENTICATION_METHOD is deprecated, use: settings.ACCOUNT_LOGIN_METHODS = {'email'}
+maamaramarket  | ?: settings.ACCOUNT_EMAIL_REQUIRED is deprecated, use: settings.ACCOUNT_SIGNUP_FIELDS = ['email*', 'password1*', 'password2*']
+maamaramarket  | ?: settings.ACCOUNT_USERNAME_REQUIRED is deprecated, use: settings.ACCOUNT_SIGNUP_FIELDS = ['email*', 'password1*', 'password2*']
+maamaramarket  | Operations to perform:
+maamaramarket  |   Apply all migrations: ReactSerializers, account, admin, auth, authtoken, contenttypes, core, oder, sessions, shop, socialaccount, token_blacklist, vendorDashboard
+maamaramarket  | Running migrations:
+maamaramarket  |   No migrations to apply.
+maamaramarket  | Traceback (most recent call last):
+maamaramarket  |   File "<frozen runpy>", line 203, in _run_module_as_main
+maamaramarket  |   File "<frozen runpy>", line 88, in _run_code
+maamaramarket  |   File "/usr/local/lib/python3.14/site-packages/daphne/__main__.py", line 3, in <module>
+maamaramarket  |     CommandLineInterface.entrypoint()
+maamaramarket  |     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^
+maamaramarket  |   File "/usr/local/lib/python3.14/site-packages/daphne/cli.py", line 171, in entrypoint
+maamaramarket  |     cls().run(sys.argv[1:])
+maamaramarket  |     ~~~~~~~~~^^^^^^^^^^^^^^
+maamaramarket  |   File "/usr/local/lib/python3.14/site-packages/daphne/cli.py", line 239, in run
+maamaramarket  |     application = self.load_asgi_app(args.application)
+maamaramarket  |   File "/usr/local/lib/python3.14/site-packages/daphne/cli.py", line 208, in load_asgi_app
+maamaramarket  |     return import_by_path(asgi_app_path)
+maamaramarket  |   File "/usr/local/lib/python3.14/site-packages/daphne/utils.py", line 17, in import_by_path
+maamaramarket  |     target = importlib.import_module(module_path)
+maamaramarket  |   File "/usr/local/lib/python3.14/importlib/__init__.py", line 88, in import_module
+maamaramarket  |     return _bootstrap._gcd_import(name[level:], package, level)
+maamaramarket  |            ~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+maamaramarket  |   File "<frozen importlib._bootstrap>", line 1406, in _gcd_import
+maamaramarket  |   File "<frozen importlib._bootstrap>", line 1371, in _find_and_load
+maamaramarket  |   File "<frozen importlib._bootstrap>", line 1342, in _find_and_load_unlocked
+maamaramarket  |   File "<frozen importlib._bootstrap>", line 938, in _load_unlocked
+maamaramarket  |   File "<frozen importlib._bootstrap_external>", line 759, in exec_module
+maamaramarket  |   File "<frozen importlib._bootstrap>", line 491, in _call_with_frames_removed
+maamaramarket  |   File "/app/project01/asgi.py", line 5, in <module>
+maamaramarket  |     import oder.chanels  # <-- now this has websocket_urlpatterns
+maamaramarket  |     ^^^^^^^^^^^^^^^^^^^
+maamaramarket  |   File "/app/oder/chanels.py", line 3, in <module>
+maamaramarket  |     from .consumers import OrderConsumer, CustomerConsumer, PayoutConsumer, StockConsumer
+maamaramarket  |   File "/app/oder/consumers.py", line 7, in <module>
+maamaramarket  |     from oder.Serializers import OrderSerializer
+maamaramarket  |   File "/app/oder/Serializers.py", line 3, in <module>
+maamaramarket  |     from .models import OderItem, Order, BillingAddress, Payment, Transaction
+maamaramarket  |   File "/app/oder/models.py", line 2, in <module>
+maamaramarket  |     from django.contrib.auth.models import User
+maamaramarket  |   File "/usr/local/lib/python3.14/site-packages/django/contrib/auth/models.py", line 5, in <module>
+maamaramarket  |     from django.contrib.auth.base_user import AbstractBaseUser, BaseUserManager
+maamaramarket  |   File "/usr/local/lib/python3.14/site-packages/django/contrib/auth/base_user.py", line 43, in <module>
+maamaramarket  |     class AbstractBaseUser(models.Model):
+maamaramarket  |     ...<120 lines>...
+maamaramarket  |             )
+maamaramarket  |   File "/usr/local/lib/python3.14/site-packages/django/db/models/base.py", line 131, in __new__
+maamaramarket  |     app_config = apps.get_containing_app_config(module)
+maamaramarket  |   File "/usr/local/lib/python3.14/site-packages/django/apps/registry.py", line 260, in get_containing_app_config
+maamaramarket  |     self.check_apps_ready()
+maamaramarket  |     ~~~~~~~~~~~~~~~~~~~~~^^
+maamaramarket  |   File "/usr/local/lib/python3.14/site-packages/django/apps/registry.py", line 138, in check_apps_ready
+maamaramarket  |     raise AppRegistryNotReady("Apps aren't loaded yet.")
+maamaramarket  | django.core.exceptions.AppRegistryNotReady: Apps aren't loaded yet.
+[Kmaamaramarket exited with code 1

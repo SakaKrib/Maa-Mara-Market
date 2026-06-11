@@ -10,9 +10,13 @@ node_modules/
 .env*
 *.txt
 cookies.txt
+
+# Docker compose deployment set
 compose.yaml
 django_pip_req_server.txt
 Dockerfile
-entrypoint.prod.sh
 nginx.conf
 entrypoint.prod.sh
+
+# Ctags tag database
+tags
