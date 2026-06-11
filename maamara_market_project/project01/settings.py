@@ -19,7 +19,12 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 # Load environment variables (ONLY ONCE)
 env = environ.Env()
-environ.Env.read_env(BASE_DIR / "project01/.env")
+
+env_file = BASE_DIR / "project01/.env"
+# Check if exists - this fails on docker deployment because the .env is injected via docker compose
+if env_file.exists():
+    environ.Env.read_env(env_file)
+
 load_dotenv()
 
 # Core Secrets
