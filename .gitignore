@@ -1,12 +1,22 @@
 venv/
+maamara_market_project/venv/
 __pycache__/
 *.pyc
 db.sqlite3
 media/
 staticfiles/
+static/
 node_modules/
-.env
+.env*
 *.txt
 cookies.txt
 
-venv/
+# Docker compose deployment set
+compose.yaml
+django_pip_req_server.txt
+Dockerfile
+nginx.conf
+entrypoint.prod.sh
+
+# Ctags tag database
+tags
