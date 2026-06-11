@@ -7,6 +7,12 @@ media/
 staticfiles/
 static/
 node_modules/
-.env
+.env*
 *.txt
 cookies.txt
+compose.yaml
+django_pip_req_server.txt
+Dockerfile
+entrypoint.prod.sh
+nginx.conf
+entrypoint.prod.sh
