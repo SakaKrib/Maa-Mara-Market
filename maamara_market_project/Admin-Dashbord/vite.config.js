@@ -4,7 +4,7 @@ import path from "path";
 import { baseUrl } from './src/cmponents/Constant/Constant';
 
 export default defineConfig({
-  base: "/static/"
+  base: "/static/",
   plugins: [react()],
   resolve: {
     alias: {
