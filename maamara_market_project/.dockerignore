@@ -1,0 +1,23 @@
+# Link to venv/bin/activate
+activate
+# Python environment
+venv
+# Settings including keys
+project01/.env
+project01/.env*
+.env
+.env*
+# SQLite database files
+db.sqlite3.bak
+db.sqlite3er
+# Scripts
+migrate_to_postgresql.sh.sql
+# Git-specific files
+.gitignore
+.git
+# ctags database
+tags
+# Any backups
+*.bkp
+# storage/tmp files
+tmp

@@ -1,7 +1,7 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react'; // or vue/svelte/etc
 import path from "path";
-import { baseUrl } from './src/cmponents/Constant/Constant';
+//import { baseUrl } from './src/cmponents/Constant/Constant';
 
 export default defineConfig({
   base: "/static/",
@@ -16,7 +16,7 @@ export default defineConfig({
     port: 5173,
     proxy: {
       '/api': {
-        target: baseUrl, // your backend server
+        target: '192.168.8.194:8000', // your backend server
         changeOrigin: true,
       }
     }
