@@ -8,6 +8,8 @@ from datetime import timedelta
 import os
 import environ
 from dotenv import load_dotenv
+from celery.schedules import crontab
+
 
 # =========================================================
 # BASE CONFIG
@@ -54,9 +56,6 @@ INSTALLED_APPS = [
     "rest_framework_simplejwt",
     "rest_framework.authtoken",
     "rest_framework_simplejwt.token_blacklist",
-    "corsheaders",
-    "user_sessions",
-
     # Allauth
     "allauth",
     "allauth.account",
@@ -235,8 +234,6 @@ CHANNEL_LAYERS = {
 # =========================================================
 # CELERY
 # =========================================================
-
-from celery.schedules import crontab
 
 CELERY_BEAT_SCHEDULE = {
     "cleanup_visitor_orders_daily": {
