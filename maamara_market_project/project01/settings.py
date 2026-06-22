@@ -7,7 +7,6 @@ from pathlib import Path
 from datetime import timedelta
 import os
 import environ
-from dotenv import load_dotenv
 from celery.schedules import crontab
 
 
@@ -24,8 +23,6 @@ env_file = BASE_DIR / "project01/.env"
 # Check if exists - this fails on docker deployment because the .env is injected via docker compose
 if env_file.exists():
     environ.Env.read_env(env_file)
-
-load_dotenv()
 
 # Core Secrets
 SECRET_KEY = env("SECRET_KEY")
