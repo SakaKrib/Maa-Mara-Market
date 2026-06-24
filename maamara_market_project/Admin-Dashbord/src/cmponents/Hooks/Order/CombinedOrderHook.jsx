@@ -11,7 +11,7 @@ export function useVendorOrdersCombined() {
   const [error, setError] = useState(null);
 
   const connect = () => {
-    const WS_URL = "ws://127.0.0.1:8000/ws/vendor-orders/";
+    const WS_URL = `ws://${window.location.host}/ws/vendor-orders/`;
 
     const ws = new WebSocket(WS_URL);
     wsRef.current = ws;

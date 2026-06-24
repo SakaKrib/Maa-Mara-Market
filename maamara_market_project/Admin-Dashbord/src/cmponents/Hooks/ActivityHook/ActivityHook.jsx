@@ -75,7 +75,7 @@ export const useVendorActivityLogs = () => {
       : "ws";
 
     const ws = new WebSocket(
-      `${protocol}://127.0.0.1:8000/ws/activity-logs/`
+      `${protocol}://${window.location.host}/ws/activity-logs/`
     );
 
     wsRef.current = ws;
