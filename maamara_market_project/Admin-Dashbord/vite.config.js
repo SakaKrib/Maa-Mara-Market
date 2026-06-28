@@ -12,11 +12,11 @@ export default defineConfig({
     },
   },
   server: {
-    host: '127.0.0.1', // This sets the frontend to use 127.0.0.1
+    host: '192.168.8.106', // This sets the frontend to use 127.0.0.1
     port: 5173,
     proxy: {
       '/api': {
-        target: '192.168.8.194:8000', // your backend server
+        target: 'http://192.168.8.106:8000', // your backend server
         changeOrigin: true,
       }
     }

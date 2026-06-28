@@ -7,13 +7,15 @@ from .Referal import *
 from .SearchEngine import search_items
 from .Open_Ai import AIChatAPIView
 from core.PasswordRecovery import *
+from django.views.generic.base import TemplateView
 
 router = DefaultRouter()
 
 
 
 urlpatterns = [
-    path('', views.home, name='home'),  # Replace with your actual view
+    #path('', views.home, name='home'),  # Replace with your actual view
+    path('', TemplateView.as_view(template_name="index.html"), name='home'),  # Replace with your actual view
     path('api/activity-logs/', get_activity_logs, name='activity-logs'),
     # path('api/notifications/', AllVendorNotificationsView.as_view(), name='get_user_notifications'),
      path('api/notifications/', AllNotificationsView.as_view(), name='get_user_notifications'),
