@@ -243,11 +243,11 @@ def merge_visitor_data_to_user(user, visitor_id: str | None) -> dict[str, int]:
             visitor_row.save(update_fields=["user", "visitor_id"])
             moved += 1
 
-    card_fields = {f.name for f in Card._meta.fields}
-    if "user" in card_fields:
-        moved += Card.objects.filter(
-            visitor_id=visitor_id
-        ).update(user=user, visitor_id=None)
+    # Saved-card metadata is safe to associate with the account because this
+    # model stores only non-sensitive display/payment-reference fields.
+    moved += Card.objects.filter(visitor_id=visitor_id, user__isnull=True).update(
+        user=user, visitor_id=None
+    )
 
     logger.info(
         "Visitor account merge completed",
