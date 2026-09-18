@@ -257,7 +257,7 @@ def resend_otp_register_otp(request):
         )
 
     pending = (
-        PendingRegistration.objects.select_for_update()
+        PendingRegistration.objects
         .filter(email=email)
         .order_by("-otp_sent_at")
         .first()
