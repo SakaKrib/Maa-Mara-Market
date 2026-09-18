@@ -25,7 +25,7 @@ def get_paypal_access_token():
         timeout=10
     )
     if response.status_code != 200:
-        raise Exception(f"Failed to get PayPal token: {response.text}")
+        raise Exception("Failed to obtain PayPal access token.")
     return response.json()["access_token"]
 
 # 🔹 Fetch PayPal capture details
@@ -51,7 +51,7 @@ def get_capture_details(capture_id):
 
     if response.status_code != 200:
         logger.error("PayPal capture details request failed.")
-        raise Exception(f"Failed to fetch capture details: {data}")
+        raise Exception("Failed to fetch PayPal capture details.")
 
     # -------------------------------------------------------
     # 2️⃣ Extract Related Order ID
@@ -83,7 +83,7 @@ def get_capture_details(capture_id):
                 logger.info("PayPal payment source retrieved successfully.")
 
         except Exception as e:
-            logger.warning(f"⚠️ Could not fetch order details for {order_id}: {e}")
+            logger.warning("Could not fetch additional PayPal order details.")
 
     # -------------------------------------------------------
     # 4️⃣ Fallback: Try capture data for card info
@@ -209,7 +209,7 @@ def capture_paypal_order(request, order_id):
         if resp.status_code not in [200, 201, 422]:
             logger.error("PayPal capture request failed.")
             return Response(
-                {"status": "error", "data": capture_response},
+                {"status": "error", "message": "PayPal capture request failed."},
                 status=resp.status_code,
             )
 
