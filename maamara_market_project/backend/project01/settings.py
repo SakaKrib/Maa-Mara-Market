@@ -29,7 +29,7 @@ load_dotenv()
 
 # Core Secrets
 SECRET_KEY = env("SECRET_KEY")
-DEBUG = True
+DEBUG = env.bool("DEBUG", default=False)
 
 FRONTEND_URL = env("FRONTEND_URL")
 
@@ -125,11 +125,11 @@ ASGI_APPLICATION = "project01.asgi.application"
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.postgresql",
-        "NAME": "maamara_db",
-        "USER": "maamara_user",
-        "PASSWORD": "maamaram@1",
-        "HOST": "db",
-        "PORT": "5432",
+        "NAME": env("POSTGRES_DB", default="maamara_db"),
+        "USER": env("POSTGRES_USER", default="maamara_user"),
+        "PASSWORD": env("POSTGRES_PASSWORD", default=""),
+        "HOST": env("POSTGRES_HOST", default="db"),
+        "PORT": env("POSTGRES_PORT", default="5432"),
     }
 }
 
@@ -218,9 +218,9 @@ SESSION_EXPIRE_AT_BROWSER_CLOSE = True
 SESSION_COOKIE_NAME = "user_sessionid"
 
 SESSION_COOKIE_SAMESITE = "Lax"
-SESSION_COOKIE_SECURE = False
+SESSION_COOKIE_SECURE = not DEBUG
 CSRF_COOKIE_SAMESITE = "Lax"
-CSRF_COOKIE_SECURE = False
+CSRF_COOKIE_SECURE = not DEBUG
 CSRF_COOKIE_HTTPONLY = False
 
 SESSION_ENGINE = "django.contrib.sessions.backends.db"
@@ -232,7 +232,9 @@ SESSION_ENGINE = "django.contrib.sessions.backends.db"
 CHANNEL_LAYERS = {
     "default": {
         "BACKEND": "channels_redis.core.RedisChannelLayer",
-        "CONFIG": {"hosts": [("redis", 6379)]},
+        "CONFIG": {
+            "hosts": [env("REDIS_URL", default="redis://redis:6379/0")],
+        },
     }
 }
 
@@ -292,8 +294,8 @@ PAYMENT_GATEWAYS = {
             "certificate_path": env("MPESA_CERTIFICATE_PATH", default=""),
             "url": env("MPESA_URL"),
 
-            "result_url": "https://nonvalued-alberta-overexpectantly.ngrok-free.dev/mpesa/result",
-            "timeout_url": "https://nonvalued-alberta-overexpectantly.ngrok-free.dev/mpesa/timeout",
+            "result_url": env("MPESA_B2C_RESULT_URL", default=""),
+            "timeout_url": env("MPESA_B2C_TIMEOUT_URL", default=""),
         },
 
         "c2b": {
@@ -358,17 +360,3 @@ EMAIL_HOST_PASSWORD = os.getenv("EMAIL_PASS")
 DEFAULT_FROM_EMAIL = os.getenv("DEFAULT_FROM_EMAIL")
 
 # =========================================================
-# LOGGING
-# =========================================================
-
-LOGGING = {
-    "version": 1,
-    "disable_existing_loggers": False,
-    "handlers": {
-        "console": {"level": "INFO", "class": "logging.StreamHandler"},
-    },
-    "loggers": {
-        "django": {"handlers": ["console"], "level": "INFO"},
-        "": {"handlers": ["console"], "level": "INFO"},
-    },
-}
