@@ -211,7 +211,7 @@ def capture_paypal_order(request, order_id):
             if details and details[0].get("issue") == "ORDER_ALREADY_CAPTURED":
                 logger.warning("PayPal order was already captured; retrieving the existing capture.")
                 order_details_resp = requests.get(
-                    f"{PAYPAL["base_url"]}/v2/checkout/orders/{order_id}",
+                    f"{PAYPAL['base_url']}/v2/checkout/orders/{order_id}",
                     headers=headers,
                     timeout=10,
                 )
