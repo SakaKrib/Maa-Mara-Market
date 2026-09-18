@@ -224,6 +224,12 @@ def stk_callback(request):
                 logger.warning("STK payment %s has no linked order.", payment.id)
                 return Response({"ResultCode": 0, "ResultDesc": "Accepted"})
 
+            # A provider can retry callbacks out of order. Once local
+            # reconciliation has completed, a later failure callback must never
+            # roll a successful payment back to failed.
+            if payment.status == "completed":
+                return Response({"ResultCode": 0, "ResultDesc": "Accepted"})
+
             if result_code != 0:
                 payment.status = "failed"
                 payment.save(update_fields=["status"])
