@@ -37,6 +37,7 @@ def sanitize(value):
 @api_view(["POST"])
 @permission_classes([IsAuthenticatedOrVisitor])
 @parser_classes([MultiPartParser, FormParser])
+@transaction.atomic
 def return_request_handler_api(request, item_id):
     """
     Handles:
@@ -66,9 +67,9 @@ def return_request_handler_api(request, item_id):
 
         # --- Find ordered item ---
         item = (
-            OrderItem.objects.filter(id=item_id, user=user).first()
+            OrderItem.objects.select_for_update().filter(id=item_id, user=user).first()
             if user
-            else OrderItem.objects.filter(id=item_id, visitor_id=visitor_id).first()
+            else OrderItem.objects.select_for_update().filter(id=item_id, visitor_id=visitor_id).first()
         )
 
         if not item:
@@ -388,9 +389,10 @@ def approve_return_request_api(request, return_id):
         # ✅ APPROVAL FLOW
         if action == "approve":
             if pref == "refund":
-                return_request.status = 'approved'
-                return_request.refund_issued = True
+                return_request.approved = True
                 return_request.approved_by_admin = True
+                return_request.admin_action = "approved"
+                return_request.refund_issued = False
                 return_request.status = "approved_refund"
                 return_request.admin_note = admin_note
                 return_request.save()
@@ -472,7 +474,9 @@ def approve_return_request_api(request, return_id):
                 }, status=status.HTTP_200_OK)
 
             elif pref == "exchange":
+                return_request.approved = True
                 return_request.approved_by_admin = True
+                return_request.admin_action = "approved"
                 return_request.status = "approved_exchange"
                 return_request.admin_note = admin_note
                 return_request.save()
@@ -557,7 +561,9 @@ def approve_return_request_api(request, return_id):
         # ❌ REJECTION FLOW
         elif action == "reject":
             return_request.status = "rejected"
+            return_request.approved = False
             return_request.approved_by_admin = False
+            return_request.admin_action = "rejected"
             return_request.admin_note = admin_note
             return_request.save()
 
