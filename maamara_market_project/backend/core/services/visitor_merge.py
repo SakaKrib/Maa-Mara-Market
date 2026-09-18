@@ -15,7 +15,7 @@ from django.db import transaction
 from core.models import ActivityLog, Notification, Profile, Referral, Voucher, Wallet
 from order.models import BillingAddress, Customer, Order, OrderItem, Payment, Transaction, Card
 from ReactSerializers.models import ItemView
-from shop.models import CommentBlog, ReactionBlog, VendorRating, Wishlist
+from shop.models import CommentBlog, ReactionBlog, VendorRating, Wishlist, Review, Reaction
 from vendorDashboard.models import ReturnRequest
 
 logger = logging.getLogger(__name__)
@@ -194,6 +194,25 @@ def merge_visitor_data_to_user(user, visitor_id: str | None) -> dict[str, int]:
     for visitor_row in Wishlist.objects.select_for_update().filter(visitor_id=visitor_id):
         if Wishlist.objects.filter(
             user=user, item_id=visitor_row.item_id
+        ).exclude(pk=visitor_row.pk).exists():
+            visitor_row.delete()
+            deduplicated += 1
+        else:
+            visitor_row.user = user
+            visitor_row.visitor_id = None
+            visitor_row.save(update_fields=["user", "visitor_id"])
+            moved += 1
+
+    # Reviews are historical visitor activity and can be retained as-is.
+    moved += Review.objects.filter(visitor_id=visitor_id, user__isnull=True).update(
+        user=user, visitor_id=None
+    )
+
+    # Reactions are mutable per-review state; keep the authenticated user's
+    # existing reaction when one already exists for the same review.
+    for visitor_row in Reaction.objects.select_for_update().filter(visitor_id=visitor_id):
+        if Reaction.objects.filter(
+            review_id=visitor_row.review_id, user=user
         ).exclude(pk=visitor_row.pk).exists():
             visitor_row.delete()
             deduplicated += 1
