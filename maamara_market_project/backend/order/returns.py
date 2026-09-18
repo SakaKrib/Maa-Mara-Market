@@ -6,7 +6,7 @@ from rest_framework import status
 from django.shortcuts import get_object_or_404
 from vendorDashboard.models import ReturnRequest, Vendor, VendorAdjustment
 from django.contrib.auth import get_user_model
-from oder.models import OderItem  
+from order.models import OrderItem  
 from .views import IsAuthenticatedOrVisitor
 from vendorDashboard.serializers import ReturnRequestSerializer
 from decimal import Decimal
@@ -63,9 +63,9 @@ def return_request_handler_api(request, item_id):
 
         # --- Find ordered item ---
         item = (
-            OderItem.objects.filter(id=item_id, user=user).first()
+            OrderItem.objects.filter(id=item_id, user=user).first()
             if user
-            else OderItem.objects.filter(id=item_id, visitor_id=visitor_id).first()
+            else OrderItem.objects.filter(id=item_id, visitor_id=visitor_id).first()
         )
 
         if not item:
