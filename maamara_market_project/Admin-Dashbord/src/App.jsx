@@ -41,10 +41,8 @@ import VendorLayout from "./cmponents/Auth/Routes/RoutesLayout/VendorLayout";
 // vendor requests
 import useDashboardInteractions from "./interaction";
 import VendorItems from "./cmponents/VENDORPAGE/Products/VendorItems/ItemList";
-import AdminCreateItemForVendor from "./cmponents/VENDORPAGE/Products/Forms/VendorItemRequest/VendorCreateItemForm";
 import VendorItemCreateRequests from "./cmponents/VENDORPAGE/Products/VendorItems/AdminApproveDenyItemCreate";
 
-import CustomerLayout from "./cmponents/Auth/Routes/RoutesLayout/CustomerLayout";
 import VendorRegistration from "./cmponents/VENDORPAGE/VendorRegistration/Terms&Conditions";
 import LoginPage from "./PublicUiForAll/PublicUi/Customer/LoginForm";
 import RegisterPage from "./PublicUiForAll/PublicUi/Customer/DesktopView/Main/Register";
@@ -127,13 +125,12 @@ import RevenueGrowthCard from "./cmponents/AdminPages/Notifications/Transactions
 import VendorSuccessPage from "./cmponents/VENDORPAGE/VendorRegistration/VendorSuccessPage";
 import CreateItemModal from "./cmponents/AdminPages/Notifications/ApproveCreatedItem";
 import AdminBannerApprovalPage from "./cmponents/Admin/ApproveBanner/aprroveBanner";
-import SingleBannerPage from "./cmponents/VENDORPAGE/VendorSections/NotificationPages/SingleBannerPage";
 import VendorBannerManager from "./cmponents/VENDORPAGE/VendorSections/NotificationPages/SingleBannerPage";
 import VendorBlogManagerNotification from "./cmponents/VENDORPAGE/VendorSections/NotificationPages/BlogsSinglePage";
 import SearchGlobalResultsPage from "./cmponents/SearchPage/SearchResultsPage";
 
 function AppContent() {
-  const { isAuthenticated, loading } = useAuth();
+  const { loading } = useAuth();
   const [theme, colorMode] = useMode();
   const themeSetup = useTheme();
   const colors = tokens(themeSetup.palette.mode);
@@ -151,10 +148,6 @@ function AppContent() {
       .catch(err => console.error(err));
   }, []);
   
-
-  useEffect(() => {
-    console.log("Authenticated:", isAuthenticated);
-  }, [isAuthenticated]);
 
   if (loading) {
     return (
