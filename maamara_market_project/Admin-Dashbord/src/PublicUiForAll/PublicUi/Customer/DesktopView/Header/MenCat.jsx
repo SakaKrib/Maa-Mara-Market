@@ -110,28 +110,6 @@ export default function MegaMenuMen() {
             </div>
           </div>
 
-          {/* Static product preview */}
-          <div className="flexcol products">
-            <div className="flex flex-col">
-              <div className="media">
-                <div className="thumbnail object-cover">
-                  <a href="#">
-                    <img
-                      src="products/kuba wall hanging.jpg"
-                      alt="Kuba Wall Hanging"
-                    />
-                  </a>
-                </div>
-              </div>
-              <div className="text-content">
-                <h4>Most Viewed</h4>
-                <a href="#" className="primary-button">
-                  Add to cart
-                </a>
-              </div>
-            </div>
-          </div>
-
         </div>
       </div>
     </div>
