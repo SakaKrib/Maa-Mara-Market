@@ -391,13 +391,16 @@ def reconcile_mpesa_refund_callback(payload, *, timeout=False):
         return None
 
     with transaction.atomic():
+        correlation = Q()
+        if conversation_id:
+            correlation |= Q(mpesa_conversation_id=conversation_id)
+        if originator_id:
+            correlation |= Q(mpesa_originator_conversation_id=originator_id)
+
         refund = (
             Refund.objects.select_for_update()
             .filter(provider="Mpesa")
-            .filter(
-                Q(mpesa_conversation_id=conversation_id)
-                | Q(mpesa_originator_conversation_id=originator_id)
-            )
+            .filter(correlation)
             .first()
         )
         if not refund:
