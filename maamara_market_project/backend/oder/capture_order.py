@@ -145,19 +145,24 @@ def capture_paypal_order(request, order_id):
             )
 
         # -------------------------------------------------------
-        # 2️⃣ Find the user's/visitor's order
+        # 2️⃣ Find the exact local order represented by the PayPal ID.
+        # Never capture against a different pending order.
         # -------------------------------------------------------
-        filters = {"status__in": ["pending", "processing"]}
-        if user:
-            filters["user"] = user
-        else:
-            filters["visitor_id"] = visitor_id
+        order_qs = Order.objects.filter(
+            paypal_order_id=order_id,
+            status__in=["pending", "processing"],
+        )
 
-        order = Order.objects.filter(**filters).order_by("-id").first()
+        if user:
+            order_qs = order_qs.filter(user=user, visitor_id__isnull=True)
+        else:
+            order_qs = order_qs.filter(user__isnull=True, visitor_id=visitor_id)
+
+        order = order_qs.select_related("payment").first()
 
         if not order:
             return Response(
-                {"status": "error", "message": "No matching order found for this user/visitor"},
+                {"status": "error", "message": "PayPal order not found"},
                 status=404,
             )
 
