@@ -131,7 +131,6 @@ logger = logging.getLogger("ReactSerializers.users")
 @permission_classes([AllowAny])
 @require_http_methods(["POST"])
 def login_view(request):
-    logger.info("🔐 Login attempt received")
 
     # Get visitor_id from cookie or POST data (adjust according to your frontend)
     visitor_id = request.COOKIES.get("visitorId") or request.POST.get("visitorId")
@@ -140,7 +139,6 @@ def login_view(request):
     password = request.POST.get("password")
     csrf_token = request.META.get('HTTP_X_CSRFTOKEN')
 
-    logger.debug(f"Identifier: {identifier}, CSRF: {csrf_token}")
 
     # --- Django User authentication ---
     user = authenticate(request, username=identifier, password=password)
