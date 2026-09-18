@@ -361,12 +361,12 @@ def create_or_update_customer_from_order(order):
         return
 
     if not getattr(order, "payment_confirmed", False):
-        logger.info(f"💳 Payment not confirmed for Order {order.id}. Skipping.")
+        logger.info("Payment not confirmed; customer update skipped.")
         return
 
     billing = getattr(order, "billing_address", None)
     if not billing:
-        logger.warning(f"⚠️ Order {order.id} has no billing address. Cannot update customer.")
+        logger.warning("Order has no billing address; customer update skipped.")
         return
 
     user = order.user
@@ -380,7 +380,7 @@ def create_or_update_customer_from_order(order):
             break
 
     if not vendor:
-        logger.warning(f"⚠️ No vendor found in order {order.id}. Cannot assign vendor to customer.")
+        logger.warning("No vendor found for order customer assignment.")
     
     lookup = {"user": user} if user else {"visitor_id": visitor_id}
     customer = Customer.objects.filter(**lookup).first()
@@ -415,7 +415,7 @@ def create_or_update_customer_from_order(order):
         if vendor and not customer.vendor:
             customer.vendor = vendor
             customer.save(update_fields=["vendor"])
-            logger.info(f"🏷️ Vendor assigned to existing customer {customer.id}")
+            logger.info("Vendor assigned to existing customer.")
 
     # --- Update customer fields ---
     def update_if_changed(cust, billing_info):
@@ -441,7 +441,7 @@ def create_or_update_customer_from_order(order):
 
         if updated:
             cust.save()
-            logger.info(f"🔄 Customer updated: {cust.full_name}")
+            logger.info("Customer record updated.")
 
     if not created:
         update_if_changed(customer, billing)
@@ -526,7 +526,7 @@ def verify_paypal_signature(raw_body, request):
             timeout=10,
         )
         if auth_resp.status_code != 200:
-            logger.error(f"❌ PayPal OAuth failed: {auth_resp.status_code} {auth_resp.text}")
+            logger.error("PayPal OAuth request failed.")
             return False
 
         access_token = auth_resp.json().get("access_token")
@@ -554,12 +554,12 @@ def verify_paypal_signature(raw_body, request):
 
         # 4️⃣ Send verification request
         resp = requests.post(verify_url, headers=headers, json=body, timeout=10)
-        logger.info(f"🔹 PayPal verify response: {resp.status_code} {resp.text}")
+        logger.info("PayPal webhook signature verification completed.")
 
         return resp.json().get("verification_status") == "SUCCESS"
 
     except Exception as e:
-        logger.exception(f"⚠️ PayPal signature verification failed: {e}")
+        logger.exception("PayPal webhook signature verification failed.")
         return False
 
 
@@ -700,7 +700,7 @@ def send_paypal_invoice(order):
         raise
 
     except Exception as e:
-        logger.exception(f"Unexpected error sending PayPal invoice order_id={order.id}: {e}")
+        logger.exception("Unexpected error sending PayPal invoice.")
         raise
 
 
@@ -889,7 +889,7 @@ def paypal_webhook(request):
                         order.paypal_invoice_id = invoice.get('id')  # You must add this field to Order model
                         order.save(update_fields=['paypal_invoice_id'])
                 except Exception as e:
-                    logger.error(f"❌ Failed to send PayPal invoice: {e}")
+                    logger.error("Failed to send PayPal invoice.")
 
                 # -------------------------------------------------------
                 # ✉️ Send Invoice Email to Customer
@@ -1065,8 +1065,8 @@ def paypal_webhook(request):
                 )
 
     except Exception as e:
-        logger.exception(f"❌ PayPal webhook processing error: {e}")
-        return Response({"status": "error", "message": str(e)}, status=500)
+        logger.exception("PayPal webhook processing error.")
+        return Response({"status": "error", "message": "Webhook processing failed."}, status=500)
 
     return Response({"status": "ok", "message": "Webhook processed"})
 
