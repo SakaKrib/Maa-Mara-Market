@@ -9,6 +9,8 @@ import Banners from "./Trending/Banner";
 import CategoryWithItems from "./Trending/Category/CategoryWithItemList";
 import AdvertBlogs from "../../../../../cmponents/Hooks/BlogHooksNew/BlogAdvert";
 import OrganicSlideshow from "./Trending/OrganicAdvert/OrganicDvert";
+import MarketplaceDiscovery from "./Discovery/MarketplaceDiscovery";
+import MultiCollections from "./Trending/MultiCollections";
 
 const Main = () => (
   <main className="mm-page">
@@ -25,6 +27,8 @@ const Main = () => (
     </section>
 
     <BrandList />
+    <MarketplaceDiscovery />
+    <MultiCollections />
     <ListPage />
     <OrganicSlideshow />
     <TrendingProducts />
