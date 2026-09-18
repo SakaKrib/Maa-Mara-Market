@@ -75,7 +75,7 @@ import CheckoutPage from "./PublicUiForAll/PublicUi/Customer/DesktopView/Main/Or
 import useMobileMenu from "./MobileInterractions";
 import OffCanvasMenu from "./PublicUiForAll/PublicUi/Customer/DesktopView/Header/Offcanvas";
 import SingleCategory from "./PublicUiForAll/PublicUi/Customer/DesktopView/Main/CategoryFilter";
-import ScrollTop from "./cmponents/Scroll/SceollToTheTop";
+import ScrollTop from "./cmponents/Scroll/ScrollToTheTop";
 import CheckoutPaypalPayment from "./PublicUiForAll/PublicUi/Customer/DesktopView/Main/Orders/Payment/Paypal";
 import MpesaC2BPayment from "./PublicUiForAll/PublicUi/Customer/DesktopView/Main/Orders/Payment/Mpesac2b";
 import SingleItemProfile from "./cmponents/VENDORPAGE/VendorSections/ItemSinglePage";
