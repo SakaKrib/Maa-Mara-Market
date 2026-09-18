@@ -77,7 +77,7 @@ import OffCanvasMenu from "./PublicUiForAll/PublicUi/Customer/DesktopView/Header
 import SingleCategory from "./PublicUiForAll/PublicUi/Customer/DesktopView/Main/CategoryFilter";
 import ScrollTop from "./cmponents/Scroll/ScrollToTheTop";
 import CheckoutPaypalPayment from "./PublicUiForAll/PublicUi/Customer/DesktopView/Main/Orders/Payment/Paypal";
-import MpesaC2BPayment from "./PublicUiForAll/PublicUi/Customer/DesktopView/Main/Orders/Payment/Mpesac2b";
+import MpesaC2BPayment from "./PublicUiForAll/PublicUi/Customer/DesktopView/Main/Orders/Payment/MpesaStkPayment";
 import SingleItemProfile from "./cmponents/VENDORPAGE/VendorSections/ItemSinglePage";
 import PaymentSuccess from "./PublicUiForAll/PublicUi/Customer/DesktopView/Main/Trending/SuccessPage";
 import BlogCard from "./cmponents/VENDORPAGE/Blogs/BlogCard";
@@ -85,7 +85,7 @@ import BlogFeed from "./cmponents/VENDORPAGE/Blogs/BlogFeed";
 import SingleBlogPage from "./cmponents/VENDORPAGE/Blogs/SinglePageBlogPost";
 import { WishlistProvider } from "./cmponents/Hooks/WishListHook/Wishlist";
 import ItemsOnsite from "./cmponents/VENDORPAGE/Products/VendorItems/ItemOnSite";
-import TransactionTable from "./cmponents/VENDORPAGE/Home/Transction";
+import TransactionTable from "./cmponents/VENDORPAGE/Home/Transaction";
 import AdminAccounts from "./cmponents/Admin/AccountMain/Accountmain";
 // link admin css
 import "./admin.css"
@@ -124,7 +124,7 @@ import SalesPage from "./cmponents/Admin/AdminAccounts/Reports/SalesStatsPage";
 import RevenueGrowthCard from "./cmponents/AdminPages/Notifications/Transactions/AdminTransactionGrowthTrack";
 import VendorSuccessPage from "./cmponents/VENDORPAGE/VendorRegistration/VendorSuccessPage";
 import CreateItemModal from "./cmponents/AdminPages/Notifications/ApproveCreatedItem";
-import AdminBannerApprovalPage from "./cmponents/Admin/ApproveBanner/aprroveBanner";
+import AdminBannerApprovalPage from "./cmponents/Admin/ApproveBanner/ApproveBanner";
 import VendorBannerManager from "./cmponents/VENDORPAGE/VendorSections/NotificationPages/SingleBannerPage";
 import VendorBlogManagerNotification from "./cmponents/VENDORPAGE/VendorSections/NotificationPages/BlogsSinglePage";
 import SearchGlobalResultsPage from "./cmponents/SearchPage/SearchResultsPage";
