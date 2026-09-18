@@ -19,7 +19,7 @@ from django.db import transaction
 from django.http import JsonResponse
 from django.template.loader import render_to_string
 from django.utils import timezone
-from django.views.decorators.csrf import csrf_exempt, csrf_protect
+from django.views.decorators.csrf import csrf_protect
 
 from rest_framework.decorators import api_view, authentication_classes, permission_classes
 from rest_framework.permissions import AllowAny
@@ -122,7 +122,7 @@ def register(request):
     )
 
 
-@csrf_exempt
+@csrf_protect
 @api_view(["POST"])
 @authentication_classes([])
 @permission_classes([AllowAny])
@@ -245,7 +245,7 @@ def verify_otp_register_otp(request):
     )
 
 
-@csrf_exempt
+@csrf_protect
 @api_view(["POST"])
 @permission_classes([AllowAny])
 def resend_otp_register_otp(request):
