@@ -5,7 +5,7 @@ services:
     environment:
       POSTGRES_DB: ${POSTGRES_DB:-maamara_db}
       POSTGRES_USER: ${POSTGRES_USER:-maamara_user}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-change-me}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD must be set}
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
@@ -32,15 +32,15 @@ services:
     env_file:
       - ./backend/project01/.env
     environment:
-      DEBUG: "True"
+      DEBUG: "${DEBUG:-false}"
       POSTGRES_DB: ${POSTGRES_DB:-maamara_db}
       POSTGRES_USER: ${POSTGRES_USER:-maamara_user}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-change-me}
       POSTGRES_HOST: db
       POSTGRES_PORT: "5432"
       REDIS_URL: redis://redis:6379/0
-      FRONTEND_URL: http://100.109.224.0:5173
-      ALLOWED_HOSTS: 127.0.0.1,localhost,100.109.224.0
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:5173}
+      ALLOWED_HOSTS: ${ALLOWED_HOSTS:-127.0.0.1,localhost}
     ports:
       - "8000:8000"
     volumes:
