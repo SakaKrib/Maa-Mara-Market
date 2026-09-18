@@ -614,8 +614,8 @@ class VendorPayout(models.Model):
 
     #mpesa data
     mpesa_conversation_id = models.CharField(max_length=100, blank=True, null=True, db_index=True)
-    mpesa_originator_conversation_id = models.CharField(max_length=100, blank=True, null=True)
-    mpesa_transaction_id = models.CharField(max_length=100, blank=True, null=True)
+    mpesa_originator_conversation_id = models.CharField(max_length=100, blank=True, null=True, db_index=True)
+    mpesa_transaction_id = models.CharField(max_length=100, blank=True, null=True, db_index=True)
     mpesa_result_code = models.IntegerField(blank=True, null=True)
     mpesa_result_desc = models.CharField(max_length=255, blank=True, null=True)
 
