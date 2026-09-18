@@ -8,7 +8,7 @@ const CustomerShop = () => {
   return (
     <>
       <Header />
-      <main className="relative h-max">
+      <main className="relative flex flex-col min-h-screen">
         <Outlet />
       </main>
       <MobileMenu/>
