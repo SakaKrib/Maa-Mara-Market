@@ -1,10 +1,9 @@
 import { defineConfig } from 'vite';
-import react from '@vitejs/plugin-react'; // or vue/svelte/etc
+import react from '@vitejs/plugin-react';
 import path from "path";
-//import { baseUrl } from './src/cmponents/Constant/Constant';
 
 export default defineConfig({
-  // Vite serves this app directly at the site root during development.
+  // Vite serves the React app at the site root during development.
   // Django keeps /static/ for backend static assets.
   base: "/",
   plugins: [react()],
@@ -14,14 +13,19 @@ export default defineConfig({
     },
   },
   server: {
-    host: '0.0.0.0', // This sets the frontend to use 127.0.0.1
+    host: "0.0.0.0",
     port: 5173,
+    watch: {
+      // Docker bind mounts can miss native filesystem events on some hosts.
+      // Polling keeps HMR reliable during local development.
+      usePolling: true,
+      interval: 300,
+    },
     proxy: {
-      '/api': {
-        target: 'http://192.168.8.106:8000', // your backend server
+      "/api": {
+        target: "http://backend:8000",
         changeOrigin: true,
-      }
-    }
-  }
+      },
+    },
+  },
 });
-
