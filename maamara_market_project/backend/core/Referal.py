@@ -8,7 +8,7 @@ from rest_framework import status
 from .models import Voucher, Referral, Wallet
 from rest_framework.parsers import MultiPartParser, FormParser
 from django.db import IntegrityError
-from oder.models import Order
+from order.models import Order
 
 
 
