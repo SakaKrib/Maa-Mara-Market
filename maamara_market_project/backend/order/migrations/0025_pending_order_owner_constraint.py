@@ -12,9 +12,17 @@ class Migration(migrations.Migration):
         migrations.AddConstraint(
             model_name="order",
             constraint=models.UniqueConstraint(
-                fields=("user", "visitor_id"),
-                condition=Q(status="pending"),
-                name="uniq_pending_order_owner",
+                fields=("user",),
+                condition=Q(status="pending", user__isnull=False),
+                name="uniq_pending_order_user",
+            ),
+        ),
+        migrations.AddConstraint(
+            model_name="order",
+            constraint=models.UniqueConstraint(
+                fields=("visitor_id",),
+                condition=Q(status="pending", visitor_id__isnull=False),
+                name="uniq_pending_order_visitor",
             ),
         ),
         migrations.AddIndex(
