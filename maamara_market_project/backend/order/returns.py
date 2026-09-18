@@ -339,6 +339,7 @@ def return_request_handler_api(request, item_id):
 
 @api_view(["POST"])
 @permission_classes([IsAdminUser])
+@transaction.atomic
 def approve_return_request_api(request, return_id):
     """
     Admin-only endpoint to approve or reject a refund or exchange request.
@@ -361,29 +362,28 @@ def approve_return_request_api(request, return_id):
                 "error": "Invalid action. Must be 'approve' or 'reject'."
             }, status=status.HTTP_400_BAD_REQUEST)
 
-        with transaction.atomic():
-            return_request = (
-                ReturnRequest.objects
-                .select_for_update()
-                .select_related("item__item", "customer")
-                .get(pk=return_id)
-            )
+        return_request = (
+            ReturnRequest.objects
+            .select_for_update()
+            .select_related("item__item", "customer")
+            .get(pk=return_id)
+        )
 
-            # Terminal states are idempotent: a repeated admin request must
-            # not create another adjustment or mutate an already-decided return.
-            if return_request.status in {"approved_refund", "approved_exchange", "rejected"}:
-                return Response({
-                    "success": True,
-                    "message": "Return request has already been decided.",
-                    "return_request": ReturnRequestSerializer(return_request).data,
-                }, status=status.HTTP_200_OK)
+        # Terminal states are idempotent: a repeated admin request must
+        # not create another adjustment or mutate an already-decided return.
+        if return_request.status in {"approved_refund", "approved_exchange", "rejected"}:
+            return Response({
+                "success": True,
+                "message": "Return request has already been decided.",
+                "return_request": ReturnRequestSerializer(return_request).data,
+            }, status=status.HTTP_200_OK)
 
-            item = return_request.item
-            product = item.item
-            vendor = Vendor.objects.get(user=product.created_by)
-            customer = return_request.customer
-            visitor_id = return_request.visitor_id
-            pref = return_request.customer_preference or "unspecified"
+        item = return_request.item
+        product = item.item
+        vendor = Vendor.objects.get(user=product.created_by)
+        customer = return_request.customer
+        visitor_id = return_request.visitor_id
+        pref = return_request.customer_preference or "unspecified"
 
         # ✅ APPROVAL FLOW
         if action == "approve":
