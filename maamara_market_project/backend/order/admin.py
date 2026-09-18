@@ -1,9 +1,9 @@
 from django.contrib import admin
-from .models import OderItem, Order,Payment,BillingAddress, Transaction, Customer, Card
+from .models import OrderItem, Order,Payment,BillingAddress, Transaction, Customer, Card
 
 # Register your models here.
 
-admin.site.register(OderItem)
+admin.site.register(OrderItem)
 
 admin.site.register(Payment)
 admin.site.register(BillingAddress)
@@ -13,10 +13,10 @@ admin.site.register(Card)
 
 
 from django.contrib import admin
-from .models import Order, OderItem
+from .models import Order, OrderItem
 
 class OrderItemInline(admin.TabularInline):
-    model = OderItem  # Directly use OderItem
+    model = OrderItem  # Directly use OrderItem
     extra = 1  # Optional, number of empty forms
 
 @admin.register(Order)
