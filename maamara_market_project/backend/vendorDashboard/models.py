@@ -422,7 +422,7 @@ class SoldItem(models.Model):
         return self.item
 
     def clean(self):
-        if self.pk is not None:
+        if self.pk is not None or getattr(self, "_stock_already_deducted", False):
             return
 
         stock_target = self._stock_target()
