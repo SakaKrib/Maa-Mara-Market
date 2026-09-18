@@ -115,6 +115,8 @@ urlpatterns = [
 
     # banners (manual fallback endpoint)
     path("api/banners-list/", BannerListView.as_view(), name="banners-all"),
+    path("api/discovery/", discovery_feed, name="discovery-feed"),
+    path("api/multi-collections/", multi_collections, name="multi-collections"),
 
     # chat
     path("api/upload/", FileUploadView.as_view(), name="file-upload"),
