@@ -1,6 +1,6 @@
 from django.urls import path
 from oder.views import *  # Make sure views.py exists and has at least one view
-from oder.shipping import *
+from oder.shipping import get_shipping_rates
 from oder.paypalApis import *
 from .Mpesa.mpesaUtils import *
 from .Mpesa.C2BMpesaIntergration.c2butils import *
@@ -50,7 +50,6 @@ urlpatterns = [
     path("api/paypal/capture-order/<str:order_id>/", capture_paypal_order, name="capture_paypal_order"),
 
     # shipping rates
-    path("api/shipping-rates/", get_shipping_rates, name="get-shipping-rates"),
 
     # handle returns
     # POST (and optionally GET if you add that later)
