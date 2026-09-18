@@ -24,7 +24,7 @@ const checkoutSchema = z.object({
   zip: z.string().min(1, "ZIP Code is required"),
   country: z.string().min(1, "Country is required"),
   phone: z.string().min(1, "Phone number is required"),
-  payment: z.enum(["Mpesa", "Credit Card", "PayPal"], {
+  payment: z.enum(["Mpesa", "PayPal"], {
     errorMap: () => ({ message: "Select a payment method" }),
   }),
   shippingMethod: z.string().optional(),
@@ -50,8 +50,7 @@ export default function CheckoutPage() {
 
   const shippingCost = selectedShipping ? Number(selectedShipping.rate) : 0;
 
-  console.log("this is order", countries)
-
+  
 
   // Watch errors and show first error as alert (replace with toast if needed)
   useEffect(() => {
@@ -309,7 +308,7 @@ const fetchShippingQuote = async () => {
               {/* Payment Method */}
               <div>
                 <h3 className="text-lg font-medium mb-3">Payment Method</h3>
-                {["Mpesa", "Credit Card", "PayPal"].map((method) => (
+                {["Mpesa", "PayPal"].map((method) => (
                   <label key={method} className="flex items-center gap-2">
                     <input type="radio" value={method} {...register("payment")} />
                     {method}
@@ -321,7 +320,7 @@ const fetchShippingQuote = async () => {
               <div>
                   <p  className="mt-4 ">Do you want to ship the Order to the billing address?</p>
                  
-                  <Button type= 'submit'>Get Shipping Quote</Button>
+                  <Button type="button" onClick={fetchShippingQuote}>Get Shipping Quote</Button>
                 </div>
 
               <Button type="submit" className="w-full mt-6">Complete Order</Button>
@@ -354,7 +353,7 @@ const fetchShippingQuote = async () => {
               <hr />
               <div className="flex justify-between font-semibold">
                 <span>Subtotal</span>
-                <span>${(totalOrder + shippingCost).toFixed(2)}</span>
+                <span>KES {Number(totalOrder + shippingCost).toLocaleString()}</span>
 
               </div>
               <div className="flex justify-between">
@@ -371,7 +370,7 @@ const fetchShippingQuote = async () => {
               <hr />
               <div className="flex justify-between font-bold text-lg">
                 <span>Total</span>
-                <span>${totalOrder.toFixed(2)}</span>
+                <span>KES {Number(totalOrder + shippingCost).toLocaleString()}</span>
               </div>
 
               {/* Hidden PayPal Component for reference */}
