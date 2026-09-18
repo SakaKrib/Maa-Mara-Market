@@ -1,83 +1,74 @@
 import React, { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import api from "../../../../../Services/Api";
-import ProductCard from "./../Main/Trending/ItemReusableCard"; 
-import { useWishlistContext } from "../../../../../cmponents/Hooks/WishListHook/Wishlist";
+import { baseUrl } from "../../../../../cmponents/Constant/Constant";
+import TrendingProductCard from "../Main/Trending/TrendingProductCard";
+import "../../../maamara.css";
 
 const SubcategoryProducts = () => {
-  const { id } = useParams(); // subcategory id
+  const { id } = useParams();
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [subcategoryName, setSubcategoryName] = useState("");
-
-  const { wishlist, addToWishlist, removeFromWishlist } = useWishlistContext();
-
-  const fetchItems = async (url) => {
-    try {
-      setLoading(true);
-      const res = await api.get(url, {
-        headers: { "Content-Type": "application/json" },
-      });
-
-      const data = res.data; // Axios returns data here
-      console.log("Fetched data:", data);
-
-      if (Array.isArray(data)) {
-        setItems(data);
-
-        if (data.length > 0) {
-          const subcat = data[0].subcategory;
-          if (typeof subcat === "string") {
-            setSubcategoryName(subcat);
-          } else if (subcat && typeof subcat === "object" && subcat.name) {
-            setSubcategoryName(subcat.name);
-          } else {
-            setSubcategoryName("Products");
-          }
-        } else {
-          setSubcategoryName("Products");
-        }
-      } else {
-        setItems([]);
-        setSubcategoryName("Products");
-      }
-      setLoading(false);
-    } catch (error) {
-      console.error("Error fetching subcategory items:", error);
-      setItems([]);
-      setSubcategoryName("Products");
-      setLoading(false);
-    }
-  };
+  const [name, setName] = useState("Products");
+  const [error, setError] = useState("");
 
   useEffect(() => {
-    fetchItems(`/api/subcategory/${id}/products/`);
+    const controller = new AbortController();
+    setLoading(true);
+    setError("");
+
+    api.get(`/api/subcategory/${id}/products/`, {
+      signal: controller.signal,
+      headers: { "Content-Type": "application/json" },
+    })
+      .then(({ data }) => {
+        const next = Array.isArray(data) ? data : Array.isArray(data?.results) ? data.results : [];
+        setItems(next);
+        const subcat = next[0]?.subcategory;
+        setName(typeof subcat === "string" ? subcat : subcat?.name || "Products");
+      })
+      .catch((err) => {
+        if (err.name !== "CanceledError" && err.name !== "AbortError") {
+          setError("Unable to load these products.");
+          setItems([]);
+        }
+      })
+      .finally(() => setLoading(false));
+
+    return () => controller.abort();
   }, [id]);
 
-  if (loading) return <p className="text-center mt-10">Loading...</p>;
+  const normalizeImage = (item) => {
+    if (!item?.image) return "";
+    return item.image.startsWith("http") ? item.image : `${baseUrl || ""}${item.image}`;
+  };
 
   return (
-    <div className="py-10 px-4 md:px-10 bg-white">
-      <div className="max-w-7xl mx-auto">
-        <div className="mb-6 text-center">
-          <h2 className="text-2xl md:text-3xl font-bold text-gray-800 border-b">
-            {subcategoryName}
-          </h2>
-        </div>
+    <main className="mm-page">
+      <section className="mm-section">
+        <div className="mm-container">
+          <div className="mb-6">
+            <p className="text-xs uppercase tracking-wide text-gray-500 mb-1">Shop</p>
+            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">{name}</h1>
+            {!loading && <p className="text-sm text-gray-500 mt-1">{items.length} product{items.length === 1 ? "" : "s"}</p>}
+          </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          {items.map((item) => (
-            <ProductCard
-              key={item.id}
-              item={item}
-              wishlist={wishlist}
-              addToWishlist={addToWishlist}
-              removeFromWishlist={removeFromWishlist}
-            />
-          ))}
+          {loading && <div className="mm-card p-10 text-center text-gray-500">Loading products…</div>}
+          {error && !loading && <div className="mm-card p-10 text-center text-red-600">{error}</div>}
+          {!loading && !error && !items.length && (
+            <div className="mm-card p-10 text-center text-gray-500">No products found in this subcategory.</div>
+          )}
+
+          {!loading && !error && items.length > 0 && (
+            <div className="product-card-grid grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2 sm:gap-4 lg:gap-6">
+              {items.map((item) => (
+                <TrendingProductCard key={item.id} item={{ ...item, image: normalizeImage(item) }} />
+              ))}
+            </div>
+          )}
         </div>
-      </div>
-    </div>
+      </section>
+    </main>
   );
 };
 
