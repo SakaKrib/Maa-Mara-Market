@@ -7,6 +7,11 @@ from django.db import models
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 
+
+def default_voucher_expiry_date():
+    """Return a rolling 30-day default for newly issued vouchers."""
+    return date.today() + timedelta(days=30)
+
 from ReactSerializers.models import Item
 
 
@@ -115,11 +120,11 @@ class Referral(models.Model):
 
 class Voucher(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
-    visitor_id = models.CharField(max_length=64, blank=True, null=True, unique=True) 
+    visitor_id = models.CharField(max_length=64, blank=True, null=True, db_index=True) 
     name = models.CharField(max_length=255, blank=False, null=False, default="Default Voucher")  # Database default value
     code = models.CharField(max_length=20, unique=True)
     discount = models.CharField(max_length=100)
-    expiry_date = models.DateField(default=lambda: date.today() + timedelta(days=30))
+    expiry_date = models.DateField(default=default_voucher_expiry_date)
     redeemed = models.BooleanField(default=False)
     active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -149,8 +154,8 @@ class Voucher(models.Model):
 ## suport cord backend development
 
 class SupportMessage(models.Model):
-    user = models.ForeignKey(User, on_delete=models.CASCADE)  # ✅ Link message to specific user
-    visitor_id = models.CharField(max_length=64, blank=True, null=True, unique=True) 
+    user = models.ForeignKey(User, on_delete=models.CASCADE)  # Link message to specific user
+    visitor_id = models.CharField(max_length=64, blank=True, null=True, db_index=True) 
     name = models.CharField(max_length=255)
     email = models.EmailField()
     message = models.TextField()
@@ -252,7 +257,7 @@ class ActivityLog(models.Model):
 
 # NOTIFICATIONS MODEL
 class Notification(models.Model):
-    visitor_id = models.CharField(max_length=64, blank=True, null=True, unique=True) 
+    visitor_id = models.CharField(max_length=64, blank=True, null=True, db_index=True) 
     user = models.ForeignKey(User, on_delete=models.CASCADE, null=True, blank=True, related_name='notifications')
     title = models.CharField(max_length=255, blank=True, null=True, default="")  # ✅ Add this
     message = models.TextField()
