@@ -42,8 +42,32 @@ import time, datetime
 @permission_classes([IsAuthenticatedOrVisitor])
 def paypal_create_order(request):
     amount = request.data.get("amount", "10.00")
-    order = create_paypal_order(amount)
-    return Response(order)
+    paypal_order = create_paypal_order(amount)
+
+    # Bind the provider order ID to the customer's pending order immediately.
+    # This lets a webhook resolve the correct local order even if it arrives
+    # before the capture endpoint is called.
+    if request.user and request.user.is_authenticated:
+        pending_order = Order.objects.filter(
+            user=request.user,
+            status="pending",
+        ).order_by("-id").first()
+    else:
+        visitor_id = request.COOKIES.get("visitorId")
+        pending_order = (
+            Order.objects.filter(visitor_id=visitor_id, status="pending")
+            .order_by("-id")
+            .first()
+            if visitor_id
+            else None
+        )
+
+    paypal_id = paypal_order.get("id")
+    if pending_order and paypal_id:
+        pending_order.paypal_order_id = paypal_id
+        pending_order.save(update_fields=["paypal_order_id"])
+
+    return Response(paypal_order)
 
 @api_view(["POST"])
 @permission_classes([IsAuthenticatedOrVisitor])
