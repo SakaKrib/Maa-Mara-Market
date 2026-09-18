@@ -552,6 +552,7 @@ def remove_from_cart_api(request, pk):
     # -----------------------------
     ActivityLog.objects.create(
         user=user,
+        visitor_id=visitor_id,
         actor_type=actor_type,
         action="item_removed_from_cart",
         item=item,
@@ -566,7 +567,8 @@ def remove_from_cart_api(request, pk):
         if vendor_user:
             ActivityLog.objects.create(
                 user=vendor_user,
-                actor_type='vendor_notification',
+                visitor_id=visitor_id,
+                actor_type='vendor',
                 action="cart_item_removed_notification",
                 item=item,
                 description=f"{actor_name} removed '{item.name}' from their cart.",
@@ -576,6 +578,7 @@ def remove_from_cart_api(request, pk):
     # Log vendor info as actor for frontend reference
     ActivityLog.objects.create(
         user=user,
+        visitor_id=visitor_id,
         actor_type='vendor',
         action="item_removed_from_cart",
         item=item,
@@ -587,6 +590,7 @@ def remove_from_cart_api(request, pk):
     for admin in User.objects.filter(is_staff=True):
         ActivityLog.objects.create(
             user=admin,
+            visitor_id=visitor_id,
             actor_type="admin",
             action="item_removed_from_cart",
             item=item,
@@ -745,6 +749,7 @@ def update_cart_quantity(request, pk):
     # 🔹 Log activity
     ActivityLog.objects.create(
         user=user,
+        visitor_id=visitor_id,
         actor_type=actor_type,
         action="item_updated_qty",
         item=item,
@@ -754,6 +759,7 @@ def update_cart_quantity(request, pk):
 
     ActivityLog.objects.create(
         user=user,
+        visitor_id=visitor_id,
         actor_type='vendor',
         action="item_updated_qty",
         item=item,
@@ -764,6 +770,7 @@ def update_cart_quantity(request, pk):
     for admin in User.objects.filter(is_staff=True):
         ActivityLog.objects.create(
             user=admin,
+            visitor_id=visitor_id,
             actor_type="admin",
             action="item_updated_qty",
             item=item,
