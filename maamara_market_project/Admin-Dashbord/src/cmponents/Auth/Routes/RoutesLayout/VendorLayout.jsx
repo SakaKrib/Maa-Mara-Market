@@ -1,7 +1,7 @@
 import { Outlet } from 'react-router-dom';
 import ProtectedRoute from '../ProtectRoute';
 import { Box, useTheme } from '@mui/material';
-import HeaderTop from '../../../Portions/HederTop/HeaderTop';
+import HeaderTop from '../../../Portions/HeaderTop/HeaderTop';
 import NavBar from '../../../Portions/NavBar/NavBarSide';
 import { tokens } from '../../../../theme';
  import VendorDashboardNav from '../../../VENDORPAGE/Home/VendorDashboardNav';
