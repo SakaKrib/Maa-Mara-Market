@@ -423,6 +423,58 @@ class Card(models.Model):
         return f"{self.brand or 'CARD'} ****{self.last_digits or '----'}"
 
 
+# Customer refund ledger. Provider calls are performed by a dedicated service;
+# approval alone never marks a refund as issued.
+class Refund(models.Model):
+    STATUS_CHOICES = [
+        ("approved", "Approved"),
+        ("processing", "Processing"),
+        ("completed", "Completed"),
+        ("failed", "Failed"),
+    ]
+
+    PROVIDER_CHOICES = [
+        ("PayPal", "PayPal"),
+        ("Mpesa", "M-Pesa"),
+    ]
+
+    return_request = models.OneToOneField(
+        "vendorDashboard.ReturnRequest",
+        on_delete=models.PROTECT,
+        related_name="refund_record",
+    )
+    payment = models.ForeignKey(
+        Payment,
+        on_delete=models.PROTECT,
+        related_name="refunds",
+    )
+    amount = models.DecimalField(max_digits=12, decimal_places=2)
+    currency = models.CharField(max_length=3, default="KES")
+    provider = models.CharField(max_length=20, choices=PROVIDER_CHOICES)
+    provider_reference = models.CharField(max_length=255, blank=True, null=True, db_index=True)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="approved")
+    failure_reason = models.TextField(blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    completed_at = models.DateTimeField(blank=True, null=True)
+
+    class Meta:
+        indexes = [
+            models.Index(fields=["payment", "status"]),
+            models.Index(fields=["provider", "status"]),
+        ]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["provider", "provider_reference"],
+                condition=models.Q(provider_reference__isnull=False) & ~models.Q(provider_reference=""),
+                name="uniq_refund_provider_reference",
+            ),
+        ]
+
+    def __str__(self):
+        return f"Refund {self.pk} - {self.amount} {self.currency} ({self.status})"
+
+
 # Payment transaction ledger
 class Transaction(models.Model):
     TRANSACTION_TYPES = (
