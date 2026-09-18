@@ -119,7 +119,7 @@ import OrganicPage from "./PublicUiForAll/PublicUi/Customer/DesktopView/Main/Tre
 import PayoutSuccess from "./cmponents/VendorPayoutReport/vendorPayouts/Payments/PayoutSuccess";
 import AuthSuccess from "./cmponents/Auth/AdminLogin/Auth-Success-Check";
 import ResetPassword from "./cmponents/Auth/AdminLogin/ResetLink";
-import ForgotPassword from "./cmponents/Auth/AdminLogin/RecorverPasword";
+import ForgotPassword from "./cmponents/Auth/AdminLogin/RecoverPassword";
 import SalesPage from "./cmponents/Admin/AdminAccounts/Reports/SalesStatsPage";
 import RevenueGrowthCard from "./cmponents/AdminPages/Notifications/Transactions/AdminTransactionGrowthTrack";
 import VendorSuccessPage from "./cmponents/VENDORPAGE/VendorRegistration/VendorSuccessPage";
