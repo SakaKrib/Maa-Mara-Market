@@ -10,7 +10,9 @@ class SubCategorySerializer(serializers.ModelSerializer):
 
     def get_items(self, obj):
         # Fetch related items for this subcategory
-        items_qs = obj.items.all()
+        items_qs = getattr(obj, "prefetched_items", None)
+        if items_qs is None:
+            items_qs = obj.items.all()
         return ItemSerializer(items_qs, many=True).data    
 
 class CategorySerializerCat(serializers.ModelSerializer):
@@ -19,11 +21,6 @@ class CategorySerializerCat(serializers.ModelSerializer):
     class Meta:
         model = Category
         fields = ['id', 'name', 'subcategories']
-
-    def get_subcategories(self, obj):
-        # Use the prefetched subcategories
-        subcategories = getattr(obj, 'prefetched_subcategories', [])
-        return SubCategorySerializer(subcategories, many=True).data    
 
 class DepartmentSerializer(serializers.ModelSerializer):
     categories = CategorySerializerCat(many=True, read_only=True)
