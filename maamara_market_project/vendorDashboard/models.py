@@ -395,20 +395,56 @@ class SoldItem(models.Model):
 
     item = models.ForeignKey(Item, on_delete=models.CASCADE, related_name='sold_items')
     vendor = models.ForeignKey('vendorDashboard.Vendor', on_delete=models.CASCADE, related_name='sold_items')
+    color_variant = models.ForeignKey(
+        "ReactSerializers.ColorVariant",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="sold_items",
+    )
+    size_stock = models.ForeignKey(
+        "ReactSerializers.SizeStock",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="sold_items",
+    )
+    age_variant = models.ForeignKey(
+        "ReactSerializers.AgeVariant",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="sold_items",
+    )
     quantity = models.PositiveIntegerField()
     sale_price = models.DecimalField(max_digits=10, decimal_places=2, editable=False)
     total_price = models.DecimalField(max_digits=10, decimal_places=2, editable=False)
     date_sold = models.DateTimeField(auto_now_add=True)
 
+    def _stock_target(self):
+        if self.size_stock_id:
+            return self.size_stock
+        if self.age_variant_id:
+            return self.age_variant
+        return self.item
+
     def clean(self):
-        # Make sure there is enough stock before selling
-        if self.pk is None and (self.item.in_stock is None or self.quantity > self.item.in_stock):
-            raise ValidationError(f"Cannot sell {self.quantity} units; only {self.item.in_stock or 0} in stock.")
+        if self.pk is not None:
+            return
+
+        stock_target = self._stock_target()
+        available = getattr(stock_target, "quantity_in_stock", None)
+        if available is None:
+            available = getattr(self.item, "in_stock", 0) or 0
+
+        if self.quantity > available:
+            raise ValidationError(
+                f"Cannot sell {self.quantity} units; only {available} in stock."
+            )
 
     def save(self, *args, **kwargs):
-        self.clean()  # validate stock availability
+        self.clean()
 
-        # Use discount price if available and lower than regular price
         if self.item.discount_price and self.item.discount_price < self.item.price:
             self.sale_price = self.item.discount_price
         else:
@@ -418,11 +454,32 @@ class SoldItem(models.Model):
 
         with transaction.atomic():
             if self.pk is None:
-                # Deduct stock on new sale
-                self.item.in_stock = (self.item.in_stock or 0) - self.quantity
-                if self.item.in_stock < 0:
-                    raise ValidationError("Not enough stock available after deduction.")
-                self.item.save(update_fields=['in_stock'])
+                if self.size_stock_id:
+                    self.size_stock.quantity_in_stock -= self.quantity
+                    self.size_stock.save(update_fields=["quantity_in_stock"])
+                elif self.age_variant_id:
+                    self.age_variant.quantity_in_stock -= self.quantity
+                    self.age_variant.save(update_fields=["quantity_in_stock"])
+                elif self.color_variant_id:
+                    remaining = (
+                        self.color_variant.sizes.aggregate(total=models.Sum("quantity_in_stock"))["total"]
+                        or 0
+                    )
+                    if self.quantity > remaining:
+                        raise ValidationError("Not enough variant stock available.")
+                    remaining_to_deduct = self.quantity
+                    for size in self.color_variant.sizes.select_for_update().order_by("id"):
+                        if remaining_to_deduct <= 0:
+                            break
+                        deduction = min(size.quantity_in_stock, remaining_to_deduct)
+                        size.quantity_in_stock -= deduction
+                        size.save(update_fields=["quantity_in_stock"])
+                        remaining_to_deduct -= deduction
+                else:
+                    self.item.in_stock = (self.item.in_stock or 0) - self.quantity
+                    if self.item.in_stock < 0:
+                        raise ValidationError("Not enough stock available after deduction.")
+                    self.item.save(update_fields=["in_stock"])
 
             super(SoldItem, self).save(*args, **kwargs)
 
