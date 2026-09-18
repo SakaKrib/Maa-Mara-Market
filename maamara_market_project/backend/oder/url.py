@@ -59,3 +59,4 @@ urlpatterns = [
     #mpesa payment gateways (B2C)
     path("api/mpesa/stk-push/", stk_push, name="mpesa-stk-push"),
     path("api/mpesa/stk-callback/", stk_callback, name="mpesa-stk-callback"),
+]
