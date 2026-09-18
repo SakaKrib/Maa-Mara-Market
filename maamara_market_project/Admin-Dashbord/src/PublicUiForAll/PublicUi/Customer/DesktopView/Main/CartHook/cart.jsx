@@ -20,8 +20,7 @@ export const CartProvider = ({ children }) => {
         setOrder(null);
       }
     } catch (err) {
-      console.error("Cart fetch error:", err);
-      setError(err);
+      setError("Unable to load your cart. Please try again.");
     } finally {
       setLoading(false);
     }
