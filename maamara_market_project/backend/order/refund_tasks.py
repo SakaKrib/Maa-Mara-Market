@@ -3,7 +3,11 @@ import logging
 from celery import shared_task
 
 from .models import Refund
-from .services.refunds import RefundProcessingError, process_paypal_refund
+from .services.refunds import (
+    RefundProcessingError,
+    process_mpesa_refund,
+    process_paypal_refund,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -11,11 +15,17 @@ logger = logging.getLogger(__name__)
 @shared_task(bind=True, max_retries=5)
 def process_refund_task(self, refund_id):
     try:
-        refund = process_paypal_refund(refund_id)
+        refund = Refund.objects.get(pk=refund_id)
+        if refund.provider == "PayPal":
+            refund = process_paypal_refund(refund_id)
+        elif refund.provider == "Mpesa":
+            refund = process_mpesa_refund(refund_id)
+        else:
+            raise RefundProcessingError("This refund provider is not implemented.")
     except RefundProcessingError:
         refund = Refund.objects.get(pk=refund_id)
         if refund.status == "failed":
-            logger.warning("Refund failed permanently for refund_id=%s", refund_id)
+            logger.warning("Refund failed for refund_id=%s", refund_id)
             return {"refund_id": refund_id, "status": "failed"}
         raise self.retry(
             countdown=min(300, 30 * (2 ** self.request.retries)),
