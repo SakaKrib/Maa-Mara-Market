@@ -12,14 +12,8 @@ def _catalog_queryset():
         Item.objects.filter(available=True, in_stock__gt=0)
         .select_related("section", "department", "category", "subcategory", "brand")
         .prefetch_related("variants", "reviews")
-        .annotate(
-            sales_count=Sum(
-                "solditem__quantity",
-                filter=Q(solditem__order_item__order__status="completed"),
-            )
-        )
+        .annotate(sales_count=Sum("sold_items__quantity"))
     )
-
 
 def _serialize_items(items, request):
     data = ProductSerializer(items, many=True, context={"request": request}).data
@@ -42,7 +36,10 @@ def discovery_feed(request):
     The ranking deliberately lives on the server so every client sees the
     same products and the browser cannot manufacture popularity numbers.
     """
-    limit = min(max(int(request.query_params.get("limit", 8)), 1), 24)
+    try:
+        limit = min(max(int(request.query_params.get("limit", 8)), 1), 24)
+    except (TypeError, ValueError):
+        limit = 8
     base = _catalog_queryset()
 
     popular = base.order_by(
@@ -91,7 +88,10 @@ def multi_collections(request):
         .order_by("name")
     )
 
-    limit = min(max(int(request.query_params.get("items", 6)), 1), 12)
+    try:
+        limit = min(max(int(request.query_params.get("items", 6)), 1), 12)
+    except (TypeError, ValueError):
+        limit = 6
     collections = []
 
     for department in departments:
