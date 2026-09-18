@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { Heart, MapPin, ShoppingBag, UserRound, Menu, Search, Sparkles } from "lucide-react";
 import "../../../../PublicUi/maamara.css";
 import SearchBar from "../../../Navigations/Search/Search";
 import NavIcons from "../../../Navigations/Search/NavIcons/NavIcon";
@@ -45,26 +46,20 @@ const Header = () => {
       <div className="mm-main-header">
         <div className="mm-container mm-main-header-inner">
           <button type="button" className="mm-mobile-menu-trigger desktop-hide" aria-label="Open menu" aria-expanded={mobileMenuOpen} onClick={() => setMobileMenuOpen(true)}>
-            <span aria-hidden="true">☰</span>
+            <Menu size={21} strokeWidth={1.8} aria-hidden="true" />
           </button>
 
-           <div className="w-full flex flex-row gap-4 ">
+           <div className="w-full flex flex-row items-center gap-3 ">
             <img
             src={Maamara}
             alt="maamara-logo"
             className="w-[50px] h-[50px] rounded-full ring p-1 ring-1 ring-green-500 xxs:-mt-20 xxs:relative xxs:-top-10 lg:mt-0 lg:top-0 z-[10]"
           />
 
-          <div className="logo xxs:-mt-20 xxs:relative xxs:-top-10 lg:mt-0 lg:top-0 mm-brand ">
-            <a href="/">
-              Maa{" "}
-              <span className="it-name">
-                Mara
-              </span>{" "}
-              <span className="mkrt">
-                Market
-              </span>
-            </a>
+          <div className="mm-brand xxs:-mt-20 xxs:relative xxs:-top-10 lg:mt-0 lg:top-0">
+            <Link to="/" className="font-[Poppins] text-[1.35rem] font-medium tracking-[-0.02em] text-[#222] no-underline whitespace-nowrap">
+              Maa <strong className="font-extrabold">Mara</strong> <span className="font-medium text-[#6f6a63]">Market</span>
+            </Link>
           </div>
           </div>
 
@@ -82,10 +77,12 @@ const Header = () => {
       <div className="mm-desktop-nav">
         <div className="mm-container mm-desktop-nav-inner">
           <nav className="mm-primary-links" aria-label="Main navigation">
-            <Link to="/">Home</Link>
-            <Link to="/list">Shop</Link>
-            <Link to="/blogs">Journal</Link>
-            <Link to="/organic">Organic</Link>
+            <Link to="/" className="flex items-center gap-1.5"><Search size={15} />Home</Link>
+            <Link to="/list" className="flex items-center gap-1.5"><ShoppingBag size={15} />Shop</Link>
+            <Link to="/blogs" className="flex items-center gap-1.5"><Heart size={15} />Journal</Link>
+            <Link to="/organic" className="flex items-center gap-1.5"><Sparkles size={15} />Organic</Link>
+            <Link to="/user-account" className="flex items-center gap-1.5"><UserRound size={15} />Account</Link>
+            <span className="flex items-center gap-1.5 text-[#6f6a63]"><MapPin size={15} />Kenya</span>
           </nav>
         </div>
       </div>
