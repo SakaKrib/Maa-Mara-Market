@@ -48,12 +48,14 @@ const Header = () => {
             <span aria-hidden="true">☰</span>
           </button>
 
-          <Link to="/" className="mm-brand" aria-label="Maa Mara Market home">
-            <img src={Maamara} alt="" className="mm-brand-logo" />
-            <span className="mm-brand-wordmark">
-              Maa <strong>Mara</strong> <span>Market</span>
-            </span>
-          </Link>
+          <div className="mm-brand logo">
+            <Link to="/" aria-label="Maa Mara Market home">
+              <img src={Maamara} alt="" className="mm-brand-logo" />
+              <span className="mm-brand-wordmark">
+                Maa <strong>Mara</strong> <span>Market</span>
+              </span>
+            </Link>
+          </div>
 
           <div className="mm-header-search">
             <SearchBar />
