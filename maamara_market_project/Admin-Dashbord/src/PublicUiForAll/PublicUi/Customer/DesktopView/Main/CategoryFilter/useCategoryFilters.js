@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import api from "../../../../../Services/Api";
 import { baseUrl } from "../../../../../cmponents/Constant/Constant";
 
@@ -8,11 +9,15 @@ const endpoint = (path) => {
 };
 
 const useCategoryFilters = () => {
+  const [searchParams] = useSearchParams();
+  const categoryFromUrl = Number(searchParams.get("category"));
+  const initialCategories = Number.isFinite(categoryFromUrl) && categoryFromUrl > 0 ? [categoryFromUrl] : [];
+
   const [filters, setFilters] = useState(null);
   const [selectedFilters, setSelectedFilters] = useState({
     sections: [],
     departments: [],
-    categories: [],
+    categories: initialCategories,
     subcategories: [],
     brands: [],
     color: "",
