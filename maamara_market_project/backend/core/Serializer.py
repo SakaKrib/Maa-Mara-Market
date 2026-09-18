@@ -166,7 +166,7 @@ class ReactionSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Reaction
-        fields = ['id', 'user', 'reaction_type', 'created_at']
+        fields = ['id', 'user', 'visitor_id', 'reaction_type', 'created_at']
 
 # Review Serializer
 class ReviewSerializer(serializers.ModelSerializer):
@@ -175,7 +175,7 @@ class ReviewSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Review
-        fields = ['id', 'user', 'rating', 'review_text', 'created_at', 'reactions']        
+        fields = ['id', 'user', 'visitor_id', 'rating', 'review_text', 'created_at', 'reactions']        
 
 class ItemSerializer(serializers.ModelSerializer):
     section = serializers.StringRelatedField()
