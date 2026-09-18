@@ -48,11 +48,11 @@ const Header = () => {
             <span aria-hidden="true">☰</span>
           </button>
 
-          <div className="mm-brand logo">
+          <div className="mm-brand">
             <Link to="/" aria-label="Maa Mara Market home">
               <img src={Maamara} alt="" className="mm-brand-logo" />
-              <span className="mm-brand-wordmark">
-                Maa <strong>Mara</strong> <span>Market</span>
+              <span className="font-[Poppins] text-[1.75rem] font-extrabold tracking-[-0.02em] text-[#222] whitespace-nowrap">
+                Maa <strong className="font-extrabold text-[#222]">Mara</strong> <span className="font-medium text-[#6f6a63]">Market</span>
               </span>
             </Link>
           </div>
