@@ -61,24 +61,32 @@ const Header = () => {
             <Menu size={21} strokeWidth={1.8} aria-hidden="true" />
           </button>
 
-           <div className="w-full flex flex-row items-center gap-3 ">
-            <img
-            src={Maamara}
-            alt="maamara-logo"
-            className="w-[50px] h-[50px] rounded-full ring p-1 ring-1 ring-green-500 xxs:-mt-20 xxs:relative xxs:-top-10 lg:mt-0 lg:top-0 z-[10]"
-          />
+            <div className="w-full flex flex-row gap-4 items-center">
+              <img
+              src={Maamara}
+              alt="maamara-logo"
+              className="w-[50px] h-[50px] rounded-full ring p-1 ring-1 ring-green-500 xxs:-mt-20 xxs:relative xxs:-top-10 lg:mt-0 lg:top-0 z-[10]"
+            />
 
-          <div className="mm-brand xxs:-mt-20 xxs:relative xxs:-top-10 lg:mt-0 lg:top-0">
-            <Link to="/" className="font-[Poppins] text-[1.35rem] font-medium tracking-[-0.02em] text-[#222] no-underline whitespace-nowrap">
-              Maa <strong className="font-extrabold">Mara</strong> <span className="font-medium text-[#6f6a63]">Market</span>
-            </Link>
-          </div>
-          </div>
+            <div>
+              <div className="logo xxs:-mt-20 xxs:relative xxs:-top-10 lg:mt-0 lg:top-0 ">
+              <a href="/">
+                Maa{" "}
+                <span className="it-name">
+                  Mara
+                </span>{" "}
+                <span className="mkrt">
+                  Market
+                </span>
+              </a>
+            </div>
+               </div>
 
-
+                    
           <div className="mm-header-search">
             <SearchBar />
           </div>
+            </div>
 
           <div className="mm-header-actions">
             <NavIcons />
