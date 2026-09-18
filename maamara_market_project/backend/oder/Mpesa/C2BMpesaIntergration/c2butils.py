@@ -201,8 +201,18 @@ def stk_callback(request):
                 .first()
             )
             if not payment:
-                # A repeated callback after the first successful callback has
-                # already replaced the checkout ID with the receipt number.
+                # A completed/replayed callback may have replaced the payment
+                # reference with the final receipt number. Recover it through
+                # the immutable provider account reference.
+                transaction_record = (
+                    Transaction.objects.select_related("payment")
+                    .filter(account_reference=checkout_request_id, payment__isnull=False)
+                    .order_by("-id")
+                    .first()
+                )
+                payment = transaction_record.payment if transaction_record else None
+
+            if not payment:
                 logger.info("Ignoring unknown/replayed STK callback.")
                 return Response({"ResultCode": 0, "ResultDesc": "Accepted"})
 
