@@ -428,17 +428,38 @@ def approve_return_request_api(request, return_id):
 
                 payment = order.payment
                 provider = payment.payment_method
-                if provider not in {"PayPal", "Mpesa", "card"}:
+                if provider not in {"PayPal", "Mpesa"}:
                     return Response({
                         "success": False,
-                        "error": "The payment provider is not supported for refunds.",
+                        "error": "Automatic refunds are currently supported only for PayPal and M-Pesa payments.",
                     }, status=status.HTTP_409_CONFLICT)
+
+                # Vendor adjustments are recorded in KES. PayPal settles in USD,
+                # so the refund ledger must store the provider-currency amount.
+                refund_amount = adjustment.amount
+                refund_currency = "KES"
+                if provider == "PayPal":
+                    if not payment.provider_amount or payment.amount <= Decimal("0.00"):
+                        return Response({
+                            "success": False,
+                            "error": "The PayPal settlement amount is unavailable for refund conversion.",
+                        }, status=status.HTTP_409_CONFLICT)
+                    refund_amount = (
+                        adjustment.amount * Decimal(str(payment.provider_amount)) / Decimal(str(payment.amount))
+                    ).quantize(Decimal("0.01"))
+                    if refund_amount <= Decimal("0.00"):
+                        return Response({
+                            "success": False,
+                            "error": "The calculated PayPal refund amount is invalid.",
+                        }, status=status.HTTP_409_CONFLICT)
+                    refund_currency = (payment.provider_currency or "USD").upper()
+
                 refund, created = Refund.objects.get_or_create(
                     return_request=return_request,
                     defaults={
                         "payment": payment,
-                        "amount": adjustment.amount,
-                        "currency": payment.provider_currency or "KES",
+                        "amount": refund_amount,
+                        "currency": refund_currency,
                         "provider": provider,
                         "status": "approved",
                     },
