@@ -266,7 +266,7 @@ def call_mpesa_b2c(vendor, amount, mpesa_config, payout=None):
         logger.warning("M-Pesa payout network request failed.")
         return {"success": False, "error": "M-Pesa payout request failed."}
     except Exception as e:
-        logger.error(f"❌ Unexpected Error: {e}")
+        logger.exception("Unexpected M-Pesa B2C payout error.")
         logger.exception("Unexpected M-Pesa B2C payout error.")
         return {"success": False, "error": "M-Pesa payout failed."}
 
@@ -322,10 +322,10 @@ def get_usd_to_kes_rate():
         rate = data.get('rates', {}).get('KES')
         if not rate or rate <= 0:
             raise Exception("Invalid or missing KES exchange rate")
-        logger.info(f"Exchange rate USD to KES fetched: {rate}")
+        logger.debug("USD/KES exchange rate fetched.")
         return rate
     except Exception as e:
-        logger.error(f"Failed to get exchange rate USD to KES: {e}")
+        logger.error("Failed to get USD/KES exchange rate.", exc_info=True)
         return None
     
 
@@ -363,8 +363,6 @@ def get_paypal_access_token():
 
     except requests.exceptions.RequestException as e:
         logger.error("Failed to get PayPal access token.", exc_info=True)
-        if resp is not None:
-
         raise
 
 
@@ -520,7 +518,7 @@ def get_kcb_access_token():
     client_id = settings.PAYMENT_GATEWAYS["kcb"]["client_id"]
     client_secret = settings.PAYMENT_GATEWAYS["kcb"]["client_secret"]
 
-    print("KCB OAuth Settings:", settings.PAYMENT_GATEWAYS["kcb"])
+    logger.debug("KCB OAuth request starting.")
 
     try:
         response = requests.post(
