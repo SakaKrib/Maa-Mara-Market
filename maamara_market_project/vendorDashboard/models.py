@@ -109,12 +109,6 @@ class Vendor(models.Model):
     is_active = models.BooleanField(default=True)
     date_updated = models.DateTimeField(auto_now=True)  # Fixed: use `auto_now=True` for updates
 
-    # get items belongin to the vendor
-    @property
-    def items(self):
-        return self.user.items.all()
-
-
     # Optional: method to get unified display value
     def get_payment_display_value(self):
         if self.payment_method == "BANK_TRANSFER":
@@ -141,23 +135,18 @@ class Vendor(models.Model):
 
     
     def save(self, *args, **kwargs):
-        # Ensure vendor_id corresponds to user.id (or another unique logic)
         if not self.vendor_id:
-            self.vendor_id = self.user.id  # Set vendor_id to user.id if not already set
-        super().save(*args, **kwargs)
+            self.vendor_id = self.user.id
 
-    
-
- 
-
-
-    def save(self, *args, **kwargs):
         if not self.vendor_code:
-            # Generate the next vendor code (e.g., max existing code + 1)
-            last_code = Vendor.objects.aggregate(models.Max('vendor_code'))['vendor_code__max']
-            # Explicitly convert last_code to an integer
-            last_code = int(last_code) if last_code else 0
-            self.vendor_code = last_code + 1
+            last_code = 0
+            for existing_code in Vendor.objects.exclude(pk=self.pk).values_list("vendor_code", flat=True):
+                try:
+                    last_code = max(last_code, int(existing_code))
+                except (TypeError, ValueError):
+                    continue
+            self.vendor_code = str(last_code + 1)
+
         super().save(*args, **kwargs)
 
 
