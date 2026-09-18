@@ -4,22 +4,20 @@ from decimal import Decimal
 
 from asgiref.sync import async_to_sync
 from channels.layers import get_channel_layer
-from django.conf import settings
 from django.db import models, transaction
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
-from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 
 from ReactSerializers.models import AgeVariant, ColorVariant, Item, Length, Shoe, SizeStock, Weight
-from core.models import ActivityLog, Notification
-from vendorDashboard.models import SoldItem, Vendor
+from .models import BillingAddress, Customer, Order, Payment
+from .models import BillingAddress, Customer, Order, Payment
 
 from .Payment import capture_paypal_order, create_paypal_order
 from .capture_order import get_paypal_access_token
-from .models import BillingAddress, Card, Customer, Order, Payment, Transaction
+from .models import BillingAddress, Customer, Order, Payment
 from .paymentserializer import CheckoutSerializer, OrderResponseSerializer
 from .views import IsAuthenticatedOrVisitor
 
