@@ -1,6 +1,6 @@
 from shop.models import BlogPost, Banner, Review
 from ReactSerializers.models import Item, Offer
-from oder.models import Order
+from order.models import Order
 from core.models import Notification, ActivityLog
 from vendorDashboard.models import VendorRequest, Vendor
 
