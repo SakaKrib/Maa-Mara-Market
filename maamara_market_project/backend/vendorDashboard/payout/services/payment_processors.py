@@ -629,7 +629,7 @@ def get_kcb_access_token():
     return token
 
 
-def call_bank_transfer(account_number, amount, max_retries=3, retry_delay=2):
+def call_bank_transfer(account_number, amount, payout=None, max_retries=3, retry_delay=2):
     """Submit a KCB bank transfer using configured gateway values.
 
     This function deliberately does not mark VendorPayout as paid. A successful
@@ -652,10 +652,23 @@ def call_bank_transfer(account_number, amount, max_retries=3, retry_delay=2):
 
     if debit_amount <= 0:
         return {"success": False, "error": "Transfer amount must be greater than zero."}
+    if payout is None:
+        return {"success": False, "error": "A payout record is required."}
 
     now = timezone.now()
     message_id = str(uuid.uuid4())
     transaction_reference = str(uuid.uuid4())
+
+    payout.kcb_transaction_reference = transaction_reference
+    payout.kcb_message_id = message_id
+    payout.kcb_provider_status = "SUBMITTED"
+    payout.kcb_result_description = "Submitted to KCB"
+    payout.save(update_fields=[
+        "kcb_transaction_reference",
+        "kcb_message_id",
+        "kcb_provider_status",
+        "kcb_result_description",
+    ])
 
     headers = {
         "Authorization": f"Bearer {access_token}",
@@ -766,7 +779,7 @@ def payment_processors(start_date, end_date, payment_method=None):
     if payment_method == "BANK_TRANSFER":
         for payout in payouts:
             try:
-                response = call_bank_transfer(payout.vendor.bank_account_number, payout.amount)
+                response = call_bank_transfer(payout.vendor.bank_account_number, payout.amount, payout=payout)
                 status = "Transferred to Bank" if response.get("success") else f"Failed: {response.get('error', 'Unknown error')}"
             except Exception as e:
                 status = f"Exception: {str(e)}"
@@ -940,7 +953,7 @@ def payment_processors(start_date, end_date, payment_method=None):
                 status = "Sent to PayPal" if response.get('success') else f"Failed: {response.get('error', 'Unknown error')}"
 
             elif method == "BANK_TRANSFER":
-                response = call_bank_transfer(vendor.bank_account_number, amount)
+                response = call_bank_transfer(vendor.bank_account_number, amount, payout=payout)
                 status = "Transferred to Bank" if response.get('success') else f"Failed: {response.get('error', 'Unknown error')}"
 
             else:
