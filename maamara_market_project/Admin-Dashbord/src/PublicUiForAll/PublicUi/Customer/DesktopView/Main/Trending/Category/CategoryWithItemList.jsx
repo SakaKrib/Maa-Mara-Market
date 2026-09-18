@@ -19,7 +19,7 @@ const CategoryWithItems = ({ onSelectItem }) => {
       })
       .catch(() => {
         if (!active) return;
-        setError("Failed to load categories");
+        setError("No Categories found.");
         setLoading(false);
       });
     return () => { active = false; };

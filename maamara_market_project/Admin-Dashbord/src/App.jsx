@@ -73,7 +73,6 @@ import CheckoutPage from "./PublicUiForAll/PublicUi/Customer/DesktopView/Main/Or
 
 // interactions
 import useMobileMenu from "./MobileInterractions";
-import OffCanvasMenu from "./PublicUiForAll/PublicUi/Customer/DesktopView/Header/Offcanvas";
 import SingleCategory from "./PublicUiForAll/PublicUi/Customer/DesktopView/Main/CategoryFilter";
 import ScrollTop from "./cmponents/Scroll/ScrollToTheTop";
 import CheckoutPaypalPayment from "./PublicUiForAll/PublicUi/Customer/DesktopView/Main/Orders/Payment/Paypal";
@@ -181,7 +180,7 @@ function AppContent() {
             }}
           >
             <ScrollTop/>
-            <OffCanvasMenu/>
+           
             
             <Routes>
               {/* Public Customer View */}

@@ -320,10 +320,6 @@ h4{
 }
 
 
-
-.logo a{
-    font-size: 1.75rem;position: relative;font-weight: var(--fw8);display: inline-flex;padding-left: 0 .75em;margin-right: 2em;
-}
 .header-nav .left{
     position: relative;top: 100px;
 }
