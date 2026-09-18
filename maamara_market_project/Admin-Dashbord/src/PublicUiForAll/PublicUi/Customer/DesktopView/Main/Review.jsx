@@ -37,7 +37,7 @@ const ReviewSection = ({ item, authToken }) => {
   const fetchReviews = async () => {
     try {
       setLoadingReviews(true);
-      const response = await api.get(`api/items/${item.id}/reviews/`);
+      const response = await api.get(`/api/items/${item.id}/reviews/`);
       const results = Array.isArray(response.data.results) ? response.data.results : [];
       setReviews(results);
 
