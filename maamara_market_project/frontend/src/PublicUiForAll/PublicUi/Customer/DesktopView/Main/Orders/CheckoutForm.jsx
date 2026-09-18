@@ -63,9 +63,9 @@ export default function CheckoutPage() {
     try {
       const responseData = await submitCheckout(data, order, selectedShipping);
       const method = String(responseData?.payment?.payment_method || "").toLowerCase();
-      if (method === "paypal") navigate("/paypal-make-payment", { state: responseData });
-      else if (method === "mpesa") navigate("/mpesa-make-payment", { state: responseData });
-      else navigate("/order-confirmation", { state: responseData });
+      if (method === "paypal") navigate("/paypal-make-payment", { state: { order: { order: responseData } } });
+      else if (method === "mpesa") navigate("/mpesa-make-payment", { state: { order: { order: responseData } } });
+      else navigate("/order-confirmation", { state: { order: { order: responseData } } });
     } catch {
       setShippingError("Checkout failed. Please review your details and try again.");
     }
