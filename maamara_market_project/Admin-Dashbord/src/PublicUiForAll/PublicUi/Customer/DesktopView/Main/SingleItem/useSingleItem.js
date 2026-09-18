@@ -14,10 +14,11 @@ const useSingleItem = () => {
 
   const fetchItem = useCallback(async () => {
     if (!itemId) return;
+    const controller = new AbortController();
     setLoading(true);
     setError(null);
     try {
-      const response = await api.get(`/api/items/${itemId}/`);
+      const response = await api.get(`/api/items/${itemId}/`, { signal: controller.signal });
       const data = response.data;
       setItem(data);
       const firstVariant = data?.variants?.[0] || null;
@@ -26,14 +27,17 @@ const useSingleItem = () => {
       setSelectedImage(null);
       setQuantity(1);
     } catch (err) {
+      if (err?.code === "ERR_CANCELED" || controller.signal.aborted) return;
       setError(err);
       setItem(null);
     } finally {
-      setLoading(false);
+      if (!controller.signal.aborted) setLoading(false);
     }
   }, [itemId]);
 
-  useEffect(() => { fetchItem(); }, [fetchItem]);
+  useEffect(() => {
+    fetchItem();
+  }, [fetchItem]);
 
   const selectColor = useCallback((color) => {
     const variant = item?.variants?.find(
