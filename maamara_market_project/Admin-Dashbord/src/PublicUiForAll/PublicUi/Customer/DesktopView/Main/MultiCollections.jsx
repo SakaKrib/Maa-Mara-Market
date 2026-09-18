@@ -1,48 +1,84 @@
-import React from "react";
-import img1 from "../../../../../assets/products/Screenshot_20250703_015944_Instagram.jpg";
-import img2 from "../../../../../assets/products/placematts.jpg";
-import img3 from "../../../../../assets/products/20241126_140823.jpg";
-import img4 from "../../../../../assets/products/set buskets.jpg";
-import img5 from "../../../../../assets/products/Screenshot_20250703_015956_Instagram.jpg";
-import img6 from "../../../../../assets/products/jani soap.jpg";
-import img7 from "../../../../../assets/products/afican hut.jpg";
-import img8 from "../../../../../assets/products/girrafe lampshade.jpg";
-import img9 from "../../../../../assets/products/Screenshot_20250703_020022_Instagram.jpg";
-import img10 from "../../../../../assets/products/Screenshot_20250703_020105_Instagram.jpg";
-import img11 from "../../../../../assets/products/kuba wall hanging.jpg";
-import img12 from "../../../../../assets/products/nativity.jpg";
-import img13 from "../../../../../assets/products/baobab.jpg";
+import React, { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
+import api from "../../../../../Services/Api";
+import { baseUrl } from "../../../../../cmponents/Constant/Constant";
 
-const collections = [
-  [img4, img4, img1, img5, img6, img4],
-  [img4, img7, img8, img2, img9, img10],
-  [img11, img12, img3, img2, img13, img1],
-];
+const resolveImage = (value) => {
+  if (!value) return "/placeholder.jpg";
+  return value.startsWith?.("http") ? value : `${baseUrl || ""}${value}`;
+};
 
-const Collection = ({ images }) => (
-  <div className="flex">
-    <h4>Collection</h4>
-    <div className="kitchen-dep">
-      <div className="product-1">
-        {images.slice(0, 2).map((src, index) => <a href="#" key={`a-${index}`}><img src={src} alt="" /></a>)}
-      </div>
-      <div className="product-3">
-        {images.slice(2, 4).map((src, index) => <a href="#" key={`b-${index}`}><img src={src} alt="" /></a>)}
-      </div>
-      <div className="extra-product">
-        {images.slice(4, 6).map((src, index) => <a href="#" key={`c-${index}`}><img src={src} alt="" /></a>)}
-      </div>
-    </div>
-  </div>
-);
+const MultiCollections = () => {
+  const [items, setItems] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-const MultiCollections = () => (
-  <section className="multi-collections container">
-    <div className="wrapper flexcol">
-      <div className="container-head"><h1>Multi Collections</h1></div>
-      {collections.map((images, index) => <Collection key={index} images={images} />)}
-    </div>
-  </section>
-);
+  useEffect(() => {
+    let active = true;
+
+    api.get("/api/items/")
+      .then((res) => {
+        if (!active) return;
+        const data = Array.isArray(res.data) ? res.data : res.data?.results || [];
+        setItems(data.filter((item) => item?.id && item?.image).slice(0, 18));
+      })
+      .catch(() => {
+        if (active) setItems([]);
+      })
+      .finally(() => {
+        if (active) setLoading(false);
+      });
+
+    return () => { active = false; };
+  }, []);
+
+  if (!loading && !items.length) return null;
+
+  const collections = Array.from({ length: 3 }, (_, index) =>
+    items.slice(index * 6, index * 6 + 6)
+  ).filter((collection) => collection.length);
+
+  return (
+    <section className="multi-collections mm-section">
+      <div className="mm-container">
+        <div className="mm-section-heading">
+          <div>
+            <h2>Explore Collections</h2>
+            <p>Discover products currently available on Maa Mara Market.</p>
+          </div>
+        </div>
+
+        {loading ? (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4" aria-label="Loading collections">
+            {[0, 1, 2].map((index) => (
+              <div key={index} className="mm-card h-64 animate-pulse bg-gray-100" />
+            ))}
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {collections.map((collection, collectionIndex) => (
+              <article key={collectionIndex} className="mm-card mm-card-interactive overflow-hidden p-2">
+                <div className="grid grid-cols-3 gap-1 aspect-[3/2]">
+                  {collection.map((item) => (
+                    <Link key={item.id} to={`/item/${item.id}`} className="block overflow-hidden rounded-md bg-gray-100">
+                      <img
+                        src={resolveImage(item.image)}
+                        alt={item.name || "Marketplace product"}
+                        className="h-full w-full object-cover transition-transform duration-300 hover:scale-105"
+                        loading="lazy"
+                      />
+                    </Link>
+                  ))}
+                </div>
+                <h3 className="px-2 pt-3 pb-2 text-base font-semibold">
+                  Collection {collectionIndex + 1}
+                </h3>
+              </article>
+            ))}
+          </div>
+        )}
+      </div>
+    </section>
+  );
+};
 
 export default MultiCollections;
