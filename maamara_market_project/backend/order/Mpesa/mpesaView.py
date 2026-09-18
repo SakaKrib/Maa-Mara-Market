@@ -23,10 +23,24 @@ def get_mpesa_access_token():
     return token
 
 
-def initiate_b2c_payment(phone_number: str, amount: int, remarks="Vendor payout"):
-    """Initiate a configured M-Pesa B2C payout."""
+def initiate_b2c_payment(phone_number: str, amount: int, remarks="Vendor payout", payout=None):
+    """Initiate a configured M-Pesa B2C payout.
+
+    When a VendorPayout is supplied, its locally generated originator
+    conversation id is persisted before the provider request so a very fast
+    callback can still be correlated safely.
+    """
     config = settings.PAYMENT_GATEWAYS["mpesa"]["b2c"]
     token = get_mpesa_access_token()
+
+    import uuid
+
+    originator_conversation_id = str(uuid.uuid4())
+
+    if payout is not None:
+        payout.mpesa_originator_conversation_id = originator_conversation_id
+        payout.mpesa_result_desc = "Submitted to M-Pesa"
+        payout.save(update_fields=["mpesa_originator_conversation_id", "mpesa_result_desc"])
 
     payload = {
         "InitiatorName": config["initiator_name"],
@@ -39,6 +53,7 @@ def initiate_b2c_payment(phone_number: str, amount: int, remarks="Vendor payout"
         "QueueTimeOutURL": config["timeout_url"],
         "ResultURL": config["result_url"],
         "Occasion": remarks[:100],
+        "OriginatorConversationID": originator_conversation_id,
     }
 
     response = requests.post(
@@ -48,4 +63,20 @@ def initiate_b2c_payment(phone_number: str, amount: int, remarks="Vendor payout"
         timeout=30,
     )
     response.raise_for_status()
-    return response.json()
+
+    data = response.json()
+
+    if payout is not None and data.get("ConversationID"):
+        payout.mpesa_conversation_id = data["ConversationID"]
+        if data.get("OriginatorConversationID"):
+            payout.mpesa_originator_conversation_id = data["OriginatorConversationID"]
+        payout.mpesa_result_desc = data.get("ResponseDescription", "")[:255]
+        payout.save(
+            update_fields=[
+                "mpesa_conversation_id",
+                "mpesa_originator_conversation_id",
+                "mpesa_result_desc",
+            ]
+        )
+
+    return data
