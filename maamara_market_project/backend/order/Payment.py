@@ -12,10 +12,23 @@ PAYPAL = settings.PAYMENT_GATEWAYS.get("paypal", {})
 if not PAYPAL:
     raise ValueError("⚠️ PayPal configuration missing in settings.PAYMENT_GATEWAYS")
 
-PAYPAL_AUTH_URL = PAYPAL.get("auth_url", "https://api.sandbox.paypal.com/v1/oauth2/token")
-PAYPAL_BASE_URL = PAYPAL.get("base_url", "https://api-m.sandbox.paypal.com")
+PAYPAL_AUTH_URL = PAYPAL.get("auth_url")
+PAYPAL_BASE_URL = PAYPAL.get("base_url")
 PAYPAL_CLIENT_ID = PAYPAL.get("client_id")
 PAYPAL_SECRET = PAYPAL.get("client_secret")
+
+
+def _validate_paypal_config():
+    missing = [
+        name for name, value in {
+            "auth_url": PAYPAL_AUTH_URL,
+            "base_url": PAYPAL_BASE_URL,
+            "client_id": PAYPAL_CLIENT_ID,
+            "client_secret": PAYPAL_SECRET,
+        }.items() if not value
+    ]
+    if missing:
+        raise ValueError("PayPal configuration is incomplete: " + ", ".join(missing))
 
 
 # ==============================
@@ -25,6 +38,7 @@ def get_paypal_access_token():
     """
     Retrieve an OAuth2 access token from PayPal.
     """
+    _validate_paypal_config()
     auth = (PAYPAL_CLIENT_ID, PAYPAL_SECRET)
     headers = {
         "Accept": "application/json",
@@ -55,6 +69,7 @@ def create_paypal_order(amount, currency="USD", *, reference_id=None):
     Create a new PayPal order.
     Returns the order JSON object containing the approval link.
     """
+    _validate_paypal_config()
     token = get_paypal_access_token()
     headers = {
         "Content-Type": "application/json",
