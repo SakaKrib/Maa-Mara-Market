@@ -787,22 +787,34 @@ def payment_processors(start_date, end_date, payment_method=None):
             return {"results": results}
 
         if response.get("success"):
+            submitted_refs = {
+                item.get("sender_item_id")
+                for item in bulk_paypal_items
+                if item.get("sender_item_id")
+            }
             for payout in payouts:
-                results.append({
-                    "vendor": payout.vendor.company_name,
-                    "reference": payout.reference,
-                    "status": "Sent to PayPal",
-                    "payment_method": "PAYPAL",
-                })
+                if payout.reference in submitted_refs:
+                    results.append({
+                        "vendor": payout.vendor.company_name,
+                        "reference": payout.reference,
+                        "status": "Sent to PayPal",
+                        "payment_method": "PAYPAL",
+                    })
         else:
-            error_msg = response.get('error', 'Unknown error')
+            error_msg = response.get("error", "Unknown error")
+            submitted_refs = {
+                item.get("sender_item_id")
+                for item in bulk_paypal_items
+                if item.get("sender_item_id")
+            }
             for payout in payouts:
-                results.append({
-                    "vendor": payout.vendor.company_name,
-                    "reference": payout.reference,
-                    "status": f"Failed: {error_msg}",
-                    "payment_method": "PAYPAL",
-                })
+                if payout.reference in submitted_refs:
+                    results.append({
+                        "vendor": payout.vendor.company_name,
+                        "reference": payout.reference,
+                        "status": f"Failed: {error_msg}",
+                        "payment_method": "PAYPAL",
+                    })
         return {"results": results}
 
     # If payment_method is None or unknown, process individually
