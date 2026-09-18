@@ -254,8 +254,11 @@ CELERY_BEAT_SCHEDULE = {
 # STATIC / MEDIA
 # =========================================================
 
-STATIC_URL = "static/"
-STATICFILES_DIRS = [BASE_DIR.parent / "frontend" / "dist"]
+STATIC_URL = "/static/"
+# The React app is served by Vite in development, not from Django's
+# STATICFILES_DIRS. Keeping the frontend dist directory out of this setting
+# prevents Django from warning about a directory that does not exist in the
+# backend container.
 STATIC_ROOT = BASE_DIR / "static/"
 
 MEDIA_URL = "/media/"
