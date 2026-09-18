@@ -36,6 +36,13 @@ class PaymentSerializer(serializers.ModelSerializer):
         return attrs
 
 
+class ShippingSelectionSerializer(serializers.Serializer):
+    provider = serializers.CharField()
+    service = serializers.CharField()
+    price = serializers.DecimalField(max_digits=12, decimal_places=2)
+    currency = serializers.CharField(max_length=3)
+
+
 class CheckoutSerializer(serializers.Serializer):
     first_name = serializers.CharField()
     last_name = serializers.CharField()
@@ -51,6 +58,7 @@ class CheckoutSerializer(serializers.Serializer):
 
     payment_method = serializers.ChoiceField(choices=["Mpesa", "PayPal"])
     items = serializers.ListField(child=serializers.DictField())  # list of cart items
+    shipping = ShippingSelectionSerializer(required=False, allow_null=True)
     visitor_id = serializers.CharField(required=False, allow_blank=True)
 
     # ✅ sanitize inputs
