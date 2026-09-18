@@ -75,4 +75,4 @@ class OrderResponseSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Order
-        fields = ["id", "status", "updated_total_price", "paypal_order_id", "billing_address", "payment"]
+        fields = ["id", "status", "updated_total_price", "paypal_order_id", "shipping_amount", "shipping_provider", "shipping_service", "shipping_provider_amount", "shipping_currency", "billing_address", "payment"]
