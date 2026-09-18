@@ -306,6 +306,16 @@ PAYMENT_GATEWAYS = {
             "short_code": env("MPESA_C2B_SHORT_CODE", default="600977"),
         },
 
+        "reversal": {
+            "initiator_name": env("MPESA_REVERSAL_INITIATOR_NAME", default=""),
+            "short_code": env("MPESA_REVERSAL_SHORT_CODE", default=""),
+            "initiator_password": env("MPESA_REVERSAL_INITIATOR_PASSWORD", default=""),
+            "certificate_path": env("MPESA_REVERSAL_CERTIFICATE_PATH", default=""),
+            "url": env("MPESA_REVERSAL_URL", default=""),
+            "result_url": env("MPESA_REVERSAL_RESULT_URL", default=""),
+            "timeout_url": env("MPESA_REVERSAL_TIMEOUT_URL", default=""),
+        },
+
         "stk_push": {
             "shortcode": env("MPESA_STK_SHORTCODE", default="174379"),
             "passkey": env("MPESA_STK_PASSKEY", default=""),
