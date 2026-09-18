@@ -17,6 +17,7 @@ from rest_framework_simplejwt.exceptions import InvalidToken, TokenError
 import uuid
 import bleach
 from django.db.models import Q
+from django.conf import settings
 from .models import Order
 
 User = get_user_model()
@@ -232,11 +233,21 @@ def return_request_handler_api(request, item_id):
                     url=f"/admin-returns/{return_request.id}/"
                 )
 
-            return Response({
+            response = Response({
                 "success": True,
                 "message": f"Refund prepared: {total_refund}. Awaiting admin approval.",
                 "refund_amount": float(total_refund)
             }, status=status.HTTP_200_OK)
+
+            response.set_cookie(
+                key="refund_amount",
+                value=str(total_refund),
+                httponly=True,
+                secure=not settings.DEBUG,
+                samesite="Lax",
+                max_age=7 * 24 * 60 * 60,
+            )
+            return response
 
         # ✅ EXCHANGE
         elif customer_pref == "exchange":
@@ -295,7 +306,8 @@ def return_request_handler_api(request, item_id):
             response.set_cookie(
                 key="exchange_credit",
                 value=str(float(total_exchange_credit)),
-                httponly=False,
+                httponly=True,
+                secure=not settings.DEBUG,
                 samesite="Lax",
                 max_age=7 * 24 * 60 * 60,  # 7 days
             )
