@@ -119,3 +119,7 @@ const AddToCartButton = ({
 // Default props for optional props
 AddToCartButton.defaultProps = {
   quantity: 1,
+  disabled: false,
+};
+
+export default AddToCartButton;
