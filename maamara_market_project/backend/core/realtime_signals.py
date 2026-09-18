@@ -5,7 +5,7 @@ from django.dispatch import receiver
 from .models import Notification, ActivityLog, CalendarEvent
 from .realtime import broadcast_event, model_snapshot
 from ReactSerializers.models import Item, ColorVariant, SizeStock, AgeVariant, Offer, PriceChangeRequest
-from order.models import Order, OrderItem, Payment, Customer
+from order.models import Order, OrderItem, Payment, Customer, Refund
 from vendorDashboard.models import Vendor, VendorPayout, VendorItemRequest
 
 
@@ -174,4 +174,19 @@ def price_change_request_save(sender, instance, created, **kwargs):
         sender, instance, "created" if created else "updated",
         vendor_ids=[vendor_id] if vendor_id else [],
         user_ids=[instance.requested_by_id] if instance.requested_by_id else [],
+    )
+@receiver(post_save, sender=Refund)
+def refund_save(sender, instance, created, **kwargs):
+    return_request = getattr(instance, "return_request", None)
+    user_id = getattr(return_request, "customer_id", None) if return_request else None
+    visitor_id = getattr(return_request, "visitor_id", None) if return_request else None
+    vendor_id = None
+    item = getattr(return_request, "item", None) if return_request else None
+    if item and getattr(item, "item", None):
+        vendor_id = getattr(item.item, "vendor_id", None)
+    emit(
+        sender, instance, "created" if created else "updated",
+        user_ids=[user_id] if user_id else [],
+        visitor_ids=[visitor_id] if visitor_id else [],
+        vendor_ids=[vendor_id] if vendor_id else [],
     )
