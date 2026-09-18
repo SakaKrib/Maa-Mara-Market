@@ -255,7 +255,7 @@ def checkout_view(request):
                 age_variant=age_variant,
                 selected_length=selected_length,
                 selected_weight=selected_weight,
-                shoe_size=shoe.shoe_size if shoe else None,
+                shoe_size=str(selected_shoe_size) if selected_shoe_size is not None else None,
             )
 
         total_amount += order_item.get_final_price()
