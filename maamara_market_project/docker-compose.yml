@@ -54,7 +54,7 @@ services:
 
   frontend:
     build:
-      context: ./frontend
+      context: ./Admin-Dashbord
     restart: unless-stopped
     environment:
       VITE_API_URL: ""
