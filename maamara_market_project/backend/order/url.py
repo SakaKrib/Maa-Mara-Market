@@ -13,6 +13,7 @@ from .paypalApis import checkout_view, get_customers
 from .returns import (
     approve_return_request_api,
     get_pending_returns_api,
+    process_refund_api,
     return_request_handler_api,
 )
 from .shipping import get_shipping_rates
@@ -46,6 +47,7 @@ urlpatterns = [
     #create order api
     path("api/checkout/", checkout_view, name="checkout"),
     path("api/paypal/capture/<str:order_id>/", capture_paypal_order, name="paypal-capture"),
+    path("api/refunds/<int:refund_id>/process/", process_refund_api, name="process-refund"),
     
 
     #mpesa payment gateways (B2C)
