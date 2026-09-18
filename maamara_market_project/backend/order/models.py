@@ -505,13 +505,24 @@ class Transaction(models.Model):
                 name="uniq_c2b_account_reference",
             ),
             models.UniqueConstraint(
-                fields=["paypal_transaction_id"],
+                fields=["payment", "paypal_transaction_id", "vendor"],
                 condition=(
                     models.Q(transaction_type="PayPal")
                     & models.Q(paypal_transaction_id__isnull=False)
                     & ~models.Q(paypal_transaction_id="")
+                    & models.Q(vendor__isnull=False)
                 ),
-                name="uniq_paypal_transaction_id",
+                name="uniq_paypal_transaction_vendor",
+            ),
+            models.UniqueConstraint(
+                fields=["payment", "paypal_transaction_id"],
+                condition=(
+                    models.Q(transaction_type="PayPal")
+                    & models.Q(paypal_transaction_id__isnull=False)
+                    & ~models.Q(paypal_transaction_id="")
+                    & models.Q(vendor__isnull=True)
+                ),
+                name="uniq_paypal_transaction_no_vendor",
             ),
         ]
 
