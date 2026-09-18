@@ -50,13 +50,11 @@ const useCategoryFilters = () => {
     return () => { active = false; };
   }, [selectedFilters]);
 
-  const toggleFilter = useCallback((group, id) => {
-    setSelectedFilters((prev) => ({
-      ...prev,
-      [group]: prev[group].includes(id)
-        ? prev[group].filter((value) => value !== id)
-        : [...prev[group], id],
-    }));
+  const toggleFilter = useCallback((group, value) => {
+    setSelectedFilters((prev) => {
+      if (group === "color" || group === "priceRange") return { ...prev, [group]: value };
+      return { ...prev, [group]: prev[group].includes(value) ? prev[group].filter((id) => id !== value) : [...prev[group], value] };
+    });
   }, []);
 
   return { filters, selectedFilters, setSelectedFilters, products, loadingFilters, loadingProducts, toggleFilter };
