@@ -147,7 +147,7 @@ def call_mpesa_b2c(vendor, amount, mpesa_config, payout=None):
         command_map = {
             "PHONE": "SalaryPayment",          # Send to M-Pesa number
             "TILL": "PromotionPayment",          # Send to M-Pesa till
-            "PAYBILL": "BusinessPayBill",        # Send to PayBill
+            "LIPA_NA_MPESA": "BusinessPayBill",        # Send to PayBill
         }
 
         command_id = command_map.get(vendor.mpesa_type)
@@ -239,7 +239,8 @@ def call_mpesa_b2c(vendor, amount, mpesa_config, payout=None):
 
             # FIX: Save the conversation details
             try:
-                if payout is None:\n                    raise ValueError("A payout record is required to attach M-Pesa callback identifiers.")
+                if payout is None:
+                    raise ValueError("A payout record is required to attach M-Pesa callback identifiers.")
                 payout.mpesa_conversation_id = data.get("ConversationID")
                 payout.mpesa_originator_conversation_id = data.get("OriginatorConversationID")
                 payout.mpesa_result_desc = data.get("ResponseDescription", "")
@@ -430,9 +431,9 @@ def call_paypal_payout_bulk(items, paypal_config):
         }
 
     except requests.RequestException as e:
-        logger.error(f"PayPal payout request failed: {e}")
+        logger.error("PayPal payout request failed.", exc_info=True)
         if response is not None:
-            logger.error(f"Response content: {response.text}")
+            pass
         return {"success": False, "error": str(e)}
 
 
@@ -540,12 +541,12 @@ def get_kcb_access_token():
         )
         response.raise_for_status()
     except requests.RequestException as e:
-        print(f"[ERROR] Failed to get access token: {e}")
+        logger.error("Failed to get KCB access token.", exc_info=True)
         return None
 
     token = response.json().get("access_token")
     if not token:
-        print("[ERROR] Access token not found in response")
+        logger.error("KCB access token not found in response.")
     return token
 
 
