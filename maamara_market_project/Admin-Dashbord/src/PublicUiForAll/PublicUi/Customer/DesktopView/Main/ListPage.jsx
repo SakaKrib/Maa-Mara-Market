@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useCallback } from "react";
 import Filter from "./Filter";
-import kuba from "../../../../../assets/products/kuba wall hanging.jpg";
 import ProductCard from "./Trending/TrendingProductCard";
 import api from "../../../../../Services/Api";
 
@@ -58,21 +57,6 @@ const ListPage = () => {
   return (
     <section className="mm-section marketplace-page">
       <div className="mm-container">
-        <div className="mm-card overflow-hidden flex flex-col-reverse md:flex-row items-center justify-between p-4 sm:p-6">
-          <div className="w-full md:w-1/2 md:pr-8">
-            <p className="text-sm font-semibold text-gray-500 mb-2">Featured savings</p>
-            <h2 className="text-2xl md:text-4xl font-semibold leading-tight text-gray-800 mb-4">
-              Grab up to 50% off on <br className="hidden sm:block" /> selected products
-            </h2>
-            <button className="bg-black text-white px-6 py-2 rounded-md hover:bg-gray-800 transition-all">
-              Buy now
-            </button>
-          </div>
-          <div className="w-full md:w-1/2 h-48 sm:h-64 flex items-center justify-center bg-gray-50">
-            <img src={kuba} alt="Campaign banner" className="object-contain h-full w-full" loading="lazy" />
-          </div>
-        </div>
-
         <div className="mt-8">
           <Filter onFilterChange={handleFilterChange} />
         </div>
