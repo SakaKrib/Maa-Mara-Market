@@ -49,7 +49,7 @@ INSTALLED_APPS = [
     # Local apps
     "shop",
     "core.apps.CoreConfig",
-    "oder",
+    "order.apps.OrderConfig",
     "vendorDashboard",
     "ReactSerializers",
 
@@ -245,7 +245,7 @@ CHANNEL_LAYERS = {
 
 CELERY_BEAT_SCHEDULE = {
     "cleanup_visitor_orders_daily": {
-        "task": "oder.task.cleanup_old_visitor_orders",
+        "task": "order.task.cleanup_old_visitor_orders",
         "schedule": crontab(hour=2, minute=0),
     },
 }
