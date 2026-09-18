@@ -4,9 +4,9 @@ from asgiref.sync import sync_to_async
 from django.forms.models import model_to_dict
 from datetime import datetime, date
 from channels.db import database_sync_to_async
-from oder.Serializers import OrderSerializer
+from order.Serializers import OrderSerializer
 from channels.generic.websocket import AsyncJsonWebsocketConsumer
-from oder.models import Order
+from order.models import Order
 from decimal import Decimal
 from core.models import Notification, ActivityLog
 import logging
