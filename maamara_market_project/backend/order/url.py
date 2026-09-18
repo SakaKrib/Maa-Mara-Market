@@ -48,6 +48,8 @@ urlpatterns = [
     path("api/checkout/", checkout_view, name="checkout"),
     path("api/paypal/capture/<str:order_id>/", capture_paypal_order, name="paypal-capture"),
     path("api/refunds/<int:refund_id>/process/", process_refund_api, name="process-refund"),
+    path("api/mpesa/refund/result/", mpesa_refund_result, name="mpesa-refund-result"),
+    path("api/mpesa/refund/timeout/", mpesa_refund_timeout, name="mpesa-refund-timeout"),
     
 
     #mpesa payment gateways (B2C)
