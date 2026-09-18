@@ -780,8 +780,7 @@ def update_cart_quantity(request, pk):
 
 
 
-# helper get transaction for vendor from the order.orderitem
-from django.db.models import Q
+# Helper: vendor transactions
 
 def get_vendor_transactions(vendor):
     return Transaction.objects.filter(
