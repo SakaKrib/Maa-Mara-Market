@@ -716,3 +716,53 @@ def get_pending_returns_api(request):
             "success": False,
             "error": str(e)
         }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+@api_view(["POST"])
+@permission_classes([IsAdminUser])
+@transaction.atomic
+def process_refund_api(request, refund_id):
+    """Admin-only retry/dispatch endpoint for a PayPal refund ledger entry."""
+    try:
+        refund = Refund.objects.select_for_update().get(pk=refund_id)
+
+        if refund.provider != "PayPal":
+            return Response(
+                {"success": False, "error": "This refund provider is not implemented."},
+                status=status.HTTP_409_CONFLICT,
+            )
+
+        if refund.status == "completed":
+            return Response(
+                {"success": True, "message": "Refund is already completed."},
+                status=status.HTTP_200_OK,
+            )
+
+        if refund.status == "failed":
+            refund.status = "approved"
+            refund.failure_reason = None
+            refund.save(update_fields=["status", "failure_reason", "updated_at"])
+
+        transaction.on_commit(
+            lambda refund_id=refund.id: process_refund_task.delay(refund_id)
+        )
+
+        return Response(
+            {
+                "success": True,
+                "message": "Refund processing has been queued.",
+                "refund_id": refund.id,
+                "status": refund.status,
+            },
+            status=status.HTTP_202_ACCEPTED,
+        )
+    except Refund.DoesNotExist:
+        return Response(
+            {"success": False, "error": "Refund record not found."},
+            status=status.HTTP_404_NOT_FOUND,
+        )
+    except Exception:
+        logger.exception("Refund dispatch failed")
+        return Response(
+            {"success": False, "error": "Unable to queue refund processing."},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
