@@ -41,8 +41,8 @@ from django.views.decorators.http import require_POST
 from collections import OrderedDict
 import calendar
 from core.mergeVisitortoUserData import merge_visitor_data_to_user
-from oder.Base import IsVendor
-from oder.views import IsAuthenticatedOrVisitor
+from order.Base import IsVendor
+from order.views import IsAuthenticatedOrVisitor
 
 import logging
 from django.http import JsonResponse
