@@ -196,6 +196,12 @@ class ItemSerializer(serializers.ModelSerializer):
     vendor = serializers.StringRelatedField(read_only=True)
     offer = OfferSerializer(read_only=True) 
 
+    size_only_icon = serializers.SerializerMethodField()
+    age_variants = AgeVariantSerializer(source="kids_sizes", many=True, read_only=True)
+    weight = WeightSerializer(read_only=True)
+    length = LengthSerializer(read_only=True)
+    shoe_inputs = ShoeSerializer(source="shoe_input", many=True, read_only=True)
+
     class Meta:
         model = Item
         fields = [
