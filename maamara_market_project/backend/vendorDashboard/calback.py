@@ -320,6 +320,25 @@ def paypal_payout_webhook(request):
     payout_item_id = resource.get("payout_item_id")
     transaction_status = str(resource.get("transaction_status") or "").upper()
     transaction_id = resource.get("transaction_id")
+
+    event_status_map = {
+        "SUCCEEDED": "SUCCESS",
+        "FAILED": "FAILED",
+        "RETURNED": "RETURNED",
+        "CANCELED": "RETURNED",
+        "HELD": "ONHOLD",
+        "BLOCKED": "BLOCKED",
+        "REFUNDED": "REFUNDED",
+        "UNCLAIMED": "UNCLAIMED",
+    }
+    event_suffix = event_type.rsplit(".", 1)[-1].upper()
+    expected_status = event_status_map.get(event_suffix)
+    if expected_status and transaction_status != expected_status:
+        logger.warning(
+            "PayPal payout webhook status did not match event type.",
+            extra={"event_id": event_id, "event_type": event_type},
+        )
+        return JsonResponse({"status": "accepted"}, status=200)
     payout_batch_id = resource.get("payout_batch_id")
 
     amount_data = resource.get("amount") or payout_item.get("amount") or {}
