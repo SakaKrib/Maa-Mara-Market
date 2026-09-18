@@ -42,9 +42,8 @@ def get_paypal_access_token():
         return token
 
     except requests.exceptions.RequestException as e:
-        logger.error(f"❌ Failed to get PayPal token: {e}")
-        if resp is not None:
-            logger.error(f"PayPal response: {resp.text}")
+        logger.error("Failed to obtain PayPal access token.")
+        logger.error("PayPal OAuth request failed.")
         raise
 
 
@@ -76,13 +75,12 @@ def create_paypal_order(amount, currency="USD"):
         resp = requests.post(url, headers=headers, json=data, timeout=10)
         resp.raise_for_status()
         order_data = resp.json()
-        logger.info(f"✅ PayPal order created successfully: {order_data.get('id')}")
+        logger.info("PayPal order created successfully.")
         return order_data
 
     except requests.exceptions.RequestException as e:
-        logger.error(f"❌ Failed to create PayPal order: {e}")
-        if resp is not None:
-            logger.error(f"PayPal response: {resp.text}")
+        logger.error("Failed to create PayPal order.")
+        logger.error("PayPal order creation request failed.")
         raise
 
 
@@ -106,11 +104,10 @@ def capture_paypal_order(order_id):
         resp = requests.post(url, headers=headers, timeout=10)
         resp.raise_for_status()
         capture_data = resp.json()
-        logger.info(f"✅ PayPal order captured successfully: {order_id}")
+        logger.info("PayPal order captured successfully.")
         return capture_data
 
     except requests.exceptions.RequestException as e:
-        logger.error(f"❌ Failed to capture PayPal order {order_id}: {e}")
-        if resp is not None:
-            logger.error(f"PayPal response: {resp.text}")
+        logger.error("Failed to capture PayPal order.")
+        logger.error("PayPal capture request failed.")
         raise
