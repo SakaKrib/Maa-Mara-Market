@@ -117,6 +117,7 @@ class Review(models.Model):
         related_name='reviews',
         on_delete=models.CASCADE
     )
+    visitor_id = models.CharField(max_length=255, null=True, blank=True, db_index=True)
     rating = models.IntegerField(
         default=1,
         validators=[MinValueValidator(1), MaxValueValidator(5)]
@@ -147,6 +148,7 @@ class Reaction(models.Model):
         related_name='reactions',
         on_delete=models.CASCADE
     )
+    visitor_id = models.CharField(max_length=255, null=True, blank=True, db_index=True)
     reaction_type = models.CharField(
         max_length=10,
         choices=[('like', 'Like'), ('dislike', 'Dislike'), ('laugh', 'Laugh'), ('angry', 'Angry')]
