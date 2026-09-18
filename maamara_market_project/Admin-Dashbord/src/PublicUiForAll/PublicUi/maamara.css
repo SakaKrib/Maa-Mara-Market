@@ -4016,7 +4016,18 @@ h1,h2,h3,h4{font-family:'regular','Poppins',Arial,sans-serif}
   }
 }
 
-/* Keep the existing Maa Mara logo visible on mobile without changing its design.\n   The legacy xxs positioning moves it upward out of the compact header. */\n@media(max-width:639px){\n  .mm-main-header img[alt="maamara-logo"],\n  .mm-main-header .logo{\n    position:relative!important;\n    top:0!important;\n    margin-top:0!important;\n  }\n}\n\n/* Mobile storefront navigation */
+/* Keep the existing Maa Mara logo visible on mobile without changing its design.
+   The legacy xxs positioning moves it upward out of the compact header. */
+@media(max-width:639px){
+  .mm-main-header img[alt="maamara-logo"],
+  .mm-main-header .logo{
+    position:relative!important;
+    top:0!important;
+    margin-top:0!important;
+  }
+}
+
+/* Mobile storefront navigation */
 .mm-mobile-drawer-backdrop{display:none}
 .mm-mobile-drawer{display:none}
 @media(max-width:639px){
