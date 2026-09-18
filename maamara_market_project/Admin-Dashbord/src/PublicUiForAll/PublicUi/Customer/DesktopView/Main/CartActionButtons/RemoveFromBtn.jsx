@@ -12,7 +12,7 @@ function getCookie(name) {
   return null;
 }
 
-const RemoveFromCartButton = ({ itemId, onRemoved }) => {
+const RemoveFromCartButton = ({ itemId, cartItemId, variantId, sizeId, ageVariantId, selectedLength, selectedWeight, shoeSize, onRemoved }) => {
   const [loading, setLoading] = useState(false);
   const [snackbar, setSnackbar] = useState({
     open: false,
@@ -35,6 +35,7 @@ const RemoveFromCartButton = ({ itemId, onRemoved }) => {
         headers: {
           "X-CSRFToken": csrfToken,
         },
+        data: { cart_item_id: cartItemId, selected_color: variantId, selected_size: sizeId, selected_age_group: ageVariantId, selected_length: selectedLength, selected_weight: selectedWeight, selected_shoe_size: shoeSize },
         withCredentials: true, // ensures cookies (session/auth) are sent
       });
       refreshCart();
