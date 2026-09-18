@@ -3,7 +3,6 @@ from http.cookies import SimpleCookie
 from channels.db import database_sync_to_async
 from django.contrib.auth.models import AnonymousUser
 from rest_framework_simplejwt.authentication import JWTAuthentication
-from rest_framework_simplejwt.exceptions import InvalidToken, TokenError
 from rest_framework_simplejwt.tokens import AccessToken
 
 jwt_auth = JWTAuthentication()
@@ -47,7 +46,7 @@ class JWTAuthMiddleware:
             try:
                 scope["user"] = await get_user_from_token(user_token)
                 return await self.inner(scope, receive, send)
-            except (InvalidToken, TokenError, Exception):
+            except Exception:
                 # Fall through to visitor authentication. Do not expose token
                 # parsing errors or token contents in logs/responses.
                 pass
@@ -59,7 +58,7 @@ class JWTAuthMiddleware:
                 if token.get("visitor") is True and token.get("visitor_id"):
                     scope["visitor_id"] = str(token["visitor_id"])
                     scope["is_visitor"] = True
-            except (InvalidToken, TokenError, Exception):
+            except Exception:
                 pass
 
         return await self.inner(scope, receive, send)
