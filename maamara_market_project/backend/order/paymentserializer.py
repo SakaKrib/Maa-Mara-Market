@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import BillingAddress, Payment, Order, OderItem
+from .models import BillingAddress, Payment, Order, OrderItem
 from ReactSerializers.models import Item
 import bleach
 
