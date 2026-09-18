@@ -448,7 +448,7 @@ def approve_return_request_api(request, return_id):
                     refund.failure_reason = None
                     refund.save(update_fields=["status", "failure_reason", "updated_at"])
 
-                if refund.provider == "PayPal" and refund.status == "approved":
+                if refund.provider in {"PayPal", "Mpesa"} and refund.status == "approved":
                     transaction.on_commit(lambda refund_id=refund.id: process_refund_task.delay(refund_id))
 
                 # --- 🔔 Notifications ---
@@ -725,7 +725,7 @@ def process_refund_api(request, refund_id):
     try:
         refund = Refund.objects.select_for_update().get(pk=refund_id)
 
-        if refund.provider != "PayPal":
+        if refund.provider not in {"PayPal", "Mpesa"}:
             return Response(
                 {"success": False, "error": "This refund provider is not implemented."},
                 status=status.HTTP_409_CONFLICT,
