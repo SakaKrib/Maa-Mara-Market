@@ -7,7 +7,7 @@ import FeaturedOffer from "./FeaturedOffer";
 import TrendingProductCard from "./TrendingProductCard";
 
 const TrendingProducts = () => {
-  const { items, loading, nextUrl, prevUrl, fetchItems, updateItemStock } = useTrendingProducts();
+  const { items, loading, nextUrl, prevUrl, fetchItems } = useTrendingProducts();
   const { wishlist, addToWishlist, removeFromWishlist } = useWishlistContext();
   const navigate = useNavigate();
 
