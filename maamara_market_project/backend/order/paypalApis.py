@@ -261,7 +261,7 @@ def checkout_view(request):
                 shoe_size=str(selected_shoe_size) if selected_shoe_size is not None else None,
             )
 
-        total_amount += (order_item.get_final_price() * quantity)
+        total_amount += order_item.get_final_price()
 
     # Remove stale lines without touching other variants of the same product.
     for existing in order.items.all():
