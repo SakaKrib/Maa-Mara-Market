@@ -322,7 +322,7 @@ def add_to_cart_api(request, pk):
     elif shoe:
         available_stock = len(shoe.shoe_size)  # simple approximation, can adjust
     else:
-        available_stock = SizeStock.objects.filter(item=item, variant__isnull=True).aggregate(
+        available_stock = SizeStock.objects.select_for_update().filter(item=item, variant__isnull=True).aggregate(
             total=models.Sum('quantity_in_stock')
         )['total'] or 0
 
@@ -385,7 +385,7 @@ def add_to_cart_api(request, pk):
     cart_item.save()
 
     # --- Create or get pending order ---
-    order, order_created = Order.objects.get_or_create(
+    order, order_created = Order.objects.select_for_update().get_or_create(
         user=user,
         visitor_id=visitor_id,
         status="pending",
@@ -470,7 +470,7 @@ def remove_from_cart_api(request, pk):
     # Sanitize incoming item ID
     # -----------------------------
     pk = sanitize(pk)
-    item = get_object_or_404(Item, pk=pk)
+    item = get_object_or_404(Item.objects.select_for_update(), pk=pk)
 
     # -----------------------------
     # Determine if request is from logged-in user or visitor
@@ -501,7 +501,7 @@ def remove_from_cart_api(request, pk):
     # -----------------------------
     # Find active order
     # -----------------------------
-    order_qs = Order.objects.filter(
+    order_qs = Order.objects.select_for_update().filter(
         user=user,
         visitor_id=visitor_id,
         status="pending"
@@ -711,8 +711,8 @@ def update_cart_quantity(request, pk):
         size_stock_obj = get_object_or_404(SizeStock.objects.select_for_update(), pk=selected_size)
         available_stock = size_stock_obj.quantity_in_stock
     elif selected_color:
-        variant_obj = get_object_or_404(ColorVariant, pk=selected_color)
-        available_stock = variant_obj.sizes.aggregate(total=models.Sum('quantity_in_stock'))['total'] or 0
+        variant_obj = get_object_or_404(ColorVariant.objects.select_for_update(), pk=selected_color)
+        available_stock = variant_obj.sizes.select_for_update().aggregate(total=models.Sum('quantity_in_stock'))['total'] or 0
     else:
         # Base item without variations
         available_stock = SizeStock.objects.filter(item=item, variant__isnull=True).aggregate(
