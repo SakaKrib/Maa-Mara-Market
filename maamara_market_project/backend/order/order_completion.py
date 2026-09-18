@@ -82,6 +82,11 @@ def complete_paid_order(order, payment, *, transaction_id=None):
     locked_order = order.__class__.objects.select_for_update().get(pk=order.pk)
     locked_payment = payment.__class__.objects.select_for_update().get(pk=payment.pk)
 
+    if locked_order.payment_id != locked_payment.id:
+        raise ValueError("Payment does not belong to the order.")
+    if locked_payment.amount is None or locked_payment.amount <= Decimal("0.00"):
+        raise ValueError("Paid order has an invalid payment amount.")
+
     # A completed order is already stock-finalized. Never run the
     # fulfillment loop again merely because a payment row is still pending.
     if locked_order.status == "completed":
@@ -115,6 +120,9 @@ def complete_paid_order(order, payment, *, transaction_id=None):
             "age_variant",
         )
     )
+
+    if not order_items:
+        raise ValueError("Cannot complete an order without order items.")
 
     # Validate/deduct stock and create sale records in the same transaction.
     for order_item in order_items:
