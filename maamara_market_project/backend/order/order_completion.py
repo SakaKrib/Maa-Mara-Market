@@ -116,6 +116,9 @@ def complete_paid_order(order, payment, *, transaction_id=None):
             color_variant=order_item.color_variant,
             size_stock=order_item.size_stock,
             age_variant=order_item.age_variant,
+            selected_weight=order_item.selected_weight,
+            selected_length=order_item.selected_length,
+            shoe_size=order_item.shoe_size,
             quantity=order_item.quantity,
             sale_price=(
                 order_item.price_at_purchase
