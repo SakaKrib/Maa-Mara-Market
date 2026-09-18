@@ -12,12 +12,7 @@ from .orderStat import (
 from .paypalApis import (
     admin_transactions,
     checkout_view,
-    dashboard_stats,
     get_customers,
-    revenue_area_chart,
-    revenue_growth,
-    transaction_totals,
-    vendor_sales,
 )
 from .returns import (
     approve_return_request_api,
@@ -31,6 +26,11 @@ from .views import (
     remove_from_cart_api,
     update_cart_quantity,
     vendor_transactions,
+    dashboard_stats,
+    revenue_area_chart,
+    revenue_growth,
+    transaction_totals,
+    vendor_sales,
 )
 
 
@@ -58,48 +58,3 @@ urlpatterns = [
     #mpesa payment gateways (B2C)
     path("api/mpesa/stk-push/", stk_push, name="mpesa-stk-push"),
     path("api/mpesa/stk-callback/", stk_callback, name="mpesa-stk-callback"),
-
-    # fetch transactions
-    path("api/vendor/transactions/", vendor_transactions, name="vendor-transactions"),
-    # transaction totals
-    path("api/transactions/totals/",transaction_totals, name="transaction-totals"),
-
-    path("api/paypal/capture-order/<str:order_id>/", capture_paypal_order, name="capture_paypal_order"),
-
-    # handle returns
-    # POST (and optionally GET if you add that later)
-    path('api/returns-request/<int:item_id>/', return_request_handler_api, name='request-return'),
-    # path('api/returns/<int:return_id>/handle-customer-preference/', handle_customer_preference_api),
-     # 🛠 Admin approval or rejection
-    path(
-        "api/returns/<int:return_id>/approve/",
-        approve_return_request_api,
-        name="approve-return-request-api"
-    ),
-    path("api/returns/pending/", get_pending_returns_api, name="get-pending-returns-api"),
-    
-    # order stats
-    path("api/pending-orders-stats/", vendor_pending_orders, name="vendor-pending-orders"),
-    
-    # pending oders
-    path("api/vendor-pending-order/items/", vendor_pending_order_items, name="vendor-pending-order-items"),
-
-    # complete orders
-    path("api/vendor-complete-order/items/", vendor_completed_order_items, name="vendor-completed-order-items"),
-
-    # customer api
-    path('api/customers/', get_customers, name='get_customers'),
-
-    # Sales dshboard stats
-    path('api/sales/stats/', dashboard_stats),
-    # stats page for admin
-    path("api/admin/dashboard/vendor-sales/", vendor_sales),
-    # monthly revenue ststistics
-    path("api/revenue-growth/", revenue_growth, name="revenue-growth"),
-    path("api/revenue-analytics/", revenue_area_chart, name="revenue-analytics"),
-    
-    # api for 
-    path("api/admin-transactions/", admin_transactions),
-
-
-]
