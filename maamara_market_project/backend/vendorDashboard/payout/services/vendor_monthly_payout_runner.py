@@ -102,7 +102,7 @@ def process_payouts_by_group(request):
             "results": {
                 payment_method: payout_results.get("results", [])
             },
-            "status": "completed",
+            "status": "submitted",
             "period": f"{start_date} → {end_date}"
         }
     else:
@@ -157,7 +157,7 @@ def pay_single_vendor_payout(request, reference):
                 "message": (
                     "Payout submitted to PayPal; awaiting provider confirmation."
                     if method == "PAYPAL"
-                    else f("Payout submitted to M-Pesa; awaiting provider confirmation." if method == "MOBILE_MONEY" else "Bank payout submitted; awaiting bank confirmation.")
+                    else ("Payout submitted to M-Pesa; awaiting provider confirmation." if method == "MOBILE_MONEY" else "Bank payout submitted; awaiting bank confirmation.")
                 ),
                 "reference": payout.reference,
                 "amount": float(amount),
