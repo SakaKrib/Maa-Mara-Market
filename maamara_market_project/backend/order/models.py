@@ -237,9 +237,14 @@ class Order(models.Model):
     class Meta:
         constraints = [
             models.UniqueConstraint(
-                fields=["user", "visitor_id"],
-                condition=models.Q(status="pending"),
-                name="uniq_pending_order_owner",
+                fields=["user"],
+                condition=models.Q(status="pending", user__isnull=False),
+                name="uniq_pending_order_user",
+            ),
+            models.UniqueConstraint(
+                fields=["visitor_id"],
+                condition=models.Q(status="pending", visitor_id__isnull=False),
+                name="uniq_pending_order_visitor",
             ),
         ]
         indexes = [
