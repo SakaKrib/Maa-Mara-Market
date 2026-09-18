@@ -27,6 +27,7 @@ from rest_framework_simplejwt.exceptions import InvalidToken, TokenError
 from core.models import Profile
 from vendorDashboard.models import Vendor
 from core.mergeVisitortoUserData import merge_visitor_data_to_user
+from .registration import register, verify_otp_register_otp, resend_otp_register_otp
 
 
 
