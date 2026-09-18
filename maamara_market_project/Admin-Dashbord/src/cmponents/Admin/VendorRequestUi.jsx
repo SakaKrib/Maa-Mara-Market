@@ -6,7 +6,7 @@ import Header from "../../Header/Header";
 import VendorItemCreateRequests from "../VENDORPAGE/Products/VendorItems/AdminApproveDenyItemCreate";
 import AdminPriceApproval from "./ApproveItemPrice";
 import AdminBlogApprovalPage from "./ApproveBlogs/ApproveBlogs";
-import AdminBannerApprovalPage from "./ApproveBanner/aprroveBanner";
+import AdminBannerApprovalPage from "./ApproveBanner/ApproveBanner";
 
 const UiForVendorRequest = () => {
   const theme = useTheme();
