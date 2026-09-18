@@ -3,7 +3,7 @@ import { useCartContext } from "./cart";
 import { useCartActions } from "../CartActionButtons/UpdateQty";
 import RemoveFromCartButton from "../CartActionButtons/RemoveFromBtn";
 import { baseUrl } from "../../../../../../cmponents/Constant/Constant";
-import { useNavigate, useNavigation } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 
 const CartPage = () => {
   const { order, loading, refreshCart } = useCartContext();
