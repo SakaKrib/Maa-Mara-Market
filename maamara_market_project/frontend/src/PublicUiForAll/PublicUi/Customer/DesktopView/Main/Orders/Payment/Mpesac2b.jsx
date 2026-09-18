@@ -20,8 +20,9 @@ export default function MpesaSTKPayment() {
 
   // Auto-set amount from cart
   useEffect(() => {
-    if (order?.order?.total) {
-      const total = Number(order.order.final_total);
+    const paymentAmount = Number(order?.order?.payment?.amount ?? 0);
+    if (paymentAmount > 0) {
+      const total = paymentAmount;
       setAmount(isNaN(total) ? 0 : total);
     }
   }, [order]);
