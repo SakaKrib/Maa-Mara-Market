@@ -16,7 +16,6 @@ from asgiref.sync import async_to_sync
 from oder.models import Payment
 from vendorDashboard.models import SoldItem
 from core.models import ActivityLog, Notification
-from oder.paypalApis import create_or_update_customer_from_order
 
 import uuid
 User = get_user_model()
