@@ -1,9 +1,10 @@
-from urllib.parse import parse_qs
 from http.cookies import SimpleCookie
 
 from channels.db import database_sync_to_async
-from rest_framework_simplejwt.authentication import JWTAuthentication
 from django.contrib.auth.models import AnonymousUser
+from rest_framework_simplejwt.authentication import JWTAuthentication
+from rest_framework_simplejwt.exceptions import InvalidToken, TokenError
+from rest_framework_simplejwt.tokens import AccessToken
 
 jwt_auth = JWTAuthentication()
 
@@ -14,55 +15,51 @@ def get_user_from_token(token):
     return jwt_auth.get_user(validated_token)
 
 
+def _cookie_value(headers, name):
+    cookie_header = headers.get(b"cookie")
+    if not cookie_header:
+        return None
+    cookie = SimpleCookie()
+    cookie.load(cookie_header.decode("latin-1"))
+    morsel = cookie.get(name)
+    return morsel.value if morsel else None
+
+
 class JWTAuthMiddleware:
+    """Authenticate WebSockets from HttpOnly cookies only.
+
+    User access tokens populate scope["user"]. Visitor access tokens populate
+    scope["visitor_id"] without attempting to create a Django user.
+    """
+
     def __init__(self, inner):
         self.inner = inner
 
     async def __call__(self, scope, receive, send):
+        scope["user"] = AnonymousUser()
+        scope["visitor_id"] = None
+        scope["is_visitor"] = False
+
         headers = dict(scope.get("headers", []))
-        token = None
+        user_token = _cookie_value(headers, "accessToken")
 
-        # -------------------------
-        # COOKIE AUTH (ROBUST PARSING)
-        # -------------------------
-        cookie_header = headers.get(b"cookie")
+        if user_token:
+            try:
+                scope["user"] = await get_user_from_token(user_token)
+                return await self.inner(scope, receive, send)
+            except (InvalidToken, TokenError, Exception):
+                # Fall through to visitor authentication. Do not expose token
+                # parsing errors or token contents in logs/responses.
+                pass
 
-        if cookie_header:
-            cookie = SimpleCookie()
-            cookie.load(cookie_header.decode())
-
-            # IMPORTANT: must match your Django cookie name EXACTLY
-            token = cookie.get("accessToken")
-            if token:
-                token = token.value
-
-        # -------------------------
-        # OPTIONAL QUERY PARAM FALLBACK
-        # (can remove if you want stricter security)
-        # -------------------------
-        if not token:
-            query_string = parse_qs(scope.get("query_string", b"").decode())
-            token = query_string.get("token", [None])[0]
-
-        # -------------------------
-        # NO TOKEN → SAFE FAIL (NO EXCEPTION)
-        # -------------------------
-        if not token:
-            print("❌ WS REJECT: No token provided")
-            scope["user"] = AnonymousUser()
-            return await self.inner(scope, receive, send)
-
-        # -------------------------
-        # VALIDATE TOKEN
-        # -------------------------
-        try:
-            user = await get_user_from_token(token)
-            scope["user"] = user
-            print("WS AUTH SUCCESS:", user)
-
-        except Exception as e:
-            print("❌ WS AUTH FAILED:", type(e).__name__, str(e))
-            scope["user"] = AnonymousUser()
-            return await self.inner(scope, receive, send)
+        visitor_token = _cookie_value(headers, "visitorAccessToken")
+        if visitor_token:
+            try:
+                token = AccessToken(visitor_token)
+                if token.get("visitor") is True and token.get("visitor_id"):
+                    scope["visitor_id"] = str(token["visitor_id"])
+                    scope["is_visitor"] = True
+            except (InvalidToken, TokenError, Exception):
+                pass
 
         return await self.inner(scope, receive, send)
