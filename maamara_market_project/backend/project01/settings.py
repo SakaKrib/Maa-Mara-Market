@@ -35,7 +35,7 @@ FRONTEND_URL = env("FRONTEND_URL")
 
 # The domains this Django site is allowed to serve. It is specified as a string
 # of comma-separated URLs in .env
-ALLOWED_HOSTS = env("ALLOWED_HOSTS").strip(",").split(",")
+ALLOWED_HOSTS = [host.strip() for host in env("ALLOWED_HOSTS", default="127.0.0.1,localhost").split(",") if host.strip()]
 
 # =========================================================
 # APPLICATIONS
@@ -54,6 +54,7 @@ INSTALLED_APPS = [
     "ReactSerializers",
 
     # Third-party apps
+    "corsheaders",
     "django_countries",
     "crispy_forms",
     "crispy_bootstrap4",
