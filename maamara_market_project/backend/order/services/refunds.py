@@ -386,6 +386,10 @@ def reconcile_mpesa_refund_callback(payload, *, timeout=False):
     except (TypeError, ValueError):
         result_code_int = None
 
+    if not conversation_id and not originator_id:
+        logger.warning("M-Pesa reversal callback missing correlation identifiers.")
+        return None
+
     with transaction.atomic():
         refund = (
             Refund.objects.select_for_update()
