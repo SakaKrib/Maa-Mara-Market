@@ -260,7 +260,7 @@ def capture_paypal_order(request, order_id):
             )
 
             vendor_ids = list(
-                locked_order.items.values_list("item__vendor", flat=True).distinct()
+                locked_order.order_items.values_list("item__vendor", flat=True).distinct()
             )
             for vendor_id in vendor_ids:
                 Transaction.objects.update_or_create(
