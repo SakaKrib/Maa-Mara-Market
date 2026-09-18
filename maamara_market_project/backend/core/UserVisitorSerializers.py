@@ -1,7 +1,7 @@
 from rest_framework import serializers
 from django.contrib.auth import get_user_model
 from .models import Profile, Wallet, Voucher, Referral
-from oder.models import  Order, OderItem, Transaction, Customer, Payment, BillingAddress
+from order.models import  Order, OrderItem, Transaction, Customer, Payment, BillingAddress
 from .Serializer import ItemSerializer
 
 User = get_user_model()
@@ -138,7 +138,7 @@ class OrderItemSerializer(serializers.ModelSerializer):
     total_price = serializers.SerializerMethodField()
 
     class Meta:
-        model = OderItem
+        model = OrderItem
         fields = [
             "id",
             "item",
