@@ -1,5 +1,7 @@
 from datetime import timedelta
 from decimal import Decimal
+import logging
+import uuid
 
 import bleach
 from django.contrib.auth import get_user_model
@@ -23,34 +25,28 @@ from .Serializers import TransactionSerializer
 from .models import OrderItem, Order, Transaction
 
 User = get_user_model()
+logger = logging.getLogger(__name__)
+
 
 class IsAuthenticatedOrVisitor(BasePermission):
+    """Allow an authenticated user or a visitor with a cookie-bound visitor token."""
+
     def has_permission(self, request, view):
-        # Check Django auth
         if request.user and request.user.is_authenticated:
             return True
-        
-        # Check visitor token
-        visitor_token = request.COOKIES.get("visitorAccessToken")
-        if visitor_token:
-            try:
-                validated = JWTAuthentication().get_validated_token(visitor_token)
-                if validated.get("visitor", False):
-                    return True
-            except (InvalidToken, TokenError):
-                pass
-        
-        # Optionally check user access token
-        access_token = request.COOKIES.get("accessToken")
-        if access_token:
-            try:
-                validated = JWTAuthentication().get_validated_token(access_token)
-                # Could verify user claims here if needed
-                return True
-            except (InvalidToken, TokenError):
-                pass
 
-        return False
+        visitor_id = request.COOKIES.get("visitorId")
+        visitor_token = request.COOKIES.get("visitorAccessToken")
+        if not visitor_id or not visitor_token:
+            return False
+
+        try:
+            validated = JWTAuthentication().get_validated_token(visitor_token)
+        except (InvalidToken, TokenError):
+            return False
+
+        token_visitor_id = str(validated.get("visitor_id", ""))
+        return bool(validated.get("visitor", False) and token_visitor_id == str(visitor_id))
     
 
 
@@ -82,16 +78,8 @@ def get_cart_view(request):
         if request.user and request.user.is_authenticated:
             user = request.user
         else:
-            # Always trust the cookie visitorId
+            # The permission class has already bound visitorId to visitorAccessToken.
             visitor_id = request.COOKIES.get("visitorId")
-
-            token = request.COOKIES.get("visitorAccessToken")
-            if token:
-                try:
-                    # We validate token, but DO NOT override visitor_id
-                    JWTAuthentication().get_validated_token(token)
-                except Exception:
-                    pass
 
             # If still no visitor ID → no cart exists
             if not visitor_id:
@@ -230,11 +218,12 @@ def get_cart_view(request):
             "items": items_data,
         })
 
-    except Exception as e:
+    except Exception:
+        logger.exception("Unexpected error while fetching cart")
         return Response({
             "success": False,
-            "message": sanitize(str(e)),
-        }, status=400)
+            "message": "Unable to load cart. Please try again.",
+        }, status=500)
 
 
 
@@ -409,6 +398,7 @@ def add_to_cart_api(request, pk):
     # --- Activity logs ---
     ActivityLog.objects.create(
         user=user,
+        visitor_id=visitor_id,
         actor_type=actor_type,
         action="item_added_to_cart",
         item=item,
@@ -418,6 +408,7 @@ def add_to_cart_api(request, pk):
 
     ActivityLog.objects.create(
         user=user,
+        visitor_id=visitor_id,
         actor_type='vendor',
         action="item_added_to_cart",
         item=item,
@@ -428,6 +419,7 @@ def add_to_cart_api(request, pk):
     for admin in User.objects.filter(is_staff=True):
         ActivityLog.objects.create(
             user=admin,
+            visitor_id=visitor_id,
             actor_type="admin",
             action="item_added_to_cart",
             item=item,
@@ -451,7 +443,7 @@ def add_to_cart_api(request, pk):
             "visitorId",
             visitor_id,
             httponly=True,
-            secure=False,  # Set True in production
+            secure=not settings.DEBUG,
             samesite="Lax",
             max_age=30*24*3600,  # 30 days
         )
