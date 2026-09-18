@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from "react";
 import { IonIcon } from "@ionic/react";
 import { chevronDownOutline, chevronForwardOutline } from "ionicons/icons";
+import { Baby, Dumbbell, Gem, Heart, Shirt, Sparkles, Users, X } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useCategories } from "./SectionHook";
 
@@ -24,6 +25,22 @@ const CategoryNavigation = () => {
     navigate(categoryId ? `/filter-category?category=${categoryId}` : "/filter-category");
   };
 
+  const quickLinks = [
+    { label: "Women", icon: Shirt, terms: ["women", "fashion"] },
+    { label: "Men", icon: Users, terms: ["men", "fashion"] },
+    { label: "Children", icon: Baby, terms: ["children", "kids"] },
+    { label: "Sports", icon: Dumbbell, terms: ["sport", "outdoor"] },
+    { label: "Unisex", icon: Sparkles, terms: ["unisex"] },
+  ];
+
+  const activateQuickLink = (terms) => {
+    const match = departments.find((department) =>
+      terms.some((term) => department.name?.toLowerCase().includes(term))
+    );
+    setActiveDepartment(match?.id || null);
+    setOpen(true);
+  };
+
   return (
     <div className="mm-category-nav">
       <div className="mm-container">
@@ -40,7 +57,13 @@ const CategoryNavigation = () => {
           </button>
 
           <nav className="mm-category-links" aria-label="Product categories">
-            {departments.slice(0, 7).map((department) => (
+            {quickLinks.map(({ label, icon: Icon, terms }) => (
+              <button type="button" key={label} onClick={() => activateQuickLink(terms)} className="mm-category-link">
+                <Icon size={16} strokeWidth={1.8} aria-hidden="true" />
+                <span>{label}</span>
+              </button>
+            ))}
+            {departments.slice(0, 2).map((department) => (
               <button
                 type="button"
                 key={department.id}
@@ -63,7 +86,7 @@ const CategoryNavigation = () => {
                 <strong>Shop by category</strong>
                 <span>Explore the marketplace by department.</span>
               </div>
-              <button type="button" onClick={() => setOpen(false)} aria-label="Close categories">×</button>
+              <button type="button" onClick={() => setOpen(false)} aria-label="Close categories"><X size={20} /></button>
             </div>
 
             {loading ? (
@@ -83,7 +106,7 @@ const CategoryNavigation = () => {
                         if (!department.categories?.length) navigate("/filter-category");
                       }}
                     >
-                      <span>{department.name}</span>
+                      <span className="flex items-center gap-2"><Gem size={16} strokeWidth={1.8} aria-hidden="true" />{department.name}</span>
                       <IonIcon icon={chevronForwardOutline} />
                     </button>
                   ))}
@@ -92,7 +115,8 @@ const CategoryNavigation = () => {
                 <div className="mm-category-results">
                   {(departments.find((item) => item.id === activeDepartment) || departments[0])?.categories?.map((category) => (
                     <section key={category.id} className="mm-category-column">
-                      <button type="button" onClick={() => goToCategory(category.id)} className="mm-category-title">
+                      <button type="button" onClick={() => goToCategory(category.id)} className="mm-category-title flex items-center gap-2">
+                        <Heart size={14} strokeWidth={1.8} aria-hidden="true" />
                         {category.name}
                       </button>
                       <ul>
