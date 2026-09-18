@@ -257,6 +257,8 @@ def filtered_items(request):
 # fetch depart. cat. subcat
 # -------------------------------
 class HierarchicalDataView(APIView):
+    permission_classes = [AllowAny]
+
     def get(self, request):
         sections = Section.objects.prefetch_related(
             'departments__categories__subcategories'
@@ -276,6 +278,7 @@ class HierarchicalDataView(APIView):
 # item fetch item and category
 # -------------------------------
 class CategoryListWithItems(generics.ListAPIView):
+    permission_classes = [AllowAny]
     serializer_class = CategorySerializerCat
 
     def get_queryset(self):
@@ -302,6 +305,7 @@ class ItemDetailView(generics.RetrieveAPIView):
 # item fetch bu sub category
 # -------------------------------
 @api_view(["GET"])
+@permission_classes([AllowAny])
 def products_by_subcategory(request, subcategory_id):
     products = Item.objects.filter(subcategory_id=subcategory_id, available=True)
 
