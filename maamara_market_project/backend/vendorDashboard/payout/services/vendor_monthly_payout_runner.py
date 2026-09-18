@@ -147,7 +147,7 @@ def pay_single_vendor_payout(request, reference):
         elif method == "PAYPAL":
             response = call_paypal_payout(payout, vendor.paypal_email, amount, paypal_config)
         elif method == "BANK_TRANSFER":
-            response = call_bank_transfer(vendor.bank_account_number, amount)
+            response = call_bank_transfer(vendor.bank_account_number, amount, payout=payout)
         else:
             return Response({"error": f"Unknown payment method: {method}"}, status=400)
 
@@ -157,12 +157,12 @@ def pay_single_vendor_payout(request, reference):
                 "message": (
                     "Payout submitted to PayPal; awaiting provider confirmation."
                     if method == "PAYPAL"
-                    else f"Payout successfully processed via {method}."
+                    else f("Payout submitted to M-Pesa; awaiting provider confirmation." if method == "MOBILE_MONEY" else "Bank payout submitted; awaiting bank confirmation.")
                 ),
                 "reference": payout.reference,
                 "amount": float(amount),
                 "response": response,
-            }, status=202 if method == "PAYPAL" else 200)
+            }, status=202)
 
         else:
             if method == "PAYPAL" and response.get("retryable"):
