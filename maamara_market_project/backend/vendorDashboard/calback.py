@@ -215,11 +215,11 @@ def mpesa_result(request):
 def mpesa_timeout(request):
     if request.method == "POST":
         ip = get_client_ip(request)
-        logger.info(f"Incoming M-Pesa Timeout callback from IP: {ip}, Raw body: {request.body}")
+        logger.info("Incoming M-Pesa timeout callback.")
 
         # Uncomment after testing to enable IP filtering:
         if not is_valid_mpesa_ip(ip):
-            logger.warning(f"Blocked M-Pesa Timeout callback from invalid IP: {ip}")
+            logger.warning("Blocked M-Pesa timeout callback from invalid IP.")
             return HttpResponseForbidden("Invalid IP")
 
         try:
@@ -228,7 +228,7 @@ def mpesa_timeout(request):
             logger.error("Failed to decode JSON from M-Pesa Timeout callback")
             return JsonResponse({"ResultCode": 1, "ResultDesc": "Invalid JSON"}, status=400)
 
-        logger.warning("⚠️ M-Pesa Timeout Callback data: %s", data)
+        logger.warning("M-Pesa timeout callback received.")
         return JsonResponse({"ResultCode": 1, "ResultDesc": "Timeout received"})
 
     return JsonResponse({"error": "Invalid method"}, status=405)
@@ -244,30 +244,23 @@ import logging
 logger = logging.getLogger(__name__)
 
 def kcb_oauth_callback(request):
-    """
-    Handles OAuth callback from KCB with authorization code.
-    """
-    error = request.GET.get('error')
-    code = request.GET.get('code')
-    state = request.GET.get('state')
+    """Handle the KCB OAuth redirect without exposing authorization codes."""
+    if request.method != "GET":
+        return HttpResponse("Invalid method", status=405)
 
+    error = request.GET.get("error")
     if error:
-        logger.error(f"KCB OAuth error: {error}")
-        return HttpResponse(f"OAuth error: {error}", status=400)
+        logger.warning("KCB OAuth callback returned an error.")
+        return HttpResponse("KCB authorization failed.", status=400)
 
-    if not code:
-        logger.error("No authorization code received from KCB OAuth.")
-        return HttpResponse("No authorization code received.", status=400)
+    if not request.GET.get("code"):
+        logger.warning("KCB OAuth callback did not contain an authorization code.")
+        return HttpResponse("Missing KCB authorization response.", status=400)
 
-    # TODO: Exchange the authorization code for access token here
-    # You may want to call your token endpoint and save token in DB or session.
-
-    logger.info(f"Received KCB OAuth code: {code} with state: {state}")
-
-    # For now just display code for testing
-    return JsonResponse({"code": code, "state": state})
-
-
+    # The authorization-code exchange is not implemented here. Never return
+    # the code in an HTTP response or persist it in logs.
+    logger.info("KCB OAuth authorization response received.")
+    return JsonResponse({"status": "received"})
 
 #-------------------------
 # Paypal_callback
