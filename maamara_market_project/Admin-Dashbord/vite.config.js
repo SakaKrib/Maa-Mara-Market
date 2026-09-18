@@ -4,7 +4,9 @@ import path from "path";
 //import { baseUrl } from './src/cmponents/Constant/Constant';
 
 export default defineConfig({
-  base: "/static/",
+  // Vite serves this app directly at the site root during development.
+  // Django keeps /static/ for backend static assets.
+  base: "/",
   plugins: [react()],
   resolve: {
     alias: {
