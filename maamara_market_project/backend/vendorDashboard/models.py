@@ -410,6 +410,9 @@ class SoldItem(models.Model):
         related_name="sold_items",
     )
     quantity = models.PositiveIntegerField()
+    selected_weight = models.CharField(max_length=50, null=True, blank=True)
+    selected_length = models.CharField(max_length=50, null=True, blank=True)
+    shoe_size = models.CharField(max_length=50, null=True, blank=True)
     sale_price = models.DecimalField(max_digits=10, decimal_places=2, editable=False)
     total_price = models.DecimalField(max_digits=10, decimal_places=2, editable=False)
     date_sold = models.DateTimeField(auto_now_add=True)
