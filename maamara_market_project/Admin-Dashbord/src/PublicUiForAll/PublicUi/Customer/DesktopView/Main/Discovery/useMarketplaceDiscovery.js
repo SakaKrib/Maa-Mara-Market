@@ -1,0 +1,55 @@
+import { useCallback, useEffect, useRef, useState } from "react";
+import api from "../../../../../../Services/Api";
+
+const useMarketplaceDiscovery = () => {
+  const [feed, setFeed] = useState({ popular: [], most_wanted: [], best_selling: [], featured: [] });
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const refreshTimer = useRef(null);
+
+  const fetchFeed = useCallback(async () => {
+    try {
+      setError(null);
+      const response = await api.get("/api/discovery/?limit=8");
+      setFeed({
+        popular: response.data?.popular || [],
+        most_wanted: response.data?.most_wanted || [],
+        best_selling: response.data?.best_selling || [],
+        featured: response.data?.featured || [],
+      });
+    } catch (err) {
+      setError(err);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchFeed();
+    refreshTimer.current = setInterval(fetchFeed, 60000);
+    return () => clearInterval(refreshTimer.current);
+  }, [fetchFeed]);
+
+  useEffect(() => {
+    const protocol = window.location.protocol === "https:" ? "wss" : "ws";
+    const host = window.location.host;
+    const socket = new WebSocket(protocol + "://" + host + "/ws/realtime/");
+
+    socket.onmessage = (event) => {
+      try {
+        const message = JSON.parse(event.data);
+        if (message?.type === "realtime.event" && message?.event === "catalog_activity") {
+          fetchFeed();
+        }
+      } catch {
+        // Ignore malformed realtime messages.
+      }
+    };
+
+    return () => socket.close();
+  }, [fetchFeed]);
+
+  return { feed, loading, error, refresh: fetchFeed };
+};
+
+export default useMarketplaceDiscovery;
