@@ -16,7 +16,7 @@ import time
 from django.utils.timezone import datetime
 import random
 from vendorDashboard.payout.services.generatePermcert import generate_security_credential
-# from oder.Mpesa.C2BMpesaIntergration.c2butils import get_mpesa_token
+# from order.Mpesa.C2BMpesaIntergration.c2butils import get_mpesa_token
 
 # def get_mpesa_access_token(mpesa_config):
     
