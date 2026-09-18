@@ -1,11 +1,14 @@
 import { useEffect, useRef } from "react";
-import { baseUrl } from "../cmponents/Constant/Constant";
 
+/**
+ * Build the realtime WebSocket URL from the current browser origin.
+ *
+ * Vite proxies /ws to the Django Channels backend in development,
+ * so the browser connects to the same host that served the application.
+ */
 function websocketUrl() {
-  const url = new URL(baseUrl);
-  url.protocol = url.protocol === "https:" ? "wss:" : "ws:";
-  url.pathname = url.pathname.replace(/\/$/, "") + "/ws/realtime/";
-  return url.toString();
+  const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
+  return protocol + "//" + window.location.host + "/ws/realtime/";
 }
 
 /**
@@ -27,6 +30,7 @@ export default function useRealtimeEvents(onEvent, { models, actions } = {}) {
   const callbackRef = useRef(onEvent);
   const modelsRef = useRef(models);
   const actionsRef = useRef(actions);
+
   callbackRef.current = onEvent;
   modelsRef.current = models;
   actionsRef.current = actions;
@@ -38,16 +42,35 @@ export default function useRealtimeEvents(onEvent, { models, actions } = {}) {
 
     const matches = (event) => {
       const modelMatch =
-        !modelsRef.current?.length || modelsRef.current.includes(event.model);
+        !modelsRef.current?.length ||
+        modelsRef.current.includes(event.model);
+
       const actionMatch =
-        !actionsRef.current?.length || actionsRef.current.includes(event.action);
+        !actionsRef.current?.length ||
+        actionsRef.current.includes(event.action);
+
       return modelMatch && actionMatch;
+    };
+
+    const scheduleReconnect = () => {
+      if (!stopped && !retryTimer) {
+        retryTimer = window.setTimeout(() => {
+          retryTimer = undefined;
+          connect();
+        }, 2000);
+      }
     };
 
     const connect = () => {
       if (stopped) return;
 
-      socket = new WebSocket(websocketUrl());
+      try {
+        socket = new WebSocket(websocketUrl());
+      } catch (error) {
+        console.error("Unable to create realtime WebSocket:", error);
+        scheduleReconnect();
+        return;
+      }
 
       socket.onopen = () => {
         // The server controls all business mutations. This socket is receive-only.
@@ -56,7 +79,10 @@ export default function useRealtimeEvents(onEvent, { models, actions } = {}) {
       socket.onmessage = (message) => {
         try {
           const event = JSON.parse(message.data);
-          if (event.type !== "realtime.event" || !matches(event)) return;
+
+          if (event.type !== "realtime.event" || !matches(event)) {
+            return;
+          }
 
           callbackRef.current?.(event);
           window.dispatchEvent(
@@ -68,20 +94,25 @@ export default function useRealtimeEvents(onEvent, { models, actions } = {}) {
       };
 
       socket.onclose = () => {
-        if (!stopped) {
-          retryTimer = window.setTimeout(connect, 2000);
-        }
+        socket = undefined;
+        scheduleReconnect();
       };
 
-      socket.onerror = () => socket.close();
+      socket.onerror = () => {
+        socket?.close();
+      };
     };
 
     connect();
 
     return () => {
       stopped = true;
-      window.clearTimeout(retryTimer);
+      if (retryTimer) {
+        window.clearTimeout(retryTimer);
+        retryTimer = undefined;
+      }
       socket?.close();
+      socket = undefined;
     };
   }, []);
 }
