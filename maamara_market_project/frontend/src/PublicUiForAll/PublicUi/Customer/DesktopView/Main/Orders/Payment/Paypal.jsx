@@ -1,6 +1,6 @@
 import { PayPalScriptProvider, PayPalButtons, FUNDING } from "@paypal/react-paypal-js";
 import { useCartContext } from "../../CartHook/cart";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 
 export default function CheckoutPaypalPayment() {
@@ -13,26 +13,6 @@ export default function CheckoutPaypalPayment() {
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
   const kesAmount = order?.order?.payment?.amount ?? order?.order?.updated_total_price ?? 0;
-
-  // --- WebSocket for real-time payment status ---
-  useEffect(() => {
-    if (!order?.order?.id) return;
-    const orderId = order.order.id;
-    const wsScheme = window.location.protocol === "https:" ? "wss" : "ws";
-    const socket = new WebSocket(`${wsScheme}://127.0.0.1:8000/ws/orders/${orderId}/`);
-
-    socket.onmessage = (event) => {
-      try {
-        const data = JSON.parse(event.data);
-        if (data.type === "payment_status" && data.status === "completed") {
-          navigate("/payment-success", { state: { order: order.order } });
-        }
-      } catch (err) {
-        console.error("❌ WebSocket message error:", err);
-      }
-    };
-    return () => socket.close();
-  }, [order?.order?.id, navigate]);
 
   const handlePaymentApproval = async (details) => {
     setLoading(true);
