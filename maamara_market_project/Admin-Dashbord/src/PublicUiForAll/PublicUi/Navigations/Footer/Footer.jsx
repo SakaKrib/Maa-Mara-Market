@@ -1,4 +1,4 @@
-import { Link, useNavigate, useLocation } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useState } from "react";
 import { IonIcon } from "@ionic/react";
 import {
@@ -18,79 +18,67 @@ import Paypal from "../../../../assets/securePayments/paypal.png";
 import DHL from "../../../../assets/partnaship/DHL.png";
 import FedEx from "../../../../assets/partnaship/fedex.png";
 import WellsFargo from "../../../../assets/partnaship/wellfargo.jpeg";
-import {useAuth} from "../../../../cmponents/Auth/AuthContext/Context"
+import { useAuth } from "../../../../cmponents/Auth/AuthContext/Context";
 import api from "../../../../Services/Api";
 import Snackbar from "@mui/material/Snackbar";
 import Alert from "@mui/material/Alert";
 
-
 const Footer = () => {
   const year = new Date().getFullYear();
-  const { isAuthenticated, user } = useAuth(); // get auth status from your context
+  const { isAuthenticated, user } = useAuth();
   const navigate = useNavigate();
-  const location = useLocation();
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
-  
 
-  // define user roles
   const isCustomer = user?.role === "customer";
   const isVendor = user?.role === "vendor";
   const isAdmin = user?.role === "admin";
 
-
-
-     // Snackbar state
-     const [snackbar, setSnackbar] = useState({
-      open: false,
-      message: "",
-      severity: "success",
-    });
+  const [snackbar, setSnackbar] = useState({
+    open: false,
+    message: "",
+    severity: "success",
+  });
 
   const handleSnackbarClose = () => {
-    setSnackbar(prev => ({ ...prev, open: false }));
+    setSnackbar((prev) => ({ ...prev, open: false }));
   };
 
-  // Sell button click handler with MUI Snackbar
- // Sell button click handler with MUI Snackbar
- const handleSellClick = async (e) => {
-  e.preventDefault();
+  const handleSellClick = async (e) => {
+    e.preventDefault();
 
-  try {
-    const response = await api.get("/api/check-auth/", {
-      withCredentials: true, // ✅ correct for axios
-    });
-
-    const data = response.data; // ✅ IMPORTANT
-
-    console.log(data);
-
-    if (data?.isAuthenticated) {
-      window.location.href = "/vendor-register-form";
-    } else {
-      setSnackbar({
-        open: true,
-        severity: "warning",
-        message: "You need to login or register first to sell your products!",
+    try {
+      const response = await api.get("/api/check-auth/", {
+        withCredentials: true,
       });
 
-      setTimeout(() => {
-        navigate("/customer-login", {
-          state: { from: "/vendor-register-form" },
-        });
-      }, 1200);
-    }
-  } catch (err) {
-    console.error("Auth check failed:", err);
-    setSnackbar({
-      open: true,
-      severity: "error",
-      message: "Something went wrong. Please try again.",
-    });
-  }
-};
+      const data = response.data;
 
-  // subscribe newsleter
+      if (data?.isAuthenticated) {
+        window.location.href = "/vendor-register-form";
+      } else {
+        setSnackbar({
+          open: true,
+          severity: "warning",
+          message: "You need to login or register first to sell your products!",
+        });
+
+        setTimeout(() => {
+          navigate("/customer-login", {
+            state: { from: "/vendor-register-form" },
+          });
+        }, 1200);
+      }
+    } catch (err) {
+      console.error("Auth check failed:", err);
+      setSnackbar({
+        open: true,
+        severity: "error",
+        message: "Something went wrong. Please try again.",
+      });
+    }
+  };
+
   const handleSubscribe = async () => {
     if (!email) {
       setSnackbar({
@@ -125,24 +113,26 @@ const Footer = () => {
       setLoading(false);
     }
   };
-  
-  
+
   return (
     <footer>
-      <div className="px-4 py-24 md:px-8 lg:px-6 xl:px-64 bg-gray-100 text-sm mt-0 xxs:block">
+      <div className="px-4 py-24 md:px-8 lg:px-6 xl:px-64 bg-gray-100 text-sm mt-24 xxs:block">
         {/* top */}
         <div className="flex justify-between gap-24 md:flex-row xxs:flex-col">
           {/* left */}
-          <div className="flex flex-col gap-8 w-full md:w-auto lg:w-1/4 ">
+          <div className="flex flex-col gap-8 w-full md:w-auto lg:w-1/4">
             <Link to="/">
-              <div className="lgtext-2xl md:text-xl sm:text-lg xxs:text-lg tracking-wide">MaaMaraMarket</div>
+              <div className="text-2xl tracking-wide">MaaMaraMarket</div>
             </Link>
-            <p className="text-sm">
-              <IonIcon className="text-sm mr-2" icon={locationOutline} />
+
+            <p>
+              <IonIcon className="text-md mr-2" icon={locationOutline} />
               14354 RedHill Road Kitisuru, Westlands, Nairobi 0100, KE, East Africa
             </p>
+
             <span className="font-semibold">maamaramarket@gmail.com</span>
             <span className="font-semibold">+254712345678</span>
+
             <div className="flex gap-6 text-lg">
               <IonIcon icon={logoFacebook} />
               <IonIcon icon={logoX} />
@@ -154,14 +144,15 @@ const Footer = () => {
           </div>
 
           {/* center */}
-          <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8 w-full lg:w-2/3">
+          <div className="hidden lg:grid grid-cols-3 gap-12 w-2/3">
             {/* COMPANY */}
             <div className="flex flex-col gap-4">
-              <h1 className="font-semibold text-lg mb-2 ">COMPANY</h1>
+              <h1 className="font-semibold text-lg mb-2">COMPANY</h1>
               <Link to="/about-us">About Us</Link>
               <Link to="#">Contact us</Link>
               <Link to="#">Order History</Link>
               <Link to="#">Shipping</Link>
+              <Link to="/support">Support</Link>
               <Link to="/help/faq">Help</Link>
               <Link to="#">Returns</Link>
               <Link to="/careers/jobs">Career</Link>
@@ -177,61 +168,56 @@ const Footer = () => {
               <Link to="#">Children</Link>
               <Link to="#">Unisex</Link>
               <Link to="#">Home Decor</Link>
-              <Link to="#">Buy Gift Cards</Link>
-
             </div>
 
             {/* HELP + DASHBOARD */}
             <div className="flex flex-col gap-4">
-              <div className="flex flex-col gap-4">
               <h1 className="font-semibold text-lg mb-2">HELP</h1>
-              <Link to="/support">Support</Link>
-              
+              <Link to="#">Customer Service</Link>
 
-              {/* Sell */}
               {isCustomer && (
                 <Link to="#" onClick={handleSellClick}>
                   Sell
                 </Link>
               )}
+
+              <Link to="#">My Account</Link>
               <Link to="#">Legal & Privacy</Link>
-              </div>
+              <Link to="#">Buy Gift Cards</Link>
 
-              <div>
-
-              
-             {/* Dashboard */}
               {isAuthenticated && (isAdmin || isVendor) && (
-                <div className="flex flex-col gap-4">
+                <>
                   <h1 className="font-semibold text-lg mt-6">DASHBOARD</h1>
-
                   <Link to={isAdmin ? "/admin-dashboard" : "/vendors-dashboard"}>
                     Dashboard
                   </Link>
-                </div>
+                </>
               )}
-              </div>
             </div>
           </div>
 
           {/* right */}
-          <div className="flex flex-col gap-8 w-full lg:w-1/3 md:w-auto ">
+          <div className="flex flex-col gap-8 w-full md:w-auto lg:w-1/4">
             <h1 className="font-medium text-lg">SUBSCRIBE</h1>
 
-            <p className="text-sm">
+            <p>
               Get our latest news and shop deals about trends, promotions, and much more!
             </p>
 
-            <div className="flex gap-2">
+            <div className="flex">
               <input
                 type="email"
                 placeholder="Email Address"
-                className="p-4 w-3/4 rounded-full"
+                className="p-4 w-3/4"
+                name="email"
+                id="email"
+                autoComplete="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
               />
 
               <button
+                type="button"
                 onClick={handleSubscribe}
                 className="w-1/4 primary-button text-white"
                 disabled={loading}
@@ -243,10 +229,10 @@ const Footer = () => {
             <span className="font-semibold">Secure Payments</span>
             <div className="flex justify-between">
               <img className="w-20 h-10" src={Visa} alt="Visa" />
-              <img className="w-20 h-10" src={Mastercard} alt="master-card" />
-              <img className="w-20 h-10" src={Discover} alt="discover" />
-              <img className="w-20 h-10" src={Mpesa} alt="mpesa" />
-              <img className="w-20 h-10" src={Paypal} alt="paypal" />
+              <img className="w-20 h-10" src={Mastercard} alt="Mastercard" />
+              <img className="w-20 h-10" src={Discover} alt="Discover" />
+              <img className="w-20 h-10" src={Mpesa} alt="M-Pesa" />
+              <img className="w-20 h-10" src={Paypal} alt="PayPal" />
             </div>
 
             <span className="font-semibold">Partnership</span>
@@ -260,7 +246,7 @@ const Footer = () => {
 
         {/* Bottom */}
         <div className="border-t border-gray-300 mt-16 pt-6 flex flex-col md:flex-row justify-between items-center text-gray-600 text-sm gap-4">
-        <span>© {year} MaaMaraMarket. All rights reserved.</span>
+          <span>© {year} MaaMaraMarket. All rights reserved.</span>
 
           <div className="flex flex-col md:flex-row items-center gap-4">
             <div>
@@ -274,23 +260,23 @@ const Footer = () => {
           </div>
         </div>
       </div>
-      {/* Snackbar UI */}
+
       <Snackbar
-          open={snackbar.open}
-          autoHideDuration={3000}
+        open={snackbar.open}
+        autoHideDuration={3000}
+        onClose={handleSnackbarClose}
+        anchorOrigin={{ vertical: "top", horizontal: "right" }}
+      >
+        <Alert
           onClose={handleSnackbarClose}
-          anchorOrigin={{ vertical: "top", horizontal: "right" }}
+          severity={snackbar.severity}
+          sx={{ width: "100%" }}
+          elevation={6}
+          variant="filled"
         >
-          <Alert
-            onClose={handleSnackbarClose}
-            severity={snackbar.severity}
-            sx={{ width: "100%" }}
-            elevation={6}
-            variant="filled"
-          >
-            {snackbar.message}
-          </Alert>
-        </Snackbar>
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
     </footer>
   );
 };
