@@ -8,6 +8,7 @@ from decimal import Decimal, InvalidOperation
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import padding
 import uuid
+import hashlib
 from cryptography import x509
 from decimal import Decimal
 from django.db import transaction as db_transaction
@@ -367,100 +368,183 @@ def get_paypal_access_token():
 
 
 def call_paypal_payout_bulk(items, paypal_config):
+    """Submit a PayPal payout batch without treating submission as settlement."""
     access_token = get_paypal_access_token()
-    payout_url = paypal_config.get('payout_url') or PAYPAL.get('payout_url') or PAYPAL.get('url')
-
+    payout_url = paypal_config.get("payout_url") or PAYPAL.get("payout_url") or PAYPAL.get("url")
     if not payout_url:
         raise ValueError("PayPal payout URL is missing")
 
+    sender_item_ids = sorted(
+        str(item.get("sender_item_id"))
+        for item in items
+        if item.get("sender_item_id")
+    )
+    if not sender_item_ids:
+        raise ValueError("PayPal payout batch requires sender item IDs.")
+
+    # A deterministic sender batch ID makes safe retries possible after a
+    # timeout/5xx response; PayPal documents duplicate protection for 30 days.
+    digest = hashlib.sha256("|".join(sender_item_ids).encode("utf-8")).hexdigest()[:40]
+    sender_batch_id = f"maa_{digest}"
+
     headers = {
         "Content-Type": "application/json",
-        "Authorization": f"Bearer {access_token}"
+        "Authorization": f"Bearer {access_token}",
     }
-
     payload = {
         "sender_batch_header": {
-            "sender_batch_id": f"batch_{int(timezone.now().timestamp())}_{uuid.uuid4().hex[:6]}",
+            "sender_batch_id": sender_batch_id,
             "email_subject": "You have a payout!",
-            "email_message": "You have received a payout!"
+            "email_message": "You have received a payout!",
         },
-        "items": items
+        "items": items,
     }
 
-    response = None
+    # Record the exact provider amount/currency and pending state before the
+    # external call. This is not settlement; only a provider SUCCESS event
+    # changes paid=True.
+    for item in items:
+        reference = item.get("sender_item_id")
+        amount = item.get("amount") or {}
+        if not reference:
+            continue
+        try:
+            payout = VendorPayout.objects.get(reference=reference)
+        except VendorPayout.DoesNotExist:
+            logger.warning(
+                "PayPal payout reference was not found before submission.",
+                extra={"payout_reference": reference},
+            )
+            continue
+
+        provider_amount = Decimal(str(amount.get("value")))
+        provider_currency = str(amount.get("currency") or "").upper()
+        payout.paypal_amount = provider_amount
+        payout.paypal_currency = provider_currency or None
+        if not payout.paid:
+            payout.paypal_transaction_status = "PENDING"
+        payout.save(
+            update_fields=[
+                "paypal_amount",
+                "paypal_currency",
+                "paypal_transaction_status",
+            ]
+        )
+
     try:
-        response = requests.post(payout_url, json=payload, headers=headers, timeout=15)
+        response = requests.post(
+            payout_url,
+            json=payload,
+            headers=headers,
+            timeout=15,
+        )
         response.raise_for_status()
         data = response.json()
 
-        batch_header = data.get("batch_header", {})
+        batch_header = data.get("batch_header") or {}
         batch_id = batch_header.get("payout_batch_id")
+        returned_items = data.get("items") or []
 
-        # Save payout_item_id to your VendorPayout by matching sender_item_id
         with db_transaction.atomic():
-            for item in data.get("items", []):
+            for item in returned_items:
                 payout_item_id = item.get("payout_item_id")
-                sender_item_id = item.get("payout_item", {}).get("sender_item_id")
+                sender_item_id = (item.get("payout_item") or {}).get("sender_item_id")
+                if not sender_item_id:
+                    continue
 
-                try:
-                    payout = VendorPayout.objects.get(reference=sender_item_id)
-                    payout.paypal_payout_item_id = payout_item_id
-                    payout.save()
-                    logger.info(f"Linked VendorPayout {payout.reference} with payout_item_id {payout_item_id}")
-                except VendorPayout.DoesNotExist:
-                    logger.warning(f"No VendorPayout found with reference {sender_item_id} to link payout_item_id {payout_item_id}")
+                payout = (
+                    VendorPayout.objects
+                    .select_for_update()
+                    .filter(reference=sender_item_id)
+                    .first()
+                )
+                if not payout:
+                    logger.warning(
+                        "PayPal payout response could not be matched.",
+                        extra={"payout_reference": sender_item_id},
+                    )
+                    continue
+
+                payout.paypal_payout_item_id = payout_item_id or payout.paypal_payout_item_id
+                payout.paypal_batch_id = batch_id or payout.paypal_batch_id
+                returned_status = item.get("transaction_status")
+                if returned_status:
+                    payout.paypal_transaction_status = str(returned_status).upper()
+
+                update_fields = [
+                    "paypal_payout_item_id",
+                    "paypal_batch_id",
+                    "paypal_transaction_status",
+                ]
+
+                transaction_id = item.get("transaction_id")
+                if transaction_id:
+                    payout.paypal_transaction_id = transaction_id
+                    update_fields.append("paypal_transaction_id")
+
+                payout.save(update_fields=update_fields)
 
         return {
             "success": True,
-            "data": data,
             "batch_id": batch_id,
+            "sender_batch_id": sender_batch_id,
             "payout_items": [
-                {"payout_item_id": item.get("payout_item_id"),
-                 "sender_item_id": item.get("payout_item", {}).get("sender_item_id")}
-                for item in data.get("items", [])
+                {
+                    "payout_item_id": item.get("payout_item_id"),
+                    "sender_item_id": (item.get("payout_item") or {}).get("sender_item_id"),
+                }
+                for item in returned_items
             ],
         }
 
-    except requests.RequestException as e:
+    except requests.RequestException:
         logger.error("PayPal payout request failed.", exc_info=True)
-        if response is not None:
-            pass
-        return {"success": False, "error": str(e)}
-
-
-
+        return {"success": False, "error": "PayPal payout request failed."}
+    except (ValueError, InvalidOperation):
+        logger.error("PayPal payout response was invalid.", exc_info=True)
+        return {"success": False, "error": "Invalid PayPal payout response."}
 
 
 
 def call_paypal_payout(payout, paypal_email, amount, paypal_config):
-    """
-    Make a single PayPal payout using the payout.reference as sender_item_id.
+    """Submit one vendor payout in USD while retaining the local KES ledger."""
+    if not payout or not payout.reference:
+        return {"success": False, "error": "A valid payout record is required."}
+    if not paypal_email:
+        return {"success": False, "error": "PayPal recipient email is required."}
 
-    Args:
-        payout: VendorPayout instance (must have .reference)
-        paypal_email: recipient email for payout
-        amount: decimal or float payout amount
-        paypal_config: dict with PayPal config like payout_url
+    usd_to_kes_rate_raw = get_usd_to_kes_rate()
+    if not usd_to_kes_rate_raw:
+        return {"success": False, "error": "Could not fetch exchange rate USD to KES."}
 
-    Returns:
-        dict: result from call_paypal_payout_bulk
-    """
+    try:
+        usd_to_kes_rate = Decimal(str(usd_to_kes_rate_raw))
+        if usd_to_kes_rate <= 0:
+            raise InvalidOperation
+        amount_usd = (Decimal(str(amount)) / usd_to_kes_rate).quantize(Decimal("0.01"))
+    except (InvalidOperation, TypeError, ValueError, ZeroDivisionError):
+        return {"success": False, "error": "Invalid USD/KES exchange rate or payout amount."}
+
+    if amount_usd <= 0:
+        return {"success": False, "error": "Invalid converted payout amount."}
 
     item = {
         "recipient_type": "EMAIL",
         "amount": {
-            "value": f"{amount:.2f}",
-            "currency": "USD",  # Ensure this matches your expected currency
+            "value": str(amount_usd),
+            "currency": "USD",
         },
         "receiver": paypal_email,
         "note": "Thank you for your service",
-        "sender_item_id": payout.reference  # use payout.reference here
+        "sender_item_id": payout.reference,
     }
 
     result = call_paypal_payout_bulk([item], paypal_config)
-
-    logger.info("PayPal payout request submitted", extra={"payout_reference": payout.reference})
-
+    if result.get("success"):
+        logger.info(
+            "PayPal payout request submitted",
+            extra={"payout_reference": payout.reference},
+        )
     return result
 
 
