@@ -40,11 +40,11 @@ class BillingAddressSerializer(serializers.ModelSerializer):
 class PaymentSerializer(serializers.ModelSerializer):
     class Meta:
         model = Payment
-        fields = ["method", "amount", "status"]
+        fields = ["id", "payment_method", "amount", "status", "provider_amount", "provider_currency"]
 
     def validate(self, attrs):
-        if "method" in attrs:
-            attrs["method"] = sanitize_text(attrs["method"])
+        if "payment_method" in attrs:
+            attrs["payment_method"] = sanitize_text(attrs["payment_method"])
         return attrs
     
     
