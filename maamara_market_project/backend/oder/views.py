@@ -784,7 +784,7 @@ def update_cart_quantity(request, pk):
 
 def get_vendor_transactions(vendor):
     return Transaction.objects.filter(
-        order__items__item__vendor=vendor
+        order__order_items__item__vendor=vendor
     ).distinct().order_by('-created_at')
 
 
