@@ -6,21 +6,9 @@ export async function fetchShippingRates({ order, address }) {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       order_id: order.order.id,
-      address: address.address,
-      apartment: address.apartment || "",
       city: address.city,
-      state: address.state || "",
       zip: address.zip,
       country: address.country,
-      phone: address.phone,
-      items: (order.items || []).map((item) => ({
-        id: item.id,
-        quantity: item.quantity,
-        weight: item.weight || 0.5,
-        length: item.length || 5,
-        width: item.width || 5,
-        height: item.height || 5,
-      })),
     }),
   });
 
@@ -45,7 +33,7 @@ export async function submitCheckout(data, order, selectedShipping) {
       country: data.country || "",
       zip: data.zip || "",
       payment_method: data.payment || "",
-      shipping: selectedShipping || "",
+      shipping: selectedShipping ? {\n        provider: selectedShipping.provider,\n        service: selectedShipping.service,\n        price: selectedShipping.price,\n        currency: selectedShipping.currency,\n      } : null,
       items: (order?.items || []).map((item) => ({
         id: item?.id ?? null,
         quantity: item?.quantity ?? 1,
