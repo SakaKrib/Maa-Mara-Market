@@ -1,13 +1,15 @@
 import { PayPalScriptProvider, PayPalButtons, FUNDING } from "@paypal/react-paypal-js";
 import { useCartContext } from "../../CartHook/cart";
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 
 export default function CheckoutPaypalPayment() {
   const clientId = import.meta.env.VITE_PAYPAL_CLIENT_ID;
   if (!clientId) throw new Error("SDK Validation error: 'Expected client-id to be passed'");
 
-  const { order } = useCartContext();
+  const { order: cartOrder } = useCartContext();
+  const location = useLocation();
+  const order = location.state?.order || location.state || cartOrder;
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
   const kesAmount = order?.order?.final_total || order?.order?.total || 0;
