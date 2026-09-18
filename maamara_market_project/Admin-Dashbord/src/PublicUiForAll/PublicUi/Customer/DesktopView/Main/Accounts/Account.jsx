@@ -27,7 +27,7 @@ import RequestReturnForm from "../Return/Return";
 export default function UserAccount() {
   const [userData, setUserData] = useState(null);
   const [wallet, setWallet] = useState(null);
-  const [voucher, setVouchers] = useState([]);
+  const [voucher, setVouchers] = useState(null);
   const [referral, setReferral] = useState(null);
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -55,7 +55,7 @@ export default function UserAccount() {
   useEffect(() => {
     const fetchAccount = async () => {
       try {
-        const res = await api.get("api/user/account/", {
+        const res = await api.get("/api/user/account/", {
           withCredentials: true,
         });
         const data = res.data;
@@ -524,14 +524,12 @@ export default function UserAccount() {
       </div>
 
       {/* ✅ Return Form Modal */}
-      <div className="hidden">
       {selectedItem && (
         <RequestReturnForm
           selectedItem={selectedItem}
           onClose={() => setSelectedItem(null)}
         />
       )}
-      </div>
 
       {/* ✅ Snackbar Toast */}
       <Snackbar
