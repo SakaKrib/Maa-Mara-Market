@@ -33,7 +33,7 @@ const TrendingProducts = () => {
 
         <FeaturedOffer item={featuredOfferItem} />
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+        <div className="product-card-grid grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2 sm:gap-4 lg:gap-6">
           {regularItems.map((item) => {
             const isWishlisted = wishlist.some((entry) => entry.item?.id === item.id || entry.id === item.id);
             const toggleWishlist = async (event) => {
