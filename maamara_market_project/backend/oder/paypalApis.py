@@ -735,7 +735,7 @@ def paypal_webhook(request):
         logger.info(
             "💳 PayPal payment update | order_id=%s | status=%s | amount=%s %s",
             paypal_order_id,
-            status,
+            paypal_resource_status,
             amount,
             currency,
         )
@@ -768,84 +768,81 @@ def paypal_webhook(request):
                     },
                 )
 
-            if order and event_type == "PAYMENT.CAPTURE.COMPLETED" and order.status != "completed":
-                order.status = "completed"
-                order.save(update_fields=["status"])
+        # Resolve the exact order identified by PayPal. Never fall back to
+        # the user's latest pending order for a provider callback.
+        order = Order.objects.filter(paypal_order_id=paypal_order_id).select_related("payment").first()
 
+        if not order:
+            logger.warning("PayPal callback references an unknown order: %s", paypal_order_id)
+            return Response({"status": "ok", "message": "Unknown order"})
 
-                 # Save SoldItem records and update stock
-                for order_item in order.items.all():
-                    try:
-                        sold_item = SoldItem(
-                            item=order_item.item,
-                            vendor=order_item.item.vendor,
-                            color_variant=order_item.color_variant,
-                            size_stock=order_item.size_stock,
-                            age_variant=order_item.age_variant,
-                            quantity=order_item.quantity,
+        payment = order.payment
+        if not payment:
+            logger.warning("PayPal order %s has no local payment record", order.id)
+            return Response({"status": "ok", "message": "Payment not found"})
+
+        if event_type == "PAYMENT.CAPTURE.COMPLETED":
+            provider_amount = Decimal(str(amount))
+            if provider_amount != payment.amount:
+                logger.error(
+                    "PayPal amount mismatch for order %s: provider=%s expected=%s",
+                    order.id,
+                    provider_amount,
+                    payment.amount,
+                )
+                return Response({"status": "ok", "message": "Amount mismatch"})
+
+            from .order_completion import complete_paid_order
+
+            locked_order, completed = complete_paid_order(
+                order,
+                payment,
+                transaction_id=paypal_order_id,
+            )
+
+            if completed:
+                # Vendor notifications remain outside the stock/payment
+                # transaction so an email failure cannot roll back a paid sale.
+                for order_item in locked_order.items.all():
+                    vendor_user = getattr(order_item.item.vendor, "user", None)
+                    if vendor_user and vendor_user.email:
+                        variants = []
+                        if order_item.size_stock:
+                            variants.append(f"Size: {order_item.size_stock.size}")
+                        if order_item.color_variant:
+                            variants.append(f"Color: {order_item.color_variant.color}")
+                        if order_item.age_variant:
+                            variants.append(f"Age: {order_item.age_variant.age_group}")
+                        if order_item.selected_length:
+                            variants.append(f"Length: {order_item.selected_length}")
+                        if order_item.selected_weight:
+                            variants.append(f"Weight: {order_item.selected_weight}")
+
+                        price = order_item.price_at_purchase or order_item.item.price
+                        html_content = render_to_string(
+                            "emails/item_sold.html",
+                            {
+                                "vendor": vendor_user,
+                                "item": order_item.item,
+                                "quantity": order_item.quantity,
+                                "variants": ", ".join(variants) or "No variants selected",
+                                "price_at_purchase": price,
+                                "total_amount": price * order_item.quantity,
+                                "weight": getattr(order_item.item, "weight", None),
+                                "order": locked_order,
+                                "current_year": timezone.now().year,
+                            },
                         )
-                        sold_item.save()
-                        logger.info(
-                            "🛒 SoldItem created | order_id=%s | item=%s | qty=%s",
-                            order.id,
-                            order_item.item.name,
-                            order_item.quantity,
+                        email = EmailMultiAlternatives(
+                            f"🎉 Your item '{order_item.item.name}' has been purchased!",
+                            "",
+                            settings.DEFAULT_FROM_EMAIL,
+                            [vendor_user.email],
                         )
+                        email.attach_alternative(html_content, "text/html")
+                        email.send()
 
-                        # --- SEND EMAIL TO VENDOR ---
-                        vendor_user = getattr(order_item.item.vendor, "user", None)
-                        weight = order_item.item.weight
-                        if vendor_user and vendor_user.email:
-                            subject = f"🎉 Your item '{order_item.item.name}' has been purchased!"
-                            from_email = "no-reply@maamaramarket.com"
-                            to_email = [vendor_user.email]
-
-                            # Build variant details
-                            variants = []
-                            if hasattr(order_item, "selected_size") and order_item.selected_size:
-                                variants.append(f"Size: {order_item.selected_size}")
-                            if hasattr(order_item, "selected_color") and order_item.selected_color:
-                                variants.append(f"Color: {order_item.selected_color}")
-                            if hasattr(order_item, "custom_length") and order_item.custom_length:
-                                variants.append(f"Length: {order_item.custom_length}")
-                            variant_text = ", ".join(variants) if variants else "No variants selected"
-
-                            price = order_item.price_at_purchase or order_item.item.price
-                            total_amount = price * order_item.quantity
-
-                            html_content = render_to_string(
-                                "emails/item_sold.html",
-                                {
-                                    "vendor": vendor_user,
-                                    "item": order_item.item,
-                                    "quantity": order_item.quantity,
-                                    "variants": variant_text,
-                                    "price_at_purchase": price,
-                                    "total_amount": total_amount,
-                                    "weight": weight,
-                                    "order": order,
-                                    "current_year": timezone.now().year,
-                                }
-                            )
-
-                            email = EmailMultiAlternatives(subject, "", from_email, to_email)
-                            email.attach_alternative(html_content, "text/html")
-                            email.send()
-                            logger.info(
-                                "📧 Vendor email sent | vendor=%s | item=%s",
-                                vendor_user.username,
-                                order_item.item.name,
-                            )
-
-                    except Exception as e:
-                        logger.error(
-                            "❌ Order item processing failed | order_id=%s | item=%s",
-                            order.id,
-                            order_item.item.name,
-                        )
-
-
-                
+                logger.info("PayPal order %s completed atomically", locked_order.id)
 
                 # Send PayPal invoice only if not sent already
                 try:
