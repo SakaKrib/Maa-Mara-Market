@@ -485,6 +485,35 @@ class Transaction(models.Model):
             models.Index(fields=["order", "payment"]),
             models.Index(fields=["transaction_type", "status"]),
         ]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["mpesa_receipt_number"],
+                condition=(
+                    models.Q(transaction_type="C2B")
+                    & models.Q(mpesa_receipt_number__isnull=False)
+                    & ~models.Q(mpesa_receipt_number="")
+                ),
+                name="uniq_c2b_mpesa_receipt",
+            ),
+            models.UniqueConstraint(
+                fields=["account_reference"],
+                condition=(
+                    models.Q(transaction_type="C2B")
+                    & models.Q(account_reference__isnull=False)
+                    & ~models.Q(account_reference="")
+                ),
+                name="uniq_c2b_account_reference",
+            ),
+            models.UniqueConstraint(
+                fields=["paypal_transaction_id"],
+                condition=(
+                    models.Q(transaction_type="PayPal")
+                    & models.Q(paypal_transaction_id__isnull=False)
+                    & ~models.Q(paypal_transaction_id="")
+                ),
+                name="uniq_paypal_transaction_id",
+            ),
+        ]
 
     def __str__(self):
         return self.mpesa_receipt_number or self.paypal_transaction_id or f"TX-{self.pk}"
