@@ -1,42 +1,29 @@
-# payments/views.py
-from rest_framework.decorators import api_view, permission_classes
-from rest_framework.response import Response
-from .Payment import create_paypal_order, capture_paypal_order
-from .paymentserializer import *
-from rest_framework.permissions import AllowAny, IsAuthenticated
-from rest_framework import status
-from django.utils import timezone
-from .views import IsAuthenticatedOrVisitor
-from oder.models import Customer
-from django.db import transaction
-from oder.models import BillingAddress, Order, Payment
 import logging
-from .models import Payment, Transaction, Order, Customer, Card
-from core.models import ActivityLog, Notification
-from django.db import transaction as db_transaction, IntegrityError
+import uuid
+from decimal import Decimal
+
 from asgiref.sync import async_to_sync
 from channels.layers import get_channel_layer
-from django.forms.models import model_to_dict
-import uuid
-from django.contrib.auth.models import User
-import json
-import requests
 from django.conf import settings
-import base64
-from decimal import Decimal
-from django.core.mail import send_mail, EmailMessage
-from vendorDashboard.models import SoldItem
-from vendorDashboard.models import Vendor
-from .capture_order import get_paypal_access_token
-from django.contrib.auth import get_user_model
-from django.core.mail import EmailMultiAlternatives
-from django.template.loader import render_to_string
-from django.utils import timezone
+from django.db import models, transaction
 from django.shortcuts import get_object_or_404
-from ReactSerializers.models import ColorVariant,SizeStock,AgeVariant,Length,Weight,Shoe
-from django.db import models
-import time, datetime
+from django.utils import timezone
+from rest_framework import status
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import AllowAny, IsAuthenticated
+from rest_framework.response import Response
 
+from ReactSerializers.models import AgeVariant, ColorVariant, Item, Length, Shoe, SizeStock, Weight
+from core.models import ActivityLog, Notification
+from vendorDashboard.models import SoldItem, Vendor
+
+from .Payment import capture_paypal_order, create_paypal_order
+from .capture_order import get_paypal_access_token
+from .models import BillingAddress, Card, Customer, Order, Payment, Transaction
+from .paymentserializer import CheckoutSerializer, OrderResponseSerializer
+from .views import IsAuthenticatedOrVisitor
+
+logger = logging.getLogger(__name__)
 
 @api_view(["POST"])
 @permission_classes([IsAuthenticatedOrVisitor])
