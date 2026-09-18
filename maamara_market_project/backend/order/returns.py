@@ -467,7 +467,14 @@ def approve_return_request_api(request, return_id):
                 if not created and refund.status == "failed":
                     refund.status = "approved"
                     refund.failure_reason = None
-                    refund.save(update_fields=["status", "failure_reason", "updated_at"])
+                    refund.amount = refund_amount
+                    refund.currency = refund_currency
+                    refund.provider = provider
+                    refund.payment = payment
+                    refund.save(update_fields=[
+                        "status", "failure_reason", "amount", "currency", "provider",
+                        "payment", "updated_at",
+                    ])
 
                 if refund.provider in {"PayPal", "Mpesa"} and refund.status == "approved":
                     transaction.on_commit(lambda refund_id=refund.id: process_refund_task.delay(refund_id))
