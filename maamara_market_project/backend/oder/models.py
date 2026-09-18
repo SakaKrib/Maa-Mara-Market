@@ -57,6 +57,8 @@ class Payment(models.Model):
     
     payment_method = models.CharField(max_length=20, choices=PAYMENT_METHOD_CHOICES, default='Mpesa')
     amount = models.DecimalField(max_digits=10, decimal_places=2)
+    provider_amount = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)
+    provider_currency = models.CharField(max_length=3, blank=True, null=True)
     transaction_id = models.CharField(max_length=100, blank=True, null=True)  # PayPal/Mpesa ref
     status = models.CharField(
         max_length=20,
