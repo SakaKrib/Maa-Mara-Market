@@ -80,10 +80,11 @@ const SingleItem = () => {
       const found = items.find((itm) => itm.id === parseInt(itemId));
       if (found) {
         setItem(found);
-        if (
-          found.variants?.length > 0 &&
-          (!selectedVariant || selectedVariant.item !== found.id)
-        ) {
+        const currentVariantStillExists = found.variants?.some(
+          (variant) => String(variant.id) === String(selectedVariant?.id)
+        );
+
+        if (found.variants?.length > 0 && !currentVariantStillExists) {
           setSelectedVariant(found.variants[0]);
           setSelectedSize(null);
           setSelectedImage(null);
