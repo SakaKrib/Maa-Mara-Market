@@ -18,13 +18,16 @@ const SingleItem = () => {
   const [selectedImage, setSelectedImage] = useState(null);
   const [quantity, setQuantity] = useState(1);
 
+  const variantStock = Array.isArray(selectedVariant?.sizes)
+    ? selectedVariant.sizes.reduce(
+        (sum, size) => sum + Number(size.quantity_in_stock || 0),
+        0
+      )
+    : 0;
+
   const availableStock =
-  selectedSize?.quantity_in_stock ??
-  (Array.isArray(selectedVariant?.sizes)
-    ? selectedVariant.sizes.reduce((sum, s) => sum + s.quantity_in_stock, 0)
-    : null) ??
-  item?.in_stock ??
-  0;
+    selectedSize?.quantity_in_stock ??
+    (variantStock > 0 ? variantStock : item?.in_stock ?? 0);
 
 
 
@@ -77,7 +80,10 @@ const SingleItem = () => {
       const found = items.find((itm) => itm.id === parseInt(itemId));
       if (found) {
         setItem(found);
-        if (found.variants && found.variants.length > 0) {
+        if (
+          found.variants?.length > 0 &&
+          (!selectedVariant || selectedVariant.item !== found.id)
+        ) {
           setSelectedVariant(found.variants[0]);
           setSelectedSize(null);
           setSelectedImage(null);
@@ -86,10 +92,10 @@ const SingleItem = () => {
     }
   }, [loading, items, itemId]);
 
-  const handleColorChange = (color) => {
+  const handleColorChange = (variantId) => {
     if (!item) return;
     const variant = item.variants.find(
-      (v) => v.color.toLowerCase() === color.toLowerCase()
+      (v) => String(v.id) === String(variantId)
     );
     if (variant) {
       setSelectedVariant(variant);
@@ -147,7 +153,7 @@ const SingleItem = () => {
       {item.variants?.map((variant) => (
         <div
           key={variant.id}
-          onClick={() => handleColorChange(variant.color)}
+          onClick={() => handleColorChange(variant.id)}
           className={`w-20 h-20 rounded-md overflow-hidden cursor-pointer border ${
             selectedVariant?.id === variant.id ? "ring-2 ring-black" : ""
           }`}
@@ -211,7 +217,7 @@ const SingleItem = () => {
                       name="color"
                       value={variant.id}
                       checked={selectedVariant?.id === variant.id}
-                      onChange={() => handleColorChange(variant.color)}
+                      onChange={() => handleColorChange(variant.id)}
                       className="hidden"
                     />
                     <span
