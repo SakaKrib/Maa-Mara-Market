@@ -1,18 +1,18 @@
 import json
 import logging
-from decimal import Decimal
 import requests
 from django.conf import settings
 from rest_framework.decorators import api_view, permission_classes
-from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
+from rest_framework_simplejwt.authentication import JWTAuthentication
+from rest_framework_simplejwt.exceptions import InvalidToken, TokenError
 from .models import Order, Transaction, Card
 from .views import IsAuthenticatedOrVisitor
 
 
 logger = logging.getLogger(__name__)
 
-# 🔹 Get PayPal access token
+# PayPal provider helper
 from .Payment import get_paypal_access_token
 
 
