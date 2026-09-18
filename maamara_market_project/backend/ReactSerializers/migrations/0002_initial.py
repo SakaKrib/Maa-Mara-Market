@@ -130,7 +130,7 @@ class Migration(migrations.Migration):
         ),
         migrations.AddConstraint(
             model_name='sizestock',
-            constraint=models.CheckConstraint(condition=models.Q(models.Q(('item__isnull', False), ('variant__isnull', True)), models.Q(('item__isnull', True), ('variant__isnull', False)), _connector='OR'), name='size_stock_attached_to_one_parent'),
+            constraint=models.CheckConstraint(check=models.Q(models.Q(('item__isnull', False), ('variant__isnull', True)), models.Q(('item__isnull', True), ('variant__isnull', False)), _connector='OR'), name='size_stock_attached_to_one_parent'),
         ),
         migrations.AddConstraint(
             model_name='sizestock',
