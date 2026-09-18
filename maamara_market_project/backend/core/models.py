@@ -67,7 +67,8 @@ class Wallet(models.Model):
 
     def redeem_coins(self, amount):
         """Redeems coins, ensuring amount meets the minimum requirement."""
-        if self.can_redeem(amount):
+        allowed, _ = self.can_redeem(amount)
+        if allowed:
             self.earned_coins -= amount
             self.balance += amount
             self.save()
@@ -118,9 +119,7 @@ class Voucher(models.Model):
     name = models.CharField(max_length=255, blank=False, null=False, default="Default Voucher")  # Database default value
     code = models.CharField(max_length=20, unique=True)
     discount = models.CharField(max_length=100)
-    expiry_date = models.DateField(
-    default=date.today() + timedelta(days=30)
-)
+    expiry_date = models.DateField(default=lambda: date.today() + timedelta(days=30))
     redeemed = models.BooleanField(default=False)
     active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -178,7 +177,7 @@ class PendingRegistration(models.Model):
     username = models.CharField(max_length=150)
     first_name = models.CharField(max_length=150)
     last_name = models.CharField(max_length=150)
-    password = models.CharField(max_length=128)  # plaintext unless hashed
+    password = models.CharField(max_length=128)  # stored as a Django password hash
     otp_code = models.CharField(max_length=6)
     referral_code = models.CharField(max_length=20, null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
