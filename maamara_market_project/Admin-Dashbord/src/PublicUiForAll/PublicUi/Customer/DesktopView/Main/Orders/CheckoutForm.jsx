@@ -107,6 +107,7 @@ const fetchShippingQuote = async () => {
 
     const res = await fetch("/api/shipping-rates", {
       method: "POST",
+      credentials: "include",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
     });
@@ -141,12 +142,20 @@ const fetchShippingQuote = async () => {
         order?.items?.map((item) => ({
           id: item?.id ?? null,
           quantity: item?.quantity ?? 1,
+          variant_id: item?.variant_id ?? null,
+          size_id: item?.size_id ?? null,
+          age_variant_id: item?.age_variant_id ?? null,
+          length_id: item?.length_id ?? null,
+          weight_id: item?.weight_id ?? null,
+          shoe_id: item?.shoe_id ?? null,
+          selected_shoe_size: item?.shoe_size ?? null,
         })) || [],
     };
 
     try {
       const res = await fetch("/api/checkout/", {
         method: "POST",
+        credentials: "include",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
