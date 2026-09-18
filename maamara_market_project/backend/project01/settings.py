@@ -342,6 +342,16 @@ PAYMENT_GATEWAYS = {
         "client_id": env("KCB_API_KEY"),
         "client_secret": env("KCB_API_SECRET"),
         "callback_url": env("KCB_CALLBACK_URL"),
+        "transfer_url": env("KCB_TRANSFER_URL", default=""),
+        "status_url": env("KCB_TRANSFER_STATUS_URL", default=""),
+        "status_reference_parameter": env("KCB_STATUS_REFERENCE_PARAMETER", default="transactionReference"),
+        "company_code": env("KCB_COMPANY_CODE", default=""),
+        "debit_account_number": env("KCB_DEBIT_ACCOUNT_NUMBER", default=""),
+        "beneficiary_bank_code": env("KCB_BENEFICIARY_BANK_CODE", default=""),
+        "transaction_type": env("KCB_TRANSACTION_TYPE", default="IF"),
+        "currency": env("KCB_CURRENCY", default="KES"),
+        "narrative": env("KCB_TRANSFER_NARRATIVE", default="Automated vendor payment"),
+        "beneficiary_details": env("KCB_BENEFICIARY_DETAILS", default="Vendor"),
     },
 
     "shipping": {
