@@ -14,7 +14,7 @@ from django.utils import timezone
 
 from core.models import Notification
 from ReactSerializers.models import Brand, Item
-from oder.models import OderItem
+from order.models import OrderItem
 
 
 
@@ -489,7 +489,7 @@ class SoldItem(models.Model):
 #Vendor Adjustment models intergration
 class VendorAdjustment(models.Model):
     vendor = models.ForeignKey(Vendor, on_delete=models.CASCADE, related_name="adjustments")
-    order_item = models.ForeignKey(OderItem, on_delete=models.CASCADE, null=True, blank=True)
+    order_item = models.ForeignKey(OrderItem, on_delete=models.CASCADE, null=True, blank=True)
     # Add this field 👇
     is_approved = models.BooleanField(default=False)
     amount = models.DecimalField(max_digits=10, decimal_places=2)
@@ -541,7 +541,7 @@ class ReturnRequest(models.Model):
         related_name='return_requests'
     )
     visitor_id = models.CharField(max_length=255, null=True, blank=True)
-    item = models.ForeignKey('oder.OderItem', on_delete=models.CASCADE)
+    item = models.ForeignKey('order.OrderItem', on_delete=models.CASCADE)
     reason = models.TextField(max_length=100, choices=PREFERENCE_REASONS, null=True, blank=True)
     description = models.TextField(max_length=400, blank=True, null=True)
     custom_reason = models.TextField(null=True, blank=True, help_text="Used when reason is 'custom'.")
