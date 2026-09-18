@@ -17,10 +17,13 @@ from rest_framework_simplejwt.exceptions import InvalidToken, TokenError
 import uuid
 import bleach
 from django.db.models import Q
+from django.db import transaction
+import logging
 from django.conf import settings
 from .models import Order
 
 User = get_user_model()
+logger = logging.getLogger(__name__)
 
 # -------------------------------
 # Sanitizer
@@ -320,7 +323,7 @@ def return_request_handler_api(request, item_id):
         }, status=status.HTTP_400_BAD_REQUEST)
 
     except Exception as e:
-        print("❌ Error in return_request_handler_api:", e)
+        logger.exception("Return request handler failed")
         return Response({
             "success": False,
             "error": str(e)
@@ -343,7 +346,10 @@ def approve_return_request_api(request, return_id):
     """
     try:
         # 🔍 Fetch the return request
-        return_request = get_object_or_404(ReturnRequest, id=return_id)
+        return_request = get_object_or_404(
+            ReturnRequest.objects.select_related("item__item", "customer"),
+            id=return_id,
+        )
         admin = request.user
 
         action = request.data.get("action")  # expected: "approve" or "reject"
@@ -355,12 +361,29 @@ def approve_return_request_api(request, return_id):
                 "error": "Invalid action. Must be 'approve' or 'reject'."
             }, status=status.HTTP_400_BAD_REQUEST)
 
-        item = return_request.item
-        product = item.item
-        vendor = Vendor.objects.get(user=product.created_by)
-        customer = return_request.customer
-        visitor_id = return_request.visitor_id
-        pref = return_request.customer_preference or "unspecified"
+        with transaction.atomic():
+            return_request = (
+                ReturnRequest.objects
+                .select_for_update()
+                .select_related("item__item", "customer")
+                .get(pk=return_id)
+            )
+
+            # Terminal states are idempotent: a repeated admin request must
+            # not create another adjustment or mutate an already-decided return.
+            if return_request.status in {"approved_refund", "approved_exchange", "rejected"}:
+                return Response({
+                    "success": True,
+                    "message": "Return request has already been decided.",
+                    "return_request": ReturnRequestSerializer(return_request).data,
+                }, status=status.HTTP_200_OK)
+
+            item = return_request.item
+            product = item.item
+            vendor = Vendor.objects.get(user=product.created_by)
+            customer = return_request.customer
+            visitor_id = return_request.visitor_id
+            pref = return_request.customer_preference or "unspecified"
 
         # ✅ APPROVAL FLOW
         if action == "approve":
@@ -393,7 +416,7 @@ def approve_return_request_api(request, return_id):
                         user=customer,
                         title="Refund Requested",
                         message=f"You have requested for a refund on  product '{product.name}'.",
-                        url=f"/vendor/orders/{product.user.order.id}/returns/"
+                        url=f"/orders/returns/{return_request.id}/"
                     )
                 elif visitor_id:
                     ActivityLog.objects.create(
@@ -410,7 +433,7 @@ def approve_return_request_api(request, return_id):
                         visitor_id=visitor_id,
                         title="Refund Requested",
                         message=f"You have requested for a refund on  product '{product.name}'.",
-                        url=f"/vendor/orders/{product.user.order.id}/returns/"
+                        url=f"/orders/returns/{return_request.id}/"
                     )
 
                 # Vendor Notification
@@ -588,7 +611,7 @@ def approve_return_request_api(request, return_id):
             }, status=status.HTTP_200_OK)
 
     except Exception as e:
-        print("❌ Error in approve_return_request_api:", e)
+        logger.exception("Return approval handler failed")
         return Response({
             "success": False,
             "error": str(e)
@@ -627,7 +650,7 @@ def get_pending_returns_api(request):
         }, status=status.HTTP_200_OK)
 
     except Exception as e:
-        print("❌ Error in get_pending_returns_api:", e)
+        logger.exception("Pending returns lookup failed")
         return Response({
             "success": False,
             "error": str(e)
