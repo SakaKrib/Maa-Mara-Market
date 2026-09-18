@@ -41,25 +41,6 @@ class BillingAddress(models.Model):
         return f"{self.first_name} {self.last_name} (Visitor {self.visitor_id})"
     
 
-    #  to address easy podt
-    # ✅ Add this method
-    def to_easypost_address(self):
-        """
-        Convert BillingAddress instance to an EasyPost-compatible address dict.
-        """
-        return {
-            "name": f"{self.first_name} {self.last_name}".strip(),
-            "street1": self.street_address,
-            "street2": self.appartment_address or "",
-            "city": self.city,
-            "state": self.state or "",
-            "zip": self.zip,
-            "country": str(self.country.code if hasattr(self.country, "code") else self.country),
-            "phone": self.phone,
-            "email": self.email,
-        }
-
-
 # payment model
 
 class Payment(models.Model):
