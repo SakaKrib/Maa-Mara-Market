@@ -1,7 +1,6 @@
-import { defineConfig } from 'vite';
-import react from '@vitejs/plugin-react'; // or vue/svelte/etc
+import { defineConfig } from "vite";
+import react from "@vitejs/plugin-react";
 import path from "path";
-//import { baseUrl } from './src/cmponents/Constant/Constant';
 
 export default defineConfig({
   base: "/static/",
@@ -12,14 +11,35 @@ export default defineConfig({
     },
   },
   server: {
-    host: '192.168.8.106', // This sets the frontend to use 127.0.0.1
+    host: "0.0.0.0",
     port: 5173,
+    strictPort: true,
     proxy: {
-      '/api': {
-        target: 'http://192.168.8.106:8000', // your backend server
+      "/api": {
+        target: "http://backend:8000",
         changeOrigin: true,
-      }
-    }
-  }
+      },
+      "/accounts": {
+        target: "http://backend:8000",
+        changeOrigin: true,
+      },
+      "/admin": {
+        target: "http://backend:8000",
+        changeOrigin: true,
+      },
+      "/media": {
+        target: "http://backend:8000",
+        changeOrigin: true,
+      },
+      "/static": {
+        target: "http://backend:8000",
+        changeOrigin: true,
+      },
+      "/ws": {
+        target: "ws://backend:8000",
+        ws: true,
+        changeOrigin: true,
+      },
+    },
+  },
 });
-
