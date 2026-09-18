@@ -11,8 +11,12 @@ channels
 channels-redis
 daphne
 celery
+redis
 psycopg2-binary
 Pillow
 requests
 python-dotenv
 openai
+bleach
+cryptography
+python-dateutil
