@@ -4,8 +4,6 @@ from decimal import Decimal
 import requests
 from django.conf import settings
 from rest_framework.decorators import api_view, permission_classes
-from rest_framework_simplejwt.authentication import JWTAuthentication
-from rest_framework_simplejwt.exceptions import InvalidToken, TokenError
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from .models import Order, Transaction, Card
@@ -15,18 +13,8 @@ from .views import IsAuthenticatedOrVisitor
 logger = logging.getLogger(__name__)
 
 # 🔹 Get PayPal access token
-def get_paypal_access_token():
-    PAYPAL = settings.PAYMENT_GATEWAYS["paypal"]
-    auth = (PAYPAL["client_id"], PAYPAL["client_secret"])
-    response = requests.post(
-        f"{PAYPAL['base_url']}/v1/oauth2/token",
-        data={"grant_type": "client_credentials"},
-        auth=auth,
-        timeout=10
-    )
-    if response.status_code != 200:
-        raise Exception("Failed to obtain PayPal access token.")
-    return response.json()["access_token"]
+from .Payment import get_paypal_access_token
+
 
 # 🔹 Fetch PayPal capture details
 def get_capture_details(capture_id):
@@ -253,4 +241,3 @@ def capture_paypal_order(request, order_id):
     except Exception as e:
         logger.exception("PayPal capture operation failed.")
         return Response({"status": "error", "message": "Payment capture failed."}, status=500)
-
