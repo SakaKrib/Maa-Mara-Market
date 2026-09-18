@@ -401,60 +401,7 @@ class Order(models.Model):
             "weight": float(round(total_weight, 2))
         }
     
-    # to address
-    def to_easypost_address(self):
-        """
-        Converts the Order's billing_address into an EasyPost address dictionary.
-        """
-        if not self.billing_address:
-            return None
 
-        country_value = self.billing_address.country
-        # Convert if it's an object
-        if hasattr(country_value, "code"):
-            country_value = country_value.code
-        elif hasattr(country_value, "alpha_2"):
-            country_value = country_value.alpha_2
-        elif not isinstance(country_value, str):
-            country_value = str(country_value)
-
-        return {
-            "name": f"{self.billing_address.first_name} {self.billing_address.last_name}",
-            "street1": self.billing_address.street_address,
-            "street2": self.billing_address.appartment_address or "",
-            "city": self.billing_address.city,
-            "state": self.billing_address.state or "",
-            "zip": self.billing_address.zip,
-            "country": country_value.upper(),
-            "phone": self.billing_address.phone,
-            "email": self.billing_address.email,
-        }
-
-
-    
-
-    def to_easypost_parcel(self):
-        """
-        Convert the total order dimensions to an EasyPost parcel dictionary.
-        """
-        dims = self.get_total_shipping_dimensions()
-        if not dims:
-            return None
-
-        # Convert cm/kg → inches/ounces
-        length = dims["length"] / Decimal("2.54")
-        width = dims["width"] / Decimal("2.54")
-        height = dims["height"] / Decimal("2.54")
-        weight = dims["weight"] * Decimal("35.274")
-
-        return {
-            "length": float(round(length, 2)),
-            "width": float(round(width, 2)),
-            "height": float(round(height, 2)),
-            "weight": float(round(weight, 2)),
-        }
-
-    
 
 
 # card
