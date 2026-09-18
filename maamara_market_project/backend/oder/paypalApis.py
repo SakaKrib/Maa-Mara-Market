@@ -1,9 +1,14 @@
+import json
 import logging
+import time
 import uuid
 from decimal import Decimal
 
+import requests
 from asgiref.sync import async_to_sync
 from channels.layers import get_channel_layer
+from django.conf import settings
+from django.contrib.auth.models import User
 from django.db import models, transaction
 from django.forms.models import model_to_dict
 from django.shortcuts import get_object_or_404
@@ -13,10 +18,12 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 
 from ReactSerializers.models import AgeVariant, ColorVariant, Item, Length, Shoe, SizeStock, Weight
-from vendorDashboard.models import Vendor
+from core.models import Notification
+from vendorDashboard.models import SoldItem, Vendor
+
 from .Payment import capture_paypal_order, create_paypal_order
 from .capture_order import get_paypal_access_token
-from .models import BillingAddress, Card, Customer, Order, Payment, Transaction
+from .models import BillingAddress, Customer, Order, Payment, Transaction
 from .paymentserializer import CheckoutSerializer, OrderResponseSerializer
 from .views import IsAuthenticatedOrVisitor
 
@@ -997,66 +1004,3 @@ def paypal_webhook(request):
             if order:
                 vendor_ids = list(order.items.values_list("item__vendor", flat=True).distinct())
                 logger.info(f"🧾 Order {order.id} vendor_ids: {vendor_ids}")
-
-                if vendor_ids:
-                    for vendor_id in vendor_ids:
-                        vendor = Vendor.objects.get(id=vendor_id)
-                        tx, created = Transaction.objects.update_or_create(
-                            paypal_transaction_id=resource.get("id"),
-                            vendor=vendor,
-                            defaults={
-                                "transaction_type": "PayPal",
-                                "payment_method": "paypal",
-                                "order": order,
-                                "payment": payment,
-                                "amount": Decimal(resource.get("amount", {}).get("value", "0.00")),
-                                "status": status,
-                                "payer_email": payer_email,
-                                "raw_data": data,
-                                
-                            },
-                        )
-                    logger.info(f"✅ Transaction(s) {tx.paypal_transaction_id} created or updated successfully")
-                else:
-                    # No vendors found, create single transaction without vendor
-                    tx, created = Transaction.objects.update_or_create(
-                        paypal_transaction_id=resource.get("id"),
-                        order=order,
-                        defaults={
-                            "transaction_type": "PayPal",
-                            "payment_method": "paypal",
-                            "amount": Decimal(resource.get("amount", {}).get("value", "0.00")),
-                            "status": status,
-                            "payer_email": payer_email,
-                            "raw_data": data,
-                            "payment": payment,
-                            
-                        },
-                    )
-                    logger.info(f"✅ Transaction {tx.paypal_transaction_id} (no vendor) created or updated successfully")
-
-                    # Notify frontend via WebSocket
-                channel_layer = get_channel_layer()
-                async_to_sync(channel_layer.group_send)(
-                    f"order_{order.id}",
-                    {"type": "payment_status", "status": "completed"},
-                )
-                async_to_sync(channel_layer.group_send)(
-                    f"order_{order.id}",
-                    {
-                        "type": "transaction.success",
-                        "message": {
-                            "order_id": order.id,
-                            "amount": order.get_total(),
-                            "status": "success",
-                            "customer": f"{order.billing_address.first_name} {order.billing_address.last_name}",
-                        },
-                    },
-                )
-
-    except Exception as e:
-        logger.exception("PayPal webhook processing error.")
-        return Response({"status": "error", "message": "Webhook processing failed."}, status=500)
-
-    return Response({"status": "ok", "message": "Webhook processed"})
-
