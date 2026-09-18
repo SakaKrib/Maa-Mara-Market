@@ -1,3 +1,4 @@
+from django.db import transaction
 from django.db.models.signals import post_delete, post_save
 from django.dispatch import receiver
 
@@ -7,86 +8,166 @@ from ReactSerializers.models import Item, ColorVariant, SizeStock, AgeVariant, O
 from oder.models import Order, OderItem, Payment, Customer
 from vendorDashboard.models import Vendor, VendorPayout, VendorItemRequest
 
+
 def emit(sender, instance, action, **kwargs):
-    broadcast_event(sender.__name__, model=sender.__name__, object_id=instance.pk,
-                    action=action, **kwargs, data=model_snapshot(instance))
+    payload = {
+        "model": sender.__name__,
+        "object_id": instance.pk,
+        "action": action,
+        **kwargs,
+        "data": model_snapshot(instance),
+    }
+
+    # Do not notify clients about a DB mutation that later rolls back.
+    transaction.on_commit(
+        lambda: broadcast_event(sender.__name__, **payload)
+    )
+
 
 def item_vendor(instance):
     return [instance.vendor_id] if getattr(instance, "vendor_id", None) else []
 
+
 def order_vendors(instance):
-    return list(Vendor.objects.filter(items__order_items__order=instance)
-                .values_list("id", flat=True).distinct())
+    return list(
+        Vendor.objects.filter(items__order_items__order=instance)
+        .values_list("id", flat=True)
+        .distinct()
+    )
+
 
 @receiver(post_save, sender=Item)
 def item_save(sender, instance, created, **kwargs):
-    emit(sender, instance, "created" if created else "updated", public=True, vendor_ids=item_vendor(instance))
+    emit(sender, instance, "created" if created else "updated",
+         public=True, vendor_ids=item_vendor(instance))
+
 
 @receiver(post_delete, sender=Item)
 def item_delete(sender, instance, **kwargs):
     emit(sender, instance, "deleted", public=True, vendor_ids=item_vendor(instance))
+
 
 @receiver(post_save, sender=ColorVariant)
 @receiver(post_save, sender=SizeStock)
 @receiver(post_save, sender=AgeVariant)
 @receiver(post_save, sender=Offer)
 def catalog_save(sender, instance, created, **kwargs):
-    item = getattr(instance, "item", None) or getattr(getattr(instance, "variant", None), "item", None)
+    item = (
+        getattr(instance, "item", None)
+        or getattr(getattr(instance, "variant", None), "item", None)
+    )
     if item:
-        emit(sender, instance, "created" if created else "updated", public=True, vendor_ids=item_vendor(item))
+        emit(sender, instance, "created" if created else "updated",
+             public=True, vendor_ids=item_vendor(item))
+
+
+@receiver(post_delete, sender=ColorVariant)
+@receiver(post_delete, sender=SizeStock)
+@receiver(post_delete, sender=AgeVariant)
+@receiver(post_delete, sender=Offer)
+def catalog_delete(sender, instance, **kwargs):
+    # Public catalog clients must invalidate/refetch the parent item.
+    emit(sender, instance, "deleted", public=True)
+
 
 @receiver(post_save, sender=Order)
 def order_save(sender, instance, created, **kwargs):
-    emit(sender, instance, "created" if created else "updated",
-         user_ids=[instance.user_id] if instance.user_id else [], vendor_ids=order_vendors(instance))
+    emit(
+        sender, instance, "created" if created else "updated",
+        user_ids=[instance.user_id] if instance.user_id else [],
+        vendor_ids=order_vendors(instance),
+    )
+
 
 @receiver(post_save, sender=OderItem)
 def order_item_save(sender, instance, created, **kwargs):
     if instance.order_id:
-        emit(sender, instance, "created" if created else "updated",
-             user_ids=[instance.order.user_id] if instance.order.user_id else [],
-             vendor_ids=order_vendors(instance.order))
+        emit(
+            sender, instance, "created" if created else "updated",
+            user_ids=[instance.order.user_id] if instance.order.user_id else [],
+            vendor_ids=order_vendors(instance.order),
+        )
+
 
 @receiver(post_save, sender=Payment)
 def payment_save(sender, instance, created, **kwargs):
-    emit(sender, instance, "created" if created else "updated",
-         user_ids=[instance.user_id] if instance.user_id else [])
+    emit(
+        sender, instance, "created" if created else "updated",
+        user_ids=[instance.user_id] if instance.user_id else [],
+    )
+
 
 @receiver(post_save, sender=Customer)
 def customer_save(sender, instance, created, **kwargs):
-    vendor_id = Vendor.objects.filter(user_id=instance.vendor_id).values_list("id", flat=True).first()
-    emit(sender, instance, "created" if created else "updated",
-         vendor_ids=[vendor_id] if vendor_id else [])
+    vendor_id = (
+        Vendor.objects.filter(user_id=instance.vendor_id)
+        .values_list("id", flat=True)
+        .first()
+    )
+    emit(
+        sender, instance, "created" if created else "updated",
+        vendor_ids=[vendor_id] if vendor_id else [],
+    )
+
 
 @receiver(post_save, sender=Notification)
 def notification_save(sender, instance, created, **kwargs):
-    emit(sender, instance, "created" if created else "updated",
-         user_ids=[instance.user_id] if instance.user_id else [])
+    emit(
+        sender, instance, "created" if created else "updated",
+        user_ids=[instance.user_id] if instance.user_id else [],
+    )
+
 
 @receiver(post_save, sender=ActivityLog)
 def activity_save(sender, instance, created, **kwargs):
     if created:
-        emit(sender, instance, "created", user_ids=[instance.user_id] if instance.user_id else [])
+        emit(
+            sender, instance, "created",
+            user_ids=[instance.user_id] if instance.user_id else [],
+        )
+
 
 @receiver(post_save, sender=CalendarEvent)
 def calendar_save(sender, instance, created, **kwargs):
-    emit(sender, instance, "created" if created else "updated", user_ids=[instance.user_id])
+    emit(
+        sender, instance, "created" if created else "updated",
+        user_ids=[instance.user_id] if instance.user_id else [],
+    )
+
 
 @receiver(post_save, sender=VendorPayout)
 def payout_save(sender, instance, created, **kwargs):
-    uid = Vendor.objects.filter(pk=instance.vendor_id).values_list("user_id", flat=True).first()
-    emit(sender, instance, "created" if created else "updated",
-         user_ids=[uid] if uid else [], vendor_ids=[instance.vendor_id])
+    uid = (
+        Vendor.objects.filter(pk=instance.vendor_id)
+        .values_list("user_id", flat=True)
+        .first()
+    )
+    emit(
+        sender, instance, "created" if created else "updated",
+        user_ids=[uid] if uid else [],
+        vendor_ids=[instance.vendor_id],
+    )
+
 
 @receiver(post_save, sender=VendorItemRequest)
 def vendor_request_save(sender, instance, created, **kwargs):
-    uid = Vendor.objects.filter(pk=instance.vendor_id).values_list("user_id", flat=True).first()
-    emit(sender, instance, "created" if created else "updated",
-         user_ids=[uid] if uid else [], vendor_ids=[instance.vendor_id])
+    uid = (
+        Vendor.objects.filter(pk=instance.vendor_id)
+        .values_list("user_id", flat=True)
+        .first()
+    )
+    emit(
+        sender, instance, "created" if created else "updated",
+        user_ids=[uid] if uid else [],
+        vendor_ids=[instance.vendor_id],
+    )
+
 
 @receiver(post_save, sender=PriceChangeRequest)
 def price_change_request_save(sender, instance, created, **kwargs):
     vendor_id = getattr(getattr(instance, "item", None), "vendor_id", None)
-    emit(sender, instance, "created" if created else "updated",
-         vendor_ids=[vendor_id] if vendor_id else [],
-         user_ids=[instance.requested_by_id] if instance.requested_by_id else [])
+    emit(
+        sender, instance, "created" if created else "updated",
+        vendor_ids=[vendor_id] if vendor_id else [],
+        user_ids=[instance.requested_by_id] if instance.requested_by_id else [],
+    )
