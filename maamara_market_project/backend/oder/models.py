@@ -224,7 +224,12 @@ class Order(models.Model):
         related_name='orders'
     )
     paypal_order_id = models.CharField(max_length=64, blank=True, null=True, unique=True)
-    updated_total_price = models.IntegerField( null=True, blank=True, default=0)
+    updated_total_price = models.IntegerField(null=True, blank=True, default=0)
+    shipping_amount = models.DecimalField(max_digits=12, decimal_places=2, default=Decimal("0.00"))
+    shipping_provider = models.CharField(max_length=32, blank=True, null=True)
+    shipping_service = models.CharField(max_length=128, blank=True, null=True)
+    shipping_provider_amount = models.DecimalField(max_digits=12, decimal_places=2, blank=True, null=True)
+    shipping_currency = models.CharField(max_length=3, blank=True, null=True)
     billing_address = models.ForeignKey(BillingAddress, on_delete=models.SET_NULL, blank=True, null=True)
     payment = models.ForeignKey(Payment, on_delete=models.SET_NULL, blank=True, null=True)
     paypal_invoice_id = models.CharField(max_length=128, blank=True, null=True, unique=True)
@@ -357,7 +362,7 @@ class Order(models.Model):
         total_volume = Decimal("0.00")
         has_dimensions = False
 
-        for order_item in self.items.all():
+        for order_item in self.order_items.all():
             item = order_item.item
             qty = order_item.quantity
 
