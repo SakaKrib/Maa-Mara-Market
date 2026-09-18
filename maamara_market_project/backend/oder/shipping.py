@@ -121,7 +121,6 @@ def _fedex_rates(order, destination):
             }},
             "recipient": {"address": destination},
             "pickupType": config.get("pickup_type", "USE_SCHEDULED_PICKUP"),
-            "serviceType": None,
             "packagingType": config.get("packaging_type", "YOUR_PACKAGING"),
             "requestedPackageLineItems": [{
                 "weight": {"units": "KG", "value": dims["weight"]},
