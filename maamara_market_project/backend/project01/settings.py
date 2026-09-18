@@ -334,18 +334,6 @@ PAYMENT_GATEWAYS = {
 EXCHANGE_RATE_API_URL = env("EXCHANGE_RATE_API_URL")
 
 OPENAI_API_KEY = env("OPENAI_API_KEY")
-EASYPOST_API_KEY = env("EASYPOST_API_KEY", default="")
-
-EASYPOST_FROM_ADDRESS = {
-    "name": env("EASYPOST_FROM_ADDRESS_NAME"),
-    "street1": env("EASYPOST_FROM_ADDRESS_STREET"),
-    "city": env("EASYPOST_FROM_ADDRESS_CITY"),
-    "state": env("EASYPOST_FROM_ADDRESS_STATE"),
-    "zip": env("EASYPOST_FROM_ADDRESS_ZIP"),
-    "country": env("EASYPOST_FROM_ADDRESS_COUNTRY"),
-    "phone": env("EASYPOST_FROM_ADDRESS_PHONE"),
-}
-
 # =========================================================
 # EMAIL
 # =========================================================
