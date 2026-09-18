@@ -373,21 +373,21 @@ class SizeStock(models.Model):
     class Meta:
         constraints = [
             models.CheckConstraint(
-                condition=(
-                    models.Q(item__isnull=False, variant__isnull=True) |
-                    models.Q(item__isnull=True, variant__isnull=False)
+                check=(
+                    models.Q(item__isnull=False, variant__isnull=True)
+                    | models.Q(item__isnull=True, variant__isnull=False)
                 ),
-                name="size_stock_attached_to_one_parent"
+                name="size_stock_attached_to_one_parent",
             ),
             models.UniqueConstraint(
-                fields=['item', 'size'],
-                condition=models.Q(variant__isnull=True),  # Only apply this constraint when there is no ColorVariant
-                name='unique_size_only_variant'
+                fields=["item", "size"],
+                condition=models.Q(variant__isnull=True),
+                name="unique_size_only_variant",
             ),
             models.UniqueConstraint(
-                fields=['variant', 'size'],
-                condition=models.Q(item__isnull=True),  # Only apply this constraint when there is no Item
-                name='unique_size_per_color_variant'
+                fields=["variant", "size"],
+                condition=models.Q(item__isnull=True),
+                name="unique_size_per_color_variant",
             ),
         ]
 
