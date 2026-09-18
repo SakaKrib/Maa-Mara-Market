@@ -33,6 +33,10 @@ DEBUG = env.bool("DEBUG", default=False)
 
 FRONTEND_URL = env("FRONTEND_URL")
 
+# Registered PayPal webhook ID. Keep this server-side; it is required to verify
+# every PayPal webhook before any payment/refund state is changed.
+PAYPAL_WEBHOOK_ID = env("PAYPAL_WEBHOOK_ID", default="")
+
 # The domains this Django site is allowed to serve. It is specified as a string
 # of comma-separated URLs in .env
 ALLOWED_HOSTS = [host.strip() for host in env("ALLOWED_HOSTS", default="127.0.0.1,localhost").split(",") if host.strip()]
