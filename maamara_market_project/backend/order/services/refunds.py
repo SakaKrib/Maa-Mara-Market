@@ -4,7 +4,7 @@ from decimal import Decimal, InvalidOperation
 import requests
 from django.conf import settings
 from django.db import transaction
-from django.db.models import Sum
+from django.db.models import Q, Sum
 from django.utils import timezone
 
 from .models import Refund, Transaction
@@ -251,8 +251,6 @@ def process_mpesa_refund(refund_id):
     Daraja reversal is transaction-based, so automatic processing is limited
     to a full reversal of the original C2B receipt amount.
     """
-    import uuid
-
     with transaction.atomic():
         refund = (
             Refund.objects
@@ -393,8 +391,8 @@ def reconcile_mpesa_refund_callback(payload, *, timeout=False):
             Refund.objects.select_for_update()
             .filter(provider="Mpesa")
             .filter(
-                models.Q(mpesa_conversation_id=conversation_id)
-                | models.Q(mpesa_originator_conversation_id=originator_id)
+                Q(mpesa_conversation_id=conversation_id)
+                | Q(mpesa_originator_conversation_id=originator_id)
             )
             .first()
         )
