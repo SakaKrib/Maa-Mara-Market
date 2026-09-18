@@ -20,7 +20,7 @@ from core.models import ActivityLog, Voucher, Wallet
 from vendorDashboard.models import ReturnRequest
 
 from .Serializers import TransactionSerializer
-from .models import OderItem, Order, Transaction
+from .models import OrderItem, Order, Transaction
 
 User = get_user_model()
 
@@ -343,7 +343,7 @@ def add_to_cart_api(request, pk):
     # Get active pending order first
     order = Order.objects.filter(user=user, visitor_id=visitor_id, status="pending").first()
 
-    cart_item_qs = OderItem.objects.filter(
+    cart_item_qs = OrderItem.objects.filter(
         item=item,
         user=user,
         visitor_id=visitor_id,
@@ -363,7 +363,7 @@ def add_to_cart_api(request, pk):
         created = False
     else:
         # Create new cart item instance
-        cart_item = OderItem(
+        cart_item = OrderItem(
             item=item,
             user=user,
             visitor_id=visitor_id,
@@ -520,7 +520,7 @@ def remove_from_cart_api(request, pk):
     # -----------------------------
     cart_item_id = request.data.get("cart_item_id")
     if cart_item_id:
-        cart_item_qs = OderItem.objects.filter(
+        cart_item_qs = OrderItem.objects.filter(
             id=cart_item_id,
             item=item,
             user=user,
@@ -529,7 +529,7 @@ def remove_from_cart_api(request, pk):
             order=order,
         )
     else:
-        cart_item_qs = OderItem.objects.filter(
+        cart_item_qs = OrderItem.objects.filter(
             item=item,
             user=user,
             visitor_id=visitor_id,
@@ -673,7 +673,7 @@ def update_cart_quantity(request, pk):
     # 🔹 Find the correct cart item
     cart_item_id = request.data.get("cart_item_id")
     if cart_item_id:
-        cart_item = OderItem.objects.filter(
+        cart_item = OrderItem.objects.filter(
             id=cart_item_id,
             item=item,
             user=user,
@@ -682,7 +682,7 @@ def update_cart_quantity(request, pk):
             order=order,
         ).first()
     else:
-        cart_item = OderItem.objects.filter(
+        cart_item = OrderItem.objects.filter(
             item=item,
             user=user,
             visitor_id=visitor_id,
@@ -838,7 +838,7 @@ def admin_transactions(request):
         .prefetch_related(
             Prefetch(
                 "order__order_items",
-                queryset=OderItem.objects.select_related("item")
+                queryset=OrderItem.objects.select_related("item")
             )
         )
         .order_by("-created_at")[:50]
@@ -946,7 +946,7 @@ def dashboard_stats(request):
 @api_view(["GET"])
 @permission_classes([IsAuthenticated, IsAdminUser])
 def vendor_sales(request):
-    items = OderItem.objects.select_related("item", "item__vendor")
+    items = OrderItem.objects.select_related("item", "item__vendor")
 
     vendors = {}
 
