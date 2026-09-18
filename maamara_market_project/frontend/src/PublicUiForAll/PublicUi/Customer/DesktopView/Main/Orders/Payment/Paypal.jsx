@@ -8,10 +8,9 @@ export default function CheckoutPaypalPayment() {
   if (!clientId) throw new Error("SDK Validation error: 'Expected client-id to be passed'");
 
   const { order } = useCartContext();
-  const [usdAmount, setUsdAmount] = useState("0.01");
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
-  const kesAmount = order?.order?.total || order?.order?.final_total || 0;
+  const kesAmount = order?.order?.final_total || order?.order?.total || 0;
 
   // --- WebSocket for real-time payment status ---
   useEffect(() => {
@@ -33,65 +32,38 @@ export default function CheckoutPaypalPayment() {
     return () => socket.close();
   }, [order?.order?.id, navigate]);
 
-  // --- Convert KES to USD ---
-  useEffect(() => {
-    async function convertKES() {
-      try {
-        const res = await fetch(
-          `https://api.exchangerate.host/convert?from=KES&to=USD&amount=${kesAmount}`
-        );
-        const data = await res.json();
-        setUsdAmount(data?.result ? Number(data.result).toFixed(2) : (kesAmount / 150).toFixed(2));
-      } catch {
-        setUsdAmount((kesAmount / 150).toFixed(2));
-      }
-    }
-    if (kesAmount > 0) convertKES();
-  }, [kesAmount]);
-
   const handlePaymentApproval = async (details) => {
     setLoading(true);
     try {
-      console.log("💳 PayPal payment captured:", details);
-
       const paypalOrderId = details.id;
+      if (!paypalOrderId || paypalOrderId !== order?.order?.paypal_order_id) {
+        throw new Error("PayPal order does not match the local order.");
+      }
+
       const response = await fetch(
-        `http://127.0.0.1:8000/api/paypal/capture-order/${paypalOrderId}/`,
+        `/api/paypal/capture/${encodeURIComponent(paypalOrderId)}/`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            ref_order_id: order.order.id,
-           
-          }),
           credentials: "include",
         }
       );
 
       const data = await response.json();
-      console.log("✅ Payment verified by backend:", data);
-
-      // Treat "already captured" as successful
-      if (data.status === "ok" && (data.message === "Capture attempted" || data.message === "Order already captured")) {
-      setLoading(false);
-
-        navigate(`/payment-success`, { state: { order: order.order } });
-      } else {
-        console.error("❌ Backend capture failed:", data);
-      setLoading(false);
-
-        alert("Payment failed. Please contact support.");
+      if (!response.ok || data.status !== "ok") {
+        throw new Error(data.message || "PayPal capture failed.");
       }
-    } catch (error) {
-      console.error("❌ Failed to capture payment:", error);
-      setLoading(false);
-      alert("Payment failed. Please try again.");
 
+      navigate("/payment-success", {
+        state: { order: data.order || order.order },
+      });
+    } catch (error) {
+      console.error("PayPal capture failed:", error);
+      alert(error.message || "Payment failed. Please try again.");
+    } finally {
+      setLoading(false);
     }
   };
-
-  
-
 
   return (
     <div className="flex flex-col py-2 px-0 bg-white min-h-screen">
@@ -114,7 +86,7 @@ export default function CheckoutPaypalPayment() {
       {/* --- Main content --- */}
       <div className="mt-64 w-full text-center">
         <h2 className="text-lg font-semibold text-gray-700 mb-4">
-          Choose a payment option (KES {kesAmount} ≈ USD {usdAmount})
+          Choose a payment option (KES {kesAmount})
         </h2>
 
         <div className="w-full max-w-xs mx-auto mt-10">
@@ -123,16 +95,13 @@ export default function CheckoutPaypalPayment() {
             <PayPalButtons
               fundingSource={FUNDING.PAYPAL}
               style={{ layout: "vertical", color: "blue", shape: "pill", label: "paypal", height: 45 }}
-              createOrder={(data, actions) =>
-                actions.order.create({
-                  purchase_units: [
-                    {
-                      amount: { currency_code: "USD", value: usdAmount },
-                      reference_id: order?.order?.id?.toString(),
-                    },
-                  ],
-                })
-              }
+              createOrder={() => {
+                const paypalOrderId = order?.order?.paypal_order_id;
+                if (!paypalOrderId) {
+                  throw new Error("PayPal order was not created by checkout.");
+                }
+                return paypalOrderId;
+              }}
               onApprove={async (data) => {
                 if (!loading) await handlePaymentApproval({ id: data.orderID });
               }}
@@ -143,16 +112,13 @@ export default function CheckoutPaypalPayment() {
             <PayPalButtons
               fundingSource={FUNDING.CARD}
               style={{ layout: "vertical", color: "black", shape: "pill", label: "pay", height: 45 }}
-              createOrder={(data, actions) =>
-                actions.order.create({
-                  purchase_units: [
-                    {
-                      amount: { currency_code: "USD", value: usdAmount },
-                      reference_id: order?.order?.id?.toString(),
-                    },
-                  ],
-                })
-              }
+              createOrder={() => {
+                const paypalOrderId = order?.order?.paypal_order_id;
+                if (!paypalOrderId) {
+                  throw new Error("PayPal order was not created by checkout.");
+                }
+                return paypalOrderId;
+              }}
               onApprove={async (data) => {
                 if (!loading) await handlePaymentApproval({ id: data.orderID });
               }}
