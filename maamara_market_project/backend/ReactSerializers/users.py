@@ -183,7 +183,7 @@ def login_view(request):
         # Set JWT cookies
         response.set_cookie("accessToken", access_token, httponly=True, secure=not settings.DEBUG, samesite="Lax",  max_age=5 * 60,
         path="/",)
-        response.set_cookie("refreshToken", refresh_token, httponly=True, secure=not __import__("django.conf", fromlist=["settings"]).settings.DEBUG, samesite="Lax", max_age=2592000, path="/")
+        response.set_cookie("refreshToken", refresh_token, httponly=True, secure=not settings.DEBUG, samesite="Lax", max_age=2592000, path="/")
         return response
 
     # --- Fallback to Vendor table ---
@@ -216,8 +216,8 @@ def login_view(request):
             }
         })
 
-        response.set_cookie("accessToken", access_token, httponly=True, secure=False, samesite='Lax', max_age=300)
-        response.set_cookie("refreshToken", refresh_token, httponly=True, secure=False, samesite='Lax', max_age=2592000)
+        response.set_cookie("accessToken", access_token, httponly=True, secure=not settings.DEBUG, samesite="Lax", max_age=300, path="/")
+        response.set_cookie("refreshToken", refresh_token, httponly=True, secure=not settings.DEBUG, samesite="Lax", max_age=2592000, path="/")
         return response
 
     return JsonResponse({"success": False, "error": "Invalid credentials"}, status=401)
