@@ -438,10 +438,11 @@ class SoldItem(models.Model):
     def save(self, *args, **kwargs):
         self.clean()
 
-        if self.item.discount_price and self.item.discount_price < self.item.price:
-            self.sale_price = self.item.discount_price
-        else:
-            self.sale_price = self.item.price
+        if self.sale_price is None:
+            if self.item.discount_price and self.item.discount_price < self.item.price:
+                self.sale_price = self.item.discount_price
+            else:
+                self.sale_price = self.item.price
 
         self.total_price = self.quantity * self.sale_price
 
