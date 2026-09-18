@@ -14,7 +14,7 @@ import logging
 import ipaddress
 from vendorDashboard.models import VendorPayout
 from core.models import Notification, ActivityLog
-from oder.models import Transaction
+from order.models import Transaction
 from django.contrib.auth import get_user_model
 
 User = get_user_model()
