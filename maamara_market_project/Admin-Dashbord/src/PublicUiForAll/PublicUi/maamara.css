@@ -3205,7 +3205,7 @@ RESPONSIVE MENU -OFF CANVAS
    These are additive: existing Maa Mara controls, colors and data remain unchanged. */
 :root{
   --mm-content-max:1280px;
-  --mm-page-bg:#fff;
+  --mm-page-bg:#faf9f7;
   --mm-surface:#fff;
   --mm-surface-muted:#f5f4f1;
   --mm-border:#e6e3de;
@@ -3876,7 +3876,7 @@ h1,h2,h3,h4{font-family:'regular','Poppins',Arial,sans-serif}
 /* Storefront consistency: keep every public page on the same marketplace rhythm. */
 .customer-storefront-page,
 .site.page-home{
-  background:var(--mm-page-bg,#fff);
+  background:var(--mm-page-bg,#faf9f7);
   color:var(--mm-text,#222);
 }
 @media(max-width:639px){
