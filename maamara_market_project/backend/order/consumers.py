@@ -84,7 +84,10 @@ class OrderConsumer(AsyncWebsocketConsumer):
 class CustomerConsumer(AsyncWebsocketConsumer):
 
     async def connect(self):
-        self.vendor_user_id = self.scope['url_route']['kwargs']['vendor_user_id']
+        self.vendor_user_id = self.scope["url_route"]["kwargs"]["vendor_user_id"]
+        if not await self.can_access_vendor():
+            await self.close(code=4003)
+            return
         self.group_name = f"customers_{self.vendor_user_id}"
 
         # Join group
@@ -95,6 +98,16 @@ class CustomerConsumer(AsyncWebsocketConsumer):
 
     async def disconnect(self, close_code):
         await self.channel_layer.group_discard(self.group_name, self.channel_name)
+
+    @database_sync_to_async
+    def can_access_vendor(self):
+        user = self.scope.get("user")
+        if not user or not user.is_authenticated:
+            return False
+        return bool(
+            user.is_staff
+            or Vendor.objects.filter(user=user, user_id=self.vendor_user_id).exists()
+        )
 
     @database_sync_to_async
     def get_customers(self, vendor_user_id):
@@ -136,10 +149,23 @@ class CustomerConsumer(AsyncWebsocketConsumer):
 class PayoutConsumer(AsyncWebsocketConsumer):
     async def connect(self):
         self.reference = self.scope["url_route"]["kwargs"]["reference"]
+        if not await self.can_access_payout():
+            await self.close(code=4003)
+            return
         self.group_name = f"payout_{self.reference}"
 
         await self.channel_layer.group_add(self.group_name, self.channel_name)
         await self.accept()
+
+    @database_sync_to_async
+    def can_access_payout(self):
+        user = self.scope.get("user")
+        if not user or not user.is_authenticated:
+            return False
+        if user.is_staff:
+            return True
+        from vendorDashboard.models import VendorPayout
+        return VendorPayout.objects.filter(reference=self.reference, vendor__user=user).exists()
 
     async def disconnect(self, close_code):
         await self.channel_layer.group_discard(self.group_name, self.channel_name)
@@ -161,6 +187,15 @@ class PayoutConsumer(AsyncWebsocketConsumer):
 class StockConsumer(AsyncWebsocketConsumer):
     async def connect(self):
         vendor_id = self.scope["url_route"]["kwargs"]["vendor_id"]
+        user = self.scope.get("user")
+        allowed = bool(
+            user and user.is_authenticated and (
+                user.is_staff or Vendor.objects.filter(id=vendor_id, user=user).exists()
+            )
+        )
+        if not allowed:
+            await self.close(code=4003)
+            return
         self.group_name = f"stock_{vendor_id}"
 
         await self.channel_layer.group_add(self.group_name, self.channel_name)
@@ -382,8 +417,8 @@ class ActivityLogsConsumer(AsyncWebsocketConsumer):
         self.group_name = "activity_logs"
         self.user = self.scope.get("user")
 
-        if not self.user or not self.user.is_authenticated:
-            await self.close(code=4001)
+        if not self.user or not self.user.is_authenticated or not self.user.is_staff:
+            await self.close(code=4003)
             return
 
         await self.channel_layer.group_add(
