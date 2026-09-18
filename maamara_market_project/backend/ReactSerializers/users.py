@@ -256,8 +256,7 @@ def google_login_success(request):
     if not email:
         return redirect("http://127.0.0.1:5173/unauthorized")
 
-    logger.info(f"Google UID: {google_uid}")
-    logger.info(f"Google Email: {email}")
+    logger.info("Google authentication completed for a linked account")
 
     # ================================
     # 🔥 1. FIND EXISTING USER (EMAIL FIRST)
@@ -323,6 +322,10 @@ def google_login_success(request):
     # ================================
     # 🔥 7. REDIRECT (YOUR FRONTEND)
     # ================================
+    # Consolidate anonymous browsing/cart/account data before visitor cookies are discarded.
+    visitor_id = request.COOKIES.get("visitorId")
+    merge_visitor_data_to_user(user, visitor_id)
+
     response = redirect("http://127.0.0.1:5173/login/auth-success")
 
 
