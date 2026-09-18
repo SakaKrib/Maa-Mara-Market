@@ -341,7 +341,6 @@ class Order(models.Model):
     def get_voucher_discounted_total(self, voucher_code):
         """Applies voucher discount safely using Voucher model."""
         voucher = Voucher.objects.filter(code=voucher_code, user=self.user, redeemed=False).first()
-        print("this is the func voucher", voucher)
 
         if voucher:
             return voucher.apply_discount(self.get_total())  # ✅ Use reusable method
