@@ -208,7 +208,7 @@ class StockConsumer(AsyncWebsocketConsumer):
 
 def safe_json(data):
     if isinstance(data, Decimal):
-        return float(data)
+        return str(data)
     if isinstance(data, list):
         return [safe_json(i) for i in data]
     if isinstance(data, dict):
@@ -226,8 +226,7 @@ class VendorOrdersConsumer(AsyncJsonWebsocketConsumer):
             await self.close()
             return
         
-        print("WS USER:", self.user)
-        print("WS AUTH:", getattr(self.user, "is_authenticated", None))
+        logger.debug("VendorOrders WebSocket authenticated", extra={"user_id": self.user.id})
 
         self.vendor = await self.get_vendor(self.user)
 
@@ -242,8 +241,8 @@ class VendorOrdersConsumer(AsyncJsonWebsocketConsumer):
 
         try:
             await self.send_orders()
-        except Exception as e:
-            print("Initial send_orders error:", e)
+        except Exception:
+            logger.exception("Initial vendor order WebSocket payload failed")
 
     async def disconnect(self, close_code):
         if hasattr(self, "group_name"):
