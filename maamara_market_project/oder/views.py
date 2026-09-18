@@ -310,6 +310,29 @@ def add_to_cart_api(request, pk):
     weight = get_object_or_404(Weight, pk=weight_id) if weight_id else None
     shoe = get_object_or_404(Shoe, pk=shoe_id) if shoe_id else None
 
+    # Server-side variation validation keeps the cart line tied to this item.
+    if variant and variant.item_id != item.id:
+        return Response({"success": False, "error": "Selected color is not available for this item."}, status=400)
+
+    if size_stock:
+        if size_stock.variant_id:
+            if not variant or size_stock.variant_id != variant.id:
+                return Response({"success": False, "error": "Selected size does not match the selected color."}, status=400)
+        elif size_stock.item_id != item.id:
+            return Response({"success": False, "error": "Selected size is not available for this item."}, status=400)
+
+    if age_variant and age_variant.item_id != item.id:
+        return Response({"success": False, "error": "Selected age group is not available for this item."}, status=400)
+
+    if length and length.item_id != item.id:
+        return Response({"success": False, "error": "Selected length is not available for this item."}, status=400)
+
+    if weight and weight.item_id != item.id:
+        return Response({"success": False, "error": "Selected weight is not available for this item."}, status=400)
+
+    if shoe and shoe.item_id != item.id:
+        return Response({"success": False, "error": "Selected shoe size is not available for this item."}, status=400)
+
     # --- Determine available stock based on variation ---
     if size_stock:
         available_stock = size_stock.quantity_in_stock
