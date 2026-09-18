@@ -3199,3 +3199,79 @@ RESPONSIVE MENU -OFF CANVAS
   .product-card-grid h2,.category-product-grid h2{font-size:.95rem;line-height:1.25rem}
   .product-card-grid h3,.category-product-grid h3{line-height:1.15rem}
 }
+
+
+/* Shared marketplace design primitives.
+   These are additive: existing Maa Mara controls, colors and data remain unchanged. */
+:root{
+  --mm-content-max:1280px;
+  --mm-page-bg:#faf9f7;
+  --mm-surface:#fff;
+  --mm-surface-muted:#f5f4f1;
+  --mm-border:#e6e3de;
+  --mm-border-strong:#d6d1c9;
+  --mm-text:#222;
+  --mm-text-muted:#6f6a63;
+  --mm-radius-sm:6px;
+  --mm-radius-md:10px;
+  --mm-radius-lg:14px;
+  --mm-shadow-card:0 1px 3px rgba(0,0,0,.08);
+  --mm-shadow-hover:0 6px 18px rgba(0,0,0,.10);
+  --mm-section-gap:28px;
+}
+
+.mm-page{
+  width:100%;
+  background:var(--mm-page-bg);
+  color:var(--mm-text);
+}
+.mm-container{
+  width:min(100% - 24px,var(--mm-content-max));
+  margin-inline:auto;
+}
+.mm-section{
+  margin-block:var(--mm-section-gap);
+}
+.mm-section-heading{
+  display:flex;
+  align-items:end;
+  justify-content:space-between;
+  gap:16px;
+  margin-bottom:16px;
+}
+.mm-section-heading h1,
+.mm-section-heading h2,
+.mm-section-heading h3{
+  margin:0;
+  color:var(--mm-text);
+}
+.mm-section-heading p{
+  margin:4px 0 0;
+  color:var(--mm-text-muted);
+  font-size:.9rem;
+}
+.mm-card{
+  background:var(--mm-surface);
+  border:1px solid var(--mm-border);
+  border-radius:var(--mm-radius-md);
+  box-shadow:var(--mm-shadow-card);
+}
+.mm-card-interactive{
+  transition:transform .18s ease,box-shadow .18s ease,border-color .18s ease;
+}
+.mm-card-interactive:hover{
+  transform:translateY(-2px);
+  box-shadow:var(--mm-shadow-hover);
+  border-color:var(--mm-border-strong);
+}
+.mm-divider{
+  height:1px;
+  border:0;
+  background:var(--mm-border);
+  margin-block:20px;
+}
+@media(max-width:639px){
+  .mm-container{width:min(100% - 16px,var(--mm-content-max))}
+  .mm-section{margin-block:20px}
+  .mm-section-heading{margin-bottom:12px}
+}
