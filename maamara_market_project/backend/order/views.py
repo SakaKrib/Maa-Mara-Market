@@ -6,7 +6,7 @@ import uuid
 import bleach
 from django.conf import settings
 from django.contrib.auth import get_user_model
-from django.db import models
+from django.db import models, transaction
 from django.db.models import Count, Prefetch, Q, Sum
 from django.db.models.functions import TruncMonth
 from django.shortcuts import get_object_or_404
@@ -234,6 +234,7 @@ def get_cart_view(request):
 # -------------------------------
 @api_view(["POST"])
 @permission_classes([IsAuthenticatedOrVisitor])
+@transaction.atomic
 def add_to_cart_api(request, pk):
     """
     Add an item to the user's or visitor's cart.
@@ -242,7 +243,7 @@ def add_to_cart_api(request, pk):
 
     # Sanitize incoming item ID
     pk = sanitize(pk)
-    item = get_object_or_404(Item, pk=pk)
+    item = get_object_or_404(Item.objects.select_for_update(), pk=pk)
 
     # Determine if request is from a logged-in user or visitor
     if request.user and request.user.is_authenticated:
@@ -277,8 +278,8 @@ def add_to_cart_api(request, pk):
     selected_shoe_size = request.data.get("selected_shoe_size")
 
     variant = get_object_or_404(ColorVariant, pk=variant_id) if variant_id else None
-    size_stock = get_object_or_404(SizeStock, pk=size_id) if size_id else None
-    age_variant = get_object_or_404(AgeVariant, pk=age_variant_id) if age_variant_id else None
+    size_stock = get_object_or_404(SizeStock.objects.select_for_update(), pk=size_id) if size_id else None
+    age_variant = get_object_or_404(AgeVariant.objects.select_for_update(), pk=age_variant_id) if age_variant_id else None
     length = get_object_or_404(Length, pk=length_id) if length_id else None
     weight = get_object_or_404(Weight, pk=weight_id) if weight_id else None
     shoe = get_object_or_404(Shoe, pk=shoe_id) if shoe_id else None
@@ -458,6 +459,7 @@ def add_to_cart_api(request, pk):
 # -------------------------------
 @api_view(["DELETE"])
 @permission_classes([IsAuthenticatedOrVisitor])
+@transaction.atomic
 def remove_from_cart_api(request, pk):
     """
     Remove an item or a specific variation from the user's or visitor's cart.
@@ -627,6 +629,7 @@ def remove_from_cart_api(request, pk):
 # -------------------------------
 @api_view(["PATCH"])
 @permission_classes([IsAuthenticatedOrVisitor])
+@transaction.atomic
 def update_cart_quantity(request, pk):
     """
     Update the quantity of an item in the cart for either a logged-in user or a visitor.
@@ -705,7 +708,7 @@ def update_cart_quantity(request, pk):
     # 🔹 Determine available stock
     available_stock = 0
     if selected_size:
-        size_stock_obj = get_object_or_404(SizeStock, pk=selected_size)
+        size_stock_obj = get_object_or_404(SizeStock.objects.select_for_update(), pk=selected_size)
         available_stock = size_stock_obj.quantity_in_stock
     elif selected_color:
         variant_obj = get_object_or_404(ColorVariant, pk=selected_color)
