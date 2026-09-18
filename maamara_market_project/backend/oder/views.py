@@ -828,7 +828,7 @@ def admin_transactions(request):
         .select_related("vendor", "order")
         .prefetch_related(
             Prefetch(
-                "order__items",
+                "order__order_items",
                 queryset=OderItem.objects.select_related("item")
             )
         )
