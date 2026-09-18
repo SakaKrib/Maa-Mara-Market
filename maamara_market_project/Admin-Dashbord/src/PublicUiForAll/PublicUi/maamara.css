@@ -3680,3 +3680,99 @@ h1,h2,h3,h4{font-family:'regular','Poppins',Arial,sans-serif}
   .mm-header-actions .relative{margin:0!important}
   .mm-main-header-inner .mm-mobile-menu-trigger{display:flex;align-items:center;justify-content:center;flex:0 0 38px}
 }
+
+
+/* Category filters: desktop sidebar, compact mobile drawer */
+.mm-desktop-filter{display:block;flex:0 0 260px}
+.mm-mobile-filter-button,
+.mm-mobile-filter-drawer,
+.mm-mobile-filter-backdrop{display:none}
+@media(max-width:639px){
+  .mm-desktop-filter{display:none}
+  .mm-mobile-filter-button{
+    display:inline-flex;
+    align-items:center;
+    gap:6px;
+    border:1px solid var(--mm-border-strong);
+    border-radius:6px;
+    background:#fff;
+    color:#222;
+    padding:8px 11px;
+    font-size:13px;
+    font-weight:700;
+  }
+  .mm-mobile-filter-drawer{
+    display:flex;
+    position:fixed;
+    inset:0 auto 0 0;
+    width:min(88vw,380px);
+    z-index:1001;
+    flex-direction:column;
+    background:#fff;
+    box-shadow:12px 0 30px rgba(0,0,0,.16);
+    transform:translateX(-105%);
+    transition:transform .2s ease;
+  }
+  .mm-mobile-filter-drawer.is-open{transform:translateX(0)}
+  .mm-mobile-filter-head{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    padding:15px 16px;
+    border-bottom:1px solid var(--mm-border);
+  }
+  .mm-mobile-filter-head button{
+    border:0;
+    background:transparent;
+    font-size:22px;
+  }
+  .mm-mobile-filter-drawer aside{
+    display:block!important;
+    width:100%!important;
+    flex:1;
+    border:0!important;
+    border-radius:0!important;
+    padding:16px!important;
+    background:#fff!important;
+    overflow:hidden;
+  }
+  .mm-mobile-filter-drawer aside > div{
+    max-height:none!important;
+    height:100%;
+    overflow-y:auto!important;
+  }
+  .mm-mobile-filter-actions{
+    display:flex;
+    gap:8px;
+    padding:12px 16px;
+    border-top:1px solid var(--mm-border);
+  }
+  .mm-mobile-filter-actions button{
+    flex:1;
+    min-height:42px;
+    border:1px solid var(--mm-border-strong);
+    border-radius:6px;
+    background:#fff;
+    font-weight:700;
+  }
+  .mm-mobile-filter-actions .secondary-button{
+    border-color:transparent;
+    color:#fff;
+  }
+  .mm-mobile-filter-backdrop{
+    display:block;
+    position:fixed;
+    inset:0;
+    z-index:1000;
+    background:rgba(0,0,0,.35);
+    opacity:0;
+    pointer-events:none;
+    transition:opacity .2s ease;
+  }
+  .mm-mobile-filter-drawer.is-open + .mm-mobile-filter-backdrop{
+    opacity:1;
+    pointer-events:auto;
+  }
+  .single-category .mm-card{box-shadow:var(--mm-shadow-card)}
+  .single-category main > .mm-card .secondary-button{display:none}
+}
