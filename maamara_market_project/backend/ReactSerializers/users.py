@@ -7,6 +7,7 @@ from django.contrib.auth import authenticate, login as auth_login, logout
 from django.contrib.auth.models import User
 from django.contrib.auth.hashers import check_password
 from django.shortcuts import redirect
+from django.conf import settings
 from django.http import JsonResponse
 from django.utils.text import slugify
 from django.views.decorators.csrf import ensure_csrf_cookie, csrf_protect
@@ -180,7 +181,7 @@ def login_view(request):
 
 
         # Set JWT cookies
-        response.set_cookie("accessToken", access_token, httponly=True, secure=not __import__("django.conf", fromlist=["settings"]).settings.DEBUG, samesite="Lax",  max_age=5 * 60,
+        response.set_cookie("accessToken", access_token, httponly=True, secure=not settings.DEBUG, samesite="Lax",  max_age=5 * 60,
         path="/",)
         response.set_cookie("refreshToken", refresh_token, httponly=True, secure=not __import__("django.conf", fromlist=["settings"]).settings.DEBUG, samesite="Lax", max_age=2592000, path="/")
         return response
@@ -241,7 +242,7 @@ def google_login_success(request):
     try:
         social = SocialAccount.objects.get(provider="google", user=request.user)
     except SocialAccount.DoesNotExist:
-        return redirect(f"{__import__("django.conf", fromlist=["settings"]).settings.FRONTEND_URL}/unauthorized")
+        return redirect(f"{settings.FRONTEND_URL}/unauthorized")
 
     extra = social.extra_data
 
