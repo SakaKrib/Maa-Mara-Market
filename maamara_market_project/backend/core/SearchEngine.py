@@ -4,7 +4,7 @@ from rest_framework.response import Response
 from django.db.models import Q
 from .models import Item
 from .Serializer import ItemSerializer  
-from oder.views import IsAuthenticatedOrVisitor
+from order.views import IsAuthenticatedOrVisitor
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticatedOrVisitor])
