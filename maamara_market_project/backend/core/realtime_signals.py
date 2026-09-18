@@ -30,7 +30,7 @@ def item_vendor(instance):
 
 def order_vendors(instance):
     return list(
-        Vendor.objects.filter(items__order_items__order=instance)
+        Vendor.objects.filter(items__oderitem__order=instance)
         .values_list("id", flat=True)
         .distinct()
     )
