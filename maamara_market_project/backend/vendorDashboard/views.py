@@ -1,4 +1,4 @@
-from datetime import date
+from datetime import date, timedelta
 from decimal import Decimal
 import uuid
 
@@ -11,13 +11,13 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from django.http import HttpResponse
 
 from ReactSerializers.Serializers import VendorPayoutSerializer
 from ReactSerializers.models import Item
 from oder.models import OderItem, Order
 from .models import SoldItem, VendorAdjustment, VendorPayout
 
-from django.http import HttpResponse
 
 def dashboard(request):
     return HttpResponse("Welcome to the Vendor Dashboard!")
@@ -74,7 +74,8 @@ def get_vendor_earnings(vendor, start_date, end_date):
     # Get all completed orders within date range
     completed_orders = Order.objects.filter(
         status="completed",
-        ordered_date__range=(start_date, end_date)
+        ordered_date__gte=start_date,
+        ordered_date__lt=end_date + timedelta(days=1)
     )
     completed_order_ids = completed_orders.values_list('id', flat=True)
 
@@ -99,7 +100,8 @@ def get_vendor_earnings(vendor, start_date, end_date):
     # Fetch unapplied vendor adjustments in this period
     adjustments = VendorAdjustment.objects.filter(
         vendor=vendor,
-        created_at__range=(start_date, end_date),
+        created_at__gte=start_date,
+        created_at__lt=end_date + timedelta(days=1),
         applied=False
     )
 
