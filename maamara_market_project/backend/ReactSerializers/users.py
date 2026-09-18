@@ -254,7 +254,7 @@ def google_login_success(request):
     last_name = extra.get("family_name", "") or ""
 
     if not email:
-        return redirect("http://127.0.0.1:5173/unauthorized")
+        return redirect(f"{settings.FRONTEND_URL}/unauthorized")
 
     logger.info("Google authentication completed for a linked account")
 
@@ -326,7 +326,7 @@ def google_login_success(request):
     visitor_id = request.COOKIES.get("visitorId")
     merge_visitor_data_to_user(user, visitor_id)
 
-    response = redirect("http://127.0.0.1:5173/login/auth-success")
+    response = redirect(f"{settings.FRONTEND_URL}/login/auth-success")
 
 
     # 🔥 DELETE VISITOR TOKENS / SESSION
