@@ -25,7 +25,11 @@ export function subscribeToRealtimeEvents(onEvent) {
 
 export default function useRealtimeEvents(onEvent, { models, actions } = {}) {
   const callbackRef = useRef(onEvent);
+  const modelsRef = useRef(models);
+  const actionsRef = useRef(actions);
   callbackRef.current = onEvent;
+  modelsRef.current = models;
+  actionsRef.current = actions;
 
   useEffect(() => {
     let socket;
@@ -33,8 +37,10 @@ export default function useRealtimeEvents(onEvent, { models, actions } = {}) {
     let stopped = false;
 
     const matches = (event) => {
-      const modelMatch = !models?.length || models.includes(event.model);
-      const actionMatch = !actions?.length || actions.includes(event.action);
+      const modelMatch =
+        !modelsRef.current?.length || modelsRef.current.includes(event.model);
+      const actionMatch =
+        !actionsRef.current?.length || actionsRef.current.includes(event.action);
       return modelMatch && actionMatch;
     };
 
@@ -77,5 +83,5 @@ export default function useRealtimeEvents(onEvent, { models, actions } = {}) {
       window.clearTimeout(retryTimer);
       socket?.close();
     };
-  }, [models, actions]);
+  }, []);
 }
