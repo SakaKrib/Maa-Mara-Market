@@ -436,6 +436,7 @@ class Refund(models.Model):
     PROVIDER_CHOICES = [
         ("PayPal", "PayPal"),
         ("Mpesa", "M-Pesa"),
+        ("card", "Card"),
     ]
 
     return_request = models.OneToOneField(
