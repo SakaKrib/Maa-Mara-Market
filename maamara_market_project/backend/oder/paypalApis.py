@@ -193,7 +193,7 @@ def checkout_view(request):
         length_id = item_data.get("length_id")
         weight_id = item_data.get("weight_id")
         shoe_id = item_data.get("shoe_id")
-        selected_shoe_size = item_data.get("selected_shoe_size")
+        selected_shoe_size = item_data.get("selected_shoe_size", item_data.get("shoe_size"))
 
         if quantity < 1:
             return Response({"success": False, "error": "Quantity must be at least 1."}, status=400)
