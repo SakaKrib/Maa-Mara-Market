@@ -15,6 +15,7 @@ import ipaddress
 from vendorDashboard.models import VendorPayout
 from core.models import Notification, ActivityLog
 from order.models import Transaction
+from core.realtime import broadcast_event
 from order.paypalApis import verify_paypal_signature
 from vendorDashboard.payout.services.paypal_payouts import apply_paypal_payout_status
 from django.contrib.auth import get_user_model
@@ -49,174 +50,163 @@ from channels.layers import get_channel_layer
 
 @csrf_exempt
 def mpesa_result(request):
+    """Handle a Daraja B2C result callback without trusting the callback as payment proof."""
     if request.method != "POST":
         return JsonResponse({"error": "Invalid method"}, status=405)
 
-    ip = get_client_ip(request)
-    logger.info(f"📥 Incoming M-Pesa Result callback from IP: {ip}, Raw body: {request.body}")
-
-    # ---------------------------------------------------------
-    # Parse JSON
-    # ---------------------------------------------------------
     try:
         data = json.loads(request.body.decode("utf-8"))
     except json.JSONDecodeError:
-        logger.error("❌ Failed to decode JSON from M-Pesa B2C callback")
         return JsonResponse({"ResultCode": 1, "ResultDesc": "Invalid JSON"}, status=400)
 
-    logger.info(f"✅ Parsed Callback Data: {data}")
-
-    result = data.get("Result")
-    if not result:
-        logger.error("❌ Missing 'Result' block in callback")
-        return JsonResponse({"ResultCode": 1, "ResultDesc": "Invalid Callback Format"})
-
-    # ---------------------------------------------------------
-    # Extract fields from Result
-    # ---------------------------------------------------------
+    result = data.get("Result") or {}
     conversation_id = result.get("ConversationID")
     originator_conversation_id = result.get("OriginatorConversationID")
     result_code = result.get("ResultCode")
-    result_desc = result.get("ResultDesc")
+    result_desc = str(result.get("ResultDesc") or "")[:255]
     transaction_id = result.get("TransactionID")
 
-    # amount fetch
-    params = result.get("ResultParameters", {}).get("ResultParameter", [])
-    amount = next((p.get("Value") for p in params if p.get("Key") == "TransactionAmount"), 0)
+    if not conversation_id and not originator_conversation_id:
+        logger.warning("M-Pesa B2C callback missing correlation identifiers.")
+        return JsonResponse({"ResultCode": 0, "ResultDesc": "Accepted"})
 
-    if not conversation_id:
-        logger.error("❌ Missing ConversationID in callback")
-        return JsonResponse({"ResultCode": 1, "ResultDesc": "Missing ConversationID"})
-
-    logger.info(f"🔎 Looking for payout with reference={conversation_id}")
-
-    # ---------------------------------------------------------
-    # DB OPERATIONS
-    # ---------------------------------------------------------
     try:
         with db_transaction.atomic():
+            payout_qs = VendorPayout.objects.select_for_update()
+            payout = None
 
-            payout = VendorPayout.objects.filter(mpesa_conversation_id=conversation_id).first()
+            if conversation_id:
+                payout = payout_qs.filter(mpesa_conversation_id=conversation_id).first()
 
-            if not payout:
-                logger.warning(f"⚠️ No VendorPayout found for ConversationID={conversation_id}")
+            if payout is None and originator_conversation_id:
+                payout = payout_qs.filter(
+                    mpesa_originator_conversation_id=originator_conversation_id
+                ).first()
+
+            if payout is None:
+                logger.warning(
+                    "M-Pesa B2C callback did not match a payout.",
+                    extra={"conversation_id": conversation_id},
+                )
                 return JsonResponse({"ResultCode": 0, "ResultDesc": "Accepted"})
 
-            # Avoid duplicate callback processing
-            if Transaction.objects.filter(account_reference=conversation_id).exists():
-                logger.info(f"🟡 Duplicate callback ignored for {conversation_id}")
+            if (
+                conversation_id
+                and payout.mpesa_conversation_id
+                and payout.mpesa_conversation_id != conversation_id
+            ):
+                logger.error(
+                    "M-Pesa conversation correlation mismatch.",
+                    extra={"payout_reference": payout.reference},
+                )
                 return JsonResponse({"ResultCode": 0, "ResultDesc": "Accepted"})
 
-            success = (result_code == 0)
+            if (
+                originator_conversation_id
+                and payout.mpesa_originator_conversation_id
+                and payout.mpesa_originator_conversation_id != originator_conversation_id
+            ):
+                logger.error(
+                    "M-Pesa originator correlation mismatch.",
+                    extra={"payout_reference": payout.reference},
+                )
+                return JsonResponse({"ResultCode": 0, "ResultDesc": "Accepted"})
 
-            # ---------------------------------------------------------
-            # Update payout with M-Pesa metadata
-            # ---------------------------------------------------------
-            payout.mpesa_conversation_id = conversation_id
-            payout.mpesa_originator_conversation_id = originator_conversation_id
-            payout.mpesa_transaction_id = transaction_id
+            if result_code == 0 and not transaction_id:
+                logger.error(
+                    "M-Pesa B2C success callback missing transaction identifier.",
+                    extra={"payout_reference": payout.reference},
+                )
+                return JsonResponse({"ResultCode": 0, "ResultDesc": "Accepted"})
+
+            if transaction_id:
+                existing = Transaction.objects.filter(
+                    mpesa_receipt_number=transaction_id
+                ).exclude(payout=payout).first()
+                if existing:
+                    logger.error(
+                        "M-Pesa transaction identifier already belongs to another payout.",
+                        extra={"payout_reference": payout.reference},
+                    )
+                    return JsonResponse({"ResultCode": 0, "ResultDesc": "Accepted"})
+
+            previous_paid = payout.paid
+            payout.mpesa_conversation_id = conversation_id or payout.mpesa_conversation_id
+            payout.mpesa_originator_conversation_id = (
+                originator_conversation_id or payout.mpesa_originator_conversation_id
+            )
+            payout.mpesa_transaction_id = transaction_id or payout.mpesa_transaction_id
             payout.mpesa_result_code = result_code
             payout.mpesa_result_desc = result_desc
 
-            if success:
-                payout.paid = True
-                payout.paid_at = timezone.now()
-            else:
+            if result_code == 0:
+                if not payout.paid:
+                    payout.paid = True
+                    payout.paid_at = timezone.now()
+            elif not payout.paid:
                 payout.paid = False
 
-            payout.save()
-            logger.info(f"💾 Updated payout {payout.reference} with M-Pesa metadata")
+            payout.save(update_fields=[
+                "mpesa_conversation_id",
+                "mpesa_originator_conversation_id",
+                "mpesa_transaction_id",
+                "mpesa_result_code",
+                "mpesa_result_desc",
+                "paid",
+                "paid_at",
+            ])
 
-            # ---------------------------------------------------------
-            # Create Transaction Log
-            # ---------------------------------------------------------
-            if Transaction.objects.filter(mpesa_receipt_number=transaction_id).exists():
-                logger.info(f"🟡 Duplicate M-Pesa receipt ignored: {transaction_id}")
-            else:
-                Transaction.objects.create(
-                    transaction_type="B2C",
+            if transaction_id:
+                Transaction.objects.update_or_create(
                     mpesa_receipt_number=transaction_id,
-                    phone_number=payout.vendor.mpesa_number,
-                    amount=amount,
-                    account_reference=conversation_id,
-                    status="Completed" if success else "Failed",
-                    raw_data=data,
-                    payout=payout,
-                    vendor=payout.vendor,
-                )
-            logger.info(f"🧾 Created Transaction record for {conversation_id}")
-
-            # ---------------------------------------------------------
-            # Send Notifications
-            # ---------------------------------------------------------
-            if success:
-                message = (
-                    f"Payout of KES {amount} completed for vendor "
-                    f"{payout.vendor.company_name}. Transaction ID: {transaction_id}."
+                    defaults={
+                        "transaction_type": "B2C",
+                        "amount": payout.amount,
+                        "account_reference": payout.reference,
+                        "status": "Completed" if result_code == 0 else "Failed",
+                        "payout": payout,
+                        "vendor": payout.vendor,
+                        "phone_number": getattr(payout.vendor, "mpesa_number", None),
+                        "raw_data": {},
+                    },
                 )
 
-                # Vendor Notification
+            if result_code == 0 and not previous_paid:
                 vendor_user = getattr(payout.vendor, "user", None)
                 if vendor_user:
                     Notification.objects.create(
                         user=vendor_user,
                         title="Vendor Payout Successful",
-                        message=message,
+                        message=f"Payout {payout.reference} has been confirmed by M-Pesa.",
                         url=f"/vendor/payouts/{payout.reference}/",
                     )
-                    logger.info(f"📢 Vendor notified: {vendor_user.username}")
 
-                # Admin Notifications
-                for admin in User.objects.filter(is_superuser=True):
-                    Notification.objects.create(
-                        user=admin,
-                        title="Vendor Payout Completed",
-                        message=message,
-                        url=f"/admin-vendor/payouts/{payout.reference}/",
-                    )
-                    logger.info(f"🗂️ Admin notified: {admin.username}")
-
-            else:
-                logger.warning(
-                    f"❌ Payout failed for {payout.vendor.company_name}: "
-                    f"Code={result_code}, Desc={result_desc}"
+            transaction_id_for_event = payout.mpesa_transaction_id
+            transaction.on_commit(
+                lambda: broadcast_event(
+                    "payout.updated",
+                    model="VendorPayout",
+                    object_id=payout.id,
+                    action="updated",
+                    vendor_ids=[payout.vendor_id],
+                    data={
+                        "reference": payout.reference,
+                        "status": "SUCCESS" if payout.paid else "FAILED",
+                        "paid": payout.paid,
+                        "paid_at": payout.paid_at.isoformat() if payout.paid_at else None,
+                        "transaction_id": transaction_id_for_event,
+                    },
                 )
+            )
 
-            # ---------------------------------------------------------
-            # ⭐⭐⭐ WEBSOCKET BROADCAST HERE ⭐⭐⭐
-            # ---------------------------------------------------------
-            # WebSocket broadcast to frontend
-            channel_layer = get_channel_layer()
-            group_name = f"payout_{payout.reference}"
+    except Exception:
+        logger.exception(
+            "M-Pesa B2C callback processing failed.",
+            extra={"conversation_id": conversation_id},
+        )
+        return JsonResponse({"ResultCode": 1, "ResultDesc": "Temporary processing failure"}, status=500)
 
-            # Include vendor info in the event
-            vendor_name = getattr(payout.vendor, "company_name", None) or getattr(payout.vendor, "name", "Vendor")
-
-            event = {
-                "type": "payout_message",
-                "status": "success" if success else "failed",
-                "reference": payout.reference,
-                "amount": amount,
-                "transaction_id": transaction_id,
-                "vendor": vendor_name,
-                "message": (
-                    f"Payout of KES {amount} completed successfully."
-                    if success else
-                    f"Payout failed: {result_desc}"
-                ),
-            }
-            async_to_sync(channel_layer.group_send)(group_name, event)
-            logger.info(f"📡 WebSocket broadcast sent to {group_name}: {event}")
-
-    except Exception as e:
-        logger.error(f"🔥 Error processing B2C callback: {e}")
-
-    # ---------------------------------------------------------
-    # Safaricom MUST always receive status=0 for retry prevention
-    # ---------------------------------------------------------
     return JsonResponse({"ResultCode": 0, "ResultDesc": "Accepted"})
-
-
 
 
 
