@@ -33,7 +33,7 @@ from django.core.mail import EmailMultiAlternatives
 from django.template.loader import render_to_string
 from django.utils import timezone
 from django.shortcuts import get_object_or_404
-from ReactSerializers.models import ColorVariant,SizeStock,AgeVariant,Length,Weight
+from ReactSerializers.models import ColorVariant,SizeStock,AgeVariant,Length,Weight,Shoe
 from django.db import models
 import time, datetime
 
@@ -152,10 +152,12 @@ def checkout_view(request):
     # 5️⃣ Sync order items
     # ----------------------------
     items_payload = data.get("items", [])
-    current_ids = [i["id"] for i in items_payload]
-    # Remove any items not in this payload
-    order.items.exclude(item_id__in=current_ids).delete()
+    if not items_payload:
+        return Response({"success": False, "error": "Your cart is empty."}, status=400)
 
+    # A cart can contain the same product more than once when the selected
+    # variant differs, so the sync key must include the selected options.
+    incoming_keys = set()
     total_amount = Decimal("0.00")
 
     for item_data in items_payload:
@@ -163,20 +165,52 @@ def checkout_view(request):
         quantity = int(item_data.get("quantity", 1))
         variant_id = item_data.get("variant_id")
         size_id = item_data.get("size_id")
+        age_variant_id = item_data.get("age_variant_id")
+        length_id = item_data.get("length_id")
+        weight_id = item_data.get("weight_id")
+        shoe_id = item_data.get("shoe_id")
 
-        try:
-            item = Item.objects.get(id=item_id)
-        except Item.DoesNotExist:
-            continue  # skip missing items
+        if quantity < 1:
+            return Response({"success": False, "error": "Quantity must be at least 1."}, status=400)
 
-        variant = None
-        size_stock = None
-        if size_id:
-            size_stock = get_object_or_404(SizeStock, pk=size_id)
+        item = get_object_or_404(Item, pk=item_id)
+
+        variant = get_object_or_404(ColorVariant, pk=variant_id) if variant_id else None
+        size_stock = get_object_or_404(SizeStock, pk=size_id) if size_id else None
+        age_variant = get_object_or_404(AgeVariant, pk=age_variant_id) if age_variant_id else None
+        length = get_object_or_404(Length, pk=length_id) if length_id else None
+        weight = get_object_or_404(Weight, pk=weight_id) if weight_id else None
+        shoe = get_object_or_404(Shoe, pk=shoe_id) if shoe_id else None
+
+        if variant and variant.item_id != item.id:
+            return Response({"success": False, "error": "Selected color is not available for this item."}, status=400)
+
+        if size_stock:
+            if size_stock.variant_id:
+                if not variant or size_stock.variant_id != variant.id:
+                    return Response({"success": False, "error": "Selected size does not match the selected color."}, status=400)
+            elif size_stock.item_id != item.id:
+                return Response({"success": False, "error": "Selected size is not available for this item."}, status=400)
+
+        if age_variant and age_variant.item_id != item.id:
+            return Response({"success": False, "error": "Selected age group is not available for this item."}, status=400)
+        if length and length.item_id != item.id:
+            return Response({"success": False, "error": "Selected length is not available for this item."}, status=400)
+        if weight and weight.item_id != item.id:
+            return Response({"success": False, "error": "Selected weight is not available for this item."}, status=400)
+        if shoe and shoe.item_id != item.id:
+            return Response({"success": False, "error": "Selected shoe size is not available for this item."}, status=400)
+
+        if size_stock:
             available_stock = size_stock.quantity_in_stock
-        elif variant_id:
-            variant = get_object_or_404(ColorVariant, pk=variant_id)
-            available_stock = variant.sizes.aggregate(total=models.Sum('quantity_in_stock'))['total'] or 0
+        elif age_variant:
+            available_stock = age_variant.quantity_in_stock
+        elif variant:
+            available_stock = variant.sizes.aggregate(
+                total=models.Sum("quantity_in_stock")
+            )["total"] or 0
+        elif shoe:
+            available_stock = item.in_stock or 0
         else:
             available_stock = item.in_stock or 0
 
@@ -186,22 +220,60 @@ def checkout_view(request):
                 "error": f"Cannot add {quantity} of '{item.name}'. Only {available_stock} in stock."
             }, status=400)
 
-        order_item, created = OderItem.objects.get_or_create(
+        selected_length = f"{length.value} {length.unit}" if length else None
+        selected_weight = f"{weight.value} {weight.unit}" if weight else None
+        sync_key = (
+            item.id, variant_id, size_id, age_variant_id,
+            selected_length, selected_weight, shoe.shoe_size if shoe else None
+        )
+        incoming_keys.add(sync_key)
+
+        order_item = OderItem.objects.filter(
             order=order,
             item=item,
-            user=user,
-            visitor_id=None if user else visitor_id,
-            defaults={
-                "quantity": quantity,
-                "price_at_purchase": item.get_item_final_price(),
-            }
-        )
-        if not created:
+            color_variant=variant,
+            size_stock=size_stock,
+            age_variant=age_variant,
+            selected_length=selected_length,
+            selected_weight=selected_weight,
+            shoe_size=shoe.shoe_size if shoe else None,
+        ).first()
+
+        if order_item:
             order_item.quantity = quantity
             order_item.price_at_purchase = item.get_item_final_price()
-            order_item.save()
+            order_item.save(update_fields=["quantity", "price_at_purchase"])
+        else:
+            order_item = OderItem.objects.create(
+                order=order,
+                item=item,
+                user=user,
+                visitor_id=None if user else visitor_id,
+                quantity=quantity,
+                price_at_purchase=item.get_item_final_price(),
+                color_variant=variant,
+                size_stock=size_stock,
+                age_variant=age_variant,
+                selected_length=selected_length,
+                selected_weight=selected_weight,
+                shoe_size=shoe.shoe_size if shoe else None,
+            )
 
         total_amount += order_item.get_final_price()
+
+    # Remove stale lines without touching other variants of the same product.
+    for existing in order.items.all():
+        key = (
+            existing.item_id,
+            existing.color_variant_id,
+            existing.size_stock_id,
+            existing.age_variant_id,
+            existing.selected_length,
+            existing.selected_weight,
+            existing.shoe_size,
+        )
+        if key not in incoming_keys:
+            existing.delete()
 
     # ----------------------------
     # 6️⃣ Update payment amount
