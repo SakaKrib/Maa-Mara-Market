@@ -17,7 +17,7 @@ PUBLIC_FIELDS = {
 }
 PRIVATE_FIELDS = {
     "Order": {"id", "status", "ordered_date", "updated_total_price", "user_id", "visitor_id"},
-    "OderItem": {"id", "order_id", "item_id", "quantity", "status", "refunded", "is_returned", "is_exchanged"},
+    "OrderItem": {"id", "order_id", "item_id", "quantity", "status", "refunded", "is_returned", "is_exchanged"},
     "Payment": {"id", "order_id", "user_id", "amount", "status", "created_at", "updated_at"},
     "Customer": {"id", "vendor_id", "user_id", "status"},
     "Notification": {"id", "title", "message", "url", "read", "created_at", "user_id"},
