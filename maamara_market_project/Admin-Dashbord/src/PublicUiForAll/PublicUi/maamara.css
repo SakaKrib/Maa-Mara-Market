@@ -3883,18 +3883,43 @@ h1,h2,h3,h4{font-family:'regular','Poppins',Arial,sans-serif}
 }
 
 
-/* Main navigation typography: keep category triggers identical to Home/Shop links. */
+/* Main navigation typography: keep category triggers and mega-menu text identical to Home/Shop. */
 .mm-primary-links,
 .mm-primary-links a,
-.mm-primary-links button,
-.mm-primary-links .relative > div,
-.mm-primary-links .relative > div *{
-  font-family:inherit;
-}
-.mm-primary-links a,
 .mm-primary-links button{
+  font-family:'regular', sans-serif;
   font-size:13px;
   font-weight:650;
+}
+
+.mm-primary-links .relative > div,
+.mm-primary-links .relative > div *,
+.mm-primary-links .relative > div h1,
+.mm-primary-links .relative > div h2,
+.mm-primary-links .relative > div h3,
+.mm-primary-links .relative > div h4,
+.mm-primary-links .relative > div h5,
+.mm-primary-links .relative > div h6{
+  font-family:'regular', sans-serif !important;
+}
+
+.mm-primary-links .relative > div h1,
+.mm-primary-links .relative > div h2,
+.mm-primary-links .relative > div h3,
+.mm-primary-links .relative > div h4,
+.mm-primary-links .relative > div h5,
+.mm-primary-links .relative > div h6{
+  font-size:13px;
+  line-height:1.4;
+  font-weight:650;
+}
+
+.mm-primary-links .relative > div li,
+.mm-primary-links .relative > div li button,
+.mm-primary-links .relative > div li span,
+.mm-primary-links .relative > div li a{
+  font-size:13px;
+  line-height:1.4;
 }
 /* Final storefront header polish */
 .mm-mobile-menu-trigger{
