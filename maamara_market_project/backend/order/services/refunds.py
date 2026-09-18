@@ -244,6 +244,202 @@ def process_paypal_refund(refund_id):
         return locked_refund
 
 
+
+def process_mpesa_refund(refund_id):
+    """Reverse a completed C2B M-Pesa payment through Daraja.
+
+    Daraja reversal is transaction-based, so automatic processing is limited
+    to a full reversal of the original C2B receipt amount.
+    """
+    import uuid
+
+    with transaction.atomic():
+        refund = (
+            Refund.objects
+            .select_for_update()
+            .select_related("payment", "return_request__item")
+            .get(pk=refund_id)
+        )
+        if refund.status == "completed":
+            return refund
+        if refund.provider != "Mpesa":
+            raise RefundProcessingError("This refund provider is not implemented.")
+
+        Payment = refund.payment.__class__
+        payment = Payment.objects.select_for_update().get(pk=refund.payment_id)
+        if payment.payment_method != "Mpesa" or payment.status != "completed":
+            raise RefundProcessingError("The original M-Pesa payment is not eligible for reversal.")
+
+        original = (
+            Transaction.objects
+            .filter(payment=payment, transaction_type="C2B")
+            .exclude(mpesa_receipt_number__isnull=True)
+            .exclude(mpesa_receipt_number="")
+            .order_by("-created_at")
+            .first()
+        )
+        if not original:
+            raise RefundProcessingError("The original M-Pesa receipt reference is missing.")
+
+        if refund.amount != original.amount:
+            return _mark_refund_failed(
+                refund_id,
+                "Automatic M-Pesa reversal currently requires a full transaction reversal.",
+            )
+
+        config = settings.PAYMENT_GATEWAYS.get("mpesa", {}).get("reversal", {})
+        required = ("initiator_name", "short_code", "initiator_password", "certificate_path", "url", "result_url", "timeout_url")
+        if not all(config.get(key) for key in required):
+            raise RefundProcessingError("M-Pesa reversal configuration is incomplete.")
+
+        from vendorDashboard.payout.services.generatePermcert import generate_security_credential
+        import uuid
+
+        originator_id = refund.mpesa_originator_conversation_id or str(uuid.uuid4())
+        security_credential = generate_security_credential(
+            config["initiator_password"],
+            config["certificate_path"],
+        )
+        refund.mpesa_originator_conversation_id = originator_id
+        refund.status = "processing"
+        refund.failure_reason = None
+        refund.save(update_fields=[
+            "mpesa_originator_conversation_id",
+            "status",
+            "failure_reason",
+            "updated_at",
+        ])
+
+    try:
+        from order.Mpesa.mpesaView import get_mpesa_access_token
+        token = get_mpesa_access_token()
+        response = requests.post(
+            config["url"],
+            headers={
+                "Authorization": f"Bearer {token}",
+                "Content-Type": "application/json",
+            },
+            json={
+                "Initiator": config["initiator_name"],
+                "SecurityCredential": security_credential,
+                "CommandID": "TransactionReversal",
+                "TransactionID": original.mpesa_receipt_number,
+                "Amount": int(refund.amount),
+                "ReceiverParty": config["short_code"],
+                "RecieverIdentifierType": "4",
+                "ResultURL": config["result_url"],
+                "QueueTimeOutURL": config["timeout_url"],
+                "Remarks": f"Refund {refund.id}",
+                "Occasion": "Customer refund",
+                "OriginatorConversationID": originator_id,
+            },
+            timeout=30,
+        )
+    except requests.exceptions.RequestException:
+        logger.exception("M-Pesa reversal request failed after submission attempt.")
+        return Refund.objects.get(pk=refund_id)
+
+    try:
+        data = response.json()
+    except ValueError:
+        data = {}
+
+    if response.status_code not in (200, 201):
+        return _mark_refund_failed(
+            refund_id,
+            data.get("errorMessage") or data.get("errorCode") or "M-Pesa rejected the reversal request.",
+        )
+
+    response_originator = data.get("OriginatorConversationID") or originator_id
+    conversation_id = data.get("ConversationID")
+    response_code = data.get("ResponseCode")
+
+    with transaction.atomic():
+        locked = Refund.objects.select_for_update().get(pk=refund_id)
+        locked.mpesa_originator_conversation_id = response_originator
+        locked.mpesa_conversation_id = conversation_id
+        try:
+            locked.mpesa_result_code = int(response_code) if response_code is not None else None
+        except (TypeError, ValueError):
+            locked.mpesa_result_code = None
+        locked.status = "processing"
+        locked.failure_reason = None
+        locked.save(update_fields=[
+            "mpesa_originator_conversation_id",
+            "mpesa_conversation_id",
+            "mpesa_result_code",
+            "status",
+            "failure_reason",
+            "updated_at",
+        ])
+        return locked
+
+
+def reconcile_mpesa_refund_callback(payload, *, timeout=False):
+    result = payload.get("Result") if isinstance(payload, dict) else None
+    if not isinstance(result, dict):
+        return None
+
+    originator_id = result.get("OriginatorConversationID")
+    conversation_id = result.get("ConversationID")
+    result_code = result.get("ResultCode")
+    try:
+        result_code_int = int(result_code) if result_code is not None else None
+    except (TypeError, ValueError):
+        result_code_int = None
+
+    with transaction.atomic():
+        refund = (
+            Refund.objects.select_for_update()
+            .filter(provider="Mpesa")
+            .filter(
+                models.Q(mpesa_conversation_id=conversation_id)
+                | models.Q(mpesa_originator_conversation_id=originator_id)
+            )
+            .first()
+        )
+        if not refund:
+            return None
+
+        refund.mpesa_result_code = result_code_int
+        if result_code_int == 0 and not timeout:
+            transaction_id = result.get("TransactionID")
+            if transaction_id:
+                refund.provider_reference = str(transaction_id)
+            refund.status = "completed"
+            refund.failure_reason = None
+            refund.completed_at = refund.completed_at or timezone.now()
+            refund.save(update_fields=[
+                "mpesa_result_code", "provider_reference", "status",
+                "failure_reason", "completed_at", "updated_at",
+            ])
+
+            return_request = refund.return_request
+            return_request.refund_issued = True
+            return_request.processed = True
+            return_request.save(update_fields=["refund_issued", "processed"])
+
+            item = return_request.item
+            item.refunded = True
+            item.refunded_at = item.refunded_at or timezone.now()
+            item.status = "refunded"
+            item.save(update_fields=["refunded", "refunded_at", "status"])
+
+            adjustment = return_request.vendor_adjustment
+            if adjustment and not adjustment.applied:
+                adjustment.applied = True
+                adjustment.save(update_fields=["applied"])
+        elif timeout or result_code_int != 0:
+            if refund.status != "completed":
+                refund.status = "failed"
+                refund.failure_reason = str(result.get("ResultDesc") or "M-Pesa reversal failed")[:1000]
+                refund.save(update_fields=[
+                    "mpesa_result_code", "status", "failure_reason", "updated_at",
+                ])
+
+        return refund
+
+
 def reconcile_paypal_refund(provider_reference, provider_status, provider_amount, provider_currency):
     """Reconcile a PayPal refund webhook against an existing refund ledger row."""
     if not provider_reference:
