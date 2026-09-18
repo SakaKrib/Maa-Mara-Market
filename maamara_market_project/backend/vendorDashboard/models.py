@@ -582,6 +582,18 @@ class ReturnRequest(models.Model):
 
     created_at = models.DateTimeField(auto_now_add=True)
 
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["item"],
+                name="uniq_return_request_per_order_item",
+            ),
+        ]
+        indexes = [
+            models.Index(fields=["customer", "status"]),
+            models.Index(fields=["visitor_id", "status"]),
+        ]
+
     def __str__(self):
         user_display = self.customer.username if self.customer else f"Visitor {self.visitor_id}"
         return f"Return for {self.item} by {user_display}"
