@@ -118,7 +118,6 @@ import SingleItemProfileNotif from "./cmponents/VENDORPAGE/VendorSections/Notifi
 import SubcategoryProducts from "./PublicUiForAll/PublicUi/Customer/DesktopView/Header/subcategoryListItem";
 import SearchResultsPage from "./PublicUiForAll/PublicUi/Navigations/Search/NavIcons/ResustsPage";
 import OrganicPage from "./PublicUiForAll/PublicUi/Customer/DesktopView/Main/Trending/OrganicAdvert/OrganicPage";
-import MpesaPayoutSuccess from "./cmponents/VendorPayoutReport/vendorPayouts/Payments/PayoutSuccess";
 import PayoutSuccess from "./cmponents/VendorPayoutReport/vendorPayouts/Payments/PayoutSuccess";
 import AuthSuccess from "./cmponents/Auth/AdminLogin/Auth-Success-Check";
 import ResetPassword from "./cmponents/Auth/AdminLogin/ResetLink";
