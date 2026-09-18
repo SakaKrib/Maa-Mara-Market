@@ -7,6 +7,7 @@ from django.db import transaction
 from django.utils import timezone
 
 from core.models import ActivityLog, Notification
+from core.realtime import broadcast_event
 from order.models import Transaction
 from order.paypalApis import get_paypal_access_token
 from vendorDashboard.models import VendorPayout
@@ -70,6 +71,10 @@ def apply_paypal_payout_status(
         raise ValueError("Unsupported PayPal payout item status.")
 
     provider_amount = _parse_amount(amount) if amount is not None else None
+    if amount is not None and provider_amount is None:
+        raise ValueError("Invalid PayPal payout amount.")
+    if provider_amount is not None and provider_amount <= 0:
+        raise ValueError("PayPal payout amount must be positive.")
     provider_currency = str(currency or "").upper() or None
 
     with transaction.atomic():
@@ -183,6 +188,35 @@ def apply_paypal_payout_status(
                     f"PayPal payout {payout.reference} provider status: {status}."
                 ),
                 timestamp=timezone.now(),
+            )
+
+            transaction.on_commit(
+                lambda: broadcast_event(
+                    "payout.updated",
+                    model="VendorPayout",
+                    object_id=payout.id,
+                    action="updated",
+                    vendor_ids=[payout.vendor_id],
+                    data={
+                        "reference": payout.reference,
+                        "status": status,
+                        "paid": payout.paid,
+                        "paid_at": (
+                            payout.paid_at.isoformat()
+                            if payout.paid_at
+                            else None
+                        ),
+                        "transaction_id": payout.paypal_transaction_id,
+                        "payout_item_id": payout.paypal_payout_item_id,
+                        "batch_id": payout.paypal_batch_id,
+                        "amount": (
+                            str(payout.paypal_amount)
+                            if payout.paypal_amount is not None
+                            else None
+                        ),
+                        "currency": payout.paypal_currency,
+                    },
+                )
             )
 
     return payout
