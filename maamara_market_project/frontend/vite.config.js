@@ -3,7 +3,9 @@ import react from "@vitejs/plugin-react";
 import path from "path";
 
 export default defineConfig({
-  base: "/static/",
+  // Vite is the frontend development server; serve the React app at "/".
+  // Django owns "/static/" for backend static assets.
+  base: "/",
   plugins: [react()],
   resolve: {
     alias: {
