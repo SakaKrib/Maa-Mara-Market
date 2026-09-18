@@ -6,7 +6,7 @@ from django.db.models import Count, Sum
 from django.db.models.functions import TruncMonth
 import calendar
 
-from .models import OderItem, Order
+from .models import OrderItem, Order
 from ReactSerializers.models import Item  
 
 @api_view(['GET'])
@@ -79,7 +79,7 @@ def vendor_pending_orders(request):
 
 
 
-# cendor pending oder objects
+# cendor pending order objects
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def vendor_pending_order_items(request):
@@ -101,13 +101,13 @@ def vendor_pending_order_items(request):
     ).distinct()
 
     # ✅ Collect all order items from those orders (works only if reverse relation exists)
-    pending_order_items = OderItem.objects.filter(
+    pending_order_items = OrderItem.objects.filter(
         item__in=vendor_items,
         order__in=pending_orders
     ).select_related("item", "order")
 
-    # ⚠️ If `OderItem` has NO `order` FK, handle via nested access:
-    if not hasattr(OderItem, "order"):
+    # ⚠️ If `OrderItem` has NO `order` FK, handle via nested access:
+    if not hasattr(OrderItem, "order"):
         order_item_pairs = []
         for order in pending_orders.prefetch_related("items__item"):
             for oi in order.items.all():
@@ -157,7 +157,7 @@ def vendor_pending_order_items(request):
             "pending_items": items_data,
         })
 
-    # If OderItem has an `order` field:
+    # If OrderItem has an `order` field:
     total_items = pending_order_items.count()
     total_quantity = pending_order_items.aggregate(total_qty=Sum("quantity"))["total_qty"] or 0
 
@@ -212,7 +212,7 @@ def vendor_pending_order_items(request):
     })
 
 
-# comoplete oders
+# complete orders
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def vendor_completed_order_items(request):
@@ -234,7 +234,7 @@ def vendor_completed_order_items(request):
     ).distinct()
 
     # Get OderItems from these completed orders for this vendor's items
-    completed_order_items = OderItem.objects.filter(
+    completed_order_items = OrderItem.objects.filter(
         item__in=vendor_items,
         order__in=completed_orders
     ).select_related("item", "order")
