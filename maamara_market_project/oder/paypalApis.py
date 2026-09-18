@@ -757,19 +757,28 @@ def paypal_webhook(request):
             return Response({"status": "ok", "message": "Already processed"})
 
         with db_transaction.atomic():
-            # Save or update Payment
-            payment, _ = Payment.objects.update_or_create(
-                transaction_id=paypal_order_id,
-                defaults={
-                    "amount": amount,
-                    # "status": "completed" if status == "completed" else status,
-                    "payment_method": "paypal",
-                },
-            )
-
-            # Link with Order
+            # Resolve the order first so the payment created during checkout is
+            # updated rather than creating a second, orphaned Payment record.
             order = Order.objects.filter(paypal_order_id=paypal_order_id).first()
-            if order and status == "completed" and order.status != "completed":
+
+            payment = order.payment if order and order.payment_id else None
+            if payment:
+                payment.transaction_id = paypal_order_id
+                payment.amount = amount
+                payment.payment_method = "PayPal"
+                payment.status = "completed" if event_type == "PAYMENT.CAPTURE.COMPLETED" else payment.status
+                payment.save(update_fields=["transaction_id", "amount", "payment_method", "status"])
+            else:
+                payment, _ = Payment.objects.update_or_create(
+                    transaction_id=paypal_order_id,
+                    defaults={
+                        "amount": amount,
+                        "payment_method": "PayPal",
+                        "status": "completed" if event_type == "PAYMENT.CAPTURE.COMPLETED" else "pending",
+                    },
+                )
+
+            if order and event_type == "PAYMENT.CAPTURE.COMPLETED" and order.status != "completed":
                 order.status = "completed"
                 order.save(update_fields=["status"])
 
@@ -780,6 +789,9 @@ def paypal_webhook(request):
                         sold_item = SoldItem(
                             item=order_item.item,
                             vendor=order_item.item.vendor,
+                            color_variant=order_item.color_variant,
+                            size_stock=order_item.size_stock,
+                            age_variant=order_item.age_variant,
                             quantity=order_item.quantity,
                         )
                         sold_item.save()
