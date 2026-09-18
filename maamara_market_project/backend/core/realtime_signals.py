@@ -3,7 +3,7 @@ from django.dispatch import receiver
 
 from .models import Notification, ActivityLog, CalendarEvent
 from .realtime import broadcast_event, model_snapshot
-from ReactSerializers.models import Item, ColorVariant, SizeStock, AgeVariant, Offer
+from ReactSerializers.models import Item, ColorVariant, SizeStock, AgeVariant, Offer, PriceChangeRequest
 from oder.models import Order, OderItem, Payment, Customer
 from vendorDashboard.models import Vendor, VendorPayout, VendorItemRequest
 
@@ -83,3 +83,10 @@ def vendor_request_save(sender, instance, created, **kwargs):
     uid = Vendor.objects.filter(pk=instance.vendor_id).values_list("user_id", flat=True).first()
     emit(sender, instance, "created" if created else "updated",
          user_ids=[uid] if uid else [], vendor_ids=[instance.vendor_id])
+
+@receiver(post_save, sender=PriceChangeRequest)
+def price_change_request_save(sender, instance, created, **kwargs):
+    vendor_id = getattr(getattr(instance, "item", None), "vendor_id", None)
+    emit(sender, instance, "created" if created else "updated",
+         vendor_ids=[vendor_id] if vendor_id else [],
+         user_ids=[instance.requested_by_id] if instance.requested_by_id else [])
