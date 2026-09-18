@@ -1,218 +1,131 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { baseUrl } from "../../../../../cmponents/Constant/Constant";
+import TrendingProductCard from "../../../Customer/DesktopView/Main/Trending/TrendingProductCard";
+import "../../../maamara.css";
 
-function useQuery() {
-  return new URLSearchParams(useLocation().search);
-}
-
-function truncate(text, maxLength) {
-  if (!text) return "";
-  return text.length > maxLength ? text.slice(0, maxLength) + "…" : text;
-}
-
-
-const ITEMS_PER_PAGE = 10;
+const ITEMS_PER_PAGE = 12;
 
 const SearchResultsPage = () => {
-  const query = useQuery();
+  const location = useLocation();
   const navigate = useNavigate();
-
+  const query = useMemo(() => new URLSearchParams(location.search), [location.search]);
   const searchTerm = query.get("name") || "";
-  const pageParam = parseInt(query.get("page") || "1", 10);
-
+  const page = Math.max(1, Number(query.get("page") || 1));
   const [results, setResults] = useState([]);
   const [totalResults, setTotalResults] = useState(0);
-  const [page, setPage] = useState(pageParam);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
-
-  // 🔹 Keep page in sync with URL
-  useEffect(() => {
-    setPage(pageParam);
-  }, [pageParam]);
+  const [error, setError] = useState("");
 
   useEffect(() => {
     if (!searchTerm.trim()) {
       setResults([]);
       setTotalResults(0);
-      return;
+      return undefined;
     }
-
     const controller = new AbortController();
-
     setLoading(true);
-    setError(null);
-
-    fetch(
-      `/api/search-items/?q=${encodeURIComponent(
-        searchTerm
-      )}&page=${page}&page_size=${ITEMS_PER_PAGE}`,
-      { signal: controller.signal }
-    )
+    setError("");
+    fetch(`/api/search-items/?q=${encodeURIComponent(searchTerm)}&page=${page}&page_size=${ITEMS_PER_PAGE}`, {
+      signal: controller.signal,
+    })
       .then((res) => {
-        if (!res.ok) throw new Error("Failed to fetch results");
+        if (!res.ok) throw new Error("Failed to fetch search results");
         return res.json();
       })
       .then((data) => {
-        if (Array.isArray(data?.results)) {
-          setResults(data.results);
-          setTotalResults(Number.isInteger(data.total) ? data.total : 0);
-        } else if (Array.isArray(data)) {
-          setResults(data);
-          setTotalResults(data.length);
-        } else {
-          setResults([]);
-          setTotalResults(0);
-        }
+        const next = Array.isArray(data?.results) ? data.results : Array.isArray(data) ? data : [];
+        setResults(next);
+        setTotalResults(Number.isInteger(data?.total) ? data.total : next.length);
       })
       .catch((err) => {
         if (err.name !== "AbortError") {
-          setError(err.message || "Error fetching results");
+          setError(err.message || "Unable to load search results.");
           setResults([]);
           setTotalResults(0);
         }
       })
       .finally(() => setLoading(false));
-
     return () => controller.abort();
   }, [searchTerm, page]);
 
   const totalPages = Math.max(1, Math.ceil(totalResults / ITEMS_PER_PAGE));
 
-  const goToPage = (newPage) => {
-    if (newPage < 1 || newPage > totalPages) return;
-    navigate(`/list?name=${encodeURIComponent(searchTerm)}&page=${newPage}`);
+  const goToPage = (nextPage) => {
+    if (nextPage < 1 || nextPage > totalPages) return;
+    navigate(`/list?name=${encodeURIComponent(searchTerm)}&page=${nextPage}`);
+  };
+
+  const normalizeImage = (item) => {
+    if (!item?.image) return "";
+    return item.image.startsWith("http") ? item.image : `${baseUrl || ""}${item.image}`;
   };
 
   return (
-    <main
-      style={{
-        maxWidth: 700,
-        margin: "2rem auto",
-        padding: "6rem 1rem 1rem", // 🔹 space for fixed header
-        minHeight: "100vh",
-        fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif",
-      }}
-    >
-      {/* Header */}
-      <div className="logo flex items-center justify-between border-b border-gray-300 pb-4 mb-6 fixed top-0 left-0 w-full px-4 bg-white z-10">
-        <a className="flex items-center space-x-2 text-2xl font-bold text-gray-800 mt-1">
-          <span className="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center text-white text-xs">
-            MMM
-          </span>
-          <span>
-            Maa <span className="it-name">Mara</span>{" "}
-            <span className="mkrt">Market</span>
-          </span>
-        </a>
-        <span
-          className="font-semibold hover:underline cursor-pointer"
-          onClick={() => navigate("/")}
-        >
-          go to shop
-        </span>
-      </div>
+    <main className="mm-page">
+      <section className="mm-section">
+        <div className="mm-container">
+          <div className="flex flex-wrap items-end justify-between gap-3 mb-6">
+            <div>
+              <p className="text-xs uppercase tracking-wide text-gray-500 mb-1">Maa Mara Market</p>
+              <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">
+                {searchTerm ? `Search results for “${searchTerm}”` : "Search the marketplace"}
+              </h1>
+              {searchTerm && !loading && <p className="text-sm text-gray-500 mt-1">{totalResults} result{totalResults === 1 ? "" : "s"}</p>}
+            </div>
+          </div>
 
-      <h1 style={{ marginBottom: "1rem" }}>
-        Search results for <q className="text-2xl">{truncate (searchTerm, 20)}</q>
-      </h1>
-
-      <div className="flex justify-between items-center border-b b-1 bg-gray-100 rounded-md p-2">
-        <p className="text-sm font-semibold">Found </p>
-        <strong>{results.length}</strong>
-      </div>
-
-      {loading && <p style={{ fontStyle: "italic" }}>Loading results...</p>}
-      {error && <p style={{ color: "red" }}>{error}</p>}
-
-      {!loading && !error && results.length === 0 && (
-        <p>No results found. Try different keywords.</p>
-      )}
-
-      {!loading && results.length > 0 && (
-        <>
-          <ul style={{ listStyle: "none", padding: 0, marginTop:'10px' }}>
-            {results.map(({ id, name, description, image }) => (
-              <li
-                key={id}
-                style={{
-                  display: "flex",
-                  gap: "1rem",
-                  padding: "1rem 1rem",
-                  borderBottom: "1px solid #ddd",
-                }}
-                className="cursor-pointer hover:bg-gray-100 rounded-lg transition-1 "
-              >
-                {image ? (
-                  <img
-                    src={image.startsWith("http") ? image : baseUrl + image}
-                    alt={name}
-                    style={{
-                      width: 80,
-                      height: 80,
-                      objectFit: "cover",
-                      borderRadius: 8,
-                    }}
-                  />
-                ) : (
-                  <div
-                    style={{
-                      width: 80,
-                      height: 80,
-                      background: "#eee",
-                      borderRadius: 8,
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      color: "#999",
-                      fontSize: "0.8rem",
-                    }}
-                  >
-                    No Image
-                  </div>
-                )}
-
-                <div>
-                  <h2 style={{ margin: 0 }} className="text-lg">{name}</h2>
-                  <p style={{ margin: "0.25rem 0" }} className="text-sm text-gray-500">
-                  {truncate(description, 100) || "No description available."}
-                  </p>
-                </div>
-              </li>
-            ))}
-          </ul>
-
-          {totalPages > 1 && (
-            <nav
-              style={{
-                display: "flex",
-                justifyContent: "center",
-                gap: "1rem",
-                marginTop: "1rem",
-              }}
-            >
-              <button
-                disabled={page <= 1}
-                onClick={() => goToPage(page - 1)}
-              >
-                Previous
-              </button>
-
-              <span>
-                Page {page} of {totalPages}
-              </span>
-
-              <button
-                disabled={page >= totalPages}
-                onClick={() => goToPage(page + 1)}
-              >
-                Next
-              </button>
-            </nav>
+          {loading && (
+            <div className="mm-card p-8 text-center text-sm text-gray-500">Finding products…</div>
           )}
-        </>
-      )}
+
+          {error && !loading && (
+            <div className="mm-card p-8 text-center text-sm text-red-600">{error}</div>
+          )}
+
+          {!loading && !error && !searchTerm.trim() && (
+            <div className="mm-card p-10 text-center">
+              <h2 className="text-lg font-semibold mb-2">What are you looking for?</h2>
+              <p className="text-sm text-gray-500">Use the search box above to discover products.</p>
+            </div>
+          )}
+
+          {!loading && !error && searchTerm.trim() && results.length === 0 && (
+            <div className="mm-card p-10 text-center">
+              <h2 className="text-lg font-semibold mb-2">No products found</h2>
+              <p className="text-sm text-gray-500">Try a different keyword or browse all products.</p>
+              <button type="button" className="mt-4 px-4 py-2 rounded-md bg-gray-900 text-white text-sm font-semibold" onClick={() => navigate("/list")}>
+                Browse products
+              </button>
+            </div>
+          )}
+
+          {!loading && !error && results.length > 0 && (
+            <>
+              <div className="product-card-grid grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2 sm:gap-4 lg:gap-6">
+                {results.map((item) => (
+                  <TrendingProductCard
+                    key={item.id}
+                    item={{ ...item, image: normalizeImage(item) }}
+                  />
+                ))}
+              </div>
+
+              {totalPages > 1 && (
+                <nav className="flex items-center justify-center gap-4 mt-8" aria-label="Search pagination">
+                  <button type="button" disabled={page <= 1} onClick={() => goToPage(page - 1)} className="px-4 py-2 rounded-md border border-gray-300 text-sm disabled:opacity-40">
+                    Previous
+                  </button>
+                  <span className="text-sm text-gray-600">Page {page} of {totalPages}</span>
+                  <button type="button" disabled={page >= totalPages} onClick={() => goToPage(page + 1)} className="px-4 py-2 rounded-md border border-gray-300 text-sm disabled:opacity-40">
+                    Next
+                  </button>
+                </nav>
+              )}
+            </>
+          )}
+        </div>
+      </section>
     </main>
   );
 };
