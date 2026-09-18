@@ -10,6 +10,7 @@ from rest_framework.response import Response
 from vendorDashboard.models import VendorPayout
 
 from .mpesaView import initiate_b2c_payment
+from order.services.refunds import reconcile_mpesa_refund_callback
 
 logger = logging.getLogger(__name__)
 
@@ -156,6 +157,20 @@ def mpesa_b2c_payment(request):
 def mpesa_result(request):
     """Process a Safaricom Daraja B2C result callback idempotently."""
     _process_b2c_callback(request.data)
+    return Response({"ResultCode": 0, "ResultDesc": "Accepted"})
+
+
+@api_view(["POST"])
+def mpesa_refund_result(request):
+    """Process a Safaricom reversal result callback idempotently."""
+    reconcile_mpesa_refund_callback(request.data)
+    return Response({"ResultCode": 0, "ResultDesc": "Accepted"})
+
+
+@api_view(["POST"])
+def mpesa_refund_timeout(request):
+    """Process a Safaricom reversal timeout callback."""
+    reconcile_mpesa_refund_callback(request.data, timeout=True)
     return Response({"ResultCode": 0, "ResultDesc": "Accepted"})
 
 
