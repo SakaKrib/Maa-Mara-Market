@@ -31,7 +31,7 @@ export default function CheckoutPage() {
     (order?.items || []).reduce((sum, item) =>
       sum + Number(item?.final_price ?? item?.price ?? 0) * Number(item?.quantity || 1), 0
     ), [order]);
-  const shippingCost = Number(selectedShipping?.rate ?? selectedShipping?.price ?? 0);
+  const shippingCost = Number(selectedShipping?.price_kes ?? selectedShipping?.rate ?? selectedShipping?.price ?? 0);
   const total = subtotal + shippingCost;
 
   useEffect(() => {
@@ -101,7 +101,7 @@ export default function CheckoutPage() {
                 <Button type="button" onClick={getShippingQuote} disabled={isLoadingShipping}>
                   {isLoadingShipping ? "Getting rates…" : "Get Shipping Quote"}
                 </Button>
-                <Button type="submit" className="w-full">Complete Order</Button>
+                <Button type="submit" className="w-full" disabled={!selectedShipping}>Complete Order</Button>
               </div>
             </form>
           </section>
