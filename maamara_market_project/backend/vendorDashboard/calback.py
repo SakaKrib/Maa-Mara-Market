@@ -15,6 +15,8 @@ import ipaddress
 from vendorDashboard.models import VendorPayout
 from core.models import Notification, ActivityLog
 from order.models import Transaction
+from order.paypalApis import verify_paypal_signature
+from vendorDashboard.payout.services.paypal_payouts import apply_paypal_payout_status
 from django.contrib.auth import get_user_model
 
 User = get_user_model()
@@ -282,172 +284,125 @@ def kcb_oauth_callback(request):
 #------------------------
 @csrf_exempt
 def paypal_payout_webhook(request):
-    """
-    PayPal payout webhook handler.
-    Handles payout item status updates and batch-level events.
-    """
-
+    """Process authenticated PayPal payout item webhooks idempotently."""
     if request.method != "POST":
         return JsonResponse({"error": "Invalid method"}, status=405)
 
+    raw_body = request.body
+    if not verify_paypal_signature(raw_body, request):
+        logger.warning("Rejected PayPal payout webhook with invalid signature.")
+        return JsonResponse({"error": "Invalid signature"}, status=400)
+
     try:
-        data = json.loads(request.body.decode("utf-8"))
+        data = json.loads(raw_body.decode("utf-8"))
     except json.JSONDecodeError:
-        logger.error("❌ Invalid JSON received from PayPal")
         return JsonResponse({"error": "Invalid JSON"}, status=400)
 
-    logger.info(f"📥 Incoming PayPal webhook: {data}")
+    event_id = data.get("id")
+    event_type = str(data.get("event_type") or "")
+    resource = data.get("resource") or {}
 
-    event_type = data.get("event_type")
-    resource = data.get("resource", {})
+    logger.info(
+        "Received PayPal payout webhook.",
+        extra={"event_id": event_id, "event_type": event_type},
+    )
 
-    # Handle batch-level events
-    if event_type and event_type.startswith("PAYMENT.PAYOUTSBATCH"):
-        batch_header = resource.get("batch_header", {})
-        batch_status = batch_header.get("batch_status")
-        payout_batch_id = batch_header.get("payout_batch_id")
+    if event_type.startswith("PAYMENT.PAYOUTSBATCH"):
+        # PayPal batch webhooks do not contain item-level information.
+        # Item settlement is reconciled through item events or the batch API.
+        return JsonResponse({"status": "accepted"}, status=200)
 
-        logger.info(f"🗂 Handling batch event: Batch ID {payout_batch_id} with status {batch_status}")
-
-        # TODO: Add any internal batch processing here if you have a Batch model
-        # For example:
-        # batch = PayoutBatch.objects.filter(batch_id=payout_batch_id).first()
-        # if batch:
-        #     batch.status = batch_status
-        #     batch.completed_at = timezone.now() if batch_status in ('SUCCESS', 'FAILED') else None
-        #     batch.save()
-
-        return JsonResponse({"status": "batch event processed"}, status=200)
-
-    # Process payout item events only
-    if not event_type or not event_type.startswith("PAYMENT.PAYOUTS-ITEM"):
-        logger.info(f"Ignoring non-item event type: {event_type}")
+    if not event_type.startswith("PAYMENT.PAYOUTS-ITEM."):
         return JsonResponse({"status": "ignored"}, status=200)
 
-    sender_item_id = resource.get("payout_item", {}).get("sender_item_id")
-    transaction_status = resource.get("transaction_status")
+    payout_item = resource.get("payout_item") or {}
+    sender_item_id = payout_item.get("sender_item_id")
+    payout_item_id = resource.get("payout_item_id")
+    transaction_status = str(resource.get("transaction_status") or "").upper()
     transaction_id = resource.get("transaction_id")
+    payout_batch_id = resource.get("payout_batch_id")
 
-    amount_str = (
-        resource.get("amount", {}).get("value")
-        or resource.get("payout_item", {}).get("amount", {}).get("value")
-    )
-    currency = (
-        resource.get("amount", {}).get("currency")
-        or resource.get("payout_item", {}).get("amount", {}).get("currency")
-    )
+    amount_data = resource.get("amount") or payout_item.get("amount") or {}
+    amount = amount_data.get("value")
+    currency = amount_data.get("currency")
 
-    if not sender_item_id:
-        logger.warning(f"⚠️ Webhook ignored — missing sender_item_id for event {event_type}")
+    if not sender_item_id and not payout_item_id:
+        logger.warning(
+            "Ignoring PayPal payout webhook without payout correlation.",
+            extra={"event_id": event_id, "event_type": event_type},
+        )
         return JsonResponse({"status": "ignored"}, status=200)
-
-    try:
-        amount = Decimal(amount_str)
-    except Exception:
-        amount = Decimal("0.00")
 
     try:
         with db_transaction.atomic():
-            payout = VendorPayout.objects.filter(reference=sender_item_id).first()
+            payout_qs = VendorPayout.objects.select_for_update()
 
-            if not payout:
+            if payout_item_id:
+                payout = payout_qs.filter(
+                    paypal_payout_item_id=payout_item_id
+                ).first()
+            else:
+                payout = None
+
+            if payout is None and sender_item_id:
+                payout = payout_qs.filter(reference=sender_item_id).first()
+
+            if payout is None:
                 logger.warning(
-                    f"⚠️ No VendorPayout found for reference={sender_item_id}. Webhook ignored."
+                    "PayPal payout webhook did not match a local payout.",
+                    extra={
+                        "event_id": event_id,
+                        "event_type": event_type,
+                        "sender_item_id": sender_item_id,
+                        "payout_item_id": payout_item_id,
+                    },
                 )
-                return JsonResponse({"status": "ignored"}, status=200)
+                return JsonResponse({"status": "accepted"}, status=200)
 
-            if transaction_id and Transaction.objects.filter(
-                paypal_transaction_id=transaction_id
-            ).exists():
-                logger.info(f"🟡 Duplicate PayPal webhook ignored (transaction {transaction_id})")
-                return JsonResponse({"status": "ok"}, status=200)
-
-            success = (transaction_status == "SUCCESS")
-
-            payout.paypal_transaction_id = transaction_id or payout.paypal_transaction_id
-            payout.paypal_transaction_status = transaction_status or payout.paypal_transaction_status
-            payout.paypal_amount = amount or payout.paypal_amount
-            payout.paypal_currency = currency or payout.paypal_currency
-
-            if success:
-                payout.paid = True
-                payout.paid_at = timezone.now()
-            payout.save()
-
-            # ---- WEBSOCKET BROADCAST ----
-            try:
-                channel_layer = get_channel_layer()
-
-                async_to_sync(channel_layer.group_send)(
-                    f"payout_{sender_item_id}",
-                    {
-                        "type": "payout.update",
-                        "event": "paypal_payout_update",
-                        "reference": sender_item_id,
-                        "status": transaction_status,
-                        "success": success,
-                        "amount": str(amount),
-                        "currency": currency,
-                        "transaction_id": transaction_id,
-                    }
+            if (
+                payout_item_id
+                and payout.paypal_payout_item_id
+                and payout.paypal_payout_item_id != payout_item_id
+            ):
+                logger.error(
+                    "PayPal payout item correlation mismatch.",
+                    extra={"payout_reference": payout.reference},
                 )
-                logger.info(f"📡 WebSocket event broadcasted for payout {sender_item_id}")
+                return JsonResponse({"status": "accepted"}, status=200)
 
-            except Exception as e:
-                logger.error(f"❌ WebSocket broadcast failed: {e}")
+            if sender_item_id and sender_item_id != payout.reference:
+                logger.error(
+                    "PayPal sender item correlation mismatch.",
+                    extra={"payout_reference": payout.reference},
+                )
+                return JsonResponse({"status": "accepted"}, status=200)
 
-
-            Transaction.objects.create(
-                transaction_type="PayPal",
-                paypal_transaction_id=transaction_id,
+            # apply_paypal_payout_status performs the authoritative locked update
+            # and only sets paid=True for provider-confirmed SUCCESS.
+            apply_paypal_payout_status(
+                payout.id,
+                transaction_status=transaction_status,
+                transaction_id=transaction_id,
+                payout_item_id=payout_item_id,
+                payout_batch_id=payout_batch_id,
                 amount=amount,
-                status="Completed" if success else "Failed",
-                account_reference=sender_item_id,
-                raw_data=data,
-                payout=payout,
-                vendor=payout.vendor,
-                payment_method="paypal",
+                currency=currency,
             )
 
-            logger.info(f"💾 Updated payout {payout.reference} | Status: {transaction_status}")
+    except (InvalidOperation, ValueError) as exc:
+        logger.warning(
+            "Rejected invalid PayPal payout webhook data.",
+            extra={"event_id": event_id, "reason": str(exc)},
+        )
+        return JsonResponse({"status": "accepted"}, status=200)
+    except Exception:
+        logger.exception(
+            "PayPal payout webhook processing failed.",
+            extra={"event_id": event_id, "event_type": event_type},
+        )
+        # Return 2xx only after the event has been authenticated. PayPal can
+        # retry delivery; reconciliation also provides a recovery path.
+        return JsonResponse({"status": "accepted"}, status=200)
 
-            # Format month name from payout date
-            month_name = payout.created_at.strftime("%B %Y") if payout.created_at else "this month"
-
-            Notification.objects.create(
-                user=payout.vendor.user if hasattr(payout.vendor, 'user') else None,
-                title="PayPal Payout Update",
-                message=(
-                    f"Your PayPal payout of {amount} {currency} "
-                    f"for {month_name} is now {transaction_status}."
-                ),
-            )
-
-            admins = User.objects.filter(is_superuser=True)
-            for admin in admins:
-                Notification.objects.create(
-                    user=admin,
-                    title=f"PayPal Payout {transaction_status}",
-                    message=(
-                        f"Payout {payout.reference} for vendor {payout.vendor.company_name} "
-                        f"has status: {transaction_status}. Transaction ID: {transaction_id}."
-                    ),
-                )
-
-            ActivityLog.objects.create(
-                user=payout.vendor.user if hasattr(payout.vendor, 'user') else None,
-                actor_type="vendor",
-                action="payout_completed" if success else "payout_failed",
-                description=(
-                    f"PayPal payout {payout.reference} updated: "
-                    f"{transaction_status} (Transaction ID: {transaction_id})"
-                ),
-                timestamp=timezone.now(),
-            )
-
-    except Exception as e:
-        logger.error(f"🔥 Webhook processing error: {e}", exc_info=True)
-        return JsonResponse({"status": "ok"}, status=200)
-
-    return JsonResponse({"status": "ok"}, status=200)
+    return JsonResponse({"status": "accepted"}, status=200)
 
