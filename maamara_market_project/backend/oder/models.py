@@ -339,7 +339,7 @@ class Order(models.Model):
     def final_total_of_cart(self):
         if self.updated_total_price > 0:
             return self.updated_total_price
-        return self.get_total()
+        return self.get_total() + int(round(self.shipping_amount or Decimal("0.00")))
 
 
     def __str__(self):
