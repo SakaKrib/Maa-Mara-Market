@@ -234,6 +234,19 @@ class Order(models.Model):
     payment = models.ForeignKey(Payment, on_delete=models.SET_NULL, blank=True, null=True)
     paypal_invoice_id = models.CharField(max_length=128, blank=True, null=True, unique=True)
 
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["user", "visitor_id"],
+                condition=models.Q(status="pending"),
+                name="uniq_pending_order_owner",
+            ),
+        ]
+        indexes = [
+            models.Index(fields=["user", "status"]),
+            models.Index(fields=["visitor_id", "status"]),
+        ]
+
     @property
     def payment_confirmed(self):
         return self.payment and self.payment.status == 'completed'
