@@ -325,6 +325,26 @@ PAYMENT_GATEWAYS = {
         "client_secret": env("KCB_API_SECRET"),
         "callback_url": env("KCB_CALLBACK_URL"),
     },
+
+    "shipping": {
+        "dhl": {
+            "api_url": env("DHL_RATES_URL", default=""),
+            "api_key": env("DHL_API_KEY", default=""),
+            "origin_postal_code": env("SHIPPING_ORIGIN_POSTAL_CODE", default="00100"),
+            "origin_city": env("SHIPPING_ORIGIN_CITY", default="Nairobi"),
+            "origin_country": env("SHIPPING_ORIGIN_COUNTRY", default="KE"),
+        },
+        "fedex": {
+            "auth_url": env("FEDEX_OAUTH_URL", default=""),
+            "api_url": env("FEDEX_RATES_URL", default=""),
+            "client_id": env("FEDEX_CLIENT_ID", default=""),
+            "client_secret": env("FEDEX_CLIENT_SECRET", default=""),
+            "account_number": env("FEDEX_ACCOUNT_NUMBER", default=""),
+            "origin_postal_code": env("SHIPPING_ORIGIN_POSTAL_CODE", default="00100"),
+            "origin_city": env("SHIPPING_ORIGIN_CITY", default="Nairobi"),
+            "origin_country": env("SHIPPING_ORIGIN_COUNTRY", default="KE"),
+        },
+    },
 }
 
 # =========================================================
