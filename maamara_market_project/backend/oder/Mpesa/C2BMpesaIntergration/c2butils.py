@@ -7,6 +7,7 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 from rest_framework.permissions import AllowAny
 import logging
+from decimal import Decimal
 from django.contrib.auth import get_user_model
 from oder.models import Transaction, Order, Customer, BillingAddress
 from oder.views import IsAuthenticatedOrVisitor
