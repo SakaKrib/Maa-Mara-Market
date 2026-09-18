@@ -185,6 +185,13 @@ def call_mpesa_b2c(vendor, amount, mpesa_config, payout=None):
 
         originator_conversation_id = str(uuid.uuid4())
 
+        # Persist the correlation id before contacting Daraja so a very fast
+        # callback can always be matched to this payout.
+        if payout is not None:
+            payout.mpesa_originator_conversation_id = originator_conversation_id
+            payout.mpesa_result_desc = "Submitted to M-Pesa"
+            payout.save(update_fields=["mpesa_originator_conversation_id", "mpesa_result_desc"])
+
         security_credential = generate_security_credential(initiator_password, cert_path)
 
 
