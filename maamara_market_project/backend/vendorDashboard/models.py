@@ -1,15 +1,20 @@
-from django.db import models
-from django.contrib.auth.models import User
-from django.core.validators import RegexValidator
-from django.core.exceptions import ValidationError
-from django.utils import timezone
-from datetime import timedelta
-from django.core.mail import send_mail
+from datetime import timedelta, date
 import random
-from django.core.mail import EmailMultiAlternatives
+import uuid
+from decimal import Decimal
+from calendar import monthrange
+
 from django.conf import settings
+from django.contrib.auth.models import User
+from django.core.exceptions import ValidationError
+from django.core.mail import EmailMultiAlternatives, send_mail
+from django.core.validators import RegexValidator
+from django.db import models, transaction
+from django.utils import timezone
+
 from core.models import Notification
 from ReactSerializers.models import Brand, Item
+
 
 
 class Vendor(models.Model):
@@ -129,10 +134,6 @@ class Vendor(models.Model):
             return f"PayPal: {self.paypal_email}"
         return "No payment details available"
 
-
-
-
-
     
     def save(self, *args, **kwargs):
         if not self.vendor_id:
@@ -149,13 +150,11 @@ class Vendor(models.Model):
 
         super().save(*args, **kwargs)
 
-
     def __str__(self):
         return f'{self.first_name} - {self.user.id}'
 
     
 # vendor request save temoralily
-
 
 class VendorRequest(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
@@ -380,18 +379,11 @@ class VendorRequest(models.Model):
             seconds_left = (expiry_time - timezone.now()).total_seconds()
             return False, f"OTP still valid. Please wait {int(seconds_left)} seconds before resending."
 
-
-
     
 
-
-
 #sold item model
-from django.db import models, transaction
-from django.core.exceptions import ValidationError
 
 class SoldItem(models.Model):
-    from oder.models import Item  # adjust import if needed
 
     item = models.ForeignKey(Item, on_delete=models.CASCADE, related_name='sold_items')
     vendor = models.ForeignKey('vendorDashboard.Vendor', on_delete=models.CASCADE, related_name='sold_items')
@@ -489,11 +481,7 @@ class SoldItem(models.Model):
     class Meta:
         ordering = ['-date_sold']
 
-
-
-
 #Vendor Adjustment models intergration
-from oder.models import OderItem
 class VendorAdjustment(models.Model):
     vendor = models.ForeignKey(Vendor, on_delete=models.CASCADE, related_name="adjustments")
     order_item = models.ForeignKey(OderItem, on_delete=models.CASCADE, null=True, blank=True)
@@ -512,7 +500,6 @@ class VendorAdjustment(models.Model):
         default='refund'
     )
     applied = models.BooleanField(default=False)
-
 
 # MODEL TO HANDLE RETURNS
 # vendorDashboard/models.py
@@ -594,14 +581,8 @@ class ReturnRequest(models.Model):
         user_display = self.customer.username if self.customer else f"Visitor {self.visitor_id}"
         return f"Return for {self.item} by {user_display}"
 
-
 # Vendor payout intergration
 # VendorPayout model
-import uuid
-from decimal import Decimal
-from datetime import date
-from calendar import monthrange
-
 
 def default_payout_period_start():
     today = date.today()
@@ -641,8 +622,6 @@ class VendorPayout(models.Model):
     paypal_currency = models.CharField(max_length=10, null=True, blank=True)
     paypal_batch_id = models.CharField(max_length=255, null=True, blank=True)
 
-
-
      # ✅ Default payout period
     payout_period_start = models.DateField(default=default_payout_period_start)
     payout_period_end = models.DateField(default=default_payout_period_end)
@@ -671,7 +650,6 @@ class VendorPayout(models.Model):
             "profit_diff": self.profit - prev.profit,
         }
 
-
     class Meta:
         # ✅ Prevent duplicate payouts for same vendor and period
         unique_together = ('vendor', 'payout_period_start', 'payout_period_end')
@@ -685,9 +663,6 @@ class VendorPayout(models.Model):
         super().save(*args, **kwargs)
 
         
-
-
-
 
 #  vendor request for item creation
 
@@ -731,5 +706,4 @@ class VendorPaymentDetail(models.Model):
     
     
     
-
 
