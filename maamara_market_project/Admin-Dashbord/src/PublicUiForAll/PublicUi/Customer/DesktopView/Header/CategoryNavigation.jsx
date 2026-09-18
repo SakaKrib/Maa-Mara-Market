@@ -30,7 +30,7 @@ const CategoryNavigation = () => {
         <div className="mm-category-nav-inner">
           <button
             type="button"
-            className={`mm-category-trigger ${open ? "is-open" : ""}`}
+            className={`mm-category-trigger primary-button ${open ? "is-open" : ""}`}
             onClick={() => setOpen((value) => !value)}
             aria-expanded={open}
           >
