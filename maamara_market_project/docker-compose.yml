@@ -44,8 +44,13 @@ services:
     ports:
       - "8000:8000"
     volumes:
-      - ./backend/media:/app/media
-      - ./backend/static:/app/static
+      - ./backend:/app
+      - backend_static:/app/static
+      - backend_media:/app/media
+    command: >
+      sh -c "python manage.py collectstatic --noinput &&
+             python manage.py migrate --noinput &&
+             python manage.py runserver 0.0.0.0:8000"
     depends_on:
       db:
         condition: service_healthy
@@ -60,9 +65,16 @@ services:
       VITE_API_URL: ""
     ports:
       - "5173:5173"
+    volumes:
+      - ./Admin-Dashbord:/app
+      - frontend_node_modules:/app/node_modules
+    command: npm run dev -- --host 0.0.0.0
     depends_on:
       - backend
 
 volumes:
   postgres_data:
   redis_data:
+  frontend_node_modules:
+  backend_static:
+  backend_media:
