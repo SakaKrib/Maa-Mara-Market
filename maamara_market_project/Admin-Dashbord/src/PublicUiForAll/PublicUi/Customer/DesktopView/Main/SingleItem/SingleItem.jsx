@@ -1,5 +1,6 @@
 import api from "../../../../../../Services/Api";
 import { baseUrl } from "../../../../../../cmponents/Constant/Constant";
+import { useCartContext } from "../CartHook/cart";
 import useItems from "../../../../ItemHook/ItemHook";
 import { useEffect, useState, useRef } from "react";
 import { useParams } from "react-router-dom";
@@ -9,6 +10,7 @@ import AddToCartButton from "../CartActionButtons/AddToCartBtn";
 const SingleItem = () => {
   const { itemId } = useParams();
   const { items, loading } = useItems();
+  const { refreshCart } = useCartContext();
 
   const [item, setItem] = useState(null);
   const [selectedVariant, setSelectedVariant] = useState(null);
@@ -110,7 +112,6 @@ const SingleItem = () => {
   if (!item) return <div>Item not found</div>;
 
   const previewImages = item.images?.length > 0 ? item.images : [item.image];
-  const availableColors = (item.variants || []).map((v) => v.color.toLowerCase());
   const mainImageSrc = selectedImage || selectedSize?.image || selectedVariant?.image || item.image;
 
   // monitor add to cart button
@@ -153,7 +154,7 @@ const SingleItem = () => {
           title={variant.color}
         >
           {variant.image ? (
-            <img src={variant.color_image} className="object-cover w-full h-full" alt={variant.color} />
+            <img src={variant.image} className="object-cover w-full h-full" alt={variant.color} />
           ) : (
             <div className="w-full h-full" style={{ backgroundColor: variant.color.toLowerCase() }} />
           )}
@@ -196,16 +197,15 @@ const SingleItem = () => {
         </div>
 
         {/* Unified form starts here */}
-        <form onSubmit={handleSubmit} className="flex flex-col gap-6 mt-6">
+        <form onSubmit={(e) => e.preventDefault()} className="flex flex-col gap-6 mt-6">
           {/* Color Selection */}
           <div>
             <p className="font-medium mb-2">Select Color</p>
             <div className="flex flex-wrap gap-4">
               {(item.variants || []).map((variant) => {
                 const color = variant.color.toLowerCase();
-                const isAvailable = availableColors.includes(color);
                 return (
-                  <label key={color} className="inline-block">
+                  <label key={variant.id} className="inline-block">
                     <input
                       type="radio"
                       name="color"
