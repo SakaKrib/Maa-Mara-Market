@@ -12,11 +12,8 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 
 from ReactSerializers.models import AgeVariant, ColorVariant, Item, Length, Shoe, SizeStock, Weight
-from .models import BillingAddress, Customer, Order, Payment
-from .models import BillingAddress, Customer, Order, Payment
 
 from .Payment import capture_paypal_order, create_paypal_order
-from .models import BillingAddress, Customer, Order, Payment
 from .models import BillingAddress, Customer, Order, Payment
 from .paymentserializer import CheckoutSerializer, OrderResponseSerializer
 from .views import IsAuthenticatedOrVisitor
@@ -38,23 +35,3 @@ def paypal_create_order(request):
             status="pending",
         ).order_by("-id").first()
     else:
-        visitor_id = request.COOKIES.get("visitorId")
-        pending_order = (
-            Order.objects.filter(visitor_id=visitor_id, status="pending")
-            .order_by("-id")
-            .first()
-            if visitor_id
-            else None
-        )
-
-    paypal_id = paypal_order.get("id")
-    if pending_order and paypal_id:
-        pending_order.paypal_order_id = paypal_id
-        pending_order.save(update_fields=["paypal_order_id"])
-
-    return Response(paypal_order)
-
-@api_view(["POST"])
-@permission_classes([IsAuthenticatedOrVisitor])
-def paypal_capture_order(request, order_id):
-    capture = capture_paypal_order(order_id)
