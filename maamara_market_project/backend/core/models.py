@@ -137,12 +137,9 @@ class Voucher(models.Model):
         # ✅ Ensure total is not negative after discount
         final_price = max(0, total - discount_amount)
 
-        print("discount of 10%", discount_amount)
 
-        # ✅ Mark voucher as redeemed
-        self.redeemed = False
-        self.save()
-
+        # Applying a discount must not redeem the voucher.
+        # Redemption belongs to the successful payment/checkout flow.
         return final_price
 
 
