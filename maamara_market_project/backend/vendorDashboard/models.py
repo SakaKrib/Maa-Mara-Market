@@ -14,6 +14,7 @@ from django.utils import timezone
 
 from core.models import Notification
 from ReactSerializers.models import Brand, Item
+from oder.models import OderItem
 
 
 
@@ -706,4 +707,3 @@ class VendorPaymentDetail(models.Model):
     
     
     
-
