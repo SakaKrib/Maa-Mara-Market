@@ -171,237 +171,108 @@ from django.utils import timezone
 @api_view(["POST"])
 @permission_classes([AllowAny])
 def stk_callback(request):
+    """Reconcile a Safaricom STK result exactly once."""
     data = request.data
-    logger.debug("STK callback received")
+    callback = data.get("Body", {}).get("stkCallback", {})
+    checkout_request_id = callback.get("CheckoutRequestID")
+    result_code = callback.get("ResultCode")
+    result_desc = callback.get("ResultDesc", "")
 
-    stk_callback_data = data.get("Body", {}).get("stkCallback", {})
-    checkout_request_id = stk_callback_data.get("CheckoutRequestID")
-    result_code = stk_callback_data.get("ResultCode")
-    result_desc = stk_callback_data.get("ResultDesc")
-
-    amount = 0
-    phone_number = None
-    mpesa_receipt = None
-
-    # --- Extract callback metadata ---
-    callback_items = stk_callback_data.get("CallbackMetadata", {}).get("Item", [])
-    for item in callback_items:
-        name = item.get("Name")
-        if name == "Amount":
-            amount = item.get("Value", 0)
-        elif name == "PhoneNumber":
-            phone_number = str(item.get("Value"))
-        elif name == "MpesaReceiptNumber":
-            mpesa_receipt = item.get("Value")
+    if not checkout_request_id:
+        logger.warning("STK callback missing CheckoutRequestID")
+        return Response({"ResultCode": 0, "ResultDesc": "Accepted"})
 
     try:
         with db_transaction.atomic():
-            # ✅ Find the Payment record using CheckoutRequestID
-            payment = Payment.objects.filter(transaction_id=checkout_request_id).first()
+            payment = (
+                Payment.objects.select_for_update()
+                .filter(transaction_id=checkout_request_id)
+                .first()
+            )
             if not payment:
-                logger.warning(f"⚠️ No Payment found for CheckoutRequestID {checkout_request_id}")
-                return Response({"ResultCode": 0, "ResultDesc": "Payment not found"})
+                # A repeated callback after the first successful callback has
+                # already replaced the checkout ID with the receipt number.
+                logger.info("Ignoring unknown/replayed STK callback.")
+                return Response({"ResultCode": 0, "ResultDesc": "Accepted"})
 
-            # ✅ Fetch linked Order and extract visitor_id and user from DB (NOT from cookies)
-            order = Order.objects.filter(payment=payment).first()
-            if order:
-                visitor_id = order.visitor_id
-                user = order.user
-            else:
-                visitor_id = None
-                user = None
+            order = (
+                Order.objects.select_for_update()
+                .filter(payment=payment)
+                .first()
+            )
+            if not order:
+                logger.warning("STK payment %s has no linked order.", payment.id)
+                return Response({"ResultCode": 0, "ResultDesc": "Accepted"})
 
-            # --- Identify actor and get/create Customer ---
-            if user and user.is_authenticated:
-                actor_type = "user"
-                actor_name = user.username
-                customer, _ = Customer.objects.get_or_create(user=user)
-            else:
-                actor_type = "visitor"
-                actor_name = f"Guest ({visitor_id[:8]})" if visitor_id else "Guest (unknown)"
-                if visitor_id:
-                    customer, _ = Customer.objects.get_or_create(visitor_id=visitor_id)
-                else:
-                    visitor_id = str(uuid.uuid4())
-                    customer, _ = Customer.objects.get_or_create(visitor_id=visitor_id)
+            if result_code != 0:
+                payment.status = "failed"
+                payment.save(update_fields=["status"])
+                return Response({"ResultCode": 0, "ResultDesc": "Accepted"})
 
-            # ✅ Update payment info
-            payment.transaction_id = mpesa_receipt
-            payment.status = "completed" if result_code == 0 else "failed"
-            payment.save()
-            logger.info(f"💰 Payment {mpesa_receipt} updated to {payment.status}")
+            callback_items = callback.get("CallbackMetadata", {}).get("Item", [])
+            metadata = {
+                entry.get("Name"): entry.get("Value")
+                for entry in callback_items
+                if entry.get("Name")
+            }
+            receipt = metadata.get("MpesaReceiptNumber")
+            callback_amount = metadata.get("Amount")
 
-            # ✅ Save transaction record
-            Transaction.objects.create(
+            if not receipt:
+                logger.error("Successful STK callback missing M-Pesa receipt.")
+                return Response({"ResultCode": 0, "ResultDesc": "Accepted"})
+
+            if callback_amount is None or Decimal(str(callback_amount)) != payment.amount:
+                logger.error(
+                    "STK amount mismatch for order %s: provider=%s expected=%s",
+                    order.id,
+                    callback_amount,
+                    payment.amount,
+                )
+                payment.status = "failed"
+                payment.save(update_fields=["status"])
+                return Response({"ResultCode": 0, "ResultDesc": "Accepted"})
+
+            # The completion service locks the order and performs payment,
+            # stock, and SoldItem changes atomically.
+            payment.transaction_id = receipt
+            payment.status = "completed"
+            payment.save(update_fields=["transaction_id", "status"])
+
+            transaction_record = Transaction.objects.filter(
+                payment=payment,
                 transaction_type="C2B",
-                 payment_method="mpesa", 
-                mpesa_receipt_number=mpesa_receipt,
-                phone_number=phone_number,
-                amount=amount,
-                account_reference=checkout_request_id,
-                status="Completed" if result_code == 0 else "Failed",
-                raw_data=data,
-                order=order if order else None
+            ).first()
+            if not transaction_record:
+                Transaction.objects.create(
+                    transaction_type="C2B",
+                    payment_method="mpesa",
+                    mpesa_receipt_number=receipt,
+                    phone_number=str(metadata.get("PhoneNumber") or ""),
+                    amount=Decimal(str(callback_amount)),
+                    account_reference=checkout_request_id,
+                    status="Completed",
+                    raw_data=data,
+                    order=order,
+                )
+
+            from oder.order_completion import complete_paid_order
+            locked_order, completed = complete_paid_order(
+                order,
+                payment,
+                transaction_id=receipt,
             )
 
-            # ✅ If payment succeeded, mark linked order as completed and update customer
-            if result_code == 0:
-                if not order:
-                    logger.warning(f"⚠️ No Order linked to Payment {payment.id}")
-                    return Response({"ResultCode": 0, "ResultDesc": "No linked order"})
+        if completed:
+            channel_layer = get_channel_layer()
+            async_to_sync(channel_layer.group_send)(
+                f"order_{locked_order.id}",
+                {"type": "payment_status", "status": "completed"},
+            )
 
-                order.status = "completed"
-                order.customer = customer
-                order.save()
-                logger.info(f"✅ Order {order.id} marked as completed")
+        return Response({"ResultCode": 0, "ResultDesc": "Accepted"})
 
-                # Save sold items and deduct stock
-                for order_item in order.items.all():
-                    try:
-                        sold_item = SoldItem(
-                            item=order_item.item,
-                            vendor=order_item.item.vendor,
-                            quantity=order_item.quantity,
-                        )
-                        sold_item.save()
-                        logger.info(f"🛒 SoldItem created for item {order_item.item.name} (qty: {order_item.quantity})")
-                    except Exception as e:
-                        logger.error(f"❌ Failed to create SoldItem for {order_item.item.name}: {e}")
-
-                if not order.billing_address:
-                    logger.warning(f"⚠️ Order {order.id} has no billing address. Skipping customer update.")
-                else:
-                    logger.info(f"➡️ About to create or update customer for order {order.id}")
-                    create_or_update_customer_from_order(order)
-                    logger.info(f"⬅️ Finished customer create/update for order {order.id}")
-
-                # --- 🔔 Notify Frontend via WebSocket ---
-                channel_layer = get_channel_layer()
-                async_to_sync(channel_layer.group_send)(
-                    f"order_{order.id}",
-                    {"type": "payment_status", "status": "completed"},
-                )
-                async_to_sync(channel_layer.group_send)(
-                    f"order_{order.id}",
-                    {
-                        "type": "transaction.success",
-                        "message": {
-                            "order_id": order.id,
-                            "amount": order.get_total(),
-                            "status": "success",
-                            "customer": f"{order.billing_address.first_name} {order.billing_address.last_name}",
-                        },
-                    },
-                )
-
-                # --- 🧾 Notify Vendor(s) ---
-                for order_item in order.items.all():
-                    vendor_user = getattr(order_item.item.vendor, "user", None)
-                    if vendor_user:
-                        # Build variant info
-                        variants = []
-                        if hasattr(order_item, "selected_size") and order_item.selected_size:
-                            variants.append(f"Size: {order_item.selected_size}")
-                        if hasattr(order_item, "selected_color") and order_item.selected_color:
-                            variants.append(f"Color: {order_item.selected_color}")
-                        if hasattr(order_item, "custom_length") and order_item.custom_length:
-                            variants.append(f"Length: {order_item.custom_length}")
-                        variant_text = ", ".join(variants) if variants else "No variants selected"
-
-                        # price = getattr(order_item, "price_at_purchase", order_item.item.price)
-                        price = order_item.item.price
-                        total_amount = price * order_item.quantity
-
-                        # Notifications
-                        Notification.objects.create(
-                            user=vendor_user,
-                            title="🎉 Item Purchased!",
-                            message=f"Your item '{order_item.item.name}' ({variant_text}) was purchased by {actor_name}.",
-                            url=f"/vendors-dashboard/vendor/orders/{order.id}"
-                        )
-
-                        # Send email
-                        if vendor_user.email:
-                            weight_obj = getattr(order_item.item, "weight", None)
-                            weight = f"{weight_obj.value} {weight_obj.unit}" if weight_obj else "N/A"
-                            context = {
-                                "vendor": vendor_user.first_name,
-                                "item": order_item.item,
-                                "quantity": order_item.quantity,
-                                "variants": variant_text,
-                                "price_at_purchase": price,
-                                "total_amount": total_amount,
-                                "weight": weight,
-                                "order": order,
-                                "current_year": timezone.now().year,
-                            }
-                            html_content = render_to_string("emails/item_purchased.html", context)
-                            subject = f"🎉 Your item '{order_item.item.name}' has been purchased!"
-                            from_email = "no-reply@maamaramarket.com"
-                            to_email = [vendor_user.email]
-                            msg = EmailMultiAlternatives(subject, "", from_email, to_email)
-                            msg.attach_alternative(html_content, "text/html")
-                            msg.send()
-                            logger.info(
-                                "Purchase email sent to vendor %s",
-                                vendor_user.id,
-                            )
-
-        
-
-                # --- 👤 Notify Customer/User ---
-                if order.user:
-                    Notification.objects.create(
-                        user=order.user,
-                        title="🛍️ Purchase Successful!",
-                        message=f"Thank you for your purchase! Your order #{order.id} is confirmed.",
-                        url=f"/orders/{order.id}/"
-                    )
-                    logger.info("User %s notified", order.user.id)
-
-                # --- 🧑‍💼 Notify Admin(s) ---
-                for admin in User.objects.filter(is_superuser=True):
-                    Notification.objects.create(
-                        user=admin,
-                        title="💼 New Sale Completed",
-                        message=f"Order #{order.id} (Total: KES {amount}) for {actor_name} has been completed.",
-                        url=f"/admin-dashboard/admin-item/orders/{order.id}/"
-                    )
-                    logger.info("Admin %s notified", admin.id)
-
-                # --- 🪵 Log Activities ---
-                ActivityLog.objects.create(
-                    user=user if user else None,
-                    visitor_id=None if user else visitor_id,
-                    actor_type=actor_type,
-                    action="item_sold",
-                    description=f"Completed purchase for order #{order.id}",
-                    related_url=f"/orders/{order.id}/",
-                )
-                for order_item in order.items.all():
-                    vendor_user = getattr(order_item.item.vendor, "user", None)
-                    if vendor_user:
-                        ActivityLog.objects.create(
-                            user=vendor_user,
-                            actor_type="vendor",
-                            action="item_sold",
-                            description=f"Sold '{order_item.item.name}' in order #{order.id}",
-                            related_url=f"/vendor/orders/{order.id}/",
-                        )
-                for admin in User.objects.filter(is_superuser=True):
-                    ActivityLog.objects.create(
-                        user=admin,
-                        actor_type="admin",
-                        action="item_sold",
-                        description=f"Order #{order.id} marked as completed.",
-                        related_url=f"/admin/orders/{order.id}/",
-                    )
-
-    except IntegrityError:
-        logger.warning("⚠️ Duplicate transaction detected for %s", mpesa_receipt)
-
-    except Exception as e:
+    except Exception:
         logger.exception("Error processing STK callback")
-
-    # ✅ Always return success to Safaricom
-    return Response({"ResultCode": 0, "ResultDesc": "Accepted"})
+        # Safaricom should not be given internal exception details.
+        return Response({"ResultCode": 0, "ResultDesc": "Accepted"})
