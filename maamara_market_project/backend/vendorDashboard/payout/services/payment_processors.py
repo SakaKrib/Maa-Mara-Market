@@ -499,7 +499,11 @@ def call_paypal_payout_bulk(items, paypal_config):
 
     except requests.RequestException:
         logger.error("PayPal payout request failed.", exc_info=True)
-        return {"success": False, "error": "PayPal payout request failed."}
+        return {
+            "success": False,
+            "error": "PayPal payout request failed.",
+            "retryable": True,
+        }
     except (ValueError, InvalidOperation):
         logger.error("PayPal payout response was invalid.", exc_info=True)
         return {"success": False, "error": "Invalid PayPal payout response."}
