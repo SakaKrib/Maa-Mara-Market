@@ -543,95 +543,111 @@ def get_kcb_access_token():
 
 
 def call_bank_transfer(account_number, amount, max_retries=3, retry_delay=2):
+    """Submit a KCB bank transfer using configured gateway values.
+
+    This function deliberately does not mark VendorPayout as paid. A successful
+    provider submission is not proof that the beneficiary received the funds.
+    """
+    config = settings.PAYMENT_GATEWAYS.get("kcb", {})
     access_token = get_kcb_access_token()
     if not access_token:
         return {"success": False, "error": "Failed to retrieve access token."}
 
-    logger.debug("KCB access token fetched.")
+    required = ["transfer_url", "company_code", "debit_account_number", "beneficiary_bank_code"]
+    missing = [key for key in required if not config.get(key)]
+    if missing:
+        return {"success": False, "error": "KCB transfer configuration is incomplete."}
+
+    try:
+        debit_amount = Decimal(str(amount)).quantize(Decimal("0.01"))
+    except (InvalidOperation, TypeError, ValueError):
+        return {"success": False, "error": "Invalid transfer amount."}
+
+    if debit_amount <= 0:
+        return {"success": False, "error": "Transfer amount must be greater than zero."}
+
+    now = timezone.now()
+    message_id = str(uuid.uuid4())
+    transaction_reference = str(uuid.uuid4())
 
     headers = {
         "Authorization": f"Bearer {access_token}",
         "Content-Type": "application/json",
         "Accept": "application/json",
-        "X-IBM-Client-Id": settings.PAYMENT_GATEWAYS["kcb"]["client_id"],
-        "X-IBM-Client-Secret": settings.PAYMENT_GATEWAYS["kcb"]["client_secret"],
-        "X-Message-ID": str(uuid.uuid4()),
+        "X-IBM-Client-Id": config["client_id"],
+        "X-IBM-Client-Secret": config["client_secret"],
+        "X-Message-ID": message_id,
     }
-
-    single_transfer_url = "https://uat.buni.kcbgroup.com/fundstransfer/1.0.0/api/v1/transfer"
-
-
-    company_code = "KE0010001"
-    transaction_type = "IF"
-    debit_account_number = "37890012"
-
-    try:
-        debit_amount = float(amount)
-    except Exception as ex:
-        return {"success": False, "error": f"Invalid amount: {ex}"}
 
     payload = {
         "header": {
-            "messageID": str(uuid.uuid4()),
-            "messageDateTime": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            "messageID": message_id,
+            "messageDateTime": now.strftime("%Y-%m-%d %H:%M:%S"),
             "channel": "API",
-            "destination": "KCB"
+            "destination": "KCB",
         },
-        "companyCode": company_code,
-        "transactionType": transaction_type,
-        "debitAccountNumber": debit_account_number,
-        "creditAccountNumber": account_number,
-        "debitAmount": debit_amount,
-        "currency": "KES",
-        "narrative": "Automated payment",
-        "debitPostingDate": datetime.now().strftime("%Y-%m-%d"),
-        "creditPostingDate": datetime.now().strftime("%Y-%m-%d"),
-        "beneficiaryDetails": "Beneficiary Name",  # Replace with dynamic value if possible
-        "beneficiaryBankCode": "01",  # Adjust if needed
-        "bankingSlipNumber": str(random.randint(100000, 999999)),
-        "transactionReference": str(uuid.uuid4())[:12],
+        "companyCode": config["company_code"],
+        "transactionType": config.get("transaction_type", "IF"),
+        "debitAccountNumber": config["debit_account_number"],
+        "creditAccountNumber": str(account_number).strip(),
+        "debitAmount": float(debit_amount),
+        "currency": config.get("currency", "KES"),
+        "narrative": config.get("narrative", "Automated vendor payment"),
+        "debitPostingDate": now.strftime("%Y-%m-%d"),
+        "creditPostingDate": now.strftime("%Y-%m-%d"),
+        "beneficiaryDetails": config.get("beneficiary_details", "Vendor"),
+        "beneficiaryBankCode": config["beneficiary_bank_code"],
+        "bankingSlipNumber": message_id.replace("-", "")[:20],
+        "transactionReference": transaction_reference,
     }
 
-    print(f"[DEBUG] Single transfer payload: {payload}")
+    transfer_url = config["transfer_url"]
 
     for attempt in range(1, max_retries + 1):
         try:
-            response = requests.post(single_transfer_url, json=payload, headers=headers, timeout=10)
-            print(f"[DEBUG] Attempt {attempt} HTTP status: {response.status_code}")
-            print(f"[DEBUG] Response content: {response.text}")
-
+            response = requests.post(
+                transfer_url,
+                json=payload,
+                headers=headers,
+                timeout=30,
+            )
             response.raise_for_status()
-
             data = response.json()
 
-            status_code = data.get("header", {}).get("statusCode")
-            status_desc = data.get("header", {}).get("statusDescription", "")
-
+            header = data.get("header") or {}
+            status_code = str(header.get("statusCode", ""))
             if status_code == "0":
-                return {"success": True, "raw": data}
-            else:
-                print(f"[ERROR] API returned failure status: {status_desc}")
-                return {"success": False, "error": status_desc, "raw": data}
+                logger.info(
+                    "KCB transfer submitted",
+                    extra={"transaction_reference": transaction_reference},
+                )
+                return {
+                    "success": True,
+                    "transaction_reference": transaction_reference,
+                    "provider_status": status_code,
+                }
 
-        except requests.RequestException as e:
-            error_msg = str(e)
-            if hasattr(e, "response") and e.response is not None:
-                try:
-                    error_json = e.response.json()
-                    error_msg += f" - {error_json}"
-                except Exception:
-                    error_msg += f" - {e.response.text}"
+            logger.warning("KCB transfer provider rejected request.")
+            return {
+                "success": False,
+                "error": header.get("statusDescription", "KCB transfer failed."),
+                "transaction_reference": transaction_reference,
+                "provider_status": status_code,
+            }
 
-            print(f"[ERROR] Attempt {attempt} failed: {error_msg}")
-
+        except (requests.RequestException, ValueError):
+            logger.warning(
+                "KCB transfer attempt failed",
+                extra={
+                    "attempt": attempt,
+                    "transaction_reference": transaction_reference,
+                },
+                exc_info=True,
+            )
             if attempt < max_retries:
-                print(f"[INFO] Retrying in {retry_delay} seconds...")
                 time.sleep(retry_delay)
-            else:
-                return {"success": False, "error": error_msg}
 
-    return {"success": False, "error": "Unknown error after retries."}
-
+    return {"success": False, "error": "KCB transfer request failed after retries."}
 
 
 #-----------------------------------
