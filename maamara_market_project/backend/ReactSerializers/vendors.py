@@ -39,7 +39,7 @@ from django.template.loader import render_to_string
 import bleach # type: ignore
 import logging
 from urllib.parse import urlparse, unquote
-from oder.Base import IsVendor
+from order.Base import IsVendor
 
 logger = logging.getLogger(__name__)
 
