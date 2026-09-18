@@ -1,13 +1,36 @@
 from django.urls import path
-from oder.views import *  # Make sure views.py exists and has at least one view
-from oder.shipping import get_shipping_rates
-from oder.paypalApis import *
-from .Mpesa.mpesaUtils import *
-from .Mpesa.C2BMpesaIntergration.c2butils import *
+
+from .Mpesa.C2BMpesaIntergration.c2butils import stk_callback, stk_push
+from .Mpesa.mpesaUtils import mpesa_b2c_payment, mpesa_result, mpesa_timeout
 from .capture_order import capture_paypal_order
-from .returns import return_request_handler_api, approve_return_request_api, get_pending_returns_api
-from .orderStat import vendor_pending_orders, vendor_pending_order_items, vendor_completed_order_items
 from .dashboardSummery import DashboardSummaryView
+from .orderStat import (
+    vendor_completed_order_items,
+    vendor_pending_order_items,
+    vendor_pending_orders,
+)
+from .paypalApis import (
+    admin_transactions,
+    checkout_view,
+    dashboard_stats,
+    get_customers,
+    paypal_webhook,
+    transaction_totals,
+    vendor_sales,
+)
+from .returns import (
+    approve_return_request_api,
+    get_pending_returns_api,
+    return_request_handler_api,
+)
+from .shipping import get_shipping_rates
+from .views import (
+    add_to_cart_api,
+    get_cart_view,
+    remove_from_cart_api,
+    update_cart_quantity,
+    vendor_transactions,
+)
 
 
 urlpatterns = [
