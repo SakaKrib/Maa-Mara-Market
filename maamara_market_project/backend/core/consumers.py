@@ -5,6 +5,9 @@ class RealtimeConsumer(AsyncJsonWebsocketConsumer):
     async def connect(self):
         self.user = self.scope.get("user")
         self.groups = {"realtime_catalog"}
+        visitor_id = self.scope.get("visitor_id")
+        if visitor_id:
+            self.groups.add(f"realtime_visitor_{visitor_id}")
         if self.user and self.user.is_authenticated:
             self.groups.add(f"realtime_user_{self.user.id}")
             if await self.is_vendor():
