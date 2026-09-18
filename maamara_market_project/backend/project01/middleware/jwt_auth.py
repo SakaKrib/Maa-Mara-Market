@@ -62,7 +62,7 @@ class JWTAuthMiddleware:
         if visitor_token:
             try:
                 token = AccessToken(visitor_token)
-                if token.get("visitor") is True and token.get("visitor_id"):
+                if (\n                    token.get("token_type") == "access"\n                    and token.get("visitor") is True\n                    and token.get("visitor_id")\n                ):
                     scope["visitor_id"] = str(token["visitor_id"])
                     scope["is_visitor"] = True
             except (InvalidToken, TokenError):
