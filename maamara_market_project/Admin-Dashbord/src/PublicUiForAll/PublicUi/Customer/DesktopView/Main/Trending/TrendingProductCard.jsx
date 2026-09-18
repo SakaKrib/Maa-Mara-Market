@@ -49,7 +49,7 @@ const TrendingProductCard = ({ item, isWishlisted = false, onToggleWishlist, onO
         )}
       </div>
 
-      <div className="p-3 sm:p-4 flex flex-col h-[calc(100%-auto)]">
+      <div className="p-3 sm:p-4 flex flex-col h-full">
         <Link to={`/item/${item.id}`} onClick={(event) => event.stopPropagation()}>
           <h3 className="text-sm sm:text-base font-semibold text-gray-800 mb-1 line-clamp-2">{item.name}</h3>
         </Link>
