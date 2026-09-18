@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { useSearchParams, useLocation, useNavigate } from "react-router-dom";
 import api from "../../../../../Services/Api";
+import { IonIcon } from "@ionic/react";
+import { filterOutline, closeOutline } from "ionicons/icons";
 
 const Filter = ({ onFilterChange }) => {
   const [searchParams] = useSearchParams();
@@ -30,6 +32,7 @@ const Filter = ({ onFilterChange }) => {
   });
 
   const [loading, setLoading] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
 
   /* ================= FETCH OPTIONS ================= */
   useEffect(() => {
@@ -115,81 +118,27 @@ const Filter = ({ onFilterChange }) => {
       const key = typeof item === "object" ? item.id : item;
 
       return (
-        <option key={key} value={value}>
-          {value}
-        </option>
-      );
-    });
+    <div className="marketplace-filter">
+      <button type="button" className="mobile-filter-trigger" onClick={() => setMobileOpen(true)}>
+        <IonIcon icon={filterOutline} /> <span>Filters</span>
+      </button>
 
-  return (
-    <div className="mt-12 flex flex-col md:flex-row md:justify-between gap-6 flex-wrap">
-
-      {/* LEFT FILTERS */}
-      <div className="flex flex-wrap gap-4 md:gap-6">
-
-        {/* SECTION */}
-        <select name="section" value={filters.section} onChange={handleChange} disabled={loading}
-          className="py-2 px-3 rounded-2xl text-sm bg-gray-100 ring-1 ring-gray-300">
-          <option value="">Section</option>
-          {renderOptions(filterOptions.sections)}
-        </select>
-
-        {/* DEPARTMENT */}
-        <select name="department" value={filters.department} onChange={handleChange} disabled={loading}
-          className="py-2 px-3 rounded-2xl text-sm bg-gray-100 ring-1 ring-gray-300">
-          <option value="">Department</option>
-          {renderOptions(filterOptions.departments)}
-        </select>
-
-        {/* CATEGORY */}
-        <select name="category" value={filters.category} onChange={handleChange} disabled={loading}
-          className="py-2 px-3 rounded-2xl text-sm bg-gray-100 ring-1 ring-gray-300">
-          <option value="">Category</option>
-          {renderOptions(filterOptions.categories)}
-        </select>
-
-        {/* SIZE */}
-        <select name="size" value={filters.size} onChange={handleChange} disabled={loading}
-          className="py-2 px-3 rounded-2xl text-sm bg-gray-100 ring-1 ring-gray-300">
-          <option value="">Size</option>
-          {renderOptions(filterOptions.sizes)}
-        </select>
-
-        {/* COLOR */}
-        <select name="color" value={filters.color} onChange={handleChange} disabled={loading}
-          className="py-2 px-3 rounded-2xl text-sm bg-gray-100 ring-1 ring-gray-300">
-          <option value="">Color</option>
-          {renderOptions(filterOptions.colors)}
-        </select>
-
-        {/* MIN PRICE */}
-        <input type="number" name="minPrice" value={filters.minPrice} onChange={handleChange}
-          placeholder="Min Price"
-          className="text-sm rounded-2xl pl-3 py-2 w-28 ring-1 ring-gray-300 bg-white"
-        />
-
-        {/* MAX PRICE */}
-        <input type="number" name="maxPrice" value={filters.maxPrice} onChange={handleChange}
-          placeholder="Max Price"
-          className="text-sm rounded-2xl pl-3 py-2 w-28 ring-1 ring-gray-300 bg-white"
-        />
+      <div className={`marketplace-filter__panel ${mobileOpen ? "is-open" : ""}`}>
+        <div className="marketplace-filter__mobile-head">
+          <strong>Filter products</strong>
+          <button type="button" aria-label="Close filters" onClick={() => setMobileOpen(false)}><IonIcon icon={closeOutline} /></button>
+        </div>
+        <div className="marketplace-filter__fields">
+          <select name="section" value={filters.section} onChange={handleChange} disabled={loading}><option value="">Section</option>{renderOptions(filterOptions.sections)}</select>
+          <select name="department" value={filters.department} onChange={handleChange} disabled={loading}><option value="">Department</option>{renderOptions(filterOptions.departments)}</select>
+          <select name="category" value={filters.category} onChange={handleChange} disabled={loading}><option value="">Category</option>{renderOptions(filterOptions.categories)}</select>
+          <select name="size" value={filters.size} onChange={handleChange} disabled={loading}><option value="">Size</option>{renderOptions(filterOptions.sizes)}</select>
+          <select name="color" value={filters.color} onChange={handleChange} disabled={loading}><option value="">Color</option>{renderOptions(filterOptions.colors)}</select>
+          <input type="number" name="minPrice" value={filters.minPrice} onChange={handleChange} placeholder="Min price" />
+          <input type="number" name="maxPrice" value={filters.maxPrice} onChange={handleChange} placeholder="Max price" />
+          <select name="sort" value={filters.sort} onChange={handleChange}><option value="">Sort by</option><option value="low-high">Price: Low to High</option><option value="high-low">Price: High to Low</option><option value="newest">Newest First</option><option value="oldest">Oldest First</option></select>
+        </div>
+        <button type="button" className="primary-button marketplace-filter__apply" onClick={() => setMobileOpen(false)}>Apply filters</button>
       </div>
-
-      {/* SORT */}
-      <div className="flex items-center">
-        <select name="sort" value={filters.sort} onChange={handleChange}
-          className="py-2 px-3 rounded-2xl text-sm bg-gray-100 ring-1 ring-gray-300">
-
-          <option value="">Sort By</option>
-          <option value="low-high">Price: Low to High</option>
-          <option value="high-low">Price: High to Low</option>
-          <option value="newest">Newest First</option>
-          <option value="oldest">Oldest First</option>
-        </select>
-      </div>
-
     </div>
-  );
-};
-
-export default Filter;
+  );;
