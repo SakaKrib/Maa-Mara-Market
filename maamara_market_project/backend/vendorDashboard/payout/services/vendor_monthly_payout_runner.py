@@ -153,11 +153,15 @@ def pay_single_vendor_payout(request, reference):
         if response.get("success"):
             
             return Response({
-                "message": f"Payout successfully processed via {method}.",
+                "message": (
+                    "Payout submitted to PayPal; awaiting provider confirmation."
+                    if method == "PAYPAL"
+                    else f"Payout successfully processed via {method}."
+                ),
                 "reference": payout.reference,
                 "amount": float(amount),
                 "response": response,
-            })
+            }, status=202 if method == "PAYPAL" else 200)
 
         else:
             return Response({
