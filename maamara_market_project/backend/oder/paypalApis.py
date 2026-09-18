@@ -24,6 +24,7 @@ from core.models import ActivityLog, Notification
 from vendorDashboard.models import SoldItem, Vendor
 
 from .capture_order import get_paypal_access_token
+from .shipping import get_rates_for_destination
 from .Payment import create_paypal_order
 from .Base import get_usd_to_kes_rate
 from .models import BillingAddress, Customer, Order, Payment, Transaction
@@ -277,10 +278,72 @@ def checkout_view(request):
             existing.delete()
 
     # ----------------------------
-    # 6️⃣ Update payment amount
+    # 6️⃣ Validate and persist the selected shipping quote.
+    # The browser may select a displayed rate, but the server re-quotes it
+    # against the current order/address before charging anything.
     # ----------------------------
-    payment.amount = total_amount
-    payment.save()
+    shipping_selection = data.get("shipping")
+    shipping_kes = Decimal("0.00")
+    if shipping_selection:
+        destination = {
+            "postalCode": str(billing.zip).strip(),
+            "cityName": str(billing.city).strip(),
+            "countryCode": str(billing.country).strip().upper(),
+        }
+        rates, _provider_errors = get_rates_for_destination(order, destination)
+        selected_provider = str(shipping_selection["provider"]).strip()
+        selected_service = str(shipping_selection["service"]).strip()
+        selected_currency = str(shipping_selection["currency"]).strip().upper()
+        selected_price = Decimal(str(shipping_selection["price"]))
+
+        matching_rate = next(
+            (
+                rate for rate in rates
+                if str(rate.get("provider", "")).strip().lower() == selected_provider.lower()
+                and str(rate.get("service", "")).strip().lower() == selected_service.lower()
+                and str(rate.get("currency", "")).strip().upper() == selected_currency
+                and Decimal(str(rate.get("price", "0.00"))) == selected_price
+            ),
+            None,
+        )
+        if not matching_rate:
+            return Response(
+                {"success": False, "error": "The selected shipping rate has changed. Please request a new quote."},
+                status=409,
+            )
+
+        if selected_price < 0:
+            return Response({"success": False, "error": "Shipping price cannot be negative."}, status=400)
+
+        if selected_currency == "KES":
+            shipping_kes = selected_price
+        elif selected_currency == "USD":
+            usd_to_kes_rate = Decimal(str(get_usd_to_kes_rate()))
+            if usd_to_kes_rate <= 0:
+                raise ValueError("Invalid USD/KES exchange rate.")
+            shipping_kes = (selected_price * usd_to_kes_rate).quantize(Decimal("0.01"))
+        else:
+            return Response({"success": False, "error": f"Unsupported shipping currency: {selected_currency}"}, status=400)
+
+        order.shipping_amount = shipping_kes
+        order.shipping_provider = selected_provider
+        order.shipping_service = selected_service
+        order.shipping_provider_amount = selected_price
+        order.shipping_currency = selected_currency
+    else:
+        order.shipping_amount = Decimal("0.00")
+        order.shipping_provider = None
+        order.shipping_service = None
+        order.shipping_provider_amount = None
+        order.shipping_currency = None
+
+    grand_total = (total_amount + shipping_kes).quantize(Decimal("0.01"))
+    payment.amount = grand_total
+    payment.save(update_fields=["amount"])
+    order.save(update_fields=[
+        "shipping_amount", "shipping_provider", "shipping_service",
+        "shipping_provider_amount", "shipping_currency",
+    ])
 
     # ----------------------------
     # 7️⃣ Prepare provider payment
