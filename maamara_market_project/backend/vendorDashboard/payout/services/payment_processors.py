@@ -358,13 +358,13 @@ def get_paypal_access_token():
         token = resp.json().get("access_token")
         if not token:
             raise ValueError("No access token in PayPal response")
-        logger.info("✅ PayPal access token fetched successfully")
+        logger.debug("PayPal access token fetched successfully")
         return token
 
     except requests.exceptions.RequestException as e:
-        logger.error(f"❌ Failed to get PayPal token: {e}")
+        logger.error("Failed to get PayPal access token.", exc_info=True)
         if resp is not None:
-            logger.error(f"PayPal response: {resp.text}")
+
         raise
 
 
@@ -462,7 +462,7 @@ def call_paypal_payout(payout, paypal_email, amount, paypal_config):
 
     result = call_paypal_payout_bulk([item], paypal_config)
 
-    logger.info(f"PayPal single payout response for {payout.reference}: {result}")
+    logger.info("PayPal payout request submitted", extra={"payout_reference": payout.reference})
 
     return result
 
@@ -816,7 +816,7 @@ def payment_processors(start_date, end_date, payment_method=None):
                 status = "Sent to M-Pesa" if response.get('success') else f"Failed: {response.get('error', 'Unknown error')}"
 
             elif method == "PAYPAL":
-                response = call_paypal_payout(vendor.paypal_email, amount, paypal_config)
+                response = call_paypal_payout(payout, vendor.paypal_email, amount, paypal_config)
                 status = "Sent to PayPal" if response.get('success') else f"Failed: {response.get('error', 'Unknown error')}"
 
             elif method == "BANK_TRANSFER":
