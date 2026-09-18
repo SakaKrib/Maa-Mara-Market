@@ -14,7 +14,6 @@ from .paypalApis import (
     checkout_view,
     dashboard_stats,
     get_customers,
-    paypal_webhook,
     revenue_area_chart,
     revenue_growth,
     transaction_totals,
@@ -47,10 +46,6 @@ urlpatterns = [
     #shipping rates
     path('api/shipping-rates', get_shipping_rates, name='shipping-rates'),
 
-    #payment apis
-    # path("api/payments/paypal/create-order/", paypal_create_order, name="paypal-create"),
-    # path("api/payments/paypal/capture-order/<str:order_id>/", paypal_capture_order, name="paypal-capture"),
-
     #create order api
     path("api/checkout/", checkout_view, name="checkout"),
     
@@ -69,11 +64,7 @@ urlpatterns = [
     # transaction totals
     path("api/transactions/totals/",transaction_totals, name="transaction-totals"),
 
-    # paypal webhook
-    path("api/paypal/webhook/", paypal_webhook, name="paypal-webhook"),
     path("api/paypal/capture-order/<str:order_id>/", capture_paypal_order, name="capture_paypal_order"),
-
-    # shipping rates
 
     # handle returns
     # POST (and optionally GET if you add that later)
@@ -98,9 +89,6 @@ urlpatterns = [
 
     # customer api
     path('api/customers/', get_customers, name='get_customers'),
-
-    # order fetch api
-    # path('api/combined-orders/', vendor_orders_combined, name='get_orders'),
 
     # Sales dshboard stats
     path('api/sales/stats/', dashboard_stats),
