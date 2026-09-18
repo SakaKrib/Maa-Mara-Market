@@ -42,7 +42,26 @@ const SingleItem = () => {
       const res = await api.get(`${baseUrl}/api/items/${itemId}/`);
       if (res.data) {
         setItem(res.data);
-  
+
+        // Reconcile the selected variant/size with the refreshed backend data
+        // so stock and availability always reflect the current selection.
+        const refreshedVariant = res.data.variants?.find(
+          (variant) => String(variant.id) === String(selectedVariant?.id)
+        );
+
+        if (refreshedVariant) {
+          setSelectedVariant(refreshedVariant);
+          if (selectedSize?.id) {
+            const refreshedSize = refreshedVariant.sizes?.find(
+              (size) => String(size.id) === String(selectedSize.id)
+            );
+            setSelectedSize(refreshedSize || null);
+          }
+        } else if (res.data.variants?.length) {
+          setSelectedVariant(res.data.variants[0]);
+          setSelectedSize(null);
+          setSelectedImage(null);
+        }
       }
     } catch (error) {
       // Keep the existing page state if a background refresh fails.
