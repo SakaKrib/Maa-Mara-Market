@@ -3871,3 +3871,17 @@ h1,h2,h3,h4{font-family:'regular','Poppins',Arial,sans-serif}
 @media(min-width:640px) and (max-width:1024px){
   .multi-category-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
 }
+
+
+/* Storefront consistency: keep every public page on the same marketplace rhythm. */
+.customer-storefront-page,
+.site.page-home{
+  background:var(--mm-page-bg,#faf9f7);
+  color:var(--mm-text,#222);
+}
+@media(max-width:639px){
+  /* The mobile storefront stays deliberately quiet: content first, navigation on demand. */
+  .brands{display:none!important}
+  .category-collections{display:none!important}
+  .multi-category-section{display:none!important}
+}
