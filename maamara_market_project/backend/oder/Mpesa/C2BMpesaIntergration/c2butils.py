@@ -244,28 +244,23 @@ def stk_callback(request):
                 payment.save(update_fields=["status"])
                 return Response({"ResultCode": 0, "ResultDesc": "Accepted"})
 
-            # The completion service locks the order and performs payment,
-            # stock, and SoldItem changes atomically.
-            payment.transaction_id = receipt
-            payment.status = "completed"
-            payment.save(update_fields=["transaction_id", "status"])
-
-            transaction_record = Transaction.objects.filter(
+            # Record the provider receipt while the payment still retains
+            # CheckoutRequestID. This makes a retried callback recoverable if
+            # processing fails before order completion.
+            Transaction.objects.update_or_create(
                 payment=payment,
                 transaction_type="C2B",
-            ).first()
-            if not transaction_record:
-                Transaction.objects.create(
-                    transaction_type="C2B",
-                    payment_method="mpesa",
-                    mpesa_receipt_number=receipt,
-                    phone_number=str(metadata.get("PhoneNumber") or ""),
-                    amount=Decimal(str(callback_amount)),
-                    account_reference=checkout_request_id,
-                    status="Completed",
-                    raw_data=data,
-                    order=order,
-                )
+                defaults={
+                    "payment_method": "mpesa",
+                    "mpesa_receipt_number": receipt,
+                    "phone_number": str(metadata.get("PhoneNumber") or ""),
+                    "amount": Decimal(str(callback_amount)),
+                    "account_reference": checkout_request_id,
+                    "status": "Completed",
+                    "raw_data": data,
+                    "order": order,
+                },
+            )
 
             from oder.order_completion import complete_paid_order
             locked_order, completed = complete_paid_order(
