@@ -1,25 +1,15 @@
-import { Outlet } from 'react-router-dom';
-import ProtectedRoute from '../ProtectRoute';
-import { Box, useTheme } from '@mui/material';
-import HeaderTop from '../../../Portions/HederTop/HeaderTop';
-import NavBar from '../../../Portions/NavBar/NavBarSide';
-import { tokens } from '../../../../theme';
+import { Outlet } from "react-router-dom";
+import ProtectedRoute from "../ProtectRoute";
+import HeaderTop from "../../../Portions/HederTop/HeaderTop";
+import NavBar from "../../../Portions/NavBar/NavBarSide";
 
-const AdminLayout = () => {
-  const theme = useTheme();
-  const colors = tokens(theme.palette.mode);
-
-  return (
-    <ProtectedRoute requiredRole="admin">
+const AdminLayout = () => (
+  <ProtectedRoute requiredRole="admin">
+    <div className="etsy-manager">
       <HeaderTop />
       <NavBar />
-      <div className="content-vite" >
-        <Box className="main-dashboard" sx={{ backgroundColor: colors.primary[500], margin: '90px 0 0 0', maxHeight:'100%'}}>
-          <Outlet />
-        </Box>
-      </div>
-    </ProtectedRoute>
-  );
-};
-
+      <main className="etsy-manager-main"><Outlet /></main>
+    </div>
+  </ProtectedRoute>
+);
 export default AdminLayout;
