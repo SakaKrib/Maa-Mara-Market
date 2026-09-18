@@ -120,12 +120,19 @@ class SubCategorySerializer(serializers.ModelSerializer):
         fields = ['id', 'name', 'category']
 
 
+class SizeStockSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = SizeStock
+        fields = ["id", "size", "quantity_in_stock"]
+
+
 class ColorVariantSerializer(serializers.ModelSerializer):
     image = serializers.ImageField(use_url=True)
+    sizes = SizeStockSerializer(many=True, read_only=True)
 
     class Meta:
         model = ColorVariant
-        fields = ['id', 'color', 'image']
+        fields = ["id", "color", "image", "sizes"]
 
 # Reaction Serializer
 class ReactionSerializer(serializers.ModelSerializer):
