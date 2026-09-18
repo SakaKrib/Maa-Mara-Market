@@ -6,7 +6,6 @@ import { Link } from "react-router-dom";
 import useMobileMenu from "../../../../../MobileInterractions";
 import { useNavigate } from "react-router-dom";
 import useNewBlogs from "../../../../../cmponents/Hooks/BlogHooksNew/NewBlogs";
-import { useCategories } from "./SectionHook";
 import MegaMenu from "./WomenCat";
 import MegaMenuMen from "./MenCat";
 import MegaMenuChildren from "./ChildrenCat";
