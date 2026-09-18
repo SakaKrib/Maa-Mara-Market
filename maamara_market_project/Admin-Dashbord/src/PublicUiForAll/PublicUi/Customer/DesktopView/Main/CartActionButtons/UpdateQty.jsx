@@ -8,14 +8,14 @@ export function useCartActions() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  const updateQuantity = async (itemId, action) => {
+  const updateQuantity = async (itemId, action, variation = {}) => {
     setLoading(true);
     setError(null);
 
     try {
       await api.patch(
         `${baseUrl}/api/cart/${itemId}/update-quantity/`,
-        { action },
+        { action, cart_item_id: variation.cartItemId, selected_color: variation.variantId, selected_size: variation.sizeId, selected_age_group: variation.ageVariantId, selected_length: variation.selectedLength, selected_weight: variation.selectedWeight, selected_shoe_size: variation.shoeSize },
         { withCredentials: true }
       );
 
@@ -29,12 +29,12 @@ export function useCartActions() {
     }
   };
 
-  const removeFromCart = async (itemId) => {
+  const removeFromCart = async (itemId, variation = {}) => {
     setLoading(true);
     setError(null);
 
     try {
-      await api.delete(`${baseUrl}/api/cart/${itemId}/`, { withCredentials: true });
+      await api.delete(`${baseUrl}/api/cart/${itemId}/`, { data: { cart_item_id: variation.cartItemId, selected_color: variation.variantId, selected_size: variation.sizeId, selected_age_group: variation.ageVariantId, selected_length: variation.selectedLength, selected_weight: variation.selectedWeight, selected_shoe_size: variation.shoeSize }, withCredentials: true });
 
       // Refresh cart state from server
       await refreshCart();
