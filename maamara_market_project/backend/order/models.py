@@ -393,7 +393,8 @@ class Order(models.Model):
 
 # card
 class Card(models.Model):
-    visitor_id = models.CharField(max_length=64, blank=True, null=True, unique=True) 
+    user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name="saved_cards")
+    visitor_id = models.CharField(max_length=64, blank=True, null=True, db_index=True) 
     brand = models.CharField(max_length=32, null=True, blank=True)
     last_digits = models.CharField(max_length=4, null=True, blank=True)
     type = models.CharField(max_length=16, null=True, blank=True)
