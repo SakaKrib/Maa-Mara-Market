@@ -3,13 +3,13 @@ import "../../../../PublicUi/maamara.css";
 import SearchBar from "../../../Navigations/Search/Search";
 import NavIcons from "../../../Navigations/Search/NavIcons/NavIcon";
 import { Link } from "react-router-dom";
-import useMobileMenu from "../../../../../MobileInterractions";
 import useNewBlogs from "../../../../../cmponents/Hooks/BlogHooksNew/NewBlogs";
 import Maamara from "../../../../../assets/Logo/Maamara.jpg";
 import CategoryNavigation from "./CategoryNavigation";
+import MobileNavigationDrawer from "./MobileNavigationDrawer";
 
 const Header = () => {
-  useMobileMenu();
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const [isFixed, setIsFixed] = useState(false);
   const { newBlogCount, loading } = useNewBlogs();
@@ -44,7 +44,7 @@ const Header = () => {
 
       <div className="mm-main-header">
         <div className="mm-container mm-main-header-inner">
-          <button type="button" className="mm-mobile-menu-trigger desktop-hide" aria-label="Open menu">
+          <button type="button" className="mm-mobile-menu-trigger desktop-hide" aria-label="Open menu" aria-expanded={mobileMenuOpen} onClick={() => setMobileMenuOpen(true)}>
             <span aria-hidden="true">☰</span>
           </button>
 
@@ -79,6 +79,7 @@ const Header = () => {
       <div className="mm-category-row">
         <CategoryNavigation />
       </div>
+      <MobileNavigationDrawer open={mobileMenuOpen} onClose={() => setMobileMenuOpen(false)} />
     </header>
   );
 };
