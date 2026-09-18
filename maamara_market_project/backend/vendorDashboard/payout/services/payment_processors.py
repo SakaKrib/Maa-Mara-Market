@@ -128,7 +128,7 @@ def get_mpesa_token():
 # ============================================================
 # 3️⃣  CALL M-PESA B2C ENDPOINT
 # ============================================================
-def call_mpesa_b2c(vendor, amount, mpesa_config):
+def call_mpesa_b2c(vendor, amount, mpesa_config, payout=None):
     """
     Execute a B2C payment (payout to vendor) through Safaricom Daraja API.
     """
@@ -188,7 +188,6 @@ def call_mpesa_b2c(vendor, amount, mpesa_config):
 
         security_credential = generate_security_credential(initiator_password, cert_path)
 
-        logger.info("mpesa config", mpesa_b2c_config)
 
         payload = {
             "OriginatorConversationID": originator_conversation_id,
@@ -196,7 +195,7 @@ def call_mpesa_b2c(vendor, amount, mpesa_config):
             "SecurityCredential": security_credential,
             "CommandID": command_id,
             "Amount": int(amount),
-            "PartyA": "600997",
+            "PartyA": mpesa_b2c_config.get("short_code"),
             "PartyB": recipient,
             "Remarks": "ok",
             "QueueTimeOutURL": mpesa_b2c_config.get("timeout_url"),
@@ -211,20 +210,20 @@ def call_mpesa_b2c(vendor, amount, mpesa_config):
             "Content-Type": "application/json",
         }
 
-        logger.info(f"📤 Sending M-Pesa B2C request → {payload}")
+        logger.info("Sending M-Pesa B2C payout request", extra={"vendor_id": vendor.id, "payout_reference": getattr(payout, "reference", None)})
 
         # ----------------------------------------------------------------------
         # 6️⃣ Send Request
         # ----------------------------------------------------------------------
         
-        response = requests.post(mpesa_b2c_config.get("url"), json=payload, headers=headers)
+        response = requests.post(mpesa_b2c_config.get("url"), json=payload, headers=headers, timeout=30)
 
-        logger.info(f"📥 Raw B2C response text: {response.text}")   # ADD THIS
+
 
         response.raise_for_status()
 
         data = response.json()
-        logger.info(f"📥 Parsed JSON: {data}")
+
 
 
         # ----------------------------------------------------------------------
@@ -234,11 +233,11 @@ def call_mpesa_b2c(vendor, amount, mpesa_config):
 
             # FIX: Save the conversation details
             try:
-                payout = VendorPayout.objects.filter(vendor=vendor, paid=False).latest('created_at')
+                if payout is None:\n                    raise ValueError("A payout record is required to attach M-Pesa callback identifiers.")
                 payout.mpesa_conversation_id = data.get("ConversationID")
                 payout.mpesa_originator_conversation_id = data.get("OriginatorConversationID")
                 payout.mpesa_result_desc = data.get("ResponseDescription", "")
-                payout.save()
+                payout.save(update_fields=["mpesa_conversation_id", "mpesa_originator_conversation_id", "mpesa_result_desc"])
                 logger.info(f"✅ Updated payout {payout.reference} with M-Pesa conversation IDs.")
             except VendorPayout.DoesNotExist:
                 logger.warning("⚠ No active VendorPayout found to attach M-Pesa ConversationIDs")
@@ -281,7 +280,7 @@ def call_mpesa_b2c_bulk(payouts, mpesa_config):
         vendor = payout.vendor
         amount = payout.amount
 
-        response = call_mpesa_b2c(vendor, amount, mpesa_config)
+        response = call_mpesa_b2c(vendor, amount, mpesa_config, payout=payout)
         status = "Sent to M-Pesa" if response.get('success') else f"Failed: {response.get('error', 'Unknown error')}"
 
         results.append({
@@ -812,7 +811,7 @@ def payment_processors(start_date, end_date, payment_method=None):
         amount = payout.amount
         try:
             if method == "MOBILE_MONEY":
-                response = call_mpesa_b2c(vendor, amount, mpesa_config)
+                response = call_mpesa_b2c(vendor, amount, mpesa_config, payout=payout)
                 status = "Sent to M-Pesa" if response.get('success') else f"Failed: {response.get('error', 'Unknown error')}"
 
             elif method == "PAYPAL":
