@@ -242,3 +242,67 @@ def process_paypal_refund(refund_id):
                 adjustment.save(update_fields=["applied"])
 
         return locked_refund
+
+
+def reconcile_paypal_refund(provider_reference, provider_status, provider_amount, provider_currency):
+    """Reconcile a PayPal refund webhook against an existing refund ledger row."""
+    if not provider_reference:
+        return None
+
+    with transaction.atomic():
+        refund = (
+            Refund.objects
+            .select_for_update()
+            .select_related("payment", "return_request__item", "return_request__vendor_adjustment")
+            .filter(provider="PayPal", provider_reference=provider_reference)
+            .first()
+        )
+        if not refund:
+            return None
+
+        if provider_amount is not None and Decimal(str(provider_amount)) != refund.amount:
+            refund.status = "failed"
+            refund.failure_reason = "PayPal refund webhook amount does not match the approved refund."
+            refund.save(update_fields=["status", "failure_reason", "updated_at"])
+            return refund
+
+        expected_currency = (refund.currency or "USD").upper()
+        if str(provider_currency or expected_currency).upper() != expected_currency:
+            refund.status = "failed"
+            refund.failure_reason = "PayPal refund webhook currency does not match the approved refund."
+            refund.save(update_fields=["status", "failure_reason", "updated_at"])
+            return refund
+
+        normalized_status = str(provider_status or "").upper()
+        if normalized_status == "COMPLETED":
+            refund.status = "completed"
+            refund.failure_reason = None
+            refund.completed_at = refund.completed_at or timezone.now()
+            refund.save(update_fields=["status", "failure_reason", "completed_at", "updated_at"])
+
+            return_request = refund.return_request
+            return_request.refund_issued = True
+            return_request.processed = True
+            return_request.save(update_fields=["refund_issued", "processed"])
+
+            item = return_request.item
+            item.refunded = True
+            item.refunded_at = item.refunded_at or timezone.now()
+            item.status = "refunded"
+            item.save(update_fields=["refunded", "refunded_at", "status"])
+
+            adjustment = return_request.vendor_adjustment
+            if adjustment and not adjustment.applied:
+                adjustment.applied = True
+                adjustment.save(update_fields=["applied"])
+
+        elif normalized_status in {"FAILED", "CANCELLED"}:
+            if refund.status != "completed":
+                refund.status = "failed"
+                refund.failure_reason = "PayPal reported the refund as failed."
+                refund.save(update_fields=["status", "failure_reason", "updated_at"])
+        else:
+            refund.status = "processing"
+            refund.save(update_fields=["status", "updated_at"])
+
+        return refund
