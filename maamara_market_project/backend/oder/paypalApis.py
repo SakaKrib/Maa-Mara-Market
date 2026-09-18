@@ -17,6 +17,7 @@ from .models import BillingAddress, Customer, Order, Payment
 
 from .Payment import capture_paypal_order, create_paypal_order
 from .models import BillingAddress, Customer, Order, Payment
+from .models import BillingAddress, Customer, Order, Payment
 from .paymentserializer import CheckoutSerializer, OrderResponseSerializer
 from .views import IsAuthenticatedOrVisitor
 
