@@ -1,6 +1,6 @@
 import { Outlet } from "react-router-dom";
 import ProtectedRoute from "../ProtectRoute";
-import HeaderTop from "../../../Portions/HederTop/HeaderTop";
+import HeaderTop from "../../../Portions/HeaderTop/HeaderTop";
 import NavBar from "../../../Portions/NavBar/NavBarSide";
 
 const AdminLayout = () => (
