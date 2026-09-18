@@ -230,8 +230,7 @@ class ItemSerializer(serializers.ModelSerializer):
         # Call the model method safely
         try:
             return round(obj.get_save_upto or 0, 2)
-        except Exception as e:
-            print("Error in get_save_upto:", e)
+        except Exception:
             return 0
 
     
