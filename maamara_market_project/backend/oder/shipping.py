@@ -1,5 +1,4 @@
 import logging
-from datetime import datetime
 
 import requests
 from django.conf import settings
@@ -43,7 +42,6 @@ def _dhl_rates(order, destination):
         return []
 
     dims = _dimensions(order)
-    address = order.billing_address
     payload = {
         "customerDetails": {
             "shipperDetails": {
