@@ -1,7 +1,5 @@
 import React from "react";
-import { useNavigate } from "react-router-dom";
 import { useWishlistContext } from "../../../../../../cmponents/Hooks/WishListHook/Wishlist";
-import api from "../../../../../../Services/Api";
 import useTrendingProducts from "./useTrendingProducts";
 import FeaturedOffer from "./FeaturedOffer";
 import TrendingProductCard from "./TrendingProductCard";
@@ -9,15 +7,6 @@ import TrendingProductCard from "./TrendingProductCard";
 const TrendingProducts = () => {
   const { items, loading, nextUrl, prevUrl, fetchItems } = useTrendingProducts();
   const { wishlist, addToWishlist, removeFromWishlist } = useWishlistContext();
-  const navigate = useNavigate();
-
-  const handleItemClick = async (id) => {
-    try {
-      await api.get(`/api/items/${id}/`);
-    } finally {
-      navigate(`/item/${id}`);
-    }
-  };
 
   if (loading) return <p className="text-center mt-10">Loading...</p>;
 
@@ -48,7 +37,6 @@ const TrendingProducts = () => {
                 item={item}
                 isWishlisted={isWishlisted}
                 onToggleWishlist={toggleWishlist}
-                onOpen={handleItemClick}
               />
             );
           })}
@@ -57,12 +45,12 @@ const TrendingProducts = () => {
         {(prevUrl || nextUrl) && (
           <div className="flex justify-between items-center mt-10">
             {prevUrl ? (
-              <button onClick={() => fetchItems(prevUrl)} className="secondary-button px-4 py-2 rounded-md text-white">
+              <button type="button" onClick={() => fetchItems(prevUrl)} className="secondary-button px-4 py-2 rounded-md text-white">
                 Previous
               </button>
             ) : <span />}
             {nextUrl && (
-              <button onClick={() => fetchItems(nextUrl)} className="secondary-button px-4 py-2 rounded-md text-white">
+              <button type="button" onClick={() => fetchItems(nextUrl)} className="secondary-button px-4 py-2 rounded-md text-white">
                 Next
               </button>
             )}
