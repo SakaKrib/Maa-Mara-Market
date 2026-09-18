@@ -170,7 +170,7 @@ def call_mpesa_b2c(vendor, amount, mpesa_config, payout=None):
         elif vendor.mpesa_type == "TILL":
             recipient = int(vendor.mpesa_till)
 
-        elif vendor.mpesa_type == "PAYBILL":
+        elif vendor.mpesa_type == "LIPA_NA_MPESA":
             recipient = int(vendor.mpesa_paybill)
 
         else:
@@ -239,21 +239,15 @@ def call_mpesa_b2c(vendor, amount, mpesa_config, payout=None):
         # 7️⃣ Handle M-Pesa Response
         # ----------------------------------------------------------------------
         if data.get("ResponseCode") == "0":
-
-            # FIX: Save the conversation details
-            try:
-                payout.mpesa_conversation_id = data.get("ConversationID")
-                payout.mpesa_originator_conversation_id = data.get("OriginatorConversationID")
-                payout.mpesa_result_desc = data.get("ResponseDescription", "")
-                payout.save(update_fields=["mpesa_conversation_id", "mpesa_originator_conversation_id", "mpesa_result_desc"])
-                logger.info("Updated payout with M-Pesa conversation IDs.", extra={"payout_reference": payout.reference})
-                
-            return {
-                "success": True,
-                "ConversationID": data.get("ConversationID"),
-                "OriginatorConversationID": data.get("OriginatorConversationID"),
-                "ResponseDescription": data.get("ResponseDescription", ""),
-            }
+            conversation_id = data.get("ConversationID")
+            returned_originator_id = data.get("OriginatorConversationID")
+            payout.mpesa_conversation_id = conversation_id
+            if returned_originator_id:
+                payout.mpesa_originator_conversation_id = returned_originator_id
+            payout.mpesa_result_desc = str(data.get("ResponseDescription") or "")[:255]
+            payout.save(update_fields=["mpesa_conversation_id", "mpesa_originator_conversation_id", "mpesa_result_desc"])
+            logger.info("Updated payout with M-Pesa conversation IDs.", extra={"payout_reference": payout.reference})
+            return {"success": True, "ConversationID": conversation_id, "OriginatorConversationID": returned_originator_id, "ResponseDescription": data.get("ResponseDescription", "")}
 
         # Handle Daraja error format
         if "errorCode" in data:
@@ -263,7 +257,7 @@ def call_mpesa_b2c(vendor, amount, mpesa_config, payout=None):
                 "code": data.get("errorCode"),
             }
 
-        return {"success": False, "error": "Unknown M-Pesa error", "raw": data}
+        return {"success": False, "error": "Unknown M-Pesa error"}
 
     # ----------------------------------------------------------------------
     # 8️⃣ EXCEPTION HANDLING
