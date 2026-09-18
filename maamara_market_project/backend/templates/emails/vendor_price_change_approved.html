@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <title>Price Change Approved</title>
+    <style>
+      /* ===== Fonts (with fallback) ===== */
+      @font-face {
+        font-family: "telo";
+        src: url(../../media/font/Allison-Regular.ttf);
+      }
+
+      /* ===== Light mode default ===== */
+      body {
+        margin: 0;
+        padding: 0;
+        background-color: #f7f7f7;
+        color: #333333;
+        font-family: Arial, sans-serif;
+        height: 100%;
+      }
+
+      .main-container { background-color: #ffffff; }
+      .status-bar { background-color: #2e7d32; color: #ffffff; }
+      .footer { background-color: #f0f0f0; color: #666666; }
+      a { color: #2e7d32; text-decoration: none; }
+
+      .button {
+        background-color: #2e7d32;
+        color: #ffffff;
+        padding: 12px 20px;
+        border-radius: 4px;
+        text-decoration: none;
+        font-weight: bold;
+        display: inline-block;
+      }
+
+      /* ===== Dark mode overrides ===== */
+      @media (prefers-color-scheme: dark) {
+        body { background-color: #121212 !important; color: #f1f1f1 !important; }
+        .main-container { background-color: #1e1e1e !important; }
+        .status-bar { background-color: #1b5e20 !important; color: #ffffff !important; }
+        .footer { background-color: #1c1c1c !important; color: #aaaaaa !important; }
+        a { color: #4fc3f7 !important; }
+        .button { background-color: #1b5e20 !important; color: #ffffff !important; }
+        
+      }
+    </style>
+  </head>
+
+  <body>
+
+    <!-- Preheader text -->
+    <div style="display:none; max-height:0; overflow:hidden; opacity:0;">
+      Your price change for {{ item.name }} has been approved.
+    </div>
+
+    <table width="100%" cellpadding="0" cellspacing="0" bgcolor="#f7f7f7">
+      <tr>
+        <td align="center" style="padding:20px 0;">
+
+          <!-- Main Container -->
+          <table width="600" cellpadding="0" cellspacing="0" class="main-container" style="border-radius:10px; overflow:hidden;">
+
+            <!-- ================= BRAND HEADER ================= -->
+            <tr>
+              <td align="center" style="padding:20px;">
+                <img
+                  src="/media//company_logos/Maamara.jpg"
+                  alt="Maamara Market"
+                  width="90"
+                  class="logo"
+                  style="display:block; margin-bottom:8px;"
+                />
+                <h1 style="margin:0; font-family:telo, Arial, sans-serif; font-size:42px; color:#2e7d32; text-decoration: underline 1px solid;">
+                  Maamara Market
+                </h1>
+              </td>
+            </tr>
+
+            <!-- ================= STATUS BAR ================= -->
+            <tr>
+              <td align="center" class="status-bar" style="padding:16px;">
+                <h2 style="margin:0; font-size:20px;">
+                  Price Change Approved ✅
+                </h2>
+              </td>
+            </tr>
+
+            <!-- ================= BODY ================= -->
+            <tr>
+              <td style="padding:30px; line-height:1.6;">
+
+                <p>Hello {{ vendor.username }},</p>
+
+                <p>
+                  Your request to change the price of
+                  <strong>{{ item.name }}</strong> to
+                  <strong>{{ price_request.new_price }}</strong> has been approved.
+                </p>
+
+                <p>
+                  The item is now updated with the new price in your catalog.
+                </p>
+
+                <!-- Button -->
+                <p style="margin-top:20px;">
+                  <a href="https://maamaramarket.com/vendor/items/{{ item.id }}/" class="button">
+                    View Item
+                  </a>
+                </p>
+
+                <p style="margin-top:25px;">
+                  — Maamara Market Team
+                </p>
+
+              </td>
+            </tr>
+
+            <!-- ================= FOOTER ================= -->
+            <tr>
+              <td align="center" class="footer" style="padding:22px; font-size:12px;">
+
+                <p style="margin:0; font-weight:bold;">
+                  🌿 Maamara Market – Naturally African 🌿
+                </p>
+
+                <p style="margin:6px 0;">
+                  123 Green Avenue, Nairobi, Kenya
+                </p>
+
+                <p style="margin:6px 0;">
+                  <a href="mailto:support@maamaramarket.com">support@maamaramarket.com</a>
+                  &nbsp;|&nbsp;
+                  <a href="https://maamaramarket.com">Visit Website</a>
+                </p>
+
+                <hr style="border:none; border-top:1px solid #cccccc; margin:16px 0;" />
+
+                <p style="margin:0;">
+                  © {{ current_year }} Maamara Market. All rights reserved.
+                </p>
+
+              </td>
+            </tr>
+
+          </table>
+
+        </td>
+      </tr>
+    </table>
+
+  </body>
+</html>

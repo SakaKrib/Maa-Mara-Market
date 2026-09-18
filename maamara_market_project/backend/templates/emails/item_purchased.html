@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <title>Item Purchased</title>
+    <style>
+      /* fonts */
+      @font-face {
+        font-family: "jayb";
+        src: url(../../media/font/LibreBaskerville-Regular.ttf);
+      }
+      @font-face {
+        font-family: "jaka";
+        src: url(../../media/font/ProtestRevolution-Regular.ttf);
+      }
+      @font-face {
+        font-family: "telo";
+        src: url(../../media/font/Allison-Regular.ttf);
+      }
+
+      /* Default colors (light mode) */
+      body { background-color: #f7f7f7; color: #333333; margin:0; padding:0; }
+      .main-container { background-color: #ffffff; }
+      .status-bar { background-color:#156dc083; color: #ffffff; } /* Blue for purchased notification */
+      .footer { background-color: #d3f3f0; color: #666666; }
+      a { color: #2e7d32; text-decoration: none; }
+
+      /* Dark mode overrides */
+      @media (prefers-color-scheme: dark) {
+        body { background-color: #121212 !important; color: #f1f1f1 !important; }
+        .main-container { background-color: #1e1e1e !important; }
+        .status-bar { background-color:#156dc083 !important; color: #ffffff !important; }
+        .footer { background-color: #1e1e1e !important; color: #aaaaaa !important; }
+        a { color: #4fc3f7 !important; }
+      }
+    </style>
+  </head>
+
+  <body>
+
+    <!-- Preheader text -->
+    <div style="display:none; max-height:0; overflow:hidden; opacity:0;">
+      Your item "{{ item.name }}" has been purchased. Prepare it for dispatch.
+    </div>
+
+    <table width="100%" cellpadding="0" cellspacing="0" bgcolor="#f7f7f7">
+      <tr>
+        <td align="center" style="padding:20px 0;">
+
+          <!-- Main Container -->
+          <table width="600" cellpadding="0" cellspacing="0" class="main-container" style="border-radius:10px; overflow:hidden;">
+
+            <!-- ================= BRAND HEADER ================= -->
+            <tr>
+              <td align="center" style="padding:20px;">
+                <img
+                  src="/media/company_logos/Maamara.jpg"
+                  alt="Maamara Market"
+                  width="50"
+                  class="logo"
+                  style="display:block; margin-bottom:8px; border-radius:50%;"
+                />
+                <h1 style="margin:0; font-family: telo, Arial, sans-serif; font-size:42px; color:#d6f0d7; text-decoration: underline 1px solid;">
+                  Maamara Market
+                </h1>
+              </td>
+            </tr>
+
+            <!-- ================= STATUS BAR ================= -->
+            <tr>
+              <td align="center" class="status-bar" style="padding:16px;">
+                <h2 style="margin:0; font-size:20px;">
+                  Item Purchased 🛒
+                </h2>
+              </td>
+            </tr>
+
+            <!-- ================= BODY ================= -->
+            <tr>
+              <td style="padding:30px; font-family:Arial, sans-serif; line-height:1.6;">
+                <p>Dear {{ vendor }},</p>
+
+                <p>
+                  Congratulations! Your item
+                  <strong>{{ item.name }}</strong> has been purchased by a customer.
+                </p>
+
+                <table cellpadding="0" cellspacing="0" width="100%" style="margin-top:15px; border-collapse: collapse;">
+                  <tr>
+                    <td width="140"><strong>Item:</strong></td>
+                    <td>{{ item.name }}</td>
+                  </tr>
+                  <tr>
+                    <td><strong>Quantity:</strong></td>
+                    <td>{{ quantity }}</td>
+                  </tr>
+                  <tr>
+                    <td><strong>Unit Price:</strong></td>
+                    <td>{{ price_at_purchase }}</td>
+                  </tr>
+                  <tr>
+                    <td><strong>Total Amount:</strong></td>
+                    <td>{{ total_amount }}</td>
+                  </tr>
+                  {% if color_variant %}
+                  <tr>
+                    <td><strong>Color:</strong></td>
+                    <td>{{ color_variant.name }}</td>
+                  </tr>
+                  {% endif %}
+                  {% if size_stock %}
+                  <tr>
+                    <td><strong>Size:</strong></td>
+                    <td>{{ size_stock.name }}</td>
+                  </tr>
+                  {% endif %}
+                  {% if age_variant %}
+                  <tr>
+                    <td><strong>Age Group:</strong></td>
+                    <td>{{ age_variant.name }}</td>
+                  </tr>
+                  {% endif %}
+                  {% if selected_length %}
+                  <tr>
+                    <td><strong>Length:</strong></td>
+                    <td>{{ selected_length }}</td>
+                  </tr>
+                  {% endif %}
+                  {% if weight_at_purchase %}
+                  <tr>
+                    <td><strong>Weight:</strong></td>
+                    <td>{{ weight_at_purchase }} kg</td>
+                  </tr>
+                  {% endif %}
+                </table>
+
+                <p style="margin-top:20px;">
+                  Please organize for the delivery of this item to the dispatch center to ensure timely delivery to the customer.
+                </p>
+
+                <p style="margin-top:25px;">
+                  — Maamara Market Team
+                </p>
+              </td>
+            </tr>
+
+            <!-- ================= FOOTER ================= -->
+            <tr>
+              <td align="center" class="footer" style="padding:22px; font-family:Arial, sans-serif; font-size:12px;">
+                <p style="margin:0; font-weight:bold;">
+                  🌿 Maamara Market – Naturally African 🌿
+                </p>
+
+                <p style="margin:6px 0;">
+                  123 Green Avenue, Nairobi, Kenya
+                </p>
+
+                <p style="margin:6px 0;">
+                  <a href="mailto:support@maamaramarket.com">support@maamaramarket.com</a>
+                  &nbsp;|&nbsp;
+                  <a href="https://maamaramarket.com">Visit Website</a>
+                </p>
+
+                <hr style="border:none; border-top:1px solid #cccccc; margin:16px 0;" />
+
+                <p style="margin:0;">
+                  © {{ current_year }} Maamara Market. All rights reserved.
+                </p>
+              </td>
+            </tr>
+
+          </table>
+
+        </td>
+      </tr>
+    </table>
+
+  </body>
+</html>
