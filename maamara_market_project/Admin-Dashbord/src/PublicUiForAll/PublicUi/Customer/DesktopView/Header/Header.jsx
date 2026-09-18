@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Heart, MapPin, ShoppingBag, UserRound, Menu, Search, Sparkles } from "lucide-react";
+import { Heart, MapPin, ShoppingBag, UserRound, Menu, Search, Sparkles, ChevronDown, Globe2 } from "lucide-react";
 import "../../../../PublicUi/maamara.css";
 import SearchBar from "../../../Navigations/Search/Search";
 import NavIcons from "../../../Navigations/Search/NavIcons/NavIcon";
@@ -7,13 +7,25 @@ import { Link } from "react-router-dom";
 import useNewBlogs from "../../../../../cmponents/Hooks/BlogHooksNew/NewBlogs";
 import Maamara from "../../../../../assets/Logo/Maamara.jpg";
 import CategoryNavigation from "./CategoryNavigation";
+import MegaMenuWomen from "./WomenCat";
+import MegaMenuMen from "./MenCat";
+import MegaMenuChildren from "./ChildrenCat";
+import MegaMenuSports from "./SportsCat";
+import MegaMenuUnisex from "./UnisexCat";
 import MobileNavigationDrawer from "./MobileNavigationDrawer";
 
 const Header = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const [isFixed, setIsFixed] = useState(false);
+  const [currency, setCurrency] = useState(() => localStorage.getItem("mm_currency") || "KES");
+  const [location, setLocation] = useState("Detecting location…");
+  const [megaMenu, setMegaMenu] = useState(null);
   const { newBlogCount, loading } = useNewBlogs();
+
+  const currencies = { KES: { label: "KES", flag: "🇰🇪" }, USD: { label: "USD", flag: "🇺🇸" }, EUR: { label: "EUR", flag: "🇪🇺" }, GBP: { label: "GBP", flag: "🇬🇧" } };
+  useEffect(() => { localStorage.setItem("mm_currency", currency); }, [currency]);
+  useEffect(() => { let active=true; fetch("https://ipapi.co/json/").then(r=>r.ok?r.json():Promise.reject()).then(d=>{if(active&&d?.country_name)setLocation(d.country_name);}).catch(()=>{if(active)setLocation("Location unavailable");}); return ()=>{active=false;}; }, []);
 
   useEffect(() => {
     const handleScroll = () => setIsFixed(window.scrollY > 120);
@@ -36,9 +48,9 @@ const Header = () => {
           <div className="mm-utility-right">
             <Link to="/customer-login">Sign in</Link>
             <span className="mm-utility-separator">·</span>
-            <span>Kenya</span>
+            <span className="flex items-center gap-1"><Globe2 size={13} />{location}</span>
             <span className="mm-utility-separator">·</span>
-            <span>KES</span>
+            <label className="flex items-center gap-1 cursor-pointer" aria-label="Select currency"><span>{currencies[currency].flag}</span><select value={currency} onChange={e=>setCurrency(e.target.value)} className="bg-transparent border-0 outline-none cursor-pointer"><option value="KES">KES</option><option value="USD">USD</option><option value="EUR">EUR</option><option value="GBP">GBP</option></select></label>
           </div>
         </div>
       </div>
@@ -79,10 +91,20 @@ const Header = () => {
           <nav className="mm-primary-links" aria-label="Main navigation">
             <Link to="/" className="flex items-center gap-1.5"><Search size={15} />Home</Link>
             <Link to="/list" className="flex items-center gap-1.5"><ShoppingBag size={15} />Shop</Link>
+            {[
+              ["Women", MegaMenuWomen], ["Men", MegaMenuMen], ["Children", MegaMenuChildren],
+              ["Sports", MegaMenuSports], ["Unisex", MegaMenuUnisex]
+            ].map(([label, MenuComponent]) => (
+              <div key={label} className="relative" onMouseEnter={()=>setMegaMenu(label)} onMouseLeave={()=>setMegaMenu(null)}>
+                <button type="button" className="flex items-center gap-1.5 px-2 py-3 font-medium text-[#222] hover:text-[#6f6a63]">
+                  {label}<ChevronDown size={13} />
+                </button>
+                {megaMenu === label && <div className="absolute left-0 top-full z-[100] pt-1" onMouseEnter={()=>setMegaMenu(label)}><MenuComponent /></div>}
+              </div>
+            ))}
             <Link to="/blogs" className="flex items-center gap-1.5"><Heart size={15} />Journal</Link>
             <Link to="/organic" className="flex items-center gap-1.5"><Sparkles size={15} />Organic</Link>
             <Link to="/user-account" className="flex items-center gap-1.5"><UserRound size={15} />Account</Link>
-            <span className="flex items-center gap-1.5 text-[#6f6a63]"><MapPin size={15} />Kenya</span>
           </nav>
         </div>
       </div>
