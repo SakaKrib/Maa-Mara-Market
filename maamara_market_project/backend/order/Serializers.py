@@ -1,6 +1,6 @@
 # serializers.py
 from rest_framework import serializers
-from .models import OderItem, Order, BillingAddress, Payment, Transaction
+from .models import OrderItem, Order, BillingAddress, Payment, Transaction
 from ReactSerializers.models import Item
 from core.Serializer import ItemSerializer
 import bleach # type: ignore
@@ -78,7 +78,7 @@ class OrderItemSerializer(serializers.ModelSerializer):
     final_price_for_vendor = serializers.SerializerMethodField()
 
     class Meta:
-        model = OderItem
+        model = OrderItem
         fields = [
             "id",
             "item",
