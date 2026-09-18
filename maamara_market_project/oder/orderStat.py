@@ -188,6 +188,19 @@ def vendor_pending_order_items(request):
             "quantity": oi.quantity,
             "customer": customer_name,
             "created_at": order.created_at.isoformat() if order.created_at else None,
+            "variant": {
+                "id": oi.color_variant_id,
+                "color": oi.color_variant.color if oi.color_variant else None,
+            },
+            "size": {
+                "id": oi.size_stock_id,
+                "value": oi.size_stock.size,
+                "quantity_in_stock": oi.size_stock.quantity_in_stock if oi.size_stock else None,
+            },
+            "age_group": oi.age_variant.age_group if oi.age_variant else None,
+            "selected_length": oi.selected_length,
+            "selected_weight": oi.selected_weight,
+            "shoe_size": oi.shoe_size,
         })
 
     return Response({
@@ -260,6 +273,19 @@ def vendor_completed_order_items(request):
             "quantity": oi.quantity,
             "customer": customer_name,
             "created_at": order.created_at.isoformat() if order.created_at else None,
+            "variant": {
+                "id": oi.color_variant_id,
+                "color": oi.color_variant.color if oi.color_variant else None,
+            },
+            "size": {
+                "id": oi.size_stock_id,
+                "value": oi.size_stock.size,
+                "quantity_in_stock": oi.size_stock.quantity_in_stock if oi.size_stock else None,
+            },
+            "age_group": oi.age_variant.age_group if oi.age_variant else None,
+            "selected_length": oi.selected_length,
+            "selected_weight": oi.selected_weight,
+            "shoe_size": oi.shoe_size,
         })
 
     return Response({
