@@ -323,9 +323,10 @@ class ReviewViewSet(viewsets.ModelViewSet):
         item_id = self.kwargs.get('item_id')
 
         if self.request.user.is_authenticated:
-            serializer.save(user=self.request.user, item_id=item_id)
+            serializer.save(user=self.request.user, visitor_id=None, item_id=item_id)
         else:
-            serializer.save(user=None, item_id=item_id)
+            visitor_id = self.request.COOKIES.get("visitorId")
+            serializer.save(user=None, visitor_id=visitor_id, item_id=item_id)
 
 
 
@@ -340,6 +341,7 @@ class ReactionViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         user = self.request.user if self.request.user.is_authenticated else None
+        visitor_id = None if user else self.request.COOKIES.get("visitorId")
         review_id = self.request.data.get("review")
         reaction_type = self.request.data.get("reaction_type")
 
@@ -350,13 +352,20 @@ class ReactionViewSet(viewsets.ModelViewSet):
             raise serializers.ValidationError({"review": "Review does not exist."})
 
         # Check if user/visitor already reacted
-        existing = Reaction.objects.filter(review=review, user=user)
+        if user:
+            existing = Reaction.objects.filter(review=review, user=user)
+        else:
+            existing = Reaction.objects.filter(review=review, visitor_id=visitor_id, user__isnull=True)
+
         if existing.exists():
-            # Update existing reaction
             existing.update(reaction_type=reaction_type)
         else:
-            # Create new reaction
-            serializer.save(review=review, user=user, reaction_type=reaction_type)
+            serializer.save(
+                review=review,
+                user=user,
+                visitor_id=visitor_id,
+                reaction_type=reaction_type,
+            )
 
 
 
