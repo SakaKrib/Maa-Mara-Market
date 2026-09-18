@@ -224,6 +224,15 @@ def get_cart_view(request):
                 "final_price": cart_item.get_final_price(),
                 "total_item_price": cart_item.get_total_item_price(),
                 "amount_saved": cart_item.get_amount_saved(),
+                "variant_id": cart_item.color_variant_id,
+                "variant_color": cart_item.color_variant.color if cart_item.color_variant else None,
+                "size_id": cart_item.size_stock_id,
+                "size": cart_item.size_stock.size if cart_item.size_stock else None,
+                "age_variant_id": cart_item.age_variant_id,
+                "age_group": cart_item.age_variant.age_group if cart_item.age_variant else None,
+                "selected_length": cart_item.selected_length,
+                "selected_weight": cart_item.selected_weight,
+                "shoe_size": cart_item.shoe_size,
             })
 
             items_data.append(item_data)
