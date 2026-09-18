@@ -230,7 +230,7 @@ def checkout_view(request):
         )
         incoming_keys.add(sync_key)
 
-        order_item = OderItem.objects.filter(
+        order_item = OrderItem.objects.filter(
             order=order,
             item=item,
             color_variant=variant,
@@ -246,7 +246,7 @@ def checkout_view(request):
             order_item.price_at_purchase = item.get_item_final_price()
             order_item.save(update_fields=["quantity", "price_at_purchase"])
         else:
-            order_item = OderItem.objects.create(
+            order_item = OrderItem.objects.create(
                 order=order,
                 item=item,
                 user=user,
