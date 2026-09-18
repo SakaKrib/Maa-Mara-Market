@@ -72,7 +72,7 @@ const ListPage = () => {
   }, []);
 
   return (
-    <div className="px-4 md:px-8 lg:px-16 xl:px-32 2xl:px-64 relative">
+    <div className="px-4 md:px-8 lg:px-16 xl:px-32 2xl:px-64 relative marketplace-page">
 
       {/* CAMPAIGN */}
       <div className="relative flex flex-col-reverse md:flex-row items-center justify-between bg-gray-100 p-6 rounded-lg mt-6">
@@ -121,7 +121,7 @@ const ListPage = () => {
               No items found.
             </p>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            <div className="product-card-grid grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2 sm:gap-4 lg:gap-6">
               {items.map((item) => (
                 <ProductCard key={item.id} mode="card" item={item} />
               ))}
