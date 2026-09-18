@@ -853,7 +853,8 @@ def paypal_webhook(request):
             locked_order, completed = complete_paid_order(
                 order,
                 payment,
-                transaction_id=paypal_order_id,
+                # Refunds must target the PayPal capture, not the checkout-order id.
+                transaction_id=transaction_id,
             )
 
             vendor_ids = list(
@@ -863,6 +864,7 @@ def paypal_webhook(request):
             )
             for vendor_id in vendor_ids:
                 Transaction.objects.update_or_create(
+                    payment=locked_order.payment,
                     paypal_transaction_id=transaction_id,
                     vendor_id=vendor_id,
                     defaults={
@@ -879,8 +881,9 @@ def paypal_webhook(request):
 
             if not vendor_ids:
                 Transaction.objects.update_or_create(
+                    payment=locked_order.payment,
                     paypal_transaction_id=transaction_id,
-                    order=locked_order,
+                    vendor=None,
                     defaults={
                         "transaction_type": "PayPal",
                         "payment_method": "paypal",
@@ -912,8 +915,9 @@ def paypal_webhook(request):
 
         # Non-success events are recorded but never complete an order.
         Transaction.objects.update_or_create(
+            payment=payment,
             paypal_transaction_id=transaction_id,
-            order=order,
+            vendor=None,
             defaults={
                 "transaction_type": "PayPal",
                 "payment_method": "paypal",
