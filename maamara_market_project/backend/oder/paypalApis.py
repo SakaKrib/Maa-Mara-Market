@@ -24,6 +24,8 @@ from core.models import ActivityLog, Notification
 from vendorDashboard.models import SoldItem, Vendor
 
 from .capture_order import get_paypal_access_token
+from .Payment import create_paypal_order
+from .Base import get_usd_to_kes_rate
 from .models import BillingAddress, Customer, Order, Payment, Transaction
 from .paymentserializer import CheckoutSerializer, OrderResponseSerializer
 from .views import IsAuthenticatedOrVisitor
@@ -281,7 +283,36 @@ def checkout_view(request):
     payment.save()
 
     # ----------------------------
-    # 7️⃣ Response
+    # 7️⃣ Prepare provider payment
+    # ----------------------------
+    if payment_method == "PayPal":
+        # PayPal settles in USD. Create the provider order server-side so the
+        # PayPal ID is bound to this exact local order before the browser pays.
+        usd_to_kes_rate = Decimal(str(get_usd_to_kes_rate()))
+        if usd_to_kes_rate <= 0:
+            raise ValueError("Invalid USD/KES exchange rate.")
+
+        provider_amount = (total_amount / usd_to_kes_rate).quantize(Decimal("0.01"))
+        if provider_amount <= 0:
+            raise ValueError("PayPal amount must be greater than zero.")
+
+        paypal_data = create_paypal_order(
+            provider_amount,
+            "USD",
+            reference_id=order.id,
+        )
+        paypal_order_id = paypal_data.get("id")
+        if not paypal_order_id:
+            raise ValueError("PayPal did not return an order ID.")
+
+        order.paypal_order_id = paypal_order_id
+        payment.provider_amount = provider_amount
+        payment.provider_currency = "USD"
+        payment.save(update_fields=["provider_amount", "provider_currency"])
+        order.save(update_fields=["paypal_order_id"])
+
+    # ----------------------------
+    # 8️⃣ Response
     # ----------------------------
     response_data = OrderResponseSerializer(order).data
     response_data["order_id"] = order.id
