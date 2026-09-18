@@ -1,0 +1,943 @@
+[33mcommit 9802ddcdab8e00c33e8fcf147d9eacc8d8bc1d6f[m
+Author: oopondo <okothopondo71@gmail.com>
+Date:   Sat Jul 25 21:24:16 2026 +0300
+
+    authentication, terms and conditions and draft vendor registration form update
+
+ .../Admin-Dashbord/tmp/package-lock.json            |     0
+ .../{_archive => }/Admin-Dashbord/tmp/package.json  |     0
+ .../{_archive => }/Admin-Dashbord/vite.config.js    |     7 [32m+[m[31m-[m
+ .../_archive/Admin-Dashbord/.gitignore              |    24 [31m-[m
+ .../Admin-Dashbord/ChatJsxUi/client-app/.gitignore  |    24 [31m-[m
+ .../Admin-Dashbord/ChatJsxUi/client-app/README.md   |    12 [31m-[m
+ .../Admin-Dashbord/ChatJsxUi/client-app/chat.html   |    15 [31m-[m
+ .../ChatJsxUi/client-app/eslint.config.js           |    33 [31m-[m
+ .../ChatJsxUi/client-app/models/users.js            |    53 [31m-[m
+ .../ChatJsxUi/client-app/package-lock.json          |  4439 [31m--------[m
+ .../ChatJsxUi/client-app/package.json               |    42 [31m-[m
+ .../patches/@jridgewell+sourcemap-codec+1.5.0.patch |    28 [31m-[m
+ .../ChatJsxUi/client-app/public/vite.svg            |     1 [31m-[m
+ .../Admin-Dashbord/ChatJsxUi/client-app/router.js   |     9 [31m-[m
+ .../Admin-Dashbord/ChatJsxUi/client-app/server.js   |   258 [31m-[m
+ .../ChatJsxUi/client-app/srcChat/AppChat.jsx        |    31 [31m-[m
+ .../ChatJsxUi/client-app/srcChat/buffer.jsx         |    19 [31m-[m
+ .../srcChat/componentChat/Hooks/ChatProfileHook.jsx |    40 [31m-[m
+ .../srcChat/componentChat/InfoBar/InfoBar.css       |    29 [31m-[m
+ .../srcChat/componentChat/InfoBar/InfoBar.jsx       |    26 [31m-[m
+ .../srcChat/componentChat/Input/InpuChat.jsx        |   157 [31m-[m
+ .../srcChat/componentChat/Input/Input.css           |    33 [31m-[m
+ .../srcChat/componentChat/Message/Message.css       |   148 [31m-[m
+ .../srcChat/componentChat/Message/Message.jsx       |   130 [31m-[m
+ .../srcChat/componentChat/Messages/Messages.css     |   117 [31m-[m
+ .../srcChat/componentChat/Messages/Messages.jsx     |   112 [31m-[m
+ .../srcChat/componentChat/RoomUsers/RoomUsers.css   |    70 [31m-[m
+ .../srcChat/componentChat/RoomUsers/RoomUsers.jsx   |    62 [31m-[m
+ .../componentChat/TextContainer/TextContainer.css   |    33 [31m-[m
+ .../componentChat/TextContainer/TextContainer.jsx   |    36 [31m-[m
+ .../client-app/srcChat/componentChat/chat/Chat.css  |   136 [31m-[m
+ .../client-app/srcChat/componentChat/chat/Chat.jsx  |   371 [31m-[m
+ .../client-app/srcChat/componentChat/join/Join.jsx  |   166 [31m-[m
+ .../client-app/srcChat/componentChat/join/join.css  |    71 [31m-[m
+ .../client-app/srcChat/icons/closeIcon.png          |   Bin [31m182[m -> [32m0[m bytes
+ .../client-app/srcChat/icons/onlineIcon.png         |   Bin [31m146[m -> [32m0[m bytes
+ .../srcChat/profile_pictures/default-sender.jpg     |   Bin [31m1925[m -> [32m0[m bytes
+ .../srcChat/profile_pictures/default-vendor.jpg     |   Bin [31m1925[m -> [32m0[m bytes
+ .../ChatJsxUi/client-app/vite.config.js             |    19 [31m-[m
+ .../_archive/Admin-Dashbord/README.md               |    12 [31m-[m
+ .../_archive/Admin-Dashbord/components.json         |    21 [31m-[m
+ .../_archive/Admin-Dashbord/components/OtpModal.jsx |   237 [31m-[m
+ .../Admin-Dashbord/components/login-form.jsx        |   297 [31m-[m
+ .../_archive/Admin-Dashbord/components/register.jsx |   233 [31m-[m
+ .../_archive/Admin-Dashbord/components/ui/alert.jsx |    47 [31m-[m
+ .../Admin-Dashbord/components/ui/avatar.jsx         |    33 [31m-[m
+ .../_archive/Admin-Dashbord/components/ui/badge.jsx |    34 [31m-[m
+ .../Admin-Dashbord/components/ui/button.jsx         |    48 [31m-[m
+ .../_archive/Admin-Dashbord/components/ui/card.jsx  |    50 [31m-[m
+ .../Admin-Dashbord/components/ui/checkbox.jsx       |    22 [31m-[m
+ .../Admin-Dashbord/components/ui/drawer.jsx         |    90 [31m-[m
+ .../_archive/Admin-Dashbord/components/ui/form.jsx  |   133 [31m-[m
+ .../Admin-Dashbord/components/ui/hover-card.jsx     |    45 [31m-[m
+ .../Admin-Dashbord/components/ui/input-otp.jsx      |    53 [31m-[m
+ .../_archive/Admin-Dashbord/components/ui/input.jsx |    19 [31m-[m
+ .../_archive/Admin-Dashbord/components/ui/label.jsx |    16 [31m-[m
+ .../Admin-Dashbord/components/ui/progress.jsx       |    21 [31m-[m
+ .../Admin-Dashbord/components/ui/scroll-area.jsx    |    38 [31m-[m
+ .../Admin-Dashbord/components/ui/select.jsx         |   119 [31m-[m
+ .../Admin-Dashbord/components/ui/separator.jsx      |    23 [31m-[m
+ .../_archive/Admin-Dashbord/components/ui/sheet.jsx |   108 [31m-[m
+ .../Admin-Dashbord/components/ui/skeleton.jsx       |    14 [31m-[m
+ .../Admin-Dashbord/components/ui/textarea.jsx       |    18 [31m-[m
+ .../_archive/Admin-Dashbord/components/ui/toast.jsx |   151 [31m-[m
+ .../Admin-Dashbord/components/ui/toaster.jsx        |    56 [31m-[m
+ .../_archive/Admin-Dashbord/eslint.config.js        |    29 [31m-[m
+ .../_archive/Admin-Dashbord/hooks/use-toast.js      |   155 [31m-[m
+ .../_archive/Admin-Dashbord/index.html              |    16 [31m-[m
+ .../_archive/Admin-Dashbord/jsconfig.json           |     9 [31m-[m
+ .../_archive/Admin-Dashbord/lib/utils.js            |     6 [31m-[m
+ .../_archive/Admin-Dashbord/package-lock.json       | 10354 [31m-------------------[m
+ .../_archive/Admin-Dashbord/package.json            |   100 [31m-[m
+ .../_archive/Admin-Dashbord/postcss.config.js       |     6 [31m-[m
+ .../Admin-Dashbord/public/Google_Icons-09-512.webp  |   Bin [31m6568[m -> [32m0[m bytes
+ .../_archive/Admin-Dashbord/public/admin.js         |   132 [31m-[m
+ .../_archive/Admin-Dashbord/public/images.png       |   Bin [31m2383[m -> [32m0[m bytes
+ .../_archive/Admin-Dashbord/public/vite.svg         |     1 [31m-[m
+ .../_archive/Admin-Dashbord/src/App.jsx             |   449 [31m-[m
+ .../src/ErrorBoundary/ErrorBoundary.jsx             |    31 [31m-[m
+ .../_archive/Admin-Dashbord/src/Header/Header.jsx   |    32 [31m-[m
+ .../Admin-Dashbord/src/MobileInterractions.jsx      |   115 [31m-[m
+ .../src/PublicUiForAll/CustomerShop.jsx             |    24 [31m-[m
+ .../Customer/DesktopView/Header/ChildrenCat.jsx     |   139 [31m-[m
+ .../PublicUi/Customer/DesktopView/Header/Header.jsx |   223 [31m-[m
+ .../PublicUi/Customer/DesktopView/Header/MenCat.jsx |   139 [31m-[m
+ .../Customer/DesktopView/Header/Offcanvas.jsx       |    38 [31m-[m
+ .../Customer/DesktopView/Header/SectionHook.jsx     |    37 [31m-[m
+ .../Customer/DesktopView/Header/SideNavBar.jsx      |   155 [31m-[m
+ .../Customer/DesktopView/Header/WomenCat.jsx        |   184 [31m-[m
+ .../DesktopView/Header/subcategoryListItem.jsx      |    84 [31m-[m
+ .../Customer/DesktopView/Main/Accounts/Account.jsx  |   554 [31m-[m
+ .../Main/Accounts/Profile-User-Visitor.jsx          |   402 [31m-[m
+ .../Main/CartActionButtons/AddToCartBtn.jsx         |   118 [31m-[m
+ .../Main/CartActionButtons/RemoveFromBtn.jsx        |   102 [31m-[m
+ .../Main/CartActionButtons/UpdateQty.jsx            |    50 [31m-[m
+ .../Customer/DesktopView/Main/CartHook/CartPage.jsx |   251 [31m-[m
+ .../Customer/DesktopView/Main/CartHook/cart.jsx     |    42 [31m-[m
+ .../Customer/DesktopView/Main/CategoryFilter.jsx    |   406 [31m-[m
+ .../PublicUi/Customer/DesktopView/Main/Filter.jsx   |   195 [31m-[m
+ .../PublicUi/Customer/DesktopView/Main/ListPage.jsx |   162 [31m-[m
+ .../PublicUi/Customer/DesktopView/Main/Main.jsx     |   284 [31m-[m
+ .../DesktopView/Main/Orders/CheckoutForm.jsx        |   379 [31m-[m
+ .../Customer/DesktopView/Main/Orders/OrderPage.jsx  |    54 [31m-[m
+ .../DesktopView/Main/Orders/Payment/Mpesac2b.jsx    |   192 [31m-[m
+ .../DesktopView/Main/Orders/Payment/Paypal.jsx      |   172 [31m-[m
+ .../Customer/DesktopView/Main/Pagination.jsx        |    34 [31m-[m
+ .../Customer/DesktopView/Main/Referals/Referals.jsx |   175 [31m-[m
+ .../PublicUi/Customer/DesktopView/Main/Register.jsx |    13 [31m-[m
+ .../Customer/DesktopView/Main/Return/Return.jsx     |   260 [31m-[m
+ .../PublicUi/Customer/DesktopView/Main/Review.jsx   |   226 [31m-[m
+ .../DesktopView/Main/SingleItem/SingleItem.jsx      |   403 [31m-[m
+ .../PublicUi/Customer/DesktopView/Main/Slider.jsx   |    14 [31m-[m
+ .../Customer/DesktopView/Main/Trending/Banner.jsx   |    92 [31m-[m
+ .../Customer/DesktopView/Main/Trending/Brands.jsx   |    63 [31m-[m
+ .../Main/Trending/Category/CategoryWithItemList.jsx |    92 [31m-[m
+ .../DesktopView/Main/Trending/ItemReusableCard.jsx  |   224 [31m-[m
+ .../Main/Trending/OrganicAdvert/OrganicDvert.jsx    |    71 [31m-[m
+ .../Main/Trending/OrganicAdvert/OrganicPage.jsx     |   156 [31m-[m
+ .../Customer/DesktopView/Main/Trending/Product.jsx  |   335 [31m-[m
+ .../DesktopView/Main/Trending/SuccessPage.jsx       |   159 [31m-[m
+ .../DesktopView/Main/VendorRatingsAndShop.jsx       |   170 [31m-[m
+ .../PublicUiForAll/PublicUi/Customer/LoginForm.jsx  |    12 [31m-[m
+ .../PublicUi/Customer/PublicUi/ChatCompononent.jsx  |    13 [31m-[m
+ .../PublicUi/Customer/PublicUi/MobileView.jsx       |    37 [31m-[m
+ .../PublicUiForAll/PublicUi/ItemHook/ItemHook.jsx   |    76 [31m-[m
+ .../PublicUi/Navigations/CartModal/CartModal.jsx    |   170 [31m-[m
+ .../PublicUi/Navigations/Footer/Footer.jsx          |   229 [31m-[m
+ .../PublicUi/Navigations/Footer/MobileFooter.jsx    |    65 [31m-[m
+ .../Navigations/Search/NavIcons/NavIcon.jsx         |   190 [31m-[m
+ .../Search/NavIcons/OpenAi/OpenAiGPT.jsx            |   160 [31m-[m
+ .../Navigations/Search/NavIcons/ResustsPage.jsx     |   220 [31m-[m
+ .../PublicUi/Navigations/Search/Search.jsx          |   134 [31m-[m
+ .../Navigations/WishlistModal/WishlistModal.jsx     |   122 [31m-[m
+ .../src/PublicUiForAll/PublicUi/maamara.css         |  3151 [31m------[m
+ .../src/Scenes/AdminLoginScean/Admin_login.jsx      |    23 [31m-[m
+ .../Admin-Dashbord/src/Scenes/Bar/BarChartsBar.jsx  |    16 [31m-[m
+ .../src/Scenes/Dashboard/Dashboard.jsx              |   551 [31m-[m
+ .../Admin-Dashbord/src/Scenes/ItemList/ItemList.css |    51 [31m-[m
+ .../Admin-Dashbord/src/Scenes/ItemList/ItemList.jsx |    18 [31m-[m
+ .../Admin-Dashbord/src/Scenes/Line/LineChart.jsx    |    16 [31m-[m
+ .../Admin-Dashbord/src/Scenes/Onsite/Onsite.jsx     |    16 [31m-[m
+ .../src/Scenes/PayoutReports/VendorReport.jsx       |    15 [31m-[m
+ .../Admin-Dashbord/src/Scenes/Pie/PieChart.jsx      |    16 [31m-[m
+ .../Admin-Dashbord/src/Scenes/Users/Users.jsx       |    95 [31m-[m
+ .../src/Scenes/VendorMothlyPayout/MothlyPayout.jsx  |    14 [31m-[m
+ .../Scenes/VendorSinglePage/VendorSinglepage.jsx    |    14 [31m-[m
+ .../Admin-Dashbord/src/Scenes/Vendors/Vendors.jsx   |    17 [31m-[m
+ .../Admin-Dashbord/src/Scenes/notification.jsx      |    63 [31m-[m
+ .../_archive/Admin-Dashbord/src/Services/Api.jsx    |    92 [31m-[m
+ .../_archive/Admin-Dashbord/src/Services/AuthApi.js |    32 [31m-[m
+ .../_archive/Admin-Dashbord/src/Services/items.js   |    23 [31m-[m
+ .../Admin-Dashbord/src/Services/tokenUtils.js       |    25 [31m-[m
+ .../_archive/Admin-Dashbord/src/admin.css           |   324 [31m-[m
+ .../Admin-Dashbord/src/assets/Logo/Maamara.jpg      |   Bin [31m299837[m -> [32m0[m bytes
+ .../src/assets/organicFood/Kenya-map.png            |   Bin [31m28599[m -> [32m0[m bytes
+ .../src/assets/organicFood/chocolate.jpeg           |   Bin [31m7431[m -> [32m0[m bytes
+ .../src/assets/organicFood/coffee.jpeg              |   Bin [31m14269[m -> [32m0[m bytes
+ .../src/assets/organicFood/fruits.jpeg              |   Bin [31m10424[m -> [32m0[m bytes
+ .../src/assets/organicFood/kales.jpeg               |   Bin [31m14384[m -> [32m0[m bytes
+ .../src/assets/organicFood/kenya map.jpg            |   Bin [31m20743[m -> [32m0[m bytes
+ .../src/assets/partnaship/mpesaLogo.png             |   Bin [31m63615[m -> [32m0[m bytes
+ .../src/assets/partnaship/wellfargo.jpeg            |   Bin [31m4447[m -> [32m0[m bytes
+ .../src/assets/products/20241126_140823.jpg         |   Bin [31m3698690[m -> [32m0[m bytes
+ .../src/assets/products/PSX_20241202_142436.jpg     |   Bin [31m489906[m -> [32m0[m bytes
+ .../Screenshot_20250703_015944_Instagram.jpg        |   Bin [31m672522[m -> [32m0[m bytes
+ .../Screenshot_20250703_015956_Instagram.jpg        |   Bin [31m632060[m -> [32m0[m bytes
+ .../Screenshot_20250703_020022_Instagram.jpg        |   Bin [31m212867[m -> [32m0[m bytes
+ .../Screenshot_20250703_020031_Instagram.jpg        |   Bin [31m455489[m -> [32m0[m bytes
+ .../Screenshot_20250703_020105_Instagram.jpg        |   Bin [31m572480[m -> [32m0[m bytes
+ .../src/assets/products/afican hut.jpg              |   Bin [31m276135[m -> [32m0[m bytes
+ .../Admin-Dashbord/src/assets/products/baobab.jpg   |   Bin [31m352467[m -> [32m0[m bytes
+ .../src/assets/products/girrafe lampshade.jpg       |   Bin [31m254379[m -> [32m0[m bytes
+ .../src/assets/products/jani soap.jpg               |   Bin [31m255432[m -> [32m0[m bytes
+ .../src/assets/products/kuba wall hanging.jpg       |   Bin [31m543875[m -> [32m0[m bytes
+ .../Admin-Dashbord/src/assets/products/nativity.jpg |   Bin [31m124871[m -> [32m0[m bytes
+ .../src/assets/products/placematts.jpg              |   Bin [31m468772[m -> [32m0[m bytes
+ .../src/assets/products/set buskets.jpg             |   Bin [31m484927[m -> [32m0[m bytes
+ .../src/assets/profile/default-sender.jpg           |   Bin [31m1925[m -> [32m0[m bytes
+ .../src/assets/securePayments/discover.png          |   Bin [31m2828[m -> [32m0[m bytes
+ .../src/assets/securePayments/master-card.png       |   Bin [31m5059[m -> [32m0[m bytes
+ .../src/assets/securePayments/mpesa.png             |   Bin [31m3016[m -> [32m0[m bytes
+ .../src/assets/securePayments/paypal.png            |   Bin [31m47579[m -> [32m0[m bytes
+ .../src/assets/securePayments/paypal.webp           |   Bin [31m18586[m -> [32m0[m bytes
+ .../src/assets/securePayments/visa.png              |   Bin [31m15439[m -> [32m0[m bytes
+ .../src/cmponents/Admin/AccountMain/Accountmain.jsx |    35 [31m-[m
+ .../cmponents/Admin/AdminAccounts/AdminCards.jsx    |   216 [31m-[m
+ .../Admin/AdminAccounts/Reports/AddPaymentModal.jsx |    89 [31m-[m
+ .../AdminAccounts/Reports/LineGrahReactChart.jsx    |   119 [31m-[m
+ .../Admin/AdminAccounts/Reports/PaymentHistory.jsx  |   135 [31m-[m
+ .../Admin/AdminAccounts/Reports/ReportsLedger.jsx   |    75 [31m-[m
+ .../Admin/AdminAccounts/Reports/SalesStatsPage.jsx  |   180 [31m-[m
+ .../cmponents/Admin/ApproveBanner/aprroveBanner.jsx |   154 [31m-[m
+ .../cmponents/Admin/ApproveBlogs/ApproveBlogs.jsx   |    99 [31m-[m
+ .../src/cmponents/Admin/ApproveItemPrice.jsx        |   408 [31m-[m
+ .../Admin/CustomerRequests/CustomerRequests.jsx     |    66 [31m-[m
+ .../src/cmponents/Admin/Returns/ApproveReturns.jsx  |   196 [31m-[m
+ .../src/cmponents/Admin/VendorRequestUi.jsx         |   152 [31m-[m
+ .../AdminApprovePriceChangeRequest.jsx              |   133 [31m-[m
+ .../AdminPages/Notifications/AdminComposeEmail.jsx  |   252 [31m-[m
+ .../AdminPages/Notifications/ApproveCreatedItem.jsx |    99 [31m-[m
+ .../AdminPages/Notifications/EmailListing.jsx       |   177 [31m-[m
+ .../Transactions/AdminTransactionGrowthTrack.jsx    |   145 [31m-[m
+ .../Notifications/VendorItemRequestDetail.jsx       |   162 [31m-[m
+ .../Admin-Dashbord/src/cmponents/Auth/AdminForm.css |     0
+ .../src/cmponents/Auth/AdminLogin/AdminLogin.jsx    |   224 [31m-[m
+ .../Auth/AdminLogin/Auth-Success-Check.jsx          |    71 [31m-[m
+ .../src/cmponents/Auth/AdminLogin/Logout.jsx        |    69 [31m-[m
+ .../cmponents/Auth/AdminLogin/RecorverPasword.jsx   |    88 [31m-[m
+ .../src/cmponents/Auth/AdminLogin/ResetLink.jsx     |   161 [31m-[m
+ .../src/cmponents/Auth/AuthContext/AuthPage.jsx     |    26 [31m-[m
+ .../src/cmponents/Auth/AuthContext/Context.jsx      |   120 [31m-[m
+ .../Auth/AuthContext/ProtectVendorAdmin.jsx         |    18 [31m-[m
+ .../cmponents/Auth/AuthContext/UserRefreshToken.jsx |    52 [31m-[m
+ .../src/cmponents/Auth/Routes/ProtectRoute.jsx      |    38 [31m-[m
+ .../Auth/Routes/RoutesLayout/AdminLayot.jsx         |    25 [31m-[m
+ .../Auth/Routes/RoutesLayout/CustomerLayout.jsx     |    20 [31m-[m
+ .../Auth/Routes/RoutesLayout/VendorLayout.jsx       |    25 [31m-[m
+ .../src/cmponents/Auth/Routes/Unauthorized.jsx      |    11 [31m-[m
+ .../Admin-Dashbord/src/cmponents/Auth/Tken.jsx      |     3 [31m-[m
+ .../src/cmponents/BarChart/BarChart.jsx             |    87 [31m-[m
+ .../src/cmponents/Calendar/Calendar.jsx             |   254 [31m-[m
+ .../src/cmponents/Calendar/CalendarHook.jsx         |    61 [31m-[m
+ .../src/cmponents/Constant/Constant.jsx             |     3 [31m-[m
+ .../src/cmponents/DataTable/DataTable.css           |     0
+ .../src/cmponents/DataTable/DataTable.jsx           |   127 [31m-[m
+ .../Admin-Dashbord/src/cmponents/FAQ/FAQ.jsx        |   187 [31m-[m
+ .../cmponents/Hooks/AccessCRF/CustomerAccess.jsx    |    26 [31m-[m
+ .../src/cmponents/Hooks/AccessCRF/UseCSRFToken.jsx  |    16 [31m-[m
+ .../Hooks/AccountSummary/AccountSummaryHook.jsx     |    46 [31m-[m
+ .../cmponents/Hooks/ActivityHook/ActivityHook.jsx   |   181 [31m-[m
+ .../Hooks/ActivityHook/ItemActivityHook.jsx         |    81 [31m-[m
+ .../src/cmponents/Hooks/BannerHook/BannerHook.jsx   |    29 [31m-[m
+ .../src/cmponents/Hooks/BlogHooksNew/BlogAdvert.jsx |    71 [31m-[m
+ .../src/cmponents/Hooks/BlogHooksNew/NewBlogs.jsx   |    41 [31m-[m
+ .../cmponents/Hooks/BlogHooksNew/PopularBlog.jsx    |    27 [31m-[m
+ .../Hooks/BlogHooksNew/PouplarBlogsFetch.jsx        |    47 [31m-[m
+ .../src/cmponents/Hooks/Brand/BrandHook.jsx         |    31 [31m-[m
+ .../src/cmponents/Hooks/Customer/CustomerHook.jsx   |    70 [31m-[m
+ .../Hooks/Customer/CustomerHookFetchForVendor.jsx   |    34 [31m-[m
+ .../cmponents/Hooks/Emails/DashboardEmailHook.jsx   |    26 [31m-[m
+ .../src/cmponents/Hooks/Emails/EmailSending.jsx     |    21 [31m-[m
+ .../src/cmponents/Hooks/ItemStats/ItemStatsHook.jsx |    99 [31m-[m
+ .../src/cmponents/Hooks/ItemStats/ItemstatsPage.jsx |   129 [31m-[m
+ .../cmponents/Hooks/ItemStats/PendingOrderPage.jsx  |   107 [31m-[m
+ .../cmponents/Hooks/ItemStats/PendingOrderStat.jsx  |    91 [31m-[m
+ .../cmponents/Hooks/ItemStats/VendoItemStatPage.jsx |   109 [31m-[m
+ .../cmponents/Hooks/ItemStats/VendorItemStats.jsx   |    69 [31m-[m
+ .../src/cmponents/Hooks/Order/CombinedOrderHook.jsx |    78 [31m-[m
+ .../src/cmponents/Hooks/Order/OrderComplete.jsx     |    33 [31m-[m
+ .../src/cmponents/Hooks/Order/OrderPage.jsx         |   147 [31m-[m
+ .../src/cmponents/Hooks/Order/OrderPending.jsx      |    33 [31m-[m
+ .../src/cmponents/Hooks/Payouts/AdminPayoutHook.jsx |    37 [31m-[m
+ .../cmponents/Hooks/Payouts/GeneratePayoutHook.jsx  |    36 [31m-[m
+ .../src/cmponents/Hooks/Payouts/Payouts.jsx         |    43 [31m-[m
+ .../src/cmponents/Hooks/ProfiHook/ProfileHook.jsx   |    40 [31m-[m
+ .../src/cmponents/Hooks/ReturnHook/ReturnHook.jsx   |    45 [31m-[m
+ .../src/cmponents/Hooks/Sales/SalesReportHook.jsx   |    42 [31m-[m
+ .../cmponents/Hooks/SearchHook/GlobalSearchHook.jsx |    77 [31m-[m
+ .../src/cmponents/Hooks/SearchHook/UseDebounce.js   |    15 [31m-[m
+ .../cmponents/Hooks/StockInventory/SalesStats.jsx   |    52 [31m-[m
+ .../Hooks/StockInventory/StockInventoryHook.jsx     |    91 [31m-[m
+ .../src/cmponents/Hooks/Toast/Usetoast.js           |     7 [31m-[m
+ .../Hooks/TransactionHook/TransactionGrowth.jsx     |    43 [31m-[m
+ .../Hooks/TransactionHook/TransactionHook.jsx       |    28 [31m-[m
+ .../Hooks/TransactionHook/TransactionTotals.jsx     |    39 [31m-[m
+ .../Hooks/UserVisitorLogs/VisitorUserLogs.jsx       |    31 [31m-[m
+ .../VendorNotificationsHook.jsx                     |    93 [31m-[m
+ .../src/cmponents/Hooks/Vendor_hook/VendorHook.jsx  |    64 [31m-[m
+ .../src/cmponents/Hooks/WishListHook/Wishlist.jsx   |    95 [31m-[m
+ .../src/cmponents/LineGraph/LineGraph.jsx           |   172 [31m-[m
+ .../src/cmponents/LineGraph/summery.jsx             |    58 [31m-[m
+ .../Admin-Dashbord/src/cmponents/Onsite/Onsite.jsx  |    88 [31m-[m
+ .../src/cmponents/PieChart/pieChart.jsx             |    65 [31m-[m
+ .../src/cmponents/Portions/HederTop/HeaderTop.jsx   |   714 [31m--[m
+ .../src/cmponents/Portions/NavBar/NavBarSide.jsx    |   282 [31m-[m
+ .../src/cmponents/ProgressCircle/ProgressCircle.jsx |    50 [31m-[m
+ .../src/cmponents/RichTextEditor/RichTextEdit.jsx   |   245 [31m-[m
+ .../src/cmponents/Scroll/SceollToTheTop.jsx         |    15 [31m-[m
+ .../src/cmponents/SearchPage/GlobalSearchPage.jsx   |   293 [31m-[m
+ .../src/cmponents/SearchPage/SearchResultsPage.jsx  |    36 [31m-[m
+ .../src/cmponents/SinglePage/SinglePage.css         |    31 [31m-[m
+ .../src/cmponents/SinglePage/SinglePage.jsx         |   366 [31m-[m
+ .../src/cmponents/StatBox/Statbox.jsx               |    48 [31m-[m
+ .../src/cmponents/VENDORPAGE/Banners/Banners.jsx    |   245 [31m-[m
+ .../src/cmponents/VENDORPAGE/Blogs/BlogCard.jsx     |   126 [31m-[m
+ .../src/cmponents/VENDORPAGE/Blogs/BlogCreate.jsx   |   389 [31m-[m
+ .../src/cmponents/VENDORPAGE/Blogs/BlogFeed.jsx     |    58 [31m-[m
+ .../src/cmponents/VENDORPAGE/Blogs/Comment.jsx      |    45 [31m-[m
+ .../src/cmponents/VENDORPAGE/Blogs/EditBlog.jsx     |   172 [31m-[m
+ .../src/cmponents/VENDORPAGE/Blogs/Reaction.jsx     |    64 [31m-[m
+ .../VENDORPAGE/Blogs/SinglePageBlogPost.jsx         |   173 [31m-[m
+ .../src/cmponents/VENDORPAGE/ChartBox/Bar/Bar.jsx   |    43 [31m-[m
+ .../ChartBox/Bar/RecentActivities/Activities.jsx    |   130 [31m-[m
+ .../src/cmponents/VENDORPAGE/ChartBox/CharBox.css   |   157 [31m-[m
+ .../src/cmponents/VENDORPAGE/ChartBox/CharBox.jsx   |    46 [31m-[m
+ .../VENDORPAGE/ChartBox/ChartData/ChartData.jsx     |    38 [31m-[m
+ .../ChartData/HomeChartData/SalesReport.jsx         |    78 [31m-[m
+ .../ChartData/HomeChartData/VendorSalesPage.jsx     |   100 [31m-[m
+ .../src/cmponents/VENDORPAGE/ChartBox/PieChart2.jsx |    97 [31m-[m
+ .../cmponents/VENDORPAGE/ChartBox/PieChart_2.jsx    |    15 [31m-[m
+ .../src/cmponents/VENDORPAGE/ChartBox/Pie_Chart.jsx |     2 [31m-[m
+ .../ChartBox/VendorBarGraph/VendorBarG.jsx          |   120 [31m-[m
+ .../src/cmponents/VENDORPAGE/Customers/Customer.css |     0
+ .../src/cmponents/VENDORPAGE/Customers/Customer.jsx |     7 [31m-[m
+ .../VENDORPAGE/Home/Orders/SalesRegister.jsx        |   206 [31m-[m
+ .../VENDORPAGE/Home/Orders/VendorCompleteOrders.jsx |   207 [31m-[m
+ .../VENDORPAGE/Home/Orders/VendorPendingOrders.jsx  |   215 [31m-[m
+ .../VENDORPAGE/Home/TopBox/CustomerPage.jsx         |   169 [31m-[m
+ .../src/cmponents/VENDORPAGE/Home/TopBox/TopBox.css |    56 [31m-[m
+ .../src/cmponents/VENDORPAGE/Home/TopBox/TopBox.jsx |    97 [31m-[m
+ .../VENDORPAGE/Home/TopBox/VendorReviewPage.jsx     |   197 [31m-[m
+ .../src/cmponents/VENDORPAGE/Home/Transction.jsx    |    90 [31m-[m
+ .../VENDORPAGE/Home/VendorDashboardNav.jsx          |   290 [31m-[m
+ .../src/cmponents/VENDORPAGE/Home/VendorNav.css     |     0
+ .../cmponents/VENDORPAGE/ItemStats/ItemStats.jsx    |    32 [31m-[m
+ .../VENDORPAGE/Products/FormSheet/ItemFormSheet.jsx |    45 [31m-[m
+ .../VENDORPAGE/Products/Forms/AddingNewItem.jsx     |  2103 [31m----[m
+ .../VENDORPAGE/Products/Forms/AdminCreateItem.jsx   |  2190 [31m----[m
+ .../Products/Forms/CreateIteSchemaHook.jsx          |   232 [31m-[m
+ .../CreateItem/AdminCreateItemForExistingVendor.jsx |  2176 [31m----[m
+ .../Forms/CreateItem/CreatItemFormRequst.jsx        |  2005 [31m----[m
+ .../Products/Forms/CreateItem/CreateItem.jsx        |   344 [31m-[m
+ .../Products/Forms/DrawerCreateNewItem/Drawer.jsx   |    59 [31m-[m
+ .../VENDORPAGE/Products/Forms/EditItem/EditItem.jsx |   464 [31m-[m
+ .../VENDORPAGE/Products/Forms/EditItemForm.jsx      |  2107 [31m----[m
+ .../VENDORPAGE/Products/Forms/ItemForms.jsx         |   147 [31m-[m
+ .../VENDORPAGE/Products/Forms/ItemUpdateForm.jsx    |  2030 [31m----[m
+ .../VendorItemRequest/VendorCreateItemForm.jsx      |   108 [31m-[m
+ .../Forms/VendorItemRequest/VendorItemRequest.jsx   |   332 [31m-[m
+ .../VENDORPAGE/Products/Forms/itemattribute.js      |    55 [31m-[m
+ .../VENDORPAGE/Products/Inventory/StockModal.jsx    |   119 [31m-[m
+ .../VENDORPAGE/Products/Inventory/StockSummary.jsx  |   135 [31m-[m
+ .../Products/Inventory/StockSummaryBox.css          |    68 [31m-[m
+ .../src/cmponents/VENDORPAGE/Products/Products.css  |     0
+ .../src/cmponents/VENDORPAGE/Products/Products.jsx  |     7 [31m-[m
+ .../VendorItems/AdminApproveDenyItemCreate.jsx      |   293 [31m-[m
+ .../VENDORPAGE/Products/VendorItems/ItemList.jsx    |   406 [31m-[m
+ .../VENDORPAGE/Products/VendorItems/ItemOnSite.jsx  |   194 [31m-[m
+ .../cmponents/VENDORPAGE/Products/vendorhooks.jsx   |    24 [31m-[m
+ .../cmponents/VENDORPAGE/SellerDasboard/Seller.jsx  |   106 [31m-[m
+ .../cmponents/VENDORPAGE/SellerDasboard/Seller.scss |    65 [31m-[m
+ .../notifications/Notifications_vendor.jsx          |    87 [31m-[m
+ .../VendorRegistration/HandleApproveDeny.jsx        |   461 [31m-[m
+ .../VendorRegistration/Terms&Conditions.jsx         |   150 [31m-[m
+ .../VENDORPAGE/VendorRegistration/VendorOTP.jsx     |   186 [31m-[m
+ .../VendorRegistration/VendorRegistrationForm.jsx   |  1248 [31m---[m
+ .../VendorRegistration/VendorSuccessPage.jsx        |   132 [31m-[m
+ .../VENDORPAGE/VendorSections/EditProfile.jsx       |   168 [31m-[m
+ .../VENDORPAGE/VendorSections/ItemSinglePage.jsx    |   304 [31m-[m
+ .../NotificationPages/BlogsSinglePage.jsx           |   295 [31m-[m
+ .../VendorSections/NotificationPages/OrderNotif.jsx |   101 [31m-[m
+ .../NotificationPages/SingleBannerPage.jsx          |   395 [31m-[m
+ .../NotificationPages/SingleItemProfileNotif.jsx    |   212 [31m-[m
+ .../VENDORPAGE/VendorSections/VendorProfile.css     |    31 [31m-[m
+ .../VENDORPAGE/VendorSections/VendorProfile.jsx     |   619 [31m--[m
+ .../src/cmponents/VendorPayoutReport/payout.jsx     |   251 [31m-[m
+ .../vendorPayouts/BankTransfer.jsx                  |   227 [31m-[m
+ .../vendorPayouts/Business2Customer.jsx             |   181 [31m-[m
+ .../vendorPayouts/Payments/PayManyVendors.jsx       |   281 [31m-[m
+ .../vendorPayouts/Payments/PayoutSuccess.jsx        |   127 [31m-[m
+ .../vendorPayouts/Payments/PaypalPayVendor.jsx      |   300 [31m-[m
+ .../vendorPayouts/Payments/SuccessPagePayout.jsx    |   130 [31m-[m
+ .../vendorPayouts/Payments/mpesa.jsx                |   179 [31m-[m
+ .../vendorPayouts/vendorPayouts.jsx                 |   198 [31m-[m
+ .../Admin-Dashbord/src/cmponents/Vendors/Vendor.css |    43 [31m-[m
+ .../src/cmponents/Vendors/Vendors.jsx               |   294 [31m-[m
+ .../Admin-Dashbord/src/data/ItemData/ItemData.jsx   |    62 [31m-[m
+ .../src/data/Vendors_info/Vendors_info.jsx          |   174 [31m-[m
+ .../_archive/Admin-Dashbord/src/globalHtml.jsx      |    15 [31m-[m
+ .../_archive/Admin-Dashbord/src/index.css           |  1735 [31m----[m
+ .../_archive/Admin-Dashbord/src/index.jsx           |    29 [31m-[m
+ .../_archive/Admin-Dashbord/src/interaction.jsx     |   158 [31m-[m
+ .../_archive/Admin-Dashbord/src/lib/utils.js        |     9 [31m-[m
+ .../_archive/Admin-Dashbord/src/main.css            |    68 [31m-[m
+ .../_archive/Admin-Dashbord/src/theme.jsx           |   367 [31m-[m
+ .../_archive/Admin-Dashbord/tailwind.config.js      |    79 [31m-[m
+ .../_archive/ReactSerializers/ItemInventory.py      |    77 [31m-[m
+ .../_archive/ReactSerializers/SantizeForm/view.py   |     0
+ .../_archive/ReactSerializers/Serializers.py        |  1109 [31m--[m
+ .../_archive/ReactSerializers/adapters.py           |    16 [31m-[m
+ .../_archive/ReactSerializers/admin.py              |    21 [31m-[m
+ .../_archive/ReactSerializers/apps.py               |     6 [31m-[m
+ .../_archive/ReactSerializers/authentication.py     |    10 [31m-[m
+ .../_archive/ReactSerializers/category.py           |    49 [31m-[m
+ .../_archive/ReactSerializers/items.py              |   108 [31m-[m
+ .../ReactSerializers/management/command/__init__.py |     0
+ .../management/command/import_categories.py         |   112 [31m-[m
+ .../ReactSerializers/migrations/0001_initial.py     |   197 [31m-[m
+ .../ReactSerializers/migrations/0002_initial.py     |   143 [31m-[m
+ .../migrations/0003_item_percentage_discount.py     |    20 [31m-[m
+ .../0004_alter_item_percentage_discount.py          |    19 [31m-[m
+ .../migrations/0005_item_gender_type.py             |    18 [31m-[m
+ .../migrations/0006_remove_item_gender_type.py      |    17 [31m-[m
+ .../migrations/0007_itempricehistory.py             |    28 [31m-[m
+ .../migrations/0008_alter_category_name.py          |    18 [31m-[m
+ .../ReactSerializers/migrations/__init__.py         |     0
+ .../_archive/ReactSerializers/models.py             |   589 [31m--[m
+ .../_archive/ReactSerializers/notifications.py      |    50 [31m-[m
+ .../_archive/ReactSerializers/routing.py            |     6 [31m-[m
+ .../_archive/ReactSerializers/signals.py            |    20 [31m-[m
+ .../_archive/ReactSerializers/soketio.py            |   119 [31m-[m
+ .../_archive/ReactSerializers/url.py                |   111 [31m-[m
+ .../_archive/ReactSerializers/users.py              |   539 [31m-[m
+ .../_archive/ReactSerializers/vendors.py            |   878 [31m--[m
+ .../_archive/ReactSerializers/views.py              |   787 [31m--[m
+ .../_archive/client-app/.gitignore                  |    24 [31m-[m
+ .../_archive/client-app/README.md                   |    12 [31m-[m
+ .../_archive/client-app/chat.html                   |    15 [31m-[m
+ .../_archive/client-app/eslint.config.js            |    33 [31m-[m
+ .../_archive/client-app/models/users.js             |    74 [31m-[m
+ .../_archive/client-app/package-lock.json           |  4158 [31m--------[m
+ .../_archive/client-app/package.json                |    39 [31m-[m
+ .../patches/@jridgewell+sourcemap-codec+1.5.0.patch |    28 [31m-[m
+ .../_archive/client-app/public/vite.svg             |     1 [31m-[m
+ .../_archive/client-app/router.js                   |     9 [31m-[m
+ .../_archive/client-app/server.js                   |   204 [31m-[m
+ .../_archive/client-app/src/AppChat.jsx             |    32 [31m-[m
+ .../_archive/client-app/src/buffer.jsx              |    19 [31m-[m
+ .../src/componentChat/InfoBar/InfoBar.css           |    29 [31m-[m
+ .../src/componentChat/InfoBar/InfoBar.jsx           |    21 [31m-[m
+ .../client-app/src/componentChat/Input/InpuChat.jsx |    26 [31m-[m
+ .../client-app/src/componentChat/Input/Input.css    |    33 [31m-[m
+ .../src/componentChat/Message/Message.css           |   148 [31m-[m
+ .../src/componentChat/Message/Message.jsx           |    72 [31m-[m
+ .../src/componentChat/Messages/Messages.css         |   117 [31m-[m
+ .../src/componentChat/Messages/Messages.jsx         |    98 [31m-[m
+ .../src/componentChat/RoomUsers/RoomUsers.css       |    69 [31m-[m
+ .../src/componentChat/RoomUsers/RoomUsers.jsx       |    56 [31m-[m
+ .../componentChat/TextContainer/TextContainer.css   |    33 [31m-[m
+ .../componentChat/TextContainer/TextContainer.jsx   |    36 [31m-[m
+ .../client-app/src/componentChat/chat/Chat.css      |   136 [31m-[m
+ .../client-app/src/componentChat/chat/Chat.jsx      |   323 [31m-[m
+ .../client-app/src/componentChat/join/Join.jsx      |   117 [31m-[m
+ .../client-app/src/componentChat/join/join.css      |    71 [31m-[m
+ .../_archive/client-app/src/icons/closeIcon.png     |   Bin [31m182[m -> [32m0[m bytes
+ .../_archive/client-app/src/icons/onlineIcon.png    |   Bin [31m146[m -> [32m0[m bytes
+ .../src/profile_pictures/default-sender.jpg         |   Bin [31m1925[m -> [32m0[m bytes
+ .../src/profile_pictures/default-vendor.jpg         |   Bin [31m1925[m -> [32m0[m bytes
+ .../_archive/client-app/vite.config.js              |    27 [31m-[m
+ maamara_market_project/_archive/client/.gitignore   |    24 [31m-[m
+ maamara_market_project/_archive/client/README.md    |    12 [31m-[m
+ .../_archive/client/eslint.config.js                |    33 [31m-[m
+ maamara_market_project/_archive/client/index.html   |    15 [31m-[m
+ .../_archive/client/models/users.js                 |    74 [31m-[m
+ maamara_market_project/_archive/client/package.json |    44 [31m-[m
+ .../_archive/client/public/vite.svg                 |     1 [31m-[m
+ maamara_market_project/_archive/client/router.js    |     9 [31m-[m
+ maamara_market_project/_archive/client/server.js    |   168 [31m-[m
+ maamara_market_project/_archive/client/src/App.jsx  |    38 [31m-[m
+ .../_archive/client/src/ErrorBoundary.jsx           |    26 [31m-[m
+ .../client/src/component/InfoBar/InfoBar.css        |    29 [31m-[m
+ .../client/src/component/InfoBar/InfoBar.jsx        |    21 [31m-[m
+ .../_archive/client/src/component/Input/Input.css   |    33 [31m-[m
+ .../_archive/client/src/component/Input/Input.jsx   |    26 [31m-[m
+ .../client/src/component/Message/Message.css        |   135 [31m-[m
+ .../client/src/component/Message/Message.jsx        |    77 [31m-[m
+ .../client/src/component/Messages/Messages.css      |    69 [31m-[m
+ .../client/src/component/Messages/Messages.jsx      |    69 [31m-[m
+ .../client/src/component/RoomUsers/RoomUsers.css    |    69 [31m-[m
+ .../client/src/component/RoomUsers/RoomUsers.jsx    |    53 [31m-[m
+ .../src/component/TextContainer/TextContainer.css   |    33 [31m-[m
+ .../src/component/TextContainer/TextContainer.jsx   |    36 [31m-[m
+ .../_archive/client/src/component/chat/Chat.css     |   136 [31m-[m
+ .../_archive/client/src/component/chat/Chat.jsx     |   201 [31m-[m
+ .../_archive/client/src/component/join/Join.jsx     |   115 [31m-[m
+ .../_archive/client/src/component/join/join.css     |    71 [31m-[m
+ .../_archive/client/src/icons/closeIcon.png         |   Bin [31m182[m -> [32m0[m bytes
+ .../_archive/client/src/icons/onlineIcon.png        |   Bin [31m146[m -> [32m0[m bytes
+ .../_archive/client/src/index.jsx                   |    18 [31m-[m
+ .../client/src/profile_pictures/default-sender.jpg  |   Bin [31m1925[m -> [32m0[m bytes
+ .../client/src/profile_pictures/default-vendor.jpg  |   Bin [31m1925[m -> [32m0[m bytes
+ .../_archive/client/vite.config.js                  |    20 [31m-[m
+ .../_archive/core/CategorySerializers.py            |    40 [31m-[m
+ maamara_market_project/_archive/core/Open_Ai.py     |   149 [31m-[m
+ .../_archive/core/PasswordRecovery.py               |    66 [31m-[m
+ maamara_market_project/_archive/core/Referal.py     |   237 [31m-[m
+ .../_archive/core/SearchEngine.py                   |    21 [31m-[m
+ maamara_market_project/_archive/core/Serializer.py  |   317 [31m-[m
+ .../_archive/core/UserVisitorSerializers.py         |   247 [31m-[m
+ maamara_market_project/_archive/core/__init__.py    |     0
+ .../_archive/core/activity_logger.py                |    28 [31m-[m
+ maamara_market_project/_archive/core/admin.py       |    50 [31m-[m
+ maamara_market_project/_archive/core/apps.py        |    11 [31m-[m
+ .../_archive/core/mergeVisitortoUserData.py         |    64 [31m-[m
+ .../_archive/core/migrations/0001_initial.py        |   135 [31m-[m
+ ...address_profile_city_profile_country_and_more.py |    33 [31m-[m
+ .../_archive/core/migrations/0003_voucher_active.py |    18 [31m-[m
+ .../migrations/0004_alter_activitylog_action.py     |    18 [31m-[m
+ ...tification_visitor_id_alter_notification_user.py |    26 [31m-[m
+ ...ofile_visitor_id_referral_visitor_id_and_more.py |    38 [31m-[m
+ .../_archive/core/migrations/0007_calendarevent.py  |    32 [31m-[m
+ .../_archive/core/migrations/0008_emaillog.py       |    25 [31m-[m
+ .../migrations/0009_alter_voucher_expiry_date.py    |    19 [31m-[m
+ .../migrations/0010_alter_voucher_expiry_date.py    |    19 [31m-[m
+ .../migrations/0011_alter_voucher_expiry_date.py    |    19 [31m-[m
+ ...otification_url_alter_notification_visitor_id.py |    23 [31m-[m
+ .../migrations/0013_alter_voucher_expiry_date.py    |    19 [31m-[m
+ ...move_wallet_balance_alter_voucher_expiry_date.py |    23 [31m-[m
+ .../migrations/0014_alter_voucher_expiry_date.py    |    19 [31m-[m
+ .../migrations/0015_alter_voucher_expiry_date.py    |    19 [31m-[m
+ .../0016_supportmessage_status_and_more.py          |    29 [31m-[m
+ .../migrations/0017_alter_supportmessage_user.py    |    21 [31m-[m
+ ...0018_alter_supportmessage_message_id_and_more.py |    26 [31m-[m
+ .../0019_alter_voucher_expiry_date_faq.py           |    41 [31m-[m
+ .../_archive/core/migrations/__init__.py            |     0
+ maamara_market_project/_archive/core/models.py      |   311 [31m-[m
+ .../_archive/core/notifications/ws.py               |    13 [31m-[m
+ maamara_market_project/_archive/core/signals.py     |    81 [31m-[m
+ maamara_market_project/_archive/core/tests.py       |     3 [31m-[m
+ maamara_market_project/_archive/core/urls.py        |    98 [31m-[m
+ maamara_market_project/_archive/core/views.py       |   820 [31m--[m
+ maamara_market_project/_archive/index.js            |    13 [31m-[m
+ maamara_market_project/_archive/oder/Base.py        |    34 [31m-[m
+ .../oder/Mpesa/C2BMpesaIntergration/c2butils.py     |   407 [31m-[m
+ .../_archive/oder/Mpesa/mpesaUtils.py               |    64 [31m-[m
+ .../_archive/oder/Mpesa/mpesaView.py                |    42 [31m-[m
+ maamara_market_project/_archive/oder/Payment.py     |   116 [31m-[m
+ maamara_market_project/_archive/oder/Serializers.py |   308 [31m-[m
+ maamara_market_project/_archive/oder/__init__.py    |     0
+ maamara_market_project/_archive/oder/admin.py       |    40 [31m-[m
+ maamara_market_project/_archive/oder/apps.py        |    16 [31m-[m
+ .../_archive/oder/capture_order.py                  |   258 [31m-[m
+ .../_archive/oder/cart_template_tags/--init.py__    |     0
+ maamara_market_project/_archive/oder/chanels.py     |    24 [31m-[m
+ maamara_market_project/_archive/oder/comand.py      |    13 [31m-[m
+ maamara_market_project/_archive/oder/consumers.py   |   428 [31m-[m
+ .../_archive/oder/dashboardSummery.py               |   124 [31m-[m
+ maamara_market_project/_archive/oder/easypost.py    |   110 [31m-[m
+ .../management/commands/migrate_orderitems_fk.py    |    17 [31m-[m
+ .../oder/management/commands/populate_categories.py |   224 [31m-[m
+ .../_archive/oder/migrations/0001_initial.py        |   116 [31m-[m
+ .../oder/migrations/0002_transaction_order.py       |    19 [31m-[m
+ ...ion_card_brand_transaction_card_type_and_more.py |    53 [31m-[m
+ .../migrations/0004_transaction_payment_method.py   |    18 [31m-[m
+ ..._remove_payment_method_payment_payment_method.py |    22 [31m-[m
+ ...card_alter_transaction_order_transaction_card.py |    35 [31m-[m
+ .../oder/migrations/0007_transaction_payment.py     |    19 [31m-[m
+ .../oder/migrations/0008_order_paypal_order_id.py   |    18 [31m-[m
+ .../oder/migrations/0009_transaction_vendor.py      |    20 [31m-[m
+ .../0010_remove_order_items_oderitem_order.py       |    23 [31m-[m
+ .../0011_alter_transaction_transaction_type.py      |    18 [31m-[m
+ .../oder/migrations/0012_transaction_payout.py      |    20 [31m-[m
+ .../oder/migrations/0013_order_paypal_invoice_id.py |    18 [31m-[m
+ ...er_transaction_paypal_transaction_id_and_more.py |    23 [31m-[m
+ .../oder/migrations/0015_customer_vendor.py         |    22 [31m-[m
+ .../oder/migrations/0016_alter_customer_vendor.py   |    21 [31m-[m
+ .../oder/migrations/0017_transaction_category.py    |    18 [31m-[m
+ .../0018_card_visitor_id_transaction_visitor_id.py  |    23 [31m-[m
+ ...m_age_variant_oderitem_color_variant_and_more.py |    41 [31m-[m
+ .../oder/migrations/0020_oderitem_shoe_size.py      |    18 [31m-[m
+ .../migrations/0021_oderitem_selected_weight.py     |    18 [31m-[m
+ .../_archive/oder/migrations/__init__.py            |     0
+ maamara_market_project/_archive/oder/models.py      |   603 [31m--[m
+ maamara_market_project/_archive/oder/orderStat.py   |   271 [31m-[m
+ .../_archive/oder/paymentserializer.py              |    70 [31m-[m
+ maamara_market_project/_archive/oder/paypalApis.py  |   965 [31m--[m
+ maamara_market_project/_archive/oder/returns.py     |   622 [31m--[m
+ maamara_market_project/_archive/oder/routing.py     |    10 [31m-[m
+ maamara_market_project/_archive/oder/shipping.py    |    62 [31m-[m
+ maamara_market_project/_archive/oder/task.py        |    18 [31m-[m
+ maamara_market_project/_archive/oder/tests_skt.py   |    30 [31m-[m
+ maamara_market_project/_archive/oder/url.py         |    93 [31m-[m
+ maamara_market_project/_archive/oder/views.py       |  1003 [31m--[m
+ maamara_market_project/_archive/package-lock.json   |  1577 [31m---[m
+ maamara_market_project/_archive/package.json        |    22 [31m-[m
+ .../_archive/perm/SandboxCertificate.cer            |    37 [31m-[m
+ .../_archive/project01/__init__.py                  |     0
+ maamara_market_project/_archive/project01/asgi.py   |    20 [31m-[m
+ .../_archive/project01/middleware/jwt_auth.py       |    68 [31m-[m
+ .../_archive/project01/settings.py                  |   374 [31m-[m
+ maamara_market_project/_archive/project01/urls.py   |    46 [31m-[m
+ maamara_market_project/_archive/project01/wsgi.py   |    21 [31m-[m
+ maamara_market_project/_archive/shop/Serializers.py |   331 [31m-[m
+ maamara_market_project/_archive/shop/__init__.py    |     0
+ maamara_market_project/_archive/shop/admin.py       |    32 [31m-[m
+ maamara_market_project/_archive/shop/celery.py      |    26 [31m-[m
+ .../_archive/shop/migrations/0001_initial.py        |    48 [31m-[m
+ .../_archive/shop/migrations/0002_banner.py         |    39 [31m-[m
+ .../shop/migrations/0003_banner_image_hash.py       |    18 [31m-[m
+ ...04_alter_banner_image_alter_banner_image_hash.py |    23 [31m-[m
+ .../_archive/shop/migrations/0005_chatfile.py       |    21 [31m-[m
+ ...alter_reaction_options_reaction_type_and_more.py |    79 [31m-[m
+ ...t_commentblog_alter_reaction_options_and_more.py |    66 [31m-[m
+ ...lter_commentblog_post_alter_reactionblog_post.py |    24 [31m-[m
+ .../shop/migrations/0009_blogpost_approved.py       |    18 [31m-[m
+ ...g_visitor_id_reactionblog_visitor_id_and_more.py |    36 [31m-[m
+ .../_archive/shop/migrations/0011_wishlist.py       |    31 [31m-[m
+ .../0012_alter_reaction_user_alter_review_user.py   |    26 [31m-[m
+ .../_archive/shop/migrations/0013_vendorrating.py   |    33 [31m-[m
+ ...4_alter_vendorrating_unique_together_and_more.py |    55 [31m-[m
+ .../0015_banner_approved_at_banner_is_approved.py   |    23 [31m-[m
+ ...r_call_to_action_url_banner_cta_item_and_more.py |    34 [31m-[m
+ .../_archive/shop/migrations/__init__.py            |     0
+ maamara_market_project/_archive/shop/models.py      |   365 [31m-[m
+ maamara_market_project/_archive/shop/tasks.py       |    12 [31m-[m
+ maamara_market_project/_archive/shop/tests.py       |     3 [31m-[m
+ maamara_market_project/_archive/shop/urls.py        |   127 [31m-[m
+ maamara_market_project/_archive/shop/views.py       |  1320 [31m---[m
+ .../_archive/templates/emails/compose_email.html    |   206 [31m-[m
+ .../_archive/templates/emails/item_purchased.html   |   179 [31m-[m
+ .../templates/emails/item_request_approved.html     |   138 [31m-[m
+ .../templates/emails/item_request_denied.html       |   135 [31m-[m
+ .../templates/emails/price_change_request.html      |   137 [31m-[m
+ .../_archive/templates/emails/registration_otp.html |    32 [31m-[m
+ .../templates/emails/registration_verification.html |    30 [31m-[m
+ .../_archive/templates/emails/resend_otp.html       |    32 [31m-[m
+ .../_archive/templates/emails/reset_password.html   |   143 [31m-[m
+ .../_archive/templates/emails/vendor_approval.html  |    84 [31m-[m
+ .../_archive/templates/emails/vendor_denial.html    |   102 [31m-[m
+ .../templates/emails/vendor_item_request.html       |   130 [31m-[m
+ .../emails/vendor_price_change_approved.html        |   154 [31m-[m
+ .../emails/vendor_price_change_request.html         |   134 [31m-[m
+ .../_archive/vendorDashboard/GlobalSearchEngine.py  |    63 [31m-[m
+ .../_archive/vendorDashboard/VendorRequests.py      |   906 [31m--[m
+ .../_archive/vendorDashboard/__init__.py            |     0
+ .../_archive/vendorDashboard/admin.py               |    17 [31m-[m
+ .../_archive/vendorDashboard/apps.py                |     7 [31m-[m
+ .../_archive/vendorDashboard/calback.py             |   453 [31m-[m
+ .../_archive/vendorDashboard/check_b2c_number.py    |   117 [31m-[m
+ .../_archive/vendorDashboard/consumers.py           |    26 [31m-[m
+ .../vendorDashboard/migrations/0001_initial.py      |   158 [31m-[m
+ .../migrations/0002_vendorrequest_brand_object.py   |    18 [31m-[m
+ .../migrations/0003_remove_vendor_password.py       |    17 [31m-[m
+ .../0004_returnrequest_custom_reason_and_more.py    |    23 [31m-[m
+ .../migrations/0005_returnrequest_description.py    |    18 [31m-[m
+ .../migrations/0006_returnrequest_visitor_id.py     |    18 [31m-[m
+ .../migrations/0007_alter_returnrequest_customer.py |    21 [31m-[m
+ ...request_admin_action_returnrequest_admin_note.py |    23 [31m-[m
+ ...equest_approved_by_admin_returnrequest_status.py |    23 [31m-[m
+ .../migrations/0010_vendoradjustment_is_approved.py |    18 [31m-[m
+ .../0011_vendorpayout_income_vendorpayout_profit.py |    23 [31m-[m
+ ...bank_account_name_vendor_bank_branch_and_more.py |    77 [31m-[m
+ ...3_vendorpayout_mpesa_conversation_id_and_more.py |    38 [31m-[m
+ .../0014_vendorpayout_paypal_amount_and_more.py     |    38 [31m-[m
+ .../migrations/0015_vendorpayout_paypal_batch_id.py |    18 [31m-[m
+ .../_archive/vendorDashboard/migrations/__init__.py |     0
+ .../_archive/vendorDashboard/models.py              |   689 [31m--[m
+ .../payout/services/generatePermcert.py             |    39 [31m-[m
+ .../payout/services/payment_processors.py           |   839 [31m--[m
+ .../payout/services/vendor_monthly_payout_runner.py |   166 [31m-[m
+ .../_archive/vendorDashboard/registermodels.py      |    83 [31m-[m
+ .../_archive/vendorDashboard/serializers.py         |    84 [31m-[m
+ .../_archive/vendorDashboard/test_credentials.py    |    26 [31m-[m
+ .../_archive/vendorDashboard/tests.py               |     3 [31m-[m
+ .../_archive/vendorDashboard/urls.py                |    88 [31m-[m
+ .../_archive/vendorDashboard/views.py               |   303 [31m-[m
+ .../backend/ReactSerializers/Serializers.py         |     8 [32m+[m[31m-[m
+ .../ReactSerializers/migrations/0001_initial.py     |   103 [32m+[m[31m-[m
+ .../ReactSerializers/migrations/0002_initial.py     |    42 [32m+[m[31m-[m
+ .../migrations/0003_item_percentage_discount.py     |    20 [31m-[m
+ .../0004_alter_item_percentage_discount.py          |    19 [31m-[m
+ .../migrations/0005_item_gender_type.py             |    18 [31m-[m
+ .../migrations/0006_remove_item_gender_type.py      |    17 [31m-[m
+ .../migrations/0007_itempricehistory.py             |    28 [31m-[m
+ .../migrations/0008_alter_category_name.py          |    18 [31m-[m
+ ...atureditem_created_at_featureditem_updated_at.py |    24 [31m-[m
+ .../migrations/0010_brand_vendor.py                 |    20 [31m-[m
+ .../migrations/0011_alter_item_options.py           |    17 [31m-[m
+ .../backend/ReactSerializers/models.py              |    34 [32m+[m[31m-[m
+ .../backend/ReactSerializers/users.py               |   497 [32m+[m[31m-[m
+ .../backend/ReactSerializers/views.py               |     2 [32m+[m[31m-[m
+ .../backend/client-app/.gitignore                   |    24 [31m-[m
+ maamara_market_project/backend/client-app/README.md |    12 [31m-[m
+ maamara_market_project/backend/client-app/chat.html |    15 [31m-[m
+ .../backend/client-app/eslint.config.js             |    33 [31m-[m
+ .../backend/client-app/models/users.js              |    74 [31m-[m
+ .../backend/client-app/package-lock.json            |  4158 [31m--------[m
+ .../backend/client-app/package.json                 |    39 [31m-[m
+ .../patches/@jridgewell+sourcemap-codec+1.5.0.patch |    28 [31m-[m
+ .../backend/client-app/public/vite.svg              |     1 [31m-[m
+ maamara_market_project/backend/client-app/router.js |     9 [31m-[m
+ maamara_market_project/backend/client-app/server.js |   204 [31m-[m
+ .../backend/client-app/src/AppChat.jsx              |    32 [31m-[m
+ .../backend/client-app/src/buffer.jsx               |    19 [31m-[m
+ .../src/componentChat/InfoBar/InfoBar.css           |    29 [31m-[m
+ .../src/componentChat/InfoBar/InfoBar.jsx           |    21 [31m-[m
+ .../client-app/src/componentChat/Input/InpuChat.jsx |    26 [31m-[m
+ .../client-app/src/componentChat/Input/Input.css    |    33 [31m-[m
+ .../src/componentChat/Message/Message.css           |   148 [31m-[m
+ .../src/componentChat/Message/Message.jsx           |    72 [31m-[m
+ .../src/componentChat/Messages/Messages.css         |   117 [31m-[m
+ .../src/componentChat/Messages/Messages.jsx         |    98 [31m-[m
+ .../src/componentChat/RoomUsers/RoomUsers.css       |    69 [31m-[m
+ .../src/componentChat/RoomUsers/RoomUsers.jsx       |    56 [31m-[m
+ .../componentChat/TextContainer/TextContainer.css   |    33 [31m-[m
+ .../componentChat/TextContainer/TextContainer.jsx   |    36 [31m-[m
+ .../client-app/src/componentChat/chat/Chat.css      |   136 [31m-[m
+ .../client-app/src/componentChat/chat/Chat.jsx      |   323 [31m-[m
+ .../client-app/src/componentChat/join/Join.jsx      |   117 [31m-[m
+ .../client-app/src/componentChat/join/join.css      |    71 [31m-[m
+ .../backend/client-app/src/icons/closeIcon.png      |   Bin [31m182[m -> [32m0[m bytes
+ .../backend/client-app/src/icons/onlineIcon.png     |   Bin [31m146[m -> [32m0[m bytes
+ .../src/profile_pictures/default-sender.jpg         |   Bin [31m1925[m -> [32m0[m bytes
+ .../src/profile_pictures/default-vendor.jpg         |   Bin [31m1925[m -> [32m0[m bytes
+ .../backend/client-app/vite.config.js               |    27 [31m-[m
+ maamara_market_project/backend/client/.gitignore    |    24 [31m-[m
+ maamara_market_project/backend/client/README.md     |    12 [31m-[m
+ .../backend/client/eslint.config.js                 |    33 [31m-[m
+ maamara_market_project/backend/client/index.html    |    15 [31m-[m
+ .../backend/client/models/users.js                  |    74 [31m-[m
+ maamara_market_project/backend/client/package.json  |    44 [31m-[m
+ .../backend/client/public/vite.svg                  |     1 [31m-[m
+ maamara_market_project/backend/client/router.js     |     9 [31m-[m
+ maamara_market_project/backend/client/server.js     |   168 [31m-[m
+ maamara_market_project/backend/client/src/App.jsx   |    38 [31m-[m
+ .../backend/client/src/ErrorBoundary.jsx            |    26 [31m-[m
+ .../client/src/component/InfoBar/InfoBar.css        |    29 [31m-[m
+ .../client/src/component/InfoBar/InfoBar.jsx        |    21 [31m-[m
+ .../backend/client/src/component/Input/Input.css    |    33 [31m-[m
+ .../backend/client/src/component/Input/Input.jsx    |    26 [31m-[m
+ .../client/src/component/Message/Message.css        |   135 [31m-[m
+ .../client/src/component/Message/Message.jsx        |    77 [31m-[m
+ .../client/src/component/Messages/Messages.css      |    69 [31m-[m
+ .../client/src/component/Messages/Messages.jsx      |    69 [31m-[m
+ .../client/src/component/RoomUsers/RoomUsers.css    |    69 [31m-[m
+ .../client/src/component/RoomUsers/RoomUsers.jsx    |    53 [31m-[m
+ .../src/component/TextContainer/TextContainer.css   |    33 [31m-[m
+ .../src/component/TextContainer/TextContainer.jsx   |    36 [31m-[m
+ .../backend/client/src/component/chat/Chat.css      |   136 [31m-[m
+ .../backend/client/src/component/chat/Chat.jsx      |   201 [31m-[m
+ .../backend/client/src/component/join/Join.jsx      |   115 [31m-[m
+ .../backend/client/src/component/join/join.css      |    71 [31m-[m
+ .../backend/client/src/icons/closeIcon.png          |   Bin [31m182[m -> [32m0[m bytes
+ .../backend/client/src/icons/onlineIcon.png         |   Bin [31m146[m -> [32m0[m bytes
+ maamara_market_project/backend/client/src/index.jsx |    18 [31m-[m
+ .../client/src/profile_pictures/default-sender.jpg  |   Bin [31m1925[m -> [32m0[m bytes
+ .../client/src/profile_pictures/default-vendor.jpg  |   Bin [31m1925[m -> [32m0[m bytes
+ .../backend/client/vite.config.js                   |    20 [31m-[m
+ .../backend/core/PasswordRecovery.py                |     2 [32m+[m[31m-[m
+ maamara_market_project/backend/core/Serializer.py   |   143 [32m+[m[31m-[m
+ .../backend/core/UserVisitorSerializers.py          |    13 [32m+[m[31m-[m
+ .../backend/core/migrations/0001_initial.py         |    52 [32m+[m[31m-[m
+ ...ry_date.py => 0002_alter_voucher_expiry_date.py} |     6 [32m+[m[31m-[m
+ ...address_profile_city_profile_country_and_more.py |    33 [31m-[m
+ .../backend/core/migrations/0003_voucher_active.py  |    18 [31m-[m
+ .../migrations/0004_alter_activitylog_action.py     |    18 [31m-[m
+ ...tification_visitor_id_alter_notification_user.py |    26 [31m-[m
+ ...ofile_visitor_id_referral_visitor_id_and_more.py |    38 [31m-[m
+ .../backend/core/migrations/0007_calendarevent.py   |    32 [31m-[m
+ .../backend/core/migrations/0008_emaillog.py        |    25 [31m-[m
+ .../migrations/0010_alter_voucher_expiry_date.py    |    19 [31m-[m
+ .../migrations/0011_alter_voucher_expiry_date.py    |    19 [31m-[m
+ ...otification_url_alter_notification_visitor_id.py |    23 [31m-[m
+ ...move_wallet_balance_alter_voucher_expiry_date.py |    23 [31m-[m
+ .../migrations/0014_alter_voucher_expiry_date.py    |    19 [31m-[m
+ .../migrations/0015_alter_voucher_expiry_date.py    |    19 [31m-[m
+ .../0016_supportmessage_status_and_more.py          |    29 [31m-[m
+ .../migrations/0017_alter_supportmessage_user.py    |    21 [31m-[m
+ ...0018_alter_supportmessage_message_id_and_more.py |    26 [31m-[m
+ .../0019_alter_voucher_expiry_date_faq.py           |    41 [31m-[m
+ maamara_market_project/backend/core/models.py       |   159 [32m+[m[31m-[m
+ maamara_market_project/backend/core/signals.py      |    15 [32m+[m[31m-[m
+ maamara_market_project/backend/core/urls.py         |   199 [32m+[m[31m-[m
+ maamara_market_project/backend/core/views.py        |   270 [32m+[m[31m-[m
+ maamara_market_project/backend/index.js             |    13 [31m-[m
+ .../backend/newsletter/migrations/0001_initial.py   |     2 [32m+[m[31m-[m
+ maamara_market_project/backend/oder/admin.py        |     4 [32m+[m[31m-[m
+ .../backend/oder/capture_order.py                   |    42 [32m+[m[31m-[m
+ maamara_market_project/backend/oder/easypost.py     |   110 [31m-[m
+ .../oder/management/commands/populate_categories.py |   370 [32m+[m[31m-[m
+ .../backend/oder/migrations/0001_initial.py         |    93 [32m+[m[31m-[m
+ .../backend/oder/migrations/0002_initial.py         |    31 [32m+[m
+ .../oder/migrations/0002_transaction_order.py       |    19 [31m-[m
+ ...ion_card_brand_transaction_card_type_and_more.py |    53 [31m-[m
+ .../migrations/0004_transaction_payment_method.py   |    18 [31m-[m
+ ..._remove_payment_method_payment_payment_method.py |    22 [31m-[m
+ ...card_alter_transaction_order_transaction_card.py |    35 [31m-[m
+ .../oder/migrations/0007_transaction_payment.py     |    19 [31m-[m
+ .../oder/migrations/0008_order_paypal_order_id.py   |    18 [31m-[m
+ .../oder/migrations/0009_transaction_vendor.py      |    20 [31m-[m
+ .../0010_remove_order_items_oderitem_order.py       |    23 [31m-[m
+ .../0011_alter_transaction_transaction_type.py      |    18 [31m-[m
+ .../oder/migrations/0012_transaction_payout.py      |    20 [31m-[m
+ .../oder/migrations/0013_order_paypal_invoice_id.py |    18 [31m-[m
+ ...er_transaction_paypal_transaction_id_and_more.py |    23 [31m-[m
+ .../backend/oder/migrations/0015_customer_vendor.py |    22 [31m-[m
+ .../oder/migrations/0016_alter_customer_vendor.py   |    21 [31m-[m
+ .../oder/migrations/0017_transaction_category.py    |    18 [31m-[m
+ .../0018_card_visitor_id_transaction_visitor_id.py  |    23 [31m-[m
+ ...m_age_variant_oderitem_color_variant_and_more.py |    41 [31m-[m
+ .../oder/migrations/0020_oderitem_shoe_size.py      |    18 [31m-[m
+ .../migrations/0021_oderitem_selected_weight.py     |    18 [31m-[m
+ .../0022_remove_transaction_card_delete_card.py     |    20 [31m-[m
+ maamara_market_project/backend/oder/models.py       |   215 [32m+[m[31m-[m
+ maamara_market_project/backend/oder/paypalApis.py   |   175 [32m+[m[31m-[m
+ maamara_market_project/backend/oder/shipping.py     |   112 [32m+[m[31m-[m
+ maamara_market_project/backend/oder/url.py          |    11 [32m+[m[31m-[m
+ maamara_market_project/backend/oder/views.py        |    11 [32m+[m[31m-[m
+ maamara_market_project/backend/package-lock.json    |  1577 [31m---[m
+ maamara_market_project/backend/package.json         |    22 [31m-[m
+ maamara_market_project/backend/password.txt         |     1 [32m+[m
+ .../pesapalpayments/Shipping/BaseProvider.py        |    53 [32m+[m
+ .../pesapalpayments/Shipping/Clients/dhh_client.py  |    78 [32m+[m
+ .../Shipping/Clients/fedex_client.py                |    69 [32m+[m
+ .../backend/pesapalpayments/Shipping/DhlProvider.py |   135 [32m+[m
+ .../pesapalpayments/Shipping/FedEXProvider.py       |    77 [32m+[m
+ .../pesapalpayments/Shipping/ShippingQuote.py       |    85 [32m+[m
+ .../backend/pesapalpayments/Shipping/utils.py       |   200 [32m+[m
+ .../pesapalpayments}/__init__.py                    |     0
+ .../backend/pesapalpayments/admin.py                |     3 [32m+[m
+ .../shop => backend/pesapalpayments}/apps.py        |     4 [32m+[m[31m-[m
+ .../backend/pesapalpayments/checkout.py             |   199 [32m+[m
+ .../pesapalpayments/migrations/0001_initial.py      |    78 [32m+[m
+ .../pesapalpayments/migrations}/__init__.py         |     0
+ .../backend/pesapalpayments/models.py               |   248 [32m+[m
+ .../pesapalpayments/permissions.py}                 |     0
+ .../backend/pesapalpayments/services.py             |   318 [32m+[m
+ .../pesapalpayments}/tests.py                       |     0
+ .../backend/pesapalpayments/urls.py                 |    18 [32m+[m
+ .../Add.jsx => backend/pesapalpayments/utils.py}    |     0
+ .../backend/pesapalpayments/views.py                |   121 [32m+[m
+ .../backend/pesapalpayments/webhook.py              |   134 [32m+[m
+ .../backend/project01/middleware/jwt_auth.py        |    23 [32m+[m[31m-[m
+ .../backend/project01/settings.py                   |   181 [32m+[m[31m-[m
+ .../backend/project01/settings.py.bkp               |   412 [31m-[m
+ maamara_market_project/backend/project01/urls.py    |     1 [32m+[m
+ maamara_market_project/backend/project01/wsgi.py    |    21 [31m-[m
+ maamara_market_project/backend/requirements.txt     |    53 [32m+[m
+ .../backend/requirements_current.txt                |    76 [32m+[m
+ maamara_market_project/backend/shop/Serializers.py  |    70 [32m+[m[31m-[m
+ maamara_market_project/backend/shop/__init__.py     |     0
+ maamara_market_project/backend/shop/apps.py         |     6 [31m-[m
+ maamara_market_project/backend/shop/celery.py       |    26 [31m-[m
+ .../backend/shop/migrations/0001_initial.py         |   177 [32m+[m[31m-[m
+ .../backend/shop/migrations/0002_banner.py          |    39 [31m-[m
+ .../shop/migrations/0003_banner_image_hash.py       |    18 [31m-[m
+ ...04_alter_banner_image_alter_banner_image_hash.py |    23 [31m-[m
+ .../backend/shop/migrations/0005_chatfile.py        |    21 [31m-[m
+ ...alter_reaction_options_reaction_type_and_more.py |    79 [31m-[m
+ ...t_commentblog_alter_reaction_options_and_more.py |    66 [31m-[m
+ ...lter_commentblog_post_alter_reactionblog_post.py |    24 [31m-[m
+ .../shop/migrations/0009_blogpost_approved.py       |    18 [31m-[m
+ ...g_visitor_id_reactionblog_visitor_id_and_more.py |    36 [31m-[m
+ .../backend/shop/migrations/0011_wishlist.py        |    31 [31m-[m
+ .../0012_alter_reaction_user_alter_review_user.py   |    26 [31m-[m
+ .../backend/shop/migrations/0013_vendorrating.py    |    33 [31m-[m
+ ...4_alter_vendorrating_unique_together_and_more.py |    55 [31m-[m
+ .../0015_banner_approved_at_banner_is_approved.py   |    23 [31m-[m
+ ...r_call_to_action_url_banner_cta_item_and_more.py |    34 [31m-[m
+ .../migrations/0017_careervacancy_jobapplication.py |    48 [31m-[m
+ .../shop/migrations/0018_jobapplication_seen.py     |    18 [31m-[m
+ .../backend/shop/migrations/0019_aboutpage.py       |    34 [31m-[m
+ maamara_market_project/backend/shop/tasks.py        |    12 [31m-[m
+ maamara_market_project/backend/shop/tests.py        |     3 [31m-[m
+ maamara_market_project/backend/shop/views.py        |    56 [32m+[m[31m-[m
+ maamara_market_project/backend/static/abt.js        |   185 [31m-[m
+ .../backend/static/assets/vite-chat.css             |     1 [31m-[m
+ .../backend/static/assets/vite-chat.js              |   106 [31m-[m
+ .../backend/static/assets/vite-chatolder.css        |     1 [31m-[m
+ .../backend/static/assets/vite-chatolder.js         |    68 [31m-[m
+ .../backend/static/assets/vite-chatworking.js       |    68 [31m-[m
+ .../backend/static/assets/vite-js.js                |   102 [31m-[m
+ .../backend/static/css/contact.css                  |   672 [31m--[m
+ .../backend/static/css/navbar.css                   |   418 [31m-[m
+ .../backend/static/f06/20241126_140823.jpg          |   Bin [31m3698690[m -> [32m0[m bytes
+ .../backend/static/f06/PSX_20241202_142436.jpg      |   Bin [31m489906[m -> [32m0[m bytes
+ .../backend/static/f06/placematts.jpg               |   Bin [31m468772[m -> [32m0[m bytes
+ .../backend/static/f06/set buskets.jpg              |   Bin [31m484927[m -> [32m0[m bytes
+ .../backend/static/font/Allison-Regular.ttf         |   Bin [31m142696[m -> [32m0[m bytes
+ .../static/font/LibreBaskerville-Regular.ttf        |   Bin [31m154676[m -> [32m0[m bytes
+ .../backend/static/font/Poppins/Poppins-Black.ttf   |   Bin [31m151396[m -> [32m0[m bytes
+ .../static/font/Poppins/Poppins-BlackItalic.ttf     |   Bin [31m171604[m -> [32m0[m bytes
+ .../backend/static/font/Poppins/Poppins-Bold.ttf    |   Bin [31m153944[m -> [32m0[m bytes
+ .../static/font/Poppins/Poppins-BoldItalic.ttf      |   Bin [31m176588[m -> [32m0[m bytes
+ .../static/font/Poppins/Poppins-ExtraBold.ttf       |   Bin [31m152764[m -> [32m0[m bytes
+ .../static/font/Poppins/Poppins-ExtraBoldItalic.ttf |   Bin [31m173916[m -> [32m0[m bytes
+ .../static/font/Poppins/Poppins-ExtraLight.ttf      |   Bin [31m161456[m -> [32m0[m bytes
+ .../font/Poppins/Poppins-ExtraLightItalic.ttf       |   Bin [31m186168[m -> [32m0[m bytes
+ .../backend/static/font/Poppins/Poppins-Italic.ttf  |   Bin [31m182012[m -> [32m0[m bytes
+ .../backend/static/font/Poppins/Poppins-Light.ttf   |   Bin [31m159892[m -> [32m0[m bytes
+ .../static/font/Poppins/Poppins-LightItalic.ttf     |   Bin [31m184460[m -> [32m0[m bytes
+ .../backend/static/font/Poppins/Poppins-Medium.ttf  |   Bin [31m156520[m -> [32m0[m bytes
+ .../static/font/Poppins/Poppins-MediumItalic.ttf    |   Bin [31m180444[m -> [32m0[m bytes
+ .../backend/static/font/Poppins/Poppins-Regular.ttf |   Bin [31m158240[m -> [32m0[m bytes
+ .../static/font/Poppins/Poppins-SemiBold.ttf        |   Bin [31m155232[m -> [32m0[m bytes
+ .../static/font/Poppins/Poppins-SemiBoldItalic.ttf  |   Bin [31m178584[m -> [32m0[m bytes
+ .../backend/static/font/Poppins/Poppins-Thin.ttf    |   Bin [31m161652[m -> [32m0[m bytes
+ .../static/font/Poppins/Poppins-ThinItalic.ttf      |   Bin [31m187044[m -> [32m0[m bytes
+ .../static/font/ProtestRevolution-Regular.ttf       |   Bin [31m802184[m -> [32m0[m bytes
+ .../backend/static/icons/heart.png                  |   Bin [31m9937[m -> [32m0[m bytes
+ .../backend/static/icons/heart.svg                  |     1 [31m-[m
+ .../backend/static/icons/share-social.png           |   Bin [31m11278[m -> [32m0[m bytes
+ .../backend/static/icons/svgviewer-png-output.png   |   Bin [31m4820[m -> [32m0[m bytes
+ .../backend/static/icons/trash.png                  |   Bin [31m11435[m -> [32m0[m bytes
+ .../backend/static/images/20241126_140753.jpg       |   Bin [31m2577897[m -> [32m0[m bytes
+ .../backend/static/images/PSX_20241212_010238.jpg   |   Bin [31m813058[m -> [32m0[m bytes
+ .../backend/static/images/admin_jb.jpg              |   Bin [31m1059451[m -> [32m0[m bytes
+ .../backend/static/images/greener.jpg               |   Bin [31m72289[m -> [32m0[m bytes
+ .../backend/static/images/skyBg.jpg                 |   Bin [31m673304[m -> [32m0[m bytes
+ maamara_market_project/backend/static/index.css     |  3547 [31m-------[m
+ maamara_market_project/backend/static/java.js       |    63 [31m-[m
+ maamara_market_project/backend/static/js-main.js    |   382 [31m-[m
+ maamara_market_project/backend/static/js.js         |    31 [31m-[m
+ .../backend/static/nav-anchor.css                   |    69 [31m-[m
+ maamara_market_project/backend/static/navbar.css    |  1299 [31m---[m
+ .../backend/static/products/afican hut.jpg          |   Bin [31m276135[m -> [32m0[m bytes
+ .../backend/static/products/baobab.jpg              |   Bin [31m352467[m -> [32m0[m bytes
+ .../backend/static/products/girrafe lampshade.jpg   |   Bin [31m254379[m -> [32m0[m bytes
+ .../backend/static/products/jani soap.jpg           |   Bin [31m255432[m -> [32m0[m bytes
+ .../backend/static/products/kuba wall hanging.jpg   |   Bin [31m543875[m -> [32m0[m bytes
+ .../backend/static/products/nativity.jpg            |   Bin [31m124871[m -> [32m0[m bytes
+ maamara_market_project/backend/static/style.css     |  1595 [31m---[m
+ .../static/users photos/IMG-20240902-WA0000.jpg     |   Bin [31m50448[m -> [32m0[m bytes
+ .../static/users photos/f06/20241126_140823.jpg     |   Bin [31m3698690[m -> [32m0[m bytes
+ .../static/users photos/f06/PSX_20241202_142436.jpg |   Bin [31m489906[m -> [32m0[m bytes
+ .../backend/static/users photos/f06/placematts.jpg  |   Bin [31m468772[m -> [32m0[m bytes
+ .../backend/static/users photos/f06/set buskets.jpg |   Bin [31m484927[m -> [32m0[m bytes
+ .../static/users photos/font/Allison-Regular.ttf    |   Bin [31m142696[m -> [32m0[m bytes
+ .../users photos/font/LibreBaskerville-Regular.ttf  |   Bin [31m154676[m -> [32m0[m bytes
+ .../users photos/font/ProtestRevolution-Regular.ttf |   Bin [31m802184[m -> [32m0[m bytes
+ .../backend/static/users photos/fred.jpg            |   Bin [31m2906931[m -> [32m0[m bytes
+ .../backend/static/users photos/icons/heart.png     |   Bin [31m9937[m -> [32m0[m bytes
+ .../backend/static/users photos/icons/heart.svg     |     1 [31m-[m
+ .../static/users photos/icons/share-social.png      |   Bin [31m11278[m -> [32m0[m bytes
+ .../users photos/icons/svgviewer-png-output.png     |   Bin [31m4820[m -> [32m0[m bytes
+ .../backend/static/users photos/icons/trash.png     |   Bin [31m11435[m -> [32m0[m bytes
+ .../static/users photos/images/20241126_140753.jpg  |   Bin [31m2577897[m -> [32m0[m bytes
+ .../users photos/images/PSX_20241212_010238.jpg     |   Bin [31m813058[m -> [32m0[m bytes
+ .../backend/static/users photos/images/skyBg.jpg    |   Bin [31m673304[m -> [32m0[m bytes
+ .../backend/static/users photos/kabena.jpg          |   Bin [31m1733299[m -> [32m0[m bytes
+ .../backend/static/users photos/maasai market.jpg   |   Bin [31m861094[m -> [32m0[m bytes
+ .../backend/static/users photos/okoth.jpg           |   Bin [31m2432359[m -> [32m0[m bytes
+ .../backend/static/users photos/otwola.jpg          |   Bin [31m2089352[m -> [32m0[m bytes
+ .../static/users photos/products/afican hut.jpg     |   Bin [31m276135[m -> [32m0[m bytes
+ .../backend/static/users photos/products/baobab.jpg |   Bin [31m352467[m -> [32m0[m bytes
+ .../users photos/products/girrafe lampshade.jpg     |   Bin [31m254379[m -> [32m0[m bytes
+ .../static/users photos/products/jani soap.jpg      |   Bin [31m255432[m -> [32m0[m bytes
+ .../users photos/products/kuba wall hanging.jpg     |   Bin [31m543875[m -> [32m0[m bytes
+ .../static/users photos/products/nativity.jpg       |   Bin [31m124871[m -> [32m0[m bytes
+ .../backend/vendorDashboard/admin.py                |     6 [32m+[m[31m-[m
+ .../vendorDashboard/migrations/0001_initial.py      |   117 [32m+[m[31m-[m
+ ...d_object.py => 0002_vendordraft_draft_images.py} |     8 [32m+[m[31m-[m
+ .../migrations/0003_remove_vendor_password.py       |    17 [31m-[m
+ .../migrations/0003_vendordraftimage.py             |    24 [32m+[m
+ .../0004_returnrequest_custom_reason_and_more.py    |    23 [31m-[m
+ .../migrations/0005_returnrequest_description.py    |    18 [31m-[m
+ .../migrations/0006_ret

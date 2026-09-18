@@ -1,0 +1,20 @@
+[33m4c55354[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mOpondo[m[33m, [m[1;31morigin/main[m[33m, [m[1;31morigin/Opondo[m[33m)[m HEAD@{Sat Jul 25 22:44:07 2026}: rebase (finish): returning to refs/heads/Opondo
+[33m4c55354[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mOpondo[m[33m, [m[1;31morigin/main[m[33m, [m[1;31morigin/Opondo[m[33m)[m HEAD@{Sat Jul 25 21:42:27 2026}: rebase (start): checkout origin/main
+[33m9802ddc[m HEAD@{Sat Jul 25 21:24:16 2026}: commit: authentication, terms and conditions and draft vendor registration form update
+[33mb7243e3[m HEAD@{Fri Jul 10 22:53:16 2026}: checkout: moving from recovery to Opondo
+[33m2aaeb50[m[33m ([m[1;32mrecovery[m[33m)[m HEAD@{Mon Jul 6 23:14:02 2026}: rebase (abort): returning to refs/heads/recovery
+[33mfce2737[m[33m ([m[1;31morigin/equip_for_production[m[33m, [m[1;32mbackup-before-restore[m[33m)[m HEAD@{Mon Jul 6 23:01:10 2026}: rebase (start): checkout origin/main
+[33m2aaeb50[m[33m ([m[1;32mrecovery[m[33m)[m HEAD@{Mon Jul 6 22:48:10 2026}: checkout: moving from restore-frontend to recovery
+[33m214f30f[m[33m ([m[1;32mrestore-frontend[m[33m)[m HEAD@{Mon Jul 6 22:47:58 2026}: commit: User interface, App.jsx and maamara.css
+[33m0269da4[m[33m ([m[1;31morigin/restore-frontend[m[33m)[m HEAD@{Sat Jul 4 00:55:15 2026}: commit: updated UI
+[33mfce2737[m[33m ([m[1;31morigin/equip_for_production[m[33m, [m[1;32mbackup-before-restore[m[33m)[m HEAD@{Fri Jul 3 10:51:57 2026}: checkout: moving from fce273757681e574bb620365fa69f0194af97a6e to restore-frontend
+[33mfce2737[m[33m ([m[1;31morigin/equip_for_production[m[33m, [m[1;32mbackup-before-restore[m[33m)[m HEAD@{Fri Jul 3 10:51:15 2026}: checkout: moving from 6f6d1dcdcba26b891b72fcadd86c8e4c9770aa5e to fce2737
+[33m6f6d1dc[m HEAD@{Fri Jul 3 09:50:43 2026}: checkout: moving from backup-before-restore to 6f6d1dc
+[33mfce2737[m[33m ([m[1;31morigin/equip_for_production[m[33m, [m[1;32mbackup-before-restore[m[33m)[m HEAD@{Fri Jul 3 09:43:22 2026}: checkout: moving from main to backup-before-restore
+[33m16b87bc[m[33m ([m[1;31morigin/Okoth[m[33m, [m[1;32mmain[m[33m)[m HEAD@{Fri Jul 3 09:43:08 2026}: reset: moving to HEAD
+[33m16b87bc[m[33m ([m[1;31morigin/Okoth[m[33m, [m[1;32mmain[m[33m)[m HEAD@{Fri Jul 3 09:13:58 2026}: reset: moving to 16b87bc
+[33mfce2737[m[33m ([m[1;31morigin/equip_for_production[m[33m, [m[1;32mbackup-before-restore[m[33m)[m HEAD@{Fri Jul 3 00:45:01 2026}: rebase (finish): returning to refs/heads/main
+[33mfce2737[m[33m ([m[1;31morigin/equip_for_production[m[33m, [m[1;32mbackup-before-restore[m[33m)[m HEAD@{Fri Jul 3 00:42:42 2026}: rebase (continue): Add frontend and restructure project, UI upgraded and other fetures
+[33m6f6d1dc[m HEAD@{Fri Jul 3 00:21:40 2026}: commit: Add frontend and restructure project, UI upgraded and other fetures
+[33m16b87bc[m[33m ([m[1;31morigin/Okoth[m[33m, [m[1;32mmain[m[33m)[m HEAD@{Fri Jul 3 00:19:36 2026}: pull origin main --rebase (start): checkout 16b87bcb995f604f59189bc839f06fed6ec32526
+[33m2e3f3b1[m HEAD@{Fri Jul 3 00:15:48 2026}: commit: Add frontend and restructure project, UI upgraded and other fetures
