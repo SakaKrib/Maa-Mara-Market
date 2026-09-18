@@ -1,4 +1,4 @@
-from oder.models import Order, OderItem, Transaction, Customer, Payment, BillingAddress
+from order.models import Order, OrderItem, Transaction, Customer, Payment, BillingAddress
 from core.models import Profile, Wallet, Voucher, ActivityLog, Notification, Referral
 
 
@@ -8,7 +8,7 @@ def merge_visitor_data_to_user(user, visitor_id):
 
     # Orders & OrderItems
     Order.objects.filter(visitor_id=visitor_id, user__isnull=True).update(user=user, visitor_id=None)
-    OderItem.objects.filter(visitor_id=visitor_id, user__isnull=True).update(user=user, visitor_id=None)
+    OrderItem.objects.filter(visitor_id=visitor_id, user__isnull=True).update(user=user, visitor_id=None)
 
     # Payments
     Payment.objects.filter(visitor_id=visitor_id, user__isnull=True).update(user=user, visitor_id=None)
