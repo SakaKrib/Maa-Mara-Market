@@ -1,4 +1,4 @@
-import core.models
+import core.field_defaults
 from django.db import migrations, models
 
 
@@ -12,7 +12,7 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name="voucher",
             name="expiry_date",
-            field=models.DateField(default=core.models.default_voucher_expiry_date),
+            field=models.DateField(default=core.field_defaults.default_voucher_expiry_date),
         ),
         migrations.AlterField(
             model_name="voucher",
