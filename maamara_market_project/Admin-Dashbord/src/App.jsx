@@ -216,34 +216,23 @@ function AppContent() {
 
               </Route>
 
-              {/* other routes */}
-
-            {/* search engine */}
-               <Route path="list" element={<SearchResultsPage />} />
-
-              <Route path="customer-login" element={<LoginPage />} />
+              {/* Public customer pages outside the outlet tree still use the same storefront shell. */}
+              <Route element={<CustomerShop />}>
+                <Route path="list" element={<SearchResultsPage />} />
+                <Route path="customer-login" element={<LoginPage />} />
                 <Route path="register" element={<RegisterPage />} />
                 <Route path="checkout-page" element={<CheckoutPage />} />
                 <Route path="paypal-make-payment" element={<CheckoutPaypalPayment />} />
                 <Route path="mpesa-make-payment" element={<MpesaC2BPayment />} />
                 <Route path="payment-success" element={<PaymentSuccess />} />
-                 <Route path="profile" element={<PublicProfile />} />
+                <Route path="profile" element={<PublicProfile />} />
                 <Route path="otp-vendor-verification" element={<OTPVerification />} />
-
-                {/* cart page */}
                 <Route path="shopping-cart" element={<CartPage />} />
-
-                {/* organic pge */}
-                <Route path="/organic" element={<OrganicPage />} />
-
-                {/* returns */}
+                <Route path="organic" element={<OrganicPage />} />
                 <Route path="request-returns" element={<RequestReturnForm />} />
-
-                {/* chat */}
-              <Route path="customer-join-chat" element={<Join />} />
-              <Route path="chat" element={<Chat />} />
-
-
+                <Route path="customer-join-chat" element={<Join />} />
+                <Route path="chat" element={<Chat />} />
+              </Route>
 
               {/* Login */}
               <Route
