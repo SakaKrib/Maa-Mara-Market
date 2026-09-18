@@ -32,7 +32,66 @@ from .models import BillingAddress, Customer, Order, Payment, Transaction
 from .paymentserializer import CheckoutSerializer, OrderResponseSerializer
 from .views import IsAuthenticatedOrVisitor
 
+
 logger = logging.getLogger(__name__)
+
+
+def verify_paypal_signature(raw_body, request):
+    """Verify a PayPal webhook through PayPal's verification endpoint."""
+    webhook_id = getattr(settings, "PAYPAL_WEBHOOK_ID", "")
+    if not webhook_id:
+        logger.error("PayPal webhook verification is not configured.")
+        return False
+
+    header = request.headers.get
+    transmission_id = header("PAYPAL-TRANSMISSION-ID")
+    transmission_time = header("PAYPAL-TRANSMISSION-TIME")
+    transmission_sig = header("PAYPAL-TRANSMISSION-SIG")
+    cert_url = header("PAYPAL-CERT-URL")
+    auth_algo = header("PAYPAL-AUTH-ALGO")
+
+    if not all((transmission_id, transmission_time, transmission_sig, cert_url, auth_algo)):
+        logger.warning("PayPal webhook is missing signature headers.")
+        return False
+
+    try:
+        event = json.loads(raw_body)
+    except (TypeError, ValueError):
+        return False
+
+    verify_payload = {
+        "auth_algo": auth_algo,
+        "cert_url": cert_url,
+        "transmission_id": transmission_id,
+        "transmission_sig": transmission_sig,
+        "transmission_time": transmission_time,
+        "webhook_id": webhook_id,
+        "webhook_event": event,
+    }
+
+    paypal = settings.PAYMENT_GATEWAYS["paypal"]
+    token = get_paypal_access_token()
+    response = requests.post(
+        f"{paypal['base_url'].rstrip('/')}/v1/notifications/verify-webhook-signature",
+        json=verify_payload,
+        headers={
+            "Content-Type": "application/json",
+            "Authorization": f"Bearer {token}",
+        },
+        timeout=10,
+    )
+    if response.status_code != 200:
+        logger.warning(
+            "PayPal webhook verification failed with HTTP %s.",
+            response.status_code,
+        )
+        return False
+
+    try:
+        return response.json().get("verification_status") == "SUCCESS"
+    except ValueError:
+        return False
+
 
 
 # CREATE PAYMENT ORDER AND BILLING ADDRESS
