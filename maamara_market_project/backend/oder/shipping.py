@@ -8,6 +8,8 @@ from rest_framework.response import Response
 
 from .views import IsAuthenticatedOrVisitor
 from .models import Order
+from .Base import get_usd_to_kes_rate
+from decimal import Decimal
 
 logger = logging.getLogger(__name__)
 
@@ -180,7 +182,27 @@ def get_rates_for_destination(order, destination):
         except (ValueError, KeyError, TypeError):
             logger.exception("%s returned an invalid shipping response", provider_name)
             provider_errors.append(provider_name)
-    return rates, provider_errors
+    normalized_rates = []
+    usd_to_kes_rate = None
+    for rate in rates:
+        rate = dict(rate)
+        currency = str(rate.get("currency", "")).upper()
+        try:
+            price = Decimal(str(rate.get("price", "0")))
+            if currency == "KES":
+                rate["price_kes"] = float(price.quantize(Decimal("0.01")))
+            elif currency == "USD":
+                if usd_to_kes_rate is None:
+                    usd_to_kes_rate = Decimal(str(get_usd_to_kes_rate()))
+                if usd_to_kes_rate <= 0:
+                    raise ValueError("Invalid USD/KES exchange rate.")
+                rate["price_kes"] = float((price * usd_to_kes_rate).quantize(Decimal("0.01")))
+            else:
+                continue
+        except (ValueError, TypeError, ArithmeticError):
+            continue
+        normalized_rates.append(rate)
+    return normalized_rates, provider_errors
 
 
 @api_view(["POST"])
