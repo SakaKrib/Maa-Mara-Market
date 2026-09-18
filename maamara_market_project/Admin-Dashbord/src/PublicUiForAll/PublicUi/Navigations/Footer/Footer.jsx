@@ -17,7 +17,6 @@ import { useAuth } from "../../../../cmponents/Auth/AuthContext/Context";
 import api from "../../../../Services/Api";
 import Snackbar from "@mui/material/Snackbar";
 import Alert from "@mui/material/Alert";
-import "./footer.css";
 
 const Footer = () => {
   const year = new Date().getFullYear();
