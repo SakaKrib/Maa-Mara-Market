@@ -125,7 +125,7 @@ def pay_single_vendor_payout(request, reference):
         return Response({"error": "Payout reference not found."}, status=404)
 
     if payout.paid:
-        return Response({"message": "Payout already paid."}, status=200)
+        return Response({"message": "Payout already paid.", "reference": payout.reference}, status=200)
 
     vendor = payout.vendor
     amount = payout.amount
@@ -137,9 +137,9 @@ def pay_single_vendor_payout(request, reference):
 
     try:
         if method == "MOBILE_MONEY":
-            response = call_mpesa_b2c(vendor, amount, mpesa_config)
+            response = call_mpesa_b2c(vendor, amount, mpesa_config, payout=payout)
         elif method == "PAYPAL":
-            response = call_paypal_payout(vendor.paypal_email, amount, paypal_config)
+            response = call_paypal_payout(payout, vendor.paypal_email, amount, paypal_config)
         elif method == "BANK_TRANSFER":
             response = call_bank_transfer(vendor.bank_account_number, amount)
         else:
