@@ -12,7 +12,7 @@ export default function CheckoutPaypalPayment() {
   const order = location.state?.order || location.state || cartOrder;
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
-  const kesAmount = order?.order?.final_total || order?.order?.total || 0;
+  const kesAmount = order?.order?.payment?.amount ?? order?.order?.updated_total_price ?? 0;
 
   // --- WebSocket for real-time payment status ---
   useEffect(() => {
