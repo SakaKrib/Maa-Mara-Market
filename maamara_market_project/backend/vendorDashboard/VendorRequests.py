@@ -22,7 +22,7 @@ from django.db import transaction
 from ReactSerializers.models import ItemPriceHistory
 from django.core.exceptions import ValidationError
 from rest_framework.permissions import IsAdminUser, IsAuthenticated
-from oder.Base import IsVendor
+from order.Base import IsVendor
 import hashlib
 from django.core.files.storage import default_storage
 
