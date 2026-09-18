@@ -1,62 +1,213 @@
+import logging
+from datetime import datetime
+
 import requests
-from rest_framework.decorators import api_view
+from django.conf import settings
+from django.utils import timezone
+from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 
-@api_view(["POST"])
-def get_shipping_rates(request):
-    data = request.data
-    destination = {
-        "postal_code": data.get("zip"),
-        "city": data.get("city"),
-        "country": data.get("country"),  # e.g., "US"
+from .views import IsAuthenticatedOrVisitor
+from .models import Order
+
+logger = logging.getLogger(__name__)
+
+
+def _order_for_request(request, order_id):
+    qs = Order.objects.filter(id=order_id).select_related("billing_address")
+    if request.user and request.user.is_authenticated:
+        return qs.filter(user=request.user, visitor_id__isnull=True).first()
+
+    visitor_id = request.COOKIES.get("visitorId")
+    if not visitor_id:
+        return None
+    return qs.filter(user__isnull=True, visitor_id=visitor_id).first()
+
+
+def _dimensions(order):
+    dimensions = order.get_total_shipping_dimensions()
+    if not dimensions or dimensions["weight"] <= 0:
+        raise ValueError("Shipping weight and dimensions are required.")
+
+    return {
+        "weight": round(float(dimensions["weight"]), 2),
+        "length": max(1, round(float(dimensions["length"]), 2)),
+        "width": max(1, round(float(dimensions["width"]), 2)),
+        "height": max(1, round(float(dimensions["height"]), 2)),
     }
 
-    # Kenya warehouse origin (example: Nairobi, 00100)
-    origin = {
-        "postalCode": "00100",
-        "cityName": "Nairobi",
-        "countryCode": "KE"
-    }
 
-    # DHL payload
+def _dhl_rates(order, destination):
+    config = settings.PAYMENT_GATEWAYS.get("shipping", {}).get("dhl", {})
+    if not config.get("api_url") or not config.get("api_key"):
+        return []
+
+    dims = _dimensions(order)
+    address = order.billing_address
     payload = {
         "customerDetails": {
-            "shipperDetails": origin,
-            "receiverDetails": {
-                "postalCode": destination["postal_code"],
-                "cityName": destination["city"],
-                "countryCode": destination["country"]
-            }
+            "shipperDetails": {
+                "postalCode": config.get("origin_postal_code", "00100"),
+                "cityName": config.get("origin_city", "Nairobi"),
+                "countryCode": config.get("origin_country", "KE"),
+            },
+            "receiverDetails": destination,
         },
-        "plannedShippingDateAndTime": "2025-09-25T10:00:00GMT+03:00",
-        "unitOfMeasurement": "metric",  # DHL requires units
-        "packages": [
-            {
-                "weight": 2.5,  # Example weight (kg)
-                "dimensions": {"length": 30, "width": 20, "height": 10}  # cm
-            }
-        ]
+        "plannedShippingDateAndTime": timezone.localtime().strftime("%Y-%m-%dT%H:%M:%S%z"),
+        "unitOfMeasurement": "metric",
+        "packages": [{
+            "weight": dims["weight"],
+            "dimensions": {
+                "length": dims["length"],
+                "width": dims["width"],
+                "height": dims["height"],
+            },
+        }],
     }
 
-    headers = {
-        "Authorization": "Bearer YOUR_DHL_API_KEY",
-        "Content-Type": "application/json",
-    }
+    response = requests.post(
+        config["api_url"],
+        json=payload,
+        headers={
+            "Authorization": f"Bearer {config['api_key']}",
+            "Content-Type": "application/json",
+        },
+        timeout=20,
+    )
+    response.raise_for_status()
+    data = response.json()
 
-    url = "https://api-mock.dhl.com/mydhlapi/rates"  # Sandbox/test URL
-    response = requests.post(url, json=payload, headers=headers)
-
-    if response.status_code == 200:
-        rates = response.json()
-        # Format simplified rates list for frontend
-        shipping_options = []
-        for product in rates.get("products", []):
-            shipping_options.append({
-                "service": product.get("productName"),
-                "price": product.get("totalPrice")[0].get("price"),
-                "currency": product.get("totalPrice")[0].get("currency"),
-                "deliveryTime": product.get("deliveryTime"),
+    rates = []
+    for product in data.get("products", []):
+        prices = product.get("totalPrice") or []
+        price = prices[0] if prices else {}
+        if price.get("price") is not None:
+            rates.append({
+                "provider": "DHL",
+                "service": product.get("productName") or product.get("productCode"),
+                "price": price.get("price"),
+                "currency": price.get("currency") or "USD",
+                "delivery_time": product.get("deliveryTime"),
             })
-        return Response({"rates": shipping_options})
-    else:
-        return Response({"error": response.text}, status=response.status_code)
+    return rates
+
+
+def _fedex_rates(order, destination):
+    config = settings.PAYMENT_GATEWAYS.get("shipping", {}).get("fedex", {})
+    if not all(config.get(key) for key in ("auth_url", "api_url", "client_id", "client_secret")):
+        return []
+
+    token_response = requests.post(
+        config["auth_url"],
+        data={
+            "grant_type": "client_credentials",
+            "client_id": config["client_id"],
+            "client_secret": config["client_secret"],
+        },
+        headers={"Content-Type": "application/x-www-form-urlencoded"},
+        timeout=10,
+    )
+    token_response.raise_for_status()
+    token = token_response.json().get("access_token")
+    if not token:
+        raise ValueError("FedEx OAuth response did not contain an access token.")
+
+    dims = _dimensions(order)
+    payload = {
+        "accountNumber": {"value": config.get("account_number", "")},
+        "requestedShipment": {
+            "shipper": {"address": {
+                "postalCode": config.get("origin_postal_code", "00100"),
+                "city": config.get("origin_city", "Nairobi"),
+                "countryCode": config.get("origin_country", "KE"),
+            }},
+            "recipient": {"address": destination},
+            "pickupType": config.get("pickup_type", "USE_SCHEDULED_PICKUP"),
+            "serviceType": None,
+            "packagingType": config.get("packaging_type", "YOUR_PACKAGING"),
+            "requestedPackageLineItems": [{
+                "weight": {"units": "KG", "value": dims["weight"]},
+                "dimensions": {
+                    "length": dims["length"],
+                    "width": dims["width"],
+                    "height": dims["height"],
+                    "units": "CM",
+                },
+            }],
+        },
+    }
+
+    response = requests.post(
+        config["api_url"],
+        json=payload,
+        headers={
+            "Authorization": f"Bearer {token}",
+            "Content-Type": "application/json",
+        },
+        timeout=20,
+    )
+    response.raise_for_status()
+    data = response.json()
+
+    rates = []
+    for detail in data.get("output", {}).get("rateReplyDetails", []):
+        rated = detail.get("ratedShipmentDetails") or []
+        amount = None
+        currency = "USD"
+        if rated:
+            shipment = rated[0].get("totalNetCharge")
+            if shipment is not None:
+                amount = shipment
+                currency = rated[0].get("currency", currency)
+        if amount is not None:
+            rates.append({
+                "provider": "FedEx",
+                "service": detail.get("serviceName") or detail.get("serviceType"),
+                "price": amount,
+                "currency": currency,
+                "delivery_time": detail.get("commit", {}).get("dateDetail"),
+            })
+    return rates
+
+
+@api_view(["POST"])
+@permission_classes([IsAuthenticatedOrVisitor])
+def get_shipping_rates(request):
+    order_id = request.data.get("order_id")
+    if not order_id:
+        return Response({"error": "order_id is required"}, status=400)
+
+    order = _order_for_request(request, order_id)
+    if not order:
+        return Response({"error": "Order not found"}, status=404)
+
+    address = order.billing_address
+    if not address:
+        return Response({"error": "Billing address is required"}, status=400)
+
+    destination = {
+        "postalCode": address.zip,
+        "cityName": address.city,
+        "countryCode": str(address.country),
+    }
+
+    rates = []
+    provider_errors = []
+
+    for provider_name, provider in (("DHL", _dhl_rates), ("FedEx", _fedex_rates)):
+        try:
+            rates.extend(provider(order, destination))
+        except requests.exceptions.RequestException:
+            logger.exception("%s shipping provider request failed", provider_name)
+            provider_errors.append(provider_name)
+        except (ValueError, KeyError, TypeError):
+            logger.exception("%s returned an invalid shipping response", provider_name)
+            provider_errors.append(provider_name)
+
+    if not rates:
+        return Response({
+            "rates": [],
+            "providers_unavailable": provider_errors,
+        }, status=502 if provider_errors else 200)
+
+    return Response({"rates": rates})
