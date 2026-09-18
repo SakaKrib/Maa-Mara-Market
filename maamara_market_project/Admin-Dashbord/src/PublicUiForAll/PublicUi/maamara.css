@@ -3205,7 +3205,7 @@ RESPONSIVE MENU -OFF CANVAS
    These are additive: existing Maa Mara controls, colors and data remain unchanged. */
 :root{
   --mm-content-max:1280px;
-  --mm-page-bg:#faf9f7;
+  --mm-page-bg:#fff;
   --mm-surface:#fff;
   --mm-surface-muted:#f5f4f1;
   --mm-border:#e6e3de;
@@ -3876,7 +3876,7 @@ h1,h2,h3,h4{font-family:'regular','Poppins',Arial,sans-serif}
 /* Storefront consistency: keep every public page on the same marketplace rhythm. */
 .customer-storefront-page,
 .site.page-home{
-  background:var(--mm-page-bg,#faf9f7);
+  background:var(--mm-page-bg,#fff);
   color:var(--mm-text,#222);
 }
 @media(max-width:639px){
@@ -3948,4 +3948,28 @@ h1,h2,h3,h4{font-family:'regular','Poppins',Arial,sans-serif}
   .category-collections .item{
     display:none!important;
   }
+}
+
+/* Mobile storefront navigation */
+.mm-mobile-drawer-backdrop{display:none}
+.mm-mobile-drawer{display:none}
+@media(max-width:639px){
+  .mm-mobile-drawer-backdrop{display:block;position:fixed;inset:0;z-index:1000;background:rgba(0,0,0,.38);opacity:0;pointer-events:none;transition:opacity .2s ease}
+  .mm-mobile-drawer-backdrop.is-open{opacity:1;pointer-events:auto}
+  .mm-mobile-drawer{display:flex;position:fixed;inset:0 auto 0 0;width:min(88vw,380px);z-index:1001;flex-direction:column;background:#fff;box-shadow:12px 0 30px rgba(0,0,0,.16);transform:translateX(-105%);transition:transform .2s ease;overflow:hidden}
+  .mm-mobile-drawer.is-open{transform:translateX(0)}
+  .mm-mobile-drawer-head{min-height:62px;display:flex;align-items:center;justify-content:space-between;padding:0 16px;border-bottom:1px solid var(--mm-border);flex:0 0 auto}
+  .mm-mobile-drawer-head strong{font-size:16px;font-weight:700}
+  .mm-mobile-drawer-head button{width:38px;height:38px;display:flex;align-items:center;justify-content:center;border:0;border-radius:50%;background:transparent;font-size:22px}
+  .mm-mobile-drawer-nav{overflow-y:auto;padding-bottom:24px}
+  .mm-mobile-drawer-nav>button,.mm-mobile-drawer-section-title,.mm-mobile-department-trigger,.mm-mobile-category,.mm-mobile-subcategory{width:100%;display:flex;align-items:center;text-align:left;border:0;background:transparent}
+  .mm-mobile-drawer-nav>button{justify-content:flex-start;padding:15px 18px;border-bottom:1px solid #eee;font-size:14px;font-weight:600}
+  .mm-mobile-drawer-section{border-bottom:1px solid #eee}
+  .mm-mobile-drawer-section-title{padding:13px 18px 8px;color:var(--mm-muted);font-size:11px;text-transform:uppercase;letter-spacing:.08em;font-weight:700}
+  .mm-mobile-department{border-top:1px solid #f0efec}
+  .mm-mobile-department-trigger{justify-content:space-between;padding:14px 18px;font-size:14px;font-weight:600}
+  .mm-mobile-category-list{padding:0 18px 10px 30px;background:#faf9f7}
+  .mm-mobile-category{padding:11px 0 5px;font-size:13px;font-weight:700}
+  .mm-mobile-subcategory{padding:5px 0;color:var(--mm-muted);font-size:12px}
+  .mm-mobile-drawer-loading{padding:14px 18px 18px;color:var(--mm-muted);font-size:13px}
 }
