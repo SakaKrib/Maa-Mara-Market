@@ -1,222 +1,87 @@
-import React, {useState, useEffect, useRef} from "react";
-import "../../../../PublicUi/maamara.css"; // Optional: your styles here
+import React, { useEffect, useState } from "react";
+import "../../../../PublicUi/maamara.css";
 import SearchBar from "../../../Navigations/Search/Search";
 import NavIcons from "../../../Navigations/Search/NavIcons/NavIcon";
 import { Link } from "react-router-dom";
 import useMobileMenu from "../../../../../MobileInterractions";
-import { useNavigate } from "react-router-dom";
 import useNewBlogs from "../../../../../cmponents/Hooks/BlogHooksNew/NewBlogs";
-import MegaMenu from "./WomenCat";
-import MegaMenuMen from "./MenCat";
-import MegaMenuChildren from "./ChildrenCat";
-import HoverCategoryMenu from "./SideNavBar";
-import Maamara from "../../../../../assets/Logo/Maamara.jpg"
+import Maamara from "../../../../../assets/Logo/Maamara.jpg";
+import CategoryNavigation from "./CategoryNavigation";
 
-
-
-const HeaderTop = () => {
-
+const Header = () => {
   useMobileMenu();
 
   const [isFixed, setIsFixed] = useState(false);
-  const navigate = useNavigate()
   const { newBlogCount, loading } = useNewBlogs();
 
-  // close open departments menu
-  const [open, setOpen] = useState(false);
-  const wrapperRef = useRef(null);
-
-  // toggle menu
-  const toggleMenu = () => {
-    setOpen((prev) => !prev);
-  };
-
   useEffect(() => {
-    const handleScroll = () => {
-      if (window.scrollY > 100) {
-        setIsFixed(true);
-      } else {
-        setIsFixed(false);
-      }
-    };
-
-    window.addEventListener("scroll", handleScroll);
+    const handleScroll = () => setIsFixed(window.scrollY > 120);
+    window.addEventListener("scroll", handleScroll, { passive: true });
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  // click to department container
-  // close when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (wrapperRef.current && !wrapperRef.current.contains(event.target)) {
-        setOpen(false);
-      }
-    };
-
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
-
   return (
-    <header>
-    <div className="header-top-1 mobile-hide">
-      <div className="container1">
-        <div className="wrapper flexitem justify-between w-full">
-          {/* Left Section */}
-          <div className="left">
-            <ul className="flexitem main links ">
+    <header className={`mm-site-header ${isFixed ? "is-scrolled" : ""}`}>
+      <div className="mm-utility-bar">
+        <div className="mm-container mm-utility-inner">
+          <nav aria-label="Utility navigation">
             <Link to="/blogs">
-
-              <li className="relative">
-                Blog
-                {!loading && newBlogCount > 0 && (
-                  <span className="absolute top-0 right-0 bg-red-600 text-white rounded-full w-max h-4 text-xs flex items-center justify-center p-1">
-                    {newBlogCount}
-                  </span>
-                )}
-              </li>
-
+              Blog
+              {!loading && newBlogCount > 0 && <span className="mm-notification-badge">{newBlogCount}</span>}
             </Link>
-              <li><a href="#">Featured</a></li>
-              <li><a href="#">Wishlist</a></li>
-            </ul>
-          </div>
-
-          {/* Right Section */}
-          <div className="right">
-            <ul className="flexitem main links">
-              <Link to='customer-login'><li>Sign Up</li></Link>
-              <li><a href="#">My Account</a></li>
-              <li><a href="#">Order Tracking</a></li>
-
-              {/* Currency Dropdown */}
-              <li className="dropdown">
-                <a href="#">
-                  USD <span className="icon-small"><i className="ri-arrow-down-s-line"></i></span>
-                </a>
-                <ul className="dropdown-menu">
-                  <li className="current"><a href="#">KES</a></li>
-                  <li><a href="#">USD</a></li>
-                  <li><a href="#">EURO</a></li>
-                  <li><a href="#">GBP</a></li>
-                </ul>
-              </li>
-
-              {/* Language Dropdown */}
-              <li className="dropdown">
-                <a href="#">
-                  English <span className="icon-small"><i className="ri-arrow-down-s-line"></i></span>
-                </a>
-                <ul className="dropdown-menu">
-                  <li className="current"><a href="#">English</a></li>
-                  <li><a href="#">Kiswahili</a></li>
-                  <li><a href="#">Germany</a></li>
-                </ul>
-              </li>
-            </ul>
+            <Link to="/filter-category">Featured</Link>
+            <Link to="/user-account">My account</Link>
+          </nav>
+          <div className="mm-utility-right">
+            <Link to="/customer-login">Sign in</Link>
+            <span className="mm-utility-separator">·</span>
+            <span>Kenya</span>
+            <span className="mm-utility-separator">·</span>
+            <span>KES</span>
           </div>
         </div>
       </div>
-    </div>
 
-    {/* header nav */}
-    <div className={`${
-          isFixed ? "fixed -top-20 left-0 w-full shadow-md bg-white z-50" : ""
-        }`}>
-    <div className='header-nav'>
-      <div className="container-">
-        <div className="wrapper flexcol">
-          <a href="#" className="trigger desktop-hide">
-            <span className="icon-large"><i className="ri-menu-2-line"></i></span>
-          </a>
-          
-          <div className="left bg-white-500 mb-10">
-            <div className="container">
-            <div className="flex items-center gap-2 w-full p-2">
-              <img src={Maamara} alt="maamara-logo" className="w-[50px] h-[50px] rounded-full ring p-1 ring-1 ring-green-500 xxs:-mt-20 xxs:relative xxs:-top-10 lg:mt-0 lg:top-0 z-[1000]" />
-            <div className="logo xxs:-mt-20 xxs:relative xxs:-top-10 lg:mt-0 lg:top-0 ">
-              <a href="#"> Maa <span className="it-name">Mara</span> <span className="mkrt">Market</span></a>
-            </div>
-            {isFixed && (
-              <div className="transition-all duration-300 w-full p-4">
-                <SearchBar />
-              </div>
-            )}
-            </div>
+      <div className="mm-main-header">
+        <div className="mm-container mm-main-header-inner">
+          <button type="button" className="mm-mobile-menu-trigger desktop-hide" aria-label="Open menu">
+            <span aria-hidden="true">☰</span>
+          </button>
 
-            <nav className="mobile-hide flex justify-between w-full">
-              <ul className="flexitem second-links ">
-                <li><a href="#">Home</a></li>
-                <li><a href="#">Shop</a></li>
-                <li className="Women has-child">
-                  <a href="#">Women
-                    <div className="icon-small"><i className="ri-arrow-down-s-line"></i></div>
-                  </a>
-                  {/* category hook */}
-                  <MegaMenu/>
+          <Link to="/" className="mm-brand" aria-label="Maa Mara Market home">
+            <img src={Maamara} alt="" className="mm-brand-logo" />
+            <span className="mm-brand-wordmark">
+              Maa <strong>Mara</strong> <span>Market</span>
+            </span>
+          </Link>
 
-                </li>
-                <li className="men has-child"><a href="#">Men</a>
-                <MegaMenuMen/>
-
-                </li>
-                <li>
-                  <a href="#">Sports
-                    <div className="fly-item"><span className="bg-blue-500 p-1 rounded-full -ml-4">New!</span></div>
-                  </a>
-                </li>
-                <li className="children has-child"><a href="#">Children</a>
-                  <MegaMenuChildren/>
-                </li>
-                <li><a href="#">Unisex</a></li>
-              </ul>
-              <div className="-top-[60px] relative w-fit ml-auto -mt-5 ">
-            <NavIcons/>
+          <div className="mm-header-search">
+            <SearchBar />
           </div>
-            </nav>
-            
-            </div>
-            
+
+          <div className="mm-header-actions">
+            <NavIcons />
           </div>
-          {/* <div className="right container  ">
-            <NavIcons/>
-          </div> */}
         </div>
       </div>
-    </div>
-    </div>
 
-    {/* header top */}
-    <div className="header-main mobile-hide">
-      <div className="container">
-        <div className="wrapper flexitem">
-          <div className="left">
-          <div className="dpt-cat relative" ref={wrapperRef}>
-            <div className="dpt-head cursor-pointer" onClick={toggleMenu}>
-              <div className="main-text">Departments & Categories</div>
-              <div className="mini-text mobile-hide">Total 1003 products</div>
-
-              <div className="dpt-trigger mobile-hide">
-                <i className="ri-menu-3-line ri-xl"></i>
-              </div>
-            </div>
-
-            {/* dropdown ONLY controlled by click */}
-            {open && <HoverCategoryMenu />}
-          </div>
-          </div>
-
-          <div className="right">
-            <div className="search-box">
-              <SearchBar/>
-            </div>
-          </div>
-
+      <div className="mm-desktop-nav">
+        <div className="mm-container mm-desktop-nav-inner">
+          <nav className="mm-primary-links" aria-label="Main navigation">
+            <Link to="/">Home</Link>
+            <Link to="/list">Shop</Link>
+            <Link to="/blogs">Journal</Link>
+            <Link to="/organic">Organic</Link>
+          </nav>
+          <CategoryNavigation />
         </div>
       </div>
-    </div>
+
+      <div className="mm-category-row">
+        <CategoryNavigation />
+      </div>
     </header>
   );
 };
 
-export default HeaderTop;
+export default Header;
