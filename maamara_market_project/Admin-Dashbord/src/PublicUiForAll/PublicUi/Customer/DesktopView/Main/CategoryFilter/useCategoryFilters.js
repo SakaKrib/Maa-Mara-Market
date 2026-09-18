@@ -25,6 +25,16 @@ const useCategoryFilters = () => {
     sortBy: "Default",
     perPage: 10,
   });
+  useEffect(() => {
+    setSelectedFilters((prev) => {
+      const nextCategories = Number.isFinite(categoryFromUrl) && categoryFromUrl > 0 ? [categoryFromUrl] : [];
+      const same =
+        prev.categories.length === nextCategories.length &&
+        prev.categories.every((value, index) => value === nextCategories[index]);
+      return same ? prev : { ...prev, categories: nextCategories };
+    });
+  }, [categoryFromUrl]);
+
   const [products, setProducts] = useState([]);
   const [nextUrl, setNextUrl] = useState(null);
   const [prevUrl, setPrevUrl] = useState(null);
