@@ -62,20 +62,21 @@ const CartPage = () => {
               const availableStock = Number(item.selected_size?.quantity_in_stock ?? item.in_stock ?? variantStock);
               const quantity = Number(item.quantity || 0);
               const remaining = Math.max(availableStock - quantity, 0);
-              const color = item.color_variant?.color || item.selected_color || item.color || item.variant?.color;
-              const size = item.size_stock?.size || item.selected_size?.size || item.size;
-              const lineId = item.id;
+              const color = item.variant_color || item.color_variant?.color || item.selected_color || item.color || item.variant?.color;
+              const size = item.size || item.size_stock?.size || item.selected_size?.size;
+              const lineId = item.ordered_item_id || item.cart_item_id || item.id;
+              const productId = item.item?.id || item.item_id || item.id;
 
               return (
                 <article key={lineId} className="mm-card p-3 sm:p-4">
                   <div className="flex gap-3 sm:gap-5">
-                    <Link to={`/item/${item.item?.id || item.item_id || item.id}`} className="shrink-0">
+                    <Link to={`/item/${productId}`} className="shrink-0">
                       <img src={imageUrl(item.image || item.item?.image)} alt={item.name || item.item?.name || "Product"} className="w-24 h-24 sm:w-32 sm:h-32 rounded-md object-cover bg-gray-100" />
                     </Link>
                     <div className="min-w-0 flex-1">
                       <div className="flex flex-col sm:flex-row sm:justify-between gap-2">
                         <div>
-                          <Link to={`/item/${item.item?.id || item.item_id || item.id}`} className="font-semibold text-base sm:text-lg hover:underline">
+                          <Link to={`/item/${productId}`} className="font-semibold text-base sm:text-lg hover:underline">
                             {item.name || item.item?.name || "Product"}
                           </Link>
                           <p className="text-xs sm:text-sm text-gray-500 mt-1">
@@ -89,13 +90,13 @@ const CartPage = () => {
                         <div className="flex items-center gap-3">
                           <span className="text-xs text-gray-500">Quantity</span>
                           <div className="inline-flex items-center border border-gray-300 rounded-md overflow-hidden">
-                            <button type="button" aria-label="Decrease quantity" disabled={actionLoading || quantity <= 1} onClick={() => updateQuantity(lineId, "decrease", { cartItemId: lineId })} className="w-9 h-9 hover:bg-gray-50 disabled:opacity-40">−</button>
+                            <button type="button" aria-label="Decrease quantity" disabled={actionLoading || quantity <= 1} onClick={() => updateQuantity(productId, "decrease", { cartItemId: lineId, variantId: item.variant_id, sizeId: item.size_id, ageVariantId: item.age_variant_id, selectedLength: item.selected_length, selectedWeight: item.selected_weight, shoeSize: item.shoe_size })} className="w-9 h-9 hover:bg-gray-50 disabled:opacity-40">−</button>
                             <span className="w-10 text-center text-sm font-semibold">{quantity}</span>
-                            <button type="button" aria-label="Increase quantity" disabled={actionLoading || remaining <= 0} onClick={() => updateQuantity(lineId, "increase", { cartItemId: lineId })} className="w-9 h-9 hover:bg-gray-50 disabled:opacity-40">+</button>
+                            <button type="button" aria-label="Increase quantity" disabled={actionLoading || remaining <= 0} onClick={() => updateQuantity(productId, "increase", { cartItemId: lineId, variantId: item.variant_id, sizeId: item.size_id, ageVariantId: item.age_variant_id, selectedLength: item.selected_length, selectedWeight: item.selected_weight, shoeSize: item.shoe_size })} className="w-9 h-9 hover:bg-gray-50 disabled:opacity-40">+</button>
                           </div>
                           <span className="text-xs text-gray-500">{remaining > 0 ? `${remaining} left` : "Stock limit reached"}</span>
                         </div>
-                        <RemoveFromCartButton itemId={lineId} cartItemId={lineId} variantId={item.color_variant?.id || item.variant_id} sizeId={item.size_stock?.id || item.size_id} />
+                        <RemoveFromCartButton itemId={productId} cartItemId={lineId} variantId={item.variant_id} sizeId={item.size_id} ageVariantId={item.age_variant_id} selectedLength={item.selected_length} selectedWeight={item.selected_weight} shoeSize={item.shoe_size} />
                       </div>
                     </div>
                   </div>
