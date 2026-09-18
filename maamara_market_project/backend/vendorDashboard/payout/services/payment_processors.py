@@ -894,7 +894,7 @@ def payment_processors(start_date, end_date, payment_method=None):
                     results.append({
                         "vendor": payout.vendor.company_name,
                         "reference": payout.reference,
-                        "status": "Sent to PayPal",
+                        "status": "Submitted to PayPal; awaiting confirmation",
                         "payment_method": "PAYPAL",
                     })
         else:
