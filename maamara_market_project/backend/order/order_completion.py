@@ -82,7 +82,17 @@ def complete_paid_order(order, payment, *, transaction_id=None):
     locked_order = order.__class__.objects.select_for_update().get(pk=order.pk)
     locked_payment = payment.__class__.objects.select_for_update().get(pk=payment.pk)
 
-    if locked_order.status == "completed" and locked_payment.status == "completed":
+    # A completed order is already stock-finalized. Never run the
+    # fulfillment loop again merely because a payment row is still pending.
+    if locked_order.status == "completed":
+        if locked_payment.status != "completed":
+            locked_payment.status = "completed"
+            if transaction_id:
+                locked_payment.transaction_id = transaction_id
+            fields = ["status"]
+            if transaction_id:
+                fields.append("transaction_id")
+            locked_payment.save(update_fields=fields)
         return locked_order, False
 
     if locked_payment.status != "completed":
