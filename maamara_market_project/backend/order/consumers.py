@@ -26,7 +26,7 @@ from channels.generic.websocket import AsyncWebsocketConsumer
 class SafeJSONEncoder(json.JSONEncoder):
     def default(self, obj):
         if isinstance(obj, Decimal):
-            return float(obj)
+            return str(obj)
         if isinstance(obj, (datetime, date)):
             return obj.isoformat()
         return super().default(obj)
@@ -37,34 +37,29 @@ class OrderConsumer(AsyncWebsocketConsumer):
         self.order_id = self.scope['url_route']['kwargs']['order_id']
         self.room_group_name = f'order_{self.order_id}'
 
-        print(f"Connecting to room group: {self.room_group_name}")
+        if not await self.can_access_order():\n            await self.close(code=4003)\n            return
         try:
             await self.channel_layer.group_add(self.room_group_name, self.channel_name)
             await self.accept()
-            print("WebSocket accepted")
+            pass
         except Exception as e:
             print(f"Error on connect: {e}")
             await self.close()
 
     async def disconnect(self, close_code):
-        print(f"Disconnecting from room group: {self.room_group_name} with code {close_code}")
+        if hasattr(self, "room_group_name"):
         await self.channel_layer.group_discard(self.room_group_name, self.channel_name)
 
-    async def dispatch(self, message):
-        # Log message types for debugging
-        message_type = message.get("type")
-        print(f"Dispatching message type: {message_type}")
-        
-        # Transform '.' to '_' as per Channels convention for handler method names
-        handler_name = message_type.replace(".", "_")
-        handler = getattr(self, handler_name, None)
-        
-        if handler:
-            await handler(message)
-        else:
-            print(f"WARNING: No handler for message type: {message_type}")
-            # Optional: You can raise or ignore here
-            # raise ValueError(f"No handler for message type {message_type}")
+    @database_sync_to_async
+    def can_access_order(self):
+        order = Order.objects.filter(id=self.order_id).first()
+        if not order:
+            return False
+        user = self.scope.get("user")
+        if user and user.is_authenticated:
+            return bool(user.is_staff or order.user_id == user.id)
+        visitor_id = self.scope.get("visitor_id")
+        return bool(visitor_id and order.visitor_id == visitor_id)
 
     async def payment_status(self, event):
         print(f"Sending payment_status event: {event}")
@@ -276,7 +271,7 @@ class VendorNotificationsConsumer(AsyncWebsocketConsumer):
         # 1. AUTH CHECK
         # -------------------------
         if not self.user.is_authenticated:
-            print("❌ WS REJECT: user not authenticated")
+
             await self.close()
             return
 
@@ -286,7 +281,7 @@ class VendorNotificationsConsumer(AsyncWebsocketConsumer):
         self.vendor = await self.get_vendor(self.user)
 
         if not self.vendor:
-            print("❌ WS REJECT: vendor not found for user:", self.user)
+
             await self.close()
             return
 
@@ -305,7 +300,7 @@ class VendorNotificationsConsumer(AsyncWebsocketConsumer):
         # -------------------------
         await self.accept()
 
-        print("✅ WS CONNECTED:", self.user)
+
 
         # -------------------------
         # 5. SEND INITIAL DATA
@@ -327,13 +322,13 @@ class VendorNotificationsConsumer(AsyncWebsocketConsumer):
                 self.channel_name
             )
 
-        print("🔌 WS DISCONNECTED:", self.user)
+
 
     # ======================================================
     # RECEIVE GROUP MESSAGE
     # ======================================================
     async def notifications_update(self, event):
-        print("🔥 WS EVENT RECEIVED:", event)
+
 
         await self.send(text_data=json.dumps({
             "type": "notifications_update",
