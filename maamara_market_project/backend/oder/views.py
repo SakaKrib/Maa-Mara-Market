@@ -25,19 +25,6 @@ from .models import OderItem, Order, Transaction
 User = get_user_model()
 
 class IsAuthenticatedOrVisitor(BasePermission):
-#     def has_permission(self, request, view):
-#         if request.user and request.user.is_authenticated:
-#             return True
-#         token = request.COOKIES.get("visitorAccessToken")
-#         if token:
-#             try:
-#                 validated = JWTAuthentication().get_validated_token(token)
-#                 return validated.get("visitor", False) is True
-#             except (InvalidToken, TokenError):
-#                 return False
-#         return False
-
-class IsAuthenticatedOrVisitor(BasePermission):
     def has_permission(self, request, view):
         # Check Django auth
         if request.user and request.user.is_authenticated:
