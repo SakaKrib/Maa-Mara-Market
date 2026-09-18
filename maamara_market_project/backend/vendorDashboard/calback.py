@@ -419,9 +419,9 @@ def paypal_payout_webhook(request):
             "PayPal payout webhook processing failed.",
             extra={"event_id": event_id, "event_type": event_type},
         )
-        # Return 2xx only after the event has been authenticated. PayPal can
-        # retry delivery; reconciliation also provides a recovery path.
-        return JsonResponse({"status": "accepted"}, status=200)
+        # Let PayPal retry transient/internal failures. The handler is
+        # idempotent, and reconciliation is available for missed deliveries.
+        return JsonResponse({"error": "Temporary processing failure"}, status=500)
 
     return JsonResponse({"status": "accepted"}, status=200)
 
