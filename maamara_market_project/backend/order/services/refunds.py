@@ -1,10 +1,10 @@
 import logging
-import uuid
 from decimal import Decimal, InvalidOperation
 
 import requests
 from django.conf import settings
 from django.db import transaction
+from django.db.models import Sum
 from django.utils import timezone
 
 from .models import Refund, Transaction
@@ -25,20 +25,27 @@ def _paypal_config():
 
 
 def _paypal_access_token(config):
-    response = requests.post(
-        config["auth_url"],
-        data={"grant_type": "client_credentials"},
-        auth=(config["client_id"], config["client_secret"]),
-        headers={"Accept": "application/json", "Accept-Language": "en_US"},
-        timeout=15,
-    )
-    if response.status_code != 200:
-        logger.error("PayPal OAuth failed while processing a refund.")
+    try:
+        response = requests.post(
+            config["auth_url"],
+            data={"grant_type": "client_credentials"},
+            auth=(config["client_id"], config["client_secret"]),
+            headers={"Accept": "application/json", "Accept-Language": "en_US"},
+            timeout=15,
+        )
+    except requests.exceptions.RequestException:
+        logger.exception("PayPal OAuth request failed during refund processing.")
         raise RefundProcessingError("Unable to authenticate with PayPal.")
+
+    if response.status_code != 200:
+        logger.error("PayPal OAuth returned status=%s during refund processing.", response.status_code)
+        raise RefundProcessingError("Unable to authenticate with PayPal.")
+
     try:
         token = response.json().get("access_token")
     except ValueError:
         token = None
+
     if not token:
         raise RefundProcessingError("PayPal authentication returned no access token.")
     return token
@@ -48,7 +55,7 @@ def _capture_id_for_payment(payment):
     if payment.transaction_id:
         return payment.transaction_id
 
-    capture = (
+    return (
         Transaction.objects
         .filter(payment=payment, transaction_type__iexact="PayPal")
         .exclude(paypal_transaction_id__isnull=True)
@@ -57,7 +64,6 @@ def _capture_id_for_payment(payment):
         .values_list("paypal_transaction_id", flat=True)
         .first()
     )
-    return capture
 
 
 def _validate_refund_total(payment, refund):
@@ -65,42 +71,39 @@ def _validate_refund_total(payment, refund):
     if provider_amount is None:
         raise RefundProcessingError("Original payment amount is unavailable.")
 
-    completed_or_processing = (
-        Refund.objects
-        .filter(payment=payment, status__in=["processing", "completed"])
-        .exclude(pk=refund.pk)
-        .aggregate_total()
-        if hasattr(Refund.objects, "aggregate_total")
-        else None
-    )
-
-    if completed_or_processing is None:
-        from django.db.models import Sum
-        completed_or_processing = (
-            Refund.objects
-            .filter(payment=payment, status__in=["processing", "completed"])
-            .exclude(pk=refund.pk)
-            .aggregate(total=Sum("amount"))
-            .get("total")
-            or Decimal("0.00")
-        )
-
     if refund.amount <= 0:
         raise RefundProcessingError("Refund amount must be greater than zero.")
 
-    if completed_or_processing + refund.amount > Decimal(str(provider_amount)):
+    previous_total = (
+        Refund.objects
+        .filter(payment=payment, status__in=["processing", "completed"])
+        .exclude(pk=refund.pk)
+        .aggregate(total=Sum("amount"))
+        .get("total")
+        or Decimal("0.00")
+    )
+
+    if previous_total + refund.amount > Decimal(str(provider_amount)):
         raise RefundProcessingError("Refund amount exceeds the remaining captured payment.")
+
+
+def _mark_refund_failed(refund_id, reason):
+    with transaction.atomic():
+        refund = Refund.objects.select_for_update().get(pk=refund_id)
+        if refund.status != "completed":
+            refund.status = "failed"
+            refund.failure_reason = str(reason)[:1000]
+            refund.save(update_fields=["status", "failure_reason", "updated_at"])
+        return refund
 
 
 def process_paypal_refund(refund_id):
     """
-    Submit one approved Refund ledger entry to PayPal.
+    Submit one approved refund ledger entry to PayPal.
 
-    The payment row is locked before the cumulative-refund check, so two
-    concurrent refunds against the same capture cannot overspend it.
-    Provider calls happen outside the database transaction; an ambiguous
-    network failure therefore leaves the refund in processing for retry/
-    reconciliation instead of falsely reporting failure.
+    The payment row is locked before the cumulative-refund check, preventing
+    concurrent refund jobs for the same payment from exceeding its captured
+    amount. Provider I/O occurs outside the database transaction.
     """
     with transaction.atomic():
         refund = (
@@ -109,63 +112,59 @@ def process_paypal_refund(refund_id):
             .select_related("payment", "return_request__item")
             .get(pk=refund_id)
         )
+
         if refund.status == "completed":
             return refund
 
         if refund.provider != "PayPal":
             raise RefundProcessingError("This refund provider is not implemented.")
 
-        payment = Payment = refund.payment.__class__
-        locked_payment = Payment.objects.select_for_update().get(pk=refund.payment_id)
-        refund.payment = locked_payment
+        Payment = refund.payment.__class__
+        payment = Payment.objects.select_for_update().get(pk=refund.payment_id)
 
-        if locked_payment.payment_method != "PayPal" or locked_payment.status != "completed":
+        if payment.payment_method != "PayPal" or payment.status != "completed":
             raise RefundProcessingError("The original PayPal payment is not eligible for refund.")
 
-        capture_id = _capture_id_for_payment(locked_payment)
+        capture_id = _capture_id_for_payment(payment)
         if not capture_id:
             raise RefundProcessingError("The original PayPal capture reference is missing.")
 
-        _validate_refund_total(locked_payment, refund)
+        _validate_refund_total(payment, refund)
 
-        if not refund.currency:
-            refund.currency = locked_payment.provider_currency or "USD"
+        provider_currency = (payment.provider_currency or "USD").upper()
+        refund_currency = (refund.currency or provider_currency).upper()
+        if refund_currency != provider_currency:
+            raise RefundProcessingError("Refund currency does not match the original PayPal payment.")
+
+        config = _paypal_config()
+        idempotency_key = f"maa-mara-refund-{refund.id}"
 
         refund.status = "processing"
         refund.failure_reason = None
+        refund.currency = provider_currency
         refund.save(update_fields=["status", "failure_reason", "currency", "updated_at"])
 
-        provider_currency = (locked_payment.provider_currency or "USD").upper()
-        if refund.currency.upper() != provider_currency:
-            raise RefundProcessingError("Refund currency does not match the original PayPal payment.")
-
-        idempotency_key = f"maa-mara-refund-{refund.id}"
-        provider_payload = {
-            "amount": {
-                "value": f"{refund.amount:.2f}",
-                "currency_code": provider_currency,
-            }
-        }
-
-    config = _paypal_config()
-    token = _paypal_access_token(config)
-    url = f"{config['base_url'].rstrip('/')}/v2/payments/captures/{capture_id}/refund"
-    headers = {
-        "Content-Type": "application/json",
-        "Authorization": f"Bearer {token}",
-        "PayPal-Request-Id": idempotency_key,
-    }
-
     try:
+        token = _paypal_access_token(config)
         response = requests.post(
-            url,
-            headers=headers,
-            json=provider_payload,
+            f"{config['base_url'].rstrip('/')}/v2/payments/captures/{capture_id}/refund",
+            headers={
+                "Content-Type": "application/json",
+                "Authorization": f"Bearer {token}",
+                "PayPal-Request-Id": idempotency_key,
+            },
+            json={
+                "amount": {
+                    "value": f"{refund.amount:.2f}",
+                    "currency_code": provider_currency,
+                }
+            },
             timeout=30,
         )
     except requests.exceptions.RequestException:
         logger.exception("PayPal refund request failed after submission attempt.")
-        # Do not mark failed: PayPal may have accepted the request.
+        # The provider may have accepted the request before the connection failed.
+        # Keep processing so reconciliation/retry can resolve it safely.
         return Refund.objects.get(pk=refund_id)
 
     try:
@@ -175,34 +174,41 @@ def process_paypal_refund(refund_id):
 
     if response.status_code not in (200, 201):
         provider_error = data.get("name") or data.get("message") or "PayPal rejected the refund."
-        with transaction.atomic():
-            locked_refund = Refund.objects.select_for_update().get(pk=refund_id)
-            if locked_refund.status != "completed":
-                locked_refund.status = "failed"
-                locked_refund.failure_reason = str(provider_error)[:1000]
-                locked_refund.save(update_fields=["status", "failure_reason", "updated_at"])
+        _mark_refund_failed(refund_id, provider_error)
         raise RefundProcessingError("PayPal rejected the refund request.")
 
     provider_reference = data.get("id")
     provider_status = str(data.get("status") or "").upper()
     provider_amount = data.get("amount", {}).get("value")
-    response_currency = str(data.get("amount", {}).get("currency_code") or provider_currency).upper()
+    response_currency = str(
+        data.get("amount", {}).get("currency_code") or provider_currency
+    ).upper()
 
     if not provider_reference:
-        raise RefundProcessingError("PayPal returned no refund reference.")
+        return _mark_refund_failed(refund_id, "PayPal returned no refund reference.")
 
     try:
         if provider_amount is not None and Decimal(str(provider_amount)) != refund.amount:
-            raise RefundProcessingError("PayPal refund amount does not match the approved refund.")
+            return _mark_refund_failed(
+                refund_id,
+                "PayPal refund amount does not match the approved refund.",
+            )
     except (InvalidOperation, TypeError):
-        raise RefundProcessingError("PayPal returned an invalid refund amount.")
+        return _mark_refund_failed(refund_id, "PayPal returned an invalid refund amount.")
 
     if response_currency != provider_currency:
-        raise RefundProcessingError("PayPal returned an unexpected refund currency.")
+        return _mark_refund_failed(
+            refund_id,
+            "PayPal returned an unexpected refund currency.",
+        )
 
     completed = provider_status == "COMPLETED"
+
     with transaction.atomic():
         locked_refund = Refund.objects.select_for_update().get(pk=refund_id)
+        if locked_refund.status == "completed":
+            return locked_refund
+
         locked_refund.provider_reference = provider_reference
         locked_refund.status = "completed" if completed else "processing"
         locked_refund.failure_reason = None
@@ -210,8 +216,11 @@ def process_paypal_refund(refund_id):
             locked_refund.completed_at = timezone.now()
         locked_refund.save(
             update_fields=[
-                "provider_reference", "status", "failure_reason",
-                "completed_at", "updated_at",
+                "provider_reference",
+                "status",
+                "failure_reason",
+                "completed_at",
+                "updated_at",
             ]
         )
 
