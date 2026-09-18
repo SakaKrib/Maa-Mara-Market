@@ -13,9 +13,8 @@ from .items import vendor_item_growth_stats
 from .ItemInventory import *
 
 router = DefaultRouter()
-router.register(r'items', ItemViewSet, basename='item')
-router.register(r'items-vendor', vendorItemViewset, basename='item-vendor')
-router.register(r'vendors', VendorAdminViewSet)
+# Legacy router registrations were removed: the referenced viewsets no longer
+# exist in this branch. Current item/vendor APIs are exposed explicitly below.
 
 urlpatterns = [
     path('api/', include(router.urls)),
