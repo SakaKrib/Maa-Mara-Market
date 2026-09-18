@@ -534,7 +534,6 @@ class Transaction(models.Model):
 
 
     card = models.ForeignKey(Card, on_delete=models.SET_NULL, null=True, blank=True)
-    order = models.ForeignKey(Order, on_delete=models.SET_NULL, null=True, blank=True)
 
     # ✅ Common fields
     amount = models.DecimalField(max_digits=10, decimal_places=2)
