@@ -15,6 +15,8 @@ from .paypalApis import (
     dashboard_stats,
     get_customers,
     paypal_webhook,
+    revenue_area_chart,
+    revenue_growth,
     transaction_totals,
     vendor_sales,
 )
@@ -89,7 +91,7 @@ urlpatterns = [
     path("api/pending-orders-stats/", vendor_pending_orders, name="vendor-pending-orders"),
     
     # pending oders
-    path("api/vendor-pending-order/items/", vendor_pending_order_items, name="vendor-pending-order-items"),
+    path("api/vendor-pending-order/items/", vendor_pending_order_items, name="vendor-completed-order-items"),
 
     #complete orders
     path("api/vendor-complete-order/items/", vendor_completed_order_items, name="vendor-pending-order-items"),
@@ -105,7 +107,8 @@ urlpatterns = [
     # stats page for admin
     path("api/admin/dashboard/vendor-sales/", vendor_sales),
     # monthly revenue ststistics
-    path("api/revenue-analytics/", vendor_sales),
+    path("api/revenue-growth/", revenue_growth, name="revenue-growth"),
+    path("api/revenue-analytics/", revenue_area_chart, name="revenue-analytics"),
     
     # api for 
     path("api/admin-transactions/", admin_transactions),
