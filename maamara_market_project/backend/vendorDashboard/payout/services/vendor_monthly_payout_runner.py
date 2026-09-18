@@ -164,6 +164,16 @@ def pay_single_vendor_payout(request, reference):
             }, status=202 if method == "PAYPAL" else 200)
 
         else:
+            if method == "PAYPAL" and response.get("retryable"):
+                return Response({
+                    "error": response.get(
+                        "error",
+                        "PayPal payout status is ambiguous; reconcile before retrying.",
+                    ),
+                    "retryable": True,
+                    "reference": payout.reference,
+                }, status=202)
+
             return Response({
                 "error": response.get("error", "Payment failed."),
                 "response": response,
