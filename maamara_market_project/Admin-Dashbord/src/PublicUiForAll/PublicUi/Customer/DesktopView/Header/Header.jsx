@@ -73,7 +73,6 @@ const Header = () => {
             <Link to="/blogs">Journal</Link>
             <Link to="/organic">Organic</Link>
           </nav>
-          <CategoryNavigation />
         </div>
       </div>
 
