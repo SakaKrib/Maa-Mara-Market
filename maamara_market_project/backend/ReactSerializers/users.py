@@ -380,7 +380,15 @@ class VisitorTokenView(APIView):
         existing_refresh = request.COOKIES.get("visitorRefreshToken")
 
         if existing_id and existing_refresh:
-            return Response({
+            try:
+                existing = RefreshToken(existing_refresh)
+                if (not existing.get("visitor") or existing.get("visitor_id") != existing_id):
+                    raise TokenError("Visitor identity mismatch")
+            except (TokenError, InvalidToken):
+                existing_id = None
+                existing_refresh = None
+            if existing_id and existing_refresh:
+                return Response({
                 "message": "Visitor already exists",
                 "visitor_id": existing_id
             })
@@ -494,7 +502,7 @@ class CookieRefreshView(APIView):
                     "accessToken",
                     str(new_access),
                     httponly=True,
-                    secure=False,
+                    secure=not settings.DEBUG,
                     samesite="Lax",
                     max_age=5 * 60,
                     path="/",
