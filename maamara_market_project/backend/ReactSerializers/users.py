@@ -23,6 +23,7 @@ from rest_framework.decorators import permission_classes, api_view
 
 from rest_framework_simplejwt.tokens import AccessToken, RefreshToken
 from rest_framework_simplejwt.authentication import JWTAuthentication
+from rest_framework_simplejwt.serializers import TokenRefreshSerializer
 from rest_framework_simplejwt.exceptions import InvalidToken, TokenError
 
 from core.models import Profile
@@ -487,21 +488,16 @@ class CookieRefreshView(APIView):
         user_refresh = request.COOKIES.get("refreshToken")
         visitor_refresh = request.COOKIES.get("visitorRefreshToken")
 
-        # -------- USER --------
         if user_refresh:
             try:
-                refresh = RefreshToken(user_refresh)
-
-                if refresh.payload.get("token_type") != "refresh":
-                    return Response({"error": "Invalid token type"}, status=401)
-
-                new_access = refresh.access_token
+                serializer = TokenRefreshSerializer(data={"refresh": user_refresh})
+                serializer.is_valid(raise_exception=True)
+                data = serializer.validated_data
 
                 response = Response({"message": "refreshed"})
-
                 response.set_cookie(
                     "accessToken",
-                    str(new_access),
+                    data["access"],
                     httponly=True,
                     secure=not settings.DEBUG,
                     samesite="Lax",
@@ -509,28 +505,45 @@ class CookieRefreshView(APIView):
                     path="/",
                 )
 
+                # ROTATE_REFRESH_TOKENS=True causes SimpleJWT to return a new
+                # refresh token here; never keep extending a stale token.
+                if "refresh" in data:
+                    response.set_cookie(
+                        "refreshToken",
+                        data["refresh"],
+                        httponly=True,
+                        secure=not settings.DEBUG,
+                        samesite="Lax",
+                        max_age=30 * 24 * 3600,
+                        path="/",
+                    )
                 return response
 
-            except (TokenError, InvalidToken):
+            except (TokenError, InvalidToken, ValueError):
                 response = Response({"error": "Invalid user refresh"}, status=401)
-                response.delete_cookie("accessToken")
-                response.delete_cookie("refreshToken")
+                response.delete_cookie("accessToken", path="/")
+                response.delete_cookie("refreshToken", path="/")
                 return response
 
-        # -------- VISITOR --------
         if visitor_refresh:
             try:
                 refresh = RefreshToken(visitor_refresh)
 
-                if not refresh.payload.get("visitor"):
-                    raise TokenError("Not a visitor token")
+                visitor_id = request.COOKIES.get("visitorId")
+                token_visitor_id = refresh.payload.get("visitor_id")
+                if (
+                    not refresh.payload.get("visitor")
+                    or not token_visitor_id
+                    or not visitor_id
+                    or str(token_visitor_id) != str(visitor_id)
+                ):
+                    raise TokenError("Visitor identity mismatch")
 
                 new_access = refresh.access_token
                 new_access["visitor"] = True
-                new_access["visitor_id"] = refresh.payload.get("visitor_id")
+                new_access["visitor_id"] = token_visitor_id
 
                 response = Response({"message": "visitor refreshed"})
-
                 response.set_cookie(
                     "visitorAccessToken",
                     str(new_access),
@@ -540,13 +553,13 @@ class CookieRefreshView(APIView):
                     max_age=30 * 24 * 3600,
                     path="/",
                 )
-
                 return response
 
             except (TokenError, InvalidToken):
                 response = Response({"error": "Invalid visitor refresh"}, status=401)
-                response.delete_cookie("visitorAccessToken")
-                response.delete_cookie("visitorRefreshToken")
+                response.delete_cookie("visitorAccessToken", path="/")
+                response.delete_cookie("visitorRefreshToken", path="/")
+                response.delete_cookie("visitorId", path="/")
                 return response
 
         return Response({"error": "No refresh token"}, status=401)
