@@ -7,7 +7,6 @@ from django_countries.fields import CountryField
 from core.models import Wallet, Voucher, Referral
 from django.utils import timezone
 from django.db.models import Sum
-from vendorDashboard.models import Vendor
 from decimal import Decimal, InvalidOperation
 import math
 from .Base import get_usd_to_kes_rate
@@ -158,7 +157,7 @@ class OderItem(models.Model):
     is_exchanged = models.BooleanField(default=False)
     status = models.CharField(
         max_length=20,
-        choices=[('none', 'No Refund'),('approved', 'Approved'),('rejected', 'Rejected'),('refunded', 'Refunded'),('none', 'No Refund')],
+        choices=[('none', 'No Refund'),('approved', 'Approved'),('rejected', 'Rejected'),('refunded', 'Refunded')],
         default='none'
     )
     ordered_date = models.DateTimeField(auto_now_add=True)
@@ -398,9 +397,7 @@ class Card(models.Model):
         return f"{self.brand or 'CARD'} ****{self.last_digits or '----'}"
 
 
-# payments/models.py
-
-
+# Payment transaction ledger
 class Transaction(models.Model):
     TRANSACTION_TYPES = (
         ("C2B", "Customer to Business"),
@@ -419,6 +416,49 @@ class Transaction(models.Model):
         ("rent", "Rent"),
     )
 
+    transaction_type = models.CharField(max_length=30, choices=TRANSACTION_TYPES)
+    payment_method = models.CharField(max_length=30)
     category = models.CharField(max_length=50, choices=CATEGORY_CHOICES, null=True, blank=True)
-
     visitor_id = models.CharField(max_length=64, blank=True, null=True, db_index=True)
+
+    order = models.ForeignKey(
+        Order,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="transactions",
+    )
+    payment = models.ForeignKey(
+        Payment,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="transactions",
+    )
+    vendor = models.ForeignKey(
+        "vendorDashboard.Vendor",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="transactions",
+    )
+
+    amount = models.DecimalField(max_digits=12, decimal_places=2, default=Decimal("0.00"))
+    status = models.CharField(max_length=30, default="pending")
+    phone_number = models.CharField(max_length=20, blank=True, null=True)
+    mpesa_receipt_number = models.CharField(max_length=100, blank=True, null=True, db_index=True)
+    account_reference = models.CharField(max_length=100, blank=True, null=True, db_index=True)
+    paypal_transaction_id = models.CharField(max_length=255, blank=True, null=True, db_index=True)
+    payer_email = models.EmailField(blank=True, null=True)
+    raw_data = models.JSONField(default=dict, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        indexes = [
+            models.Index(fields=["order", "payment"]),
+            models.Index(fields=["transaction_type", "status"]),
+        ]
+
+    def __str__(self):
+        return self.mpesa_receipt_number or self.paypal_transaction_id or f"TX-{self.pk}"
