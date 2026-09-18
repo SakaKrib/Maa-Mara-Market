@@ -20,7 +20,8 @@ from django.db.models import Q
 from django.db import transaction
 import logging
 from django.conf import settings
-from .models import Order
+from .refund_tasks import process_refund_task
+from .models import Order, Refund
 
 User = get_user_model()
 logger = logging.getLogger(__name__)
@@ -80,7 +81,11 @@ def return_request_handler_api(request, item_id):
 
         # --- Get the order containing this item ---
         order = Order.objects.filter(order_items=item).first()
-
+        if not order:
+            return Response({
+                "success": False,
+                "error": "The ordered item is not attached to an order.",
+            }, status=status.HTTP_409_CONFLICT)
 
         # --- Check if a return already exists ---
         existing_return = ReturnRequest.objects.filter(item=item).first()
@@ -167,8 +172,14 @@ def return_request_handler_api(request, item_id):
         else:
             return_request = existing_return
 
-        # Step 2️⃣ — Handle customer preference
-        customer_pref = request.data.get("customer_preference") or return_request.customer_preference
+        # Step 2️⃣ — Handle customer preference. Once chosen, it cannot silently change.
+        requested_pref = request.data.get("customer_preference")
+        customer_pref = return_request.customer_preference or requested_pref
+        if requested_pref and return_request.customer_preference and requested_pref != return_request.customer_preference:
+            return Response({
+                "success": False,
+                "error": "This return request already has a different customer preference.",
+            }, status=status.HTTP_409_CONFLICT)
 
         if not customer_pref:
             return Response({
@@ -194,13 +205,16 @@ def return_request_handler_api(request, item_id):
         if customer_pref == "refund":
             total_refund = unit_price * quantity
 
-            VendorAdjustment.objects.create(
+            vendor_adjustment = VendorAdjustment.objects.create(
                 vendor=vendor,
                 order_item=order_item,
                 amount=total_refund,
                 reason=f"Customer refund for {product_name} (OrderItem ID: {order_item.id})",
-                customer_preference='refund'
+                customer_preference="refund",
             )
+            return_request.vendor_adjustment = vendor_adjustment
+            if not return_request.customer_preference:
+                return_request.customer_preference = "refund"
 
             return_request.start_refund = True
             return_request.refund_issued = False
@@ -240,7 +254,7 @@ def return_request_handler_api(request, item_id):
             response = Response({
                 "success": True,
                 "message": f"Refund prepared: {total_refund}. Awaiting admin approval.",
-                "refund_amount": float(total_refund)
+                "refund_amount": str(total_refund)
             }, status=status.HTTP_200_OK)
 
             response.set_cookie(
@@ -304,7 +318,7 @@ def return_request_handler_api(request, item_id):
             response = Response({
                 "success": True,
                 "message": "Exchange credit created. You can now select a replacement item.",
-                "exchange_credit": float(total_exchange_credit)
+                "exchange_credit": str(total_exchange_credit)
             }, status=status.HTTP_200_OK)
 
             response.set_cookie(
@@ -327,7 +341,7 @@ def return_request_handler_api(request, item_id):
         logger.exception("Return request handler failed")
         return Response({
             "success": False,
-            "error": str(e)
+            "error": "Unable to process the return request."
         }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
@@ -382,6 +396,12 @@ def approve_return_request_api(request, return_id):
         item = return_request.item
         product = item.item
         vendor = Vendor.objects.get(user=product.created_by)
+        order = Order.objects.select_for_update().filter(order_items=item).select_related("payment").first()
+        if not order or not order.payment:
+            return Response({
+                "success": False,
+                "error": "The return is not linked to a payment.",
+            }, status=status.HTTP_409_CONFLICT)
         customer = return_request.customer
         visitor_id = return_request.visitor_id
         pref = return_request.customer_preference or "unspecified"
@@ -397,7 +417,39 @@ def approve_return_request_api(request, return_id):
                 return_request.admin_note = admin_note
                 return_request.save()
 
-                VendorAdjustment.objects.filter(order_item=item).update(is_approved=True)
+                adjustment = return_request.vendor_adjustment
+                if not adjustment:
+                    return Response({
+                        "success": False,
+                        "error": "Refund adjustment is missing for this return request.",
+                    }, status=status.HTTP_409_CONFLICT)
+                adjustment.is_approved = True
+                adjustment.save(update_fields=["is_approved"])
+
+                payment = order.payment
+                provider = payment.payment_method
+                if provider not in {"PayPal", "Mpesa", "card"}:
+                    return Response({
+                        "success": False,
+                        "error": "The payment provider is not supported for refunds.",
+                    }, status=status.HTTP_409_CONFLICT)
+                refund, created = Refund.objects.get_or_create(
+                    return_request=return_request,
+                    defaults={
+                        "payment": payment,
+                        "amount": adjustment.amount,
+                        "currency": payment.provider_currency or "KES",
+                        "provider": provider,
+                        "status": "approved",
+                    },
+                )
+                if not created and refund.status == "failed":
+                    refund.status = "approved"
+                    refund.failure_reason = None
+                    refund.save(update_fields=["status", "failure_reason", "updated_at"])
+
+                if refund.provider == "PayPal" and refund.status == "approved":
+                    transaction.on_commit(lambda refund_id=refund.id: process_refund_task.delay(refund_id))
 
                 # --- 🔔 Notifications ---
                 msg = f"Refund approved for '{product.name}'. Amount will be refunded shortly."
@@ -453,7 +505,7 @@ def approve_return_request_api(request, return_id):
                     user=vendor.user,
                     title="Refund Request Approved",
                     message=f"A refund has been Approved by Admin for your product '{product.name} your account will be affected for the adjustments will be made in the following moth payouts'.",
-                    url=f"/vendor/orders/{product.user.order.id}/returns/"
+                    url=f"/vendor/orders/{order.id}/returns/"
                 )
 
                 # Notify all Admins
@@ -481,7 +533,10 @@ def approve_return_request_api(request, return_id):
                 return_request.admin_note = admin_note
                 return_request.save()
 
-                VendorAdjustment.objects.filter(order_item=item).update(is_approved=True)
+                adjustment = return_request.vendor_adjustment
+                if adjustment:
+                    adjustment.is_approved = True
+                    adjustment.save(update_fields=["is_approved"])
 
                 # --- 🔔 Notifications ---
                 msg = f"Exchange approved for '{product.name}'. You can now redeem your exchange credit."
@@ -620,7 +675,7 @@ def approve_return_request_api(request, return_id):
         logger.exception("Return approval handler failed")
         return Response({
             "success": False,
-            "error": str(e)
+            "error": "Unable to process the return decision."
         }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
