@@ -4,6 +4,8 @@ import requests
 from django.conf import settings
 from requests.auth import HTTPBasicAuth
 
+from vendorDashboard.payout.services.generatePermcert import generate_security_credential
+
 logger = logging.getLogger(__name__)
 
 
@@ -42,9 +44,16 @@ def initiate_b2c_payment(phone_number: str, amount: int, remarks="Vendor payout"
         payout.mpesa_result_desc = "Submitted to M-Pesa"
         payout.save(update_fields=["mpesa_originator_conversation_id", "mpesa_result_desc"])
 
+    certificate_path = config.get("certificate_path")
+    initiator_password = config.get("initiator_password")
+    if not initiator_password or not certificate_path:
+        raise ValueError("M-Pesa B2C security credential configuration is incomplete.")
+
+    security_credential = generate_security_credential(initiator_password, certificate_path)
+
     payload = {
         "InitiatorName": config["initiator_name"],
-        "SecurityCredential": config["initiator_password"],
+        "SecurityCredential": security_credential,
         "CommandID": "BusinessPayment",
         "Amount": int(amount),
         "PartyA": config["short_code"],
