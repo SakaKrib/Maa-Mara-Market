@@ -3180,3 +3180,35 @@ RESPONSIVE MENU -OFF CANVAS
 .products .price .old{color:#777!important}
 .trending,.product-categories,.widgets{background:#fff!important}
 @media(max-width:700px){.header-nav .second-links{gap:12px!important;overflow-x:auto!important;white-space:nowrap!important}.header-main{padding:6px 0!important}.products.main .item{border-radius:6px!important}}
+
+/* Marketplace product-card system: two compact cards on phones, richer cards at larger widths. */
+.product-card-grid > article,
+.category-product-grid > article {
+  min-width: 0;
+}
+@media (max-width: 639px) {
+  .product-card-grid,
+  .category-product-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+  .product-card-grid article,
+  .category-product-grid article {
+    border-radius: 10px;
+    box-shadow: 0 1px 4px rgba(0,0,0,.08);
+    overflow: hidden;
+  }
+  .product-card-grid article > div:last-child,
+  .category-product-grid article > div:last-child {
+    padding: 9px;
+  }
+  .product-card-grid h2,
+  .category-product-grid h2 {
+    font-size: .95rem;
+    line-height: 1.25rem;
+  }
+  .product-card-grid h3,
+  .category-product-grid h3 {
+    line-height: 1.15rem;
+  }
+}
