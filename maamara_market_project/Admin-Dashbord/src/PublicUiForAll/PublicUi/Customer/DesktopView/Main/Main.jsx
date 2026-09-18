@@ -2,7 +2,6 @@ import React from "react";
 import "../../../../PublicUi/maamara.css";
 import "../../../../../index.css";
 import HomepageHero from "./HomepageHero";
-import MultiCollections from "./MultiCollections";
 import ListPage from "./ListPage";
 import TrendingProducts from "./Trending/Product";
 import BrandList from "./Trending/Brands";
@@ -23,7 +22,6 @@ const Main = () => (
           </div>
         </div>
       </div>
-      <MultiCollections />
     </section>
 
     <BrandList />
