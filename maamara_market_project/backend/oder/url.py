@@ -5,7 +5,6 @@ from oder.paypalApis import *
 from .Mpesa.mpesaUtils import *
 from .Mpesa.C2BMpesaIntergration.c2butils import *
 from .capture_order import capture_paypal_order
-from .easypost import get_shipping_rates
 from .returns import return_request_handler_api, approve_return_request_api, get_pending_returns_api
 from .orderStat import vendor_pending_orders, vendor_pending_order_items, vendor_completed_order_items
 from .dashboardSummery import DashboardSummaryView
