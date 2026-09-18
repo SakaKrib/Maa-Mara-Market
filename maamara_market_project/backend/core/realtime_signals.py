@@ -75,6 +75,7 @@ def order_save(sender, instance, created, **kwargs):
     emit(
         sender, instance, "created" if created else "updated",
         user_ids=[instance.user_id] if instance.user_id else [],
+        visitor_ids=[instance.visitor_id] if getattr(instance, "visitor_id", None) else [],
         vendor_ids=order_vendors(instance),
     )
 
@@ -85,6 +86,7 @@ def order_item_save(sender, instance, created, **kwargs):
         emit(
             sender, instance, "created" if created else "updated",
             user_ids=[instance.order.user_id] if instance.order.user_id else [],
+            visitor_ids=[instance.order.visitor_id] if getattr(instance.order, "visitor_id", None) else [],
             vendor_ids=order_vendors(instance.order),
         )
 
@@ -94,6 +96,7 @@ def payment_save(sender, instance, created, **kwargs):
     emit(
         sender, instance, "created" if created else "updated",
         user_ids=[instance.user_id] if instance.user_id else [],
+        visitor_ids=[instance.visitor_id] if getattr(instance, "visitor_id", None) else [],
     )
 
 
@@ -115,6 +118,7 @@ def notification_save(sender, instance, created, **kwargs):
     emit(
         sender, instance, "created" if created else "updated",
         user_ids=[instance.user_id] if instance.user_id else [],
+        visitor_ids=[instance.visitor_id] if getattr(instance, "visitor_id", None) else [],
     )
 
 
