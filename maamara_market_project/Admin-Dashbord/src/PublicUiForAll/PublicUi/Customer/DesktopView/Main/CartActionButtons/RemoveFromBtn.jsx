@@ -1,0 +1,102 @@
+import React, { useState } from "react";
+import { baseUrl } from "../../../../../../cmponents/Constant/Constant";
+import api from "../../../../../../Services/Api";
+import { Snackbar, Alert, Button } from "@mui/material";
+import { useCartContext } from "../CartHook/cart";
+
+// Helper to read CSRF token from cookies
+function getCookie(name) {
+  const value = `; ${document.cookie}`;
+  const parts = value.split(`; ${name}=`);
+  if (parts.length === 2) return parts.pop().split(";").shift();
+  return null;
+}
+
+const RemoveFromCartButton = ({ itemId, onRemoved }) => {
+  const [loading, setLoading] = useState(false);
+  const [snackbar, setSnackbar] = useState({
+    open: false,
+    message: "",
+    severity: "success",
+  });
+
+  const { refreshCart } = useCartContext();
+
+  const handleClose = () =>
+    setSnackbar(prev => ({ ...prev, open: false }));
+
+  const handleRemove = async () => {
+    setLoading(true);
+
+    try {
+      const csrfToken = getCookie("csrftoken"); // get CSRF from cookie
+
+      const res = await api.delete(`${baseUrl}/api/cart/remove/${itemId}/`, {
+        headers: {
+          "X-CSRFToken": csrfToken,
+        },
+        withCredentials: true, // ensures cookies (session/auth) are sent
+      });
+      refreshCart();
+
+      if (res.data.success) {
+        // Notify user
+        setSnackbar({
+          open: true,
+          message: res.data.message || "Item removed from cart",
+          severity: "success",
+        });
+
+        // Update local UI
+        if (onRemoved) onRemoved(itemId);
+
+        
+      } else {
+        setSnackbar({
+          open: true,
+          message: res.data.message || "Could not remove item",
+          severity: "error",
+        });
+      }
+    } catch (err) {
+      console.error("Remove cart error:", err);
+      setSnackbar({
+        open: true,
+        message: "Something went wrong",
+        severity: "error",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <>
+      <Button
+        onClick={handleRemove}
+        color="error"
+        variant="outlined"
+        disabled={loading}
+      >
+        {loading ? "Removing..." : "Remove"}
+      </Button>
+
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={3000}
+        onClose={handleClose}
+        anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
+      >
+        <Alert
+          onClose={handleClose}
+          severity={snackbar.severity}
+          sx={{ width: "100%" }}
+        >
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
+    </>
+  );
+};
+
+export default RemoveFromCartButton;
