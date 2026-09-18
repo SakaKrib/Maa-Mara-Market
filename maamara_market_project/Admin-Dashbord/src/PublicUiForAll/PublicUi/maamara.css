@@ -3939,3 +3939,13 @@ h1,h2,h3,h4{font-family:'regular','Poppins',Arial,sans-serif}
     border-radius:22px!important;
   }
 }
+
+/* Homepage category collections: desktop only.
+   Mobile storefront intentionally keeps products and search first. */
+@media(max-width:639px){
+  .category-collections,
+  .category-collections .category,
+  .category-collections .item{
+    display:none!important;
+  }
+}
