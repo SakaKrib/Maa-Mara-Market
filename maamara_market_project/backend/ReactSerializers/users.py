@@ -9,7 +9,7 @@ from django.contrib.auth.hashers import check_password
 from django.shortcuts import redirect
 from django.http import JsonResponse
 from django.utils.text import slugify
-from django.views.decorators.csrf import csrf_exempt, ensure_csrf_cookie
+from django.views.decorators.csrf import ensure_csrf_cookie, csrf_protect
 from django.views.decorators.http import require_http_methods
 from django.middleware.csrf import get_token
 from django.utils.decorators import method_decorator
@@ -127,7 +127,7 @@ class HybridCheckAuthView(APIView):
 
 logger = logging.getLogger("ReactSerializers.users")
 
-@csrf_exempt
+@csrf_protect
 @permission_classes([AllowAny])
 @require_http_methods(["POST"])
 def login_view(request):
@@ -180,9 +180,9 @@ def login_view(request):
 
 
         # Set JWT cookies
-        response.set_cookie("accessToken", access_token, httponly=True, secure=False, samesite='Lax',  max_age=5 * 60,
+        response.set_cookie("accessToken", access_token, httponly=True, secure=not __import__("django.conf", fromlist=["settings"]).settings.DEBUG, samesite="Lax",  max_age=5 * 60,
         path="/",)
-        response.set_cookie("refreshToken", refresh_token, httponly=True, secure=False, samesite='Lax', max_age=2592000, path="/")
+        response.set_cookie("refreshToken", refresh_token, httponly=True, secure=not __import__("django.conf", fromlist=["settings"]).settings.DEBUG, samesite="Lax", max_age=2592000, path="/")
         return response
 
     # --- Fallback to Vendor table ---
@@ -241,7 +241,7 @@ def google_login_success(request):
     try:
         social = SocialAccount.objects.get(provider="google", user=request.user)
     except SocialAccount.DoesNotExist:
-        return redirect("http://127.0.0.1:5173/unauthorized")
+        return redirect(f"{__import__("django.conf", fromlist=["settings"]).settings.FRONTEND_URL}/unauthorized")
 
     extra = social.extra_data
 
