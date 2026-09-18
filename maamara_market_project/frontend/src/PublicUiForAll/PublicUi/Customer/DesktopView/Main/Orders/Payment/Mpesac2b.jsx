@@ -6,14 +6,16 @@ import { lockClosed } from "ionicons/icons";
 import MpesaLogo from "../../../../../../../assets/partnaship/mpesaLogo.png";
 import { Input } from "../../../../../../../../components/ui/input";
 import { Button } from "../../../../../../../../components/ui/button";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 
 export default function MpesaSTKPayment() {
   const [phone, setPhone] = useState("");
   const [amount, setAmount] = useState(0); // number internally
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
-  const { order } = useCartContext();
+  const { order: cartOrder } = useCartContext();
+  const location = useLocation();
+  const order = location.state?.order || location.state || cartOrder;
   const navigate = useNavigate()
 
   // Auto-set amount from cart
