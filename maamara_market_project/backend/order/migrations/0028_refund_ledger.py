@@ -28,7 +28,7 @@ class Migration(migrations.Migration):
             ],
             options={
                 "indexes": [models.Index(fields=["payment", "status"], name="order_refund_payment_status_idx"), models.Index(fields=["provider", "status"], name="order_refund_provider_status_idx")],
-                "constraints": [models.UniqueConstraint(condition=Q(("provider_reference__isnull", False), ("provider_reference", "")), fields=("provider", "provider_reference"), name="uniq_refund_provider_reference")],
+                "constraints": [models.UniqueConstraint(condition=(Q(provider_reference__isnull=False) & ~Q(provider_reference="")), fields=("provider", "provider_reference"), name="uniq_refund_provider_reference")],
             },
         ),
     ]
