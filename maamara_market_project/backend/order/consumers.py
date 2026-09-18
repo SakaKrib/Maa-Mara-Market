@@ -34,21 +34,24 @@ class SafeJSONEncoder(json.JSONEncoder):
 
 class OrderConsumer(AsyncWebsocketConsumer):
     async def connect(self):
-        self.order_id = self.scope['url_route']['kwargs']['order_id']
-        self.room_group_name = f'order_{self.order_id}'
+        self.order_id = self.scope["url_route"]["kwargs"]["order_id"]
+        self.room_group_name = f"order_{self.order_id}"
 
-        if not await self.can_access_order():\n            await self.close(code=4003)\n            return
+        if not await self.can_access_order():
+            await self.close(code=4003)
+            return
+
         try:
             await self.channel_layer.group_add(self.room_group_name, self.channel_name)
             await self.accept()
-            pass
-        except Exception as e:
-            print(f"Error on connect: {e}")
-            await self.close()
+        except Exception:
+            await self.close(code=1011)
 
     async def disconnect(self, close_code):
         if hasattr(self, "room_group_name"):
-        await self.channel_layer.group_discard(self.room_group_name, self.channel_name)
+            await self.channel_layer.group_discard(
+                self.room_group_name, self.channel_name
+            )
 
     @database_sync_to_async
     def can_access_order(self):
@@ -62,20 +65,16 @@ class OrderConsumer(AsyncWebsocketConsumer):
         return bool(visitor_id and order.visitor_id == visitor_id)
 
     async def payment_status(self, event):
-        print(f"Sending payment_status event: {event}")
         await self.send(text_data=json.dumps({
             "type": "payment_status",
             "status": event.get("status")
         }))
 
     async def transaction_success(self, event):
-        print(f"Sending transaction.success event: {event}")
         await self.send(text_data=json.dumps({
             "type": "transaction.success",
             "message": event.get("message", {})
         }))
-
-
 
 
 # send customer to the frontend page
