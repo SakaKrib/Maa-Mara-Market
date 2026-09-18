@@ -16,12 +16,12 @@ from rest_framework import status
 from rest_framework.decorators import action
 from .Serializers import BlogPostSerializer
 from .models import BlogPost
-from oder.views import IsAuthenticatedOrVisitor
+from order.views import IsAuthenticatedOrVisitor
 from django.shortcuts import get_object_or_404
 from django.db import transaction
 from django.db.models import F
 from django.db.models import Avg, Q, Count
-from oder.Base import IsVendor
+from order.Base import IsVendor
 from rest_framework.exceptions import PermissionDenied
 import uuid
 import bleach # type: ignore
