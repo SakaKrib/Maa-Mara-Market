@@ -15,6 +15,7 @@ from vendorDashboard.payout.services.payment_processors import (
 from vendorDashboard.models import Vendor, VendorPayout
 from vendorDashboard.payout.services.payment_processors import payment_processors
 from vendorDashboard.payout.services.paypal_payouts import reconcile_paypal_payout
+from vendorDashboard.payout.services.kcb_payouts import reconcile_kcb_payout
 from vendorDashboard.views import get_vendor_earnings  # assuming your current function lives here
 from rest_framework.permissions import IsAdminUser
 from rest_framework.decorators import permission_classes,api_view
@@ -183,6 +184,40 @@ def pay_single_vendor_payout(request, reference):
         return Response({
             "error": f"Exception during payment: {str(e)}"
         }, status=500)
+
+@api_view(["POST"])
+@permission_classes([IsAdminUser])
+def reconcile_bank_vendor_payout(request, reference):
+    """Reconcile one bank payout from the configured KCB status API."""
+    payout = VendorPayout.objects.filter(reference=reference).first()
+    if not payout:
+        return Response({"error": "Payout reference not found."}, status=404)
+
+    if payout.vendor.payment_method != "BANK_TRANSFER":
+        return Response({"error": "Payout is not configured for bank transfer."}, status=400)
+
+    try:
+        payout = reconcile_kcb_payout(payout.id)
+    except requests.RequestException:
+        return Response({"error": "KCB reconciliation request failed."}, status=502)
+    except ValueError:
+        return Response({"error": "KCB payout reconciliation is not configured or correlated."}, status=409)
+    except Exception:
+        logger.exception(
+            "Unexpected KCB payout reconciliation failure.",
+            extra={"payout_reference": reference},
+        )
+        return Response({"error": "KCB payout reconciliation failed."}, status=500)
+
+    return Response({
+        "reference": payout.reference,
+        "paid": payout.paid,
+        "paid_at": payout.paid_at,
+        "kcb_status": payout.kcb_provider_status,
+        "kcb_transaction_reference": payout.kcb_transaction_reference,
+        "kcb_provider_reference": payout.kcb_provider_reference,
+    })
+
 
 @api_view(["POST"])
 @permission_classes([IsAdminUser])
