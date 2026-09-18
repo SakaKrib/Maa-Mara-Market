@@ -1,3 +1,22 @@
+from datetime import date
+from decimal import Decimal
+import uuid
+
+from dateutil.relativedelta import relativedelta
+from django.db.models import Count, ExpressionWrapper, F, FloatField, Sum
+from django.db.models.functions import TruncMonth, TruncYear
+from django.utils.timezone import now
+from rest_framework import permissions, status
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
+from rest_framework.views import APIView
+
+from ReactSerializers.Serializers import VendorPayoutSerializer
+from ReactSerializers.models import Item
+from oder.models import OderItem, Order
+from .models import SoldItem, VendorAdjustment, VendorPayout
+
 from django.http import HttpResponse
 
 def dashboard(request):
@@ -6,26 +25,6 @@ def dashboard(request):
 
 # mangin refund when the customer returns the ordered item
 #payment logic to handle refunds payout culculation logic
-from datetime import datetime, timedelta
-from django.utils.timezone import make_aware
-from dateutil.relativedelta import relativedelta
-from .models import VendorAdjustment, VendorPayout
-from oder.models import OderItem, Order
-from datetime import date, datetime
-from ReactSerializers.models import Item
-from django.db.models import Q, Sum, Count, FloatField, ExpressionWrapper
-from decimal import Decimal
-from ReactSerializers.Serializers import VendorPayoutSerializer
-from rest_framework.views import APIView
-from rest_framework.response import Response
-from rest_framework import status, permissions
-from django.db.models import Sum, F
-from django.utils.timezone import now
-from rest_framework.decorators import api_view, permission_classes
-from django.db.models.functions import TruncMonth, TruncYear
-from rest_framework.permissions import IsAuthenticated
-from rest_framework.response import Response
-from .models import SoldItem
 
 
 # ==============================================================
@@ -57,11 +56,6 @@ def get_month_range(months_back=6, include_current=False):
 # 💰 FUNCTION: get_vendor_earnings @@Adm
 # --------------------------------------------------------------
 
-from decimal import Decimal
-from django.db.models import Sum
-
-import uuid
-from dateutil.relativedelta import relativedelta
 
 def get_vendor_earnings(vendor, start_date, end_date):
     """
@@ -123,10 +117,20 @@ def get_vendor_earnings(vendor, start_date, end_date):
     # Compute vendor's final net payout for the month (without markup)
     net_total = gross_sales + adjustment_total
 
-    # Calculate total income (with markup) by summing order totals in the period
-    total_income = sum(order.get_total() for order in completed_orders) if completed_orders else Decimal("0.00")
+    # Customer-side income must be limited to this vendor's order items.
+    customer_order_items = OderItem.objects.filter(
+        order_id__in=completed_order_ids,
+        item__in=vendor_items,
+        refunded=False,
+        is_returned=False,
+        is_exchanged=False,
+    )
+    total_income = sum(
+        (oi.get_final_price() for oi in customer_order_items),
+        Decimal("0.00"),
+    )
 
-    # Calculate profit = income - payout
+    # Calculate profit from this vendor's own sales only.
     profit = total_income - net_total
 
     # Create or update the VendorPayout record
@@ -202,19 +206,9 @@ def get_monthly_vendor_report(vendor, months_back=6):
 
     # Generate month ranges
     for start, end in get_month_range(months_back):
-        # ✅ Get or update payout for the month (from get_vendor_earnings)
-        payout = get_vendor_earnings(vendor, start, end)
+        result = get_vendor_earnings(vendor, start, end)
+        payout = result["payout"]
 
-        # ✅ Ensure payout has a reference for uniqueness
-        if not payout.reference:
-            payout.reference = f"{vendor.id}-{start.strftime('%Y-%m')}"
-            payout.save(update_fields=["reference"])
-
-        # ✅ Ensure adjustments are attached (optional safety)
-        if hasattr(payout, "adjustments"):
-            payout.adjustments.set(payout.adjustments.all())
-
-        # ✅ Append the report data cleanly
         reports.append({
             "month": start.strftime("%B %Y"),
             "gross_sales": payout.gross_sales or 0,
