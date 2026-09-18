@@ -14,10 +14,10 @@ from rest_framework.parsers import MultiPartParser, FormParser
 from core.Serializer import *
 from .UserVisitorSerializers import *
 import bleach # type: ignore
-from oder.views import IsAuthenticatedOrVisitor
+from order.views import IsAuthenticatedOrVisitor
 from .CategorySerializers import SectionSerializerCat, CategorySerializerCat
 from django.db.models import Prefetch
-from oder.views import IsAuthenticatedOrVisitor
+from order.views import IsAuthenticatedOrVisitor
 from django.core.mail import send_mail
 from rest_framework import generics
 from django.utils.timezone import now
@@ -589,7 +589,7 @@ def user_account_view(request):
     # 4️⃣ Build order data (including items)
     order_data = []
     for order in orders:
-        order_items = OderItem.objects.filter(order=order)
+        order_items = OrderItem.objects.filter(order=order)
         order_data.append({
             **OrderSerializer(order).data,
             "items": OrderItemSerializer(order_items, many=True).data,
