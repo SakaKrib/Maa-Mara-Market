@@ -3776,3 +3776,31 @@ h1,h2,h3,h4{font-family:'regular','Poppins',Arial,sans-serif}
   .single-category .mm-card{box-shadow:var(--mm-shadow-card)}
   .single-category main > .mm-card .secondary-button{display:none}
 }
+
+
+/* Final reusable Etsy-like product card polish */
+.mm-product-card{display:flex;flex-direction:column;min-width:0;overflow:hidden}
+.mm-product-media{background:var(--mm-surface-muted);overflow:hidden}
+.mm-product-media img{display:block;width:100%;aspect-ratio:1/1;object-fit:cover;transition:transform .22s ease}
+.mm-product-card:hover .mm-product-media img{transform:scale(1.025)}
+.mm-product-actions{opacity:0;transition:opacity .16s ease}
+.mm-product-card:hover .mm-product-actions,.mm-product-actions:focus-within{opacity:1}
+.mm-product-action{width:34px;height:34px;display:flex;align-items:center;justify-content:center;border:1px solid rgba(0,0,0,.08);border-radius:999px;background:rgba(255,255,255,.94);color:#333;box-shadow:0 2px 8px rgba(0,0,0,.10);cursor:pointer}
+.mm-product-action:hover{background:#fff;color:#111}
+.mm-product-action ion-icon{font-size:17px}
+.mm-product-discount{position:absolute;left:8px;bottom:8px;padding:4px 8px;border-radius:999px;background:#222;color:#fff;font-size:11px;font-weight:700}
+.mm-product-content{min-width:0}
+.mm-product-rating{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mm-product-rating > span:first-child{color:#222}
+.mm-product-meta{margin-top:auto}
+@media(max-width:639px){
+  .mm-product-actions{opacity:1}
+  .mm-product-action{width:30px;height:30px}
+  .mm-product-action ion-icon{font-size:15px}
+  .mm-product-discount{font-size:10px;padding:3px 6px}
+  .mm-product-content{padding:9px!important}
+  .mm-product-content h3{font-size:.9rem;line-height:1.15rem}
+  .mm-product-content .text-xl{font-size:1rem}
+  .mm-product-content .text-lg{font-size:.95rem}
+  .mm-product-content .text-xs{font-size:.68rem}
+}
