@@ -716,6 +716,24 @@ def call_bank_transfer(account_number, amount, payout=None, max_retries=3, retry
 
             header = data.get("header") or {}
             status_code = str(header.get("statusCode", ""))
+            provider_reference = (
+                header.get("transactionReference")
+                or header.get("transactionId")
+                or data.get("transactionReference")
+                or data.get("transactionId")
+            )
+            payout.kcb_provider_status = status_code or "SUBMITTED"
+            payout.kcb_result_description = str(
+                header.get("statusDescription") or "Submitted to KCB"
+            )[:255]
+            if provider_reference:
+                payout.kcb_provider_reference = str(provider_reference)[:100]
+            payout.save(update_fields=[
+                "kcb_provider_status",
+                "kcb_result_description",
+                "kcb_provider_reference",
+            ])
+
             if status_code == "0":
                 logger.info(
                     "KCB transfer submitted",
@@ -725,6 +743,7 @@ def call_bank_transfer(account_number, amount, payout=None, max_retries=3, retry
                     "success": True,
                     "transaction_reference": transaction_reference,
                     "message_id": message_id,
+                    "provider_reference": provider_reference,
                     "provider_status": status_code,
                     "settlement_pending": True,
                 }
