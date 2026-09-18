@@ -133,6 +133,9 @@ def call_mpesa_b2c(vendor, amount, mpesa_config, payout=None):
     """
     mpesa_b2c_config = mpesa_config.get("b2c", {})
 
+    if payout is None:
+        return {"success": False, "error": "A payout record is required."}
+
     try:
         # ----------------------------------------------------------------------
         # 1️⃣ Get Access Token
@@ -239,15 +242,11 @@ def call_mpesa_b2c(vendor, amount, mpesa_config, payout=None):
 
             # FIX: Save the conversation details
             try:
-                if payout is None:
-                    raise ValueError("A payout record is required to attach M-Pesa callback identifiers.")
                 payout.mpesa_conversation_id = data.get("ConversationID")
                 payout.mpesa_originator_conversation_id = data.get("OriginatorConversationID")
                 payout.mpesa_result_desc = data.get("ResponseDescription", "")
                 payout.save(update_fields=["mpesa_conversation_id", "mpesa_originator_conversation_id", "mpesa_result_desc"])
-                logger.info(f"✅ Updated payout {payout.reference} with M-Pesa conversation IDs.")
-            except VendorPayout.DoesNotExist:
-                logger.warning("⚠ No active VendorPayout found to attach M-Pesa ConversationIDs")
+                logger.info("Updated payout with M-Pesa conversation IDs.", extra={"payout_reference": payout.reference})
                 
             return {
                 "success": True,
@@ -262,7 +261,6 @@ def call_mpesa_b2c(vendor, amount, mpesa_config, payout=None):
                 "success": False,
                 "error": data.get("errorMessage", "Daraja Error"),
                 "code": data.get("errorCode"),
-                "raw": data,
             }
 
         return {"success": False, "error": "Unknown M-Pesa error", "raw": data}
@@ -274,7 +272,6 @@ def call_mpesa_b2c(vendor, amount, mpesa_config, payout=None):
         logger.warning("M-Pesa payout network request failed.")
         return {"success": False, "error": "M-Pesa payout request failed."}
     except Exception as e:
-        logger.exception("Unexpected M-Pesa B2C payout error.")
         logger.exception("Unexpected M-Pesa B2C payout error.")
         return {"success": False, "error": "M-Pesa payout failed."}
 
