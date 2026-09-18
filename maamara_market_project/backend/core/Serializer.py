@@ -1,26 +1,39 @@
-from rest_framework import serializers
-from .models import *
-from rest_framework.decorators import api_view
-from rest_framework.permissions import IsAuthenticated, IsAdminUser
-from  rest_framework.decorators import permission_classes
+from rest_framework import generics, serializers
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
-from shop.models import Review, Reaction
-from .models import Profile
-from ReactSerializers.models import Offer
-from rest_framework import generics
+
+from django.contrib.auth import get_user_model
+
+from ReactSerializers.models import (
+    AgeVariant,
+    Brand,
+    Category,
+    ColorVariant,
+    Department,
+    Item,
+    Length,
+    Section,
+    ShippingDimension,
+    Shoe,
+    SizeStock,
+    SubCategory,
+    Weight,
+    Offer,
+)
+from shop.models import Reaction, Review
+
+from .models import ActivityLog, CalendarEvent, Notification, Profile
+
+User = get_user_model()
 
 
-
-#offer serializer
 class OfferSerializer(serializers.ModelSerializer):
     class Meta:
         model = Offer
-        fields = ["discount_percentage", "start_date", "end_date"]
+        fields = ["discount_percentage", "start_date", "end_date", "final_price"]
 
 
-
-
-# notificatin serializers
 class NotificationSerializer(serializers.ModelSerializer):
     user = serializers.StringRelatedField()
     vendor_request = serializers.PrimaryKeyRelatedField(read_only=True)
@@ -28,41 +41,33 @@ class NotificationSerializer(serializers.ModelSerializer):
     class Meta:
         model = Notification
         fields = [
-            'id',
-            'user',
-            'title',
-            'message',
-            'vendor_request',
-            'url',
-            'seen',
-            'is_read',
-            'created_at'
+            "id",
+            "user",
+            "title",
+            "message",
+            "vendor_request",
+            "url",
+            "seen",
+            "is_read",
+            "created_at",
         ]
-        read_only_fields = ['id', 'created_at']
+        read_only_fields = ["id", "created_at"]
 
-# mark as seen when opened
-@api_view(['POST'])
+
+@api_view(["POST"])
 @permission_classes([IsAuthenticated])
 def mark_notification_seen(request, notification_id):
     try:
         notification = Notification.objects.get(id=notification_id)
-
-        # ✅ Prevent regular users from changing other users' notifications
-        if not request.user.is_staff and notification.user != request.user:
-            return Response({'error': 'Not authorized'}, status=403)
-
-        notification.seen = True
-        notification.save()
-
-        return Response({'status': 'seen'})
     except Notification.DoesNotExist:
-        return Response({'error': 'Notification not found'}, status=404)
+        return Response({"error": "Notification not found"}, status=404)
 
+    if not request.user.is_staff and notification.user != request.user:
+        return Response({"error": "Not authorized"}, status=403)
 
-# item query serializer
-from rest_framework import serializers
-from  ReactSerializers.models import Item, ColorVariant, SizeStock, Department, Category, SubCategory, Section, Brand, ShippingDimension
-
+    notification.seen = True
+    notification.save(update_fields=["seen"])
+    return Response({"status": "seen"})
 
 
 class BrandSerializer(serializers.ModelSerializer):
@@ -95,35 +100,61 @@ class ShippingDimensionSerializer(serializers.ModelSerializer):
     def get_chargeable_weight(self, obj):
         return obj.chargeable_weight()
 
+
 class DepartmentSerializer(serializers.ModelSerializer):
     class Meta:
         model = Department
-        fields = ['id', 'name']
+        fields = ["id", "name"]
+
 
 class SectionSerializer(serializers.ModelSerializer):
     departments = DepartmentSerializer(many=True, read_only=True)
 
     class Meta:
         model = Section
-        fields = ["id", "name", "description", "departments"]        
+        fields = ["id", "name", "departments"]
 
 
 class CategorySerializer(serializers.ModelSerializer):
     class Meta:
         model = Category
-        fields = ['id', 'name', 'department']
+        fields = ["id", "name", "department"]
 
 
 class SubCategorySerializer(serializers.ModelSerializer):
     class Meta:
         model = SubCategory
-        fields = ['id', 'name', 'category']
+        fields = ["id", "name", "category"]
 
 
 class SizeStockSerializer(serializers.ModelSerializer):
     class Meta:
         model = SizeStock
         fields = ["id", "size", "quantity_in_stock"]
+
+
+class AgeVariantSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = AgeVariant
+        fields = ["id", "age_group", "quantity_in_stock"]
+
+
+class WeightSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Weight
+        fields = ["id", "value", "unit"]
+
+
+class LengthSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Length
+        fields = ["id", "value", "unit"]
+
+
+class ShoeSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Shoe
+        fields = ["id", "shoe_type", "shoe_gender", "shoe_size"]
 
 
 class ColorVariantSerializer(serializers.ModelSerializer):
@@ -134,22 +165,23 @@ class ColorVariantSerializer(serializers.ModelSerializer):
         model = ColorVariant
         fields = ["id", "color", "image", "sizes"]
 
-# Reaction Serializer
+
 class ReactionSerializer(serializers.ModelSerializer):
     user = serializers.StringRelatedField(read_only=True)
 
     class Meta:
         model = Reaction
-        fields = ['id', 'user', 'reaction_type', 'created_at']
+        fields = ["id", "user", "reaction_type", "created_at"]
 
-# Review Serializer
+
 class ReviewSerializer(serializers.ModelSerializer):
     user = serializers.StringRelatedField(read_only=True)
     reactions = ReactionSerializer(many=True, read_only=True)
 
     class Meta:
         model = Review
-        fields = ['id', 'user', 'rating', 'review_text', 'created_at', 'reactions']        
+        fields = ["id", "user", "rating", "review_text", "created_at", "reactions"]
+
 
 class ItemSerializer(serializers.ModelSerializer):
     section = serializers.StringRelatedField()
@@ -157,18 +189,41 @@ class ItemSerializer(serializers.ModelSerializer):
     category = serializers.StringRelatedField()
     subcategory = serializers.StringRelatedField()
     image = serializers.ImageField(use_url=True)
+
     final_price = serializers.SerializerMethodField()
     final_discounted_price = serializers.SerializerMethodField()
     save_upto = serializers.SerializerMethodField()
-    variants = ColorVariantSerializer(many=True, read_only=True)
-    reviews = ReviewSerializer(many=True, read_only=True)
     average_rating = serializers.SerializerMethodField()
     review_count = serializers.SerializerMethodField()
+
+    variants = ColorVariantSerializer(many=True, read_only=True)
+    size_only_icon = SizeStockSerializer(
+        source="size_only_icon",
+        many=True,
+        read_only=True,
+    )
+    age_variants = AgeVariantSerializer(
+        source="kids_sizes",
+        many=True,
+        read_only=True,
+    )
+    weight = WeightSerializer(read_only=True)
+    length = LengthSerializer(read_only=True)
+    shoe_inputs = ShoeSerializer(
+        source="shoe_input",
+        many=True,
+        read_only=True,
+    )
+
+    reviews = ReviewSerializer(many=True, read_only=True)
     brand = BrandSerializer(read_only=True)
     shipping_dimension = ShippingDimensionSerializer(read_only=True)
-    shipping_dimension_data = ShippingDimensionSerializer(write_only=True, required=False)
+    shipping_dimension_data = ShippingDimensionSerializer(
+        write_only=True,
+        required=False,
+    )
     vendor = serializers.StringRelatedField(read_only=True)
-    offer = OfferSerializer(read_only=True) 
+    offer = OfferSerializer(read_only=True)
 
     class Meta:
         model = Item
@@ -195,7 +250,6 @@ class ItemSerializer(serializers.ModelSerializer):
             "children_size_based_age",
             "shipping_dimension",
             "shipping_dimension_data",
-            "in_offer",
             "is_organic",
             "manufactured_date",
             "expiry_date",
@@ -213,8 +267,11 @@ class ItemSerializer(serializers.ModelSerializer):
             "final_discounted_price",
             "save_upto",
             "variants",
-            "size_only_icon",  # ✅ fixed typo (was size_only_item before)
-            "offer",
+            "size_only_icon",
+            "age_variants",
+            "weight",
+            "length",
+            "shoe_inputs",
             "average_rating",
             "reviews",
             "review_count",
@@ -227,55 +284,42 @@ class ItemSerializer(serializers.ModelSerializer):
         return round(obj.get_item_final_discounted_price(), 2)
 
     def get_save_upto(self, obj):
-        # Call the model method safely
-        try:
-            return round(obj.get_save_upto or 0, 2)
-        except Exception:
-            return 0
+        return round(obj.get_save_upto or 0, 2)
 
-    
     def get_average_rating(self, obj):
-        reviews = obj.reviews.all()
-        if not reviews:
-            return None
-        return round(sum([review.rating for review in reviews]) / len(reviews), 2)
-    
+        ratings = list(obj.reviews.values_list("rating", flat=True))
+        return round(sum(ratings) / len(ratings), 2) if ratings else None
+
     def get_review_count(self, obj):
-       
         return obj.reviews.count()
 
 
 class ActivityLogSerializer(serializers.ModelSerializer):
-    item = ItemSerializer(read_only=True)  # 👈 nested item data
+    item = ItemSerializer(read_only=True)
 
     class Meta:
         model = ActivityLog
         fields = [
-            'id',
-            'user',
-            'visitor_id',
-            'actor_type',
-            'actor_role',
-            'action',
-            'description',
-            'related_url',
-            'timestamp',
-            'item',  # 👈 include item
+            "id",
+            "user",
+            "visitor_id",
+            "actor_type",
+            "actor_role",
+            "action",
+            "description",
+            "related_url",
+            "timestamp",
+            "item",
         ]
 
 
-@api_view(['GET'])
+@api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def get_activity_logs(request):
-    logs = ActivityLog.objects.all().order_by('-timestamp')[:100]
-    serializer = ActivityLogSerializer(logs, many=True)
-    return Response(serializer.data)
+    logs = ActivityLog.objects.all().order_by("-timestamp")[:100]
+    return Response(ActivityLogSerializer(logs, many=True).data)
 
 
-#______________________
-
-# ORGANIC
-#_____________________
 class OrganicItemsView(generics.ListAPIView):
     serializer_class = ItemSerializer
 
@@ -283,15 +327,11 @@ class OrganicItemsView(generics.ListAPIView):
         return Item.objects.filter(is_organic=True, available=True)
 
 
-#______________________
-
-# PROFILE SERIALIZERS
-#_____________________
-
 class ProfileSerializer(serializers.ModelSerializer):
     class Meta:
         model = Profile
         fields = ["profile_picture", "date_of_birth", "location"]
+
 
 class UserSerializer(serializers.ModelSerializer):
     profile = ProfileSerializer(required=False)
@@ -302,13 +342,13 @@ class UserSerializer(serializers.ModelSerializer):
 
     def update(self, instance, validated_data):
         profile_data = validated_data.pop("profile", None)
-        instance.first_name = validated_data.get("first_name", instance.first_name)
-        instance.last_name = validated_data.get("last_name", instance.last_name)
-        instance.email = validated_data.get("email", instance.email)
+        for field in ("first_name", "last_name", "email"):
+            if field in validated_data:
+                setattr(instance, field, validated_data[field])
         instance.save()
 
         if profile_data:
-            profile, created = Profile.objects.get_or_create(user=instance)
+            profile, _ = Profile.objects.get_or_create(user=instance)
             for attr, value in profile_data.items():
                 setattr(profile, attr, value)
             profile.save()
@@ -316,7 +356,6 @@ class UserSerializer(serializers.ModelSerializer):
         return instance
 
 
-# calendar serializer
 class CalendarEventSerializer(serializers.ModelSerializer):
     class Meta:
         model = CalendarEvent
