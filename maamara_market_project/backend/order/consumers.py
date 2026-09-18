@@ -376,8 +376,8 @@ class VendorNotificationsConsumer(AsyncWebsocketConsumer):
     def get_vendor(self, user):
         try:
             return Vendor.objects.filter(user=user).first()
-        except Exception as e:
-            print("❌ Vendor lookup error:", e)
+        except Exception:
+            logger.exception("Vendor lookup failed in WebSocket consumer")
             return None
 
     @database_sync_to_async
@@ -404,8 +404,8 @@ class VendorNotificationsConsumer(AsyncWebsocketConsumer):
 
             return notifications
 
-        except Exception as e:
-            print("❌ Notification fetch error:", e)
+        except Exception:
+            logger.exception("Notification fetch failed in WebSocket consumer")
             return []
         
 #Activity cosumer funtion class
