@@ -20,7 +20,7 @@ def vendor_pending_orders(request):
     vendor = user.vendor
 
     # ✅ Vendor's items
-    vendor_items = Item.objects.filter(created_by=user)
+    vendor_items = Item.objects.filter(vendor=vendor)
 
     # ✅ All pending orders that include vendor’s items
     pending_orders = Order.objects.filter(
@@ -92,7 +92,7 @@ def vendor_pending_order_items(request):
     vendor = user.vendor
 
     # ✅ Get vendor's items
-    vendor_items = Item.objects.filter(created_by=user)
+    vendor_items = Item.objects.filter(vendor=vendor)
 
     # ✅ Find all pending orders containing vendor's items (via ManyToMany)
     pending_orders = Order.objects.filter(
