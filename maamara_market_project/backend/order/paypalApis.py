@@ -26,6 +26,7 @@ from vendorDashboard.models import SoldItem, Vendor
 from .capture_order import get_paypal_access_token
 from .shipping import get_rates_for_destination
 from .Payment import create_paypal_order
+from .services.refunds import reconcile_paypal_refund
 from .Base import get_usd_to_kes_rate
 from .models import BillingAddress, Customer, Order, Payment, Transaction
 from .paymentserializer import CheckoutSerializer, OrderResponseSerializer
@@ -799,6 +800,17 @@ def paypal_webhook(request):
         }
         if event_type not in relevant_events:
             return Response({"status": "ignored"})
+
+        if event_type == "PAYMENT.CAPTURE.REFUNDED":
+            refund = reconcile_paypal_refund(
+                provider_reference=resource.get("id"),
+                provider_status=resource.get("status"),
+                provider_amount=resource.get("amount", {}).get("value"),
+                provider_currency=resource.get("amount", {}).get("currency_code"),
+            )
+            if refund:
+                return Response({"status": "ok", "message": "Refund reconciled"})
+            return Response({"status": "ok", "message": "Unknown refund reference"})
 
         paypal_order_id = (
             resource.get("supplementary_data", {})
