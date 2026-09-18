@@ -18,6 +18,7 @@ const AddToCartButton = ({
   availableStock,
   remainingStock,
   disabled = false,
+  onAddSuccess,
 }) => {
   const [adding, setAdding] = useState(false);
   const [toast, setToast] = useState({ open: false, message: "", severity: "success" });
@@ -51,6 +52,7 @@ const AddToCartButton = ({
       );
       // Refresh the cart context after success
       refreshCart();
+      onAddSuccess?.(res.data);
       setToast({ open: true, message: res.data.message || "Item added to cart!", severity: "success" });
     } catch (error) {
       setToast({
