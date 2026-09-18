@@ -1,61 +1,92 @@
 import React from "react";
 import { baseUrl } from "../../../../../../cmponents/Constant/Constant";
+import { useWishlistContext } from "../../../../../../cmponents/Hooks/WishListHook/Wishlist";
 import { IonIcon } from "@ionic/react";
 import { heart, heartOutline, eyeOutline, shareOutline } from "ionicons/icons";
 import { Link, useNavigate } from "react-router-dom";
 import AddToCartButton from "../CartActionButtons/AddToCartBtn";
 
-const TrendingProductCard = ({ item, isWishlisted = false, onToggleWishlist, onOpen }) => {
+const TrendingProductCard = ({ item, isWishlisted: controlledWishlist, onToggleWishlist, onOpen }) => {
   const navigate = useNavigate();
+  const { wishlist, addToWishlist, removeFromWishlist } = useWishlistContext();
+
   const image = item.image?.startsWith("http") ? item.image : `${baseUrl || ""}${item.image || ""}`;
   const hasDiscount = Number(item.discount_price || 0) > 0 || Number(item.discount || 0) > 0;
   const currentPrice = hasDiscount
     ? (item.final_discounted_price ?? item.discount_price ?? item.final_price ?? item.price ?? 0)
     : (item.final_price ?? item.price ?? 0);
-  const originalPrice = item.final_price ?? item.original_price ?? item.price ?? 0;
+  const originalPrice = item.original_price ?? item.price ?? item.final_price ?? 0;
   const rating = item.rating ?? item.average_rating ?? 0;
+  const reviewCount = item.review_count ?? item.reviews_count ?? item.reviews ?? 0;
+  const stock = Number(item.in_stock ?? 0);
+  const derivedWishlist = wishlist.some((entry) => entry.item?.id === item.id || entry.id === item.id);
+  const isWishlisted = controlledWishlist ?? derivedWishlist;
 
   const openProduct = () => {
     if (onOpen) onOpen(item.id);
     else navigate(`/item/${item.id}`);
   };
 
+  const toggleWishlist = async (event) => {
+    event.stopPropagation();
+    if (onToggleWishlist) return onToggleWishlist(event);
+    if (isWishlisted) await removeFromWishlist(item.id);
+    else await addToWishlist(item.id);
+  };
+
+  const shareProduct = async (event) => {
+    event.stopPropagation();
+    const url = window.location.origin + `/item/${item.id}`;
+    try {
+      if (navigator.share) {
+        await navigator.share({ title: item.name || "Maa Mara Market product", url });
+      } else if (navigator.clipboard) {
+        await navigator.clipboard.writeText(url);
+      }
+    } catch (error) {
+      if (error?.name !== "AbortError") console.error("Unable to share product", error);
+    }
+  };
+
   return (
-    <article className="mm-card mm-card-interactive h-full overflow-hidden bg-white">
-      <div className="relative cursor-pointer" onClick={openProduct}>
-        <img src={image || "/placeholder.png"} alt={item.name || "Marketplace product"} className="w-full aspect-square object-cover" loading="lazy" />
-        <div className="absolute top-2 right-2 flex flex-col gap-2 z-10">
-          {onToggleWishlist && (
-            <button
-              type="button"
-              onClick={(event) => { event.stopPropagation(); onToggleWishlist(event); }}
-              aria-label={isWishlisted ? "Remove from wishlist" : "Add to wishlist"}
-              className="rounded-full p-2 bg-white/90 shadow-sm"
-            >
-              <IonIcon icon={isWishlisted ? heart : heartOutline} className={isWishlisted ? "text-red-500" : "text-gray-500"} />
-            </button>
-          )}
-          <button type="button" onClick={(event) => event.stopPropagation()} aria-label="View product" className="rounded-full p-2 bg-white/90 shadow-sm">
-            <IonIcon icon={eyeOutline} className="text-gray-600" />
+    <article className="mm-product-card mm-card mm-card-interactive h-full overflow-hidden bg-white">
+      <div className="mm-product-media relative cursor-pointer" onClick={openProduct}>
+        <img
+          src={image || "/placeholder.png"}
+          alt={item.name || "Marketplace product"}
+          className="w-full aspect-square object-cover"
+          loading="lazy"
+        />
+
+        <div className="mm-product-actions absolute top-2 right-2 flex flex-col gap-1.5 z-10">
+          <button type="button" onClick={toggleWishlist} aria-label={isWishlisted ? "Remove from wishlist" : "Add to wishlist"} className="mm-product-action">
+            <IonIcon icon={isWishlisted ? heart : heartOutline} />
           </button>
-          <button type="button" onClick={(event) => event.stopPropagation()} aria-label="Share product" className="rounded-full p-2 bg-white/90 shadow-sm">
-            <IonIcon icon={shareOutline} className="text-gray-600" />
+          <button type="button" onClick={(event) => { event.stopPropagation(); openProduct(); }} aria-label="View product" className="mm-product-action">
+            <IonIcon icon={eyeOutline} />
+          </button>
+          <button type="button" onClick={shareProduct} aria-label="Share product" className="mm-product-action">
+            <IonIcon icon={shareOutline} />
           </button>
         </div>
-        {Number(item.discount || 0) > 0 && (
-          <span className="absolute bottom-2 left-2 bg-red-600 text-white text-xs font-semibold px-2 py-1 rounded-full">
-            {item.discount}% OFF
+
+        {Number(item.discount || item.percentage_discount || 0) > 0 && (
+          <span className="mm-product-discount">
+            {Number(item.discount || item.percentage_discount)}% OFF
           </span>
         )}
       </div>
 
-      <div className="p-3 sm:p-4 flex flex-col h-full">
-        <Link to={`/item/${item.id}`} onClick={(event) => event.stopPropagation()}>
+      <div className="mm-product-content p-3 sm:p-4 flex flex-col h-full">
+        <Link to={`/item/${item.id}`} onClick={(event) => event.stopPropagation()} className="block">
           <h3 className="text-sm sm:text-base font-semibold text-gray-800 mb-1 line-clamp-2">{item.name}</h3>
         </Link>
-        <p className="text-xs sm:text-sm text-gray-500 mb-2" aria-label={`${rating} rating from reviews`}>
-          ★ {Number(rating).toFixed(1)} <span>({item.review_count ?? item.reviews_count ?? item.reviews ?? 0} reviews)</span>
+
+        <p className="mm-product-rating text-xs sm:text-sm text-gray-500 mb-2" aria-label={`${rating} rating from ${reviewCount} reviews`}>
+          <span aria-hidden="true">★</span> {Number(rating).toFixed(1)}
+          <span> · {reviewCount} reviews</span>
         </p>
+
         <div className="flex flex-wrap items-baseline gap-2 mb-2">
           <span className={`font-bold text-lg sm:text-xl ${hasDiscount ? "text-red-600" : "text-gray-900"}`}>
             KES {Number(currentPrice).toLocaleString()}
@@ -66,16 +97,18 @@ const TrendingProductCard = ({ item, isWishlisted = false, onToggleWishlist, onO
             </span>
           )}
         </div>
-        <div className="flex justify-between gap-2 text-[11px] sm:text-xs text-gray-500 mb-3">
+
+        <div className="mm-product-meta flex justify-between gap-2 text-[11px] sm:text-xs text-gray-500 mb-3">
           <span>{item.sold || 0} sold</span>
-          <span>{item.in_stock || 0} in stock</span>
+          <span>{stock} in stock</span>
         </div>
+
         <AddToCartButton
           itemId={item.id}
           quantity={1}
-          availableStock={item.in_stock}
-          remainingStock={item.in_stock}
-          disabled={Number(item.in_stock || 0) <= 0}
+          availableStock={stock}
+          remainingStock={stock}
+          disabled={stock <= 0}
         />
       </div>
     </article>
