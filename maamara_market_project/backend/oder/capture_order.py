@@ -1,5 +1,7 @@
 import logging
 import requests
+from decimal import Decimal
+from django.db import transaction
 from django.conf import settings
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
@@ -224,21 +226,83 @@ def capture_paypal_order(request, order_id):
         if not capture_id:
             return Response(
                 {
-                    "status": "ok",
-                    "message": "Capture completed but no capture ID returned, wait for webhook",
-                }
+                    "status": "error",
+                    "message": "PayPal capture did not return a capture ID.",
+                },
+                status=502,
             )
 
-        # -------------------------------------------------------
-        # 6️⃣ Save PayPal order ID (but don't change status)
-        # -------------------------------------------------------
-        order.paypal_order_id = order_id
-        order.save(update_fields=["paypal_order_id"])
+        capture = purchase_units[0]["payments"]["captures"][0]
+        provider_amount = Decimal(str(capture.get("amount", {}).get("value", "0.00")))
+        provider_currency = capture.get("amount", {}).get("currency_code", "USD").upper()
+        expected_amount = order.payment.provider_amount
+        expected_currency = (order.payment.provider_currency or "USD").upper()
 
+        if (
+            expected_amount is None
+            or provider_amount != Decimal(str(expected_amount))
+            or provider_currency != expected_currency
+            or (capture.get("status") or "").upper() != "COMPLETED"
+        ):
+            logger.error("PayPal capture validation failed for local order %s.", order.id)
+            return Response(
+                {"status": "error", "message": "PayPal payment validation failed."},
+                status=400,
+            )
 
-        logger.info("PayPal order captured successfully.")
+        from .order_completion import complete_paid_order
 
-        return Response({"status": "ok", "message": "Capture attempted"})
+        with transaction.atomic():
+            locked_order, completed = complete_paid_order(
+                order,
+                order.payment,
+                transaction_id=capture_id,
+            )
+
+            vendor_ids = list(
+                locked_order.items.values_list("item__vendor", flat=True).distinct()
+            )
+            for vendor_id in vendor_ids:
+                Transaction.objects.update_or_create(
+                    paypal_transaction_id=capture_id,
+                    vendor_id=vendor_id,
+                    defaults={
+                        "transaction_type": "PayPal",
+                        "payment_method": "paypal",
+                        "order": locked_order,
+                        "payment": locked_order.payment,
+                        "amount": provider_amount,
+                        "status": "completed",
+                        "payer_email": capture_response.get("payer", {}).get("email_address"),
+                        "raw_data": capture_response,
+                    },
+                )
+
+            if not vendor_ids:
+                Transaction.objects.update_or_create(
+                    paypal_transaction_id=capture_id,
+                    order=locked_order,
+                    defaults={
+                        "transaction_type": "PayPal",
+                        "payment_method": "paypal",
+                        "amount": provider_amount,
+                        "status": "completed",
+                        "payment": locked_order.payment,
+                        "raw_data": capture_response,
+                    },
+                )
+
+        logger.info("PayPal order %s captured and local order %s completed.", order_id, order.id)
+
+        return Response({
+            "status": "ok",
+            "message": "Payment completed",
+            "order": {
+                "id": locked_order.id,
+                "status": locked_order.status,
+                "paypal_order_id": locked_order.paypal_order_id,
+            },
+        })
 
     except Exception as e:
         logger.exception("PayPal capture operation failed.")
