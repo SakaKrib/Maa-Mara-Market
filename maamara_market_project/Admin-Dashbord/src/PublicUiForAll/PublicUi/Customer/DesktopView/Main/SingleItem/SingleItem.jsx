@@ -17,7 +17,7 @@ const SingleItem = () => {
   if (loading) return <div className="p-10 text-center">Loading product...</div>;
   if (error || !item) return <div className="p-10 text-center">Item not found.</div>;
 
-  const hasDiscount = Number(item.discount_price || 0) > 0;
+  const hasDiscount = Number(item.discount_price || item.discount || 0) > 0;
 
   return (
     <div className="px-4 md:px-8 lg:px-16 xl:px-32 2xl:px-64 flex flex-col lg:flex-row gap-10 lg:gap-16 mt-10">
