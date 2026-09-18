@@ -12,10 +12,10 @@ import AdvertBlogs from "../../../../../cmponents/Hooks/BlogHooksNew/BlogAdvert"
 import OrganicSlideshow from "./Trending/OrganicAdvert/OrganicDvert";
 
 const Main = () => (
-  <main>
+  <main className="mm-page">
     <HomepageHero />
 
-    <section className="category-collections">
+    <section className="category-collections mm-section">
       <div className="category-cont">
         <div className="containers">
           <div className="wrappe">
