@@ -711,7 +711,9 @@ def call_bank_transfer(account_number, amount, max_retries=3, retry_delay=2):
                 return {
                     "success": True,
                     "transaction_reference": transaction_reference,
+                    "message_id": message_id,
                     "provider_status": status_code,
+                    "settlement_pending": True,
                 }
 
             logger.warning("KCB transfer provider rejected request.")
@@ -734,7 +736,12 @@ def call_bank_transfer(account_number, amount, max_retries=3, retry_delay=2):
             if attempt < max_retries:
                 time.sleep(retry_delay)
 
-    return {"success": False, "error": "KCB transfer request failed after retries."}
+    return {
+        "success": False,
+        "error": "KCB transfer request failed after retries.",
+        "retryable": True,
+        "transaction_reference": transaction_reference,
+    }
 
 
 #-----------------------------------
