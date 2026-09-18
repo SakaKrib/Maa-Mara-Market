@@ -194,7 +194,7 @@ def vendor_pending_order_items(request):
             },
             "size": {
                 "id": oi.size_stock_id,
-                "value": oi.size_stock.size,
+                "value": oi.size_stock.size if oi.size_stock else None,
                 "quantity_in_stock": oi.size_stock.quantity_in_stock if oi.size_stock else None,
             },
             "age_group": oi.age_variant.age_group if oi.age_variant else None,
@@ -224,8 +224,8 @@ def vendor_completed_order_items(request):
 
     vendor = user.vendor
 
-    # Get all vendor items created by this user
-    vendor_items = Item.objects.filter(created_by=user)
+    # Resolve completed orders from the vendor's actual catalog.
+    vendor_items = Item.objects.filter(vendor=vendor)
 
     # Get completed orders containing vendor's items
     completed_orders = Order.objects.filter(
