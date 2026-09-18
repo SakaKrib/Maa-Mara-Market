@@ -103,8 +103,13 @@ def _process_b2c_callback(payload: dict, *, timeout: bool = False) -> None:
             payout.mpesa_originator_conversation_id = str(originator_id)
 
         if result_code == 0 and not timeout:
-            if transaction_id:
-                payout.mpesa_transaction_id = transaction_id
+            if not transaction_id:
+                logger.error(
+                    "M-Pesa B2C success callback missing transaction identifier.",
+                    extra={"payout_reference": payout.reference},
+                )
+                return
+            payout.mpesa_transaction_id = transaction_id
             payout.paid = True
             payout.paid_at = timezone.now()
             update_fields = [
