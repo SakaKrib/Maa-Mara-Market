@@ -7,11 +7,7 @@ from django.db import models
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 
-
-def default_voucher_expiry_date():
-    """Return a rolling 30-day default for newly issued vouchers."""
-    return date.today() + timedelta(days=30)
-
+from .field_defaults import default_voucher_expiry_date
 from ReactSerializers.models import Item
 
 
