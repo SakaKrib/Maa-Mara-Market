@@ -279,7 +279,7 @@ def vendor_completed_order_items(request):
             },
             "size": {
                 "id": oi.size_stock_id,
-                "value": oi.size_stock.size,
+                "value": oi.size_stock.size if oi.size_stock else None,
                 "quantity_in_stock": oi.size_stock.quantity_in_stock if oi.size_stock else None,
             },
             "age_group": oi.age_variant.age_group if oi.age_variant else None,
