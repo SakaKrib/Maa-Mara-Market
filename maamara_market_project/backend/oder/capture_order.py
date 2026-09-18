@@ -1,4 +1,3 @@
-import json
 import logging
 import requests
 from django.conf import settings
@@ -7,13 +6,11 @@ from rest_framework.response import Response
 from rest_framework_simplejwt.authentication import JWTAuthentication
 from rest_framework_simplejwt.exceptions import InvalidToken, TokenError
 from .models import Order, Transaction, Card
+from .Payment import get_paypal_access_token
 from .views import IsAuthenticatedOrVisitor
 
 
 logger = logging.getLogger(__name__)
-
-# PayPal provider helper
-from .Payment import get_paypal_access_token
 
 
 # 🔹 Fetch PayPal capture details
