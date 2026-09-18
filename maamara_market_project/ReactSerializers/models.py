@@ -217,21 +217,6 @@ class Item(models.Model):
         help_text="Only required if category = Coffee"
     )
 
-    # prevent direct price change
-    def save(self, *args, **kwargs):
-        if self.pk:
-            old = Item.objects.get(pk=self.pk)
-
-            # Detect price change
-            if old.price != self.price:
-                # Only allow if explicitly flagged from approval flow
-                if not getattr(self, "_allow_price_update", False):
-                    raise ValidationError(
-                        "Direct price changes are not allowed. Use PriceChangeRequest approval flow."
-                    )
-
-        super().save(*args, **kwargs)
-
     # get vendor price without markup
     def get_item_final_price_for_vendor(self):
         """Returns the price including 7% markup."""
@@ -265,6 +250,13 @@ class Item(models.Model):
         return self.price
 
     def save(self, *args, **kwargs):
+        if self.pk:
+            old = Item.objects.get(pk=self.pk)
+            if old.price != self.price and not getattr(self, "_allow_price_update", False):
+                raise ValidationError(
+                    "Direct price changes are not allowed. Use PriceChangeRequest approval flow."
+                )
+
         if not self.slug:
             base_slug = slugify(self.name)
             slug = base_slug
@@ -274,9 +266,8 @@ class Item(models.Model):
                 counter += 1
             self.slug = slug
 
-        # Calculate image hash on save if not present
         if not self.image_hash and self.image:
-            self.image_hash = hashlib.sha256(self.image.name.encode('utf-8')).hexdigest()
+            self.image_hash = hashlib.sha256(self.image.name.encode("utf-8")).hexdigest()
 
         super().save(*args, **kwargs)
 
