@@ -1,5 +1,6 @@
 from django.urls import path, include
 from .views import *
+from .discovery import discovery_feed, multi_collections
 from rest_framework.routers import DefaultRouter
 
 router = DefaultRouter()
@@ -95,6 +96,8 @@ urlpatterns = [
     path("filters/", filters_view, name="filters"),
     path("filter-products/", products_view, name="products"),
     path("api/brands/", list_brands, name="list_brands"),
+    path("api/discovery/", discovery_feed, name="discovery-feed"),
+    path("api/multi-collections/", multi_collections, name="multi-collections"),
 
     # blogs
     path("api/blogs/", blog_list, name="list_blogs"),
