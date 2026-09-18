@@ -91,10 +91,10 @@ urlpatterns = [
     path("api/pending-orders-stats/", vendor_pending_orders, name="vendor-pending-orders"),
     
     # pending oders
-    path("api/vendor-pending-order/items/", vendor_pending_order_items, name="vendor-completed-order-items"),
+    path("api/vendor-pending-order/items/", vendor_pending_order_items, name="vendor-pending-order-items"),
 
-    #complete orders
-    path("api/vendor-complete-order/items/", vendor_completed_order_items, name="vendor-pending-order-items"),
+    # complete orders
+    path("api/vendor-complete-order/items/", vendor_completed_order_items, name="vendor-completed-order-items"),
 
     # customer api
     path('api/customers/', get_customers, name='get_customers'),
