@@ -375,7 +375,7 @@ def add_to_cart_api(request, pk):
             age_variant=age_variant if age_variant else None,
             selected_length=str(length.value) + " " + length.unit if length else None,
             selected_weight=str(weight.value) + " " + weight.unit if weight else None,
-            shoe_size=shoe.shoe_size if shoe else None,
+            shoe_size=str(selected_shoe_size) if selected_shoe_size is not None else None,
         )
         new_quantity = requested_qty
         created = True  
@@ -518,19 +518,30 @@ def remove_from_cart_api(request, pk):
     # -----------------------------
     # Find cart item with exact variation
     # -----------------------------
-    cart_item_qs = OderItem.objects.filter(
-        item=item,
-        user=user,
-        visitor_id=visitor_id,
-        status="pending",
-        order=order,
-        color_variant=selected_color,       # should be ColorVariant instance
-        size_stock=selected_size,           # should be SizeStock instance
-        age_variant=selected_age_group,     # should be AgeVariant instance
-        selected_length=selected_length,    # string, e.g. "30 cm"
-        selected_weight=selected_weight,    # string, e.g. "2 kg"
-        shoe_size=selected_shoe_size        # string, e.g. "42"
-    )
+    cart_item_id = request.data.get("cart_item_id")
+    if cart_item_id:
+        cart_item_qs = OderItem.objects.filter(
+            id=cart_item_id,
+            item=item,
+            user=user,
+            visitor_id=visitor_id,
+            status="pending",
+            order=order,
+        )
+    else:
+        cart_item_qs = OderItem.objects.filter(
+            item=item,
+            user=user,
+            visitor_id=visitor_id,
+            status="pending",
+            order=order,
+            color_variant_id=selected_color or None,
+            size_stock_id=selected_size or None,
+            age_variant_id=selected_age_group or None,
+            selected_length=selected_length,
+            selected_weight=selected_weight,
+            shoe_size=selected_shoe_size,
+        )
 
 
     if not cart_item_qs.exists():
@@ -660,19 +671,30 @@ def update_cart_quantity(request, pk):
     )
 
     # 🔹 Find the correct cart item
-    cart_item = OderItem.objects.filter(
-        item=item,
-        user=user,
-        visitor_id=visitor_id,
-        status="pending",
-        order=order,
-        color_variant=selected_color,       # should be ColorVariant instance
-        size_stock=selected_size,           # should be SizeStock instance
-        age_variant=selected_age_group,     # should be AgeVariant instance
-        selected_length=selected_length,    # string, e.g. "30 cm"
-        selected_weight=selected_weight,    # string, e.g. "2 kg"
-        shoe_size=selected_shoe_size        # string, e.g. "42"
-    ).first()
+    cart_item_id = request.data.get("cart_item_id")
+    if cart_item_id:
+        cart_item = OderItem.objects.filter(
+            id=cart_item_id,
+            item=item,
+            user=user,
+            visitor_id=visitor_id,
+            status="pending",
+            order=order,
+        ).first()
+    else:
+        cart_item = OderItem.objects.filter(
+            item=item,
+            user=user,
+            visitor_id=visitor_id,
+            status="pending",
+            order=order,
+            color_variant_id=selected_color or None,
+            size_stock_id=selected_size or None,
+            age_variant_id=selected_age_group or None,
+            selected_length=selected_length,
+            selected_weight=selected_weight,
+            shoe_size=selected_shoe_size,
+        ).first()
 
 
     if not cart_item:
