@@ -85,7 +85,9 @@ function AppContent() {
   const { isAuthenticated, loading } = useAuth();
   const [theme, colorMode] = useMode();
   const themeSetup = useTheme();
-  const colors = tokens(themeSetup.palette.mode);\n\n  useRealtimeEvents(() => {});
+  const colors = tokens(themeSetup.palette.mode);
+
+  useRealtimeEvents(() => {});
 
   useEffect(() => {
     // Only call the API to set the visitor token cookie
