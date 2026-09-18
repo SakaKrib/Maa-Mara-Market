@@ -59,34 +59,42 @@ def sanitize_phone(phone: str) -> str:
 # STK Push Endpoint
 # ----------------------
 @api_view(["POST"])
-@permission_classes([AllowAny])
+@permission_classes([IsAuthenticatedOrVisitor])
 def stk_push(request):
+    """Initiate an STK payment for the caller's own pending order."""
     try:
-        phone = request.data.get("phone")
-        amount = int(request.data.get("amount", 1))
         order_id = request.data.get("order_id")
+        phone = request.data.get("phone")
 
-        if not phone or not order_id:
+        if not order_id or not phone:
             return Response({"error": "Phone number and order_id are required"}, status=400)
 
         phone = sanitize_phone(phone)
-        logger.info("📱 Phone: %s | 💰 Amount: %s | 🆔 Order: %s", phone, amount, order_id)
+        if len(phone) != 12 or not phone.startswith("2547"):
+            return Response({"error": "Invalid Kenyan phone number"}, status=400)
 
-        # ✅ Get order
-        order = Order.objects.filter(id=order_id).first()
+        user = request.user if request.user and request.user.is_authenticated else None
+        visitor_id = request.COOKIES.get("visitorId") if not user else None
+
+        order_qs = Order.objects.filter(id=order_id, status="pending")
+        if user:
+            order_qs = order_qs.filter(user=user, visitor_id__isnull=True)
+        else:
+            if not visitor_id:
+                return Response({"error": "Visitor identity is required"}, status=401)
+            order_qs = order_qs.filter(user__isnull=True, visitor_id=visitor_id)
+
+        order = order_qs.select_related("billing_address", "payment").first()
         if not order:
             return Response({"error": "Order not found"}, status=404)
-        
+
         if not order.billing_address:
-            logger.warning(f"⚠️ Order {order.id} has no billing address. Cannot initiate STK push.")
             return Response({"error": "Billing address is required before payment"}, status=400)
 
-        logger.info(f"📦 Billing address for order {order.id}: {order.billing_address}")
+        amount = Decimal(str(order.final_total_of_cart()))
+        if amount <= 0:
+            return Response({"error": "Order amount must be greater than zero"}, status=400)
 
-        # ✅ Determine user/visitor
-        visitor_id = request.COOKIES.get("visitor_id") or None
-
-        # ✅ M-Pesa credentials
         shortcode = str(settings.PAYMENT_GATEWAYS["mpesa"]["stk_push"]["shortcode"]).strip()
         passkey = str(settings.PAYMENT_GATEWAYS["mpesa"]["stk_push"]["passkey"]).strip()
         callback_url = settings.PAYMENT_GATEWAYS["mpesa"]["stk_push"]["callback_url"].strip()
@@ -100,63 +108,65 @@ def stk_push(request):
             "Password": password,
             "Timestamp": timestamp,
             "TransactionType": "CustomerPayBillOnline",
-            "Amount": amount,
+            "Amount": int(amount),
             "PartyA": phone,
             "PartyB": shortcode,
             "PhoneNumber": phone,
             "CallBackURL": callback_url,
-            "AccountReference": str(order_id),
-            "TransactionDesc": f"Payment for order {order_id}",
+            "AccountReference": str(order.id),
+            "TransactionDesc": f"Payment for order {order.id}",
         }
 
-        # ✅ Get OAuth token and send STK push
         token = get_mpesa_token()
-        headers = {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
-
-        response = requests.post(stk_url, json=payload, headers=headers, timeout=30)
-        logger.info(f"🟡 STK RAW RESPONSE: {response.text}")
-
-        if response.status_code != 200:
-            logger.error(f"❌ Safaricom Error: {response.text}")
-            return Response(
-                {"error": "Safaricom rejected request", "details": response.text},
-                status=response.status_code
-            )
-
-
+        response = requests.post(
+            stk_url,
+            json=payload,
+            headers={"Authorization": f"Bearer {token}", "Content-Type": "application/json"},
+            timeout=30,
+        )
+        response.raise_for_status()
         data = response.json()
-        logger.info("STK Push request sent successfully: %s", data)
 
-        # ✅ Extract CheckoutRequestID for tracking
         checkout_request_id = data.get("CheckoutRequestID")
         if not checkout_request_id:
-            return Response({"error": "No CheckoutRequestID returned"}, status=500)
+            logger.error("M-Pesa STK response did not contain CheckoutRequestID")
+            return Response({"error": "Payment provider did not return a checkout reference"}, status=502)
 
-        # ✅ Create Payment record (store CheckoutRequestID temporarily)
-        payment = Payment.objects.create(
-            user=request.user if request.user.is_authenticated else None,
-            visitor_id=visitor_id,
-            payment_method="Mpesa",
-            amount=amount,
-            transaction_id=checkout_request_id,
-            status="pending",
-        )
+        payment = order.payment
+        if payment and payment.status == "pending":
+            payment.transaction_id = checkout_request_id
+            payment.amount = amount
+            payment.payment_method = "Mpesa"
+            payment.save(update_fields=["transaction_id", "amount", "payment_method"])
+        else:
+            payment = Payment.objects.create(
+                user=user,
+                visitor_id=visitor_id,
+                payment_method="Mpesa",
+                amount=amount,
+                transaction_id=checkout_request_id,
+                status="pending",
+            )
+            order.payment = payment
+            order.save(update_fields=["payment"])
 
-        # ✅ Link Payment to Order
-        order.payment = payment
-        order.save()
+        return Response({
+            "message": "STK Push initiated",
+            "checkout_request_id": checkout_request_id,
+            "order_id": order.id,
+            "amount": str(amount),
+        })
 
+    except requests.exceptions.RequestException:
+        logger.exception("M-Pesa STK Push provider request failed")
+        return Response({"error": "Payment provider request failed"}, status=502)
+    except (KeyError, ValueError, TypeError, ArithmeticError):
+        logger.exception("Invalid M-Pesa STK configuration or order amount")
+        return Response({"error": "Unable to initiate payment"}, status=400)
+    except Exception:
+        logger.exception("Unexpected STK Push error")
+        return Response({"error": "Unable to initiate payment"}, status=500)
 
-
-        return Response({"message": "STK Push initiated", "checkout_request_id": checkout_request_id})
-
-    except requests.exceptions.RequestException as e:
-        logger.error("❌ STK Push failed: %s", str(e))
-        return Response({"error": "STK Push failed", "details": str(e)}, status=500)
-
-    except Exception as e:
-        logger.error("❌ Unexpected error: %s", str(e))
-        return Response({"error": str(e)}, status=500)
 
 # ----------------------
 # STK Callback Endpoint
