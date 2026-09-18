@@ -50,7 +50,7 @@ def get_paypal_access_token():
 # ==============================
 # 🔹 Create Order
 # ==============================
-def create_paypal_order(amount, currency="USD"):
+def create_paypal_order(amount, currency="USD", *, reference_id=None):
     """
     Create a new PayPal order.
     Returns the order JSON object containing the approval link.
@@ -65,6 +65,7 @@ def create_paypal_order(amount, currency="USD"):
         "purchase_units": [
             {
                 "amount": {"currency_code": currency, "value": str(amount)},
+                **({"reference_id": str(reference_id)} if reference_id else {}),
             }
         ]
     }
