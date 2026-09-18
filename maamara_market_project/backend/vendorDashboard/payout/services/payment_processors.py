@@ -547,7 +547,7 @@ def call_bank_transfer(account_number, amount, max_retries=3, retry_delay=2):
     if not access_token:
         return {"success": False, "error": "Failed to retrieve access token."}
 
-    print(f"KCB Access Token: {access_token}")
+    logger.debug("KCB access token fetched.")
 
     headers = {
         "Authorization": f"Bearer {access_token}",
