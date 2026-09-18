@@ -49,6 +49,12 @@ export async function submitCheckout(data, order, selectedShipping) {
       items: (order?.items || []).map((item) => ({
         id: item?.id ?? null,
         quantity: item?.quantity ?? 1,
+        variant_id: item?.variant_id ?? null,
+        size_id: item?.size_id ?? null,
+        age_variant_id: item?.age_variant_id ?? null,
+        length_id: item?.length_id ?? null,
+        weight_id: item?.weight_id ?? null,
+        shoe_id: item?.shoe_id ?? null,
       })),
     }),
   });
