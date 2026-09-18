@@ -15,7 +15,7 @@ from django.http import HttpResponse
 
 from ReactSerializers.Serializers import VendorPayoutSerializer
 from ReactSerializers.models import Item
-from oder.models import OderItem, Order
+from order.models import OrderItem, Order
 from .models import SoldItem, VendorAdjustment, VendorPayout
 
 
@@ -80,7 +80,7 @@ def get_vendor_earnings(vendor, start_date, end_date):
     completed_order_ids = completed_orders.values_list('id', flat=True)
 
     # Get all valid order items linked to those orders for this vendor
-    order_items = OderItem.objects.filter(
+    order_items = OrderItem.objects.filter(
         order_id__in=completed_order_ids,
         item__in=vendor_items,
         refunded=False,
@@ -120,7 +120,7 @@ def get_vendor_earnings(vendor, start_date, end_date):
     net_total = gross_sales + adjustment_total
 
     # Customer-side income must be limited to this vendor's order items.
-    customer_order_items = OderItem.objects.filter(
+    customer_order_items = OrderItem.objects.filter(
         order_id__in=completed_order_ids,
         item__in=vendor_items,
         refunded=False,

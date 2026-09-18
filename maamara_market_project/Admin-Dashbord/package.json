@@ -57,7 +57,7 @@
     "country-list": "^2.4.1",
     "date-fns": "^4.1.0",
     "dayjs": "^1.11.13",
-    "dompurify": "^3.4.5",
+    "dompurify": "^3.4.11",
     "formik": "^2.4.6",
     "framer-motion": "^12.23.22",
     "input-otp": "^1.4.2",
