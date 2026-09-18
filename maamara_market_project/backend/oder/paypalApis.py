@@ -682,32 +682,19 @@ def send_paypal_invoice(order):
 @api_view(["POST"])
 @permission_classes([AllowAny])
 def paypal_webhook(request):
-    """
-    Handles PayPal webhook events for payments and orders.
-    Verifies authenticity and processes only relevant event types.
-    Links transactions to cards if applicable.
-    """
+    """Process verified PayPal events without guessing the local order."""
     try:
         raw_body = request.body
-        logger.info("📩 PayPal webhook received")
-
-        # Parse JSON payload
         try:
             data = json.loads(raw_body)
-        except json.JSONDecodeError as e:
-            logger.error(f"❌ Invalid webhook JSON: {e}")
+        except json.JSONDecodeError:
             return Response({"status": "error", "message": "Invalid JSON"}, status=400)
 
-        # Verify PayPal signature
         if not verify_paypal_signature(raw_body, request):
-            logger.warning("⚠️ Invalid PayPal webhook signature")
             return Response({"status": "error", "message": "Invalid signature"}, status=400)
 
         event_type = (data.get("event_type") or "").upper()
-        resource = data.get("resource", {})
-        logger.info("🔔 PayPal event received | event_type=%s", event_type)
-
-        # Only process relevant events
+        resource = data.get("resource") or {}
         relevant_events = {
             "PAYMENT.CAPTURE.COMPLETED",
             "CHECKOUT.ORDER.COMPLETED",
@@ -717,318 +704,117 @@ def paypal_webhook(request):
             "PAYMENT.CAPTURE.DECLINED",
         }
         if event_type not in relevant_events:
-            logger.info(f"ℹ️ Ignored irrelevant event: {event_type}")
             return Response({"status": "ignored"})
 
-        # Extract transaction details
         paypal_order_id = (
             resource.get("supplementary_data", {})
             .get("related_ids", {})
             .get("order_id")
-            or resource.get("id")
         )
-        paypal_resource_status = resource.get("status", "").lower()
-        amount = resource.get("amount", {}).get("value", "0.00")
-        currency = resource.get("amount", {}).get("currency_code", "USD")
-        payer_email = resource.get("payer", {}).get("email_address")
+        if not paypal_order_id:
+            return Response({"status": "ok", "message": "Missing PayPal order reference"})
 
-        logger.info(
-            "💳 PayPal payment update | order_id=%s | status=%s | amount=%s %s",
-            paypal_order_id,
-            paypal_resource_status,
-            amount,
-            currency,
-        )
-
-        # Avoid duplicates
-        existing_payment = Payment.objects.filter(transaction_id=paypal_order_id).first()
-        if existing_payment and existing_payment.status == "completed":
-            logger.info(f"⚠️ Payment {paypal_order_id} already processed")
-            return Response({"status": "ok", "message": "Already processed"})
-
-        with transaction.atomic():
-            # Resolve the order first so the payment created during checkout is
-            # updated rather than creating a second, orphaned Payment record.
-            order = Order.objects.filter(paypal_order_id=paypal_order_id).first()
-
-            payment = order.payment if order and order.payment_id else None
-            if payment:
-                payment.transaction_id = paypal_order_id
-                payment.amount = amount
-                payment.payment_method = "PayPal"
-                payment.status = "completed" if event_type == "PAYMENT.CAPTURE.COMPLETED" else payment.status
-                payment.save(update_fields=["transaction_id", "amount", "payment_method", "status"])
-            else:
-                payment, _ = Payment.objects.update_or_create(
-                    transaction_id=paypal_order_id,
-                    defaults={
-                        "amount": amount,
-                        "payment_method": "PayPal",
-                        "status": "completed" if event_type == "PAYMENT.CAPTURE.COMPLETED" else "pending",
-                    },
-                )
-
-        # Resolve the exact order identified by PayPal. Never fall back to
-        # the user's latest pending order for a provider callback.
-        order = Order.objects.filter(paypal_order_id=paypal_order_id).select_related("payment").first()
-
-        if not order:
-            logger.warning("PayPal callback references an unknown order: %s", paypal_order_id)
+        order = Order.objects.filter(
+            paypal_order_id=paypal_order_id
+        ).select_related("payment").first()
+        if not order or not order.payment:
+            logger.warning("PayPal webhook references unknown local order: %s", paypal_order_id)
             return Response({"status": "ok", "message": "Unknown order"})
 
         payment = order.payment
-        if not payment:
-            logger.warning("PayPal order %s has no local payment record", order.id)
-            return Response({"status": "ok", "message": "Payment not found"})
+        amount = resource.get("amount", {}).get("value")
+        currency = resource.get("amount", {}).get("currency_code", "USD")
+        provider_status = (resource.get("status") or event_type).lower()
+        transaction_id = resource.get("id") or paypal_order_id
 
         if event_type == "PAYMENT.CAPTURE.COMPLETED":
-            provider_amount = Decimal(str(amount))
-            if provider_amount != payment.amount:
+            if amount is None or Decimal(str(amount)) != Decimal(str(payment.amount)):
                 logger.error(
                     "PayPal amount mismatch for order %s: provider=%s expected=%s",
                     order.id,
-                    provider_amount,
+                    amount,
                     payment.amount,
                 )
                 return Response({"status": "ok", "message": "Amount mismatch"})
 
             from .order_completion import complete_paid_order
-
             locked_order, completed = complete_paid_order(
                 order,
                 payment,
                 transaction_id=paypal_order_id,
             )
 
-            if completed:
-                # Vendor notifications remain outside the stock/payment
-                # transaction so an email failure cannot roll back a paid sale.
-                for order_item in locked_order.items.all():
-                    vendor_user = getattr(order_item.item.vendor, "user", None)
-                    if vendor_user and vendor_user.email:
-                        variants = []
-                        if order_item.size_stock:
-                            variants.append(f"Size: {order_item.size_stock.size}")
-                        if order_item.color_variant:
-                            variants.append(f"Color: {order_item.color_variant.color}")
-                        if order_item.age_variant:
-                            variants.append(f"Age: {order_item.age_variant.age_group}")
-                        if order_item.selected_length:
-                            variants.append(f"Length: {order_item.selected_length}")
-                        if order_item.selected_weight:
-                            variants.append(f"Weight: {order_item.selected_weight}")
-
-                        price = order_item.price_at_purchase or order_item.item.price
-                        html_content = render_to_string(
-                            "emails/item_sold.html",
-                            {
-                                "vendor": vendor_user,
-                                "item": order_item.item,
-                                "quantity": order_item.quantity,
-                                "variants": ", ".join(variants) or "No variants selected",
-                                "price_at_purchase": price,
-                                "total_amount": price * order_item.quantity,
-                                "weight": getattr(order_item.item, "weight", None),
-                                "order": locked_order,
-                                "current_year": timezone.now().year,
-                            },
-                        )
-                        email = EmailMultiAlternatives(
-                            f"🎉 Your item '{order_item.item.name}' has been purchased!",
-                            "",
-                            settings.DEFAULT_FROM_EMAIL,
-                            [vendor_user.email],
-                        )
-                        email.attach_alternative(html_content, "text/html")
-                        email.send()
-
-                logger.info("PayPal order %s completed atomically", locked_order.id)
-
-                # Send PayPal invoice only if not sent already
-                try:
-                    if not getattr(order, "paypal_invoice_id", None):
-                        invoice = send_paypal_invoice(order)
-                        logger.info("💳 PayPal invoice created | order_id=%s", order.id)
-                        order.paypal_invoice_id = invoice.get('id')  # You must add this field to Order model
-                        order.save(update_fields=['paypal_invoice_id'])
-                except Exception as e:
-                    logger.error("Failed to send PayPal invoice.")
-
-                # -------------------------------------------------------
-                # ✉️ Send Invoice Email to Customer
-                # -------------------------------------------------------
-                try:
-                    if order.billing_address and order.billing_address.email:
-                        customer_email = order.billing_address.email
-                    elif order.user and order.user.email:
-                        customer_email = order.user.email
-                    else:
-                        customer_email = None
-
-                    if customer_email:
-                        subject = f"🧾 Invoice for Your Order #{order.id}"
-
-                        # Build detailed item list
-                        items_details = ""
-                        for oi in order.items.all():
-                            item = oi.item
-                            variants = []
-                            if hasattr(oi, "selected_size") and oi.selected_size:
-                                variants.append(f"Size: {oi.selected_size}")
-                            if hasattr(oi, "selected_color") and oi.selected_color:
-                                variants.append(f"Color: {oi.selected_color}")
-                            if hasattr(oi, "custom_length") and oi.custom_length:
-                                variants.append(f"Length: {oi.custom_length}")
-                            variant_text = ", ".join(variants) if variants else "No variants"
-
-                            price = oi.price_at_purchase or oi.get_final_price()
-                            total_price = price * oi.quantity
-
-                            items_details += (
-                                f"- {item.name} ({variant_text})\n"
-                                f"  Quantity: {oi.quantity}\n"
-                                f"  Price per item: ${price:.2f}\n"
-                                f"  Total: ${total_price:.2f}\n\n"
-                            )
-
-                        message = (
-                            f"Hello {order.billing_address.first_name if order.billing_address else order.user.first_name},\n\n"
-                            f"Thank you for your purchase!\n\n"
-                            f"Order ID: #{order.id}\n\n"
-                            f"Items:\n{items_details}"
-                            f"Order Total: ${order.get_total():.2f}\n"
-                            f"Payment Method: PayPal\n"
-                            f"Transaction ID: {paypal_order_id}\n\n"
-                            f"You can view your full order details here:\n"
-                            f"http://maamaramarket.com/orders/{order.id}/\n\n"
-                            f"Best regards,\n"
-                            f"Maamara Market Team"
-                        )
-
-                        send_mail(
-                            subject,
-                            message,
-                            settings.DEFAULT_FROM_EMAIL,
-                            [customer_email],
-                            fail_silently=False,
-                        )
-
-                        logger.info(
-                            "📧 Customer invoice email sent | order_id=%s",
-                            order.id,
-                        )
-                    else:
-                        logger.warning(f"⚠️ No email found for Order #{order.id}, invoice not sent.")
-                except Exception as email_err:
-                    logger.error(f"❌ Failed to send invoice email for Order #{order.id}: {email_err}")
-
-                # Log activity
-                ActivityLog.objects.create(
-                    user=order.user,
-                    actor_type="user" if order.user else "guest",
-                    action="paypal_payment",
-                    description=f"PayPal order {paypal_order_id} completed.",
-                    related_url=f"/orders/{order.id}/",
-                )
-
-                # Notify buyer
-                if order.user:
-                    Notification.objects.create(
-                        user=order.user,
-                        title="🛍️ PayPal Payment Successful",
-                        message=f"Your order #{order.id} has been successfully paid.",
-                        url=f"/orders/{order.id}/",
-                    )
-
-                # Notify vendor(s)
-                for item in order.items.all():
-                    vendor_user = getattr(item.item.vendor, "user", None)
-                    if vendor_user:
-                        Notification.objects.create(
-                            user=vendor_user,
-                            title="💰 New PayPal Sale!",
-                            message=f"Your item '{item.item.name}' was purchased.",
-                            url=f"/vendors-dashboard/vendor/orders/{order.id}/",
-                        )
-
-                # Notify admins
-                for admin in User.objects.filter(is_superuser=True):
-                    Notification.objects.create(
-                        user=admin,
-                        title="📦 PayPal Order Completed",
-                        message=f"Order #{order.id} ({amount} {currency}) completed.",
-                        url=f"/admin-dashboard/admin/orders/{order.id}/",
-                    )
-
-                logger.info(f"✅ Order #{order.id} marked as completed via webhook")
-
-            # --- Extract card info if available ---
-           
-            # -------------------------------------------------------
-            # 💾 Save Transaction(s) for Each Vendor
-            # -------------------------------------------------------
-            if order:
-                vendor_ids = list(order.items.values_list("item__vendor", flat=True).distinct())
-                logger.info(f"🧾 Order {order.id} vendor_ids: {vendor_ids}")
-
-                if vendor_ids:
-                    for vendor_id in vendor_ids:
-                        vendor = Vendor.objects.get(id=vendor_id)
-                        tx, created = Transaction.objects.update_or_create(
-                            paypal_transaction_id=resource.get("id"),
-                            vendor=vendor,
-                            defaults={
-                                "transaction_type": "PayPal",
-                                "payment_method": "paypal",
-                                "order": order,
-                                "payment": payment,
-                                "amount": Decimal(resource.get("amount", {}).get("value", "0.00")),
-                                "status": paypal_resource_status,
-                                "payer_email": payer_email,
-                                "raw_data": data,
-                                
-                            },
-                        )
-                    logger.info(f"✅ Transaction(s) {tx.paypal_transaction_id} created or updated successfully")
-                else:
-                    # No vendors found, create single transaction without vendor
-                    tx, created = Transaction.objects.update_or_create(
-                        paypal_transaction_id=resource.get("id"),
-                        order=order,
-                        defaults={
-                            "transaction_type": "PayPal",
-                            "payment_method": "paypal",
-                            "amount": Decimal(resource.get("amount", {}).get("value", "0.00")),
-                            "status": status,
-                            "payer_email": payer_email,
-                            "raw_data": data,
-                            "payment": payment,
-                            
-                        },
-                    )
-                    logger.info(f"✅ Transaction {tx.paypal_transaction_id} (no vendor) created or updated successfully")
-
-                    # Notify frontend via WebSocket
-                channel_layer = get_channel_layer()
-                async_to_sync(channel_layer.group_send)(
-                    f"order_{order.id}",
-                    {"type": "payment_status", "status": "completed"},
-                )
-                async_to_sync(channel_layer.group_send)(
-                    f"order_{order.id}",
-                    {
-                        "type": "transaction.success",
-                        "message": {
-                            "order_id": order.id,
-                            "amount": order.get_total(),
-                            "status": "success",
-                            "customer": f"{order.billing_address.first_name} {order.billing_address.last_name}",
-                        },
+            vendor_ids = list(
+                locked_order.items.values_list(
+                    "item__vendor", flat=True
+                ).distinct()
+            )
+            for vendor_id in vendor_ids:
+                Transaction.objects.update_or_create(
+                    paypal_transaction_id=transaction_id,
+                    vendor_id=vendor_id,
+                    defaults={
+                        "transaction_type": "PayPal",
+                        "payment_method": "paypal",
+                        "order": locked_order,
+                        "payment": locked_order.payment,
+                        "amount": Decimal(str(amount)),
+                        "status": "completed",
+                        "payer_email": resource.get("payer", {}).get("email_address"),
+                        "raw_data": data,
                     },
                 )
 
-    except Exception as e:
-        logger.exception("PayPal webhook processing error.")
+            if not vendor_ids:
+                Transaction.objects.update_or_create(
+                    paypal_transaction_id=transaction_id,
+                    order=locked_order,
+                    defaults={
+                        "transaction_type": "PayPal",
+                        "payment_method": "paypal",
+                        "amount": Decimal(str(amount)),
+                        "status": "completed",
+                        "payer_email": resource.get("payer", {}).get("email_address"),
+                        "raw_data": data,
+                        "payment": locked_order.payment,
+                    },
+                )
+
+            if completed:
+                ActivityLog.objects.create(
+                    user=locked_order.user,
+                    actor_type="user" if locked_order.user else "guest",
+                    action="paypal_payment",
+                    description=f"PayPal order {paypal_order_id} completed.",
+                    related_url=f"/orders/{locked_order.id}/",
+                )
+                if locked_order.user:
+                    Notification.objects.create(
+                        user=locked_order.user,
+                        title="PayPal Payment Successful",
+                        message=f"Your order #{locked_order.id} has been successfully paid.",
+                        url=f"/orders/{locked_order.id}/",
+                    )
+
+            return Response({"status": "ok", "message": "Payment processed"})
+
+        # Non-success events are recorded but never complete an order.
+        Transaction.objects.update_or_create(
+            paypal_transaction_id=transaction_id,
+            order=order,
+            defaults={
+                "transaction_type": "PayPal",
+                "payment_method": "paypal",
+                "amount": Decimal(str(amount or "0.00")),
+                "status": provider_status,
+                "payer_email": resource.get("payer", {}).get("email_address"),
+                "raw_data": data,
+                "payment": payment,
+            },
+        )
+        return Response({"status": "ok", "message": "Event recorded"})
+
+    except Exception:
+        logger.exception("PayPal webhook processing error")
         return Response({"status": "error", "message": "Webhook processing failed."}, status=500)
 
-    return Response({"status": "ok", "message": "Webhook processed"})
