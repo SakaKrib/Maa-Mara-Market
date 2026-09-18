@@ -114,7 +114,7 @@ import VendorOrdersPage from "./cmponents/Hooks/Order/OrderPage";
 import SalesReportPage from "./cmponents/VENDORPAGE/Home/Orders/SalesRegister";
 import SingleItemProfileNotif from "./cmponents/VENDORPAGE/VendorSections/NotificationPages/SingleItemProfileNotif";
 import SubcategoryProducts from "./PublicUiForAll/PublicUi/Customer/DesktopView/Header/subcategoryListItem";
-import SearchResultsPage from "./PublicUiForAll/PublicUi/Navigations/Search/NavIcons/ResustsPage";
+import SearchResultsPage from "./PublicUiForAll/PublicUi/Navigations/Search/NavIcons/ResultsPage";
 import OrganicPage from "./PublicUiForAll/PublicUi/Customer/DesktopView/Main/Trending/OrganicAdvert/OrganicPage";
 import PayoutSuccess from "./cmponents/VendorPayoutReport/vendorPayouts/Payments/PayoutSuccess";
 import AuthSuccess from "./cmponents/Auth/AdminLogin/Auth-Success-Check";
