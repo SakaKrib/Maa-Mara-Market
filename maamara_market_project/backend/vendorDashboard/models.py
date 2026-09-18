@@ -446,7 +446,7 @@ class SoldItem(models.Model):
         self.total_price = self.quantity * self.sale_price
 
         with transaction.atomic():
-            if self.pk is None:
+            if self.pk is None and not getattr(self, "_stock_already_deducted", False):
                 if self.size_stock_id:
                     self.size_stock.quantity_in_stock -= self.quantity
                     self.size_stock.save(update_fields=["quantity_in_stock"])
