@@ -167,6 +167,22 @@ def _fedex_rates(order, destination):
     return rates
 
 
+def get_rates_for_destination(order, destination):
+    """Return live DHL/FedEx rates for an owned order and destination."""
+    rates = []
+    provider_errors = []
+    for provider_name, provider in (("DHL", _dhl_rates), ("FedEx", _fedex_rates)):
+        try:
+            rates.extend(provider(order, destination))
+        except requests.exceptions.RequestException:
+            logger.exception("%s shipping provider request failed", provider_name)
+            provider_errors.append(provider_name)
+        except (ValueError, KeyError, TypeError):
+            logger.exception("%s returned an invalid shipping response", provider_name)
+            provider_errors.append(provider_name)
+    return rates, provider_errors
+
+
 @api_view(["POST"])
 @permission_classes([IsAuthenticatedOrVisitor])
 def get_shipping_rates(request):
@@ -178,28 +194,17 @@ def get_shipping_rates(request):
     if not order:
         return Response({"error": "Order not found"}, status=404)
 
-    address = order.billing_address
-    if not address:
-        return Response({"error": "Billing address is required"}, status=400)
+    address = request.data
+    if not address.get("zip") or not address.get("city") or not address.get("country"):
+        return Response({"error": "city, country and ZIP / postal code are required"}, status=400)
 
     destination = {
-        "postalCode": address.zip,
-        "cityName": address.city,
-        "countryCode": str(address.country),
+        "postalCode": str(address["zip"]).strip(),
+        "cityName": str(address["city"]).strip(),
+        "countryCode": str(address["country"]).strip().upper(),
     }
 
-    rates = []
-    provider_errors = []
-
-    for provider_name, provider in (("DHL", _dhl_rates), ("FedEx", _fedex_rates)):
-        try:
-            rates.extend(provider(order, destination))
-        except requests.exceptions.RequestException:
-            logger.exception("%s shipping provider request failed", provider_name)
-            provider_errors.append(provider_name)
-        except (ValueError, KeyError, TypeError):
-            logger.exception("%s returned an invalid shipping response", provider_name)
-            provider_errors.append(provider_name)
+    rates, provider_errors = get_rates_for_destination(order, destination)
 
     if not rates:
         return Response({
