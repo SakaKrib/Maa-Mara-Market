@@ -261,7 +261,7 @@ def checkout_view(request):
                 shoe_size=str(selected_shoe_size) if selected_shoe_size is not None else None,
             )
 
-        total_amount += order_item.get_final_price()
+        total_amount += (order_item.get_final_price() * quantity)
 
     # Remove stale lines without touching other variants of the same product.
     for existing in order.items.all():
@@ -355,7 +355,7 @@ def checkout_view(request):
         if usd_to_kes_rate <= 0:
             raise ValueError("Invalid USD/KES exchange rate.")
 
-        provider_amount = (total_amount / usd_to_kes_rate).quantize(Decimal("0.01"))
+        provider_amount = (grand_total / usd_to_kes_rate).quantize(Decimal("0.01"))
         if provider_amount <= 0:
             raise ValueError("PayPal amount must be greater than zero.")
 
