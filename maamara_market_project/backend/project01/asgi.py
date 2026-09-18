@@ -12,7 +12,7 @@ django_asgi_app = get_asgi_application()
 # before get_asgi_application() raises AppRegistryNotReady during Daphne startup.
 from project01.middleware.jwt_auth import JWTAuthMiddleware
 from core.routing import websocket_urlpatterns as core_websocket_urlpatterns
-from oder.routing import websocket_urlpatterns as order_websocket_urlpatterns
+from order.routing import websocket_urlpatterns as order_websocket_urlpatterns
 
 websocket_urlpatterns = core_websocket_urlpatterns + order_websocket_urlpatterns
 
