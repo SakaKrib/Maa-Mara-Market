@@ -89,7 +89,6 @@ def get_capture_details(capture_id):
                 "brand": card_data.get("brand"),
                 "last_digits": card_data.get("last_digits"),
                 "type": card_data.get("type"),
-                "user": order.user if order_id and "order" in locals() else None,
             },
         )
         logger.info("PayPal card metadata saved successfully.")
