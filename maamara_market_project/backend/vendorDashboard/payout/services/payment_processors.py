@@ -64,30 +64,29 @@ def get_mpesa_token():
         try:
             data = response.json()
         except Exception:
-            logger.error(f"❌ OAuth response not JSON: {response.text}")
+            logger.error("M-Pesa OAuth response was not valid JSON.")
             raise ValueError("Failed to parse M-Pesa OAuth response as JSON.")
 
-        logger.info(f"🔐 OAuth Token Response: {data}")
+        logger.debug("M-Pesa OAuth token response received.")
 
         token = data.get("access_token")
         if not token:
-            logger.error(f"❌ access_token missing in response: {data}")
+            logger.error("M-Pesa OAuth response did not contain access_token.")
             raise ValueError("M-Pesa OAuth response did not contain access_token.")
 
         return token
 
     except requests.exceptions.HTTPError as e:
         # Log full Safaricom error response if present
-        err_text = e.response.text if hasattr(e, "response") and e.response is not None else str(e)
-        logger.error(f"❌ Safaricom OAuth HTTPError: {err_text}")
+        logger.error("Safaricom OAuth request failed with HTTP error.")
         raise
 
     except requests.exceptions.RequestException as e:
-        logger.error(f"❌ Network error fetching token: {str(e)}")
+        logger.error("Network error fetching M-Pesa token.")
         raise
 
     except Exception as e:
-        logger.error(f"❌ Unexpected error fetching token: {str(e)}")
+        logger.exception("Unexpected error fetching M-Pesa token.")
         raise
 
 
@@ -264,10 +263,12 @@ def call_mpesa_b2c(vendor, amount, mpesa_config, payout=None):
     # 8️⃣ EXCEPTION HANDLING
     # ----------------------------------------------------------------------
     except requests.exceptions.RequestException as e:
-        return {"success": False, "error": f"Network Error: {str(e)}"}
+        logger.warning("M-Pesa payout network request failed.")
+        return {"success": False, "error": "M-Pesa payout request failed."}
     except Exception as e:
         logger.error(f"❌ Unexpected Error: {e}")
-        return {"success": False, "error": f"Unexpected Error: {str(e)}"}
+        logger.exception("Unexpected M-Pesa B2C payout error.")
+        return {"success": False, "error": "M-Pesa payout failed."}
 
 
 
