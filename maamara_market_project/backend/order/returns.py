@@ -397,10 +397,10 @@ def approve_return_request_api(request, return_id):
         product = item.item
         vendor = Vendor.objects.get(user=product.created_by)
         order = Order.objects.select_for_update().filter(order_items=item).select_related("payment").first()
-        if not order or not order.payment:
+        if not order or not order.payment or order.payment.status != "completed":
             return Response({
                 "success": False,
-                "error": "The return is not linked to a payment.",
+                "error": "The return is not linked to a completed payment.",
             }, status=status.HTTP_409_CONFLICT)
         customer = return_request.customer
         visitor_id = return_request.visitor_id
