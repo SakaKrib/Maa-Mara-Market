@@ -293,8 +293,6 @@ def checkout_view(request):
 # 🔹rest api get customers
 # ==============================
 
-import logging
-logger = logging.getLogger(__name__)
 
 def notify_vendor_customer_update(customer):
     if not customer.vendor:
@@ -563,7 +561,7 @@ def send_paypal_invoice(order):
     currency_code = getattr(order, "currency", "USD")
 
     invoice_number = f"INV-{order.id}-{int(time.time())}"
-    invoice_date = datetime.date.today().isoformat()
+    invoice_date = timezone.now().date().isoformat()
 
     # Build items safely
     items = []
@@ -1037,4 +1035,3 @@ def paypal_webhook(request):
         return Response({"status": "error", "message": "Webhook processing failed."}, status=500)
 
     return Response({"status": "ok", "message": "Webhook processed"})
-
