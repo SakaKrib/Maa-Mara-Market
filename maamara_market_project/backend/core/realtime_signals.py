@@ -5,7 +5,7 @@ from django.dispatch import receiver
 from .models import Notification, ActivityLog, CalendarEvent
 from .realtime import broadcast_event, model_snapshot
 from ReactSerializers.models import Item, ColorVariant, SizeStock, AgeVariant, Offer, PriceChangeRequest
-from oder.models import Order, OderItem, Payment, Customer
+from order.models import Order, OrderItem, Payment, Customer
 from vendorDashboard.models import Vendor, VendorPayout, VendorItemRequest
 
 
@@ -79,7 +79,7 @@ def order_save(sender, instance, created, **kwargs):
     )
 
 
-@receiver(post_save, sender=OderItem)
+@receiver(post_save, sender=OrderItem)
 def order_item_save(sender, instance, created, **kwargs):
     if instance.order_id:
         emit(
