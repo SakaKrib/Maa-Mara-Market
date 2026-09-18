@@ -1,3 +1,5 @@
+import requests
+import logging
 from datetime import date
 from dateutil.relativedelta import relativedelta
 from django.utils import timezone
@@ -12,11 +14,14 @@ from vendorDashboard.payout.services.payment_processors import (
 
 from vendorDashboard.models import Vendor, VendorPayout
 from vendorDashboard.payout.services.payment_processors import payment_processors
+from vendorDashboard.payout.services.paypal_payouts import reconcile_paypal_payout
 from vendorDashboard.views import get_vendor_earnings  # assuming your current function lives here
 from rest_framework.permissions import IsAdminUser
 from rest_framework.decorators import permission_classes,api_view
 from rest_framework.response import Response
 from collections import defaultdict
+
+logger = logging.getLogger(__name__)
 
 
 # =========================
@@ -164,3 +169,49 @@ def pay_single_vendor_payout(request, reference):
         return Response({
             "error": f"Exception during payment: {str(e)}"
         }, status=500)
+
+@api_view(["POST"])
+@permission_classes([IsAdminUser])
+def reconcile_single_vendor_payout(request, reference):
+    """Reconcile one PayPal payout from PayPal's authoritative batch state."""
+    payout = VendorPayout.objects.filter(reference=reference).first()
+    if not payout:
+        return Response({"error": "Payout reference not found."}, status=404)
+
+    if payout.vendor.payment_method != "PAYPAL":
+        return Response(
+            {"error": "Payout is not configured for PayPal."},
+            status=400,
+        )
+
+    try:
+        payout = reconcile_paypal_payout(payout.id)
+    except requests.RequestException:
+        return Response(
+            {"error": "PayPal reconciliation request failed."},
+            status=502,
+        )
+    except (ValueError, VendorPayout.DoesNotExist):
+        return Response(
+            {"error": "PayPal payout could not be reconciled."},
+            status=409,
+        )
+    except Exception:
+        logger.exception(
+            "Unexpected PayPal payout reconciliation failure.",
+            extra={"payout_reference": reference},
+        )
+        return Response(
+            {"error": "PayPal payout reconciliation failed."},
+            status=500,
+        )
+
+    return Response({
+        "reference": payout.reference,
+        "paid": payout.paid,
+        "paid_at": payout.paid_at,
+        "paypal_status": payout.paypal_transaction_status,
+        "paypal_transaction_id": payout.paypal_transaction_id,
+        "paypal_payout_item_id": payout.paypal_payout_item_id,
+        "paypal_batch_id": payout.paypal_batch_id,
+    })
