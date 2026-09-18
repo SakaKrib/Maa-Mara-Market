@@ -11,14 +11,16 @@ from django.conf import settings
 from django.contrib.auth.models import User
 from django.db import models, transaction
 from django.forms.models import model_to_dict
+from django.template.loader import render_to_string
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 
 from ReactSerializers.models import AgeVariant, ColorVariant, Item, Length, Shoe, SizeStock, Weight
-from core.models import Notification
+from core.models import ActivityLog, Notification
 from vendorDashboard.models import SoldItem, Vendor
 
 from .capture_order import get_paypal_access_token
@@ -29,9 +31,7 @@ from .views import IsAuthenticatedOrVisitor
 logger = logging.getLogger(__name__)
 
 
-#   CREATE PAYMENT ORDER AND BILLING ADDRESS
-
-logger = logging.getLogger(__name__)
+# CREATE PAYMENT ORDER AND BILLING ADDRESS
 
 
 @api_view(["POST"])
@@ -151,14 +151,30 @@ def checkout_view(request):
         if quantity < 1:
             return Response({"success": False, "error": "Quantity must be at least 1."}, status=400)
 
-        item = get_object_or_404(Item, pk=item_id)
+        # Lock stock-bearing rows for the entire checkout transaction.
+        item = Item.objects.select_for_update().filter(pk=item_id).first()
+        if not item:
+            return Response({"success": False, "error": "Product not found."}, status=404)
 
-        variant = get_object_or_404(ColorVariant, pk=variant_id) if variant_id else None
-        size_stock = get_object_or_404(SizeStock, pk=size_id) if size_id else None
-        age_variant = get_object_or_404(AgeVariant, pk=age_variant_id) if age_variant_id else None
-        length = get_object_or_404(Length, pk=length_id) if length_id else None
-        weight = get_object_or_404(Weight, pk=weight_id) if weight_id else None
-        shoe = get_object_or_404(Shoe, pk=shoe_id) if shoe_id else None
+        variant = ColorVariant.objects.select_for_update().filter(pk=variant_id).first() if variant_id else None
+        size_stock = SizeStock.objects.select_for_update().filter(pk=size_id).first() if size_id else None
+        age_variant = AgeVariant.objects.select_for_update().filter(pk=age_variant_id).first() if age_variant_id else None
+        length = Length.objects.filter(pk=length_id).first() if length_id else None
+        weight = Weight.objects.filter(pk=weight_id).first() if weight_id else None
+        shoe = Shoe.objects.filter(pk=shoe_id).first() if shoe_id else None
+
+        if variant_id and not variant:
+            return Response({"success": False, "error": "Selected color was not found."}, status=404)
+        if size_id and not size_stock:
+            return Response({"success": False, "error": "Selected size was not found."}, status=404)
+        if age_variant_id and not age_variant:
+            return Response({"success": False, "error": "Selected age option was not found."}, status=404)
+        if length_id and not length:
+            return Response({"success": False, "error": "Selected length was not found."}, status=404)
+        if weight_id and not weight:
+            return Response({"success": False, "error": "Selected weight was not found."}, status=404)
+        if shoe_id and not shoe:
+            return Response({"success": False, "error": "Selected shoe option was not found."}, status=404)
 
         if variant and variant.item_id != item.id:
             return Response({"success": False, "error": "Selected color is not available for this item."}, status=400)
@@ -219,7 +235,7 @@ def checkout_view(request):
             age_variant=age_variant,
             selected_length=selected_length,
             selected_weight=selected_weight,
-            shoe_size=shoe.shoe_size if shoe else None,
+            shoe_size=str(selected_shoe_size) if selected_shoe_size is not None else None,
         ).first()
 
         if order_item:
@@ -526,13 +542,6 @@ def verify_paypal_signature(raw_body, request):
 # ==============================
 # 🔹 PAYPAL INVOICE
 # ==============================
-import time
-import json
-import logging
-import requests
-
-
-logger = logging.getLogger(__name__)
 def send_paypal_invoice(order):
     token = get_paypal_access_token()
     url = "https://api.sandbox.paypal.com/v2/invoicing/invoices"
@@ -720,7 +729,7 @@ def paypal_webhook(request):
             .get("order_id")
             or resource.get("id")
         )
-        status = resource.get("status", "").lower()
+        paypal_resource_status = resource.get("status", "").lower()
         amount = resource.get("amount", {}).get("value", "0.00")
         currency = resource.get("amount", {}).get("currency_code", "USD")
         payer_email = resource.get("payer", {}).get("email_address")
@@ -739,7 +748,7 @@ def paypal_webhook(request):
             logger.info(f"⚠️ Payment {paypal_order_id} already processed")
             return Response({"status": "ok", "message": "Already processed"})
 
-        with db_transaction.atomic():
+        with transaction.atomic():
             # Resolve the order first so the payment created during checkout is
             # updated rather than creating a second, orphaned Payment record.
             order = Order.objects.filter(paypal_order_id=paypal_order_id).first()
@@ -979,7 +988,7 @@ def paypal_webhook(request):
                                 "order": order,
                                 "payment": payment,
                                 "amount": Decimal(resource.get("amount", {}).get("value", "0.00")),
-                                "status": status,
+                                "status": paypal_resource_status,
                                 "payer_email": payer_email,
                                 "raw_data": data,
                                 
