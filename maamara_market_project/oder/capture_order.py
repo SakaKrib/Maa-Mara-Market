@@ -45,12 +45,12 @@ def get_capture_details(capture_id):
 
     try:
         data = response.json()
-        logger.info(f"📦 Fetched capture details {capture_id}: {data}")
+        logger.info("PayPal capture details retrieved successfully.")
     except ValueError:
         data = {"raw_text": response.text}
 
     if response.status_code != 200:
-        logger.error(f"❌ Failed to fetch capture details {capture_id}: {data}")
+        logger.error("PayPal capture details request failed.")
         raise Exception(f"Failed to fetch capture details: {data}")
 
     # -------------------------------------------------------
@@ -74,13 +74,13 @@ def get_capture_details(capture_id):
             order_data = order_resp.json()
 
             payer_email = order_data.get("payer", {}).get("email_address")
-            logger.info(f"👤 Payer for capture {capture_id}: {payer_email}")
+            logger.info("PayPal payer details retrieved successfully.")
 
             # Extract card details from order if present
             payment_source = order_data.get("payment_source", {})
             if "card" in payment_source:
                 card_data = payment_source["card"]
-                logger.info(f"💳 Card details from order {order_id}: {card_data}")
+                logger.info("PayPal payment source retrieved successfully.")
 
         except Exception as e:
             logger.warning(f"⚠️ Could not fetch order details for {order_id}: {e}")
@@ -104,7 +104,7 @@ def get_capture_details(capture_id):
                 "type": card_data.get("type"),
             },
         )
-        logger.info(f"💳 Card saved/updated for capture {capture_id}: {card_info}")
+        logger.info("PayPal card metadata saved successfully.")
 
     # -------------------------------------------------------
     # 6️⃣ Return Unified Result
@@ -178,9 +178,7 @@ def capture_paypal_order(request, order_id):
         # -------------------------------------------------------
         existing_tx = Transaction.objects.filter(order__paypal_order_id=order_id).first()
         if existing_tx:
-            logger.info(
-                f"⚠️ Order {order_id} already has a transaction: {existing_tx.paypal_transaction_id}"
-            )
+            logger.info("PayPal order already has a recorded transaction.")
             return Response(
                 {
                     "status": "ok",
@@ -200,7 +198,7 @@ def capture_paypal_order(request, order_id):
             "Authorization": f"Bearer {token}",
         }
 
-        logger.info(f"🔹 Attempting PayPal capture for order {order_id}")
+        logger.info("Attempting PayPal capture.")
         resp = requests.post(url, headers=headers, timeout=10)
 
         try:
@@ -209,7 +207,7 @@ def capture_paypal_order(request, order_id):
             capture_response = {"raw_text": resp.text}
 
         if resp.status_code not in [200, 201, 422]:
-            logger.error(f"❌ PayPal capture failed: {resp.text}")
+            logger.error("PayPal capture request failed.")
             return Response(
                 {"status": "error", "data": capture_response},
                 status=resp.status_code,
@@ -219,7 +217,7 @@ def capture_paypal_order(request, order_id):
         if resp.status_code == 422:
             details = capture_response.get("details", [])
             if details and details[0].get("issue") == "ORDER_ALREADY_CAPTURED":
-                logger.warning(f"⚠️ Order {order_id} already captured.")
+                logger.warning("PayPal order was already captured.")
                 return Response({"status": "ok", "message": "Order already captured"})
 
         # -------------------------------------------------------
@@ -248,11 +246,11 @@ def capture_paypal_order(request, order_id):
         order.save(update_fields=["paypal_order_id"])
 
 
-        logger.info(f"✅ PayPal order captured successfully for Order #{order.id}")
+        logger.info("PayPal order captured successfully.")
 
         return Response({"status": "ok", "message": "Capture attempted"})
 
     except Exception as e:
-        logger.exception(f"❌ Capture order failed: {e}")
-        return Response({"status": "error", "message": str(e)}, status=500)
+        logger.exception("PayPal capture operation failed.")
+        return Response({"status": "error", "message": "Payment capture failed."}, status=500)
 
