@@ -142,6 +142,44 @@ def pay_single_vendor_payout(request, reference):
     paypal_config = settings.PAYMENT_GATEWAYS.get("paypal", {})
 
     try:
+        # Do not submit a second provider request while an earlier submission
+        # has a provider correlation that is still awaiting settlement.
+        if method == "MOBILE_MONEY" and (
+            payout.mpesa_conversation_id or payout.mpesa_originator_conversation_id
+        ) and not payout.mpesa_transaction_id:
+            return Response(
+                {
+                    "error": "M-Pesa payout is already submitted and awaiting provider confirmation.",
+                    "reference": payout.reference,
+                    "retryable": False,
+                },
+                status=409,
+            )
+
+        if method == "BANK_TRANSFER" and payout.kcb_transaction_reference:
+            kcb_status = (payout.kcb_provider_status or "").upper()
+            if kcb_status in {"SUBMITTED", "PENDING", "PROCESSING", "IN_PROGRESS", ""}:
+                return Response(
+                    {
+                        "error": "Bank payout is already submitted and awaiting bank confirmation.",
+                        "reference": payout.reference,
+                        "retryable": False,
+                    },
+                    status=409,
+                )
+
+        if method == "PAYPAL" and (
+            payout.paypal_batch_id or payout.paypal_payout_item_id
+        ) and not payout.paid:
+            return Response(
+                {
+                    "error": "PayPal payout is already submitted and awaiting provider confirmation.",
+                    "reference": payout.reference,
+                    "retryable": False,
+                },
+                status=409,
+            )
+
         if method == "MOBILE_MONEY":
             response = call_mpesa_b2c(vendor, amount, mpesa_config, payout=payout)
         elif method == "PAYPAL":
