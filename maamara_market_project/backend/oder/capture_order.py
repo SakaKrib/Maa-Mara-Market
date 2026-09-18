@@ -205,12 +205,21 @@ def capture_paypal_order(request, order_id):
                 status=resp.status_code,
             )
 
-        # Handle already captured
+        # Handle a provider-side duplicate capture without skipping local finalization.
         if resp.status_code == 422:
             details = capture_response.get("details", [])
             if details and details[0].get("issue") == "ORDER_ALREADY_CAPTURED":
-                logger.warning("PayPal order was already captured.")
-                return Response({"status": "ok", "message": "Order already captured"})
+                logger.warning("PayPal order was already captured; retrieving the existing capture.")
+                order_details_resp = requests.get(
+                    f"{PAYPAL["base_url"]}/v2/checkout/orders/{order_id}",
+                    headers=headers,
+                    timeout=10,
+                )
+                if order_details_resp.status_code != 200:
+                    return Response({"status": "error", "message": "Unable to verify the existing PayPal capture."}, status=502)
+                capture_response = order_details_resp.json()
+            else:
+                return Response({"status": "error", "message": "PayPal capture request failed."}, status=422)
 
         # -------------------------------------------------------
         # 5️⃣ Extract capture ID
