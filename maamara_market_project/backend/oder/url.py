@@ -9,11 +9,7 @@ from .orderStat import (
     vendor_pending_order_items,
     vendor_pending_orders,
 )
-from .paypalApis import (
-    admin_transactions,
-    checkout_view,
-    get_customers,
-)
+from .paypalApis import checkout_view, get_customers
 from .returns import (
     approve_return_request_api,
     get_pending_returns_api,
@@ -31,6 +27,7 @@ from .views import (
     revenue_growth,
     transaction_totals,
     vendor_sales,
+    admin_transactions,
 )
 
 
