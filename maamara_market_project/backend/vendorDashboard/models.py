@@ -631,6 +631,13 @@ class VendorPayout(models.Model):
     mpesa_result_code = models.IntegerField(blank=True, null=True)
     mpesa_result_desc = models.CharField(max_length=255, blank=True, null=True)
 
+    # KCB bank-transfer provider correlation/status
+    kcb_transaction_reference = models.CharField(max_length=100, null=True, blank=True, db_index=True)
+    kcb_message_id = models.CharField(max_length=100, null=True, blank=True, db_index=True)
+    kcb_provider_status = models.CharField(max_length=50, null=True, blank=True)
+    kcb_provider_reference = models.CharField(max_length=100, null=True, blank=True, db_index=True)
+    kcb_result_description = models.CharField(max_length=255, null=True, blank=True)
+
     # paypal details
     paypal_payout_item_id = models.CharField(max_length=255, null=True, blank=True)
     paypal_transaction_id = models.CharField(max_length=255, null=True, blank=True)
