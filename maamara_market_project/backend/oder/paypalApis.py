@@ -759,7 +759,13 @@ def paypal_webhook(request):
         transaction_id = resource.get("id") or paypal_order_id
 
         if event_type == "PAYMENT.CAPTURE.COMPLETED":
-            if amount is None or Decimal(str(amount)) != Decimal(str(payment.amount)):
+            expected_provider_amount = payment.provider_amount
+            if (
+                amount is None
+                or expected_provider_amount is None
+                or Decimal(str(amount)) != Decimal(str(expected_provider_amount))
+                or currency.upper() != (payment.provider_currency or "USD").upper()
+            ):
                 logger.error(
                     "PayPal amount mismatch for order %s: provider=%s expected=%s",
                     order.id,
