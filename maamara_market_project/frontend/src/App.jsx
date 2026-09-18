@@ -168,3 +168,25 @@ function AppContent() {
 
                 {/* Route for unified auth check for normal login and google */}
                 <Route path="login/auth-success" element={<AuthSuccess />} />
+              </Route>
+            </Routes>
+          </div>
+        </div>
+      </ThemeProvider>
+    </ColourModeContext.Provider>
+  );
+}
+
+function App() {
+  return (
+    <AuthProvider>
+      <CartProvider>
+        <WishlistProvider>
+          <AppContent />
+        </WishlistProvider>
+      </CartProvider>
+    </AuthProvider>
+  );
+}
+
+export default App;
