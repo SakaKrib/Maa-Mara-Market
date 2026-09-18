@@ -21,50 +21,12 @@ from ReactSerializers.models import AgeVariant, ColorVariant, Item, Length, Shoe
 from core.models import Notification
 from vendorDashboard.models import SoldItem, Vendor
 
-from .Payment import capture_paypal_order, create_paypal_order
 from .capture_order import get_paypal_access_token
 from .models import BillingAddress, Customer, Order, Payment, Transaction
 from .paymentserializer import CheckoutSerializer, OrderResponseSerializer
 from .views import IsAuthenticatedOrVisitor
 
 logger = logging.getLogger(__name__)
-
-@api_view(["POST"])
-@permission_classes([IsAuthenticatedOrVisitor])
-def paypal_create_order(request):
-    amount = request.data.get("amount", "10.00")
-    paypal_order = create_paypal_order(amount)
-
-    # Bind the provider order ID to the customer's pending order immediately.
-    # This lets a webhook resolve the correct local order even if it arrives
-    # before the capture endpoint is called.
-    if request.user and request.user.is_authenticated:
-        pending_order = Order.objects.filter(
-            user=request.user,
-            status="pending",
-        ).order_by("-id").first()
-    else:
-        visitor_id = request.COOKIES.get("visitorId")
-        pending_order = (
-            Order.objects.filter(visitor_id=visitor_id, status="pending")
-            .order_by("-id")
-            .first()
-            if visitor_id
-            else None
-        )
-
-    paypal_id = paypal_order.get("id")
-    if pending_order and paypal_id:
-        pending_order.paypal_order_id = paypal_id
-        pending_order.save(update_fields=["paypal_order_id"])
-
-    return Response(paypal_order)
-
-@api_view(["POST"])
-@permission_classes([IsAuthenticatedOrVisitor])
-def paypal_capture_order(request, order_id):
-    capture = capture_paypal_order(order_id)
-    return Response(capture)
 
 
 #   CREATE PAYMENT ORDER AND BILLING ADDRESS
