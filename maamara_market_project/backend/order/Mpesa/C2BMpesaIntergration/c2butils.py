@@ -9,11 +9,11 @@ from rest_framework.permissions import AllowAny
 import logging
 from decimal import Decimal
 from django.contrib.auth import get_user_model
-from oder.models import Transaction, Order, Customer, BillingAddress
-from oder.views import IsAuthenticatedOrVisitor
+from order.models import Transaction, Order, Customer, BillingAddress
+from order.views import IsAuthenticatedOrVisitor
 from channels.layers import get_channel_layer
 from asgiref.sync import async_to_sync
-from oder.models import Payment
+from order.models import Payment
 from vendorDashboard.models import SoldItem
 from core.models import ActivityLog, Notification
 
@@ -271,7 +271,7 @@ def stk_callback(request):
                 },
             )
 
-            from oder.order_completion import complete_paid_order
+            from order.order_completion import complete_paid_order
             locked_order, completed = complete_paid_order(
                 order,
                 payment,
