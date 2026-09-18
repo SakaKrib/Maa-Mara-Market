@@ -8,7 +8,6 @@ import {
 import { Routes, Route } from "react-router-dom";
 import { useMode } from "./theme";
 import BridgeToHTML from "./globalHtml";
-import LoginForm from "./cmponents/Auth/AdminLogin/AdminLogin";
 import { AuthProvider, useAuth } from "./cmponents/Auth/AuthContext/Context";
 import { useEffect } from "react";
 import "./index.css";
@@ -66,20 +65,16 @@ import BlogCard from "./cmponents/VENDORPAGE/Blogs/BlogCard";
 import BlogFeed from "./cmponents/VENDORPAGE/Blogs/BlogFeed";
 import SingleBlogPage from "./cmponents/VENDORPAGE/Blogs/SinglePageBlogPost";
 import { WishlistProvider } from "./cmponents/Hooks/WishListHook/Wishlist";
-import AdminAccounts from "./cmponents/Admin/AccountMain/Accountmain";
 // link admin css
 import "./admin.css"
 import InviteFriends from "./PublicUiForAll/PublicUi/Customer/DesktopView/Main/Referals/Referals";
 import UserAccount from "./PublicUiForAll/PublicUi/Customer/DesktopView/Main/Accounts/Account";
 import CartPage from "./PublicUiForAll/PublicUi/Customer/DesktopView/Main/CartHook/CartPage";
-import SuccessPage from "./cmponents/VendorPayoutReport/vendorPayouts/Payments/SuccessPagePayout";
 import CustomerPage from "./cmponents/VENDORPAGE/Home/TopBox/CustomerPage";
 import VendorSalesPage from "./cmponents/VENDORPAGE/ChartBox/ChartData/HomeChartData/VendorSalesPage";
 
-import { Link } from "react-router-dom";
 import SingleItemProfileNotif from "./cmponents/VENDORPAGE/VendorSections/NotificationPages/SingleItemProfileNotif";
 import SubcategoryProducts from "./PublicUiForAll/PublicUi/Customer/DesktopView/Header/subcategoryListItem";
-import SearchResultsPage from "./PublicUiForAll/PublicUi/Navigations/Search/NavIcons/ResustsPage";
 import OrganicPage from "./PublicUiForAll/PublicUi/Customer/DesktopView/Main/Trending/OrganicAdvert/OrganicPage";
 import PayoutSuccess from "./cmponents/VendorPayoutReport/vendorPayouts/Payments/PayoutSuccess";
 import AuthSuccess from "./cmponents/Auth/AdminLogin/Auth-Success-Check";
