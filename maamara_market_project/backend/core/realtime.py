@@ -51,7 +51,7 @@ def model_snapshot(instance):
     return data
 
 def broadcast_event(event: str, *, model: str, object_id=None, action="updated",
-                    user_ids=None, vendor_ids=None, public=False, data=None):
+                    user_ids=None, vendor_ids=None, visitor_ids=None, public=False, data=None):
     payload = {
         "type": "realtime.event",
         "event": event,
@@ -69,6 +69,7 @@ def broadcast_event(event: str, *, model: str, object_id=None, action="updated",
         groups.add("realtime_catalog")
     groups.update(f"realtime_user_{i}" for i in (user_ids or []) if i)
     groups.update(f"realtime_vendor_{i}" for i in (vendor_ids or []) if i)
+    groups.update(f"realtime_visitor_{i}" for i in (visitor_ids or []) if i)
 
     for group in groups:
         try:
