@@ -1,14 +1,10 @@
-// ...imports stay the same
+import api from "../../../../../../Services/Api";
+import { baseUrl } from "../../../../../../cmponents/Constant/Constant";
 import useItems from "../../../../ItemHook/ItemHook";
 import { useEffect, useState, useRef } from "react";
 import { useParams } from "react-router-dom";
 import ReviewSection from "../Review";
 import AddToCartButton from "../CartActionButtons/AddToCartBtn";
-
-const allowedColors = [
-  "blue", "brown", "orange", "turquise", "yellow",
-  "red", "green", "purple", "black"
-];
 
 const SingleItem = () => {
   const { itemId } = useParams();
@@ -42,15 +38,9 @@ const SingleItem = () => {
       if (res.data) {
         setItem(res.data);
   
-        // Reset variant and size selection on refresh, if needed
-        if (res.data.variants && res.data.variants.length > 0) {
-          setSelectedVariant(res.data.variants[0]);
-          setSelectedSize(null);
-          setSelectedImage(null);
-        }
       }
     } catch (error) {
-      console.error("Failed to fetch item details:", error);
+      // Keep the existing page state if a background refresh fails.
     }
   };
   
@@ -112,28 +102,15 @@ const SingleItem = () => {
   };
 
   const handlePreviewImageClick = (imageUrl) => {
+    // Image previews must not clear the selected color or size.
     setSelectedImage(imageUrl);
-    setSelectedSize(null);
-    setSelectedVariant(null);
-  };
-
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    // Example submission logic
-    const formData = {
-      itemId,
-      variantId: selectedVariant?.id,
-      sizeId: selectedSize?.id,
-      quantity
-    };
-    // console.log("Form submitted:", formData);
   };
 
   if (loading) return <div>Loading...</div>;
   if (!item) return <div>Item not found</div>;
 
   const previewImages = item.images?.length > 0 ? item.images : [item.image];
-  const availableColors = item.variants.map((v) => v.color.toLowerCase());
+  const availableColors = (item.variants || []).map((v) => v.color.toLowerCase());
   const mainImageSrc = selectedImage || selectedSize?.image || selectedVariant?.image || item.image;
 
   // monitor add to cart button
@@ -175,7 +152,7 @@ const SingleItem = () => {
           }`}
           title={variant.color}
         >
-          {variant.color_image ? (
+          {variant.image ? (
             <img src={variant.color_image} className="object-cover w-full h-full" alt={variant.color} />
           ) : (
             <div className="w-full h-full" style={{ backgroundColor: variant.color.toLowerCase() }} />
@@ -224,22 +201,22 @@ const SingleItem = () => {
           <div>
             <p className="font-medium mb-2">Select Color</p>
             <div className="flex flex-wrap gap-4">
-              {allowedColors.map((color) => {
+              {(item.variants || []).map((variant) => {
+                const color = variant.color.toLowerCase();
                 const isAvailable = availableColors.includes(color);
                 return (
                   <label key={color} className="inline-block">
                     <input
                       type="radio"
                       name="color"
-                      value={color}
-                      checked={selectedVariant?.color.toLowerCase() === color}
-                      onChange={() => handleColorChange(color)}
-                      disabled={!isAvailable}
+                      value={variant.id}
+                      checked={selectedVariant?.id === variant.id}
+                      onChange={() => handleColorChange(variant.color)}
                       className="hidden"
                     />
                     <span
                       className={`block w-6 h-6 rounded-full border cursor-pointer ${
-                        isAvailable ? "opacity-100 hover:ring-2 hover:ring-offset-1" : "opacity-40 cursor-not-allowed"
+                        selectedVariant?.id === variant.id ? "ring-2 ring-offset-1" : "hover:ring-2 hover:ring-offset-1"
                       }`}
                       style={{ backgroundColor: color }}
                       title={color}
@@ -339,8 +316,8 @@ const SingleItem = () => {
         remainingStock={remainingStock}
         disabled={isDisabled}
         onAddSuccess={() => {
-          fetchCart();        // refresh cart context
-          fetchItemDetails(); // refresh item stock and details
+          refreshCart();
+          fetchItemDetails();
         }}
       />
 
