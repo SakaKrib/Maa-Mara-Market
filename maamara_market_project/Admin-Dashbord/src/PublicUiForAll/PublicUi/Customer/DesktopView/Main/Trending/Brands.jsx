@@ -30,7 +30,7 @@ const BrandList = () => {
                   )}
                 </div>
                 <h4 className="text-center text-sm font-semibold text-gray-900 truncate w-full">{brand.name}</h4>
-              </a>
+              </Link>
             );
           }) : (
             <p className="text-center text-gray-500 col-span-full py-8">No brands available yet.</p>
