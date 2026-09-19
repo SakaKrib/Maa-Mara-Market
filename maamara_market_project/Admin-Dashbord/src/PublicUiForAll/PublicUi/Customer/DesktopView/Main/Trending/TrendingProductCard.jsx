@@ -1,5 +1,4 @@
 import React from "react";
-import { baseUrl } from "../../../../../../cmponents/Constant/Constant";
 import { useWishlistContext } from "../../../../../../cmponents/Hooks/WishListHook/Wishlist";
 import { IonIcon } from "@ionic/react";
 import { heart, heartOutline, eyeOutline, shareOutline } from "ionicons/icons";
@@ -11,7 +10,7 @@ const TrendingProductCard = ({ item, isWishlisted: controlledWishlist, onToggleW
   const navigate = useNavigate();
   const { wishlist, addToWishlist, removeFromWishlist } = useWishlistContext();
 
-  const image = item.image?.startsWith("http") ? item.image : `${baseUrl || ""}${item.image || ""}`;
+  const image = item.image || "";
   const hasDiscount = Number(item.discount_price || 0) > 0 || Number(item.discount || 0) > 0;
   const currentPrice = hasDiscount
     ? (item.final_discounted_price ?? item.discount_price ?? item.final_price ?? item.price ?? 0)
