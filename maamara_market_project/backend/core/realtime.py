@@ -25,6 +25,7 @@ PRIVATE_FIELDS = {
     "CalendarEvent": {"id", "title", "description", "start", "end", "user_id"},
     "VendorPayout": {"id", "vendor_id", "amount", "gross_sales", "adjustment_amount", "income", "profit", "paid", "paid_at", "created_at", "payout_period_start", "payout_period_end"},
     "Refund": {"id", "return_request_id", "payment_id", "amount", "currency", "provider", "provider_reference", "status", "failure_reason", "created_at", "updated_at", "completed_at"},
+    "ReturnRequest": {"id", "customer_id", "visitor_id", "item_id", "reason", "description", "approved", "processed", "refund_issued", "start_refund", "admin_action", "customer_preference", "approved_by_admin", "status", "created_at"},
     "VendorItemRequest": {"id", "vendor_id", "status", "created_at", "updated_at"},
     "PriceChangeRequest": {"id", "item_id", "requested_by_id", "status", "created_at", "updated_at"},
 }
