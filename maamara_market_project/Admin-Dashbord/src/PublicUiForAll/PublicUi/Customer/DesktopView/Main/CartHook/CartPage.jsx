@@ -4,11 +4,13 @@ import { useCartActions } from "../CartActionButtons/UpdateQty";
 import RemoveFromCartButton from "../CartActionButtons/RemoveFromBtn";
 import { Link } from "react-router-dom";
 import FormattedCurrency from "../Currency/FormattedCurrency";
+import { useCurrency } from "../Currency/CurrencyContext";
 
 const imageUrl = (image) => image || "";
 
 const CartPage = () => {
   const { order, loading, error } = useCartContext();
+  const { currency, rates } = useCurrency();
   const { updateQuantity, loading: actionLoading, error: actionError } = useCartActions();
   const [selectedVoucher, setSelectedVoucher] = useState("");
   const [useWallet, setUseWallet] = useState(false);
@@ -116,7 +118,19 @@ const CartPage = () => {
                 Voucher
                 <select value={selectedVoucher} onChange={(e) => setSelectedVoucher(e.target.value)} className="mt-2 w-full rounded-md border border-gray-300 bg-white px-3 py-2">
                   <option value="">Select a voucher</option>
-                  {vouchers.map((voucher) => <option key={voucher.code} value={voucher.code}>{voucher.code} — <FormattedCurrency value={Number(voucher.discount)} /></option>)}
+                  {vouchers.map((voucher) => {
+                    const discount = Number(voucher.discount || 0);
+                    const rate = currency === "KES" ? 1 : (rates?.[currency] ?? 1);
+                    const formattedDiscount = new Intl.NumberFormat(undefined, {
+                      style: "currency",
+                      currency,
+                    }).format((Number.isFinite(discount) ? discount : 0) * rate);
+                    return (
+                      <option key={voucher.code} value={voucher.code}>
+                        {voucher.code} — {formattedDiscount}
+                      </option>
+                    );
+                  })}
                 </select>
               </label>
             )}
