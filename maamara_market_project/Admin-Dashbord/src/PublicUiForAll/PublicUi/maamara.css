@@ -4590,7 +4590,10 @@ h1,h2,h3,h4{font-family:'regular','Poppins',Arial,sans-serif}
 .mm-auth-page{
   box-sizing:border-box;
   width:100%;
+  min-height:100vh;
   min-height:100svh;
+  display:flex;
+  flex-direction:column;
   background:var(--mm-page-bg,#faf9f7);
   color:var(--mm-text,#222);
   overflow-x:hidden;
@@ -4598,6 +4601,9 @@ h1,h2,h3,h4{font-family:'regular','Poppins',Arial,sans-serif}
 .mm-auth-page > div{
   width:100%;
   min-width:0;
+  flex:1 1 auto;
+  display:flex;
+  align-items:center;
 }
 @media(max-width:639px){
   .mm-auth-page{
