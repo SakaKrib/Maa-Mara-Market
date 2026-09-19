@@ -6,8 +6,8 @@ import ErrorBoundary from './ErrorBoundary/ErrorBoundary';
 import { AuthProvider } from './cmponents/Auth/AuthContext/Context';
 import "./main.css";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { CurrencyProvider } from './PublicUiForAll/PublicUi/Customer/DesktopView/Main/Currency/CurrencyContext';
 
-// ✅ Create a QueryClient instance
 const queryClient = new QueryClient();
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
@@ -18,12 +18,12 @@ root.render(
       <BrowserRouter>
         <QueryClientProvider client={queryClient}>
           <AuthProvider>
-            <App />
+            <CurrencyProvider>
+              <App />
+            </CurrencyProvider>
           </AuthProvider>
-          {/* ReactQueryDevtools removed */}
         </QueryClientProvider>
       </BrowserRouter>
     </ErrorBoundary>
   </React.StrictMode>
 );
-
