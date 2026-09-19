@@ -1,6 +1,7 @@
 import { createContext, useContext, useState, useEffect } from "react";
 import api from "../../../../../../Services/Api";
-import { baseUrl } from "../../../../../../cmponents/Constant/Constant";
+
+const CartContext = createContext();
 
 const CartContext = createContext();
 
