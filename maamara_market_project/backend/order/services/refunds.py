@@ -454,7 +454,18 @@ def reconcile_mpesa_refund_callback(payload, *, timeout=False):
             if adjustment and not adjustment.applied:
                 adjustment.applied = True
                 adjustment.save(update_fields=["applied"])
-        elif timeout or result_code_int != 0:
+        elif timeout:
+            # A Daraja timeout is ambiguous: the reversal request may have
+            # reached the provider even though no result was delivered.
+            # Keep it processing so reconciliation/retry does not create a
+            # second independent reversal.
+            if refund.status != "completed":
+                refund.status = "processing"
+                refund.failure_reason = "M-Pesa reversal callback timed out; awaiting provider confirmation."
+                refund.save(update_fields=[
+                    "mpesa_result_code", "status", "failure_reason", "updated_at",
+                ])
+        elif result_code_int != 0:
             if refund.status != "completed":
                 refund.status = "failed"
                 refund.failure_reason = str(result.get("ResultDesc") or "M-Pesa reversal failed")[:1000]
