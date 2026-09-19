@@ -2,9 +2,13 @@ import axios from "axios";
 
 // Keep every frontend API request on the same configurable backend origin.
 // In local development, fall back to the backend on the current browser host.
-const configuredBaseURL = import.meta.env.VITE_API_URL || import.meta.env.VITE_BASE_URL || "";
+// GitLab reference uses a single backend base URL. Keep that design, but
+// allow deployment-specific configuration so we never hard-code a developer LAN IP.
+const configuredBaseURL = import.meta.env.VITE_API_URL || import.meta.env.VITE_BASE_URL;
 export const baseURL = configuredBaseURL || (
-  typeof window !== "undefined" ? `${window.location.protocol}//${window.location.hostname}:8000` : "http://127.0.0.1:8000"
+  typeof window !== "undefined"
+    ? window.location.protocol + "//" + window.location.hostname + ":8000"
+    : "http://127.0.0.1:8000"
 );
 
 const api = axios.create({
