@@ -9,6 +9,7 @@ from rest_framework_simplejwt.views import (
 )
 from .users import *
 from .vendors import *
+from .views import VendorUpdateProfile
 from .items import vendor_item_growth_stats
 from .ItemInventory import *
 
