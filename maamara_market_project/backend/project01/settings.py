@@ -238,7 +238,15 @@ CHANNEL_LAYERS = {
     "default": {
         "BACKEND": "channels_redis.core.RedisChannelLayer",
         "CONFIG": {
-            "hosts": [env("REDIS_URL", default="redis://redis:6379/0")],
+            # Use explicit Redis connection timeouts. redis-py/channel_redis
+            # can otherwise inherit a short socket read timeout, which causes
+            # healthy blocking WebSocket reads to fail after several seconds.
+            "hosts": [{
+                "address": env("REDIS_URL", default="redis://redis:6379/0"),
+                "socket_connect_timeout": 5,
+                "socket_timeout": 15,
+                "retry_on_timeout": True,
+            }],
         },
     }
 }
