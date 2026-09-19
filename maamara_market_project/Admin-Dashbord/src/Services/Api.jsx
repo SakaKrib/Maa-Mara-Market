@@ -9,7 +9,11 @@ const configuredBaseURL =
 
 const browserBaseURL =
   typeof window !== "undefined" && window.location?.host
-    ? `${window.location.protocol}//${window.location.host}`
+    ? (
+        window.location.port === "5173" || window.location.port === "4173"
+          ? window.location.protocol + "//" + window.location.hostname + ":8000"
+          : window.location.protocol + "//" + window.location.host
+      )
     : "";
 
 const baseURL =
@@ -81,8 +85,8 @@ api.interceptors.response.use(
 
     isRefreshing = true;
 
-    refreshPromise = axios.post(
-      `${baseURL}/api/token/refresh/`,
+    refreshPromise = api.post(
+      "/api/token/refresh/",
       {},
       { withCredentials: true }
     );
