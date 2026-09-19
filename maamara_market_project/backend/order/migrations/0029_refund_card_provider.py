@@ -4,7 +4,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ("order", "0028_refund_ledger"),
+        ("oder", "0028_refund_ledger"),
     ]
 
     operations = [
