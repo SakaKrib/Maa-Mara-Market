@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Heart, ShoppingBag, UserRound, Menu, Search, Sparkles, ChevronDown, Globe2, LayoutDashboard } from "lucide-react";
+import { Heart, ShoppingBag, UserRound, Menu, Search, Sparkles, ChevronDown, Globe2, LayoutDashboard, Store } from "lucide-react";
 import "../../../../PublicUi/maamara.css";
 import SearchBar from "../../../Navigations/Search/Search";
 import NavIcons from "../../../Navigations/Search/NavIcons/NavIcon";
@@ -13,26 +13,39 @@ import MegaMenuChildren from "./ChildrenCat";
 import MegaMenuSports from "./SportsCat";
 import MegaMenuUnisex from "./UnisexCat";
 import MobileNavigationDrawer from "./MobileNavigationDrawer";
+import { useAuth } from "../../../../../cmponents/Auth/AuthContext/Context";
 
 
 const Header = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-
   const [isFixed, setIsFixed] = useState(false);
   const [currency, setCurrency] = useState(() => localStorage.getItem("mm_currency") || "KES");
   const [location, setLocation] = useState("Detecting location…");
   const [megaMenu, setMegaMenu] = useState(null);
   const { newBlogCount, loading } = useNewBlogs();
+  const { isAuthenticated, user, logout } = useAuth();
 
   const currencies = { KES: { label: "KES", flag: "🇰🇪" }, USD: { label: "USD", flag: "🇺🇸" }, EUR: { label: "EUR", flag: "🇪🇺" }, GBP: { label: "GBP", flag: "🇬🇧" } };
+
   useEffect(() => { localStorage.setItem("mm_currency", currency); }, [currency]);
-  useEffect(() => { let active=true; fetch("https://ipapi.co/json/").then(r=>r.ok?r.json():Promise.reject()).then(d=>{if(active&&d?.country_name)setLocation(d.country_name);}).catch(()=>{if(active)setLocation("Location unavailable");}); return ()=>{active=false;}; }, []);
+
+  useEffect(() => {
+    let active = true;
+    fetch("https://ipapi.co/json/")
+      .then(r => r.ok ? r.json() : Promise.reject())
+      .then(d => { if (active && d?.country_name) setLocation(d.country_name); })
+      .catch(() => { if (active) setLocation("Location unavailable"); });
+    return () => { active = false; };
+  }, []);
 
   useEffect(() => {
     const handleScroll = () => setIsFixed(window.scrollY > 120);
     window.addEventListener("scroll", handleScroll, { passive: true });
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
+
+  const isAdminOrVendor = user?.role === "admin" || user?.role === "vendor";
+  const firstName = user?.first_name?.trim() || "";
 
   return (
     <header className={`mm-site-header ${isFixed ? "is-scrolled" : ""}`}>
@@ -47,11 +60,26 @@ const Header = () => {
             <Link to="/user-account">My account</Link>
           </nav>
           <div className="mm-utility-right">
-            <Link to="/customer-login">Sign in</Link>
+            {isAuthenticated ? (
+              <>
+                {firstName && <span className="mm-user-first-name">{firstName}</span>}
+                <button type="button" className="mm-auth-action mm-auth-action--logout" onClick={logout}>Log out</button>
+              </>
+            ) : (
+              <Link to="/customer-login" className="mm-auth-action">Sign in</Link>
+            )}
             <span className="mm-utility-separator">·</span>
             <span className="flex items-center gap-1"><Globe2 size={13} />{location}</span>
             <span className="mm-utility-separator">·</span>
-            <label className="flex items-center gap-1 cursor-pointer" aria-label="Select currency"><span>{currencies[currency].flag}</span><select value={currency} onChange={e=>setCurrency(e.target.value)} className="bg-transparent border-0 outline-none cursor-pointer"><option value="KES">KES</option><option value="USD">USD</option><option value="EUR">EUR</option><option value="GBP">GBP</option></select></label>
+            <label className="flex items-center gap-1 cursor-pointer" aria-label="Select currency">
+              <span>{currencies[currency].flag}</span>
+              <select value={currency} onChange={e => setCurrency(e.target.value)} className="bg-transparent border-0 outline-none cursor-pointer">
+                <option value="KES">KES</option>
+                <option value="USD">USD</option>
+                <option value="EUR">EUR</option>
+                <option value="GBP">GBP</option>
+              </select>
+            </label>
           </div>
         </div>
       </div>
@@ -62,42 +90,56 @@ const Header = () => {
             <Menu size={21} strokeWidth={1.8} aria-hidden="true" />
           </button>
 
-            <div className="w-full flex flex-row gap-4 items-center ">
-              <img
+          <div className="w-full flex flex-row gap-4 items-center">
+            <img
               src={Maamara}
               alt="maamara-logo"
               className="w-[50px] h-[50px] rounded-full ring p-1 ring-1 ring-green-500 xxs:-mt-20 xxs:relative xxs:-top-10 lg:mt-0 lg:top-0 z-[10] mobile-hide"
             />
 
             <div>
-              <div className="logo xxs:-mt-20 xxs:relative xxs:-top-10 lg:mt-0 lg:top-0 ">
-              <a href="/">
-                Maa{" "}
-                <span className="it-name">
-                  Mara
-                </span>{" "}
-                <span className="mkrt">
-                  Market
-                </span>
-              </a>
+              <div className="logo xxs:-mt-20 xxs:relative xxs:-top-10 lg:mt-0 lg:top-0">
+                <a href="/">
+                  Maa{" "}
+                  <span className="it-name">Mara</span>{" "}
+                  <span className="mkrt">Market</span>
+                </a>
+              </div>
             </div>
-               </div>
 
-                    
-          <div className="mm-header-search mobile-hide">
-            <SearchBar />
-          </div>
-          
-          <div className="mm-header-actions items-center mobile-hide" aria-label="Account, wishlist and cart">
-            <NavIcons />
-          </div>
+            <div className="mm-header-search mobile-hide">
+              <SearchBar />
             </div>
-            <div className="flex flex-col w-full relative mr-0 desktop-hide">
-            <LayoutDashboard />
+
+            <div className="mm-header-actions items-center mobile-hide" aria-label="Account, wishlist and cart">
+              <NavIcons />
+            </div>
           </div>
-          <div className="flex flex-row w-full relative gap-2 items-center desktop-hide">
-            <UserRound className="w-[15px]"/>
-            <p className="text-sm">first-name</p>
+
+          <div className="flex flex-row w-full relative gap-3 items-center justify-end desktop-hide">
+            {isAuthenticated && !isAdminOrVendor && (
+              <Link to="/vendor-register-form" className="flex items-center gap-1 text-sm" aria-label="Become a vendor">
+                <Store className="w-[15px]" />
+                <span>Become a Vendor</span>
+              </Link>
+            )}
+
+            {isAuthenticated && isAdminOrVendor && (
+              <Link
+                to={user?.role === "admin" ? "/admin-dashboard" : "/vendors-dashboard"}
+                className="flex items-center"
+                aria-label="Open dashboard"
+              >
+                <LayoutDashboard className="w-[17px]" />
+              </Link>
+            )}
+
+            {isAuthenticated && firstName && (
+              <div className="flex flex-row items-center gap-2">
+                <UserRound className="w-[15px]" />
+                <p className="text-sm">{firstName}</p>
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -111,11 +153,11 @@ const Header = () => {
               ["Women", MegaMenuWomen], ["Men", MegaMenuMen], ["Children", MegaMenuChildren],
               ["Sports", MegaMenuSports], ["Unisex", MegaMenuUnisex]
             ].map(([label, MenuComponent]) => (
-              <div key={label} className="relative" onMouseEnter={()=>setMegaMenu(label)} onMouseLeave={()=>setMegaMenu(null)}>
+              <div key={label} className="relative" onMouseEnter={() => setMegaMenu(label)} onMouseLeave={() => setMegaMenu(null)}>
                 <button type="button" className="flex items-center gap-1.5 px-2 py-3 font-medium text-[#222] hover:text-[#6f6a63]">
                   {label}<ChevronDown size={13} />
                 </button>
-                {megaMenu === label && <div className="absolute left-0 top-full z-[100] pt-1" onMouseEnter={()=>setMegaMenu(label)}><MenuComponent /></div>}
+                {megaMenu === label && <div className="absolute left-0 top-full z-[100] pt-1" onMouseEnter={() => setMegaMenu(label)}><MenuComponent /></div>}
               </div>
             ))}
             <Link to="/blogs" className="flex items-center gap-1.5"><Heart size={15} />Journal</Link>
