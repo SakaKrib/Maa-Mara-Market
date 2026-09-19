@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "../../../../../cmponents/Auth/AuthContext/Context";
 import { useCategories } from "./SectionHook";
 import MegaMenuWomen from "./WomenCat";
 import MegaMenuMen from "./MenCat";
@@ -16,6 +17,8 @@ import {
   Sparkles,
   LogIn,
   UserRound,
+  LogOut,
+  LayoutDashboard,
   Truck,
   Newspaper,
   Heart,
@@ -27,6 +30,10 @@ import {
 const MobileNavigationDrawer = ({ open, onClose }) => {
   const { data, loading } = useCategories();
   const navigate = useNavigate();
+  const { isAuthenticated, user, logout } = useAuth();
+  const isAdmin = user?.role === "admin";
+  const isVendor = user?.role === "vendor";
+  const canBecomeVendor = isAuthenticated && !isAdmin && !isVendor;
   const [expandedCategory, setExpandedCategory] = useState(null);
 
   const departments = useMemo(() => {
@@ -309,70 +316,47 @@ const MobileNavigationDrawer = ({ open, onClose }) => {
           <div className="mm-mobile-drawer-section mt-4 border-t border-gray-200">
             <div className="mm-mobile-drawer-section-title">Account</div>
 
-            <button
-              type="button"
-              onClick={() => go("/customer-login")}
-              className={itemClass}
-            >
-              <span className="flex items-center gap-3">
-                <LogIn size={19} strokeWidth={1.8} />
-                Sign In
-              </span>
-            </button>
+            {isAuthenticated ? (
+              <>
+                {canBecomeVendor && (
+                  <button type="button" onClick={() => go("/vendor-register-form")} className={itemClass}>
+                    <span className="flex items-center gap-3"><Store size={19} strokeWidth={1.8} />Become a vendor</span>
+                  </button>
+                )}
+                <button type="button" onClick={() => go("/user-account")} className={itemClass}>
+                  <span className="flex items-center gap-3"><UserRound size={19} strokeWidth={1.8} />My Account</span>
+                </button>
+                <button type="button" onClick={() => go("/customer-order")} className={itemClass}>
+                  <span className="flex items-center gap-3"><Truck size={19} strokeWidth={1.8} />Order Tracking</span>
+                </button>
+                {(isAdmin || isVendor) && (
+                  <button type="button" onClick={() => go(isAdmin ? "/admin-dashboard" : "/vendors-dashboard")} className={itemClass}>
+                    <span className="flex items-center gap-3"><LayoutDashboard size={19} strokeWidth={1.8} />Dashboard</span>
+                  </button>
+                )}
+                <button type="button" onClick={async () => { await logout(); onClose(); }} className={itemClass}>
+                  <span className="flex items-center gap-3"><LogOut size={19} strokeWidth={1.8} />Log out</span>
+                </button>
+              </>
+            ) : (
+              <>
+                <button type="button" onClick={() => go("/customer-login")} className={itemClass}>
+                  <span className="flex items-center gap-3"><LogIn size={19} strokeWidth={1.8} />Sign In</span>
+                </button>
+                <button type="button" onClick={() => go("/register")} className={itemClass}>
+                  <span className="flex items-center gap-3"><UserRound size={19} strokeWidth={1.8} />Sign Up</span>
+                </button>
+              </>
+            )}
 
-            <button
-              type="button"
-              onClick={() => go("/user-account")}
-              className={itemClass}
-            >
-              <span className="flex items-center gap-3">
-                <UserRound size={19} strokeWidth={1.8} />
-                My Account
-              </span>
+            <button type="button" onClick={() => go("/blogs")} className={itemClass}>
+              <span className="flex items-center gap-3"><Newspaper size={19} strokeWidth={1.8} />Journal</span>
             </button>
-
-            <button
-              type="button"
-              onClick={() => go("/customer-order")}
-              className={itemClass}
-            >
-              <span className="flex items-center gap-3">
-                <Truck size={19} strokeWidth={1.8} />
-                Order Tracking
-              </span>
+            <button type="button" onClick={() => go("/filter-category")} className={itemClass}>
+              <span className="flex items-center gap-3"><Heart size={19} strokeWidth={1.8} />Wishlist</span>
             </button>
-
-            <button
-              type="button"
-              onClick={() => go("/blogs")}
-              className={itemClass}
-            >
-              <span className="flex items-center gap-3">
-                <Newspaper size={19} strokeWidth={1.8} />
-                Journal
-              </span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => go("/filter-category")}
-              className={itemClass}
-            >
-              <span className="flex items-center gap-3">
-                <Heart size={19} strokeWidth={1.8} />
-                Wishlist
-              </span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => go("/filter-category")}
-              className={itemClass}
-            >
-              <span className="flex items-center gap-3">
-                <Star size={19} strokeWidth={1.8} />
-                Featured
-              </span>
+            <button type="button" onClick={() => go("/filter-category")} className={itemClass}>
+              <span className="flex items-center gap-3"><Star size={19} strokeWidth={1.8} />Featured</span>
             </button>
           </div>
         </nav>
