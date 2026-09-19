@@ -10,14 +10,12 @@ export const WishlistProvider = ({ children }) => {
 
   // 📥 Fetch wishlist items
   const fetchWishlist = async () => {
-    console.log("🚨 fetchWishlist called");
     try {
       setLoading(true);
       const res = await api.get(`/api/wishlist/`, { withCredentials: true });
       // extract items array
       const data = Array.isArray(res.data.items) ? res.data.items : [];
       setWishlist(data);
-      console.log("✅ Wishlist fetched:", data);
     } catch (err) {
       console.error("❌ Wishlist fetch error:", err);
       setWishlist([]);
@@ -27,7 +25,6 @@ export const WishlistProvider = ({ children }) => {
   };
   
   useEffect(() => {
-    console.log("🌀 WishlistProvider mounted");
     fetchWishlist();
   }, []);
   
