@@ -9,7 +9,6 @@ import Snackbar from '@mui/material/Snackbar'
 import Alert from '@mui/material/Alert'
 import { Eye, EyeOff } from "lucide-react"
 
-// 🧠 Helper to read cookie
 const getCookie = (name) => {
   const value = `; ${document.cookie}`
   const parts = value.split(`; ${name}=`)
@@ -80,21 +79,18 @@ const RegistrationForm = () => {
       if (response.ok && data.success) {
         setMessage(data.message)
         setSnackbar({ open: true, severity: "success", message: data.message })
-
-        // ✅ NAVIGATE TO OTP PAGE
         navigate("/verify-otp", {
           state: {
             email: formData.email,
             expiresAt: data.expires_at
           }
         })
-
       } else {
         const errorMsg = data.message || "Registration failed."
         setError(errorMsg)
         setSnackbar({ open: true, severity: "error", message: errorMsg })
       }
-    } catch (err) {
+    } catch {
       const errorMsg = "Something went wrong. Please try again."
       setError(errorMsg)
       setSnackbar({ open: true, severity: "error", message: errorMsg })
@@ -148,7 +144,6 @@ const RegistrationForm = () => {
                         value={formData[name]}
                         onChange={handleChange}
                       />
-
                       <button
                         type="button"
                         onClick={() => setShowPassword(p => !p)}
@@ -169,7 +164,7 @@ const RegistrationForm = () => {
                 </div>
               ))}
 
-              <Button className="w-full" type="submit" disabled={loading || !csrfToken}>
+              <Button className="mm-auth-submit w-full" type="submit" disabled={loading}>
                 {loading ? "Registering..." : "Register"}
               </Button>
             </form>
