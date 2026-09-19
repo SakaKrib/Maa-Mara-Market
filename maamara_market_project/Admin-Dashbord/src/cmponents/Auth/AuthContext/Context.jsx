@@ -23,13 +23,23 @@ const requestAuthCheck = () => {
 
 export const AuthProvider = ({ children }) => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isVisitor, setIsVisitor] = useState(false);
+  const [authType, setAuthType] = useState("anonymous");
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
   const applyAuthResponse = (data) => {
-    const authenticated = Boolean(data?.isAuthenticated);
-    setIsAuthenticated(authenticated);
-    setUser(authenticated ? data?.user ?? null : null);
+    const visitor = data?.authType === "visitor";
+    const authenticatedUser =
+      Boolean(data?.isAuthenticated) &&
+      !visitor &&
+      Boolean(data?.user?.id);
+
+    setIsVisitor(visitor);
+    setAuthType(visitor ? "visitor" : authenticatedUser ? (data?.authType || "user") : "anonymous");
+    setIsAuthenticated(authenticatedUser);
+    setUser(authenticatedUser ? data.user : null);
+
     return data;
   };
 
@@ -39,6 +49,8 @@ export const AuthProvider = ({ children }) => {
       return applyAuthResponse(data);
     } catch (error) {
       setIsAuthenticated(false);
+      setIsVisitor(false);
+      setAuthType("anonymous");
       setUser(null);
       return null;
     } finally {
@@ -56,7 +68,9 @@ export const AuthProvider = ({ children }) => {
   };
 
   const login = (userData) => {
-    setIsAuthenticated(true);
+    setIsAuthenticated(Boolean(userData?.id));
+    setIsVisitor(false);
+    setAuthType("user");
     setUser(userData || null);
   };
 
@@ -65,14 +79,25 @@ export const AuthProvider = ({ children }) => {
       await api.post("/api/logout/");
     } finally {
       setIsAuthenticated(false);
+      setIsVisitor(false);
+      setAuthType("anonymous");
       setUser(null);
       if (typeof window !== "undefined") window.location.assign("/");
     }
   };
 
   const value = useMemo(
-    () => ({ loading, isAuthenticated, user, login, logout, refreshAuth }),
-    [loading, isAuthenticated, user]
+    () => ({
+      loading,
+      isAuthenticated,
+      isVisitor,
+      authType,
+      user,
+      login,
+      logout,
+      refreshAuth,
+    }),
+    [loading, isAuthenticated, isVisitor, authType, user]
   );
 
   return (
