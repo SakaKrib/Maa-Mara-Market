@@ -69,7 +69,10 @@ const Header = () => {
                 <button type="button" className="mm-auth-action mm-auth-action--logout" onClick={logout}>Log out</button>
               </>
             ) : (
-              <Link to="/customer-login" className="mm-auth-action">Sign in</Link>
+              <>
+                <Link to="/customer-login" className="mm-auth-action">Sign in</Link>
+                <Link to="/register" className="mm-auth-action">Sign up</Link>
+              </>
             )}
             <span className="mm-utility-separator">·</span>
             <span className="flex items-center gap-1"><Globe2 size={13} />{location}</span>
@@ -130,7 +133,10 @@ const Header = () => {
             {isAuthenticated ? (
               <button type="button" className="mm-auth-action mm-auth-action--logout text-sm" onClick={logout}>Log out</button>
             ) : (
-              <Link to="/customer-login" className="mm-auth-action text-sm">Sign in</Link>
+              <>
+                <Link to="/customer-login" className="mm-auth-action text-sm">Sign in</Link>
+                <Link to="/register" className="mm-auth-action text-sm">Sign up</Link>
+              </>
             )}
           </div>
         </div>
