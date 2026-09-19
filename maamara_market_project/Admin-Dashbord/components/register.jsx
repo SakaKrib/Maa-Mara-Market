@@ -80,24 +80,47 @@ const RegistrationForm = () => {
     setError("")
     setMessage("")
 
-    try {
-      const response = await fetch(`${baseUrl}/api/register/`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/x-www-form-urlencoded",
-          "X-CSRFToken": csrfToken
-        },
-        credentials: "include",
-        body: new URLSearchParams(formData)
-      })
+    if (!isStrongPassword(formData.password)) {
+      const errorMsg = "Password must be at least 12 characters and include uppercase, lowercase, a number, and a special character."
+      setPasswordError(errorMsg)
+      setSnackbar({ open: true, severity: "error", message: errorMsg })
+      setLoading(false)
+      return
+    }
 
-      const data = await response.json()
+    if (formData.password !== formData.password2) {
+      const errorMsg = "Passwords do not match."
+      setPasswordError(errorMsg)
+      setSnackbar({ open: true, severity: "error", message: errorMsg })
+      setLoading(false)
+      return
+    }
+
+    try {
+      let token = csrfToken
+      if (!token) {
+        const csrfResponse = await api.get("/api/get-csrf-token/")
+        token = csrfResponse.data?.csrfToken || getCookie("csrftoken")
+        setCsrfToken(token)
+      }
+
+      const { data } = await api.post(
+        "/api/register/",
+        new URLSearchParams(formData),
+        {
+          headers: {
+            "Content-Type": "application/x-www-form-urlencoded",
+            "X-CSRFToken": token,
+          },
+          withCredentials: true,
+        }
+      )
 
       if (data.success) {
         setMessage(data.message)
         setSnackbar({ open: true, severity: "success", message: data.message })
         setOtpSent(true)
-        setExpiryTime(data.expires_at)  // ✅ store expiry time
+        setExpiryTime(data.expires_at)
       } else {
         const errorMsg = data.message || "Registration failed."
         setError(errorMsg)
@@ -105,14 +128,13 @@ const RegistrationForm = () => {
       }
     } catch (err) {
       console.error("Registration error:", err)
-      const errorMsg = "Something went wrong. Please try again."
+      const errorMsg = err.response?.data?.message || "Something went wrong. Please try again."
       setError(errorMsg)
       setSnackbar({ open: true, severity: "error", message: errorMsg })
     } finally {
       setLoading(false)
     }
   }
-
   // Handle close/open snackbar
   const handleSnackbarClose = () => {
     setSnackbar(prev => ({ ...prev, open: false }));
