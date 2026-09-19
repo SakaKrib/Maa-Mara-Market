@@ -2,11 +2,10 @@ import React, { useState } from "react";
 import { useCartContext } from "./cart";
 import { useCartActions } from "../CartActionButtons/UpdateQty";
 import RemoveFromCartButton from "../CartActionButtons/RemoveFromBtn";
-import { baseUrl } from "../../../../../../cmponents/Constant/Constant";
 import { Link } from "react-router-dom";
+import FormattedCurrency from "../Currency/FormattedCurrency";
 
-const money = (value) => Number(value || 0).toLocaleString();
-const imageUrl = (image) => image?.startsWith("http") ? image : `${baseUrl || ""}${image || ""}`;
+const imageUrl = (image) => image || "";
 
 const CartPage = () => {
   const { order, loading, error } = useCartContext();
