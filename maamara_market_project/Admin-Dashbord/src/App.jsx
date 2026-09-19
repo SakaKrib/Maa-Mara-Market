@@ -67,7 +67,6 @@ import PayoutsPage from "./cmponents/VendorPayoutReport/vendorPayouts/vendorPayo
 import ProtectedRoute from "./cmponents/Auth/Routes/ProtectRoute";
 import HomeRedirectWrapper from "./cmponents/Auth/AuthContext/ProtectVendorAdmin";
 import { CartProvider } from "./PublicUiForAll/PublicUi/Customer/DesktopView/Main/CartHook/cart";
-import { baseUrl } from "./cmponents/Constant/Constant";
 import CheckoutPage from "./PublicUiForAll/PublicUi/Customer/DesktopView/Main/Orders/CheckoutForm";
 
 
@@ -83,6 +82,7 @@ import BlogCard from "./cmponents/VENDORPAGE/Blogs/BlogCard";
 import BlogFeed from "./cmponents/VENDORPAGE/Blogs/BlogFeed";
 import SingleBlogPage from "./cmponents/VENDORPAGE/Blogs/SinglePageBlogPost";
 import { WishlistProvider } from "./cmponents/Hooks/WishListHook/Wishlist";
+import api from "./Services/Api";
 import ItemsOnsite from "./cmponents/VENDORPAGE/Products/VendorItems/ItemOnSite";
 import TransactionTable from "./cmponents/VENDORPAGE/Home/Transaction";
 import AdminAccounts from "./cmponents/Admin/AccountMain/Accountmain";
@@ -139,10 +139,7 @@ function AppContent() {
 
   useEffect(() => {
     // Only call the API to set the visitor token cookie
-    fetch(`${baseUrl}/api/vistor-token/`, {
-      method: "GET",
-      credentials: "include", // Important! Sends cookies and allows the server to set cookies
-    })
+    api.get("/api/vistor-token/")
       .then(res => {
         if (!res.ok) throw new Error("Failed to get visitor token");
         console.log("Visitor token cookie set by server");
