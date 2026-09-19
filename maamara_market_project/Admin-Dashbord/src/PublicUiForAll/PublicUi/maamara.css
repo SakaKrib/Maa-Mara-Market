@@ -4536,3 +4536,51 @@ h1,h2,h3,h4{font-family:'regular','Poppins',Arial,sans-serif}
   .mm-auth-card{border-radius:var(--mm-radius-md)}
   .mm-auth-form-panel{padding:22px!important}
 }
+
+
+/* Authentication form controls use the same Maa Mara storefront language. */
+.mm-auth-form label{
+  display:block;
+  margin-bottom:6px;
+  color:var(--mm-text,#222);
+  font-family:'regular',sans-serif;
+  font-size:13px;
+  font-weight:600;
+}
+.mm-auth-form .mm-auth-input{
+  width:100%;
+  min-height:42px;
+  border:1px solid var(--mm-border,#e6e3de);
+  border-radius:6px;
+  background:var(--mm-surface,#fff);
+  color:var(--mm-text,#222);
+  font-family:'regular',sans-serif;
+  font-size:13px;
+  box-shadow:none;
+}
+.mm-auth-form .mm-auth-input:focus{
+  border-color:var(--mm-border-strong,#d6d1c9);
+  outline:none;
+  box-shadow:0 0 0 2px rgba(10,2,28,.06);
+}
+.mm-auth-google{
+  min-height:42px;
+  border:1px solid var(--mm-border,#e6e3de)!important;
+  background:var(--mm-surface,#fff)!important;
+  color:var(--mm-text,#222)!important;
+  font-family:'regular',sans-serif;
+  font-size:13px;
+  font-weight:600;
+  box-shadow:none!important;
+}
+.mm-auth-google:hover{
+  background:var(--mm-surface-muted,#f5f4f1)!important;
+  color:var(--mm-text,#222)!important;
+}
+.mm-auth-submit{
+  min-height:42px;
+  border-radius:2em!important;
+  font-family:'regular',sans-serif;
+  font-size:13px;
+  font-weight:600;
+}
