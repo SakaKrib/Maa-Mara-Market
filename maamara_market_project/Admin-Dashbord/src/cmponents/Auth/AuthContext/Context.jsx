@@ -1,5 +1,6 @@
 "use client";
 import React, { createContext, useContext, useState, useEffect, useMemo } from 'react';
+import api from '../../../Services/Api';
 
 let accessTokenRef = null;
 
@@ -8,10 +9,6 @@ export const setGlobalAccessToken = token => {
 };
 
 export const getGlobalAccessToken = () => accessTokenRef;
-
-const API_BASE_URL = import.meta.env.VITE_API_URL || import.meta.env.VITE_BASE_URL || (
-  typeof window !== 'undefined' ? `${window.location.protocol}//${window.location.hostname}:8000` : 'http://127.0.0.1:8000'
-);
 
 const AuthContext = createContext();
 
@@ -23,17 +20,8 @@ export const AuthProvider = ({ children }) => {
 
   const checkAuth = async (retry = 1) => {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/check-auth/`, {
-        method: 'GET',
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json' }
-      });
-
-      if (!response.ok) {
-        throw new Error(`Auth check failed with status ${response.status}`);
-      }
-
-      const data = await response.json();
+      const response = await api.get('/api/check-auth/');
+      const data = response.data;
 
       setIsAuthenticated(Boolean(data.isAuthenticated));
       setUser(data.user || null);
@@ -73,15 +61,7 @@ export const AuthProvider = ({ children }) => {
 
   const logout = async () => {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/logout/`, {
-        method: 'POST',
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json' }
-      });
-
-      if (!response.ok) {
-        throw new Error(`Logout failed with status ${response.status}`);
-      }
+      const response = await api.post('/api/logout/');
 
       setIsAuthenticated(false);
       setUser(null);
