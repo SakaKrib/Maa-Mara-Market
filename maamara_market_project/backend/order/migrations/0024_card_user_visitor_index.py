@@ -5,7 +5,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ("order", "0023_rename_oderitem_orderitem"),
+        ("oder", "0023_rename_oderitem_orderitem"),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
     ]
 
