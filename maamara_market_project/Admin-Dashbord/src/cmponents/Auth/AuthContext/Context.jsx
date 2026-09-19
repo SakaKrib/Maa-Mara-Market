@@ -11,6 +11,10 @@ export const setGlobalAccessToken = token => {
 
 export const getGlobalAccessToken = () => accessTokenRef;
 
+const API_BASE_URL = import.meta.env.VITE_API_URL || import.meta.env.VITE_BASE_URL || (
+  typeof window !== 'undefined' ? `${window.location.protocol}//${window.location.hostname}:8000` : 'http://127.0.0.1:8000'
+);
+
 const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
@@ -19,8 +23,6 @@ export const AuthProvider = ({ children }) => {
   const [accessToken, setAccessToken] = useState(null);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
-
-  const baseURL = 'http://127.0.0.1:8000';
 
   const checkAuth = async (retry = 1) => {
     try {
