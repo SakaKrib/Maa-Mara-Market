@@ -33,7 +33,6 @@ import {
   saveVendorDraft,
   deleteVendorDraft,
 } from "../../../Services/VendorDrafts";
-import HeaderPages from "../../OtherPageHeader";
 
 // Zod Schema with conditional validation
 
@@ -885,8 +884,7 @@ const onSubmit = async (data) => {
 
   return (
   <div className="w-full h-full overflow-y-hidden pt-20">
-    <HeaderPages/>
-      <div className="py-10 flex justify-center px-4 md:px-8 lg:px-16 xl:px-32 2xl:px-64 relative">
+<div className="py-10 flex justify-center px-4 md:px-8 lg:px-16 xl:px-32 2xl:px-64 relative">
     <Form {...form}>
     <form
       onSubmit={(e) => {
