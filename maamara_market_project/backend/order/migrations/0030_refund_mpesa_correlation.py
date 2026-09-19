@@ -4,7 +4,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ("order", "0029_refund_card_provider"),
+        ("oder", "0029_refund_card_provider"),
     ]
 
     operations = [
