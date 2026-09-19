@@ -5,7 +5,7 @@ import django.db.models.deletion
 
 class Migration(migrations.Migration):
     dependencies = [
-        ("order", "0027_paypal_transaction_vendor_constraints"),
+        ("oder", "0027_paypal_transaction_vendor_constraints"),
         ("vendorDashboard", "0018_unique_return_request_per_item"),
     ]
 
