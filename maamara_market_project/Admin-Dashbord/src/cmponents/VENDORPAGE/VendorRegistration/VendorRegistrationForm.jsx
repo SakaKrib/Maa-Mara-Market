@@ -790,7 +790,7 @@ const onSubmit = async (data) => {
 
     // API Call
     const response = await api.post(
-      `${baseUrl}/api/vendor-request/`,
+      "/api/vendor-request/",
       formData,
       {
         withCredentials: true,
@@ -829,7 +829,7 @@ const onSubmit = async (data) => {
 
     if (status === 401) {
       try {
-        await api.post(`${baseUrl}/api/vendor-request/`, formData, {
+        await api.post("/api/vendor-request/", formData, {
           withCredentials: true,
           headers: { "Content-Type": "multipart/form-data" },
         });
