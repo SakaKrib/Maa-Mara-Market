@@ -168,7 +168,11 @@ def capture_paypal_order(request, order_id):
         # -------------------------------------------------------
         # 3️⃣ Check if transaction already exists for this PayPal order
         # -------------------------------------------------------
-        existing_tx = Transaction.objects.filter(\n            order__paypal_order_id=order_id,\n            transaction_type="PayPal",\n            paypal_transaction_id__isnull=False,\n        ).first()
+        existing_tx = Transaction.objects.filter(
+            order__paypal_order_id=order_id,
+            transaction_type="PayPal",
+            paypal_transaction_id__isnull=False,
+        ).first()
         if existing_tx:
             logger.info("PayPal order already has a recorded transaction.")
             return Response(
