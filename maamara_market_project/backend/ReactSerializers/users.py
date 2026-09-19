@@ -92,7 +92,11 @@ class HybridCheckAuthView(APIView):
                     'user': {
                         'username': user.username,
                         'email': user.email,
+                        'first_name': user.first_name,
+                        'last_name': user.last_name,
                         'role': role,
+                        'is_vendor': role == 'vendor',
+                        'is_admin': role == 'admin',
                         'id': user.id
                     }
                 }, status=status.HTTP_200_OK)
