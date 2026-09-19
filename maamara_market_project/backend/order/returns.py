@@ -462,7 +462,7 @@ def approve_return_request_api(request, return_id):
                 # The adjustment is created from the immutable purchase price
                 # and must agree with the return ledger amount.
                 expected_amount = (
-                    Decimal(str(order_item.price_at_purchase)) * order_item.quantity
+                    Decimal(str(item.price_at_purchase)) * item.quantity
                 ).quantize(Decimal("0.01"))
                 if adjustment.amount != expected_amount:
                     return Response({
