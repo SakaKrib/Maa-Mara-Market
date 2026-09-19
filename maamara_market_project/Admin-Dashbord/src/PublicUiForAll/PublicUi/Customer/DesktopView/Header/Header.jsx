@@ -140,6 +140,14 @@ const Header = () => {
                 <p className="text-sm">{firstName}</p>
               </div>
             )}
+
+            {isAuthenticated ? (
+              <button type="button" className="mm-auth-action mm-auth-action--logout text-sm" onClick={logout}>
+                Log out
+              </button>
+            ) : (
+              <Link to="/customer-login" className="mm-auth-action text-sm">Sign in</Link>
+            )}
           </div>
         </div>
       </div>
