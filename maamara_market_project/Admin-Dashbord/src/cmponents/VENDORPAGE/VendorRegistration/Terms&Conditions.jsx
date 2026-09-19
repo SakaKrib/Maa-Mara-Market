@@ -3,7 +3,6 @@ import VendorForm from "./VendorRegistrationForm";
 import { Button } from "../../../../components/ui/button";
 import { useCustomerAccessGuard } from "../../Hooks/AccessCRF/CustomerAccess";
 import { useAuth } from "../../Auth/AuthContext/Context";
-import HeaderPages from "../../OtherPageHeader";
 
 const VendorRegistration = () => {
 
@@ -75,9 +74,6 @@ const VendorRegistration = () => {
 
       <div className="bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-2xl shadow-xl overflow-hidden">
 
-
-        {/* Header */}
-        <HeaderPages/>
 
         <div className="p-6 lg:mt-20 lg:py-10 xxs:mt-20 xxs:py-10  md:p-8 border-b dark:border-slate-700">
 
