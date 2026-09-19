@@ -1,6 +1,6 @@
 import { useWishlistContext } from "../../../../cmponents/Hooks/WishListHook/Wishlist";
-import { baseUrl } from "../../../../cmponents/Constant/Constant";
-import { Heart, Share2, Trash2 } from "lucide-react"; // ✅ using lucide-react icons
+import { Heart, Share2, Trash2 } from "lucide-react";
+import FormattedCurrency from "../../Customer/DesktopView/Main/Currency/FormattedCurrency";
 
 const WishlistModal = () => {
   const { wishlist, loading, removeFromWishlist } = useWishlistContext();
@@ -50,7 +50,7 @@ const WishlistModal = () => {
           return (
             <div key={item.id} className="flex gap-4">
               <img
-                src={item.image?.startsWith("http") ? item.image : `${baseUrl}${item.image}`}
+                src={item.image || ""}
                 alt={item.name || "Item"}
                 width={96}
                 height={96}
@@ -65,7 +65,7 @@ const WishlistModal = () => {
                     {truncateWords(item.name, 3)}
                   </h3>
                   <div className="p-1 bg-gray-200 rounded-sm text-sm">
-                    KES {(item.final_price || 0).toLocaleString()}
+                    <FormattedCurrency value={Number(item.final_price || 0)} />
                   </div>
                 </div>
 
