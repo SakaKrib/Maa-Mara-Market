@@ -26,7 +26,7 @@ export const AuthProvider = ({ children }) => {
 
   const checkAuth = async (retry = 1) => {
     try {
-      const response = await fetch(`${baseURL}/api/check-auth/`, {
+      const response = await fetch(`${API_BASE_URL}/api/check-auth/`, {
         method: 'GET',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' }
