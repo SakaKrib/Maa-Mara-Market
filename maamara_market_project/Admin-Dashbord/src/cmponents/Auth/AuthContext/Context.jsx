@@ -1,46 +1,39 @@
+// src/components/Auth/AuthContext/Context.jsx
 "use client";
-import React, { createContext, useContext, useState, useEffect, useMemo } from 'react';
-import api from '../../../Services/Api';
 
-let accessTokenRef = null;
+import React, {
+  createContext,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
+import api from "../../../Services/Api";
 
-export const setGlobalAccessToken = token => {
-  accessTokenRef = token;
-};
-
-export const getGlobalAccessToken = () => accessTokenRef;
-
-const AuthContext = createContext();
+const AuthContext = createContext(null);
 
 export const AuthProvider = ({ children }) => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [user, setUser] = useState(null);
-  const [accessToken, setAccessToken] = useState(null);
   const [loading, setLoading] = useState(true);
 
   const checkAuth = async (retry = 1) => {
     try {
-      const response = await api.get('/api/check-auth/');
+      const response = await api.get("/api/check-auth/");
       const data = response.data;
 
       setIsAuthenticated(Boolean(data.isAuthenticated));
-      setUser(data.user || null);
-
-      if (data.access) {
-        setAccessToken(data.access);
-        setGlobalAccessToken(data.access);
-      }
-
+      setUser(data.user ?? null);
     } catch (error) {
-      console.error("❌ Auth check failed:", error);
+      console.error("Auth check failed:", error);
+
       if (retry > 0) {
         await checkAuth(retry - 1);
-      } else {
-        setIsAuthenticated(false);
-        setUser(null);
-        setAccessToken(null);
-        setGlobalAccessToken(null);
+        return;
       }
+
+      setIsAuthenticated(false);
+      setUser(null);
     } finally {
       setLoading(false);
     }
@@ -50,49 +43,43 @@ export const AuthProvider = ({ children }) => {
     checkAuth();
   }, []);
 
-  useEffect(() => {
-    setGlobalAccessToken(accessToken);
-  }, [accessToken]);
-
   const refreshAuth = async () => {
     setLoading(true);
     await checkAuth();
   };
 
+  const login = (userData) => {
+    setIsAuthenticated(true);
+    setUser(userData ?? null);
+  };
+
   const logout = async () => {
     try {
-      const response = await api.post('/api/logout/');
-
+      await api.post("/api/logout/");
+    } catch (error) {
+      console.error("Logout failed:", error);
+    } finally {
+      // Backend owns the authentication cookies. React only mirrors state.
       setIsAuthenticated(false);
       setUser(null);
-      setAccessToken(null);
-      setGlobalAccessToken(null);
-      window.location.href = '/customer-login';
-    } catch (error) {
-      console.error("❌ Logout error:", error);
+      window.location.href = "/";
     }
   };
 
-  const login = (userData, token) => {
-    setIsAuthenticated(true);
-    setUser(userData);
-    setAccessToken(token);
-    setGlobalAccessToken(token);
-  };
-
-  const contextValue = useMemo(() => ({
-    isAuthenticated,
-    user,
-    accessToken,
-    setAccessToken,
-    loading,
-    logout,
-    refreshAuth,
-    login
-  }), [isAuthenticated, user, accessToken, loading]);
+  const value = useMemo(
+    () => ({
+      loading,
+      isAuthenticated,
+      user,
+      login,
+      logout,
+      refreshAuth,
+    }),
+    [loading, isAuthenticated, user]
+  );
 
   return (
-    <AuthContext.Provider value={contextValue}>
+    <AuthContext.Provider value={value}>
       {children}
     </AuthContext.Provider>
   );
