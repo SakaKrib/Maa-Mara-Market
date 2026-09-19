@@ -80,15 +80,40 @@ def return_request_handler_api(request, item_id):
             }, status=status.HTTP_404_NOT_FOUND)
 
         # --- Get the order containing this item ---
-        order = Order.objects.filter(order_items=item).first()
+        order = (
+            Order.objects
+            .select_for_update()
+            .select_related("payment")
+            .filter(order_items=item)
+            .first()
+        )
         if not order:
             return Response({
                 "success": False,
                 "error": "The ordered item is not attached to an order.",
             }, status=status.HTTP_409_CONFLICT)
 
+        # Returns/refunds are only valid for paid, completed orders.
+        if order.status != "completed" or not order.payment or order.payment.status != "completed":
+            return Response({
+                "success": False,
+                "error": "Only completed, paid orders can be returned.",
+            }, status=status.HTTP_409_CONFLICT)
+
+        # A line can only be returned/exchanged once.
+        if item.refunded or item.is_returned or item.is_exchanged:
+            return Response({
+                "success": False,
+                "error": "This order item has already been returned, exchanged, or refunded.",
+            }, status=status.HTTP_409_CONFLICT)
+
         # --- Check if a return already exists ---
-        existing_return = ReturnRequest.objects.filter(item=item).first()
+        existing_return = (
+            ReturnRequest.objects
+            .select_for_update()
+            .filter(item=item)
+            .first()
+        )
 
         # Step 1️⃣ — Create a new return request if not exists
         if not existing_return:
@@ -171,6 +196,12 @@ def return_request_handler_api(request, item_id):
                 }, status=status.HTTP_400_BAD_REQUEST)
         else:
             return_request = existing_return
+            if return_request.status in {"approved_refund", "approved_exchange", "rejected"}:
+                return Response({
+                    "success": False,
+                    "error": "This return request has already been decided.",
+                    "return_request": ReturnRequestSerializer(return_request).data,
+                }, status=status.HTTP_409_CONFLICT)
 
         # Step 2️⃣ — Handle customer preference. Once chosen, it cannot silently change.
         requested_pref = request.data.get("customer_preference")
@@ -199,11 +230,15 @@ def return_request_handler_api(request, item_id):
         vendor = Vendor.objects.get(user=product.created_by)
         product_name = product.name
         quantity = order_item.quantity
-        unit_price = Decimal(str(product.get_item_final_discounted_price()))
+
+        # Refund/exchange credit must use the immutable purchase price, not
+        # today's catalog price. This prevents price changes after checkout
+        # from changing the customer's refund amount.
+        purchase_unit_price = Decimal(str(order_item.price_at_purchase))
+        total_refund = (purchase_unit_price * quantity).quantize(Decimal("0.01"))
 
         # ✅ REFUND
         if customer_pref == "refund":
-            total_refund = unit_price * quantity
 
             vendor_adjustment = VendorAdjustment.objects.create(
                 vendor=vendor,
@@ -269,7 +304,7 @@ def return_request_handler_api(request, item_id):
 
         # ✅ EXCHANGE
         elif customer_pref == "exchange":
-            total_exchange_credit = unit_price * quantity
+            total_exchange_credit = total_refund
 
             vendor_adjustment =  VendorAdjustment.objects.create(
                 vendor=vendor,
@@ -409,22 +444,12 @@ def approve_return_request_api(request, return_id):
         # ✅ APPROVAL FLOW
         if action == "approve":
             if pref == "refund":
-                return_request.approved = True
-                return_request.approved_by_admin = True
-                return_request.admin_action = "approved"
-                return_request.refund_issued = False
-                return_request.status = "approved_refund"
-                return_request.admin_note = admin_note
-                return_request.save()
-
                 adjustment = return_request.vendor_adjustment
                 if not adjustment:
                     return Response({
                         "success": False,
                         "error": "Refund adjustment is missing for this return request.",
                     }, status=status.HTTP_409_CONFLICT)
-                adjustment.is_approved = True
-                adjustment.save(update_fields=["is_approved"])
 
                 payment = order.payment
                 provider = payment.payment_method
@@ -432,6 +457,17 @@ def approve_return_request_api(request, return_id):
                     return Response({
                         "success": False,
                         "error": "Automatic refunds are currently supported only for PayPal and M-Pesa payments.",
+                    }, status=status.HTTP_409_CONFLICT)
+
+                # The adjustment is created from the immutable purchase price
+                # and must agree with the return ledger amount.
+                expected_amount = (
+                    Decimal(str(order_item.price_at_purchase)) * order_item.quantity
+                ).quantize(Decimal("0.01"))
+                if adjustment.amount != expected_amount:
+                    return Response({
+                        "success": False,
+                        "error": "The refund adjustment does not match the purchased item amount.",
                     }, status=status.HTTP_409_CONFLICT)
 
                 # Vendor adjustments are recorded in KES. PayPal settles in USD,
@@ -464,17 +500,43 @@ def approve_return_request_api(request, return_id):
                         "status": "approved",
                     },
                 )
-                if not created and refund.status == "failed":
-                    refund.status = "approved"
-                    refund.failure_reason = None
-                    refund.amount = refund_amount
-                    refund.currency = refund_currency
-                    refund.provider = provider
-                    refund.payment = payment
-                    refund.save(update_fields=[
-                        "status", "failure_reason", "amount", "currency", "provider",
-                        "payment", "updated_at",
-                    ])
+                if not created:
+                    # Never silently change a completed/processing refund's
+                    # financial terms during a repeated approval request.
+                    if refund.status in {"completed", "processing"}:
+                        return Response({
+                            "success": True,
+                            "message": "Refund processing is already in progress or completed.",
+                            "return_request": ReturnRequestSerializer(return_request).data,
+                        }, status=status.HTTP_200_OK)
+
+                    if refund.status == "failed":
+                        refund.status = "approved"
+                        refund.failure_reason = None
+                        refund.amount = refund_amount
+                        refund.currency = refund_currency
+                        refund.provider = provider
+                        refund.payment = payment
+                        refund.save(update_fields=[
+                            "status", "failure_reason", "amount", "currency", "provider",
+                            "payment", "updated_at",
+                        ])
+
+                # Only mutate the return/adjustment approval state after every
+                # provider and refund-ledger precondition has passed.
+                return_request.approved = True
+                return_request.approved_by_admin = True
+                return_request.admin_action = "approved"
+                return_request.refund_issued = False
+                return_request.status = "approved_refund"
+                return_request.admin_note = admin_note
+                return_request.save(update_fields=[
+                    "approved", "approved_by_admin", "admin_action",
+                    "refund_issued", "status", "admin_note",
+                ])
+
+                adjustment.is_approved = True
+                adjustment.save(update_fields=["is_approved"])
 
                 if refund.provider in {"PayPal", "Mpesa"} and refund.status == "approved":
                     transaction.on_commit(lambda refund_id=refund.id: process_refund_task.delay(refund_id))
