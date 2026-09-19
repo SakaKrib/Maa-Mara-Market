@@ -6,7 +6,7 @@ from .models import Notification, ActivityLog, CalendarEvent
 from .realtime import broadcast_event, model_snapshot
 from ReactSerializers.models import Item, ColorVariant, SizeStock, AgeVariant, Offer, PriceChangeRequest
 from order.models import Order, OrderItem, Payment, Customer, Refund
-from vendorDashboard.models import Vendor, VendorPayout, VendorItemRequest
+from vendorDashboard.models import Vendor, VendorPayout, VendorItemRequest, ReturnRequest
 
 
 def emit(sender, instance, action, **kwargs):
@@ -175,6 +175,24 @@ def price_change_request_save(sender, instance, created, **kwargs):
         vendor_ids=[vendor_id] if vendor_id else [],
         user_ids=[instance.requested_by_id] if instance.requested_by_id else [],
     )
+@receiver(post_save, sender=ReturnRequest)
+def return_request_save(sender, instance, created, **kwargs):
+    vendor_id = None
+    item = getattr(instance, "item", None)
+    if item and getattr(item, "item", None):
+        vendor_id = (
+            Vendor.objects.filter(user_id=item.item.created_by_id)
+            .values_list("id", flat=True)
+            .first()
+        )
+    emit(
+        sender, instance, "created" if created else "updated",
+        user_ids=[instance.customer_id] if instance.customer_id else [],
+        visitor_ids=[instance.visitor_id] if getattr(instance, "visitor_id", None) else [],
+        vendor_ids=[vendor_id] if vendor_id else [],
+    )
+
+
 @receiver(post_save, sender=Refund)
 def refund_save(sender, instance, created, **kwargs):
     return_request = getattr(instance, "return_request", None)
@@ -183,7 +201,11 @@ def refund_save(sender, instance, created, **kwargs):
     vendor_id = None
     item = getattr(return_request, "item", None) if return_request else None
     if item and getattr(item, "item", None):
-        vendor_id = getattr(item.item, "vendor_id", None)
+        vendor_id = (
+            Vendor.objects.filter(user_id=item.item.created_by_id)
+            .values_list("id", flat=True)
+            .first()
+        )
     emit(
         sender, instance, "created" if created else "updated",
         user_ids=[user_id] if user_id else [],
