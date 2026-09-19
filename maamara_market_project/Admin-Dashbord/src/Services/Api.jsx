@@ -1,62 +1,62 @@
 import axios from "axios";
 
-/*
- * Single API client for the entire frontend.
- *
- * Priority:
- * 1. Explicit VITE_API_URL / VITE_BASE_URL when deployed behind a known API.
- * 2. The browser's current host with Django's backend port in local/Tailscale use.
- * 3. The configured Tailscale backend as the final fallback.
- *
- * Do not hard-code the frontend origin here. Cookies are sent through the
- * shared Axios client and JWT refresh is handled centrally below.
- */
 const FALLBACK_API_ORIGIN = "http://100.109.224.0:8000";
 const BACKEND_PORT = "8000";
 
-const getApiOrigin = () => {
+const resolveApiOrigin = () => {
   const configured = import.meta.env.VITE_API_URL || import.meta.env.VITE_BASE_URL;
+
   if (configured) {
     return configured.replace(/\/$/, "");
   }
 
   if (typeof window !== "undefined" && window.location.host) {
-    // Prefer the exact browser host when it is already the backend.
-    // When the browser is serving Vite on another port (normally 5173),
-    // keep the browser's protocol/hostname and switch only to Django's port.
-    const browserHost = window.location.host;
-    if (browserHost.endsWith(`:${BACKEND_PORT}`)) {
-      return `${window.location.protocol}//${browserHost}`;
+    const { protocol, hostname, host } = window.location;
+
+    // If the browser is already on Django's port, preserve the exact host.
+    if (host.endsWith(`:${BACKEND_PORT}`)) {
+      return `${protocol}//${host}`;
     }
 
-    return `${window.location.protocol}//${window.location.hostname}:${BACKEND_PORT}`;
+    // Otherwise keep the browser's hostname/protocol and switch to Django.
+    // This works for localhost, LAN and Tailscale browser access.
+    return `${protocol}//${hostname}:${BACKEND_PORT}`;
   }
 
   return FALLBACK_API_ORIGIN;
 };
 
-export const baseURL = getApiOrigin();
+export const baseURL = resolveApiOrigin();
 
 const api = axios.create({
   baseURL,
   withCredentials: true,
 });
 
-// Serialize refresh requests. If several API calls receive 401 together,
-// exactly one refresh request is sent and the others wait for it.
 let isRefreshing = false;
 let refreshPromise = null;
 let failedQueue = [];
 
 const processQueue = (error = null) => {
-  failedQueue.forEach(({ resolve, reject }) => {
+  const queue = failedQueue;
+  failedQueue = [];
+
+  queue.forEach(({ resolve, reject }) => {
     if (error) {
       reject(error);
     } else {
       resolve();
     }
   });
-  failedQueue = [];
+};
+
+const redirectToLoginOnce = () => {
+  if (
+    typeof window !== "undefined" &&
+    window.location.pathname !== "/login"
+  ) {
+    window.location.assign("/login");
+  }
 };
 
 api.interceptors.response.use(
@@ -64,14 +64,15 @@ api.interceptors.response.use(
   async (error) => {
     const originalRequest = error.config;
 
-    // Network/CORS/server-unreachable errors have no response. Do not try
-    // token refresh repeatedly when the backend itself cannot be reached.
+    // Network/CORS errors have no HTTP response. Refreshing cannot fix them.
     if (!error.response || !originalRequest) {
       return Promise.reject(error);
     }
 
-    // Never refresh recursively.
-    if (originalRequest.url?.includes("/api/token/refresh/")) {
+    const requestUrl = originalRequest.url || "";
+
+    // Never recursively refresh the refresh endpoint itself.
+    if (requestUrl.includes("/api/token/refresh/")) {
       return Promise.reject(error);
     }
 
@@ -100,6 +101,7 @@ api.interceptors.response.use(
       return api(originalRequest);
     } catch (refreshError) {
       processQueue(refreshError);
+      redirectToLoginOnce();
       return Promise.reject(refreshError);
     } finally {
       isRefreshing = false;
