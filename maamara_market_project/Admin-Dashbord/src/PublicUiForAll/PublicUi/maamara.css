@@ -4589,3 +4589,18 @@ h1,h2,h3,h4{font-family:'regular','Poppins',Arial,sans-serif}
   font-weight:600;
   width: 100%;
 }
+
+/* Header authentication actions */
+.mm-auth-action{
+  color:var(--mm-text);
+  background:transparent;
+  border:0;
+  padding:0;
+  font:inherit;
+  cursor:pointer;
+  text-decoration:none;
+}
+.mm-auth-action:hover{color:var(--mm-text-muted)}
+.mm-auth-action--logout{color:#dc2626}
+.mm-auth-action--logout:hover{color:#b91c1c}
+.mm-user-first-name{white-space:nowrap}
