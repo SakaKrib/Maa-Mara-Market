@@ -90,6 +90,7 @@ import AdminAccounts from "./cmponents/Admin/AccountMain/Accountmain";
 import "./admin.css"
 import InviteFriends from "./PublicUiForAll/PublicUi/Customer/DesktopView/Main/Referals/Referals";
 import UserAccount from "./PublicUiForAll/PublicUi/Customer/DesktopView/Main/Accounts/Account";
+import CustomerOrdersDashboard from "./PublicUiForAll/PublicUi/Customer/DesktopView/Main/Accounts/CustomerOrder";
 import PublicProfile from "./PublicUiForAll/PublicUi/Customer/DesktopView/Main/Accounts/Profile-User-Visitor";
 import CartPage from "./PublicUiForAll/PublicUi/Customer/DesktopView/Main/CartHook/CartPage";
 import RequestReturnForm from "./PublicUiForAll/PublicUi/Customer/DesktopView/Main/Return/Return";
@@ -202,6 +203,7 @@ function AppContent() {
                 {/* invite a friend */}
                 <Route path="send-invitation" element={<InviteFriends />} />
                 <Route path="user-account" element={<UserAccount />} />
+                <Route path="customer-order" element={<CustomerOrdersDashboard />} />
                 {/* profile */}
 
                 {/* Route for subcategory products */}
