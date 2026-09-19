@@ -3,12 +3,28 @@ import { useWishlistContext } from "../../../../../../cmponents/Hooks/WishListHo
 import useTrendingProducts from "./useTrendingProducts";
 import FeaturedOffer from "./FeaturedOffer";
 import TrendingProductCard from "./TrendingProductCard";
+import ProductSkeleton from "./ProductSkelwton";
 
 const TrendingProducts = () => {
   const { items, loading, nextUrl, prevUrl, fetchItems } = useTrendingProducts();
   const { wishlist, addToWishlist, removeFromWishlist } = useWishlistContext();
 
-  if (loading) return <p className="text-center mt-10">Loading...</p>;
+  if (loading) {
+    return (
+      <section className="py-10 px-4 md:px-10 bg-white">
+        <div className="max-w-7xl mx-auto">
+          <div className="mb-6">
+            <div className="mx-auto h-8 w-56 animate-pulse rounded bg-gray-200" />
+          </div>
+          <div className="product-card-grid grid grid-cols-2 gap-2 sm:gap-4 lg:grid-cols-3 lg:gap-6 xl:grid-cols-4">
+            {Array.from({ length: 8 }, (_, index) => (
+              <ProductSkeleton key={index} />
+            ))}
+          </div>
+        </div>
+      </section>
+    );
+  }
 
   const featuredOfferItem = items.find((item) => item.in_offer && item.offer?.end_date);
   const regularItems = items.filter((item) => item.in_offer === false);
