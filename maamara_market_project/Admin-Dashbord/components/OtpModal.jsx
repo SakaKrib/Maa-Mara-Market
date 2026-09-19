@@ -135,8 +135,8 @@ const OTPModal = ({ email, onVerify, expiresAt }) => {
   }
 
   return (
-    <div className="mm-otp-overlay fixed inset-0 flex items-center justify-center z-50 bg-black/30">
-      <div className="mm-otp-card bg-white p-6 rounded-lg shadow-lg w-full max-w-sm">
+    <div className="fixed inset-0 bg-opacity-50 flex items-center justify-center z-50 bg-black/30">
+      <div className="bg-white p-6 rounded-lg shadow-lg w-full max-w-sm">
         <div className="flex justify-center mb-4">
           <div className="flex gap-4 items-center">
             <img src={Maamara} alt="maamara-logo" className="w-5 h-5" />
@@ -145,44 +145,43 @@ const OTPModal = ({ email, onVerify, expiresAt }) => {
         </div>
         
 
-        <h2 className="mm-otp-title text-lg font-semibold mb-2 text-center">Verify OTP</h2>
-        <p className="mm-otp-subtitle">Enter the 6-digit code sent to <strong>{email}</strong>.</p>
+        <h2 className="text-lg font-semibold mb-6 text-center">Verify OTP</h2>
 
       <div className="w-full">
-        <InputOTP maxLength={6} value={otp} onChange={setOtp} className="mm-otp-input flex justify-center gap-2 sm:gap-3 max-w-xs mx-auto select-none">
+        <InputOTP maxLength={6} value={otp} onChange={setOtp} className="flex justify-center gap-3 max-w-xs mx-auto select-none rounded-xl">
           <InputOTPGroup>
             <InputOTPSlot
               index={0}
-              className="mm-otp-slot"
+              className="w-12 h-20 text-2xl text-center rounded-xl border border-gray-300 shadow-sm focus:outline-none focus:border-blue-600 focus:ring-1 focus:ring-blue-600 transition"
             />
             <InputOTPSlot
               index={1}
-              className="mm-otp-slot"
+              className="w-12 h-20 text-2xl text-center rounded-xl border border-gray-300 shadow-sm focus:outline-none focus:border-blue-600 focus:ring-1 focus:ring-blue-600 transition"
             />
             <InputOTPSlot
               index={2}
-              className="mm-otp-slot"
+              className="w-12 h-20 text-2xl text-center rounded-xl border border-gray-300 shadow-sm focus:outline-none focus:border-blue-600 focus:ring-1 focus:ring-blue-600 transition"
             />
           </InputOTPGroup>
           <InputOTPSeparator />
           <InputOTPGroup>
             <InputOTPSlot
               index={3}
-              className="mm-otp-slot"
+              className="w-12 h-20 text-2xl text-center rounded-xl border border-gray-300 shadow-sm focus:outline-none focus:border-blue-600 focus:ring-1 focus:ring-blue-600 transition"
             />
             <InputOTPSlot
               index={4}
-              className="mm-otp-slot"
+              className="w-12 h-20 text-2xl text-center rounded-xl border border-gray-300 shadow-sm focus:outline-none focus:border-blue-600 focus:ring-1 focus:ring-blue-600 transition"
             />
             <InputOTPSlot
               index={5}
-              className="mm-otp-slot"
+              className="w-12 h-20 text-2xl text-center rounded-xl border border-gray-300 shadow-sm focus:outline-none focus:border-blue-600 focus:ring-1 focus:ring-blue-600 transition"
             />
           </InputOTPGroup>
         </InputOTP>
 
         <Button
-          className="mm-otp-verify"
+          className="mt-6 w-full"
           onClick={handleVerify}
           disabled={loading || otp.length !== 6 || timer <= 0}
           className="mt-6 w-full"
@@ -193,7 +192,7 @@ const OTPModal = ({ email, onVerify, expiresAt }) => {
         <div className="mt-4 text-center">
           <Button
             variant="outline"
-            className="mm-otp-resend"
+            className="w-full"
             onClick={handleResend}
             disabled={timer > 0 || resending}
             className="w-full"
