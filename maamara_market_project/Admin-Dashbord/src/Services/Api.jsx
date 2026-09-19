@@ -1,3 +1,5 @@
+import axios from "axios";
+
 const DEFAULT_API_ORIGIN = "http://100.109.224.0:8000";
 
 const resolveBaseURL = () => {
