@@ -9,6 +9,7 @@ from django.utils.timezone import now
 from rest_framework import permissions, status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from django.http import HttpResponse
@@ -16,7 +17,7 @@ from django.http import HttpResponse
 from ReactSerializers.Serializers import VendorPayoutSerializer
 from ReactSerializers.models import Item
 from order.models import OrderItem, Order
-from .models import SoldItem, VendorAdjustment, VendorPayout
+from .models import SoldItem, VendorAdjustment, VendorPayout, VendorDraft, VendorDraftImage
 
 
 def dashboard(request):
@@ -297,3 +298,91 @@ def monthly_sales_report(request):
         'year': year,
         'available_months': available_months,
     })
+
+
+class VendorDraftView(APIView):
+    """Persist an in-progress vendor registration for the authenticated user."""
+
+    permission_classes = [IsAuthenticated]
+
+    def _get_owner(self, request):
+        return {"user": request.user}
+
+    def get(self, request):
+        draft = (
+            VendorDraft.objects
+            .filter(**self._get_owner(request), status="DRAFT", expires_at__gt=timezone.now())
+            .prefetch_related("images")
+            .order_by("-updated_at")
+            .first()
+        )
+        if not draft:
+            return Response({"exists": False, "draft": None})
+
+        data = dict(draft.data or {})
+        items = list(data.get("item_list") or [])
+        for image in draft.images.all():
+            if image.item_index < len(items):
+                items[image.item_index]["image"] = request.build_absolute_uri(image.image.url)
+        data["item_list"] = items
+        return Response({
+            "exists": True,
+            "draft": data,
+            "updated_at": draft.updated_at,
+        })
+
+    @transaction.atomic
+    def post(self, request):
+        owner = self._get_owner(request)
+        try:
+            data = json.loads(request.data.get("data", "{}"))
+        except (TypeError, ValueError):
+            return Response({"detail": "Invalid draft data."}, status=status.HTTP_400_BAD_REQUEST)
+
+        draft, created = VendorDraft.objects.get_or_create(
+            **owner,
+            defaults={
+                "data": {},
+                "expires_at": timezone.now() + timezone.timedelta(days=30),
+            },
+        )
+
+        new_files = [key for key in request.FILES if key.startswith("item_image_")]
+        if new_files:
+            for old_image in draft.images.all():
+                old_image.image.delete(save=False)
+            draft.images.all().delete()
+
+        for key, file in request.FILES.items():
+            if not key.startswith("item_image_"):
+                continue
+            try:
+                index = int(key.replace("item_image_", ""))
+            except ValueError:
+                continue
+            VendorDraftImage.objects.create(draft=draft, image=file, item_index=index)
+
+        items = list(data.get("item_list") or [])
+        for image in draft.images.all():
+            if image.item_index < len(items):
+                items[image.item_index]["image"] = image.image.url
+        data["item_list"] = items
+
+        draft.data = data
+        draft.expires_at = timezone.now() + timezone.timedelta(days=30)
+        draft.save(update_fields=["data", "expires_at", "updated_at"])
+
+        return Response({
+            "message": "Draft saved successfully.",
+            "created": created,
+            "images_saved": draft.images.count(),
+        })
+
+    @transaction.atomic
+    def delete(self, request):
+        draft = VendorDraft.objects.filter(**self._get_owner(request)).first()
+        if draft:
+            for image in draft.images.all():
+                image.image.delete(save=False)
+            draft.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
