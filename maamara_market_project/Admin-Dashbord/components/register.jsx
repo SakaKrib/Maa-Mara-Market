@@ -115,7 +115,7 @@ const RegistrationForm = () => {
   return (
     <>
       <div>
-        <div className="flex justify-center">
+        <div className="flex justify-center mm-auth-brand">
           <div className="flex gap-4 items-center">
             <img src={Maamara} alt="maamara-logo" className="w-[20px] h-[20px]" />
             <h2 className="text-lg">Maamara Market</h2>
@@ -123,15 +123,16 @@ const RegistrationForm = () => {
         </div>
         <Card className="mm-auth-card max-w-md mx-auto mt-10">
           <CardHeader className="mm-auth-header">
-            <CardTitle className="mm-auth-title text-2xl">Create your account</CardTitle>\n            <p className="mm-auth-subtitle text-sm">Join Maa Mara Market and discover local makers and products.</p>
+            <CardTitle className="mm-auth-title text-2xl">Create your account</CardTitle>
+            <p className="mm-auth-subtitle text-sm">Join Maa Mara Market and discover local makers and products.</p>
           </CardHeader>
 
           <CardContent>
-            {message && <p className="text-green-600 mb-4">{message}</p>}
-            {error && <p className="text-red-600 mb-4">{error}</p>}
+            {message && <p className="text-green-600 mb-4 mm-auth-success">{message}</p>}
+            {error && <p className="text-red-600 mb-4 mm-auth-error">{error}</p>}
 
             {!otpSent ? (
-              <form onSubmit={handleSubmit} className="space-y-4">
+              <form onSubmit={handleSubmit} className="mm-auth-form space-y-4">
                 {[
                     { label: "First Name", name: "First_name" },
                     { label: "Surname", name: "Sur_name" },
