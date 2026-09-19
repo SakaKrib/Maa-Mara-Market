@@ -7,6 +7,7 @@ import QuantityAndCart from "./QuantityAndCart";
 import ProductDetails from "./ProductDetails";
 import ProductReviews from "./ProductReviews";
 import FormattedCurrency from "../Currency/FormattedCurrency";
+import { useWishlistContext } from "../../../../../../cmponents/Hooks/WishListHook/Wishlist";
 
 const SingleItem = () => {
   const {
@@ -14,6 +15,8 @@ const SingleItem = () => {
     quantity, setQuantity, availableStock, remainingStock,
     selectColor, selectSize, selectImage, refreshItem,
   } = useSingleItem();
+  const { wishlist, addToWishlist, removeFromWishlist } = useWishlistContext();
+  const isWishlisted = Array.isArray(wishlist) && wishlist.some((entry) => (entry.item?.id || entry.id) === item?.id);
 
   if (loading) return <div className="p-10 text-center">Loading product...</div>;
   if (error || !item) return <div className="p-10 text-center">Item not found.</div>;
@@ -74,7 +77,7 @@ const SingleItem = () => {
           />
 
           <ul className="flex gap-6 mt-2 text-sm">
-            <li><button type="button" className="hover:underline">♡ Wishlist</button></li>
+            <li><button type="button" className="hover:underline" onClick={() => (isWishlisted ? removeFromWishlist(item.id) : addToWishlist(item.id))} aria-pressed={isWishlisted}>{isWishlisted ? "♥ Saved" : "♡ Wishlist"}</button></li>
             <li><button type="button" className="hover:underline" onClick={() => navigator.share?.({ title: item.name, url: window.location.href })}>↗ Share</button></li>
           </ul>
         </div>
