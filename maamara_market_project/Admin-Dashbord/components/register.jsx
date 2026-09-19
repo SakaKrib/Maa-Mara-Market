@@ -5,6 +5,7 @@ import { Input } from "./ui/input"
 import { Label } from "./ui/label"
 import OTPModal from "./OtpModal"
 import { baseUrl } from "../src/cmponents/Constant/Constant";
+import api from "../src/Services/Api";
 import { useNavigate } from "react-router-dom";
 import Maamara from "../src/assets/Logo/Maamara.jpg";
 import Snackbar from '@mui/material/Snackbar'
@@ -39,16 +40,13 @@ const RegistrationForm = () => {
   const [error, setError] = useState("")
   const [otpSent, setOtpSent] = useState(false)
   const [expiryTime, setExpiryTime] = useState(null)  // ⏳ new state for OTP expiry
+  const [passwordError, setPasswordError] = useState("")
 
   // 🔐 Fetch CSRF token cookie on mount
   useEffect(() => {
-    fetch(`http://127.0.0.1:8000/api/get-csrf-token/`, {
-      method: "GET",
-      credentials: "include",
-    })
-      .then(() => {
-        const token = getCookie("csrftoken")
-        setCsrfToken(token)
+    api.get("/api/get-csrf-token/")
+      .then(({ data }) => {
+        setCsrfToken(data?.csrfToken || getCookie("csrftoken"))
       })
       .catch(err => console.error("CSRF fetch error:", err))
   }, [])
@@ -63,7 +61,18 @@ const RegistrationForm = () => {
   const handleChange = (e) => {
     const { name, value } = e.target
     setFormData(prev => ({ ...prev, [name]: value }))
+
+    if (name === "password" || name === "password2") {
+      setPasswordError("")
+    }
   }
+
+  const isStrongPassword = (password) =>
+    password.length >= 12 &&
+    /[a-z]/.test(password) &&
+    /[A-Z]/.test(password) &&
+    /\d/.test(password) &&
+    /[^A-Za-z0-9]/.test(password)
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -84,7 +93,7 @@ const RegistrationForm = () => {
 
       const data = await response.json()
 
-      if (response.ok && data.success) {
+      if (data.success) {
         setMessage(data.message)
         setSnackbar({ open: true, severity: "success", message: data.message })
         setOtpSent(true)
@@ -153,6 +162,7 @@ const RegistrationForm = () => {
                             type={showPassword ? "text" : "password"}
                             value={formData[name]}
                             onChange={handleChange}
+                            autoComplete="new-password"
                             required={name !== "referral_code"}
                           />
 
@@ -173,6 +183,14 @@ const RegistrationForm = () => {
                           onChange={handleChange}
                           required={name !== "referral_code"}
                         />
+                      )}
+                      {name === "password" && (
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Use at least 12 characters with uppercase, lowercase, a number, and a special character.
+                        </p>
+                      )}
+                      {name === "password2" && passwordError && (
+                        <p className="text-xs text-red-600 mt-1">{passwordError}</p>
                       )}
                     </div>
                   ))}
