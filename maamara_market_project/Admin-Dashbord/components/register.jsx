@@ -147,7 +147,7 @@ const RegistrationForm = () => {
 
                       {(name === "password" || name === "password2") ? (
                         <div className="relative">
-                          <Input
+                          <Input className="mm-auth-input"
                             id={name}
                             name={name}
                             type={showPassword ? "text" : "password"}
@@ -165,7 +165,7 @@ const RegistrationForm = () => {
                           </button>
                         </div>
                       ) : (
-                        <Input
+                        <Input className="mm-auth-input"
                           id={name}
                           name={name}
                           type={type}
@@ -180,7 +180,7 @@ const RegistrationForm = () => {
                 <Button
                   type="button"
                   variant="outline"
-                  className="mm-auth-google w-full flex items-center justify-center gap-2"
+                  className="mm-auth-google w-full flex items-center justify-center gap-2 rounded-[2em]"
                   onClick={() => {
                     window.location.href = `${baseUrl}/accounts/google/login/`
                   }}
@@ -194,7 +194,7 @@ const RegistrationForm = () => {
                   Continue with Google
                 </Button>
 
-                <div className="relative my-2 flex items-center"><span className="h-px flex-1 bg-[#e6e3de]" /><span className="px-3 text-xs text-[#6f6a63]">or continue with email</span><span className="h-px flex-1 bg-[#e6e3de]" /></div>\n\n                <Button type="submit" disabled={loading || !csrfToken} className="mm-auth-submit w-full">
+                <div className="relative my-2 flex items-center"><span className="h-px flex-1 bg-[#e6e3de]" /><span className="px-3 text-xs text-[#6f6a63]">or continue with email</span><span className="h-px flex-1 bg-[#e6e3de]" /></div>\n\n                <Button type="submit" disabled={loading || !csrfToken} className="mm-auth-submit primary-button w-full">
                   {loading ? "Registering..." : "Register"}
                 </Button>
               </form>
