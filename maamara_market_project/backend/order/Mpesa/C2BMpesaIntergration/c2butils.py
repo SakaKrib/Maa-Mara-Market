@@ -130,28 +130,28 @@ def stk_push(request):
             password = generate_stk_password(shortcode, passkey, timestamp)
 
             payload = {
-            "BusinessShortCode": shortcode,
-            "Password": password,
-            "Timestamp": timestamp,
-            "TransactionType": "CustomerPayBillOnline",
-            "Amount": int(amount),
-            "PartyA": phone,
-            "PartyB": shortcode,
-            "PhoneNumber": phone,
-            "CallBackURL": callback_url,
-            "AccountReference": str(order.id),
-            "TransactionDesc": f"Payment for order {order.id}",
+                "BusinessShortCode": shortcode,
+                "Password": password,
+                "Timestamp": timestamp,
+                "TransactionType": "CustomerPayBillOnline",
+                "Amount": int(amount),
+                "PartyA": phone,
+                "PartyB": shortcode,
+                "PhoneNumber": phone,
+                "CallBackURL": callback_url,
+                "AccountReference": str(order.id),
+                "TransactionDesc": f"Payment for order {order.id}",
             }
 
             token = get_mpesa_token()
             response = requests.post(
-            stk_url,
-            json=payload,
-            headers={"Authorization": f"Bearer {token}", "Content-Type": "application/json"},
-            timeout=30,
+                stk_url,
+                json=payload,
+                headers={"Authorization": f"Bearer {token}", "Content-Type": "application/json"},
+                timeout=30,
             )
-        response.raise_for_status()
-        data = response.json()
+            response.raise_for_status()
+            data = response.json()
 
         checkout_request_id = data.get("CheckoutRequestID")
         if not checkout_request_id:
