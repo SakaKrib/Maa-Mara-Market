@@ -3,6 +3,12 @@ from .models import VendorItemRequest
 from ReactSerializers.Serializers import VendorSerializer, PriceChangeRequest
 from vendorDashboard.models import ReturnRequest
 
+class VendorDraftSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = VendorDraft
+        fields = "__all__"
+
+
 class VendorItemRequestSerializer(serializers.ModelSerializer):
     description = serializers.CharField(max_length=1000)  # or larger if needed
     vendor = VendorSerializer(read_only=True)
