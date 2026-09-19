@@ -21,31 +21,34 @@ import "./footer.css";
 
 const Footer = () => {
   const year = new Date().getFullYear();
-  const { isAuthenticated, user } = useAuth();
+  const { isAuthenticated, user, logout } = useAuth();
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
   const [snackbar, setSnackbar] = useState({ open: false, message: "", severity: "success" });
 
-  const isCustomer = user?.role === "customer";
   const isAdmin = user?.role === "admin";
   const isVendor = user?.role === "vendor";
+  const canBecomeVendor = isAuthenticated && !isAdmin && !isVendor;
 
   const handleSnackbarClose = () => setSnackbar((prev) => ({ ...prev, open: false }));
 
-  const handleSellClick = async (event) => {
+  const handleBecomeVendor = async (event) => {
     event.preventDefault();
+
+    if (!isAuthenticated) {
+      navigate("/customer-login", { state: { from: "/vendor-register-form" } });
+      return;
+    }
+
+    navigate("/vendor-register-form");
+  };
+
+  const handleLogout = async () => {
     try {
-      const response = await api.get("/api/check-auth/", { withCredentials: true });
-      if (response.data?.isAuthenticated) {
-        navigate("/vendor-register-form");
-        return;
-      }
-      setSnackbar({ open: true, severity: "warning", message: "Please sign in or register before selling products." });
-      setTimeout(() => navigate("/customer-login", { state: { from: "/vendor-register-form" } }), 1000);
+      await logout();
     } catch (error) {
-      console.error("Auth check failed:", error);
-      setSnackbar({ open: true, severity: "error", message: "Something went wrong. Please try again." });
+      console.error("Logout failed:", error);
     }
   };
 
@@ -92,6 +95,16 @@ const Footer = () => {
 
           <div className="mm-footer-links">
             <div>
+              <h3>Company</h3>
+              <a href="mailto:maamaramarket@gmail.com?subject=About%20Maa%20Mara%20Market">About Us</a>
+              <a href="mailto:maamaramarket@gmail.com?subject=Contact%20Maa%20Mara%20Market">Contact us</a>
+              <Link to="/customer-order">Order History</Link>
+              <Link to="/request-returns">Returns</Link>
+              <a href="mailto:maamaramarket@gmail.com?subject=Shipping%20Question">Shipping</a>
+              <a href="mailto:maamaramarket@gmail.com?subject=Career%20Enquiry">Career</a>
+            </div>
+
+            <div>
               <h3>Shop</h3>
               <Link to="/list">All products</Link>
               <Link to="/organic">Organic</Link>
@@ -99,22 +112,36 @@ const Footer = () => {
               <Link to="/filter-category">Featured</Link>
               <Link to="/shopping-cart">Cart</Link>
             </div>
+
             <div>
               <h3>Account</h3>
               <Link to="/user-account">My account</Link>
               <Link to="/profile">Profile</Link>
-              <Link to="/request-returns">Returns</Link>
-              <Link to="/customer-login">Sign in</Link>
-              <Link to="/register">Create account</Link>
+              {isAuthenticated ? (
+                <button type="button" className="mm-footer-action-link mm-footer-logout" onClick={handleLogout}>
+                  Log out
+                </button>
+              ) : (
+                <>
+                  <Link to="/customer-login">Sign in</Link>
+                  <Link to="/register">Sign up</Link>
+                </>
+              )}
             </div>
+
             <div>
               <h3>Help</h3>
-              <Link to="/vendor-register-form" onClick={isCustomer ? undefined : handleSellClick}>Sell on Maa Mara</Link>
+              {canBecomeVendor && (
+                <button type="button" className="mm-footer-action-link" onClick={handleBecomeVendor}>
+                  Become a vendor
+                </button>
+              )}
               <Link to="/send-invitation">Invite friends</Link>
               <Link to="/chat">Chat with us</Link>
-              <Link to="/blogs">News & stories</Link>
-              <Link to="/vendor-register-form">Become a vendor</Link>
+              <a href="mailto:maamaramarket@gmail.com?subject=Support%20Request">Support</a>
+              <a href="mailto:maamaramarket@gmail.com?subject=Help%20Request">Help</a>
             </div>
+
             {isAuthenticated && (isAdmin || isVendor) && (
               <div>
                 <h3>Dashboard</h3>
