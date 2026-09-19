@@ -152,39 +152,38 @@ const OTPModal = ({ email, onVerify, expiresAt }) => {
           <InputOTPGroup>
             <InputOTPSlot
               index={0}
-              className="w-12 h-20 text-2xl text-center rounded-xl border border-gray-300 shadow-sm focus:outline-none focus:border-blue-600 focus:ring-1 focus:ring-blue-600 transition"
+              className="w-12 h-12 text-xl text-center rounded-xl border border-gray-300 bg-white focus:outline-none focus:border-[var(--blue)] focus:ring-1 focus:ring-[var(--blue)] transition"
             />
             <InputOTPSlot
               index={1}
-              className="w-12 h-20 text-2xl text-center rounded-xl border border-gray-300 shadow-sm focus:outline-none focus:border-blue-600 focus:ring-1 focus:ring-blue-600 transition"
+              className="w-12 h-12 text-xl text-center rounded-xl border border-gray-300 bg-white focus:outline-none focus:border-[var(--blue)] focus:ring-1 focus:ring-[var(--blue)] transition"
             />
             <InputOTPSlot
               index={2}
-              className="w-12 h-20 text-2xl text-center rounded-xl border border-gray-300 shadow-sm focus:outline-none focus:border-blue-600 focus:ring-1 focus:ring-blue-600 transition"
+              className="w-12 h-12 text-xl text-center rounded-xl border border-gray-300 bg-white focus:outline-none focus:border-[var(--blue)] focus:ring-1 focus:ring-[var(--blue)] transition"
             />
           </InputOTPGroup>
           <InputOTPSeparator />
           <InputOTPGroup>
             <InputOTPSlot
               index={3}
-              className="w-12 h-20 text-2xl text-center rounded-xl border border-gray-300 shadow-sm focus:outline-none focus:border-blue-600 focus:ring-1 focus:ring-blue-600 transition"
+              className="w-12 h-12 text-xl text-center rounded-xl border border-gray-300 bg-white focus:outline-none focus:border-[var(--blue)] focus:ring-1 focus:ring-[var(--blue)] transition"
             />
             <InputOTPSlot
               index={4}
-              className="w-12 h-20 text-2xl text-center rounded-xl border border-gray-300 shadow-sm focus:outline-none focus:border-blue-600 focus:ring-1 focus:ring-blue-600 transition"
+              className="w-12 h-12 text-xl text-center rounded-xl border border-gray-300 bg-white focus:outline-none focus:border-[var(--blue)] focus:ring-1 focus:ring-[var(--blue)] transition"
             />
             <InputOTPSlot
               index={5}
-              className="w-12 h-20 text-2xl text-center rounded-xl border border-gray-300 shadow-sm focus:outline-none focus:border-blue-600 focus:ring-1 focus:ring-blue-600 transition"
+              className="w-12 h-12 text-xl text-center rounded-xl border border-gray-300 bg-white focus:outline-none focus:border-[var(--blue)] focus:ring-1 focus:ring-[var(--blue)] transition"
             />
           </InputOTPGroup>
         </InputOTP>
 
         <Button
-          className="mt-6 w-full"
+          className="primary-button w-full mt-6"
           onClick={handleVerify}
           disabled={loading || otp.length !== 6 || timer <= 0}
-          className="mt-6 w-full"
         >
           {loading ? "Verifying..." : timer <= 0 ? "OTP Expired" : "Verify OTP"}
         </Button>
@@ -192,10 +191,9 @@ const OTPModal = ({ email, onVerify, expiresAt }) => {
         <div className="mt-4 text-center">
           <Button
             variant="outline"
-            className="w-full"
+            className="light-button w-full"
             onClick={handleResend}
             disabled={timer > 0 || resending}
-            className="w-full"
           >
             {timer > 0
               ? `Resend OTP in ${timer}s`
