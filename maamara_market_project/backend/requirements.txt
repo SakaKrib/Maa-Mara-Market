@@ -7,11 +7,11 @@ django-allauth
 django-countries
 django-crispy-forms
 crispy-bootstrap4
-channels
-channels-redis
-daphne
+channels==4.3.2
+channels-redis==4.3.0
+daphne==4.2.3
 celery
-redis
+redis>=5.2,<6.0
 psycopg2-binary
 Pillow
 requests
