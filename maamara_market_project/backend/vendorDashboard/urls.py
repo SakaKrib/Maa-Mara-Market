@@ -6,6 +6,7 @@ from .payout.services.vendor_monthly_payout_runner import process_payouts_by_gro
 from .calback import *
 from . GlobalSearchEngine import GlobalSearchView
 urlpatterns = [
+    path("api/vendor-draft/", views.VendorDraftView.as_view(), name="vendor-draft"),
     path('', views.dashboard, name='vendor-dashboard'),  # Replace with your actual view
 
     # search engine, global
