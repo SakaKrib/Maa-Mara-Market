@@ -12,6 +12,7 @@ import axios from "axios";
  * shared Axios client and JWT refresh is handled centrally below.
  */
 const FALLBACK_API_ORIGIN = "http://100.109.224.0:8000";
+const BACKEND_PORT = "8000";
 
 const getApiOrigin = () => {
   const configured = import.meta.env.VITE_API_URL || import.meta.env.VITE_BASE_URL;
@@ -19,12 +20,12 @@ const getApiOrigin = () => {
     return configured.replace(/\/$/, "");
   }
 
-  if (typeof window !== "undefined" && window.location.hostname) {
-    if (window.location.port === "8000") {
+  if (typeof window !== "undefined" && window.location.host) {
+    if (window.location.port === BACKEND_PORT) {
       return window.location.origin;
     }
 
-    return `${window.location.protocol}//${window.location.hostname}:8000`;
+    return `${window.location.protocol}//${window.location.hostname}:${BACKEND_PORT}`;
   }
 
   return FALLBACK_API_ORIGIN;
@@ -35,9 +36,6 @@ export const baseURL = getApiOrigin();
 const api = axios.create({
   baseURL,
   withCredentials: true,
-  headers: {
-    "Content-Type": "application/json",
-  },
 });
 
 // Serialize refresh requests. If several API calls receive 401 together,
