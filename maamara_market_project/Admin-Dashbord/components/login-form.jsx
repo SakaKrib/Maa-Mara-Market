@@ -128,20 +128,20 @@ export function LoginForm({ className, ...props }) {
   return (
     <>
       <div className={cn("flex flex-col gap-6", className)} {...props}>
-        <div className="flex justify-center">
+        <div className="flex justify-center mm-auth-brand">
           <div className="flex gap-4 items-center">
             <img src={Maamara} alt="maamara-logo" className="w-[20px] h-[20px]" />
             <h2 className="text-lg">Maamara Market</h2>
           </div>
         </div>
 
-        <Card className="overflow-hidden">
+        <Card className="mm-auth-card overflow-hidden">
           <CardContent className="grid p-0 md:grid-cols-2">
-            <form onSubmit={handleSubmit} className="p-6 md:p-8">
-              <div className="flex flex-col gap-6">
+            <form onSubmit={handleSubmit} className="mm-auth-form-panel p-6 md:p-8">
+              <div className="mm-auth-form flex flex-col gap-6">
                 <div className="flex flex-col items-center text-center">
-                  <h1 className="text-2xl font-bold">Welcome back</h1>
-                  <p className="text-balance text-muted-foreground">
+                  <h1 className="text-2xl font-bold mm-auth-title">Welcome back</h1>
+                  <p className="text-balance text-muted-foreground mm-auth-subtitle">
                     Login to your Maamara Market account
                   </p>
                 </div>
@@ -240,20 +240,20 @@ export function LoginForm({ className, ...props }) {
                     Continue with Google
                   </Button>
 
-                <Button type="submit" className="w-full" disabled={loading}>
+                <Button type="submit" className="mm-auth-submit w-full" disabled={loading}>
                   {loading ? "Logging in..." : "Login"}
                 </Button>
 
                 <div className="text-center text-sm">
                   Don&apos;t have an account?{" "}
-                  <a href="/register" className="underline underline-offset-4">
+                  <a href="/register" className="mm-auth-link underline underline-offset-4">
                     Sign up
                   </a>
                 </div>
               </div>
             </form>
 
-            <div className="relative hidden bg-muted md:block">
+            <div className="mm-auth-visual relative hidden md:block">
               <img
                 src={Maamara}
                 alt="Login visual"
@@ -263,7 +263,7 @@ export function LoginForm({ className, ...props }) {
           </CardContent>
         </Card>
 
-        <div className="text-center text-xs text-muted-foreground">
+        <div className="mm-auth-legal text-center text-xs text-muted-foreground">
           By clicking continue, you agree to our{" "}
           <a href="#" className="underline underline-offset-4">
             Terms of Service
