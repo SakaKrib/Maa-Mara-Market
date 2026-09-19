@@ -155,6 +155,26 @@ class Vendor(models.Model):
         return f'{self.first_name} - {self.user.id}'
 
     
+# Vendor registration drafts
+class VendorDraft(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4)
+    user = models.ForeignKey(User, null=True, blank=True, on_delete=models.SET_NULL)
+    visitor_id = models.UUIDField(null=True, blank=True)
+    data = models.JSONField(default=dict)
+    draft_images = models.JSONField(default=list, blank=True)
+    status = models.CharField(max_length=20, default="DRAFT")
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    expires_at = models.DateTimeField()
+
+
+class VendorDraftImage(models.Model):
+    draft = models.ForeignKey(VendorDraft, related_name="images", on_delete=models.CASCADE)
+    image = models.ImageField(upload_to="vendor_drafts/")
+    item_index = models.IntegerField()
+    created_at = models.DateTimeField(auto_now_add=True)
+
+
 # vendor request save temoralily
 
 class VendorRequest(models.Model):
