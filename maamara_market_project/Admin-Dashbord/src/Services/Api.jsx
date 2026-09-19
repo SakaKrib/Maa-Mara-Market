@@ -1,25 +1,21 @@
-import axios from "axios";
-
 const DEFAULT_API_ORIGIN = "http://100.109.224.0:8000";
 
 const resolveBaseURL = () => {
   const configured = import.meta.env.VITE_API_URL || import.meta.env.VITE_BASE_URL;
   if (configured) return configured.replace(/\/$/, "");
 
-  if (typeof window === "undefined") {
-    return DEFAULT_API_ORIGIN;
-  }
+  if (typeof window === "undefined") return DEFAULT_API_ORIGIN;
 
-  // When the browser is already talking to the backend, preserve its origin.
+  // If the browser is directly serving the Django API, preserve the exact
+  // browser origin, including its existing port.
   if (window.location.port === "8000") {
     return window.location.origin;
   }
 
-  // Local Vite/dev frontend normally runs on 5173 while Django runs on 8000.
-  // Keep the browser hostname so localhost, LAN IPs, and Tailscale hosts work.
-  const hostname = window.location.hostname;
-  if (hostname) {
-    return `${window.location.protocol}//${hostname}:8000`;
+  // Normal Vite development: keep the browser's host/IP but use Django's API port.
+  // This works for localhost, LAN addresses, and Tailscale addresses.
+  if (window.location.hostname) {
+    return `${window.location.protocol}//${window.location.hostname}:8000`;
   }
 
   return DEFAULT_API_ORIGIN;
