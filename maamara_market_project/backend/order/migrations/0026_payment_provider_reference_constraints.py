@@ -4,7 +4,7 @@ from django.db.models import Q
 
 class Migration(migrations.Migration):
     dependencies = [
-        ("order", "0025_pending_order_owner_constraint"),
+        ("oder", "0025_pending_order_owner_constraint"),
     ]
 
     operations = [
