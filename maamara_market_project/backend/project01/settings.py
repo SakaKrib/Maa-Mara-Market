@@ -215,8 +215,22 @@ SIMPLE_JWT = {
 # CORS / CSRF / SESSION
 # =========================================================
 
-CORS_ALLOWED_ORIGINS = [FRONTEND_URL]
-CSRF_TRUSTED_ORIGINS = [FRONTEND_URL]
+CORS_ALLOWED_ORIGINS = [
+    origin.strip().rstrip("/")
+    for origin in env(
+        "CORS_ALLOWED_ORIGINS",
+        default=FRONTEND_URL,
+    ).split(",")
+    if origin.strip()
+]
+CSRF_TRUSTED_ORIGINS = [
+    origin.strip().rstrip("/")
+    for origin in env(
+        "CSRF_TRUSTED_ORIGINS",
+        default=",".join(CORS_ALLOWED_ORIGINS),
+    ).split(",")
+    if origin.strip()
+]
 CORS_ALLOW_CREDENTIALS = True
 
 SESSION_EXPIRE_AT_BROWSER_CLOSE = True
