@@ -1,27 +1,74 @@
 import axios from "axios";
 
-const baseURL =
-  import.meta.env.VITE_API_URL ||
-  (typeof window !== "undefined"
-    ? `${window.location.protocol}//${window.location.host}`
-    : "http://100.109.224.0:8000");
+const DEFAULT_API_ORIGIN = "http://100.109.224.0:8000";
+
+const resolveBaseURL = () => {
+  const configured = import.meta.env.VITE_API_URL || import.meta.env.VITE_BASE_URL;
+  if (configured) return configured.replace(/\/$/, "");
+
+  if (typeof window === "undefined") {
+    return DEFAULT_API_ORIGIN;
+  }
+
+  // When the browser is already talking to the backend, preserve its origin.
+  if (window.location.port === "8000") {
+    return window.location.origin;
+  }
+
+  // Local Vite/dev frontend normally runs on 5173 while Django runs on 8000.
+  // Keep the browser hostname so localhost, LAN IPs, and Tailscale hosts work.
+  const hostname = window.location.hostname;
+  if (hostname) {
+    return `${window.location.protocol}//${hostname}:8000`;
+  }
+
+  return DEFAULT_API_ORIGIN;
+};
+
+const baseURL = resolveBaseURL();
 
 const api = axios.create({
   baseURL,
   withCredentials: true,
+  headers: {
+    "Content-Type": "application/json",
+  },
 });
 
-// Serialize concurrent refresh attempts so only one refresh request is sent.
 let isRefreshing = false;
 let refreshPromise = null;
 let failedQueue = [];
 
 const processQueue = (error = null) => {
-  failedQueue.forEach(({ resolve, reject }) => {
-    if (error) reject(error);
-    else resolve();
-  });
+  const queue = failedQueue;
   failedQueue = [];
+
+  queue.forEach(({ resolve, reject }) => {
+    if (error) {
+      reject(error);
+    } else {
+      resolve();
+    }
+  });
+};
+
+const refreshTokens = () => {
+  if (!refreshPromise) {
+    refreshPromise = axios.post(
+      `${baseURL}/api/token/refresh/`,
+      {},
+      {
+        withCredentials: true,
+        headers: {
+          "Content-Type": "application/json",
+        },
+      },
+    ).finally(() => {
+      refreshPromise = null;
+    });
+  }
+
+  return refreshPromise;
 };
 
 api.interceptors.response.use(
@@ -29,18 +76,18 @@ api.interceptors.response.use(
   async (error) => {
     const originalRequest = error.config;
 
+    // Network/CORS errors have no response. Do not turn them into
+    // authentication failures or redirect loops.
     if (!error.response || !originalRequest) {
       return Promise.reject(error);
     }
 
-    if (
-      originalRequest.url?.includes("/api/token/refresh/") ||
-      originalRequest._retry
-    ) {
+    const requestURL = originalRequest.url || "";
+    if (requestURL.includes("/api/token/refresh/")) {
       return Promise.reject(error);
     }
 
-    if (error.response.status !== 401) {
+    if (error.response.status !== 401 || originalRequest._retry) {
       return Promise.reject(error);
     }
 
@@ -53,27 +100,19 @@ api.interceptors.response.use(
     }
 
     isRefreshing = true;
-    refreshPromise = axios.post(
-      `${baseURL}/api/token/refresh/`,
-      {},
-      { withCredentials: true }
-    );
 
     try {
-      await refreshPromise;
+      await refreshTokens();
       processQueue();
       return api(originalRequest);
     } catch (refreshError) {
       processQueue(refreshError);
-      if (typeof window !== "undefined") {
-        window.location.href = "/login";
-      }
       return Promise.reject(refreshError);
     } finally {
       isRefreshing = false;
-      refreshPromise = null;
     }
-  }
+  },
 );
 
+export { baseURL };
 export default api;
