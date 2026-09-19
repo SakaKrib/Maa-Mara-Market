@@ -164,7 +164,7 @@ const RegistrationForm = () => {
                 </div>
               ))}
 
-              <Button className="mm-auth-submit w-full" type="submit" disabled={loading}>
+              <Button className="w-full" type="submit" disabled={loading}>
                 {loading ? "Registering..." : "Register"}
               </Button>
             </form>
