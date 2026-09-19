@@ -607,7 +607,7 @@ class VisitorTokenView(APIView):
         # ---------------------------------------------------
         cookie_options = {
             "httponly": True,
-            "secure": not settings.DEBUG,
+            "secure": request.is_secure(),
             "samesite": "Lax",
             "path": "/",
         }
