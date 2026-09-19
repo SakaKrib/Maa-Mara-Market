@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import VendorItemRequest
+from .models import VendorItemRequest, VendorDraft
 from ReactSerializers.Serializers import VendorSerializer, PriceChangeRequest
 from vendorDashboard.models import ReturnRequest
 
