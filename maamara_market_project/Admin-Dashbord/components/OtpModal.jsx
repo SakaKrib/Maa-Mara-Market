@@ -12,6 +12,10 @@ import { Button } from "./ui/button"
 import Maamara from "../src/assets/Logo/Maamara.jpg"
 
 // 🍪 Helper to read CSRF token from cookies
+const setCookie = (name, value) => {
+  const secure = window.location.protocol === "https:" ? "; Secure" : ""
+  document.cookie = name + "=" + encodeURIComponent(value) + "; Path=/; SameSite=Lax" + secure
+}
 const getCookie = (name) => {
   const value = `; ${document.cookie}`
   const parts = value.split(`; ${name}=`)
@@ -35,8 +39,9 @@ const OTPModal = ({ email, onVerify, expiresAt }) => {
   useEffect(() => {
     const fetchCsrf = async () => {
       try {
-        await api.get("/api/get-csrf-token/", { withCredentials: true })
-        const token = getCookie("csrftoken")
+        const { data } = await api.get("/api/get-csrf-token/", { withCredentials: true })
+        const token = data?.csrfToken || getCookie("csrftoken")
+        if (token) setCookie("csrftoken", token)
         setCsrfToken(token)
       } catch (err) {
         console.error("CSRF fetch error:", err)
