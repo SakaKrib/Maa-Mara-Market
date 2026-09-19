@@ -496,6 +496,8 @@ def reconcile_paypal_refund(provider_reference, provider_status, provider_amount
 
         normalized_status = str(provider_status or "").upper()
         if normalized_status == "COMPLETED":
+            if refund.status == "completed":
+                return refund
             refund.status = "completed"
             refund.failure_reason = None
             refund.completed_at = refund.completed_at or timezone.now()
