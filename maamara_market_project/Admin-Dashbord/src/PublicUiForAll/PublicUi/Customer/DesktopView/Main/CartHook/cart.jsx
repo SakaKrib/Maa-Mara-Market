@@ -11,7 +11,7 @@ export const CartProvider = ({ children }) => {
   const fetchCart = async () => {
     try {
       setLoading(true);
-      const res = await api.get(`${baseUrl}/api/cart/`, { withCredentials: true });
+      const res = await api.get(`/api/cart/`, { withCredentials: true });
       if (res.data.success) {
         setOrder(res.data);
         setError(null);
