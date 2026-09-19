@@ -9,7 +9,10 @@ const MobileAccountModal = ({ open, onClose, user }) => {
   const [profile, setProfile] = useState(null);
 
   useEffect(() => {
-    if (!open) return;
+    if (!open || !user?.id) {
+      setProfile(null);
+      return undefined;
+    }
     let active = true;
     api.get("/api/user/account/", { withCredentials: true })
       .then((res) => {
@@ -33,13 +36,23 @@ const MobileAccountModal = ({ open, onClose, user }) => {
           </div>
           <div>
             <strong>{profile?.first_name || user?.username || "My Account"}</strong>
-            <span>{profile?.email || user?.email || "Sign in to manage your account"}</span>
+            <span>{profile?.email || user?.email || ""}</span>
           </div>
         </div>
         <div className="mm-mobile-account-links">
-          <button type="button" onClick={() => go("/profile-view")}><UserRound size={17} /> View Profile <ExternalLink size={14} /></button>
-          <button type="button" onClick={() => go("/customer-order")}><Package size={17} /> Orders <ExternalLink size={14} /></button>
-          <button type="button" onClick={() => go("/settings")}><Settings size={17} /> Settings <ExternalLink size={14} /></button>
+          {user?.id ? (
+            <>
+              <button type="button" onClick={() => go("/profile-view")}><UserRound size={17} /> View Profile <ExternalLink size={14} /></button>
+              <button type="button" onClick={() => go("/customer-order")}><Package size={17} /> Orders <ExternalLink size={14} /></button>
+              <button type="button" onClick={() => go("/settings")}><Settings size={17} /> Settings <ExternalLink size={14} /></button>
+              <button type="button" onClick={async () => { await onLogout?.(); onClose?.(); }}>Log out</button>
+            </>
+          ) : (
+            <>
+              <button type="button" onClick={() => go("/customer-login")}>Sign in <ExternalLink size={14} /></button>
+              <button type="button" onClick={() => go("/register")}>Sign up <ExternalLink size={14} /></button>
+            </>
+          )}
         </div>
       </div>
     </MobileBottomSheet>
