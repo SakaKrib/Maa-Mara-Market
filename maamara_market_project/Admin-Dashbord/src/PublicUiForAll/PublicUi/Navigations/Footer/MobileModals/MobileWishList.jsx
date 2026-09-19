@@ -1,15 +1,15 @@
 import React from "react";
 import MobileBottomSheet from "./MobileBottomSheet";
 import { useNavigate } from "react-router-dom";
-import { baseUrl } from "../../../../../cmponents/Constant/Constant";
 import { Heart, Share2 } from "lucide-react";
 import { useWishlistContext } from "../../../../../cmponents/Hooks/WishListHook/Wishlist";
+import FormattedCurrency from "../../../Customer/DesktopView/Main/Currency/FormattedCurrency";
 
 const MobileWishlistModal = ({ open, onClose }) => {
   const navigate = useNavigate();
   const { wishlist: items = [] } = useWishlistContext();
 
-  const getImage = (image) => image?.startsWith("http") ? image : `${baseUrl}${image || ""}`;
+  const getImage = (image) => image || "";
 
   const handleShare = async (item) => {
     const url = `${window.location.origin}/item/${item.slug || item.id}`;
@@ -44,7 +44,7 @@ const MobileWishlistModal = ({ open, onClose }) => {
                   <img src={getImage(item.image)} alt={item.name || "Wishlist item"} />
                   <div className="mm-mobile-line-copy">
                     <strong>{item.name}</strong>
-                    <span>KES {Number(item.final_price || 0).toLocaleString()}</span>
+                    <span><FormattedCurrency value={Number(item.final_price || 0)} /></span>
                   </div>
                   <div className="mm-mobile-line-actions">
                     <button type="button" onClick={() => { navigate(`/item/${item.slug || item.id}`); onClose?.(); }}>View</button>
