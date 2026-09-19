@@ -544,7 +544,7 @@ class VisitorTokenView(APIView):
         # ---------------------------------------------------
         # 1. If user is logged in → DO NOT create visitor
         # ---------------------------------------------------
-        if request.COOKIES.get("accessToken") and request.COOKIES.get("refreshToken"):
+        if request.COOKIES.get("accessToken") or request.COOKIES.get("refreshToken"):
             return Response({
                 "message": "Authenticated user detected — visitor not created"
             })
