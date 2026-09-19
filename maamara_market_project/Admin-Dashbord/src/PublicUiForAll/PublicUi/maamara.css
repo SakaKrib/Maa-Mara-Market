@@ -4497,7 +4497,7 @@ h1,h2,h3,h4{font-family:'regular','Poppins',Arial,sans-serif}
 .mm-auth-form input{
   min-height:44px;
   border:1px solid var(--mm-border-strong);
-  border-radius:var(--mm-radius-sm);
+  border-radius:100px;
   background:var(--mm-surface);
   color:var(--dark-color);
   box-shadow:none;
@@ -4584,5 +4584,5 @@ h1,h2,h3,h4{font-family:'regular','Poppins',Arial,sans-serif}
   font-family:'regular',sans-serif;
   font-size:13px;
   font-weight:600;
-  width: 100;
+  width: 100%;
 }

@@ -180,7 +180,7 @@ const RegistrationForm = () => {
                 <Button
                   type="button"
                   variant="outline"
-                  className="mm-auth-google w-full flex items-center justify-center gap-2 rounded-[2em]"
+                  className="mm-auth-google w-full flex items-center justify-center gap-2 rounded-full"
                   onClick={() => {
                     window.location.href = `${baseUrl}/accounts/google/login/`
                   }}
@@ -194,9 +194,12 @@ const RegistrationForm = () => {
                   Continue with Google
                 </Button>
 
-                <div className="relative my-2 flex items-center"><span className="h-px flex-1 bg-[#e6e3de]" /><span className="px-3 text-xs text-[#6f6a63]">or continue with email</span><span className="h-px flex-1 bg-[#e6e3de]" /></div>\n\n                <Button type="submit" disabled={loading || !csrfToken} className="mm-auth-submit primary-button w-full">
+                <div className="relative my-2 flex items-center"><span className="h-px flex-1 bg-[#e6e3de]" /><span className="px-3 text-xs text-[#6f6a63]">or continue with email</span><span className="h-px flex-1 bg-[#e6e3de]" /></div>              
+                <div className="flex justify-center items-center w-full">
+                  <Button type="submit" disabled={loading || !csrfToken} className="mm-auth-submit primary-button w-full">
                   {loading ? "Registering..." : "Register"}
                 </Button>
+                </div>
               </form>
             ) : (
               <p className="text-sm text-muted-foreground">

@@ -47,12 +47,13 @@ const ForgotPassword = () => {
             placeholder="Enter your email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="w-full min-h-[46px] px-4 py-3 rounded-[var(--mm-radius-md)] border border-[var(--mm-border)] bg-[var(--mm-surface)] text-[var(--mm-text)] text-sm outline-none transition focus:border-[var(--mm-border-strong)] focus:ring-2 focus:ring-black/5 disabled:opacity-60"
+            className="w-full min-h-[46px] px-4 py-3 rounded-full border border-[var(--mm-border)] bg-[var(--mm-surface)] text-[var(--mm-text)] text-sm outline-none transition focus:border-[var(--mm-border-strong)] focus:ring-2 focus:ring-black/5 disabled:opacity-60"
             disabled={loading}
             autoComplete="email"
           />
 
-          <button
+          <div className='flex justify-center items-center w-full'>
+            <button
             type="submit"
             disabled={loading}
             className="primary-button w-full mt-6 flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
@@ -66,6 +67,7 @@ const ForgotPassword = () => {
               "Send Reset Link"
             )}
           </button>
+          </div>
 
           {message && (
             <p className="text-sm mt-4 text-center text-[var(--mm-text-muted)]" role="status">

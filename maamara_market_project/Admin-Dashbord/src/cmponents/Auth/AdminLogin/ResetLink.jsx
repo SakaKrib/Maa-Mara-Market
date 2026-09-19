@@ -71,11 +71,11 @@ const ResetPassword = () => {
         }}
       >
 
-        <h2 className="text-xl font-semibold mb-4">
+        <h2 className="text-xl font-semibold mb-4 text-[var(--mm-text)]">
           Reset Password
         </h2>
 
-        <p className="text-sm text-gray-500 text-center mb-6">
+        <p className="text-sm text-gray-500 text-center mb-6 text-[var(--mm-text-muted)]">
           Enter your new password below.
         </p>
 
@@ -89,7 +89,7 @@ const ResetPassword = () => {
             placeholder="New password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            className="w-full p-2 border rounded-md outline-none mb-3"
+            className="w-full p-2 border rounded-full outline-none mb-3"
             disabled={loading}
           />
 
@@ -124,7 +124,7 @@ const ResetPassword = () => {
             </button> */}
          </div>
 
-          <div className="flex justify-center mt-6">
+          <div className="flex justify-center mt-6 items-center">
             <button
               type="submit"
               disabled={loading}
