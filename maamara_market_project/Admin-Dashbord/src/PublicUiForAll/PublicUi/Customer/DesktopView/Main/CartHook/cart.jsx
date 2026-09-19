@@ -3,8 +3,6 @@ import api from "../../../../../../Services/Api";
 
 const CartContext = createContext();
 
-const CartContext = createContext();
-
 export const CartProvider = ({ children }) => {
   const [order, setOrder] = useState(null);
   const [loading, setLoading] = useState(true);
