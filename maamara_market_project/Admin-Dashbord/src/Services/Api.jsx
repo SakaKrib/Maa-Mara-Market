@@ -11,7 +11,15 @@ const baseURL = (() => {
   if (configured) return configured.replace(/\/$/, "");
 
   if (typeof window !== "undefined" && window.location?.host) {
-    return `${window.location.protocol}//${window.location.host}`;
+    const { protocol, hostname, port } = window.location;
+
+    // Vite serves the frontend on :5173 while Django runs on :8000 in local
+    // development. Otherwise use the browser origin, including its port.
+    if (port === "5173") {
+      return `${protocol}//${hostname}:8000`;
+    }
+
+    return `${protocol}//${window.location.host}`;
   }
 
   return FALLBACK_API_ORIGIN;
