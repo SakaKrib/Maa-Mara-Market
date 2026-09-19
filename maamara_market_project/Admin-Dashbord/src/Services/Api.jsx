@@ -21,11 +21,15 @@ const getApiOrigin = () => {
   }
 
   if (typeof window !== "undefined" && window.location.host) {
-    if (window.location.port === BACKEND_PORT) {
-      return window.location.origin;
+    // Use the browser's current host and replace the frontend port with
+    // Django's backend port.
+    const browserUrl = new URL(window.location.href);
+
+    if (browserUrl.port === BACKEND_PORT) {
+      return browserUrl.origin;
     }
 
-    return `${window.location.protocol}//${window.location.hostname}:${BACKEND_PORT}`;
+    return `${browserUrl.protocol}//${browserUrl.hostname}:${BACKEND_PORT}`;
   }
 
   return FALLBACK_API_ORIGIN;
