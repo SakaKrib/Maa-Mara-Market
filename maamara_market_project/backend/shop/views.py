@@ -250,7 +250,7 @@ class BannerListView(generics.ListAPIView):
 
 # fetch barnd serializer
 @api_view(["GET"])
-@permission_classes([IsAuthenticated, IsVendor])
+@permission_classes([AllowAny])
 def list_brands(request):
     brands = Brand.objects.all()
     serializer = BrandSerializer(brands, many=True, context={'request': request})
