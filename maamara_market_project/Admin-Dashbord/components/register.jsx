@@ -196,7 +196,7 @@ const RegistrationForm = () => {
 
                 <div className="relative my-2 flex items-center"><span className="h-px flex-1 bg-[#e6e3de]" /><span className="px-3 text-xs text-[#6f6a63]">or continue with email</span><span className="h-px flex-1 bg-[#e6e3de]" /></div>              
                 <div className="flex justify-center items-center w-full">
-                  <Button type="submit" disabled={loading || !csrfToken} className="mm-auth-submit primary-button w-full">
+                  <Button type="submit" disabled={loading} className="primary-button w-full">
                   {loading ? "Registering..." : "Register"}
                 </Button>
                 </div>
