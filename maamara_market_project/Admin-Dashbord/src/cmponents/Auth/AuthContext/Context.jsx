@@ -21,17 +21,21 @@ export const AuthProvider = ({ children }) => {
   // therefore retried by Api.jsx after the HttpOnly refresh cookie succeeds.
   const checkAuth = async () => {
     try {
-      const response = await api.get("/api/check-auth/");
-      const data = response.data;
+      // Use the shared Axios client so auth checks participate in the same
+      // cookie-based refresh/queue flow as every other API request.
+      const response = await api.get("/api/check-auth/", {
+        withCredentials: true,
+      });
 
+      const data = response.data;
       setIsAuthenticated(Boolean(data.isAuthenticated));
-      setUser(data.user ?? null);
-      return data;
+      setUser(data.user || null);
     } catch (error) {
       console.error("Auth check failed:", error);
       setIsAuthenticated(false);
       setUser(null);
-      return null;
+      setAccessToken(null);
+      setGlobalAccessToken(null);
     } finally {
       setLoading(false);
     }
