@@ -4455,3 +4455,84 @@ h1,h2,h3,h4{font-family:'regular','Poppins',Arial,sans-serif}
     flex:0 0 auto;
   }
 }
+
+/* Maa Mara customer authentication surfaces */
+.mm-auth-form,
+.mm-auth-form *{
+  font-family:'regular',sans-serif;
+}
+.mm-auth-brand{margin-bottom:4px}
+.mm-auth-brand img{
+  width:34px;
+  height:34px;
+  border-radius:50%;
+  object-fit:cover;
+}
+.mm-auth-brand h2{
+  margin:0;
+  font-family:'regular',sans-serif;
+  font-size:18px;
+  font-weight:600;
+  color:var(--dark-color);
+}
+.mm-auth-card{
+  border:1px solid var(--mm-border);
+  border-radius:var(--mm-radius-lg);
+  background:var(--mm-surface);
+  box-shadow:var(--mm-shadow-card);
+}
+.mm-auth-form-panel{background:var(--mm-surface)}
+.mm-auth-title{
+  color:var(--dark-color);
+  letter-spacing:-.02em;
+}
+.mm-auth-subtitle{color:var(--mm-text-muted)!important}
+.mm-auth-form label{
+  margin-bottom:7px;
+  color:var(--dark-color);
+  font-size:13px;
+  font-weight:600;
+}
+.mm-auth-form input{
+  min-height:44px;
+  border:1px solid var(--mm-border-strong);
+  border-radius:var(--mm-radius-sm);
+  background:var(--mm-surface);
+  color:var(--dark-color);
+  box-shadow:none;
+  font-family:'regular',sans-serif;
+  font-size:14px;
+}
+.mm-auth-form input::placeholder{color:var(--mm-text-muted)}
+.mm-auth-form input:focus{
+  border-color:var(--blue);
+  box-shadow:0 0 0 3px rgba(42,33,133,.10);
+}
+.mm-auth-google{
+  min-height:44px;
+  border:1px solid var(--mm-border-strong)!important;
+  border-radius:var(--mm-radius-sm)!important;
+  background:var(--mm-surface)!important;
+  color:var(--dark-color)!important;
+  box-shadow:none!important;
+  font-weight:600!important;
+}
+.mm-auth-google:hover{background:var(--mm-surface-muted)!important}
+.mm-auth-submit{
+  min-height:44px;
+  border-radius:var(--mm-radius-sm)!important;
+  background:var(--blue)!important;
+  color:var(--white)!important;
+  box-shadow:none!important;
+  font-weight:600!important;
+}
+.mm-auth-submit:hover{background:var(--dark-color)!important}
+.mm-auth-link{color:var(--blue)}
+.mm-auth-visual{background:var(--mm-surface-muted)!important}
+.mm-auth-visual img{opacity:.96}
+.mm-auth-legal{color:var(--mm-text-muted)!important}
+@media(max-width:767px){
+  .mm-auth-form{gap:18px}
+  .mm-auth-card{border-radius:var(--mm-radius-md)}
+  .mm-auth-form-panel{padding:22px!important}
+}
