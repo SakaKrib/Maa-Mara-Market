@@ -1,1 +1,83 @@
-import axios from "axios";\n\nconst FALLBACK_API_ORIGIN = "http://100.109.224.0:8000";\n\nconst resolveApiOrigin = () => {\n  const configured = import.meta.env.VITE_API_URL || import.meta.env.VITE_BASE_URL;\n\n  if (configured) return configured.replace(/\/$/, "");\n\n  if (typeof window !== "undefined" && window.location?.origin) {\n    return window.location.origin.replace(/\/$/, "");\n  }\n\n  return FALLBACK_API_ORIGIN;\n};\n\nexport const baseURL = resolveApiOrigin();\n\nconst api = axios.create({ baseURL, withCredentials: true });\n\nlet isRefreshing = false;\nlet refreshPromise = null;\nlet failedQueue = [];\n\nconst processQueue = (error = null) => {\n  const queue = failedQueue;\n  failedQueue = [];\n  queue.forEach(({ resolve, reject }) => (error ? reject(error) : resolve()));\n};\n\nconst redirectToLoginOnce = () => {\n  if (typeof window !== "undefined" && window.location.pathname !== "/login") {\n    window.location.assign("/login");\n  }\n};\n\nconst refreshAuthentication = () => {\n  if (!refreshPromise) {\n    refreshPromise = api.post("/api/token/refresh/");\n  }\n  return refreshPromise;\n};\n\napi.interceptors.response.use(\n  (response) => response,\n  async (error) => {\n    const originalRequest = error.config;\n\n    if (!error.response || !originalRequest) return Promise.reject(error);\n\n    const requestUrl = originalRequest.url || "";\n    if (requestUrl.includes("/api/token/refresh/")) return Promise.reject(error);\n\n    if (error.response.status !== 401 || originalRequest._retry) {\n      return Promise.reject(error);\n    }\n\n    originalRequest._retry = true;\n\n    if (isRefreshing) {\n      return new Promise((resolve, reject) => {\n        failedQueue.push({ resolve, reject });\n      }).then(() => api(originalRequest));\n    }\n\n    isRefreshing = true;\n\n    try {\n      await refreshAuthentication();\n      processQueue();\n      return api(originalRequest);\n    } catch (refreshError) {\n      processQueue(refreshError);\n      redirectToLoginOnce();\n      return Promise.reject(refreshError);\n    } finally {\n      isRefreshing = false;\n      refreshPromise = null;\n    }\n  }\n);\n\nexport default api;
+import axios from "axios";
+
+const FALLBACK_API_ORIGIN = "http://100.109.224.0:8000";
+
+const resolveApiOrigin = () => {
+  const configured = import.meta.env.VITE_API_URL || import.meta.env.VITE_BASE_URL;
+
+  if (configured) return configured.replace(/\/$/, "");
+
+  if (typeof window !== "undefined" && window.location?.origin) {
+    return window.location.origin.replace(/\/$/, "");
+  }
+
+  return FALLBACK_API_ORIGIN;
+};
+
+export const baseURL = resolveApiOrigin();
+
+const api = axios.create({ baseURL, withCredentials: true });
+
+let isRefreshing = false;
+let refreshPromise = null;
+let failedQueue = [];
+
+const processQueue = (error = null) => {
+  const queue = failedQueue;
+  failedQueue = [];
+  queue.forEach(({ resolve, reject }) => (error ? reject(error) : resolve()));
+};
+
+const redirectToLoginOnce = () => {
+  if (typeof window !== "undefined" && window.location.pathname !== "/login") {
+    window.location.assign("/login");
+  }
+};
+
+const refreshAuthentication = () => {
+  if (!refreshPromise) {
+    refreshPromise = api.post("/api/token/refresh/");
+  }
+  return refreshPromise;
+};
+
+api.interceptors.response.use(
+  (response) => response,
+  async (error) => {
+    const originalRequest = error.config;
+
+    if (!error.response || !originalRequest) return Promise.reject(error);
+
+    const requestUrl = originalRequest.url || "";
+    if (requestUrl.includes("/api/token/refresh/")) return Promise.reject(error);
+
+    if (error.response.status !== 401 || originalRequest._retry) {
+      return Promise.reject(error);
+    }
+
+    originalRequest._retry = true;
+
+    if (isRefreshing) {
+      return new Promise((resolve, reject) => {
+        failedQueue.push({ resolve, reject });
+      }).then(() => api(originalRequest));
+    }
+
+    isRefreshing = true;
+
+    try {
+      await refreshAuthentication();
+      processQueue();
+      return api(originalRequest);
+    } catch (refreshError) {
+      processQueue(refreshError);
+      redirectToLoginOnce();
+      return Promise.reject(refreshError);
+    } finally {
+      isRefreshing = false;
+      refreshPromise = null;
+    }
+  }
+);
+
+export default api;
