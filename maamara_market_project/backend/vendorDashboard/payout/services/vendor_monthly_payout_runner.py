@@ -3,6 +3,7 @@ import logging
 from datetime import date
 from dateutil.relativedelta import relativedelta
 from django.utils import timezone
+from django.db import transaction
 
 from django.conf import settings
 
@@ -124,9 +125,12 @@ def process_payouts_by_group(request):
 
 @api_view(["POST"])
 @permission_classes([IsAdminUser])
+@transaction.atomic
 def pay_single_vendor_payout(request, reference):
     try:
-        payout = VendorPayout.objects.get(reference=reference)
+        # Serialize payout submission so two admin requests cannot both pass
+        # the duplicate-submission checks and call the provider.
+        payout = VendorPayout.objects.select_for_update().select_related("vendor").get(reference=reference)
     except VendorPayout.DoesNotExist:
         return Response({"error": "Payout reference not found."}, status=404)
 
@@ -218,9 +222,13 @@ def pay_single_vendor_payout(request, reference):
                 "response": response,
             }, status=400)
 
-    except Exception as e:
+    except Exception:
+        logger.exception(
+            "Unexpected vendor payout submission failure.",
+            extra={"payout_reference": reference},
+        )
         return Response({
-            "error": f"Exception during payment: {str(e)}"
+            "error": "Vendor payout submission failed."
         }, status=500)
 
 @api_view(["POST"])
