@@ -49,7 +49,7 @@ const SingleItem = () => {
         <div className="flex items-center gap-4">
           {hasDiscount && <h3 className="text-lg text-gray-400 line-through"><FormattedCurrency value={Number(item.final_price)} /></h3>}
           <h2 className={`font-medium text-2xl ${hasDiscount ? "text-red-600" : ""}`}>
-            Ksh {Number(hasDiscount ? item.final_discounted_price : item.final_price).toLocaleString()}
+            <FormattedCurrency value={Number(hasDiscount ? item.final_discounted_price : item.final_price)} />
           </h2>
         </div>
 
