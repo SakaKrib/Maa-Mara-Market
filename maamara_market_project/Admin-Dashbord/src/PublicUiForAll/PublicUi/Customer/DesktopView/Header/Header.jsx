@@ -117,6 +117,20 @@ const Header = () => {
           </div>
 
           <div className="flex flex-row w-full relative gap-3 items-center justify-end desktop-hide">
+            <label className="mm-mobile-currency" aria-label="Select currency">
+              <span aria-hidden="true">{currencies[currency].flag}</span>
+              <select
+                value={currency}
+                onChange={e => setCurrency(e.target.value)}
+                className="bg-transparent border-0 outline-none cursor-pointer"
+                aria-label="Currency"
+              >
+                <option value="KES">KES</option>
+                <option value="USD">USD</option>
+                <option value="EUR">EUR</option>
+                <option value="GBP">GBP</option>
+              </select>
+            </label>
             {isAuthenticated && !isAdminOrVendor && (
               <Link to="/vendor-register-form" className="flex items-center gap-1 text-sm" aria-label="Become a vendor">
                 <Store className="w-[15px]" />
