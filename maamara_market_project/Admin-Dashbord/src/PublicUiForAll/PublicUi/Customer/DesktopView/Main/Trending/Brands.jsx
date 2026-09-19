@@ -1,4 +1,5 @@
 import React from "react";
+import { Link } from "react-router-dom";
 import useBrands from "../../../../../../cmponents/Hooks/Brand/BrandHook";
 
 const BrandList = () => {
@@ -20,7 +21,7 @@ const BrandList = () => {
           {brands.length > 0 ? brands.map((brand) => {
             const displayLogo = brand.logo_url || brand.vendor_logo_url;
             return (
-              <a key={brand.id} href={`/brands/${brand.id}`} className="mm-card mm-card-interactive group flex flex-col items-center p-3 sm:p-4 cursor-pointer" title={brand.name}>
+              <Link key={brand.id} to={`/brands/${brand.id}`} className="mm-card mm-card-interactive group flex flex-col items-center p-3 sm:p-4 cursor-pointer" title={brand.name}>
                 <div className="w-20 h-20 sm:w-28 sm:h-28 flex items-center justify-center rounded-full bg-gray-100 overflow-hidden mb-3">
                   {displayLogo ? (
                     <img src={displayLogo} alt={brand.name} className="object-contain w-full h-full transform group-hover:scale-105 transition-transform duration-300" loading="lazy" />
