@@ -140,8 +140,7 @@ function AppContent() {
   useEffect(() => {
     // Only call the API to set the visitor token cookie
     api.get("/api/vistor-token/")
-      .then(res => {
-        if (!res.ok) throw new Error("Failed to get visitor token");
+      .then(() => {
         console.log("Visitor token cookie set by server");
       })
       .catch(err => console.error(err));
