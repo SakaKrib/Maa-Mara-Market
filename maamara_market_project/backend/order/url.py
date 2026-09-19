@@ -47,6 +47,23 @@ urlpatterns = [
     #create order api
     path("api/checkout/", checkout_view, name="checkout"),
     path("api/paypal/capture/<str:order_id>/", capture_paypal_order, name="paypal-capture"),
+
+    # Returns / refunds
+    path(
+        "api/returns-request/<int:item_id>/",
+        return_request_handler_api,
+        name="return-request",
+    ),
+    path(
+        "api/returns/pending/",
+        get_pending_returns_api,
+        name="pending-returns",
+    ),
+    path(
+        "api/returns/<int:return_id>/approve/",
+        approve_return_request_api,
+        name="approve-return",
+    ),
     path("api/refunds/<int:refund_id>/process/", process_refund_api, name="process-refund"),
     path("api/mpesa/refund/result/", mpesa_refund_result, name="mpesa-refund-result"),
     path("api/mpesa/refund/timeout/", mpesa_refund_timeout, name="mpesa-refund-timeout"),
