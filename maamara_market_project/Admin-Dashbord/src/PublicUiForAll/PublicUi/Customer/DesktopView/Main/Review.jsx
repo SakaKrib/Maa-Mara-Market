@@ -4,6 +4,7 @@ import Snackbar from "@mui/material/Snackbar";
 import MuiAlert from "@mui/material/Alert";
 import Avatar from "@mui/material/Avatar";
 import VendorRatingForm from "./VendorRatingsAndShop";
+import { useAuth } from "../../../../../cmponents/Auth/AuthContext/Context";
 
 // Reaction types matching backend
 const reactionTypes = [
@@ -18,7 +19,8 @@ const Alert = React.forwardRef(function Alert(props, ref) {
   return <MuiAlert elevation={6} ref={ref} variant="filled" {...props} />;
 });
 
-const ReviewSection = ({ item, authToken }) => {
+const ReviewSection = ({ item }) => {
+  const { user } = useAuth();
   const [reviewText, setReviewText] = useState("");
   const [rating, setRating] = useState(5);
   const [posting, setPosting] = useState(false);
@@ -96,10 +98,7 @@ const ReviewSection = ({ item, authToken }) => {
   // Handle reactions
   const handleReaction = async (reviewId, type) => {
     try {
-      await api.post(`/api/reactions/`, { review: reviewId, reaction_type: type }, {
-        headers: { Authorization: authToken ? `Bearer ${authToken}` : "" },
-        withCredentials: true,
-      });
+      await api.post(`/api/reactions/`, { review: reviewId, reaction_type: type }, { withCredentials: true });
       setSnackbar({ open: true, message: `Reacted with ${type}`, severity: "success" });
       fetchReviews();
     } catch (err) {
@@ -154,7 +153,6 @@ const ReviewSection = ({ item, authToken }) => {
       {item?.vendor?.id && (
         <VendorRatingForm
           vendorId={item.vendor.id}
-          authToken={authToken}
           onRated={fetchVendorRatings}
         />
       )}
@@ -190,7 +188,7 @@ const ReviewSection = ({ item, authToken }) => {
               return acc;
             }, {});
 
-            const userReaction = review.reactions?.find(r => authToken ? r.user === review.user?.id : !r.user);
+            const userReaction = review.reactions?.find((reaction) => user?.id ? reaction.user === user.id : !reaction.user);
 
             return (
               <div key={review.id} className="bg-gray-50 p-4 rounded-lg space-y-2">
