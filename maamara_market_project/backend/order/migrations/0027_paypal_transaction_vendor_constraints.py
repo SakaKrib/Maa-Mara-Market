@@ -4,7 +4,7 @@ from django.db.models import Q
 
 class Migration(migrations.Migration):
     dependencies = [
-        ("order", "0026_payment_provider_reference_constraints"),
+        ("oder", "0026_payment_provider_reference_constraints"),
     ]
 
     operations = [
