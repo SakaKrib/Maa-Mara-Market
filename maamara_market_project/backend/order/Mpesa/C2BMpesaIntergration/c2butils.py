@@ -115,21 +115,21 @@ def stk_push(request):
                 )
 
             if not order.billing_address:
-            return Response({"error": "Billing address is required before payment"}, status=400)
+                return Response({"error": "Billing address is required before payment"}, status=400)
 
-        amount = Decimal(str(order.final_total_of_cart()))
-        if amount <= 0:
-            return Response({"error": "Order amount must be greater than zero"}, status=400)
+            amount = Decimal(str(order.final_total_of_cart()))
+            if amount <= 0:
+                return Response({"error": "Order amount must be greater than zero"}, status=400)
 
-        shortcode = str(settings.PAYMENT_GATEWAYS["mpesa"]["stk_push"]["shortcode"]).strip()
+            shortcode = str(settings.PAYMENT_GATEWAYS["mpesa"]["stk_push"]["shortcode"]).strip()
         passkey = str(settings.PAYMENT_GATEWAYS["mpesa"]["stk_push"]["passkey"]).strip()
-        callback_url = settings.PAYMENT_GATEWAYS["mpesa"]["stk_push"]["callback_url"].strip()
-        stk_url = settings.PAYMENT_GATEWAYS["mpesa"]["stk_push"]["stk_url"].strip()
+            callback_url = settings.PAYMENT_GATEWAYS["mpesa"]["stk_push"]["callback_url"].strip()
+            stk_url = settings.PAYMENT_GATEWAYS["mpesa"]["stk_push"]["stk_url"].strip()
 
-        timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
-        password = generate_stk_password(shortcode, passkey, timestamp)
+            timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
+            password = generate_stk_password(shortcode, passkey, timestamp)
 
-        payload = {
+            payload = {
             "BusinessShortCode": shortcode,
             "Password": password,
             "Timestamp": timestamp,
