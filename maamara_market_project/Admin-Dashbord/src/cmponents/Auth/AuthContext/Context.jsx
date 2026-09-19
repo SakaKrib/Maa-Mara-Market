@@ -17,25 +17,19 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // The central Axios client owns JWT refresh. A 401 from check-auth is
-  // therefore retried by Api.jsx after the HttpOnly refresh cookie succeeds.
   const checkAuth = async () => {
     try {
-      // Use the shared Axios client so auth checks participate in the same
-      // cookie-based refresh/queue flow as every other API request.
-      const response = await api.get("/api/check-auth/", {
-        withCredentials: true,
-      });
+      const { data } = await api.get("/api/check-auth/");
 
-      const data = response.data;
       setIsAuthenticated(Boolean(data.isAuthenticated));
       setUser(data.user || null);
+      return data;
     } catch (error) {
-      console.error("Auth check failed:", error);
+      // A failed refresh is handled by Api.jsx. At this point the session
+      // is genuinely unavailable, so reset local auth state.
       setIsAuthenticated(false);
       setUser(null);
-      setAccessToken(null);
-      setGlobalAccessToken(null);
+      return null;
     } finally {
       setLoading(false);
     }
@@ -52,16 +46,12 @@ export const AuthProvider = ({ children }) => {
 
   const login = (userData) => {
     setIsAuthenticated(true);
-    setUser(userData ?? null);
+    setUser(userData || null);
   };
 
   const logout = async () => {
     try {
       await api.post("/api/logout/");
-    } catch (error) {
-      // The backend owns the cookies. Even if the request fails, clear local
-      // React state so the UI cannot continue to present a logged-in session.
-      console.error("Logout failed:", error);
     } finally {
       setIsAuthenticated(false);
       setUser(null);
