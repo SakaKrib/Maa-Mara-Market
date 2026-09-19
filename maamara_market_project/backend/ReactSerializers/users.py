@@ -237,15 +237,9 @@ class HybridCheckAuthView(APIView):
 
                 return Response(
                     {
-                        "isAuthenticated": True,
+                        "isAuthenticated": False,
                         "authType": "visitor",
-                        "user": {
-                            "id": token_visitor_id,
-                            "username": "visitor",
-                            "role": "customer",
-                            "is_vendor": False,
-                            "is_admin": False,
-                        },
+                        "user": None,
                     },
                     status=status.HTTP_200_OK,
                 )
@@ -274,15 +268,9 @@ class HybridCheckAuthView(APIView):
 
                 response = Response(
                     {
-                        "isAuthenticated": True,
+                        "isAuthenticated": False,
                         "authType": "visitor",
-                        "user": {
-                            "id": token_visitor_id,
-                            "username": "visitor",
-                            "role": "customer",
-                            "is_vendor": False,
-                            "is_admin": False,
-                        },
+                        "user": None,
                     },
                     status=status.HTTP_200_OK,
                 )
