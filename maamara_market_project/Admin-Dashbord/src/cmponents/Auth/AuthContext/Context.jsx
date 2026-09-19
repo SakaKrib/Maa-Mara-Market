@@ -17,35 +17,33 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  const checkAuth = async (retry = 1) => {
+  // The central Axios client owns JWT refresh. A 401 from check-auth is
+  // therefore retried by Api.jsx after the HttpOnly refresh cookie succeeds.
+  const checkAuth = async () => {
     try {
       const response = await api.get("/api/check-auth/");
       const data = response.data;
 
       setIsAuthenticated(Boolean(data.isAuthenticated));
       setUser(data.user ?? null);
+      return data;
     } catch (error) {
       console.error("Auth check failed:", error);
-
-      if (retry > 0) {
-        await checkAuth(retry - 1);
-        return;
-      }
-
       setIsAuthenticated(false);
       setUser(null);
+      return null;
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    checkAuth();
+    void checkAuth();
   }, []);
 
   const refreshAuth = async () => {
     setLoading(true);
-    await checkAuth();
+    return checkAuth();
   };
 
   const login = (userData) => {
@@ -57,9 +55,10 @@ export const AuthProvider = ({ children }) => {
     try {
       await api.post("/api/logout/");
     } catch (error) {
+      // The backend owns the cookies. Even if the request fails, clear local
+      // React state so the UI cannot continue to present a logged-in session.
       console.error("Logout failed:", error);
     } finally {
-      // Backend owns the authentication cookies. React only mirrors state.
       setIsAuthenticated(false);
       setUser(null);
       window.location.href = "/";
