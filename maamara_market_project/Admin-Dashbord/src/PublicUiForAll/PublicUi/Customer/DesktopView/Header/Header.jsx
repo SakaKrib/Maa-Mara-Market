@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { Heart, ShoppingBag, UserRound, Menu, Search, Sparkles, ChevronDown, Globe2 } from "lucide-react";
 import "../../../../PublicUi/maamara.css";
 import SearchBar from "../../../Navigations/Search/Search";
+import NavIcons from "../../../Navigations/Search/NavIcons/NavIcon";
 import { Link } from "react-router-dom";
 import useNewBlogs from "../../../../../cmponents/Hooks/BlogHooksNew/NewBlogs";
 import Maamara from "../../../../../assets/Logo/Maamara.jpg";
@@ -84,6 +85,9 @@ const Header = () => {
                     
           <div className="mm-header-search">
             <SearchBar />
+          </div>
+          <div className="mm-header-actions" aria-label="Account, wishlist and cart">
+            <NavIcons />
           </div>
             </div>
         </div>
