@@ -196,7 +196,7 @@ class HybridCheckAuthView(APIView):
                     "accessToken",
                     refreshed["access"],
                     httponly=True,
-                    secure=not settings.DEBUG,
+                    secure=request.is_secure(),
                     samesite="Lax",
                     max_age=5 * 60,
                     path="/",
@@ -206,7 +206,7 @@ class HybridCheckAuthView(APIView):
                         "refreshToken",
                         refreshed["refresh"],
                         httponly=True,
-                        secure=not settings.DEBUG,
+                        secure=request.is_secure(),
                         samesite="Lax",
                         max_age=30 * 24 * 3600,
                         path="/",
@@ -290,7 +290,7 @@ class HybridCheckAuthView(APIView):
                     "visitorAccessToken",
                     str(new_access),
                     httponly=True,
-                    secure=not settings.DEBUG,
+                    secure=request.is_secure(),
                     samesite="Lax",
                     max_age=30 * 24 * 3600,
                     path="/",
@@ -368,9 +368,9 @@ def login_view(request):
 
 
         # Set JWT cookies
-        response.set_cookie("accessToken", access_token, httponly=True, secure=not settings.DEBUG, samesite="Lax",  max_age=5 * 60,
+        response.set_cookie("accessToken", access_token, httponly=True, secure=request.is_secure(), samesite="Lax",  max_age=5 * 60,
         path="/",)
-        response.set_cookie("refreshToken", refresh_token, httponly=True, secure=not settings.DEBUG, samesite="Lax", max_age=2592000, path="/")
+        response.set_cookie("refreshToken", refresh_token, httponly=True, secure=request.is_secure(), samesite="Lax", max_age=2592000, path="/")
         return response
 
     # --- Fallback to Vendor table ---
@@ -402,8 +402,8 @@ def login_view(request):
         response.delete_cookie("visitorRefreshToken", path="/")
         response.delete_cookie("visitorId", path="/")
         response.delete_cookie("user_sessionid", path="/")
-        response.set_cookie("accessToken", access_token, httponly=True, secure=not settings.DEBUG, samesite="Lax", max_age=300, path="/")
-        response.set_cookie("refreshToken", refresh_token, httponly=True, secure=not settings.DEBUG, samesite="Lax", max_age=2592000, path="/")
+        response.set_cookie("accessToken", access_token, httponly=True, secure=request.is_secure(), samesite="Lax", max_age=300, path="/")
+        response.set_cookie("refreshToken", refresh_token, httponly=True, secure=request.is_secure(), samesite="Lax", max_age=2592000, path="/")
         return response
 
     return JsonResponse({"success": False, "error": "Invalid credentials"}, status=401)
@@ -525,7 +525,7 @@ def google_login_success(request):
         "accessToken",
         str(refresh.access_token),
         httponly=True,
-        secure=not settings.DEBUG,
+        secure=request.is_secure(),
         samesite="Lax",
         max_age=5 * 60,
         path="/",
@@ -535,7 +535,7 @@ def google_login_success(request):
         "refreshToken",
         str(refresh),
         httponly=True,
-        secure=not settings.DEBUG,
+        secure=request.is_secure(),
         samesite="Lax",
         max_age=2592000,
         path="/"
@@ -694,7 +694,7 @@ class CookieRefreshView(APIView):
                     "accessToken",
                     data["access"],
                     httponly=True,
-                    secure=not settings.DEBUG,
+                    secure=request.is_secure(),
                     samesite="Lax",
                     max_age=5 * 60,
                     path="/",
@@ -707,7 +707,7 @@ class CookieRefreshView(APIView):
                         "refreshToken",
                         data["refresh"],
                         httponly=True,
-                        secure=not settings.DEBUG,
+                        secure=request.is_secure(),
                         samesite="Lax",
                         max_age=30 * 24 * 3600,
                         path="/",
@@ -743,7 +743,7 @@ class CookieRefreshView(APIView):
                     "visitorAccessToken",
                     str(new_access),
                     httponly=True,
-                    secure=not settings.DEBUG,
+                    secure=request.is_secure(),
                     samesite="Lax",
                     max_age=30 * 24 * 3600,
                     path="/",
