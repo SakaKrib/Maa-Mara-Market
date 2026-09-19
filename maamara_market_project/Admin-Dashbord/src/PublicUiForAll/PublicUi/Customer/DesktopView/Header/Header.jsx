@@ -14,20 +14,23 @@ import MegaMenuSports from "./SportsCat";
 import MegaMenuUnisex from "./UnisexCat";
 import MobileNavigationDrawer from "./MobileNavigationDrawer";
 import { useAuth } from "../../../../../cmponents/Auth/AuthContext/Context";
-
+import { useCurrency } from "../Main/Currency/CurrencyContext";
 
 const Header = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isFixed, setIsFixed] = useState(false);
-  const [currency, setCurrency] = useState(() => localStorage.getItem("mm_currency") || "KES");
   const [location, setLocation] = useState("Detecting location…");
   const [megaMenu, setMegaMenu] = useState(null);
   const { newBlogCount, loading } = useNewBlogs();
   const { isAuthenticated, user, logout } = useAuth();
+  const { currency, setCurrency } = useCurrency();
 
-  const currencies = { KES: { label: "KES", flag: "🇰🇪" }, USD: { label: "USD", flag: "🇺🇸" }, EUR: { label: "EUR", flag: "🇪🇺" }, GBP: { label: "GBP", flag: "🇬🇧" } };
-
-  useEffect(() => { localStorage.setItem("mm_currency", currency); }, [currency]);
+  const currencies = {
+    KES: { label: "KES", flag: "🇰🇪" },
+    USD: { label: "USD", flag: "🇺🇸" },
+    EUR: { label: "EUR", flag: "🇪🇺" },
+    GBP: { label: "GBP", flag: "🇬🇧" }
+  };
 
   useEffect(() => {
     let active = true;
@@ -72,12 +75,9 @@ const Header = () => {
             <span className="flex items-center gap-1"><Globe2 size={13} />{location}</span>
             <span className="mm-utility-separator">·</span>
             <label className="flex items-center gap-1 cursor-pointer" aria-label="Select currency">
-              <span>{currencies[currency].flag}</span>
+              <span>{currencies[currency]?.flag}</span>
               <select value={currency} onChange={e => setCurrency(e.target.value)} className="bg-transparent border-0 outline-none cursor-pointer">
-                <option value="KES">KES</option>
-                <option value="USD">USD</option>
-                <option value="EUR">EUR</option>
-                <option value="GBP">GBP</option>
+                {Object.keys(currencies).map(code => <option key={code} value={code}>{code}</option>)}
               </select>
             </label>
           </div>
@@ -91,74 +91,44 @@ const Header = () => {
           </button>
 
           <div className="w-full flex flex-row gap-4 items-center">
-            <img
-              src={Maamara}
-              alt="maamara-logo"
-              className="w-[50px] h-[50px] rounded-full ring p-1 ring-1 ring-green-500 xxs:-mt-20 xxs:relative xxs:-top-10 lg:mt-0 lg:top-0 z-[10] mobile-hide"
-            />
-
+            <img src={Maamara} alt="maamara-logo" className="w-[50px] h-[50px] rounded-full ring p-1 ring-green-500 xxs:-mt-20 xxs:relative xxs:-top-10 lg:mt-0 lg:top-0 z-[10] mobile-hide" />
             <div>
               <div className="logo xxs:-mt-20 xxs:relative xxs:-top-10 lg:mt-0 lg:top-0">
-                <a href="/">
-                  Maa{" "}
-                  <span className="it-name">Mara</span>{" "}
-                  <span className="mkrt">Market</span>
-                </a>
+                <a href="/">Maa <span className="it-name">Mara</span> <span className="mkrt">Market</span></a>
               </div>
             </div>
-
-            <div className="mm-header-search mobile-hide">
-              <SearchBar />
-            </div>
-
-            <div className="mm-header-actions items-center mobile-hide" aria-label="Account, wishlist and cart">
-              <NavIcons />
-            </div>
+            <div className="mm-header-search mobile-hide"><SearchBar /></div>
+            <div className="mm-header-actions items-center mobile-hide" aria-label="Account, wishlist and cart"><NavIcons /></div>
           </div>
 
           <div className="flex flex-row w-full relative gap-3 items-center justify-end desktop-hide">
             <label className="mm-mobile-currency" aria-label="Select currency">
-              <span aria-hidden="true">{currencies[currency].flag}</span>
-              <select
-                value={currency}
-                onChange={e => setCurrency(e.target.value)}
-                className="bg-transparent border-0 outline-none cursor-pointer"
-                aria-label="Currency"
-              >
-                <option value="KES">KES</option>
-                <option value="USD">USD</option>
-                <option value="EUR">EUR</option>
-                <option value="GBP">GBP</option>
+              <span aria-hidden="true">{currencies[currency]?.flag}</span>
+              <select value={currency} onChange={e => setCurrency(e.target.value)} className="bg-transparent border-0 outline-none cursor-pointer" aria-label="Currency">
+                {Object.keys(currencies).map(code => <option key={code} value={code}>{code}</option>)}
               </select>
             </label>
+
             {isAuthenticated && !isAdminOrVendor && (
               <Link to="/vendor-register-form" className="flex items-center gap-1 text-sm" aria-label="Become a vendor">
-                <Store className="w-[15px]" />
-                <span>Become a Vendor</span>
+                <Store className="w-[15px]" /><span>Become a Vendor</span>
               </Link>
             )}
 
             {isAuthenticated && isAdminOrVendor && (
-              <Link
-                to={user?.role === "admin" ? "/admin-dashboard" : "/vendors-dashboard"}
-                className="flex items-center"
-                aria-label="Open dashboard"
-              >
+              <Link to={user?.role === "admin" ? "/admin-dashboard" : "/vendors-dashboard"} className="flex items-center" aria-label="Open dashboard">
                 <LayoutDashboard className="w-[17px]" />
               </Link>
             )}
 
             {isAuthenticated && firstName && (
               <div className="flex flex-row items-center gap-2">
-                <UserRound className="w-[15px]" />
-                <p className="text-sm">{firstName}</p>
+                <UserRound className="w-[15px]" /><p className="text-sm">{firstName}</p>
               </div>
             )}
 
             {isAuthenticated ? (
-              <button type="button" className="mm-auth-action mm-auth-action--logout text-sm" onClick={logout}>
-                Log out
-              </button>
+              <button type="button" className="mm-auth-action mm-auth-action--logout text-sm" onClick={logout}>Log out</button>
             ) : (
               <Link to="/customer-login" className="mm-auth-action text-sm">Sign in</Link>
             )}
@@ -189,9 +159,7 @@ const Header = () => {
         </div>
       </div>
 
-      <div className="mm-category-row">
-        <CategoryNavigation />
-      </div>
+      <div className="mm-category-row"><CategoryNavigation /></div>
       <MobileNavigationDrawer open={mobileMenuOpen} onClose={() => setMobileMenuOpen(false)} />
     </header>
   );
