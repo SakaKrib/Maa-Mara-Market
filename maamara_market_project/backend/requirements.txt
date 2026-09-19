@@ -20,3 +20,4 @@ openai
 bleach
 cryptography
 python-dateutil
+whitenoise
