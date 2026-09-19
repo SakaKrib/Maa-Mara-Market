@@ -28,12 +28,6 @@ const processQueue = (error = null) => {
   queue.forEach(({ resolve, reject }) => (error ? reject(error) : resolve()));
 };
 
-const redirectToLoginOnce = () => {
-  if (typeof window !== "undefined" && window.location.pathname !== "/login") {
-    window.location.assign("/login");
-  }
-};
-
 const refreshAuthentication = () => {
   if (!refreshPromise) {
     refreshPromise = api.post("/api/token/refresh/");
@@ -46,10 +40,15 @@ api.interceptors.response.use(
   async (error) => {
     const originalRequest = error.config;
 
-    if (!error.response || !originalRequest) return Promise.reject(error);
+    if (!error.response || !originalRequest) {
+      return Promise.reject(error);
+    }
 
     const requestUrl = originalRequest.url || "";
-    if (requestUrl.includes("/api/token/refresh/")) return Promise.reject(error);
+
+    if (requestUrl.includes("/api/token/refresh/")) {
+      return Promise.reject(error);
+    }
 
     if (error.response.status !== 401 || originalRequest._retry) {
       return Promise.reject(error);
@@ -71,7 +70,6 @@ api.interceptors.response.use(
       return api(originalRequest);
     } catch (refreshError) {
       processQueue(refreshError);
-      redirectToLoginOnce();
       return Promise.reject(refreshError);
     } finally {
       isRefreshing = false;
