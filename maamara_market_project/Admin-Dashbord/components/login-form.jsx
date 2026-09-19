@@ -197,7 +197,7 @@ export function LoginForm({ className, ...props }) {
                   <Button
                     type="button"
                     variant="outline"
-                    className="w-full flex items-center justify-center gap-2"
+                    className="mm-auth-google w-full flex items-center justify-center gap-2"
                     onClick={() => {
                       // optional: store redirect after login
                       sessionStorage.setItem("postLoginRedirect", from)
