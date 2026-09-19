@@ -18,8 +18,6 @@ router = DefaultRouter()
 
 urlpatterns = [
     path('api/', include(router.urls)),
-    path('api/vendor-net-payout/', vendor_net_payout_api, name='vendor_net_payout_api'),
-    path("api/vendor/payouts/", vendor_recent_payouts_api, name="vendor-payouts-api"),
 
     #vendor profile
     path("api/vendor-profile/single-page/", VendorProfileView.as_view(), name="vendor-profile"),
@@ -42,7 +40,6 @@ urlpatterns = [
     path("google/success/", google_login_success),
     
     # item stats
-    path('api/item-stats/', vendor_item_stats),
     path("api/vendor-item-growth/", vendor_item_growth_stats, name="vendor-item-growth"),
 
     
@@ -63,7 +60,6 @@ urlpatterns = [
         name="vendor-item-detail"
     ),
 
-    path('api/vendor/profile/',get_vendor_profile),
 
 
     path('api/register/',register),
@@ -93,7 +89,6 @@ urlpatterns = [
     path('api/vendor-requests/<int:vendor_request_id>/update-vendor-info/', update_vendor_info, name='update_vendor_info'),
 
     #vendor payouts
-    path("api/vendor-payout-history/",vendor_payout_history_api, name="vendor-payout-history"),
 
 
    
