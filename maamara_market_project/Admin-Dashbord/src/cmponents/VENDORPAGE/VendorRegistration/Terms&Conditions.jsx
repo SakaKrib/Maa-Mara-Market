@@ -16,9 +16,6 @@ const VendorRegistration = () => {
   const [showForm, setShowForm] = useState(false);
 
 
-  if (!isAllowed) return null;
-
-
   const storageKey =
     user && user.id
       ? `agreedToTerms_${user.id}`
@@ -37,7 +34,7 @@ const VendorRegistration = () => {
 
   }, [storageKey]);
 
-
+  if (!isAllowed) return null;
 
   const handleAgreementSubmit = (e) => {
 
