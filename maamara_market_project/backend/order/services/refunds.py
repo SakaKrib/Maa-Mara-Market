@@ -420,8 +420,17 @@ def reconcile_mpesa_refund_callback(payload, *, timeout=False):
         refund.mpesa_result_code = result_code_int
         if result_code_int == 0 and not timeout:
             transaction_id = result.get("TransactionID")
-            if transaction_id:
-                refund.provider_reference = str(transaction_id)
+            if not transaction_id:
+                # A successful callback without the provider transaction
+                # reference is not sufficient evidence of settlement.
+                refund.status = "processing"
+                refund.failure_reason = "M-Pesa reversal callback was successful but contained no transaction reference."
+                refund.save(update_fields=[
+                    "mpesa_result_code", "status", "failure_reason", "updated_at",
+                ])
+                return refund
+
+            refund.provider_reference = str(transaction_id)
             refund.status = "completed"
             refund.failure_reason = None
             refund.completed_at = refund.completed_at or timezone.now()
