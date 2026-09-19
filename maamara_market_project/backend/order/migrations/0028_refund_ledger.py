@@ -23,7 +23,7 @@ class Migration(migrations.Migration):
                 ("created_at", models.DateTimeField(auto_now_add=True)),
                 ("updated_at", models.DateTimeField(auto_now=True)),
                 ("completed_at", models.DateTimeField(blank=True, null=True)),
-                ("payment", models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, related_name="refunds", to="order.payment")),
+                ("payment", models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, related_name="refunds", to="oder.payment")),
                 ("return_request", models.OneToOneField(on_delete=django.db.models.deletion.PROTECT, related_name="refund_record", to="vendorDashboard.returnrequest")),
             ],
             options={
