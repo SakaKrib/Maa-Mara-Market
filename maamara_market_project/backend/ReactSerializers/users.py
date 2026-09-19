@@ -32,35 +32,19 @@ from vendorDashboard.models import Vendor
 from core.mergeVisitortoUserData import merge_visitor_data_to_user
 from .registration import register, verify_otp_register_otp, resend_otp_register_otp
 
-
-
-
-
 from django.contrib.auth import get_user_model
 
 
 logger = logging.getLogger(__name__)
 
-# @ensure_csrf_cookie
-# def get_csrf_token(request):
-#     return JsonResponse({'csrfToken': request.META.get('CSRF_COOKIE', '')})
-
 
 @ensure_csrf_cookie
 def get_csrf_token(request):
     csrf_token = get_token(request)
-    response = JsonResponse({"success": True, "csrfToken": csrf_token})
-    response.set_cookie(
-        "csrftoken",
-        csrf_token,
-        secure=request.is_secure(),
-        httponly=False,
-        samesite="Lax",
-        path="/",
-    )
-    return response
-
-
+    return JsonResponse({
+        "success": True,
+        "csrfToken": csrf_token,
+    })
 
 
 class ProfileView(APIView):
@@ -153,7 +137,6 @@ class HybridCheckAuthView(APIView):
         response.delete_cookie("sessionid", path="/")
 
     def get(self, request):
-        # 1. Preserve Django session auth for the admin interface.
         session_user = request.user
         if session_user.is_authenticated and session_user.is_superuser:
             return Response(
@@ -161,7 +144,6 @@ class HybridCheckAuthView(APIView):
                 status=status.HTTP_200_OK,
             )
 
-        # 2. Normal authenticated user access token.
         access_token = request.COOKIES.get("accessToken")
         if access_token:
             jwt_authenticator = JWTAuthentication()
@@ -176,12 +158,8 @@ class HybridCheckAuthView(APIView):
                 self._clear_user_session_cookies(response)
                 return response
             except (InvalidToken, TokenError):
-                # Continue into refresh-token recovery below.
                 pass
 
-        # 3. Recover an expired/missing user access cookie from the refresh
-        # cookie. TokenRefreshSerializer honors the project's configured
-        # rotation + blacklist policy.
         refresh_token = request.COOKIES.get("refreshToken")
         if refresh_token:
             try:
@@ -225,11 +203,8 @@ class HybridCheckAuthView(APIView):
                 self._clear_user_session_cookies(response)
                 return response
             except (InvalidToken, TokenError, User.DoesNotExist, ValueError):
-                # An invalid user refresh should not prevent a valid visitor
-                # identity from being considered below.
                 pass
 
-        # 4. Visitor access token.
         visitor_id_cookie = request.COOKIES.get("visitorId")
         visitor_token = request.COOKIES.get("visitorAccessToken")
         if visitor_token:
@@ -255,7 +230,6 @@ class HybridCheckAuthView(APIView):
             except (InvalidToken, TokenError):
                 pass
 
-        # 5. Visitor refresh recovery.
         visitor_refresh = request.COOKIES.get("visitorRefreshToken")
         if visitor_refresh:
             try:
@@ -317,28 +291,23 @@ logger = logging.getLogger("ReactSerializers.users")
 @require_http_methods(["POST"])
 def login_view(request):
 
-    # Get visitor_id from cookie or POST data (adjust according to your frontend)
     visitor_id = request.COOKIES.get("visitorId") or request.POST.get("visitorId")
 
-    identifier = request.POST.get("username")  # Can be username or email
+    identifier = request.POST.get("username")
     password = request.POST.get("password")
     csrf_token = request.META.get('HTTP_X_CSRFTOKEN')
 
-
-    # --- Django User authentication ---
     user = authenticate(request, username=identifier, password=password)
 
     if user is not None:
         auth_login(request, user)
         role = "admin" if user.is_superuser else ("vendor" if hasattr(user, "vendor") else "customer")
-        # Ensure profile exists
         Profile.objects.get_or_create(user=user)
 
         refresh = RefreshToken.for_user(user)
         access_token = str(refresh.access_token)
         refresh_token = str(refresh)
 
-         # Merge visitor data after login
         merge_visitor_data_to_user(user, visitor_id)
 
         incomplete_profile = not all([
@@ -362,15 +331,10 @@ def login_view(request):
         response.delete_cookie('visitorId')
         response.delete_cookie('user_sessionid')
 
-
-
-        # Set JWT cookies
-        response.set_cookie("accessToken", access_token, httponly=True, secure=request.is_secure(), samesite="Lax",  max_age=5 * 60,
-        path="/",)
+        response.set_cookie("accessToken", access_token, httponly=True, secure=request.is_secure(), samesite="Lax", max_age=5 * 60, path="/")
         response.set_cookie("refreshToken", refresh_token, httponly=True, secure=request.is_secure(), samesite="Lax", max_age=2592000, path="/")
         return response
 
-    # --- Fallback to Vendor table ---
     try:
         vendor = Vendor.objects.get(email=identifier)
     except Vendor.DoesNotExist:
@@ -406,8 +370,6 @@ def login_view(request):
     return JsonResponse({"success": False, "error": "Invalid credentials"}, status=401)
 
 
-
-# google login success (fix frontend url in production, hide it in .env)
 from django.shortcuts import redirect
 from django.contrib.auth import login
 from django.contrib.auth.models import User
@@ -420,8 +382,6 @@ logger = logging.getLogger(__name__)
 
 def google_login_success(request):
 
-    # ❌ DO NOT RELY ON request.user
-    # instead always pull SocialAccount directly
     try:
         social = SocialAccount.objects.get(provider="google", user=request.user)
     except SocialAccount.DoesNotExist:
@@ -429,8 +389,7 @@ def google_login_success(request):
 
     extra = social.extra_data
 
-    # 🔑 PRIMARY IDENTITY (BEST): Google UID
-    google_uid = social.uid  # "sub"
+    google_uid = social.uid
     email = extra.get("email")
 
     first_name = extra.get("given_name", "") or ""
@@ -441,14 +400,8 @@ def google_login_success(request):
 
     logger.info("Google authentication completed for a linked account")
 
-    # ================================
-    # 🔥 1. FIND EXISTING USER (EMAIL FIRST)
-    # ================================
     user = User.objects.filter(email=email).first()
 
-    # ================================
-    # 🔥 2. CREATE USER ONLY IF NOT EXISTS
-    # ================================
     if not user:
         base_username = slugify(email.split("@")[0])
         username = base_username
@@ -465,16 +418,10 @@ def google_login_success(request):
             last_name=last_name,
         )
 
-    # ================================
-    # 🔥 3. LINK SOCIAL ACCOUNT PROPERLY
-    # ================================
     if social.user != user:
         social.user = user
         social.save()
 
-    # ================================
-    # 🔥 4. UPDATE MISSING INFO ONLY
-    # ================================
     updated = False
 
     if first_name and not user.first_name:
@@ -488,31 +435,19 @@ def google_login_success(request):
     if updated:
         user.save()
 
-    # ================================
-    # 🔐 5. LOGIN PROPER BACKEND
-    # ================================
     login(
         request,
         user,
         backend="django.contrib.auth.backends.ModelBackend"
     )
 
-    # ================================
-    # 🔥 6. JWT TOKENS
-    # ================================
     refresh = RefreshToken.for_user(user)
 
-    # ================================
-    # 🔥 7. REDIRECT (YOUR FRONTEND)
-    # ================================
-    # Consolidate anonymous browsing/cart/account data before visitor cookies are discarded.
     visitor_id = request.COOKIES.get("visitorId")
     merge_visitor_data_to_user(user, visitor_id)
 
     response = redirect(f"{settings.FRONTEND_URL}/login/auth-success")
 
-
-    # 🔥 DELETE VISITOR TOKENS / SESSION
     response.delete_cookie("visitorAccessToken")
     response.delete_cookie("visitorRefreshToken")
     response.delete_cookie("visitorId")
@@ -541,26 +476,17 @@ def google_login_success(request):
     return response
 
 
-
-# create acces tokens for visitors
-
 class VisitorTokenView(APIView):
     authentication_classes = []
     permission_classes = [AllowAny]
 
     def get(self, request):
 
-        # ---------------------------------------------------
-        # 1. If user is logged in → DO NOT create visitor
-        # ---------------------------------------------------
         if request.COOKIES.get("accessToken") or request.COOKIES.get("refreshToken"):
             return Response({
                 "message": "Authenticated user detected — visitor not created"
             })
 
-        # ---------------------------------------------------
-        # 2. If visitor already exists → reuse it
-        # ---------------------------------------------------
         existing_id = request.COOKIES.get("visitorId")
         existing_refresh = request.COOKIES.get("visitorRefreshToken")
 
@@ -578,9 +504,6 @@ class VisitorTokenView(APIView):
                 "visitor_id": existing_id
             })
 
-        # ---------------------------------------------------
-        # 3. Create new visitor identity
-        # ---------------------------------------------------
         visitor_id = str(uuid.uuid4())
 
         refresh = RefreshToken()
@@ -591,17 +514,11 @@ class VisitorTokenView(APIView):
         access["visitor"] = True
         access["visitor_id"] = visitor_id
 
-        # ---------------------------------------------------
-        # 4. Response (NO TOKEN LEAK IN JSON)
-        # ---------------------------------------------------
         response = Response({
             "message": "Visitor created",
             "visitor_id": visitor_id
         })
 
-        # ---------------------------------------------------
-        # 5. Cookies (secure + consistent)
-        # ---------------------------------------------------
         cookie_options = {
             "httponly": True,
             "secure": request.is_secure(),
@@ -633,17 +550,13 @@ class VisitorTokenView(APIView):
         return response
 
 
-
-# logout view
 @api_view(["POST"])
 @permission_classes([AllowAny])
 @require_http_methods(["POST"])
 def logout_view(request):
 
-    # 1. Django session logout
     logout(request)
 
-    # 2. Blacklist refresh token (if using SimpleJWT blacklist)
     refresh_token = request.COOKIES.get("refreshToken")
 
     if refresh_token:
@@ -653,11 +566,8 @@ def logout_view(request):
         except TokenError:
             pass
 
-    # 3. Response
     response = JsonResponse({"message": "Logged out successfully"})
 
-    # 4. Clear every browser identity cookie. Logout must still work
-    # when the short-lived access token has already expired.
     for cookie_name in (
         "accessToken",
         "refreshToken",
@@ -697,8 +607,6 @@ class CookieRefreshView(APIView):
                     path="/",
                 )
 
-                # ROTATE_REFRESH_TOKENS=True causes SimpleJWT to return a new
-                # refresh token here; never keep extending a stale token.
                 if "refresh" in data:
                     response.set_cookie(
                         "refreshToken",
