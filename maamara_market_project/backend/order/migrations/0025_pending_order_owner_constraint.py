@@ -5,7 +5,7 @@ from django.db.models import Q
 class Migration(migrations.Migration):
 
     dependencies = [
-        ("order", "0024_card_user_visitor_index"),
+        ("oder", "0024_card_user_visitor_index"),
     ]
 
     operations = [
