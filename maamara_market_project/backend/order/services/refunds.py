@@ -174,6 +174,17 @@ def process_paypal_refund(refund_id):
 
     if response.status_code not in (200, 201):
         provider_error = data.get("name") or data.get("message") or "PayPal rejected the refund."
+
+        # A 5xx response is ambiguous: PayPal may have accepted the refund
+        # before the connection/proxy failed. Keep it processing so the
+        # reconciliation path can resolve it instead of risking a duplicate.
+        if response.status_code >= 500:
+            logger.warning(
+                "PayPal refund provider returned a server error; keeping refund processing.",
+                extra={"refund_id": refund_id, "status_code": response.status_code},
+            )
+            return Refund.objects.get(pk=refund_id)
+
         _mark_refund_failed(refund_id, provider_error)
         raise RefundProcessingError("PayPal rejected the refund request.")
 
