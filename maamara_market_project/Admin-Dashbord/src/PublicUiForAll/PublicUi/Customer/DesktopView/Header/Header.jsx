@@ -65,7 +65,7 @@ const Header = () => {
               <img
               src={Maamara}
               alt="maamara-logo"
-              className="w-[50px] h-[50px] rounded-full ring p-1 ring-1 ring-green-500 xxs:-mt-20 xxs:relative xxs:-top-10 lg:mt-0 lg:top-0 z-[10]"
+              className="w-[50px] h-[50px] rounded-full ring p-1 ring-1 ring-green-500 xxs:-mt-20 xxs:relative xxs:-top-10 lg:mt-0 lg:top-0 z-[10] mobile-hide"
             />
 
             <div>

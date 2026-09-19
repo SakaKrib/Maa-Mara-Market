@@ -2298,6 +2298,9 @@ input[type="range"]::-webkit-slider-thumb {
 
 
 @media screen and (min-width: 300px) and (max-width: 639px) {
+    .logo a{
+        font-size: 12px;
+    }
     #cart-table {
         margin-top: -2em;
     }
