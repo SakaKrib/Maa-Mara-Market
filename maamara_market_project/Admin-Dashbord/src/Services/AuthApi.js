@@ -6,8 +6,6 @@ const baseURL = import.meta.env.VITE_API_URL || import.meta.env.VITE_BASE_URL ||
 import { getAccessToken, refreshAccessToken } from "./TokenUtils";
 
 export async function fetchWithAuth(url, options = {}) {
-
-export async function fetchWithAuth(url, options = {}) {
   let token = getAccessToken();
 
   let res = await fetch(url, {
