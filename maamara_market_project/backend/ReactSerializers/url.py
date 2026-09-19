@@ -9,7 +9,6 @@ from rest_framework_simplejwt.views import (
 )
 from .users import *
 from .vendors import *
-from .views import VendorUpdateProfile
 from .items import vendor_item_growth_stats
 from .ItemInventory import *
 
@@ -22,7 +21,6 @@ urlpatterns = [
 
     #vendor profile
     path("api/vendor-profile/single-page/", VendorProfileView.as_view(), name="vendor-profile"),
-    path("api/vendor-update-profile/<int:pk>/", VendorUpdateProfile.as_view(), name="vendor-profile-update"),
     
     
     path('api/token/refresh/', CookieRefreshView.as_view(), name='refresh'),
