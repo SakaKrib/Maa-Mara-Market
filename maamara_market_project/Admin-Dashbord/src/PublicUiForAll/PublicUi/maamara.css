@@ -4604,3 +4604,26 @@ h1,h2,h3,h4{font-family:'regular','Poppins',Arial,sans-serif}
 .mm-auth-action--logout{color:#dc2626}
 .mm-auth-action--logout:hover{color:#b91c1c}
 .mm-user-first-name{white-space:nowrap}
+
+.mm-mobile-currency{
+  display:none;
+}
+@media(max-width:639px){
+  .mm-mobile-currency{
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    gap:6px;
+    min-height:34px;
+    padding:0 8px;
+    border:1px solid var(--mm-border);
+    border-radius:999px;
+    background:var(--mm-surface);
+    flex:0 0 auto;
+  }
+  .mm-mobile-currency select{
+    max-width:62px;
+    font-size:12px;
+    color:var(--mm-text);
+  }
+}
