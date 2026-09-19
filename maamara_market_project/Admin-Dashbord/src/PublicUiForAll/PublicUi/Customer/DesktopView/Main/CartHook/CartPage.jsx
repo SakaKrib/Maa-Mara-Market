@@ -131,7 +131,7 @@ const CartPage = () => {
             <div className="mm-divider" />
             <div className="flex justify-between items-baseline">
               <span className="font-semibold">Total</span>
-              <strong className="text-xl">KES {money(subtotal)}</strong>
+              <strong className="text-xl"><FormattedCurrency value={Number(subtotal)} /></strong>
             </div>
             <p className="text-xs text-gray-500 mt-2">Shipping and final payment details are confirmed at checkout.</p>
             <Link to="/checkout-page" className="primary-button mt-5 flex w-full justify-center rounded-md px-5 py-3 text-white font-semibold">Proceed to checkout</Link>
