@@ -10,7 +10,7 @@ import { useMode } from "./theme";
 import BridgeToHTML from "./globalHtml";
 import LoginForm from "./cmponents/Auth/AdminLogin/AdminLogin";
 import { AuthProvider, useAuth } from "./cmponents/Auth/AuthContext/Context";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import "./index.css";
 import "./main.css";
 import "../src/PublicUiForAll/PublicUi/maamara.css";
@@ -136,16 +136,6 @@ function AppContent() {
   const [theme, colorMode] = useMode();
   const themeSetup = useTheme();
   const colors = tokens(themeSetup.palette.mode);
-
-  useEffect(() => {
-    // Only call the API to set the visitor token cookie
-    api.get("/api/vistor-token/")
-      .then(() => {
-        console.log("Visitor token cookie set by server");
-      })
-      .catch(err => console.error(err));
-  }, []);
-  
 
   if (loading) {
     return (
@@ -413,6 +403,33 @@ function AppContent() {
 function App() {
   useDashboardInteractions();
   useMobileMenu();
+
+  const [visitorReady, setVisitorReady] = useState(false);
+
+  useEffect(() => {
+    let active = true;
+
+    api.get("/api/vistor-token/")
+      .then(() => {
+        if (active) setVisitorReady(true);
+      })
+      .catch((error) => {
+        console.error("Visitor token initialization failed:", error);
+        if (active) setVisitorReady(true);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  if (!visitorReady) {
+    return (
+      <div className="loader-screen flex justify-center items-center h-screen">
+        <CircularProgress />
+      </div>
+    );
+  }
 
   return (
     <ToastProvider>
