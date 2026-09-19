@@ -4627,3 +4627,92 @@ h1,h2,h3,h4{font-family:'regular','Poppins',Arial,sans-serif}
     color:var(--mm-text);
   }
 }
+
+/* OTP verification surface — matches the Maa Mara authentication design system. */
+.mm-otp-overlay{
+  padding:16px;
+  background:rgba(10,2,28,.42)!important;
+  backdrop-filter:blur(3px);
+}
+.mm-otp-card{
+  max-width:430px!important;
+  padding:28px!important;
+  border:1px solid var(--mm-border,#e6e3de);
+  border-radius:var(--mm-radius-lg,14px)!important;
+  background:var(--mm-surface,#fff)!important;
+  color:var(--mm-text,#222);
+  box-shadow:0 18px 50px rgba(10,2,28,.16)!important;
+  font-family:'regular',sans-serif;
+}
+.mm-otp-title{
+  margin:0!important;
+  color:var(--dark-color,#0a021c);
+  font-family:'regular',sans-serif!important;
+  font-size:20px!important;
+  font-weight:600!important;
+}
+.mm-otp-subtitle{
+  margin:0 0 22px;
+  color:var(--mm-text-muted,#6f6a63);
+  text-align:center;
+  font-size:12px;
+  line-height:1.6;
+}
+.mm-otp-subtitle strong{color:var(--mm-text,#222);font-weight:600}
+.mm-otp-input{gap:8px!important}
+.mm-otp-input > div{gap:8px!important}
+.mm-otp-slot{
+  width:52px!important;
+  height:52px!important;
+  border:1px solid var(--mm-border-strong,#d6d1c9)!important;
+  border-radius:var(--mm-radius-md,10px)!important;
+  background:var(--mm-surface,#fff)!important;
+  color:var(--dark-color,#0a021c);
+  font-family:'regular',sans-serif;
+  font-size:20px!important;
+  font-weight:600;
+  box-shadow:var(--mm-shadow-card,0 1px 3px rgba(0,0,0,.08))!important;
+}
+.mm-otp-slot:first-child,
+.mm-otp-slot:last-child{border-radius:var(--mm-radius-md,10px)!important}
+.mm-otp-slot[data-active="true"],
+.mm-otp-slot:focus-within{
+  border-color:var(--blue,#2a2185)!important;
+  box-shadow:0 0 0 3px rgba(42,33,133,.10)!important;
+  outline:none;
+}
+.mm-otp-verify,
+.mm-otp-resend{
+  width:100%;
+  min-height:44px;
+  border-radius:var(--mm-radius-sm,6px)!important;
+  font-family:'regular',sans-serif;
+  font-size:13px;
+  font-weight:600;
+}
+.mm-otp-verify{
+  background:var(--blue,#2a2185)!important;
+  color:#fff!important;
+  box-shadow:none!important;
+}
+.mm-otp-verify:hover{background:var(--dark-color,#0a021c)!important}
+.mm-otp-resend{
+  margin-top:0;
+  border-color:var(--mm-border-strong,#d6d1c9)!important;
+  background:var(--mm-surface,#fff)!important;
+  color:var(--mm-text,#222)!important;
+  box-shadow:none!important;
+}
+.mm-otp-resend:hover{
+  background:var(--mm-surface-muted,#f5f4f1)!important;
+}
+@media(max-width:480px){
+  .mm-otp-card{padding:22px 16px!important}
+  .mm-otp-input{gap:5px!important}
+  .mm-otp-input > div{gap:5px!important}
+  .mm-otp-slot{
+    width:43px!important;
+    height:48px!important;
+    font-size:18px!important;
+  }
+}
