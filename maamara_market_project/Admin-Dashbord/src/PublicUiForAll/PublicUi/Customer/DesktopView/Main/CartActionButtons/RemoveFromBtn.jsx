@@ -1,5 +1,4 @@
 import React, { useState } from "react";
-import { baseUrl } from "../../../../../../cmponents/Constant/Constant";
 import api from "../../../../../../Services/Api";
 import { Snackbar, Alert, Button } from "@mui/material";
 import { useCartContext } from "../CartHook/cart";
@@ -31,7 +30,7 @@ const RemoveFromCartButton = ({ itemId, cartItemId, variantId, sizeId, ageVarian
     try {
       const csrfToken = getCookie("csrftoken"); // get CSRF from cookie
 
-      const res = await api.delete(`${baseUrl}/api/cart/remove/${itemId}/`, {
+      const res = await api.delete(`/api/cart/remove/${itemId}/`, {
         headers: {
           "X-CSRFToken": csrfToken,
         },
