@@ -416,14 +416,12 @@ function App() {
 
   return (
     <ToastProvider>
-      <AuthProvider>
-        <CartProvider>
+      <CartProvider>
         <WishlistProvider>
-        <AppContent />
+          <AppContent />
         </WishlistProvider>
-        </CartProvider>
-        <Toaster />
-      </AuthProvider>
+      </CartProvider>
+      <Toaster />
     </ToastProvider>
   );
 }
