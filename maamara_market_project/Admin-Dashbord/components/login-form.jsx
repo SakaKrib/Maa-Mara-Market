@@ -136,8 +136,8 @@ export function LoginForm({ className, ...props }) {
         </div>
 
         <Card className="mm-auth-card overflow-hidden">
-          <CardContent className="grid p-0 md:grid-cols-2">
-            <form onSubmit={handleSubmit} className="mm-auth-form-panel p-6 md:p-8">
+          <CardContent className="grid p-0 md:grid-cols-2 xxs:grid-cols-1">
+            <form onSubmit={handleSubmit} className="mm-auth-form-panel p-6 md:p-8 ">
               <div className="mm-auth-form flex flex-col gap-6">
                 <div className="flex flex-col items-center text-center">
                   <h1 className="text-2xl font-bold mm-auth-title">Welcome back</h1>
@@ -253,7 +253,7 @@ export function LoginForm({ className, ...props }) {
               </div>
             </form>
 
-            <div className="mm-auth-visual relative hidden md:block">
+            <div className="mm-auth-visual relative mobile-hide md:block">
               <img
                 src={Maamara}
                 alt="Login visual"
