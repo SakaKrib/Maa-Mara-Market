@@ -15,6 +15,10 @@ import { Eye, EyeOff } from "lucide-react"
 
 
 // 🧠 Helper to read cookie
+const setCookie = (name, value) => {
+  const secure = window.location.protocol === "https:" ? "; Secure" : ""
+  document.cookie = name + "=" + encodeURIComponent(value) + "; Path=/; SameSite=Lax" + secure
+}
 const getCookie = (name) => {
   const value = `; ${document.cookie}`
   const parts = value.split(`; ${name}=`)
@@ -46,7 +50,9 @@ const RegistrationForm = () => {
   useEffect(() => {
     api.get("/api/get-csrf-token/")
       .then(({ data }) => {
-        setCsrfToken(data?.csrfToken || getCookie("csrftoken"))
+        const token = data?.csrfToken || getCookie("csrftoken")
+        if (token) setCookie("csrftoken", token)
+        setCsrfToken(token)
       })
       .catch(err => console.error("CSRF fetch error:", err))
   }, [])
@@ -101,6 +107,7 @@ const RegistrationForm = () => {
       if (!token) {
         const csrfResponse = await api.get("/api/get-csrf-token/")
         token = csrfResponse.data?.csrfToken || getCookie("csrftoken")
+        if (token) setCookie("csrftoken", token)
         setCsrfToken(token)
       }
 
