@@ -53,6 +53,48 @@ def get_csrf_token(request):
 
 
 
+class ProfileView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        profile, _ = Profile.objects.get_or_create(user=request.user)
+        return Response({
+            "success": True,
+            "user": {
+                "id": request.user.id,
+                "username": request.user.username,
+                "email": request.user.email,
+                "first_name": request.user.first_name,
+                "last_name": request.user.last_name,
+            },
+            "profile": {
+                "profile_picture": profile.profile_picture.url if profile.profile_picture else None,
+                "date_of_birth": profile.date_of_birth,
+                "location": profile.location,
+                "phone_number": profile.phone_number,
+                "address": profile.address,
+                "city": profile.city,
+                "country": profile.country,
+            },
+        })
+
+    def patch(self, request):
+        profile, _ = Profile.objects.get_or_create(user=request.user)
+        user_fields = ("first_name", "last_name", "email")
+        profile_fields = ("date_of_birth", "location", "phone_number", "address", "city", "country")
+
+        for field in user_fields:
+            if field in request.data:
+                setattr(request.user, field, request.data[field])
+        request.user.save(update_fields=[f for f in user_fields if f in request.data])
+
+        for field in profile_fields:
+            if field in request.data:
+                setattr(profile, field, request.data[field])
+        profile.save()
+
+        return self.get(request)
+
 class HybridCheckAuthView(APIView):
     authentication_classes = []
     permission_classes = []
