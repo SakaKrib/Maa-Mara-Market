@@ -49,7 +49,16 @@ logger = logging.getLogger(__name__)
 @ensure_csrf_cookie
 def get_csrf_token(request):
     csrf_token = get_token(request)
-    return JsonResponse({'success': True, 'csrfToken': csrf_token})
+    response = JsonResponse({"success": True, "csrfToken": csrf_token})
+    response.set_cookie(
+        "csrftoken",
+        csrf_token,
+        secure=request.is_secure(),
+        httponly=False,
+        samesite="Lax",
+        path="/",
+    )
+    return response
 
 
 
