@@ -14,7 +14,7 @@ from ReactSerializers.models import Item
 class Profile(models.Model):
     user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     visitor_id = models.CharField(max_length=64, blank=True, null=True, unique=True) 
-    customer = models.OneToOneField("order.Customer", on_delete=models.CASCADE, null=True, blank=True)
+    customer = models.OneToOneField("oder.Customer", on_delete=models.CASCADE, null=True, blank=True)
     profile_picture = models.ImageField(upload_to='profile_pictures/', blank=True, null=True)
     date_of_birth = models.DateField(blank=True, null=True)
     location = models.CharField(max_length=255, blank=True, null=True)
