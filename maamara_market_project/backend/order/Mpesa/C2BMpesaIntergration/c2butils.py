@@ -122,7 +122,7 @@ def stk_push(request):
                 return Response({"error": "Order amount must be greater than zero"}, status=400)
 
             shortcode = str(settings.PAYMENT_GATEWAYS["mpesa"]["stk_push"]["shortcode"]).strip()
-        passkey = str(settings.PAYMENT_GATEWAYS["mpesa"]["stk_push"]["passkey"]).strip()
+            passkey = str(settings.PAYMENT_GATEWAYS["mpesa"]["stk_push"]["passkey"]).strip()
             callback_url = settings.PAYMENT_GATEWAYS["mpesa"]["stk_push"]["callback_url"].strip()
             stk_url = settings.PAYMENT_GATEWAYS["mpesa"]["stk_push"]["stk_url"].strip()
 
@@ -141,15 +141,15 @@ def stk_push(request):
             "CallBackURL": callback_url,
             "AccountReference": str(order.id),
             "TransactionDesc": f"Payment for order {order.id}",
-        }
+            }
 
-        token = get_mpesa_token()
-        response = requests.post(
+            token = get_mpesa_token()
+            response = requests.post(
             stk_url,
             json=payload,
             headers={"Authorization": f"Bearer {token}", "Content-Type": "application/json"},
             timeout=30,
-        )
+            )
         response.raise_for_status()
         data = response.json()
 
