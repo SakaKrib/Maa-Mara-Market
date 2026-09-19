@@ -244,7 +244,10 @@ CHANNEL_LAYERS = {
             "hosts": [{
                 "address": env("REDIS_URL", default="redis://redis:6379/0"),
                 "socket_connect_timeout": 5,
-                "socket_timeout": 15,
+                # WebSocket/channel-layer receives are long-lived. A finite
+                # socket read timeout can kill an otherwise healthy idle
+                # connection with "Timeout reading from redis:6379".
+                "socket_timeout": None,
                 "retry_on_timeout": True,
             }],
         },
