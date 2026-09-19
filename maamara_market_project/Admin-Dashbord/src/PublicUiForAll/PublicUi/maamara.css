@@ -4584,3 +4584,60 @@ h1,h2,h3,h4{font-family:'regular','Poppins',Arial,sans-serif}
   font-size:13px;
   font-weight:600;
 }
+
+
+/* Authentication page frame and mobile containment */
+.mm-auth-page{
+  box-sizing:border-box;
+  width:100%;
+  min-height:100svh;
+  background:var(--mm-page-bg,#faf9f7);
+  color:var(--mm-text,#222);
+  overflow-x:hidden;
+}
+.mm-auth-page > div{
+  width:100%;
+  min-width:0;
+}
+@media(max-width:639px){
+  .mm-auth-page{
+    min-height:100svh;
+    padding:16px!important;
+    justify-content:flex-start!important;
+  }
+  .mm-auth-page > div{
+    max-width:100%!important;
+  }
+  .mm-auth-form-panel{
+    width:100%;
+    min-width:0;
+    padding:20px!important;
+  }
+  .mm-auth-card,
+  .mm-auth-card > *{
+    width:100%;
+    min-width:0;
+  }
+  .mm-auth-form{
+    width:100%;
+    min-width:0;
+    gap:16px;
+  }
+  .mm-auth-form input,
+  .mm-auth-form .mm-auth-input,
+  .mm-auth-google,
+  .mm-auth-submit{
+    max-width:100%;
+    box-sizing:border-box;
+  }
+  .mm-auth-form .flex.items-center{
+    min-width:0;
+    flex-wrap:wrap;
+    gap:6px;
+  }
+  .mm-auth-form .flex.items-center .mm-auth-link,
+  .mm-auth-form .flex.items-center a{
+    max-width:100%;
+    overflow-wrap:anywhere;
+  }
+}
