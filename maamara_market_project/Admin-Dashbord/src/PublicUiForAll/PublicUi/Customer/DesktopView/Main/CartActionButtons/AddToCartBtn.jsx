@@ -1,6 +1,5 @@
 import React, { useState } from "react";
 import api from "../../../../../../Services/Api";
-import { baseUrl } from "../../../../../../cmponents/Constant/Constant";
 import CartIcon from "@mui/icons-material/ShoppingCartOutlined";
 import Snackbar from "@mui/material/Snackbar";
 import MuiAlert from "@mui/material/Alert";
@@ -46,7 +45,7 @@ const AddToCartButton = ({
     try {
       setAdding(true);
       const res = await api.post(
-        `${baseUrl}/api/cart/add/${itemId}/`,
+        `/api/cart/add/${itemId}/`,
         { quantity, variant_id: variantId, size_id: sizeId },
         { withCredentials: true }
       );
