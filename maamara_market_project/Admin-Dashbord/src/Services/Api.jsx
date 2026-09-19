@@ -4,22 +4,18 @@ import axios from "axios";
 // backend aligned when the application is accessed through a LAN/Tailscale
 // hostname or a reverse proxy. VITE_API_URL remains an explicit deployment
 // override when the API intentionally lives on a different origin.
-const configuredBaseURL =
-  import.meta.env.VITE_API_URL || import.meta.env.VITE_BASE_URL || "";
+const FALLBACK_API_ORIGIN = "http://100.109.224.0:8000";
 
-const browserBaseURL =
-  typeof window !== "undefined" && window.location?.host
-    ? (
-        window.location.port === "5173" || window.location.port === "4173"
-          ? window.location.protocol + "//" + window.location.hostname + ":8000"
-          : window.location.protocol + "//" + window.location.host
-      )
-    : "";
+const baseURL = (() => {
+  const configured = import.meta.env.VITE_API_URL || import.meta.env.VITE_BASE_URL;
+  if (configured) return configured.replace(/\/$/, "");
 
-const baseURL =
-  configuredBaseURL ||
-  browserBaseURL ||
-  "http://100.109.224.0:8000";
+  if (typeof window !== "undefined" && window.location?.host) {
+    return `${window.location.protocol}//${window.location.host}`;
+  }
+
+  return FALLBACK_API_ORIGIN;
+})();
 
 const api = axios.create({
   baseURL,
