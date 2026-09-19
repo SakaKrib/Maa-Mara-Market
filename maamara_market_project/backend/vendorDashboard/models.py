@@ -541,7 +541,7 @@ class ReturnRequest(models.Model):
         related_name='return_requests'
     )
     visitor_id = models.CharField(max_length=255, null=True, blank=True)
-    item = models.ForeignKey('order.OrderItem', on_delete=models.CASCADE)
+    item = models.ForeignKey('oder.OrderItem', on_delete=models.CASCADE)
     reason = models.TextField(max_length=100, choices=PREFERENCE_REASONS, null=True, blank=True)
     description = models.TextField(max_length=400, blank=True, null=True)
     custom_reason = models.TextField(null=True, blank=True, help_text="Used when reason is 'custom'.")
