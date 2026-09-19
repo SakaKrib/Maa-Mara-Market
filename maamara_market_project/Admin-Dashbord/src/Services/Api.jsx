@@ -21,15 +21,15 @@ const getApiOrigin = () => {
   }
 
   if (typeof window !== "undefined" && window.location.host) {
-    // Use the browser's current host and replace the frontend port with
-    // Django's backend port.
-    const browserUrl = new URL(window.location.href);
-
-    if (browserUrl.port === BACKEND_PORT) {
-      return browserUrl.origin;
+    // Prefer the exact browser host when it is already the backend.
+    // When the browser is serving Vite on another port (normally 5173),
+    // keep the browser's protocol/hostname and switch only to Django's port.
+    const browserHost = window.location.host;
+    if (browserHost.endsWith(`:${BACKEND_PORT}`)) {
+      return `${window.location.protocol}//${browserHost}`;
     }
 
-    return `${browserUrl.protocol}//${browserUrl.hostname}:${BACKEND_PORT}`;
+    return `${window.location.protocol}//${window.location.hostname}:${BACKEND_PORT}`;
   }
 
   return FALLBACK_API_ORIGIN;
