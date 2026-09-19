@@ -26,11 +26,7 @@
 .mm-footer-subscribe-form{display:flex;gap:7px;width:100%;min-width:0}
 .mm-footer-subscribe-form input{box-sizing:border-box;min-width:0;width:100%;max-width:100%;flex:1 1 auto;height:42px;padding:0 14px;border:1px solid #d5d1c9;border-radius:22px;background:#fff;outline:none;font-family:'regular',sans-serif;font-size:13px}
 .mm-footer-subscribe-form input:focus{border-color:#222}
-<<<<<<< Updated upstream
 .mm-footer-subscribe-form button{flex:0 0 auto;min-width:70px;height:42px;border:0;border-radius:20px;background:#222;color:#fff;font-weight:700;cursor:pointer}
-=======
-.mm-footer-subscribe-form button{flex:0 0 auto;min-width:70px;height:42px;border:0;border-radius:20px;background:#222;color:#fff;font-weight:700;cursor:pointer;}
->>>>>>> Stashed changes
 .mm-footer-subscribe-form button:disabled{opacity:.6;cursor:wait}
 .mm-footer-payment-group{display:flex;flex-direction:column;gap:8px;margin-top:8px}
 .mm-footer-payment-group>span{font-size:12px;font-weight:800}

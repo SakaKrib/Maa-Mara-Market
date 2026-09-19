@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Heart, ShoppingBag, UserRound, Menu, Search, Sparkles, ChevronDown, Globe2 } from "lucide-react";
+import { Heart, ShoppingBag, UserRound, Menu, Search, Sparkles, ChevronDown, Globe2, LayoutDashboard } from "lucide-react";
 import "../../../../PublicUi/maamara.css";
 import SearchBar from "../../../Navigations/Search/Search";
 import NavIcons from "../../../Navigations/Search/NavIcons/NavIcon";
@@ -13,6 +13,7 @@ import MegaMenuChildren from "./ChildrenCat";
 import MegaMenuSports from "./SportsCat";
 import MegaMenuUnisex from "./UnisexCat";
 import MobileNavigationDrawer from "./MobileNavigationDrawer";
+
 
 const Header = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -83,13 +84,21 @@ const Header = () => {
                </div>
 
                     
-          <div className="mm-header-search">
+          <div className="mm-header-search mobile-hide">
             <SearchBar />
           </div>
+          
           <div className="mm-header-actions items-center mobile-hide" aria-label="Account, wishlist and cart">
             <NavIcons />
           </div>
             </div>
+            <div className="flex flex-col w-full relative mr-0 desktop-hide">
+            <LayoutDashboard />
+          </div>
+          <div className="flex flex-row w-full relative gap-2 items-center desktop-hide">
+            <UserRound className="w-[15px]"/>
+            <p className="text-sm">first-name</p>
+          </div>
         </div>
       </div>
 
