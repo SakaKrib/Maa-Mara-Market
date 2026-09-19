@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react"
-import axios from "axios"
+import api from "../src/Services/Api"
 import {
   InputOTP,
   InputOTPGroup,
@@ -9,7 +9,6 @@ import {
 import Snackbar from '@mui/material/Snackbar'
 import Alert from '@mui/material/Alert'
 import { Button } from "./ui/button"
-import { baseUrl } from "../src/cmponents/Constant/Constant"
 import Maamara from "../src/assets/Logo/Maamara.jpg"
 
 // 🍪 Helper to read CSRF token from cookies
@@ -36,7 +35,7 @@ const OTPModal = ({ email, onVerify, expiresAt }) => {
   useEffect(() => {
     const fetchCsrf = async () => {
       try {
-        await axios.get(`${baseUrl}/api/get-csrf-token/`, { withCredentials: true })
+        await api.get("/api/get-csrf-token/", { withCredentials: true })
         const token = getCookie("csrftoken")
         setCsrfToken(token)
       } catch (err) {
@@ -82,11 +81,7 @@ const OTPModal = ({ email, onVerify, expiresAt }) => {
     setSnackbar({ open: false, severity: "success", message: "" })
 
     try {
-      const response = await axios.post(
-        `${baseUrl}/api/verify-otp/`,
-        { email, otp },
-        { headers: { "X-CSRFToken": csrfToken }, withCredentials: true }
-      )
+      const response = await api.post("/api/verify-otp/", { email, otp }, { headers: { "X-CSRFToken": csrfToken }, withCredentials: true })
 
       if (response.data?.success) {
         setSnackbar({ open: true, severity: "success", message: "✅ OTP verified successfully!" })
@@ -111,11 +106,7 @@ const OTPModal = ({ email, onVerify, expiresAt }) => {
     setSnackbar({ open: false, severity: "success", message: "" })
 
     try {
-      const response = await axios.post(
-        `${baseUrl}/api/resend-otp/`,
-        { email },
-        { headers: { "X-CSRFToken": csrfToken } }
-      )
+      const response = await api.post("/api/resend-otp/", { email }, { headers: { "X-CSRFToken": csrfToken } })
 
       if (response.data?.success) {
         setSnackbar({ open: true, severity: "success", message: "📨 A new OTP has been sent to your email." })
