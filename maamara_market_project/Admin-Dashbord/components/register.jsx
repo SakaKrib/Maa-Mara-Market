@@ -192,7 +192,9 @@ const RegistrationForm = () => {
                     <path fill="#1976D2" d="M43.611 20.083H42V20H24v8h11.303c-1.11 3.109-3.41 5.615-6.094 7.19l.002-.001 6.19 5.238C36.971 39.205 44 34 44 24c0-1.341-.138-2.651-.389-3.917z"/>
                   </svg>
                   Continue with Google
-                </Button>\n\n                <div className="relative my-2 flex items-center"><span className="h-px flex-1 bg-[#e6e3de]" /><span className="px-3 text-xs text-[#6f6a63]">or continue with email</span><span className="h-px flex-1 bg-[#e6e3de]" /></div>\n\n                <Button type="submit" disabled={loading || !csrfToken} className="mm-auth-submit w-full">
+                </Button>
+
+                <div className="relative my-2 flex items-center"><span className="h-px flex-1 bg-[#e6e3de]" /><span className="px-3 text-xs text-[#6f6a63]">or continue with email</span><span className="h-px flex-1 bg-[#e6e3de]" /></div>\n\n                <Button type="submit" disabled={loading || !csrfToken} className="mm-auth-submit w-full">
                   {loading ? "Registering..." : "Register"}
                 </Button>
               </form>
