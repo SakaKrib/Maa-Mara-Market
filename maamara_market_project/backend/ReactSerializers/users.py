@@ -105,21 +105,51 @@ class HybridCheckAuthView(APIView):
                 return response
 
             except (InvalidToken, TokenError):
-                pass  # Fall through to visitor token check
+                # Let the shared Axios client invoke /api/token/refresh/
+                # instead of silently reporting an expired authenticated
+                # session as an anonymous user.
+                if request.COOKIES.get("refreshToken"):
+                    return Response(
+                        {
+                            "isAuthenticated": False,
+                            "refreshRequired": True,
+                            "user": None,
+                        },
+                        status=status.HTTP_401_UNAUTHORIZED,
+                    )
 
-        # Visitor token check
-        visitor_token = request.COOKIES.get('visitorAccessToken')
+        # Visitor token check. Validate the access token rather than merely
+        # trusting the presence of the cookie.
+        visitor_token = request.COOKIES.get("visitorAccessToken")
         if visitor_token:
-            # Assuming validate_visitor_token returns True if valid
-            return Response({
-                'isAuthenticated': True,
-                'authType': 'visitor',
-                'user': {
-                    'username': 'visitor',
-                    'role': 'customer',
-                    'id': None,
-                }
-            }, status=status.HTTP_200_OK)
+            try:
+                validated_visitor = AccessToken(visitor_token)
+                if (
+                    not validated_visitor.get("visitor")
+                    or not validated_visitor.get("visitor_id")
+                    or str(validated_visitor.get("visitor_id"))
+                    != str(request.COOKIES.get("visitorId"))
+                ):
+                    raise TokenError("Invalid visitor identity")
+                return Response({
+                    "isAuthenticated": True,
+                    "authType": "visitor",
+                    "user": {
+                        "username": "visitor",
+                        "role": "customer",
+                        "id": validated_visitor.get("visitor_id"),
+                    }
+                }, status=status.HTTP_200_OK)
+            except (InvalidToken, TokenError):
+                if request.COOKIES.get("visitorRefreshToken"):
+                    return Response(
+                        {
+                            "isAuthenticated": False,
+                            "refreshRequired": True,
+                            "user": None,
+                        },
+                        status=status.HTTP_401_UNAUTHORIZED,
+                    )
 
         # Default fallback: not authenticated
         return Response({'isAuthenticated': False, 'user': None}, status=status.HTTP_200_OK)
