@@ -1,29 +1,33 @@
 import axios from "axios";
 
-// The browser host is the primary API origin. This keeps the frontend and
-// backend aligned when the application is accessed through a LAN/Tailscale
-// hostname or a reverse proxy. VITE_API_URL remains an explicit deployment
-// override when the API intentionally lives on a different origin.
-const FALLBACK_API_ORIGIN = "http://100.109.224.0:8000";
+const FALLBACK_API_URL = "http://100.109.224.0:8000";
 
-const baseURL = (() => {
-  const configured = import.meta.env.VITE_API_URL || import.meta.env.VITE_BASE_URL;
-  if (configured) return configured.replace(/\/$/, "");
-
-  if (typeof window !== "undefined" && window.location?.host) {
-    const { protocol, hostname, port } = window.location;
-
-    // Vite serves the frontend on :5173 while Django runs on :8000 in local
-    // development. Otherwise use the browser origin, including its port.
-    if (port === "5173") {
-      return `${protocol}//${hostname}:8000`;
-    }
-
-    return `${protocol}//${window.location.host}`;
+const resolveApiBaseURL = () => {
+  if (typeof window === "undefined") {
+    return FALLBACK_API_URL;
   }
 
-  return FALLBACK_API_ORIGIN;
-})();
+  const configured = import.meta.env.VITE_API_URL || import.meta.env.VITE_BASE_URL;
+  if (configured) {
+    return configured.replace(/\/$/, "");
+  }
+
+  // If the browser is already serving the backend, preserve its exact host/port.
+  if (window.location.port === "8000") {
+    return window.location.origin;
+  }
+
+  // The frontend normally runs on Vite's port while Django runs on 8000.
+  // Keep the browser's hostname (including a Tailscale host/IP) and switch
+  // only to Django's API port.
+  if (window.location.hostname) {
+    return `${window.location.protocol}//${window.location.hostname}:8000`;
+  }
+
+  return FALLBACK_API_URL;
+};
+
+const baseURL = resolveApiBaseURL();
 
 const api = axios.create({
   baseURL,
