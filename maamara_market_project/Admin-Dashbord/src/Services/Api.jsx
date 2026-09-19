@@ -1,87 +1,67 @@
 import axios from "axios";
 
-const DEFAULT_API_ORIGIN = "http://100.109.224.0:8000";
+// The browser host is the primary API origin. This keeps the frontend and
+// backend aligned when the application is accessed through a LAN/Tailscale
+// hostname or a reverse proxy. VITE_API_URL remains an explicit deployment
+// override when the API intentionally lives on a different origin.
+const configuredBaseURL =
+  import.meta.env.VITE_API_URL || import.meta.env.VITE_BASE_URL || "";
 
-const resolveBaseURL = () => {
-  const configured = import.meta.env.VITE_API_URL || import.meta.env.VITE_BASE_URL;
-  if (configured) return configured.replace(/\/$/, "");
+const browserBaseURL =
+  typeof window !== "undefined" && window.location?.host
+    ? `${window.location.protocol}//${window.location.host}`
+    : "";
 
-  if (typeof window === "undefined") return DEFAULT_API_ORIGIN;
-
-  // If the browser is directly serving the Django API, preserve the exact
-  // browser origin, including its existing port.
-  if (window.location.port === "8000") {
-    return window.location.origin;
-  }
-
-  // Normal Vite development: keep the browser's host/IP but use Django's API port.
-  // This works for localhost, LAN addresses, and Tailscale addresses.
-  if (window.location.hostname) {
-    return `${window.location.protocol}//${window.location.hostname}:8000`;
-  }
-
-  return DEFAULT_API_ORIGIN;
-};
-
-const baseURL = resolveBaseURL();
+const baseURL =
+  configuredBaseURL ||
+  browserBaseURL ||
+  "http://100.109.224.0:8000";
 
 const api = axios.create({
   baseURL,
   withCredentials: true,
-  headers: {
-    "Content-Type": "application/json",
-  },
 });
 
+// =====================
+// REFRESH CONTROL STATE
+// =====================
 let isRefreshing = false;
 let refreshPromise = null;
 let failedQueue = [];
 
+// =====================
+// PROCESS QUEUE
+// =====================
 const processQueue = (error = null) => {
-  const queue = failedQueue;
-  failedQueue = [];
-
-  queue.forEach(({ resolve, reject }) => {
+  failedQueue.forEach(({ resolve, reject }) => {
     if (error) {
       reject(error);
     } else {
       resolve();
     }
   });
+
+  failedQueue = [];
 };
 
-const refreshTokens = () => {
-  if (!refreshPromise) {
-    refreshPromise = axios.post(
-      `${baseURL}/api/token/refresh/`,
-      {},
-      {
-        withCredentials: true,
-        headers: {
-          "Content-Type": "application/json",
-        },
-      },
-    ).finally(() => {
-      refreshPromise = null;
-    });
-  }
-
-  return refreshPromise;
-};
-
+// =====================
+// RESPONSE INTERCEPTOR
+// =====================
 api.interceptors.response.use(
   (response) => response,
+
   async (error) => {
     const originalRequest = error.config;
 
-    // Network/CORS errors have no response. Do not turn them into
-    // authentication failures or redirect loops.
+    // Network/CORS/DNS failures have no response. Do not attempt token
+    // refresh for them because there is no evidence that authentication
+    // caused the failure.
     if (!error.response || !originalRequest) {
       return Promise.reject(error);
     }
 
-    const requestURL = originalRequest.url || "";
-    if (requestURL.includes("/api/token/refresh/")) {
+    // Never refresh the refresh endpoint itself.
+    if (originalRequest.url?.includes("/token/refresh/")) {
       return Promise.reject(error);
     }
 
@@ -91,7 +71,9 @@ api.interceptors.response.use(
 
     originalRequest._retry = true;
 
-    if (isRefreshing) {
+    // If another request is already refreshing, wait for that same refresh
+    // operation rather than issuing multiple refresh requests.
+    if (isRefreshing && refreshPromise) {
       return new Promise((resolve, reject) => {
         failedQueue.push({ resolve, reject });
       }).then(() => api(originalRequest));
@@ -99,18 +81,29 @@ api.interceptors.response.use(
 
     isRefreshing = true;
 
+    refreshPromise = axios.post(
+      `${baseURL}/api/token/refresh/`,
+      {},
+      { withCredentials: true }
+    );
+
     try {
-      await refreshTokens();
+      await refreshPromise;
       processQueue();
       return api(originalRequest);
     } catch (refreshError) {
       processQueue(refreshError);
+
+      // The API uses HttpOnly cookies, so the client cannot clear the JWT
+      // itself. Returning the refresh error lets the auth context handle the
+      // unauthenticated state without creating a redirect loop.
       return Promise.reject(refreshError);
     } finally {
       isRefreshing = false;
+      refreshPromise = null;
     }
-  },
+  }
 );
 
-export { baseURL };
 export default api;
+export { baseURL };
