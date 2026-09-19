@@ -1,5 +1,4 @@
 import api from "../../../../../../Services/Api";
-import { baseUrl } from "../../../../../../cmponents/Constant/Constant";
 import { useCartContext } from "../CartHook/cart";
 import { useState } from "react";
 
@@ -14,7 +13,7 @@ export function useCartActions() {
 
     try {
       await api.patch(
-        `${baseUrl}/api/cart/${itemId}/update-quantity/`,
+        `/api/cart/${itemId}/update-quantity/`,
         { action, cart_item_id: variation.cartItemId, selected_color: variation.variantId, selected_size: variation.sizeId, selected_age_group: variation.ageVariantId, selected_length: variation.selectedLength, selected_weight: variation.selectedWeight, selected_shoe_size: variation.shoeSize },
         { withCredentials: true }
       );
@@ -34,7 +33,7 @@ export function useCartActions() {
     setError(null);
 
     try {
-      await api.delete(`${baseUrl}/api/cart/${itemId}/`, { data: { cart_item_id: variation.cartItemId, selected_color: variation.variantId, selected_size: variation.sizeId, selected_age_group: variation.ageVariantId, selected_length: variation.selectedLength, selected_weight: variation.selectedWeight, selected_shoe_size: variation.shoeSize }, withCredentials: true });
+      await api.delete(`/api/cart/${itemId}/`, { data: { cart_item_id: variation.cartItemId, selected_color: variation.variantId, selected_size: variation.sizeId, selected_age_group: variation.ageVariantId, selected_length: variation.selectedLength, selected_weight: variation.selectedWeight, selected_shoe_size: variation.shoeSize }, withCredentials: true });
 
       // Refresh cart state from server
       await refreshCart();
