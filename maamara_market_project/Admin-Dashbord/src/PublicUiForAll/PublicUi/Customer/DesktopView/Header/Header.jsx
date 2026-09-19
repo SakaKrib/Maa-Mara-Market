@@ -61,7 +61,7 @@ const Header = () => {
             <Menu size={21} strokeWidth={1.8} aria-hidden="true" />
           </button>
 
-            <div className="w-full flex flex-row gap-4 items-center">
+            <div className="w-full flex flex-row gap-4 items-center ">
               <img
               src={Maamara}
               alt="maamara-logo"
@@ -86,7 +86,7 @@ const Header = () => {
           <div className="mm-header-search">
             <SearchBar />
           </div>
-          <div className="mm-header-actions" aria-label="Account, wishlist and cart">
+          <div className="mm-header-actions items-center mobile-hide" aria-label="Account, wishlist and cart">
             <NavIcons />
           </div>
             </div>
