@@ -1,7 +1,5 @@
-// src/components/Auth/AuthContext/Context.js
 "use client";
 import React, { createContext, useContext, useState, useEffect, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
 
 let accessTokenRef = null;
 
@@ -22,7 +20,6 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [accessToken, setAccessToken] = useState(null);
   const [loading, setLoading] = useState(true);
-  const navigate = useNavigate();
 
   const checkAuth = async (retry = 1) => {
     try {
@@ -32,9 +29,13 @@ export const AuthProvider = ({ children }) => {
         headers: { 'Content-Type': 'application/json' }
       });
 
+      if (!response.ok) {
+        throw new Error(`Auth check failed with status ${response.status}`);
+      }
+
       const data = await response.json();
 
-      setIsAuthenticated(data.isAuthenticated);
+      setIsAuthenticated(Boolean(data.isAuthenticated));
       setUser(data.user || null);
 
       if (data.access) {
@@ -42,12 +43,11 @@ export const AuthProvider = ({ children }) => {
         setGlobalAccessToken(data.access);
       }
 
-      
-
     } catch (error) {
       console.error("❌ Auth check failed:", error);
-      if (retry > 0) await checkAuth(retry - 1);
-      else {
+      if (retry > 0) {
+        await checkAuth(retry - 1);
+      } else {
         setIsAuthenticated(false);
         setUser(null);
         setAccessToken(null);
@@ -73,22 +73,21 @@ export const AuthProvider = ({ children }) => {
 
   const logout = async () => {
     try {
-      const response = await fetch(`${baseURL}/api/logout/`, {
+      const response = await fetch(`${API_BASE_URL}/api/logout/`, {
         method: 'POST',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' }
       });
 
-      const data = await response.json();
-
-      if (data.success) {
-        setIsAuthenticated(false);
-        setUser(null);
-        setAccessToken(null);
-        setGlobalAccessToken(null);
-
-        window.location.href = '/login'
+      if (!response.ok) {
+        throw new Error(`Logout failed with status ${response.status}`);
       }
+
+      setIsAuthenticated(false);
+      setUser(null);
+      setAccessToken(null);
+      setGlobalAccessToken(null);
+      window.location.href = '/customer-login';
     } catch (error) {
       console.error("❌ Logout error:", error);
     }
