@@ -7,9 +7,11 @@ import MobileAccountModal from "./MobileModals/MobileAccountModal";
 import MobileSearchModal from "../Search/MobileSearchBar";
 import { useCartContext } from "../../Customer/DesktopView/Main/CartHook/cart";
 import { useWishlistContext } from "../../../../cmponents/Hooks/WishListHook/Wishlist";
+import { useAuth } from "../../../../cmponents/Auth/AuthContext/Context";
 
-const MobileMenu = ({ user, onLogout }) => {
+const MobileMenu = () => {
   const navigate = useNavigate();
+  const { user, logout } = useAuth();
   const [activeSheet, setActiveSheet] = useState(null);
   const { order } = useCartContext();
   const { wishlist = [] } = useWishlistContext();
@@ -43,7 +45,7 @@ const MobileMenu = ({ user, onLogout }) => {
       <div className="mm-mobile-bottom-spacer" aria-hidden="true" />
       <MobileCartModal open={activeSheet === "cart"} onClose={close} />
       <MobileWishlistModal open={activeSheet === "wishlist"} onClose={close} />
-      <MobileAccountModal open={activeSheet === "account"} onClose={close} user={user} onLogout={onLogout} />
+      <MobileAccountModal open={activeSheet === "account"} onClose={close} user={user} onLogout={logout} />
       <MobileSearchModal open={activeSheet === "search"} onClose={close} />
     </>
   );
