@@ -82,7 +82,7 @@ const CartPage = () => {
                             {[color && `Color: ${color}`, size && `Size: ${size}`].filter(Boolean).join(" · ") || "Standard selection"}
                           </p>
                         </div>
-                        <strong className="text-base sm:text-lg">KES {money(item.final_price)}</strong>
+                        <strong className="text-base sm:text-lg"><FormattedCurrency value={Number(item.final_price)} /></strong>
                       </div>
 
                       <div className="mt-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
@@ -107,8 +107,8 @@ const CartPage = () => {
           <aside className="mm-card p-5 sm:p-6 lg:sticky lg:top-6">
             <h2 className="text-lg font-bold mb-5">Order summary</h2>
             <div className="space-y-3 text-sm">
-              <div className="flex justify-between"><span>Subtotal</span><strong>KES {money(subtotal)}</strong></div>
-              {exchangeCredit > 0 && <div className="flex justify-between text-green-700"><span>Exchange credit</span><span>− KES {money(exchangeCredit)}</span></div>}
+              <div className="flex justify-between"><span>Subtotal</span><strong><FormattedCurrency value={Number(subtotal)} /></strong></div>
+              {exchangeCredit > 0 && <div className="flex justify-between text-green-700"><span>Exchange credit</span><span>− <FormattedCurrency value={Number(exchangeCredit)} /></span></div>}
             </div>
 
             {vouchers.length > 0 && (
@@ -116,14 +116,14 @@ const CartPage = () => {
                 Voucher
                 <select value={selectedVoucher} onChange={(e) => setSelectedVoucher(e.target.value)} className="mt-2 w-full rounded-md border border-gray-300 bg-white px-3 py-2">
                   <option value="">Select a voucher</option>
-                  {vouchers.map((voucher) => <option key={voucher.code} value={voucher.code}>{voucher.code} — KES {money(voucher.discount)}</option>)}
+                  {vouchers.map((voucher) => <option key={voucher.code} value={voucher.code}>{voucher.code} — <FormattedCurrency value={Number(voucher.discount)} /></option>)}
                 </select>
               </label>
             )}
 
             {wallet > 0 && (
               <label className="flex items-center justify-between gap-3 mt-5 text-sm">
-                <span>Use wallet balance (KES {money(wallet)})</span>
+                <span>Use wallet balance (<FormattedCurrency value={Number(wallet)} />)</span>
                 <input type="checkbox" checked={useWallet} onChange={(e) => setUseWallet(e.target.checked)} />
               </label>
             )}
