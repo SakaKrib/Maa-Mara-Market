@@ -84,11 +84,37 @@ def stk_push(request):
                 return Response({"error": "Visitor identity is required"}, status=401)
             order_qs = order_qs.filter(user__isnull=True, visitor_id=visitor_id)
 
-        order = order_qs.select_related("billing_address", "payment").first()
-        if not order:
-            return Response({"error": "Order not found"}, status=404)
+        with db_transaction.atomic():
+            order = (
+                order_qs.select_for_update()
+                .select_related("billing_address", "payment")
+                .first()
+            )
+            if not order:
+                return Response({"error": "Order not found"}, status=404)
 
-        if not order.billing_address:
+            # Do not create a second provider request while an existing STK
+            # request is still pending. The payment row is locked so two
+            # concurrent browser requests cannot race and overwrite its
+            # CheckoutRequestID.
+            if (
+                order.payment_id
+                and order.payment
+                and order.payment.payment_method == "Mpesa"
+                and order.payment.status == "pending"
+                and order.payment.transaction_id
+            ):
+                return Response(
+                    {
+                        "message": "An M-Pesa payment request is already pending.",
+                        "checkout_request_id": order.payment.transaction_id,
+                        "order_id": order.id,
+                        "amount": str(order.payment.amount),
+                    },
+                    status=409,
+                )
+
+            if not order.billing_address:
             return Response({"error": "Billing address is required before payment"}, status=400)
 
         amount = Decimal(str(order.final_total_of_cart()))
