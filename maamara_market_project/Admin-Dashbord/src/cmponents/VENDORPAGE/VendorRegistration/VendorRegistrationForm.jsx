@@ -27,10 +27,13 @@ import {
 import api from "../../../Services/Api";
 import { getNames, getCodeList } from "country-list";
 // import { useCustomerAccessGuard } from "../../Hooks/AccessCRF/CustomerAccess";
-import { baseUrl } from "../../Constant/Constant";
 import { useNavigate } from "react-router-dom";
-import { useWatch } from "react-hook-form";
-import { color } from "framer-motion";
+import {
+  getVendorDraft,
+  saveVendorDraft,
+  deleteVendorDraft,
+} from "../../../Services/VendorDrafts";
+import HeaderPages from "../../OtherPageHeader";
 
 // Zod Schema with conditional validation
 
@@ -103,7 +106,7 @@ import { color } from "framer-motion";
       bank_currency: z.union([z.string().min(1), z.literal("")]).optional(),
       intermediary_bank_name: z.union([z.string().min(1), z.literal("")]).optional(),
       intermediary_swift_code: z.union([z.string().min(1), z.literal("")]).optional(),
-    
+
       // Items
       item_pdf: z.any().optional(),
       item_list: z
@@ -114,12 +117,21 @@ import { color } from "framer-motion";
           price: z.number(),
           image: z
             .any()
-            .refine((file) => file instanceof File || file === undefined, {
-              message: "Image must be a file",
-            }),
+            .refine(
+              (file) =>
+                file instanceof File ||
+                typeof file === "string" ||
+                file === undefined,
+              {
+                message: "Image must be a file or existing image URL",
+              }
+            ),
         })
       )
       .optional(),
+
+     
+    
       brand_name: z.string().optional().nullable(),
       brand_description: z.string().optional().nullable(),
       brand_logo: z
@@ -132,12 +144,50 @@ import { color } from "framer-motion";
 
     // 🔁 Conditional logic and custom validation
     .superRefine((data, ctx) => {
-      // Require at least one of item_pdf or item_list
+
+      // ❗ Require either PDF or item list
       if (!data.item_pdf && (!data.item_list || data.item_list.length === 0)) {
         ctx.addIssue({
           path: ["item_list"],
           code: z.ZodIssueCode.custom,
           message: "Either item PDF or item list is required",
+        });
+      }
+
+      // ❗ If item list is selected → validate all fields
+      if (data.item_list && data.item_list.length > 0) {
+        data.item_list.forEach((item, index) => {
+          if (!item.name) {
+            ctx.addIssue({
+              path: ["item_list", index, "name"],
+              code: z.ZodIssueCode.custom,
+              message: "Item name is required",
+            });
+          }
+
+          if (!item.description) {
+            ctx.addIssue({
+              path: ["item_list", index, "description"],
+              code: z.ZodIssueCode.custom,
+              message: "Item description is required",
+            });
+          }
+
+          if (!item.price) {
+            ctx.addIssue({
+              path: ["item_list", index, "price"],
+              code: z.ZodIssueCode.custom,
+              message: "Item price is required",
+            });
+          }
+
+          if (!item.image) {
+            ctx.addIssue({
+              path: ["item_list", index, "image"],
+              code: z.ZodIssueCode.custom,
+              message: "Item image is required",
+            });
+          }
         });
       }
   
@@ -284,24 +334,24 @@ if (data.payment_method === "MOBILE_MONEY") {
   
 
  
-// local storage key
-const LOCAL_STORAGE_KEY = "vendorFormData";
 
 export default function VendorForm() {
-  // const isAllowed = useCustomerAccessGuard();
-  // if (!isAllowed) return null;
+ 
 
   //define counries
   const countries = getNames();
     const [open, setOpen] = useState(false);
     const fileInputRef = useRef(null);
 
-
+// submitting state
+const [isSubmitting, setIsSubmitting] = useState(false);
 
         // Snackbar state
   const [snackbarOpen, setSnackbarOpen] = useState(false);
   const [snackbarSeverity, setSnackbarSeverity] = useState("info"); // success, error, warning, info
   const [snackbarMessage, setSnackbarMessage] = useState("");
+  const [formData, setFormData] = useState([])
+  const [itemPreview, setItemPreview] = useState(null);
 
   // Snackbar close handler
   const handleCloseSnackbar = (event, reason) => {
@@ -310,8 +360,7 @@ export default function VendorForm() {
   };
 
   const navigate = useNavigate();
-  // form data
-  const formData = new FormData();
+  
 
 
   // useState for form data management
@@ -323,6 +372,7 @@ export default function VendorForm() {
     image: null,
   });
   const [items, setItems] = useState([]);
+
 
   const form = useForm({
     resolver: zodResolver(vendorSchema),
@@ -338,7 +388,7 @@ export default function VendorForm() {
       id_number: "",
       product_type: "organic",
       is_food: "no",
-      Are_You_KEBS_certified: "yes",
+      Are_You_KEBS_certified: "no",
       product_description: "",
       company_name: "",
       workshop_location: "",
@@ -388,7 +438,7 @@ export default function VendorForm() {
     },
   });
   
-
+  const watchedValues = form.watch();
 const paymentMethod = form.watch("payment_method")
 const mpesaType = form.watch("mpesa_type") // optional if you want sub-types
 const country = form.watch("country");
@@ -403,77 +453,269 @@ useEffect(() => {
   }
 }, [country, form]);
 
-  
-
-  // console.log(form)
-
-  useEffect(() => {
-    console.log("Form Errors: ", form.formState.errors);
-  }, [form.formState.errors]);
 
 
-  // Helper: save all fields to localStorage whenever formData changes
-  useEffect(() => {
-    localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(formData));
-  }, [formData]);
+ // Restore draft
+const saveTimeout = useRef(null);
+const isFirstRender = useRef(true);
+const restoringDraft = useRef(false);
 
-  useEffect(() => {
-    localStorage.setItem("vendorItems", JSON.stringify(items));
-  }, [items]);
+useEffect(() => {
+    const restoreDraft = async () => {
+        try {
+            const response = await getVendorDraft();
 
-  const handleChange = (name, value) => {
-    setFormData((prev) => ({ ...prev, [name]: value }));
+            if (!response.exists) return;
+
+            restoringDraft.current = true;
+
+            const draft = response.draft;
+
+            form.reset(draft);
+
+
+            const restoredItems = (draft.item_list || []).map((item) => {
+
+                let image = null;
+
+
+                if (item.image) {
+
+                    if (item.image.startsWith("/media/")) {
+                        image = item.image;
+                    } 
+                    else if (item.image.startsWith("http")) {
+                        image = item.image;
+                    }
+                    else {
+                        image = `/media/${item.image}`;
+                    }
+
+                }
+
+
+
+
+                return {
+                    name: item.name || "",
+                    description: item.description || "",
+                    price: Number(item.price) || 0,
+                    image,
+                };
+            });
+
+
+            setItems(restoredItems);
+
+            form.setValue(
+              "item_list",
+              restoredItems
+            );
+
+
+            setUsePdf(draft.usePdf ?? false);
+
+
+            setTimeout(() => {
+                restoringDraft.current = false;
+            }, 0);
+
+
+        } catch (error) {
+
+            console.error(
+                "Failed to restore vendor draft:",
+                error
+            );
+
+            restoringDraft.current = false;
+        }
+    };
+
+
+    restoreDraft();
+
+}, []);
+
+// Autosave draft
+useEffect(() => {
+
+  if (isFirstRender.current) {
+    isFirstRender.current = false;
+    return;
+  }
+
+
+  if (restoringDraft.current) {
+    return;
+  }
+
+
+  clearTimeout(saveTimeout.current);
+
+
+  saveTimeout.current = setTimeout(async () => {
+
+    try {
+
+      const draftFormData = new FormData();
+
+
+      const draftData = {
+        ...watchedValues,
+
+        item_list: items.map((item, index) => ({
+          name: item.name || "",
+          description: item.description || "",
+          price: Number(item.price) || 0,
+
+          // helps backend map images
+          image_index:
+            item.image instanceof File
+              ? index
+              : null,
+
+          // keep restored images
+          image:
+            typeof item.image === "string"
+              ? item.image
+              : null,
+        })),
+
+        usePdf
+      };
+
+
+      draftFormData.append(
+        "data",
+        JSON.stringify(draftData)
+      );
+
+
+
+      // append only real files
+      items.forEach((item, index) => {
+
+        if (item.image instanceof File) {
+
+          draftFormData.append(
+            `item_image_${index}`,
+            item.image
+          );
+
+        }
+
+      });
+
+
+
+     
+
+      await saveVendorDraft(
+        draftFormData
+      );
+
+
+    } catch (error) {
+
+      console.error(
+        "Draft save error:",
+        error
+      );
+
+    }
+
+
+  }, 2000);
+
+
+
+  return () => {
+
+    clearTimeout(
+      saveTimeout.current
+    );
+
   };
+
+
+}, [
+  watchedValues,
+  items,
+  usePdf
+]);
+
+
   
 
   const handleAddItem = () => {
+  if (
+    !itemFields.name ||
+    !itemFields.description ||
+    !itemFields.price ||
+    !itemFields.image
+  ) {
+    return;
+  }
 
-    // Validate that all necessary fields are filled
-    if (!itemFields.name || !itemFields.description || !itemFields.price) return;
-  
-    // Create a new item object
-    const newItem = { ...itemFields, price: parseFloat(itemFields.price) };
-  
-    // Add the item to the state (item list)
-    const updatedItems = [...items, newItem];
-    setItems(updatedItems);
-  
-    // Update the 'item_list' field in the form
-    form.setValue("item_list", updatedItems);  // Sync the form state with the updated items
-  
-    // Reset the item input fields
-    setItemFields({ name: "", description: "", price: "", image: null });
+  const newItem = {
+    ...itemFields,
+    price: parseFloat(itemFields.price),
+    preview: URL.createObjectURL(itemFields.image),
+  };
 
-     // ✅ Reset the file input visually
+  const updatedItems = [...items, newItem];
+
+  setItems(updatedItems);
+  form.setValue("item_list", updatedItems);
+
+  setItemFields({
+    name: "",
+    description: "",
+    price: "",
+    image: null,
+  });
+
   if (fileInputRef.current) {
     fileInputRef.current.value = "";
   }
-  };
+};
   
 
   const handleRemoveItem = (index) => {
     const updated = [...items];
     updated.splice(index, 1);
     setItems(updated);
+    form.setValue("item_list", updated);
   };
 
-  const handleClearItems = () => setItems([]);
-
+  const handleClearItems = () => {
+    setItems([]);
+    form.setValue("item_list", []);
+};
   // Log individual field values (e.g., watch "product_type")
 useEffect(() => {
  
 }, [form.watch("product_type")]);
 
-// // For more fields, you can do something like:
-// console.log("Current form state: ", form.getValues());  // Log all form values
+
+// HANDLE IMAGE CHANGE
+useEffect(() => {
+  return () => {
+    if (itemPreview) {
+      URL.revokeObjectURL(itemPreview);
+    }
+  };
+}, [itemPreview]);
+
 
 // -------------------- onSubmit --------------------
 const onSubmit = async (data) => {
 
+  setIsSubmitting(true);
   try {
-   
+    const formData = new FormData();
 
-    // Destructure all fields including files
     const {
       item_pdf,
       profile_picture,
@@ -491,7 +733,7 @@ const onSubmit = async (data) => {
       )
     );
 
-    // ✅ Add brand info if present
+    // Add brand info if present
     if (brand_name || brand_description) {
       vendorData.brand = {
         name: brand_name || "",
@@ -499,144 +741,161 @@ const onSubmit = async (data) => {
       };
     }
 
-    // ✅ Append vendor_data JSON
+    // Append vendor_data JSON
     formData.append("vendor_data", JSON.stringify(vendorData));
 
-    // ✅ Handle brand_logo
+    // Handle brand_logo
     if (brand_logo instanceof File) {
       formData.append("brand_logo", brand_logo);
     }
 
-    // ✅ Handle company logo
+    // Handle company logo
     if (vendor_company_logo instanceof File) {
       formData.append("vendor_company_logo", vendor_company_logo);
     }
 
-    // ✅ Handle profile picture
+    // Handle profile picture
     if (profile_picture instanceof File) {
       formData.append("profile_picture", profile_picture);
     }
 
-    // ✅ Handle item PDF
+    // Handle item PDF
     if (usePdf && item_pdf instanceof File) {
       formData.append("item_pdf", item_pdf);
     }
 
-    // ✅ Handle item list
+    // Handle item list
     if (!usePdf && items.length > 0) {
       const cleanedItemList = items.map((item, index) => {
         let imageKey = null;
-    
+
         if (item.image instanceof File) {
-          // ✅ Use the actual filename to build a realistic path
-          const safeFileName = item.image.name.replace(/\s+/g, "_"); // remove spaces
+          const safeFileName = item.image.name.replace(/\s+/g, "_");
           imageKey = `items/${safeFileName}`;
-    
-          // 👇 still append using a stable key the backend will look for
+
           formData.append(`item_image_${index}`, item.image);
         } else if (typeof item.image === "string") {
-          imageKey = item.image; // Keep if already uploaded
+          imageKey = item.image;
         }
-    
+
         return {
           ...item,
           price: Number(item.price),
           image: imageKey,
         };
       });
-    
+
       formData.append("item_list", JSON.stringify(cleanedItemList));
     }
-    
 
-    // 🧪 Debugging output
-    // for (const [key, value] of formData.entries()) {
-    //   console.log(
-    //     `${key}:`,
-    //     value instanceof File ? `📎 ${value.name}` : value
-    //   );
-    // }
-
-    // ✅ API Call
-    const response = await api.post(`${baseUrl}/api/vendor-request/`, formData, {
-      withCredentials: true,
-      headers: { "Content-Type": "multipart/form-data" },
-    });
+    // API Call
+    const response = await api.post(
+      `${baseUrl}/api/vendor-request/`,
+      formData,
+      {
+        withCredentials: true,
+        headers: { "Content-Type": "multipart/form-data" },
+      }
+    );
 
     if (response.status === 201) {
-      navigate("/otp-vendor-verification", { state: { email: data.email } });
+     
+
       setSnackbarSeverity("success");
       setSnackbarMessage("Vendor request submitted successfully!");
       setSnackbarOpen(true);
 
-      // hide snackbar after 3 seconds
-    setTimeout(() => {
-      setSnackbarOpen(false);
-    }, 3000);
+      await deleteVendorDraft();
 
+      navigate("/otp-vendor-verification", {
+        state: { email: data.email },
+      });
+      
+
+      setTimeout(() => setSnackbarOpen(false), 3000);
     } else {
       console.error("Failed submission:", response.data);
+
       setSnackbarSeverity("error");
-        setSnackbarMessage("Submission failed: Please check you Network and try again! ");
-        setSnackbarOpen(true);
-        setTimeout(() => setSnackbarOpen(false), 3000);
+      setSnackbarMessage(
+        "Submission failed: Please check your network and try again!"
+      );
+      setSnackbarOpen(true);
+
+      setTimeout(() => setSnackbarOpen(false), 3000);
     }
-  }  catch (error) {
+  } catch (error) {
     const status = error.response?.status;
 
     if (status === 401) {
       try {
-        // 🔁 Retry once
-        response = await api.post(`/api/vendor-request/`, formData, {
+        await api.post(`${baseUrl}/api/vendor-request/`, formData, {
           withCredentials: true,
           headers: { "Content-Type": "multipart/form-data" },
         });
       } catch (retryError) {
-        // ❌ Still 401 after retry → show message and redirect
         if (retryError.response?.status === 401) {
           setSnackbarSeverity("error");
           setSnackbarMessage("Session expired. Redirecting to login...");
           setSnackbarOpen(true);
-    
+
           setTimeout(() => {
             setSnackbarOpen(false);
-            // Save current location so user can return after login
+
             if (location) {
-              navigate("/customer-login", { state: { from: location.pathname } });
+              navigate("/customer-login", {
+                state: { from: location.pathname },
+              });
             } else {
               navigate("/customer-login");
             }
           }, 6000);
-          return; // stop execution
+
+          return;
         }
-    
-        // Other retry errors
-        console.error("Retry error:", retryError.response?.data || retryError.message);
+
+        console.error(
+          "Retry error:",
+          retryError.response?.data || retryError.message
+        );
+
         setSnackbarSeverity("error");
         setSnackbarMessage("Something went wrong. Please try again.");
         setSnackbarOpen(true);
+
         setTimeout(() => setSnackbarOpen(false), 3000);
         return;
+      }finally {
+        setIsSubmitting(false); // always stop loading
       }
     } else {
-      // ✅ Non-401 errors
       console.error("Submission error:", error.response?.data || error.message);
+
       setSnackbarSeverity("error");
       setSnackbarMessage("Something went wrong. Please try again.");
       setSnackbarOpen(true);
+
       setTimeout(() => setSnackbarOpen(false), 3000);
     }
+  } finally {
+    setIsSubmitting(false); // always stop loading
   }
 };
-
-
-
   
 
   return (
-    <div>
+  <div className="w-full h-full overflow-y-hidden pt-20">
+    <HeaderPages/>
+      <div className="py-10 flex justify-center px-4 md:px-8 lg:px-16 xl:px-32 2xl:px-64 relative">
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 flex w-100% container flex-col relative top-20">
+    <form
+      onSubmit={(e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        form.handleSubmit(onSubmit)(e);
+      }}
+      className="space-y-6 w-100% relative lg:border md:border lg:p-10 w-full"
+    >
         {/* Personal Info */}
         <h2 className="text-xl font-semibold mt-6 text-center">Personal Information</h2>
 
@@ -840,7 +1099,12 @@ const onSubmit = async (data) => {
         <FormField name="vendor_company_logo" control={form.control} render={({ field }) => (
           <FormItem>
             <FormLabel>Company Logo</FormLabel>
-            <FormControl><Input type="file" onChange={(e) => field.onChange(e.target.files?.[0])} /></FormControl>
+            <FormControl><Input type="file" key="company_logo" accept="image/*"
+            onChange={(e) => {
+              const file = e.target.files?.[0] || null;
+              field.onChange(file);
+            }} />
+            </FormControl>
             <FormMessage />
           </FormItem>
         )} />
@@ -1135,7 +1399,12 @@ const onSubmit = async (data) => {
         <FormField name="profile_picture" control={form.control} render={({ field }) => (
           <FormItem>
             <FormLabel>Profile Picture</FormLabel>
-            <FormControl><Input type="file" onChange={(e) => field.onChange(e.target.files?.[0])} /></FormControl>
+            <FormControl><Input type="file" accept="image/*"
+            onChange={(e) => {
+              const file = e.target.files?.[0] || null;
+              field.onChange(file);
+            }} />
+            </FormControl>
             <FormMessage />
           </FormItem>
         )} />
@@ -1175,49 +1444,102 @@ const onSubmit = async (data) => {
                   value={itemFields.price}
                   onChange={(e) => {
                     const value = e.target.value;
-                    // ✅ allow only digits
+
                     if (/^\d*$/.test(value)) {
-                      setItemFields({ ...itemFields, price: value });
+                      setItemFields({
+                        ...itemFields,
+                        price: value,
+                      });
                     }
                   }}
                 />
 
                 <Textarea placeholder="Description" value={itemFields.description} onChange={(e) => setItemFields({ ...itemFields, description: e.target.value })} />
-                <Input type="file" ref={fileInputRef} onChange={(e) => setItemFields({ ...itemFields, image: e.target.files?.[0] })} />
+                <Input type="file" ref={fileInputRef} accept='image/*' onChange={(e) => setItemFields({ ...itemFields, image: e.target.files?.[0] })} />
               </div>
-              <Button className='mt-4' type="button" onClick={handleAddItem}>➕ Add Item</Button>
+             <div className="flex justify-center w-full">
+               <Button className='mt-4 primary-button' type="button" onClick={handleAddItem}>+ Add Item</Button>
+             </div>
             </div>
 
             {items.length > 0 && (
-              <div className="space-y-1">
-                <h4 className="font-medium text-2xl">🧺 Items Added</h4>
-                {items.map((item, index) => (
-                  <div key={index} className="border px-2 py-1 rounded-md flex justify-between">
-                    <div className="flex gap-20">
-                      <p><strong>Name:</strong> {item.name}</p>
-                      <p><strong>Price:</strong> {item.price}</p>
-                      <p><strong>Description:</strong> {item.description}</p>
-                      {item.image && (
-                      <div className="flex flex-col items-center">
-                      <p><strong>Image:</strong> {item.image.name}</p>
-                      <img
-                        src={URL.createObjectURL(item.image)}
-                        alt="Item preview"
-                        className="w-20 h-20 object-cover rounded-md mt-1"
-                      />
-                    </div>
-                  )}    
-                    </div>
-                    <Button variant="destructive" onClick={() => handleRemoveItem(index)}>Remove</Button>
-                  </div>
-                ))}
-                <Button variant="outline" onClick={handleClearItems}>🗑️ Clear All</Button>
+          <div className="space-y-4">
+            <h4 className="font-medium text-xl md:text-2xl">
+              🧺 Items Added
+            </h4>
+
+            {items.map((item, index) => (
+              <div
+                key={index}
+                className="
+                  border rounded-md p-3
+                  flex flex-col md:flex-row
+                  md:justify-between
+                  gap-4
+                "
+              >
+                {/* Item details */}
+                <div className="flex flex-col md:flex-row md:gap-10 gap-2 flex-1">
+                  <p className="text-sm"><strong>Name:</strong> {item.name}</p>
+                  <p className="text-sm"><strong>Price:</strong> {item.price}</p>
+                  <p className="break-words text-sm">
+                    <strong>Description:</strong> {item.description}
+                  </p>
+
+                {/* Image */}
+               {item.image && (
+                <div className="flex flex-col items-start md:items-center">
+                  <p className="text-sm">
+                    <strong>Image:</strong>{" "}
+                    {item.image instanceof File
+                      ? item.image.name
+                      : item.image.split("/").pop()}
+                  </p>
+
+                  <img
+                    src={
+                      item.image instanceof File
+                        ? item.preview
+                        : item.image
+                    }
+                    alt={item.name || "Item image"}
+                    className="w-32 h-32 object-cover rounded-md mt-2"
+                    />
+                </div>
+              )}
+                </div>
+
+                {/* Button */}
+                <div className="flex md:justify-end xxs:justify-center">
+                  <Button
+                    variant="destructive"
+                    onClick={() => handleRemoveItem(index)}
+                    className="w-full md:w-auto rounded-full"
+                  >
+                    Remove
+                  </Button>
+                </div>
               </div>
-            )}
+            ))}
+
+            <Button variant="outline" className='light-button text-red-500' onClick={handleClearItems}>
+              🗑️ Clear All
+            </Button>
+          </div>
+        )}
           </>
         )}
 
-        <Button type="submit" className="mt-6">Submit Vendor Form</Button>
+      <div className="w-full flex justify-center">
+        <Button
+        type="submit"
+        className="mt-6 primary-button w-full"
+        disabled={isSubmitting}
+
+      >
+        {isSubmitting ? "Submitting..." : "Submit Vendor Form"}
+      </Button>
+      </div>
       </form>
     </Form>
 
@@ -1241,8 +1563,19 @@ const onSubmit = async (data) => {
 </Snackbar>
 
 
+ {/* 🔥 DEBUG PANEL (PUT IT HERE) */}
+ {/* {process.env.NODE_ENV === "development" && (
+      <div className="fixed bottom-0 left-0 right-0 bg-black text-green-400 text-xs p-2 max-h-40 overflow-auto z-[9999]">
+        <p>FORM ERRORS:</p>
+        <pre>{JSON.stringify(form.formState.errors, null, 2)}</pre>
+
+        <p>VALUES:</p>
+        <pre>{JSON.stringify(form.getValues(), null, 2)}</pre>
+      </div>
+    )} */}
 
     </div>
+  </div>
     
   )
 }
