@@ -6,6 +6,7 @@ import ProductOptions from "./ProductOptions";
 import QuantityAndCart from "./QuantityAndCart";
 import ProductDetails from "./ProductDetails";
 import ProductReviews from "./ProductReviews";
+import FormattedCurrency from "../Currency/FormattedCurrency";
 
 const SingleItem = () => {
   const {
@@ -46,7 +47,7 @@ const SingleItem = () => {
         </div>
 
         <div className="flex items-center gap-4">
-          {hasDiscount && <h3 className="text-lg text-gray-400 line-through">Ksh {Number(item.final_price).toLocaleString()}</h3>}
+          {hasDiscount && <h3 className="text-lg text-gray-400 line-through"><FormattedCurrency value={Number(item.final_price)} /></h3>}
           <h2 className={`font-medium text-2xl ${hasDiscount ? "text-red-600" : ""}`}>
             Ksh {Number(hasDiscount ? item.final_discounted_price : item.final_price).toLocaleString()}
           </h2>
