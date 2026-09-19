@@ -166,6 +166,7 @@ def mpesa_result(request):
 
 
 @api_view(["POST"])
+@api_view(["POST"])
 def mpesa_refund_result(request):
     """Process a Safaricom reversal result callback idempotently."""
     reconcile_mpesa_refund_callback(request.data)
