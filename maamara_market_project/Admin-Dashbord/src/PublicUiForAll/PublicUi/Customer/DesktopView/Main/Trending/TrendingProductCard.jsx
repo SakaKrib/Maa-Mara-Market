@@ -5,6 +5,7 @@ import { IonIcon } from "@ionic/react";
 import { heart, heartOutline, eyeOutline, shareOutline } from "ionicons/icons";
 import { Link, useNavigate } from "react-router-dom";
 import AddToCartButton from "../CartActionButtons/AddToCartBtn";
+import FormattedCurrency from "../Currency/FormattedCurrency";
 
 const TrendingProductCard = ({ item, isWishlisted: controlledWishlist, onToggleWishlist, onOpen }) => {
   const navigate = useNavigate();
@@ -89,11 +90,11 @@ const TrendingProductCard = ({ item, isWishlisted: controlledWishlist, onToggleW
 
         <div className="flex flex-wrap items-baseline gap-2 mb-2">
           <span className={`font-bold text-lg sm:text-xl ${hasDiscount ? "text-red-600" : "text-gray-900"}`}>
-            KES {Number(currentPrice).toLocaleString()}
+            <FormattedCurrency value={Number(currentPrice)} />
           </span>
           {hasDiscount && Number(originalPrice) > Number(currentPrice) && (
             <span className="text-xs sm:text-sm text-gray-400 line-through">
-              KES {Number(originalPrice).toLocaleString()}
+              <FormattedCurrency value={Number(originalPrice)} />
             </span>
           )}
         </div>
