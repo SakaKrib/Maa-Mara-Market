@@ -639,7 +639,7 @@ class VisitorTokenView(APIView):
 
 # logout view
 @api_view(["POST"])
-@permission_classes([IsAuthenticated])
+@permission_classes([AllowAny])
 @require_http_methods(["POST"])
 def logout_view(request):
 
@@ -659,9 +659,18 @@ def logout_view(request):
     # 3. Response
     response = JsonResponse({"message": "Logged out successfully"})
 
-    # 4. Correct cookie deletion (ONLY path/domain allowed)
-    response.delete_cookie("accessToken", path="/")
-    response.delete_cookie("refreshToken", path="/")
+    # 4. Clear every browser identity cookie. Logout must still work
+    # when the short-lived access token has already expired.
+    for cookie_name in (
+        "accessToken",
+        "refreshToken",
+        "visitorAccessToken",
+        "visitorRefreshToken",
+        "visitorId",
+        "user_sessionid",
+        "sessionid",
+    ):
+        response.delete_cookie(cookie_name, path="/")
 
     return response
 
