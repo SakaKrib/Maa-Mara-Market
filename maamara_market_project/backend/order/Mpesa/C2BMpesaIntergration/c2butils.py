@@ -33,7 +33,7 @@ def get_mpesa_token():
     consumer_secret = settings.PAYMENT_GATEWAYS["mpesa"]["consumer_secret"].strip()
     auth_url = settings.PAYMENT_GATEWAYS["mpesa"]["auth_url"].strip()
 
-    response = requests.get(auth_url, auth=(consumer_key, consumer_secret))
+    response = requests.get(auth_url, auth=(consumer_key, consumer_secret), timeout=10)
     response.raise_for_status()
     token = response.json().get("access_token")
     return token
