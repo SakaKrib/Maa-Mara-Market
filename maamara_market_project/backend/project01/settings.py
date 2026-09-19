@@ -240,7 +240,7 @@ SESSION_COOKIE_NAME = "user_sessionid"
 SESSION_COOKIE_SAMESITE = "Lax"
 SESSION_COOKIE_SECURE = not DEBUG
 CSRF_COOKIE_SAMESITE = "Lax"
-CSRF_COOKIE_SECURE = not DEBUG
+CSRF_COOKIE_SECURE = env.bool("CSRF_COOKIE_SECURE", default=FRONTEND_URL.startswith("https://"))
 CSRF_COOKIE_HTTPONLY = False
 
 SESSION_ENGINE = "django.contrib.sessions.backends.db"
