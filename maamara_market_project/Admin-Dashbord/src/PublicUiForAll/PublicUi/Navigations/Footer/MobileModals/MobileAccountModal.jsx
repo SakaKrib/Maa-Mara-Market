@@ -106,7 +106,7 @@ const MobileAccountModal = ({ open, onClose, user }) => {
           </div>
           {isVisitor && (
             <p className="mt-3 text-xs leading-5 text-[#6f675c]">
-              Your visitor account keeps your cart, orders, activity and profile connected to this browser.
+              Your cart, orders, activity and profile are saved with your visitor account. Sign in anytime to keep everything with your account.
             </p>
           )}
         </div>
@@ -155,7 +155,7 @@ const MobileAccountModal = ({ open, onClose, user }) => {
             </div>
 
             {isVisitor && (
-              <Button variant="outline" className="mm-auth-light-button w-full" onClick={() => go("/customer-login")}>
+              <Button variant="outline" className="mm-auth-submit w-full" onClick={() => go("/customer-login")}>
                 <LogIn size={16} className="mr-2" /> Sign in / Create full account
               </Button>
             )}
