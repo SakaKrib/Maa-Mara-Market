@@ -14,7 +14,7 @@ export default function FastPayment() {
   // handle add payment modal state
   const [openModal, setOpenModal] = useState(false);
 
-  const { data, loading, error } = useDashboardSummary();
+  const { data, loading, error, refetch } = useDashboardSummary();
 
   if (loading) return <p>Loading...</p>;
   if (error || !data)
@@ -43,7 +43,7 @@ export default function FastPayment() {
   const handleAddPayment = async (form) => {
     try {
       await api.post("/api/transactions/", form);
-      window.location.reload(); // simple refresh; consider better state update later
+      await refetch(true);
     } catch (err) {
       console.error("Failed to add payment", err);
     }
