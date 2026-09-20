@@ -36,6 +36,7 @@ from .views import (
     vendor_sales,
     admin_transactions,
 )
+from .invoice_views import invoice_list
 
 
 urlpatterns = [
@@ -53,6 +54,9 @@ urlpatterns = [
     #create order api
     path("api/checkout/", checkout_view, name="checkout"),
     path("api/paypal/capture/<str:order_id>/", capture_paypal_order, name="paypal-capture"),
+
+    # invoices
+    path("api/invoices/", invoice_list, name="invoice-list"),
 
     # Returns / refunds
     path(
@@ -73,7 +77,6 @@ urlpatterns = [
     path("api/refunds/<int:refund_id>/process/", process_refund_api, name="process-refund"),
     path("api/mpesa/refund/result/", mpesa_refund_result, name="mpesa-refund-result"),
     path("api/mpesa/refund/timeout/", mpesa_refund_timeout, name="mpesa-refund-timeout"),
-    
 
     #mpesa payment gateways (B2C)
     path("mpesa/b2c/", mpesa_b2c_payment, name="mpesa_b2c"),
