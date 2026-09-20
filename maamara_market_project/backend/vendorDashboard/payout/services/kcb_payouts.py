@@ -8,6 +8,7 @@ from django.utils import timezone
 from core.realtime import broadcast_event
 from core.models import ActivityLog, Notification
 from order.models import Transaction
+from order.invoice_services import create_vendor_payout_invoice
 from vendorDashboard.models import VendorPayout
 from vendorDashboard.payout.services.payment_processors import get_kcb_access_token
 
@@ -104,6 +105,9 @@ def reconcile_kcb_payout(payout_id):
             "paid",
             "paid_at",
         ])
+
+        if status in SUCCESS_STATUSES and payout.paid:
+            create_vendor_payout_invoice(payout)
 
         if status in SUCCESS_STATUSES and not was_paid:
             vendor_user = getattr(payout.vendor, "user", None)
