@@ -324,13 +324,23 @@ class VendorDraftView(APIView):
 
         data = dict(draft.data or {})
         items = list(data.get("item_list") or [])
-        for image in draft.images.all():
-            if image.item_index < len(items):
-                items[image.item_index]["image"] = request.build_absolute_uri(image.image.url)
+        images_by_index = {image.item_index: image for image in draft.images.all()}
+
+        for index, item in enumerate(items):
+            image = images_by_index.get(index)
+            if image:
+                item["image"] = request.build_absolute_uri(image.image.url)
+                item["image_asset_id"] = image.id
+            elif item.get("image"):
+                item["image_asset_id"] = item.get("image_asset_id")
+
         data["item_list"] = items
+        data["draft_id"] = str(draft.id)
+
         return Response({
             "exists": True,
             "draft": data,
+            "draft_id": str(draft.id),
             "updated_at": draft.updated_at,
         })
 
@@ -350,12 +360,16 @@ class VendorDraftView(APIView):
             },
         )
 
-        new_files = [key for key in request.FILES if key.startswith("item_image_")]
-        if new_files:
-            for old_image in draft.images.all():
-                old_image.image.delete(save=False)
-            draft.images.all().delete()
+        items = list(data.get("item_list") or [])
 
+        # Remove draft images for items that no longer exist.
+        valid_indexes = set(range(len(items)))
+        for old_image in list(draft.images.all()):
+            if old_image.item_index not in valid_indexes:
+                old_image.image.delete(save=False)
+                old_image.delete()
+
+        # Replace only the images whose item was actually changed.
         for key, file in request.FILES.items():
             if not key.startswith("item_image_"):
                 continue
@@ -363,14 +377,31 @@ class VendorDraftView(APIView):
                 index = int(key.replace("item_image_", ""))
             except ValueError:
                 continue
-            VendorDraftImage.objects.create(draft=draft, image=file, item_index=index)
+            if index < 0 or index >= len(items):
+                continue
 
-        items = list(data.get("item_list") or [])
-        for image in draft.images.all():
-            if image.item_index < len(items):
-                items[image.item_index]["image"] = image.image.url
+            old_image = draft.images.filter(item_index=index).first()
+            if old_image:
+                old_image.image.delete(save=False)
+                old_image.delete()
+
+            VendorDraftImage.objects.create(
+                draft=draft,
+                image=file,
+                item_index=index,
+            )
+
+        # Resolve each item to the authoritative stored draft asset.
+        for index, item in enumerate(items):
+            image = draft.images.filter(item_index=index).first()
+            if image:
+                item["image"] = image.image.url
+                item["image_asset_id"] = image.id
+            else:
+                item.pop("image_asset_id", None)
+
         data["item_list"] = items
-
+        data["draft_id"] = str(draft.id)
         draft.data = data
         draft.expires_at = timezone.now() + timezone.timedelta(days=30)
         draft.save(update_fields=["data", "expires_at", "updated_at"])
