@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Card, CardContent } from "../../../../../../../components/ui/card";
 import { Button } from "../../../../../../../components/ui/button";
@@ -21,10 +22,10 @@ import {
 import api from "../../../../../../Services/Api";
 import Snackbar from "@mui/material/Snackbar";
 import MuiAlert from "@mui/material/Alert";
-import RequestReturnForm from "../Return/Return";
 import { Avatar } from "@mui/material";
 
 export default function UserAccount() {
+  const navigate = useNavigate();
   const [userData, setUserData] = useState(null);
   const [wallet, setWallet] = useState(null);
   const [voucher, setVouchers] = useState(null);
@@ -33,7 +34,6 @@ export default function UserAccount() {
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState(false);
   const [orders, setOrders] = useState([]);
-  const [selectedItem, setSelectedItem] = useState(null);
   const [formData, setFormData] = useState({
     first_name: "",
     last_name: "",
@@ -365,7 +365,7 @@ export default function UserAccount() {
                               <Button
                                 size="sm"
                                 variant="outline"
-                                onClick={() => setSelectedItem({ ...itemObj, order: o })}
+                                onClick={() => navigate("/request-returns", { state: { selectedItem: { ...itemObj, order: o } } })}
                                 className="text-xs"
                               >
                                 <Undo2 className="h-3.5 w-3.5 mr-1" />
@@ -522,14 +522,6 @@ export default function UserAccount() {
           </CardContent>
         </Card>
       </div>
-
-      {/* ✅ Return Form Modal */}
-      {selectedItem && (
-        <RequestReturnForm
-          selectedItem={selectedItem}
-          onClose={() => setSelectedItem(null)}
-        />
-      )}
 
       {/* ✅ Snackbar Toast */}
       <Snackbar
