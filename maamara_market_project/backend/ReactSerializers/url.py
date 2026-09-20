@@ -16,6 +16,8 @@ router = DefaultRouter()
 # Legacy router registrations were removed: the referenced viewsets no longer
 # exist in this branch. Current item/vendor APIs are exposed explicitly below.
 
+router.register(r"vendors", VendorAdminViewSet, basename="admin-vendor")
+
 urlpatterns = [
     path('api/', include(router.urls)),
 
