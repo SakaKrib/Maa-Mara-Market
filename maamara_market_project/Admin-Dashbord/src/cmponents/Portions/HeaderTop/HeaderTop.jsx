@@ -1,6 +1,6 @@
 import { useRef, useState, useEffect, useContext } from "react";
 import { IonIcon } from "@ionic/react";
-import { menuOutline, searchOutline, sunnyOutline, moon, closeOutline, cameraOutline } from "ionicons/icons";
+import { menuOutline, searchOutline, sunnyOutline, moon, closeOutline, cameraOutline, notificationsOutline } from "ionicons/icons";
 import { useAuth } from "../../Auth/AuthContext/Context";
 import { useCsrfToken } from "../../Hooks/AccessCRF/UseCSRFToken";
 import { baseUrl } from "../../Constant/Constant";
@@ -164,7 +164,7 @@ const HeaderTop = ({ onMenuToggle }) => {
             type="button"
             aria-label="Open admin navigation"
             onClick={onMenuToggle}
-            className="grid h-10 w-10 shrink-0 place-items-center rounded-xl text-slate-600 hover:bg-slate-100 lg:hidden dark:text-slate-200 dark:hover:bg-slate-800"
+            className="grid h-10 w-10 shrink-0 place-items-center rounded-xl text-muted-foreground hover:bg-muted lg:hidden"
           >
             <IonIcon icon={menuOutline} className="text-xl" />
           </button>
@@ -177,7 +177,7 @@ const HeaderTop = ({ onMenuToggle }) => {
             </div>
           </div>
 
-          <div className="min-w-0 flex-1 max-w-2xl">
+          <div className="hidden min-w-0 max-w-2xl flex-1 sm:block">
             <div className="relative">
               <IonIcon icon={searchOutline} className="pointer-events-none absolute left-3 top-1/2 z-10 -translate-y-1/2 text-slate-400" />
               <SearchBarForVendorAdmin />
@@ -188,16 +188,16 @@ const HeaderTop = ({ onMenuToggle }) => {
             <button
               type="button"
               onClick={() => setOpenProfile(true)}
-              className="flex items-center gap-2 rounded-xl p-1.5 pr-2 hover:bg-slate-100 dark:hover:bg-slate-800"
+              className="flex items-center gap-2 rounded-xl p-1.5 pr-2 hover:bg-muted"
               aria-label="Open admin profile"
             >
               <img
                 src={previewImage || profilePicture}
                 alt="Admin profile"
-                className="h-9 w-9 rounded-full border border-slate-200 object-cover dark:border-slate-700"
+                className="h-9 w-9 rounded-full border border-border object-cover"
               />
-              <span className="hidden max-w-28 truncate text-left text-xs font-semibold text-slate-700 sm:block dark:text-slate-200">
-                {form.first_name || user?.username || "Admin"}
+              <span className="hidden max-w-28 truncate text-left text-xs font-semibold text-foreground sm:block">
+                {displayName}
               </span>
             </button>
           </div>
