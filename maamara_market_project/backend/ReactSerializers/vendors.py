@@ -636,8 +636,8 @@ def approve_vendor(request, vendor_request_id):
                 except Exception as e:
                     pass
 
-    # 🧹 Clean vendor data
-    for field in ['social_media_links', 'item_list', 'item_pdf']:
+    # Clean vendor data. draft_id is only an internal approval reference.
+    for field in ['social_media_links', 'item_list', 'item_pdf', 'draft_id']:
         vendor_data.pop(field, None)
 
     for field in ['profile_picture', 'vendor_company_logo']:
