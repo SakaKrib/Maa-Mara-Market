@@ -16,7 +16,6 @@ import { useNavigate } from "react-router-dom";
 
 import CreateItemModal from "../../../../cmponents/AdminPages/Notifications/ApproveCreatedItem";
 
-const POLL_INTERVAL = 10_000;
 
 const VendorItemCreateRequests = ({ onCountChange }) => {
   const [requests, setRequests] = useState([]);
@@ -66,12 +65,6 @@ const VendorItemCreateRequests = ({ onCountChange }) => {
 
   useEffect(() => {
     fetchRequests(false);
-
-    const interval = setInterval(() => {
-      fetchRequests(true);
-    }, POLL_INTERVAL);
-
-    return () => clearInterval(interval);
   }, []);
 
   // ======================
