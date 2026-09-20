@@ -4,7 +4,7 @@ from django.db.models.signals import post_delete, post_save
 from django.dispatch import receiver
 from channels.layers import get_channel_layer
 
-from .models import Vendor, VendorRequest, VendorItemRequest, PriceChangeRequest
+from .models import Vendor, VendorRequest, VendorItemRequest, PriceChangeRequest, ReturnRequest
 
 
 def _broadcast(group, resource, action, object_id):
@@ -88,3 +88,17 @@ def vendor_item_request_deleted(sender, instance, **kwargs):
 @receiver(post_delete, sender=PriceChangeRequest)
 def price_change_request_deleted(sender, instance, **kwargs):
     _broadcast_request_change("price", "deleted", instance.pk)
+
+
+@receiver(post_save, sender=ReturnRequest)
+def return_request_saved(sender, instance, created, **kwargs):
+    _broadcast_request_change(
+        "return",
+        "created" if created else "updated",
+        instance.pk,
+    )
+
+
+@receiver(post_delete, sender=ReturnRequest)
+def return_request_deleted(sender, instance, **kwargs):
+    _broadcast_request_change("return", "deleted", instance.pk)
