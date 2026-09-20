@@ -34,6 +34,8 @@ urlpatterns = [
     path('api/profile/', ProfileView.as_view(), name='profile'),
     path('api/check-auth/', HybridCheckAuthView.as_view()),
     path('api/logout/',logout_view),
+    path('api/user/account/', user_account_view, name='user-account'),
+    path('api/user/update/', update_account_view, name='user-update'),
 
     # google login
     path("google/success/", google_login_success),
