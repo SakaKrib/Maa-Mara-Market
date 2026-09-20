@@ -705,8 +705,13 @@ def approve_vendor(request, vendor_request_id):
     # Validate and resolve every persisted draft image before creating
     # the vendor or any final item records.
     resolved_draft_images = {}
-    for item in item_list:
+    for index, item in enumerate(item_list):
         image_asset_id = item.get("image_asset_id")
+        if source_draft and item.get("image") and not image_asset_id:
+            return Response(
+                {"error": f"Item image {index + 1} must reference its saved draft asset."},
+                status=400,
+            )
         if not image_asset_id:
             continue
         if not source_draft:
@@ -718,11 +723,11 @@ def approve_vendor(request, vendor_request_id):
             draft_image = VendorDraftImage.objects.get(
                 id=image_asset_id,
                 draft=source_draft,
-                item_index=item_list.index(item),
+                item_index=index,
             )
         except VendorDraftImage.DoesNotExist:
             return Response(
-                {"error": "A saved item image could not be resolved."},
+                {"error": f"Saved item image {index + 1} could not be resolved."},
                 status=400,
             )
         resolved_draft_images[image_asset_id] = draft_image.image.name
