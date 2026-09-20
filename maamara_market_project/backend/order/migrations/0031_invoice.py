@@ -6,7 +6,7 @@ import django.db.models.deletion
 class Migration(migrations.Migration):
 
     dependencies = [
-        ("order", "0030_refund_mpesa_correlation"),
+        ("oder", "0030_refund_mpesa_correlation"),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
     ]
 
@@ -27,9 +27,9 @@ class Migration(migrations.Migration):
                 ("issued_at", models.DateTimeField(auto_now_add=True)),
                 ("paid_at", models.DateTimeField(blank=True, null=True)),
                 ("metadata", models.JSONField(blank=True, default=dict)),
-                ("order", models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name="invoices", to="order.order")),
-                ("payment", models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name="invoices", to="order.payment")),
-                ("transaction", models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name="invoices", to="order.transaction")),
+                ("order", models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name="invoices", to="oder.order")),
+                ("payment", models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name="invoices", to="oder.payment")),
+                ("transaction", models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name="invoices", to="oder.transaction")),
                 ("user", models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name="invoices", to=settings.AUTH_USER_MODEL)),
             ],
             options={
