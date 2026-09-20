@@ -132,7 +132,7 @@ export default function PublicProfile() {
                         .map((o) => (
                           <div
                             key={o.id}
-                            className="border rounded-lg p-3 shadow-sm bg-muted/30"
+                            className="border rounded-lg p-3 shadow-sm bg-white"
                           >
                             {/* Header */}
                             <div className="flex justify-between items-center border-b pb-1 mb-2">
