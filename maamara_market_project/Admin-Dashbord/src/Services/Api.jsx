@@ -3,15 +3,12 @@ import axios from "axios";
 const FALLBACK_API_ORIGIN = "http://100.109.224.0:8000";
 
 const resolveApiOrigin = () => {
-  const configured = import.meta.env.VITE_API_URL || import.meta.env.VITE_BASE_URL;
+  const configured =
+    import.meta.env.VITE_API_URL ||
+    import.meta.env.VITE_BASE_URL ||
+    FALLBACK_API_ORIGIN;
 
-  if (configured) return configured.replace(/\/$/, "");
-
-  if (typeof window !== "undefined" && window.location?.origin) {
-    return window.location.origin.replace(/\/$/, "");
-  }
-
-  return FALLBACK_API_ORIGIN;
+  return configured.replace(/\/$/, "");
 };
 
 export const baseURL = resolveApiOrigin();

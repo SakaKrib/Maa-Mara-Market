@@ -25,6 +25,7 @@ export function LoginForm({ className, ...props }) {
   const [password, setPassword] = useState("")
   const [error, setError] = useState("")
   const [csrfToken, setCsrfToken] = useState("")
+  const [csrfReady, setCsrfReady] = useState(false)
   const [loading, setLoading] = useState(false)
 
   // set see password hide password
@@ -32,7 +33,7 @@ export function LoginForm({ className, ...props }) {
 
   const location = useLocation()
   const navigate = useNavigate()
-  const { login } = useAuth()
+  const { refreshAuth } = useAuth()
   
   // Snackbar state
   const [snackbar, setSnackbar] = useState({ open: false, severity: "error", message: "" })
@@ -48,8 +49,12 @@ export function LoginForm({ className, ...props }) {
       .then(() => {
         const token = getCookie("csrftoken")
         setCsrfToken(token)
+        setCsrfReady(Boolean(token))
       })
-      .catch(err => console.error("CSRF fetch error:", err))
+      .catch(err => {
+        console.error("CSRF fetch error:", err)
+        setCsrfReady(false)
+      })
   }, [])
 
   const handleSnackbarClose = () => {
@@ -63,6 +68,13 @@ export function LoginForm({ className, ...props }) {
 
     if (!username || !password) {
       const msg = "Both username and password are required."
+      setError(msg)
+      setSnackbar({ open: true, severity: "error", message: msg })
+      return
+    }
+
+    if (!csrfReady || !csrfToken) {
+      const msg = "Security token is still loading. Please try again."
       setError(msg)
       setSnackbar({ open: true, severity: "error", message: msg })
       return
@@ -96,9 +108,13 @@ export function LoginForm({ className, ...props }) {
       if (contentType && contentType.includes("application/json")) {
         const data = await response.json()
         if (data.success) {
-          login(data.user)
           setUsername("")
           setPassword("")
+
+          // Django has established the authenticated HttpOnly cookies.
+          // Synchronize AuthContext with the server before navigating.
+          await refreshAuth()
+
           console.log("Redirecting to:", from)
           navigate(from, { replace: true })
         } else {

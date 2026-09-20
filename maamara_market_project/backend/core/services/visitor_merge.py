@@ -127,10 +127,16 @@ def merge_visitor_data_to_user(user, visitor_id: str | None) -> dict[str, int]:
         Order.objects.filter(visitor_id=visitor_id, user__isnull=True),
         OrderItem.objects.filter(visitor_id=visitor_id, user__isnull=True),
         Payment.objects.filter(visitor_id=visitor_id, user__isnull=True),
-        Transaction.objects.filter(visitor_id=visitor_id, user__isnull=True),
         BillingAddress.objects.filter(visitor_id=visitor_id, user__isnull=True),
     ):
-        moved += qs.update(user=user, visitor_id=None)
+       moved += qs.update(user=user, visitor_id=None)
+
+    # Transaction has no direct user FK.
+    # Its ownership is represented through its related order/payment/vendor.
+    # Clear the visitor ownership after the transaction has been associated
+    # through its existing relationships.
+    transaction_qs = Transaction.objects.filter(visitor_id=visitor_id)
+    moved += transaction_qs.update(visitor_id=None)
 
     customer = _merge_customer(user, visitor_id)
 

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Heart, ShoppingBag, UserRound, Menu, Search, Sparkles, ChevronDown, Globe2, LayoutDashboard, Store } from "lucide-react";
+import { Heart, ShoppingBag, UserRound, Menu, Search, Sparkles, ChevronDown, Globe2, LayoutDashboard, Store, LogOutIcon } from "lucide-react";
 import "../../../../PublicUi/maamara.css";
 import SearchBar from "../../../Navigations/Search/Search";
 import NavIcons from "../../../Navigations/Search/NavIcons/NavIcon";
@@ -15,6 +15,16 @@ import MegaMenuUnisex from "./UnisexCat";
 import MobileNavigationDrawer from "./MobileNavigationDrawer";
 import { useAuth } from "../../../../../cmponents/Auth/AuthContext/Context";
 import { useCurrency } from "../Main/Currency/CurrencyContext";
+
+const truncateName = (name, visibleChars = 3) => {
+  const cleanName = name?.trim() || "";
+
+  if (cleanName.length <= visibleChars) {
+    return cleanName;
+  }
+
+  return `${cleanName.slice(0, visibleChars)}...`;
+};
 
 const Header = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -49,6 +59,7 @@ const Header = () => {
 
   const isAdminOrVendor = user?.role === "admin" || user?.role === "vendor";
   const firstName = user?.first_name?.trim() || "";
+  const displayFirstName = truncateName(firstName);
 
   return (
     <header className={`mm-site-header ${isFixed ? "is-scrolled" : ""}`}>
@@ -114,7 +125,7 @@ const Header = () => {
 
             {isAuthenticated && !isAdminOrVendor && (
               <Link to="/vendor-register-form" className="flex items-center gap-1 text-sm" aria-label="Become a vendor">
-                <Store className="w-[15px]" /><span>Become a Vendor</span>
+                <Store className="w-[15px]" />
               </Link>
             )}
 
@@ -126,12 +137,17 @@ const Header = () => {
 
             {isAuthenticated && firstName && (
               <div className="flex flex-row items-center gap-2">
-                <UserRound className="w-[15px]" /><p className="text-sm">{firstName}</p>
+                <Link to='user-account'><UserRound className="w-[15px]" /></Link>
+                {/* {firstName && (
+              <span className="mm-user-first-name">
+                <p className="text-xs">{displayFirstName}</p>
+              </span>
+            )} */}
               </div>
             )}
 
             {isAuthenticated ? (
-              <button type="button" className="mm-auth-action mm-auth-action--logout text-sm" onClick={logout}>Log out</button>
+              <button type="button" className="mm-auth-action mm-auth-action--logout text-sm" onClick={logout}><LogOutIcon className="w-[15px]"/></button>
             ) : (
               <>
                 <Link to="/customer-login" className="p-2 bg-gray-100 rounded-full text-sm">Sign in</Link>
