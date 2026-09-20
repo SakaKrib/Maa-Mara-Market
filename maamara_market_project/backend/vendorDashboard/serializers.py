@@ -24,6 +24,7 @@ class VendorItemRequestSerializer(serializers.ModelSerializer):
 #price change request serializer
 class PriceChangeRequestSerializer(serializers.ModelSerializer):
     item_name = serializers.CharField(source="item.name", read_only=True)
+    item_price = serializers.FloatField(source="item.price", read_only=True)
     requested_by_username = serializers.CharField(source="requested_by.username", read_only=True)
 
     class Meta:
@@ -32,6 +33,7 @@ class PriceChangeRequestSerializer(serializers.ModelSerializer):
             "id",
             "item",
             "item_name",
+            "item_price",
             "requested_by",
             "requested_by_username",
             "new_price",
