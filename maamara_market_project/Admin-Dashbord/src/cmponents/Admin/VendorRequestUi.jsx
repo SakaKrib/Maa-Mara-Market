@@ -1,24 +1,51 @@
-import { useTheme, Box, Button } from "@mui/material";
 import { useEffect, useRef, useState } from "react";
+import { IonIcon } from "@ionic/react";
+import {
+  shieldCheckmarkOutline,
+  cubeOutline,
+  newspaperOutline,
+  pricetagOutline,
+  imageOutline,
+} from "ionicons/icons";
 import VendorApprovalPanel from "../VENDORPAGE/VendorRegistration/HandleApproveDeny";
-import { tokens } from "../../theme";
-import { getWebSocketUrl } from "../../Services/Api";
-import Header from "../../Header/Header";
 import VendorItemCreateRequests from "../VENDORPAGE/Products/VendorItems/AdminApproveDenyItemCreate";
 import AdminPriceApproval from "./ApproveItemPrice";
 import AdminBlogApprovalPage from "./ApproveBlogs/ApproveBlogs";
-import AdminBannerApprovalPage from "./ApproveBanner/ApproveBanner";
+import AdminBannerApprovalPage from "./ApproveBanner/aprroveBanner";
+import { getWebSocketUrl } from "../../Services/Api";
+
+const sections = [
+  { key: "vendors", label: "Vendor Requests", icon: shieldCheckmarkOutline },
+  { key: "items", label: "Item Requests", icon: cubeOutline },
+  { key: "blogs", label: "Blog Requests", icon: newspaperOutline },
+  { key: "prices", label: "Price Updates", icon: pricetagOutline },
+  { key: "banners", label: "Banner Requests", icon: imageOutline },
+];
+
+const sectionTitles = {
+  vendors: {
+    title: "Vendor requests awaiting approval",
+    description: "Review verified vendor applications before they become active marketplace vendors.",
+  },
+  items: {
+    title: "Vendor items awaiting approval",
+    description: "Review item creation requests submitted by marketplace vendors.",
+  },
+  blogs: {
+    title: "Blogs awaiting approval",
+    description: "Review vendor blog submissions before publication.",
+  },
+  prices: {
+    title: "Vendor price updates awaiting approval",
+    description: "Review requested item price changes before they are applied.",
+  },
+  banners: {
+    title: "Banner requests awaiting approval",
+    description: "Review vendor promotional banners before they become visible.",
+  },
+};
 
 const UiForVendorRequest = () => {
-  const theme = useTheme();
-  const colors = tokens(theme.palette.mode);
-
-  const getButtonStyle = (key) => ({
-    color: activeSection === key ? colors.gray[100] : colors.gray[300],
-    backgroundColor: activeSection === key ? colors.primary[400] : "transparent",
-    border: `1px solid ${colors.primary[400]}`,
-  });
-
   const [activeSection, setActiveSection] = useState("vendors");
   const [refreshToken, setRefreshToken] = useState(0);
   const wsRef = useRef(null);
@@ -31,6 +58,7 @@ const UiForVendorRequest = () => {
 
     const connect = () => {
       if (manuallyClosedRef.current) return;
+
       const socket = new WebSocket(getWebSocketUrl("/ws/admin/vendor-requests/"));
       wsRef.current = socket;
 
@@ -52,7 +80,11 @@ const UiForVendorRequest = () => {
       socket.onclose = (event) => {
         wsRef.current = null;
         if (manuallyClosedRef.current || event.code === 4403) return;
-        const delay = Math.min(1000 * 2 ** reconnectAttemptRef.current, 15000);
+
+        const delay = Math.min(
+          1000 * 2 ** reconnectAttemptRef.current,
+          15000
+        );
         reconnectAttemptRef.current += 1;
         reconnectTimerRef.current = window.setTimeout(connect, delay);
       };
@@ -61,140 +93,90 @@ const UiForVendorRequest = () => {
     };
 
     connect();
+
     return () => {
       manuallyClosedRef.current = true;
-      if (reconnectTimerRef.current) window.clearTimeout(reconnectTimerRef.current);
-      if (wsRef.current) wsRef.current.close();
+      if (reconnectTimerRef.current) {
+        window.clearTimeout(reconnectTimerRef.current);
+      }
+      if (wsRef.current) {
+        wsRef.current.close();
+      }
       wsRef.current = null;
     };
   }, []);
 
+  const active = sectionTitles[activeSection];
+
   return (
-    <Box sx={{ backgroundColor: colors.primary[500], minHeight: "100vh" }}>
-      
-      {/* Header */}
-      <div style={{ padding: "10px" }}>
-        <Header title="Vendor Requests" subtitle="Recent Requests" />
-      </div>
+    <section className="min-w-0 space-y-5 p-2 sm:p-4">
+      <header className="rounded-2xl border border-border bg-card p-4 shadow-sm sm:p-5">
+        <div className="flex min-w-0 items-center gap-3">
+          <div className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary">
+            <IonIcon icon={shieldCheckmarkOutline} className="text-xl" />
+          </div>
+          <div className="min-w-0">
+            <h1 className="truncate text-xl font-bold text-card-foreground sm:text-2xl">
+              Vendor Requests
+            </h1>
+            <p className="mt-1 text-xs text-muted-foreground sm:text-sm">
+              Manage vendor, item, content, pricing and banner approvals.
+            </p>
+          </div>
+        </div>
+      </header>
 
-      {/* Buttons */}
-      <div className="flex flex-wrap gap-3 px-4 pb-4">
+      <nav className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5">
+        {sections.map((section) => {
+          const selected = activeSection === section.key;
+          return (
+            <button
+              key={section.key}
+              type="button"
+              onClick={() => setActiveSection(section.key)}
+              className={[
+                "flex min-w-0 items-center justify-center gap-2 rounded-xl border px-3 py-3 text-xs font-semibold transition sm:text-sm",
+                selected
+                  ? "border-primary bg-primary text-primary-foreground shadow-sm"
+                  : "border-border bg-card text-muted-foreground hover:bg-muted hover:text-card-foreground",
+              ].join(" ")}
+            >
+              <IonIcon icon={section.icon} className="shrink-0 text-base" />
+              <span className="truncate">{section.label}</span>
+            </button>
+          );
+        })}
+      </nav>
 
-      <Button
-        variant="outlined"
-        onClick={() => setActiveSection("vendors")}
-        sx={getButtonStyle("vendors")}
-      >
-        Vendor Requests
-      </Button>
+      <article className="min-w-0 overflow-hidden rounded-2xl border border-border bg-card shadow-sm">
+        <div className="border-b border-border p-4 sm:p-5">
+          <h2 className="text-base font-bold text-card-foreground sm:text-lg">
+            {active.title}
+          </h2>
+          <p className="mt-1 text-xs leading-5 text-muted-foreground sm:text-sm">
+            {active.description}
+          </p>
+        </div>
 
-      <Button
-        variant="outlined"
-        onClick={() => setActiveSection("items")}
-        sx={getButtonStyle("items")}
-      >
-        Item Requests
-      </Button>
-
-      <Button
-        variant="outlined"
-        onClick={() => setActiveSection("blogs")}
-        sx={getButtonStyle("blogs")}
-      >
-        Blog Requests
-      </Button>
-
-      <Button
-        variant="outlined"
-        onClick={() => setActiveSection("prices")}
-        sx={getButtonStyle("prices")}
-      >
-        Price Updates
-      </Button>
-
-      <Button
-        variant="outlined"
-        onClick={() => setActiveSection("banners")}
-        sx={getButtonStyle("banners")}
-      >
-        Banner Requests
-      </Button>
-
-  
-       
-
-      </div>
-
-      {/* Content */}
-      <div className="flex p-4 flex-col gap-4">
-
-        {/* Vendors */}
-        {activeSection === "vendors" && (
-          <div
-            className="flex flex-col gap-4 rounded-xl p-4 shadow-md"
-            style={{ backgroundColor: colors.primary[600] }}
-          >
-            <h4 style={{ color: colors.blueAccent[100] }}>
-              Vendor Request Awaiting Approval
-            </h4>
+        <div className="min-w-0 p-2 sm:p-4">
+          {activeSection === "vendors" && (
             <VendorApprovalPanel key={`vendors-${refreshToken}`} />
-          </div>
-        )}
-
-        {/* Items */}
-        {activeSection === "items" && (
-          <div
-            className="flex flex-col gap-4 rounded-xl p-4 shadow-md"
-            style={{ backgroundColor: colors.primary[600] }}
-          >
-            <h4 style={{ color: colors.blueAccent[100] }}>
-              Vendor Items Awaiting Approval
-            </h4>
+          )}
+          {activeSection === "items" && (
             <VendorItemCreateRequests key={`items-${refreshToken}`} />
-          </div>
-        )}
-
-        {/* Blogs */}
-        {activeSection === "blogs" && (
-          <div
-            className="flex flex-col gap-4 rounded-xl p-4 shadow-md"
-            style={{ backgroundColor: colors.primary[600] }}
-          >
-            <h4 style={{ color: colors.blueAccent[100] }}>
-              Blogs Awaiting Approval
-            </h4>
+          )}
+          {activeSection === "blogs" && (
             <AdminBlogApprovalPage key={`blogs-${refreshToken}`} />
-          </div>
-        )}
-
-        {/* Prices */}
-        {activeSection === "prices" && (
-          <div
-            className="flex flex-col gap-4 rounded-xl p-4 shadow-md"
-            style={{ backgroundColor: colors.primary[600] }}
-          >
-            <h4 style={{ color: colors.blueAccent[100] }}>
-              Vendor Price Updates Awaiting Approval
-            </h4>
+          )}
+          {activeSection === "prices" && (
             <AdminPriceApproval key={`prices-${refreshToken}`} />
-          </div>
-        )}
-
-        {/* ✅ NEW: Banners */}
-        {activeSection === "banners" && (
-          <div
-            className="flex flex-col gap-4 rounded-xl p-4 shadow-md"
-            style={{ backgroundColor: colors.primary[600] }}
-          >
-            <h4 style={{ color: colors.blueAccent[100] }}>
-              Banner Requests Awaiting Approval
-            </h4>
+          )}
+          {activeSection === "banners" && (
             <AdminBannerApprovalPage key={`banners-${refreshToken}`} />
-          </div>
-        )}
-
-      </div>
-    </Box>
+          )}
+        </div>
+      </article>
+    </section>
   );
 };
 
