@@ -307,7 +307,7 @@ function AppContent() {
               <Route path="sales-Analytics" element={<SalesPage />} />
 
               {/* Transaction Growth */}
-              <Route path="admin-dashboard/sales-Analytics/transaction-growth-track" element={<RevenueGrowthCard />} />
+              <Route path="sales-Analytics/transaction-growth-track" element={<RevenueGrowthCard />} />
 
               {/* search global results route */}
               <Route path="search/global-results" element={<SearchGlobalResultsPage />} />
