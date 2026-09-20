@@ -1,7 +1,6 @@
 import { useEffect, useState, useRef } from "react";
 import api from "../../../Services/Api";
 
-const POLL_INTERVAL = 10_000; // 10 seconds
 
 export default function AdminBlogApprovalPage({ onCountChange }) {
   const [blogs, setBlogs] = useState([]);
@@ -33,11 +32,6 @@ export default function AdminBlogApprovalPage({ onCountChange }) {
     fetchBlogs(false);
 
     // Background polling (no flicker)
-    const interval = setInterval(() => {
-      fetchBlogs(true);
-    }, POLL_INTERVAL);
-
-    return () => clearInterval(interval);
   }, []);
 
   const handleApprove = async (blogId) => {
