@@ -33,7 +33,7 @@ export default function PublicProfile() {
   const {activities, notifications ,loadingExtras} = useUserExtras()
  
 
-    console.log(selectedItem)
+    
   
 
   useEffect(() => {
