@@ -343,9 +343,6 @@ const MobileNavigationDrawer = ({ open, onClose }) => {
                 <button type="button" onClick={() => go("/customer-login")} className={itemClass}>
                   <span className="flex items-center gap-3"><LogIn size={19} strokeWidth={1.8} />Sign In</span>
                 </button>
-                <button type="button" onClick={() => go("/register")} className={itemClass}>
-                  <span className="flex items-center gap-3"><UserRound size={19} strokeWidth={1.8} />Sign Up</span>
-                </button>
               </>
             )}
 
