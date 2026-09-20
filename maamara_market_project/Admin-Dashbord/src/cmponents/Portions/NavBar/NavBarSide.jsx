@@ -12,16 +12,12 @@ import {
   clipboardOutline,
   megaphoneOutline,
   briefcaseOutline,
-  mailOutline,
   closeOutline,
   cubeOutline,
   storefrontOutline,
   cardOutline,
   shieldCheckmarkOutline,
-  pricetagOutline,
-  newspaperOutline,
   returnDownBackOutline,
-  informationCircleOutline,
 } from "ionicons/icons";
 import { Link, useLocation } from "react-router-dom";
 import { useAuth } from "../../Auth/AuthContext/Context";
@@ -40,7 +36,6 @@ const navigation = [
       { label: "Vendors", to: "/admin-dashboard/vendors", icon: peopleOutline },
       { label: "Vendor requests", to: "/admin-dashboard/vendor-requests", icon: shieldCheckmarkOutline },
       { label: "Item requests", to: "/admin-dashboard/vendor/create-items/requests", icon: cubeOutline },
-      { label: "Price requests", to: "/admin-dashboard/vendorDashboard/vendoritemPricerequest/1", icon: pricetagOutline },
       { label: "Listings", to: "/admin-dashboard/approve-banner", icon: storefrontOutline },
       { label: "Returns & customer requests", to: "/admin-dashboard/customer-requests", icon: returnDownBackOutline },
     ],
@@ -56,8 +51,7 @@ const navigation = [
     label: "Communication",
     items: [
       { label: "Messages", to: "/admin-dashboard/join-chat", icon: chatboxOutline },
-      { label: "Email", to: "/admin-dashboard/create-support", icon: mailOutline },
-      { label: "Careers", to: "/admin-dashboard/careers", icon: briefcaseOutline },
+      { label: "Careers", to: "/admin-dashboard/create-career", icon: briefcaseOutline },
       { label: "Support", to: "/admin-dashboard/create-support", icon: helpCircleOutline },
     ],
   },
@@ -65,8 +59,6 @@ const navigation = [
     label: "Content",
     items: [
       { label: "Marketing & banners", to: "/admin-dashboard/approve-banner", icon: megaphoneOutline },
-      { label: "Blogs", to: "/admin-dashboard/approve-blogs", icon: newspaperOutline },
-      { label: "About us", to: "/admin-dashboard/create-support", icon: informationCircleOutline },
       { label: "FAQ", to: "/admin-dashboard/faq", icon: helpCircleOutline },
     ],
   },
