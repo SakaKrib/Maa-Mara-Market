@@ -15,6 +15,7 @@ import ipaddress
 from vendorDashboard.models import VendorPayout
 from core.models import Notification, ActivityLog
 from order.models import Transaction
+from order.invoice_services import create_vendor_payout_invoice
 from core.realtime import broadcast_event
 from order.paypalApis import verify_paypal_signature
 from vendorDashboard.payout.services.paypal_payouts import apply_paypal_payout_status
@@ -170,6 +171,9 @@ def mpesa_result(request):
                         "raw_data": {},
                     },
                 )
+
+            if result_code == 0 and payout.paid:
+                create_vendor_payout_invoice(payout)
 
             if result_code == 0 and not previous_paid:
                 vendor_user = getattr(payout.vendor, "user", None)
