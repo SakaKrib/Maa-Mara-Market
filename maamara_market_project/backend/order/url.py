@@ -35,6 +35,7 @@ from .views import (
     transaction_totals,
     vendor_sales,
     admin_transactions,
+    create_admin_transaction,
 )
 from .invoice_views import invoice_list
 
@@ -47,6 +48,7 @@ urlpatterns = [
 
     # account summery
     path("api/dashboard/summary/", DashboardSummaryView.as_view()),
+    path("api/transactions/", create_admin_transaction, name="create-admin-transaction"),
 
     #shipping rates
     path('api/shipping-rates', get_shipping_rates, name='shipping-rates'),
