@@ -124,7 +124,6 @@ const Footer = () => {
               ) : (
                 <>
                   <Link to="/customer-login">Sign in</Link>
-                  <Link to="/register">Sign up</Link>
                 </>
               )}
             </div>
