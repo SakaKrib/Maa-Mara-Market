@@ -134,8 +134,7 @@ const Header = () => {
               <button type="button" className="mm-auth-action mm-auth-action--logout text-sm" onClick={logout}>Log out</button>
             ) : (
               <>
-                <Link to="/customer-login" className="mm-auth-action text-sm">Sign in</Link>
-                <Link to="/register" className="mm-auth-action text-sm">Sign up</Link>
+                <Link to="/customer-login" className="light-button text-sm">Sign in</Link>
               </>
             )}
           </div>
