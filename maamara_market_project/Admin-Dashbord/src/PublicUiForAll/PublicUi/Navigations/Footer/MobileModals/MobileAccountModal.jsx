@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from "react";
 import MobileBottomSheet from "./MobileBottomSheet";
-import { UserRound, Package, Bell, Pencil, Save, LogIn, Store, FilePenLine, ChevronRight } from "lucide-react";
+import { UserRound, Package, Bell, Pencil, Save, LogIn, Store, FilePenLine, ChevronRight, FileText } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Input } from "../../../../../../components/ui/input";
 import { Button } from "../../../../../../components/ui/button";
 import api from "../../../../../Services/Api";
+import Invoices from "../../../Customer/DesktopView/Main/Accounts/Invoices";
 
 const MobileAccountModal = ({ open, onClose, user }) => {
   const navigate = useNavigate();
@@ -13,6 +14,7 @@ const MobileAccountModal = ({ open, onClose, user }) => {
   const [saving, setSaving] = useState(false);
   const [draft, setDraft] = useState(null);
   const [notifications, setNotifications] = useState([]);
+  const [invoicesOpen, setInvoicesOpen] = useState(false);
 
   const [form, setForm] = useState({
     first_name: "",
@@ -149,6 +151,9 @@ const MobileAccountModal = ({ open, onClose, user }) => {
               <button type="button" onClick={() => setEditing(true)} className="flex w-full items-center gap-3 border-b px-4 py-3 text-left text-sm">
                 <Pencil size={17} /> Edit account details
               </button>
+              <button type="button" onClick={() => setInvoicesOpen(true)} className="flex w-full items-center gap-3 border-b px-4 py-3 text-left text-sm">
+                <FileText size={17} /> Invoices
+              </button>
               <button type="button" onClick={() => go("/vendor-register-form")} className="flex w-full items-center gap-3 px-4 py-3 text-left text-sm">
                 <Store size={17} /> Become a vendor
               </button>
@@ -190,6 +195,7 @@ const MobileAccountModal = ({ open, onClose, user }) => {
           </div>
         )}
       </div>
+      <Invoices open={invoicesOpen} onClose={() => setInvoicesOpen(false)} />
     </MobileBottomSheet>
   );
 };
