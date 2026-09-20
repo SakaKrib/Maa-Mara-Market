@@ -16,12 +16,13 @@ import {
   MapPin,
   Calendar,
   ShoppingBag,
-  Undo2
+  Undo2,
 } from "lucide-react";
 import api from "../../../../../../Services/Api";
 import Snackbar from "@mui/material/Snackbar";
 import MuiAlert from "@mui/material/Alert";
 import RequestReturnForm from "../Return/Return";
+import { Avatar } from "@mui/material";
 
 export default function UserAccount() {
   const [userData, setUserData] = useState(null);

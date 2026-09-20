@@ -4665,7 +4665,7 @@ h1,h2,h3,h4{font-family:'regular','Poppins',Arial,sans-serif}
   padding:0 14px!important;
   border:1px solid var(--mm-border,#e6e3de)!important;
   border-radius:100px!important;
-  background:var(--mm-surface,#fff)!important;
+  background: transparent!important;
   color:var(--mm-text,#222)!important;
   font-family:'regular',sans-serif!important;
   font-size:13px!important;
@@ -4680,14 +4680,16 @@ h1,h2,h3,h4{font-family:'regular','Poppins',Arial,sans-serif}
 .mm-account-input:disabled{
   opacity:1;
   cursor:not-allowed;
-  background:var(--mm-surface-muted,#f5f4f1)!important;
+  background: transparent!important;
   color:var(--mm-text-muted,#6f6a63)!important;
 }
 .mm-account-profile{
   padding:12px;
   border:1px solid var(--mm-border,#e6e3de);
   border-radius:var(--mm-radius-md,14px);
-  background:var(--mm-surface-muted,#f5f4f1);
+  background:var(--mm-surface,#fff);
+  display: flex;
+  justify-content: center;
 }
 .mm-account-avatar{
   border:2px solid var(--mm-border-strong,#d6d1c9)!important;
