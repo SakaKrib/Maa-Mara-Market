@@ -77,3 +77,28 @@ class AdminVendorRequestsConsumer(AsyncWebsocketConsumer):
             "action": event.get("action", "updated"),
             "object_id": event.get("object_id"),
         }))
+
+
+class AdminPayoutsConsumer(AsyncWebsocketConsumer):
+    """Real-time payout invalidation channel for admin payout history."""
+
+    group_name = "admin_payouts"
+
+    async def connect(self):
+        user = self.scope.get("user")
+        if not user or not user.is_authenticated or not user.is_staff:
+            await self.close(code=4403)
+            return
+
+        await self.channel_layer.group_add(self.group_name, self.channel_name)
+        await self.accept()
+
+    async def disconnect(self, close_code):
+        await self.channel_layer.group_discard(self.group_name, self.channel_name)
+
+    async def payout_changed(self, event):
+        await self.send(text_data=json.dumps({
+            "type": "payout.changed",
+            "action": event.get("action", "updated"),
+            "payout_id": event.get("payout_id"),
+        }))
