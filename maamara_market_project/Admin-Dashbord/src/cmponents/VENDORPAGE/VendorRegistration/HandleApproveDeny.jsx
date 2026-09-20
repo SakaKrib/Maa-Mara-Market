@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import api from '../../../Services/Api';
-import { baseUrl } from '../../Constant/Constant';
+import api, { resolveApiAssetUrl } from '../../../Services/Api';
 import { Button } from '../../../../components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../../../../components/ui/card';
 import { useToast } from '../../../../components/ui/toast';
@@ -42,19 +41,19 @@ export default function VendorApprovalPanel() {
     }
   };
 
-  const handleApprove = async (id) => {
+  const handleApprove = async (id, vendorInfo = editVendorInfo, itemList = editItemList) => {
     setLoading(true);
 
     const dataToUpdate = {
-      ...editVendorInfo,
-      item_list: editItemList,
+      ...vendorInfo,
+      item_list: itemList,
     };
 
     const cleanedData = { ...dataToUpdate };
     delete cleanedData.confirm_password;
 
     try {
-      await api.post(`${baseUrl}/api/vendor-requests/${id}/approve/`, cleanedData);
+      await api.post(`/api/vendor-requests/${id}/approve/`, cleanedData);
       toast({
         title: 'Vendor Approved',
         description: 'Vendor and item list saved successfully.',
@@ -136,13 +135,13 @@ export default function VendorApprovalPanel() {
                       setSelectedVendor(vendor);
                       setEditVendorInfo(vendor.vendor_data || {});
                       setEditItemList(vendor.item_list || []);
-                      handleApprove(vendor.id);
+                      handleApprove(vendor.id, vendor.vendor_data || {}, vendor.item_list || []);
                     }}
                     variant="outline"
                   >
                     Approve
                   </Button>
-                  <Button variant="destructive" disabled={loading} onClick={() => handleDeny(vendor.user)}>
+                  <Button variant="destructive" disabled={loading} onClick={() => handleDeny(vendor.id)}>
                     Deny
                   </Button>
                   <Button variant="outline" onClick={() => handleViewDetails(vendor)}>
@@ -185,9 +184,7 @@ export default function VendorApprovalPanel() {
                       <li key={`${item.name}-${idx}`} className="py-2">
                         {Object.entries(item).map(([itemKey, itemValue]) => {
                           if (itemKey === 'image' && itemValue) {
-                            const src = itemValue.startsWith('http')
-                              ? itemValue
-                              : `${baseUrl.replace(/\/$/, '')}/media/${itemValue.replace(/^\/+/, '')}`;
+                            const src = resolveApiAssetUrl(itemValue);
                             return (
                               <div key={itemKey} className="w-32 h-32 mt-2">
                                 <img src={src} alt={item.name} className="w-32 h-32 object-cover" />
