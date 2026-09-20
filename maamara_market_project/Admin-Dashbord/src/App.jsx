@@ -46,6 +46,7 @@ import VendorItemCreateRequests from "./cmponents/VENDORPAGE/Products/VendorItem
 import VendorRegistration from "./cmponents/VENDORPAGE/VendorRegistration/Terms&Conditions";
 import LoginPage from "./PublicUiForAll/PublicUi/Customer/LoginForm";
 import RegisterPage from "./PublicUiForAll/PublicUi/Customer/DesktopView/Main/Register";
+import VerifyRegistrationNewUser from "../components/VerifyRegistrationNewUser";
 import Main from "./PublicUiForAll/PublicUi/Customer/DesktopView/Main/Main";
 import OTPVerification from "./cmponents/VENDORPAGE/VendorRegistration/VendorOTP";
 import SingleItem from "./PublicUiForAll/PublicUi/Customer/DesktopView/Main/SingleItem/SingleItem";
@@ -212,6 +213,7 @@ function AppContent() {
                 <Route path="list" element={<SearchResultsPage />} />
                 <Route path="customer-login" element={<LoginPage />} />
                 <Route path="register" element={<RegisterPage />} />
+                <Route path="verify-otp" element={<VerifyRegistrationNewUser />} />
                 <Route path="checkout-page" element={<CheckoutPage />} />
                 <Route path="paypal-make-payment" element={<CheckoutPaypalPayment />} />
                 <Route path="mpesa-make-payment" element={<MpesaC2BPayment />} />
