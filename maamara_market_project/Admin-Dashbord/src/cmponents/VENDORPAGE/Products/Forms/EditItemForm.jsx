@@ -1873,7 +1873,7 @@ if (data.shipping_dimension_data) {
                             : typeof variant.color_image === "string" && variant.color_image.startsWith("http")
                             ? variant.color_image // ✅ already full URL
                             : variant.color_image
-                            ? `${baseUrl}${variant.color_image}` // ✅ relative path from backend
+                            ? resolveApiAssetUrl(variant.color_image) // ✅ relative path from backend
                             : "/placeholder.png" // optional fallback
                         }
                         alt={`${variant.color} preview`}
