@@ -17,6 +17,7 @@ from rest_framework.decorators import action
 from .Serializers import BlogPostSerializer
 from .models import BlogPost, CareerVacancy, JobApplication
 from order.views import IsAuthenticatedOrVisitor
+from order.models import Customer
 from django.shortcuts import get_object_or_404
 from django.contrib.auth import get_user_model
 from django.db import transaction
