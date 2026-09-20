@@ -52,22 +52,7 @@ export default function PublicProfile() {
   if (loading) {
     return (
       <div className="mm-page min-h-screen bg-[#faf8f4] text-[#29251f]">
-      {/* --- Header --- */}
-      <div className="logo flex items-center justify-between border-b border-gray-300 pb-4 mb-6 fixed w-full px-4 bg-white z-10">
-        <a href="#" className="flex items-center space-x-2 text-2xl font-bold text-gray-800">
-          <span className="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center text-white text-xs">
-            MMM
-          </span>
-          <span>
-            Maa <span className="it-name">Mara</span>{" "}
-            <span className="mkrt">Market</span>
-          </span>
-        </a>
-        <span className="font-semibold hover:underline cursor-pointer">
-          go to shop
-        </span>
-      </div>
-      <div className="flex justify-center mt-64">
+      <div className="flex justify-center mt-16">
         <Skeleton className="h-64 w-96 rounded-xl" />
       </div>
       </div>
@@ -85,23 +70,8 @@ export default function PublicProfile() {
   const { user, wallet, referral, vouchers, orders, profile: profileDetails } = profile;
 
   return (
-    <div className="flex flex-col py-2 px-0 bg-white min-h-screen">
-      {/* --- Header --- */}
-      <div className="logo flex items-center justify-between border-b border-gray-300 pb-4 mb-6 fixed w-full px-4 bg-white z-10">
-        <a href="#" className="flex items-center space-x-2 text-2xl font-bold text-gray-800">
-          <span className="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center text-white text-xs">
-            MMM
-          </span>
-          <span>
-            Maa <span className="it-name">Mara</span>{" "}
-            <span className="mkrt">Market</span>
-          </span>
-        </a>
-        <span className="font-semibold hover:underline cursor-pointer">
-          go to shop
-        </span>
-      </div>
-    <div className="flex justify-center px-4 pt-24 pb-8 sm:pt-28">
+    <div className="mm-page flex flex-col py-2 px-0 bg-[#faf8f4] text-[#29251f] min-h-screen">
+    <div className="flex justify-center px-4 pt-6 pb-8 sm:pt-8">
       <Card className="mm-profile-card w-full max-w-3xl overflow-hidden rounded-3xl border-[#e5dfd4] bg-white shadow-[0_10px_35px_rgba(54,45,32,0.08)]">
         <CardHeader className="flex flex-col items-center text-center space-y-3 border-b border-[#eee8de] bg-[#f6f2ea] px-6 py-8">
           <Avatar className="h-24 w-24">
@@ -309,13 +279,13 @@ export default function PublicProfile() {
                 Please log in, invite friends and earn Coins and Vouchers.
               </p>
               <Button
-                variant="default"
+                className="mm-auth-submit w-full sm:w-auto"
                 onClick={() => (window.location.href = "/customer-login")}
               >
                 Login to View Account
               </Button>
-              <div className=" flex justify-center items-center mt-4">
-                <div className='ring-1 w-max hover:bg-blue-200 px-4 py-2 rounded-full cursor-pointer'>
+              <div className="flex justify-center items-center mt-4">
+                <div className="mm-auth-light-button w-max cursor-pointer">
                   Invoices
                 </div>
               </div>
