@@ -1,0 +1,11 @@
+.mm-vendor-registration{font-family:'regular',sans-serif;background:#fff;color:#222}
+.mm-vendor-registration h1,.mm-vendor-registration h2,.mm-vendor-registration h3,.mm-vendor-registration h4{font-family:'regular',sans-serif;color:#222;letter-spacing:-.02em}
+.mm-vendor-registration-form{max-width:1040px;margin:0 auto;background:#fff;border-color:#e6e3de!important;border-radius:16px;box-shadow:0 10px 30px rgba(34,34,34,.05)}
+.mm-vendor-registration-form [data-slot="form-label"],.mm-vendor-registration-form label{font-family:'regular',sans-serif;color:#45413c;font-size:12px;font-weight:600}
+.mm-vendor-registration-form input,.mm-vendor-registration-form textarea{font-family:'regular',sans-serif;border-color:#d8d4cc;background:#fff;border-radius:8px;min-height:42px}
+.mm-vendor-registration-form input:focus,.mm-vendor-registration-form textarea:focus{border-color:#222;box-shadow:0 0 0 2px rgba(34,34,34,.06)}
+.mm-vendor-registration-form h2{font-size:20px;font-weight:700;padding-bottom:8px;border-bottom:1px solid #eee9e2}
+.mm-vendor-registration-form button{font-family:'regular',sans-serif}
+.mm-vendor-registration-form .primary-button{background:#222;color:#fff;border-radius:999px}
+.mm-vendor-registration-form .primary-button:hover{background:#45413c}
+@media(max-width:639px){.mm-vendor-registration{padding-top:12px}.mm-vendor-registration-form{border:0!important;border-radius:0;box-shadow:none;padding:18px 14px!important}.mm-vendor-registration-form h2{font-size:18px}.mm-vendor-registration-form input,.mm-vendor-registration-form textarea{font-size:14px}}
