@@ -17,7 +17,7 @@ const useDashboardStats = () => {
       setLoading(true);
 
       // axios response
-      const response = await api.get("/api/admin/dashboard/vendor-sales/");
+      const response = await api.get("/api/sales/stats/");
 
       // axios data
       const data = response.data;
