@@ -365,7 +365,7 @@ export default function UserAccount() {
                               <Button
                                 size="sm"
                                 variant="outline"
-                                onClick={() => setSelectedItem(item)}
+                                onClick={() => setSelectedItem({ ...itemObj, order: o })}
                                 className="text-xs"
                               >
                                 <Undo2 className="h-3.5 w-3.5 mr-1" />
