@@ -15,9 +15,10 @@ from vendorDashboard.serializers import VendorItemRequestSerializer
 from rest_framework import status
 from rest_framework.decorators import action
 from .Serializers import BlogPostSerializer
-from .models import BlogPost
+from .models import BlogPost, CareerVacancy, JobApplication
 from order.views import IsAuthenticatedOrVisitor
 from django.shortcuts import get_object_or_404
+from django.contrib.auth import get_user_model
 from django.db import transaction
 from django.db.models import F
 from django.db.models import Avg, Q, Count
@@ -1318,3 +1319,89 @@ class VendorHistoryTimelineView(APIView):
         )
 
         return Response(timeline)
+
+# -------------------------------
+# Careers
+# -------------------------------
+
+@api_view(["GET", "POST"])
+def career_vacancies_api(request):
+    if request.method == "GET":
+        vacancies = CareerVacancy.objects.all() if request.user.is_staff else CareerVacancy.objects.filter(is_active=True)
+        return Response(CareerVacancySerializer(vacancies, many=True).data)
+
+    if not request.user.is_authenticated or not request.user.is_staff:
+        return Response({"detail": "Admin access required."}, status=status.HTTP_403_FORBIDDEN)
+
+    serializer = CareerVacancySerializer(data=request.data)
+    if serializer.is_valid():
+        return Response(serializer.data if serializer.save() else serializer.data, status=status.HTTP_201_CREATED)
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+@api_view(["GET"])
+def job_vacancy_detail_api(request, pk):
+    vacancy = get_object_or_404(CareerVacancy, pk=pk, is_active=True)
+    return Response(CareerVacancySerializer(vacancy).data)
+
+
+@api_view(["PUT", "PATCH", "DELETE"])
+@permission_classes([permissions.IsAdminUser])
+def career_vacancy_detail_api(request, pk):
+    vacancy = get_object_or_404(CareerVacancy, pk=pk)
+
+    if request.method == "DELETE":
+        vacancy.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+    serializer = CareerVacancySerializer(vacancy, data=request.data, partial=request.method == "PATCH")
+    if serializer.is_valid():
+        serializer.save()
+        return Response(serializer.data)
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+@api_view(["POST"])
+@permission_classes([IsAuthenticatedOrVisitor])
+def apply_for_job_api(request):
+    serializer = JobApplicationSerializer(data=request.data)
+    if serializer.is_valid():
+        application = serializer.save(seen=False)
+        return Response(JobApplicationSerializer(application).data, status=status.HTTP_201_CREATED)
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+@api_view(["PATCH"])
+@permission_classes([permissions.IsAdminUser])
+def mark_application_seen(request, pk):
+    application = get_object_or_404(JobApplication, pk=pk)
+    application.seen = True
+    application.save(update_fields=["seen"])
+    return Response({"message": "Marked as seen"})
+
+
+@api_view(["GET"])
+@permission_classes([permissions.IsAdminUser])
+def get_job_applications_api(request):
+    applications = JobApplication.objects.select_related("vacancy").all()
+    return Response(JobApplicationSerializer(applications, many=True).data)
+
+
+@api_view(["GET"])
+@permission_classes([permissions.IsAdminUser])
+def unseen_applications_count_api(request):
+    return Response({"unseen": JobApplication.objects.filter(seen=False).count()})
+
+
+@api_view(["GET"])
+def career_stats_api(request):
+    User = get_user_model()
+    stats = {
+        "total_vacancies": CareerVacancy.objects.count(),
+        "active_vacancies": CareerVacancy.objects.filter(is_active=True).count(),
+        "vendors_supported": Vendor.objects.count(),
+        "customers_reached": Customer.objects.count(),
+        "team_members": User.objects.filter(is_staff=True).count(),
+        "region": "East Africa",
+    }
+    return Response(stats)
