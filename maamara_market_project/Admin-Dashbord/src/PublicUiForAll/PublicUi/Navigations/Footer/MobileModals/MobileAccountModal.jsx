@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import MobileBottomSheet from "./MobileBottomSheet";
-import { UserRound, Package, Bell, Pencil, Save, LogIn, Store } from "lucide-react";
+import { UserRound, Package, Bell, Pencil, Save, LogIn, Store, FilePenLine, ChevronRight } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Input } from "../../../../../../components/ui/input";
 import { Button } from "../../../../../../components/ui/button";
@@ -11,6 +11,8 @@ const MobileAccountModal = ({ open, onClose, user }) => {
   const [account, setAccount] = useState(null);
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [draft, setDraft] = useState(null);
+  const [notifications, setNotifications] = useState([]);
 
   const [form, setForm] = useState({
     first_name: "",
@@ -26,10 +28,14 @@ const MobileAccountModal = ({ open, onClose, user }) => {
     if (!open) return;
 
     let active = true;
-    api.get("/api/user/account/", { withCredentials: true })
-      .then((res) => {
-        if (!active) return;
-        const data = res.data || {};
+    Promise.allSettled([
+      api.get("/api/user/account/", { withCredentials: true }),
+      api.get("/api/vendor-draft/", { withCredentials: true }),
+      api.get("/api/user-visitor-notifications/", { withCredentials: true }),
+    ]).then(([accountResult, draftResult, notificationResult]) => {
+      if (!active) return;
+      if (accountResult.status === "fulfilled") {
+        const data = accountResult.value.data || {};
         setAccount(data);
         setForm({
           first_name: data.user?.first_name || "",
@@ -40,10 +46,12 @@ const MobileAccountModal = ({ open, onClose, user }) => {
           country: data.profile?.country || "",
           location: data.profile?.location || "",
         });
-      })
-      .catch((error) => {
-        if (active) console.error("Account loading failed:", error);
-      });
+      }
+      setDraft(draftResult.status === "fulfilled" && draftResult.value.data?.exists ? draftResult.value.data : null);
+      setNotifications(notificationResult.status === "fulfilled" ? (notificationResult.value.data?.results || []) : []);
+    }).catch((error) => {
+      if (active) console.error("Account loading failed:", error);
+    });
 
     return () => { active = false; };
   }, [open]);
@@ -119,9 +127,24 @@ const MobileAccountModal = ({ open, onClose, user }) => {
               </button>
             </div>
 
+            {draft && (
+              <button type="button" onClick={() => go("/vendor-register-form")} className="w-full rounded-2xl border bg-[#f5f4f1] p-4 text-left">
+                <div className="flex items-center gap-3">
+                  <span className="flex h-10 w-10 items-center justify-center rounded-full bg-white"><FilePenLine size={17} /></span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block text-[10px] font-bold tracking-[0.12em] text-[#6f6a63]">SAVED DRAFT</span>
+                    <span className="block truncate text-sm font-semibold">{draft.draft?.company_name || "Vendor registration"}</span>
+                    <span className="block text-xs text-[#6f6a63]">Continue where you left off</span>
+                  </span>
+                  <ChevronRight size={18} />
+                </div>
+              </button>
+            )}
+
             <div className="space-y-1 rounded-2xl border bg-white">
               <button type="button" onClick={() => go("/profile")} className="flex w-full items-center gap-3 border-b px-4 py-3 text-left text-sm">
                 <Bell size={17} /> Notifications
+                {notifications.filter((n) => !n.is_read).length > 0 && <span className="ml-auto rounded-full bg-black px-2 py-0.5 text-[10px] text-white">{notifications.filter((n) => !n.is_read).length}</span>}
               </button>
               <button type="button" onClick={() => setEditing(true)} className="flex w-full items-center gap-3 border-b px-4 py-3 text-left text-sm">
                 <Pencil size={17} /> Edit account details
