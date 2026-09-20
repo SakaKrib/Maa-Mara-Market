@@ -44,7 +44,7 @@ const CustomerOrdersDashboard = ({ wallet, vouchers = [], orders = [] }) => {
     <section className="mm-page min-h-screen bg-white text-[#29251f]">
       <div className="mm-container px-4 py-8 sm:px-6 sm:py-10">
         <div className="space-y-6">
-          <Card className="overflow-hidden rounded-3xl border border-[#e5dfd4] bg-[#f6f2ea] text-[#29251f] shadow-[0_10px_35px_rgba(54,45,32,0.08)]">
+          <Card className="overflow-hidden rounded-3xl border border-[#e5dfd4] bg-white text-[#29251f] shadow-sm">
             <CardContent className="p-6 sm:p-7">
               <div className="mb-2 flex items-center gap-3">
                 <Wallet className="h-6 w-6 shrink-0" aria-hidden="true" />
@@ -108,7 +108,7 @@ const CustomerOrdersDashboard = ({ wallet, vouchers = [], orders = [] }) => {
                   {safeVouchers.map((voucher) => (
                     <div
                       key={voucher.id ?? voucher.code}
-                      className="flex flex-col gap-2 rounded-2xl border border-[#e5dfd4] bg-[#faf8f4] p-4 shadow-sm transition-shadow hover:shadow-md sm:flex-row sm:items-center sm:justify-between"
+                      className="flex flex-col gap-2 rounded-2xl border border-[#e5dfd4] bg-white p-4 shadow-sm transition-shadow hover:shadow-md sm:flex-row sm:items-center sm:justify-between"
                     >
                       <div>
                         <p className="font-mono font-semibold">{voucher.code}</p>
@@ -117,7 +117,7 @@ const CustomerOrdersDashboard = ({ wallet, vouchers = [], orders = [] }) => {
                           {voucher.discount_type === "percent" ? "%" : " KES"} OFF
                         </p>
                       </div>
-                      <Badge>Active</Badge>
+                      <span className="text-xs font-semibold text-[#514a41]">Active</span>
                     </div>
                   ))}
                 </div>
@@ -135,12 +135,12 @@ const CustomerOrdersDashboard = ({ wallet, vouchers = [], orders = [] }) => {
               {pendingOrders.length > 0 ? (
                 <div className="space-y-4">
                   {pendingOrders.map((order) => (
-                    <div key={order.id ?? order.paypal_order_id} className="rounded-2xl border border-[#e5dfd4] bg-[#faf8f4] p-4 shadow-sm transition-shadow hover:shadow-md">
+                    <div key={order.id ?? order.paypal_order_id} className="rounded-2xl border border-[#e5dfd4] bg-white p-4 shadow-sm transition-shadow hover:shadow-md">
                       <div className="mb-3 flex flex-wrap items-center justify-between gap-2 border-b border-[#e5dfd4] pb-3">
                         <span className="font-semibold">
                           #{order.id ?? order.paypal_order_id ?? "—"}
                         </span>
-                        <Badge className="bg-yellow-100 text-yellow-700">
+                        <Badge className="border border-[#e5dfd4] bg-white text-yellow-700">
                           {order.status || "Pending"}
                         </Badge>
                       </div>
@@ -172,7 +172,7 @@ const CustomerOrdersDashboard = ({ wallet, vouchers = [], orders = [] }) => {
                         <span className="font-semibold">
                           #{order.id ?? order.paypal_order_id ?? "—"}
                         </span>
-                        <Badge className="bg-green-100 text-green-700">Completed</Badge>
+                        <Badge className="border border-[#e5dfd4] bg-white text-green-700">Completed</Badge>
                       </div>
 
                       {(order.items || []).map((itemObj, index) => {
