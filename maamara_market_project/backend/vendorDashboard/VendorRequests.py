@@ -31,7 +31,7 @@ User = get_user_model()
 class VendorItemRequestDetailView(generics.RetrieveAPIView):
     queryset = VendorItemRequest.objects.all()
     serializer_class = VendorItemRequestSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.IsAdminUser]
 
 
 
