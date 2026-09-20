@@ -285,12 +285,14 @@ export default function PublicProfile() {
               >
                 Login to View Account
               </Button>
-              <div className="mt-4">
-                <Invoices />
-              </div>
+              <div className="mt-4" />
             </div>
             
           )}
+
+          <div className="mt-5">
+            <Invoices />
+          </div>
         </CardContent>
       </Card>
     </div>
