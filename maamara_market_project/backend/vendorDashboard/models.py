@@ -174,14 +174,6 @@ class VendorDraftImage(models.Model):
     item_index = models.IntegerField()
     created_at = models.DateTimeField(auto_now_add=True)
 
-    class Meta:
-        constraints = [
-            models.UniqueConstraint(
-                fields=["draft", "item_index"],
-                name="unique_vendor_draft_image_index",
-            )
-        ]
-
 
 # vendor request save temoralily
 
