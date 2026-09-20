@@ -3,7 +3,6 @@ import { IonIcon } from "@ionic/react";
 import { walletOutline, cardOutline, cashOutline, trendingUpOutline } from "ionicons/icons";
 import PaymentsOverview from "../AdminAccounts/AdminCards";
 import FastPayment from "../AdminAccounts/Reports/PaymentHistory";
-import MonthlyReport from "../AdminAccounts/Reports/ReportsLedger";
 import CryptoChart from "../AdminAccounts/Reports/LineGrahReactChart";
 import Header from "../../../Header/Header";
 import useDashboardData from "../../Hooks/AccountSummary/AccountSummaryHook";
@@ -36,7 +35,6 @@ const AdminAccounts = () => {
           <>
             <PaymentsOverview />
             <FastPayment />
-            <MonthlyReport />
             <CryptoChart monthlySummary={monthlySummary} />
           </>
         )}
