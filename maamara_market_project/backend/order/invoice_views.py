@@ -1,7 +1,7 @@
 from django.db.models import Q
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
-from rest_framework.permissions import IsAuthenticated
+from .views import IsAuthenticatedOrVisitor
 
 from .invoice_models import Invoice
 
@@ -27,11 +27,14 @@ def _serialize(invoice):
 
 
 @api_view(["GET"])
-@permission_classes([IsAuthenticated])
+@permission_classes([IsAuthenticatedOrVisitor])
 def invoice_list(request):
-    queryset = Invoice.objects.filter(user=request.user).select_related(
-        "order", "payment", "transaction"
-    )
+    user = request.user if request.user and request.user.is_authenticated else None
+    visitor_id = request.COOKIES.get("visitorId") if not user else None
+
+    queryset = Invoice.objects.filter(
+        Q(user=user) if user else Q(visitor_id=visitor_id)
+    ).select_related("order", "payment", "transaction")
 
     invoice_type = request.query_params.get("type")
     if invoice_type in {Invoice.TYPE_CUSTOMER, Invoice.TYPE_VENDOR}:
