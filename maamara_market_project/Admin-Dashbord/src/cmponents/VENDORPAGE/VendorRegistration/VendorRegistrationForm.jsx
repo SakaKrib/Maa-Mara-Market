@@ -817,8 +817,6 @@ const onSubmit = async (data) => {
       setSnackbarMessage("Vendor request submitted successfully!");
       setSnackbarOpen(true);
 
-      await deleteVendorDraft();
-
       navigate("/otp-vendor-verification", {
         state: { email: data.email },
       });
