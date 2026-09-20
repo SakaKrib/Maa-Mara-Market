@@ -1,179 +1,183 @@
-import { useEffect, useState } from "react";
-import { Box, Typography, useTheme, Button } from "@mui/material";
-import { DataGrid } from "@mui/x-data-grid";
+import { useEffect, useMemo, useState } from "react";
+import { IonIcon } from "@ionic/react";
+import { cashOutline, trendingUpOutline } from "ionicons/icons";
+import { useNavigate } from "react-router-dom";
 import api from "../../../../Services/Api";
-import { tokens } from "../../../../theme";
-import StatBox from "../../../StatBox/Statbox";
 import useDashboardStats from "../../../Hooks/StockInventory/SalesStats";
-import PointOfSaleIcon from "@mui/icons-material/PointOfSale";
-import { color } from "framer-motion";
-import { useNavigate } from "react-router-dom"; 
-
 
 const SalesPage = () => {
-  const theme = useTheme();
-  const colors = tokens(theme.palette.mode);
-
   const [rows, setRows] = useState([]);
-
+  const [loadingRows, setLoadingRows] = useState(true);
+  const [error, setError] = useState("");
   const { stats, loading } = useDashboardStats();
-  const navigate = useNavigate()
-
- 
+  const navigate = useNavigate();
 
   useEffect(() => {
+    let active = true;
+
     const fetchData = async () => {
       try {
+        setLoadingRows(true);
+        setError("");
         const res = await api.get("/api/admin/dashboard/vendor-sales/");
+        const vendors = Array.isArray(res.data) ? res.data : [];
 
-        // FLATTEN DATA FOR DATAGRID
-        const formatted = res.data.flatMap((vendor) =>
-          vendor.items.map((item, index) => ({
-            id: `${vendor.vendor_name}-${index}`,
-            vendor: vendor.vendor_name,
-            item: item.item_name,
-            qty_sold: item.qty_sold,
-            total_qty: item.total_qty,
-            remaining: item.total_qty - item.qty_sold,
+        const formatted = vendors.flatMap((vendor) =>
+          (Array.isArray(vendor.items) ? vendor.items : []).map((item, index) => ({
+            id: `${vendor.vendor_name || "vendor"}-${item.item_id || item.item_name || index}`,
+            vendor: vendor.vendor_name || "Unknown vendor",
+            item: item.item_name || "Unnamed item",
+            qty_sold: Number(item.qty_sold || 0),
+            total_qty: Number(item.total_qty || 0),
+            remaining:
+              item.current_stock !== undefined && item.current_stock !== null
+                ? Number(item.current_stock)
+                : Math.max(Number(item.total_qty || 0) - Number(item.qty_sold || 0), 0),
           }))
         );
 
-        setRows(formatted);
+        if (active) setRows(formatted);
       } catch (err) {
-        console.log(err);
+        console.error("Vendor sales load failed:", err);
+        if (active) {
+          setRows([]);
+          setError("Unable to load vendor sales right now.");
+        }
+      } finally {
+        if (active) setLoadingRows(false);
       }
     };
 
     fetchData();
+    return () => { active = false; };
   }, []);
 
-  const columns = [
-    {
-      field: "vendor",
-      headerName: "Vendor",
-      flex: 1,
-    },
-    {
-      field: "item",
-      headerName: "Item",
-      flex: 1,
-    },
-    {
-      field: "qty_sold",
-      headerName: "Qty Sold",
-      flex: 1,
-      type: "number",
-    },
-    {
-      field: "total_qty",
-      headerName: "Total Stock",
-      flex: 1,
-      type: "number",
-    },
-    {
-      field: "remaining",
-      headerName: "Remaining",
-      flex: 1,
-      type: "number",
-    },
-  ];
+  const totals = useMemo(
+    () => ({
+      sold: rows.reduce((sum, row) => sum + row.qty_sold, 0),
+      stock: rows.reduce((sum, row) => sum + row.total_qty, 0),
+      remaining: rows.reduce((sum, row) => sum + row.remaining, 0),
+    }),
+    [rows]
+  );
 
-  if (loading) {
-    return <div>Loading...</div>;
+  const statsProgress =
+    Number(stats?.total_orders || 0) > 0
+      ? Number(stats?.completed_orders || 0) / Number(stats.total_orders)
+      : 0;
+
+  if (loading && loadingRows) {
+    return (
+      <section className="flex min-h-[40vh] items-center justify-center p-4 text-sm text-muted-foreground">
+        Loading vendor sales...
+      </section>
+    );
   }
 
   return (
-    <Box p={3}>
-      <Typography variant="h3" mb={3} sx={{color:colors.gray[100]}}>
-        Vendor Sales
-      </Typography>
+    <section className="min-w-0 space-y-5 p-2 sm:p-4 lg:p-6">
+      <header>
+        <p className="text-xs font-semibold uppercase tracking-[0.16em] text-primary">Sales reporting</p>
+        <h1 className="mt-1 text-2xl font-bold tracking-tight text-foreground sm:text-3xl">Vendor Sales</h1>
+        <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
+          Review vendor item sales, stock levels and remaining inventory.
+        </p>
+      </header>
 
-      <Box sx={{mt:'10px', mb:'10px'}}> 
-        <Typography variant="h5" sx={{color:colors.gray[100], mb:'10px'}}> Stats Analysis</Typography>
-      <Box
-      bgcolor={colors.primary[600]}
-      p={2}
-      borderRadius="0.5em"
-      display="flex"
-      sx={{
-        cursor: "pointer",
-        transition: "0.3s",
-        "&:hover": {
-          opacity: 0.9,
-          transform: "translateY(-2px)",
-        },
-      }}
-    >
-      <StatBox
-        title={`${Number(stats.total_sales).toLocaleString()}`}
-        subtitle="Sales"
-        progress={
-          stats.total_orders > 0
-            ? stats.completed_orders / stats.total_orders
-            : 0
-        }
-        increase={`${stats.total_orders} Orders`}
-        icon={
-          <PointOfSaleIcon
-            sx={{
-              color: colors.greenAccent[600],
-              fontSize: 24,
-            }}
-          />
-        }
-      />
-    </Box>
-    <Box sx={{ mt: 2, display: "flex", justifyContent: "flex-end" }}>
-      <Button
-        variant="contained"
-        onClick={() => navigate("transaction-growth-track")}
-        sx={{
-          backgroundColor: colors.greenAccent[600],
-          color: "#fff",
-          fontWeight: "bold",
-          textTransform: "none",
-          px: 2,
-          py: 1,
-          borderRadius: "8px",
-          "&:hover": {
-            backgroundColor: colors.greenAccent[700],
-          },
-        }}
-      >
-        View Revenue Growth
-      </Button>
-    </Box>
-      </Box>
+      <section aria-label="Sales statistics" className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <article className="rounded-2xl border border-border bg-card p-4 shadow-sm">
+          <div className="flex items-center gap-3">
+            <div className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary">
+              <IonIcon icon={cashOutline} className="text-xl" />
+            </div>
+            <div className="min-w-0">
+              <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Sales</p>
+              <p className="mt-1 text-2xl font-bold text-foreground">
+                {Number(stats?.total_sales || 0).toLocaleString()}
+              </p>
+            </div>
+          </div>
+          <div className="mt-4 flex items-center justify-between gap-3 text-xs text-muted-foreground">
+            <span>{Number(stats?.total_orders || 0).toLocaleString()} orders</span>
+            <span>{Math.round(statsProgress * 100)}% completed</span>
+          </div>
+          <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-muted">
+            <div className="h-full rounded-full bg-primary transition-all" style={{ width: `${Math.min(statsProgress * 100, 100)}%` }} />
+          </div>
+        </article>
 
-      <Box
-        sx={{
-          height: "75vh",
-          width: "100%",
-          mt:'30px',
-          "& .MuiDataGrid-root": {
-            border: "none",
-          },
-          "& .MuiDataGrid-cell": {
-            borderBottom: "none",
-          },
-          "& .MuiDataGrid-columnHeaders": {
-            backgroundColor: colors.primary[700],
-            color: colors.gray[100],
-            borderTop: `1px solid ${colors.gray[100]}`,
-          },
-          "& .MuiDataGrid-virtualScroller": {
-            backgroundColor: colors.primary[600],
-          },
-          "& .MuiDataGrid-footerContainer": {
-            borderTop: "none",
-            backgroundColor: colors.primary[700],
-          },
-        }}
-      >
-          <Typography variant="h5" sx={{color:colors.gray[100], mb:'10px'}}> Sales</Typography>
-        <DataGrid rows={rows} columns={columns} />
-      </Box>
-    </Box>
+        <article className="rounded-2xl border border-border bg-card p-4 shadow-sm">
+          <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Quantity sold</p>
+          <p className="mt-2 text-2xl font-bold text-foreground">{totals.sold.toLocaleString()}</p>
+          <p className="mt-1 text-xs text-muted-foreground">Across returned vendor items</p>
+        </article>
+
+        <article className="rounded-2xl border border-border bg-card p-4 shadow-sm">
+          <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Total stock</p>
+          <p className="mt-2 text-2xl font-bold text-foreground">{totals.stock.toLocaleString()}</p>
+          <p className="mt-1 text-xs text-muted-foreground">Recorded vendor inventory</p>
+        </article>
+
+        <article className="rounded-2xl border border-border bg-card p-4 shadow-sm">
+          <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Remaining</p>
+          <p className="mt-2 text-2xl font-bold text-foreground">{totals.remaining.toLocaleString()}</p>
+          <p className="mt-1 text-xs text-muted-foreground">Current available quantity</p>
+        </article>
+      </section>
+
+      <div className="flex justify-start sm:justify-end">
+        <button
+          type="button"
+          onClick={() => navigate("transaction-growth-track")}
+          className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm transition hover:bg-primary/90 sm:w-auto"
+        >
+          <IonIcon icon={trendingUpOutline} />
+          View Revenue Growth
+        </button>
+      </div>
+
+      <section className="min-w-0 overflow-hidden rounded-2xl border border-border bg-card shadow-sm">
+        <div className="border-b border-border p-4">
+          <h2 className="text-lg font-bold text-foreground">Sales</h2>
+          <p className="mt-1 text-xs text-muted-foreground">
+            {rows.length.toLocaleString()} vendor item records
+          </p>
+        </div>
+
+        {error ? (
+          <div className="p-6 text-sm text-destructive">{error}</div>
+        ) : loadingRows ? (
+          <div className="p-6 text-sm text-muted-foreground">Loading sales...</div>
+        ) : rows.length === 0 ? (
+          <div className="p-6 text-sm text-muted-foreground">No vendor sales data available.</div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="min-w-[720px] w-full text-left text-sm">
+              <thead className="bg-muted text-xs uppercase tracking-wider text-muted-foreground">
+                <tr>
+                  <th className="px-4 py-3 font-semibold">Vendor</th>
+                  <th className="px-4 py-3 font-semibold">Item</th>
+                  <th className="px-4 py-3 text-right font-semibold">Qty Sold</th>
+                  <th className="px-4 py-3 text-right font-semibold">Total Stock</th>
+                  <th className="px-4 py-3 text-right font-semibold">Remaining</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border">
+                {rows.map((row) => (
+                  <tr key={row.id} className="transition hover:bg-muted/50">
+                    <td className="max-w-[220px] truncate px-4 py-3 font-medium text-foreground">{row.vendor}</td>
+                    <td className="max-w-[260px] truncate px-4 py-3 text-muted-foreground">{row.item}</td>
+                    <td className="px-4 py-3 text-right font-semibold text-foreground">{row.qty_sold.toLocaleString()}</td>
+                    <td className="px-4 py-3 text-right text-muted-foreground">{row.total_qty.toLocaleString()}</td>
+                    <td className="px-4 py-3 text-right font-semibold text-primary">{row.remaining.toLocaleString()}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </section>
+    </section>
   );
 };
 
