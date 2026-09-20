@@ -14,6 +14,7 @@ from django.db import transaction
 
 from core.models import ActivityLog, Notification, Profile, Referral, Voucher, Wallet
 from order.models import BillingAddress, Customer, Order, OrderItem, Payment, Transaction, Card
+from order.invoice_models import Invoice
 from ReactSerializers.models import ItemView
 from shop.models import CommentBlog, ReactionBlog, VendorRating, Wishlist, Review, Reaction
 from vendorDashboard.models import ReturnRequest
@@ -267,6 +268,10 @@ def merge_visitor_data_to_user(user, visitor_id: str | None) -> dict[str, int]:
     moved += Card.objects.filter(visitor_id=visitor_id, user__isnull=True).update(
         user=user, visitor_id=None
     )
+
+    moved += Invoice.objects.filter(
+        visitor_id=visitor_id, user__isnull=True
+    ).update(user=user, visitor_id=None)
 
     logger.info(
         "Visitor account merge completed",
