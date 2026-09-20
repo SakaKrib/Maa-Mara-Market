@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "../../../../Services/Api";
 import { TrendingUp, UserRound, Heart, Search, ShoppingCart } from "lucide-react";
