@@ -71,7 +71,7 @@ export default function PublicProfile() {
   const { user, wallet, referral, vouchers, orders, profile: profileDetails } = profile;
 
   return (
-    <div className="mm-page flex flex-col py-2 px-0 bg-[#faf8f4] text-[#29251f] min-h-screen">
+    <div className="mm-page flex flex-col py-2 px-0 bg-white text-[#29251f] min-h-screen">
     <div className="flex justify-center px-4 pt-6 pb-8 sm:pt-8">
       <Card className="mm-profile-card w-full max-w-3xl overflow-hidden rounded-3xl border-[#e5dfd4] bg-white shadow-[0_10px_35px_rgba(54,45,32,0.08)]">
         <CardHeader className="flex flex-col items-center text-center space-y-3 border-b border-[#eee8de] bg-[#f6f2ea] px-6 py-8">
