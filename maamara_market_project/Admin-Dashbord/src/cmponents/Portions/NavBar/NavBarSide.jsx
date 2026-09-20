@@ -13,6 +13,7 @@ import {
   megaphoneOutline,
   briefcaseOutline,
   closeOutline,
+  logOutOutline,
   cubeOutline,
   cardOutline,
   shieldCheckmarkOutline,
