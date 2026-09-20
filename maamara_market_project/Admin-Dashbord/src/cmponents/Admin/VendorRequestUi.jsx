@@ -11,7 +11,7 @@ import VendorApprovalPanel from "../VENDORPAGE/VendorRegistration/HandleApproveD
 import VendorItemCreateRequests from "../VENDORPAGE/Products/VendorItems/AdminApproveDenyItemCreate";
 import AdminPriceApproval from "./ApproveItemPrice";
 import AdminBlogApprovalPage from "./ApproveBlogs/ApproveBlogs";
-import AdminBannerApprovalPage from "./ApproveBanner/aprroveBanner";
+import AdminBannerApprovalPage from "./ApproveBanner/ApproveBanner";
 import { getWebSocketUrl } from "../../Services/Api";
 
 const sections = [
