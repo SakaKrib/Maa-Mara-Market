@@ -33,21 +33,21 @@ class Invoice(models.Model):
     visitor_id = models.CharField(max_length=255, blank=True, null=True, db_index=True)
 
     order = models.ForeignKey(
-        "order.Order",
+        "oder.Order",
         on_delete=models.SET_NULL,
         null=True,
         blank=True,
         related_name="invoices",
     )
     payment = models.ForeignKey(
-        "order.Payment",
+        "oder.Payment",
         on_delete=models.SET_NULL,
         null=True,
         blank=True,
         related_name="invoices",
     )
     transaction = models.ForeignKey(
-        "order.Transaction",
+        "oder.Transaction",
         on_delete=models.SET_NULL,
         null=True,
         blank=True,
