@@ -30,7 +30,7 @@ from rest_framework_simplejwt.exceptions import InvalidToken, TokenError
 
 from core.models import Profile, Wallet, Voucher, Referral, Notification, ActivityLog
 from vendorDashboard.models import Vendor
-from oder.models import Customer, Order
+from order.models import Customer, Order
 from core.mergeVisitortoUserData import merge_visitor_data_to_user
 from .registration import register, verify_otp_register_otp, resend_otp_register_otp
 
