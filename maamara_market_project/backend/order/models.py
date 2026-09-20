@@ -584,3 +584,7 @@ class Transaction(models.Model):
 
     def __str__(self):
         return self.mpesa_receipt_number or self.paypal_transaction_id or f"TX-{self.pk}"
+
+
+# Import invoice models through Django's model module so the model is registered during app loading.
+from .invoice_models import Invoice
