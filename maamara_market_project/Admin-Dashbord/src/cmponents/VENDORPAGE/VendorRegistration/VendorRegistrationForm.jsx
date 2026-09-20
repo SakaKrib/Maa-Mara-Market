@@ -25,6 +25,7 @@ import {
   SelectItem,
 } from "../../../../components/ui/select";
 import api from "../../../Services/Api";
+import "./VendorRegistration.css";
 import { getNames, getCodeList } from "country-list";
 // import { useCustomerAccessGuard } from "../../Hooks/AccessCRF/CustomerAccess";
 import { useNavigate } from "react-router-dom";
@@ -883,7 +884,7 @@ const onSubmit = async (data) => {
   
 
   return (
-  <div className="w-full h-full overflow-y-hidden pt-20">
+  <div className="mm-vendor-registration w-full h-full overflow-y-hidden pt-20">
 <div className="py-10 flex justify-center px-4 md:px-8 lg:px-16 xl:px-32 2xl:px-64 relative">
     <Form {...form}>
     <form
@@ -892,7 +893,7 @@ const onSubmit = async (data) => {
         e.stopPropagation();
         form.handleSubmit(onSubmit)(e);
       }}
-      className="space-y-6 w-100% relative lg:border md:border lg:p-10 w-full"
+      className="mm-vendor-registration-form space-y-6 w-100% relative lg:border md:border lg:p-10 w-full"
     >
         {/* Personal Info */}
         <h2 className="text-xl font-semibold mt-6 text-center">Personal Information</h2>
