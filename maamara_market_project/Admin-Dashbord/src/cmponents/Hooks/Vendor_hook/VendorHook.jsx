@@ -10,7 +10,7 @@ const useVendors = () => {
     let isMounted = true; // ✅ prevents state updates if component unmounts
 
     api
-      .get(`${baseUrl}/api/vendors/`, {
+      .get("/api/vendors/", {
         headers: {
           "Content-Type": "application/json",
         },
