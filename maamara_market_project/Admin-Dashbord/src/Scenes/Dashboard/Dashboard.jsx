@@ -32,7 +32,7 @@ const StatCard = ({ icon, label, value, detail, to, onClick }) => {
       className="group flex min-h-[148px] w-full cursor-pointer flex-col items-center justify-center rounded-2xl border border-border bg-card p-4 text-center shadow-sm transition hover:-translate-y-0.5 hover:shadow-md sm:min-h-36 sm:p-5"
     >
       <div className="flex min-w-0 w-full flex-col items-center">
-        <div className="mb-3 grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary">
+        <div className="mb-3 flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
           <IonIcon icon={icon} className="text-xl" />
         </div>
         <p className="w-full truncate text-xs font-semibold uppercase tracking-wider text-muted-foreground">{label}</p>
@@ -246,10 +246,10 @@ const Dashboard = () => {
         />
       </div>
 
-      <div className="grid min-w-0 gap-5 xl:grid-cols-[minmax(0,1.7fr)_minmax(320px,0.8fr)]">
+      <div className="grid min-w-0 grid-cols-1 gap-5 xl:grid-cols-2">
         <Link
           to="/admin-dashboard/sales-Analytics"
-          className="min-w-0 overflow-hidden rounded-2xl border border-border bg-card shadow-sm transition hover:shadow-md"
+          className="min-w-0 w-full overflow-hidden rounded-2xl border border-border bg-card shadow-sm transition hover:shadow-md"
         >
           <div className="flex flex-col gap-3 border-b border-border p-5 sm:flex-row sm:items-center sm:justify-between dark:border-border">
             <div>
@@ -268,7 +268,7 @@ const Dashboard = () => {
           </div>
         </Link>
 
-        <div className="min-w-0 rounded-2xl border border-border bg-card p-3 shadow-sm sm:p-4">
+        <div className="min-w-0 w-full rounded-2xl border border-border bg-card p-3 shadow-sm sm:p-4">
           <div className="mb-3 grid grid-cols-3 gap-1 rounded-xl bg-muted p-1">
             {[
               ["activities", "Activity", activityLogs.length],
