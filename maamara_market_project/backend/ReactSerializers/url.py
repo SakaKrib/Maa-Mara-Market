@@ -37,6 +37,8 @@ urlpatterns = [
     path('api/user/account/', user_account_view, name='user-account'),
     path('api/user-profile/', user_account_view, name='user-profile'),
     path('api/user/update/', update_account_view, name='user-update'),
+    path('api/user-visitor-notifications/', user_visitor_notifications_view, name='user-visitor-notifications'),
+    path('api/user-visitor-activity/', user_visitor_activity_view, name='user-visitor-activity'),
 
     # google login
     path("google/success/", google_login_success),
