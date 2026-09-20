@@ -390,13 +390,50 @@ def submit_vendor_request(request):
     # ✅ Handle PDF
     decoded['item_pdf'] = request.FILES.get('item_pdf')
 
-    # ✅ Handle item images
-    item_images = {}
-    for key, file in request.FILES.items():
-        if key.startswith("item_images["):
-            item_images[key] = file
-    if item_images:
-        decoded['item_images'] = item_images
+    # Persist newly selected item images. Existing draft images are not
+    # re-uploaded; their image_asset_id is resolved during approval.
+    if item_list_raw:
+        draft_id = vendor_data.get("draft_id")
+        draft = None
+        if draft_id:
+            try:
+                draft = VendorDraft.objects.get(id=draft_id, user=user, status="DRAFT")
+            except (VendorDraft.DoesNotExist, ValueError, TypeError):
+                return Response(
+                    {"vendor_data": ["The saved vendor draft could not be verified."]},
+                    status=400,
+                )
+
+        for index, item in enumerate(decoded.get("item_list", [])):
+            upload = request.FILES.get(f"item_image_{index}")
+            if upload:
+                path = default_storage.save(
+                    f"vendor_items/{upload.name}",
+                    ContentFile(upload.read()),
+                )
+                item["image"] = default_storage.url(path)
+                item["image_asset_id"] = None
+                continue
+
+            asset_id = item.get("image_asset_id")
+            if asset_id and draft:
+                try:
+                    asset = VendorDraftImage.objects.get(
+                        id=asset_id,
+                        draft=draft,
+                        item_index=index,
+                    )
+                except VendorDraftImage.DoesNotExist:
+                    return Response(
+                        {"item_list": [f"Invalid saved image reference for item {index + 1}."]},
+                        status=400,
+                    )
+                item["image"] = default_storage.url(asset.image.name)
+            elif asset_id:
+                return Response(
+                    {"item_list": [f"Saved image reference for item {index + 1} is not valid."]},
+                    status=400,
+                )
 
     # ✅ Pass to serializer
     serializer = VendorRequestSerializer(data=decoded, context={"request": request})
