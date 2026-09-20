@@ -9,7 +9,7 @@ export const useVendorPayoutHistory = () => {
   const fetchPayouts = useCallback(async (silent = false) => {
     if (!silent) setLoading(true);
     try {
-      const response = await api.get("/api/vendor-payout-history/", {
+      const response = await api.get("/api/admin-payouts/", {
         withCredentials: true,
       });
       setPayouts(Array.isArray(response.data) ? response.data : response.data?.results || []);
