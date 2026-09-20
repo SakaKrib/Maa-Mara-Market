@@ -34,6 +34,9 @@ from .models import Item, ColorVariant, SizeStock, AgeVariant
 from .Serializers import ItemSerializers
 from rest_framework.permissions import IsAuthenticated
 import json
+import hashlib
+from django.core.files.storage import default_storage
+from django.utils.text import slugify
 from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
 from django.template.loader import render_to_string
 import bleach # type: ignore
@@ -364,22 +367,44 @@ def submit_vendor_request(request):
     # ✅ Handle PDF
     decoded['item_pdf'] = request.FILES.get('item_pdf')
 
-    # Persist newly selected item images. Existing draft images are not
-    # re-uploaded; their image_asset_id is resolved during approval.
+    # Keep item images authoritative in VendorDraft when a draft exists.
+    # Existing files are referenced by asset ID; replacements update the
+    # draft asset in place instead of creating a second, disconnected copy.
     if item_list_raw:
         draft_id = vendor_data.get("draft_id")
         draft = None
         if draft_id:
             try:
-                draft = VendorDraft.objects.get(id=draft_id, user=user, status="DRAFT")
+                draft = VendorDraft.objects.get(
+                    id=draft_id,
+                    user=user,
+                    status="DRAFT",
+                    expires_at__gt=timezone.now(),
+                )
             except (VendorDraft.DoesNotExist, ValueError, TypeError):
                 return Response(
-                    {"vendor_data": ["The saved vendor draft could not be verified."]},
+                    {"vendor_data": ["The saved vendor draft could not be verified or has expired."]},
                     status=400,
                 )
 
         for index, item in enumerate(decoded.get("item_list", [])):
             upload = request.FILES.get(f"item_image_{index}")
+
+            if upload and draft:
+                old_image = draft.images.filter(item_index=index).first()
+                if old_image:
+                    old_image.image.delete(save=False)
+                    old_image.delete()
+
+                asset = VendorDraftImage.objects.create(
+                    draft=draft,
+                    image=upload,
+                    item_index=index,
+                )
+                item["image"] = default_storage.url(asset.image.name)
+                item["image_asset_id"] = asset.id
+                continue
+
             if upload:
                 path = default_storage.save(
                     f"vendor_items/{upload.name}",
@@ -408,6 +433,15 @@ def submit_vendor_request(request):
                     {"item_list": [f"Saved image reference for item {index + 1} is not valid."]},
                     status=400,
                 )
+
+        if draft:
+            draft.data = {
+                **(draft.data or {}),
+                "item_list": decoded.get("item_list", []),
+                "draft_id": str(draft.id),
+            }
+            draft.expires_at = timezone.now() + timezone.timedelta(days=30)
+            draft.save(update_fields=["data", "expires_at", "updated_at"])
 
     # ✅ Pass to serializer
     serializer = VendorRequestSerializer(data=decoded, context={"request": request})
@@ -574,6 +608,7 @@ import os, requests
 
 @api_view(['POST'])
 @permission_classes([IsAuthenticated, IsAdminUser])
+@transaction.atomic
 def approve_vendor(request, vendor_request_id):
 
     # 🧭 Fetch the vendor request
@@ -659,6 +694,7 @@ def approve_vendor(request, vendor_request_id):
                 id=draft_id,
                 user=user,
                 status="DRAFT",
+                expires_at__gt=timezone.now(),
             )
         except VendorDraft.DoesNotExist:
             return Response(
@@ -682,6 +718,7 @@ def approve_vendor(request, vendor_request_id):
             draft_image = VendorDraftImage.objects.get(
                 id=image_asset_id,
                 draft=source_draft,
+                item_index=item_list.index(item),
             )
         except VendorDraftImage.DoesNotExist:
             return Response(
