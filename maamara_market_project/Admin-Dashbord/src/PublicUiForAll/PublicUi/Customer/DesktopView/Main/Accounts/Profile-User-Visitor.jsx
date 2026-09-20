@@ -52,7 +52,7 @@ export default function PublicProfile() {
 
   if (loading) {
     return (
-      <div className="mm-page min-h-screen bg-[#faf8f4] text-[#29251f]">
+      <div className="mm-page min-h-screen bg-white text-[#29251f]">
       <div className="flex justify-center mt-16">
         <Skeleton className="h-64 w-96 rounded-xl" />
       </div>
