@@ -110,14 +110,28 @@ def register(request):
         to=[email],
     )
     email_message.attach_alternative(html_content, "text/html")
-    email_message.send(fail_silently=False)
+    email_sent = False
+    try:
+        email_sent = bool(email_message.send(fail_silently=False))
+    except Exception:
+        # The pending registration and OTP must survive an email transport
+        # failure so the user can retry delivery from the standalone OTP page.
+        # Keep logs free of registration email addresses or OTP values.
+        logger.exception("Registration OTP email delivery failed")
+
+    message = (
+        "Account created. Please check your email for the OTP to verify your account."
+        if email_sent
+        else "Account created, but the OTP email could not be delivered. Please use Resend OTP on the verification page."
+    )
 
     return JsonResponse(
         {
             "success": True,
-            "message": "Account created. Please check your email for the OTP to verify your account.",
+            "message": message,
             "email": email,
             "expires_at": (now + timedelta(minutes=OTP_EXPIRY_MINUTES)).isoformat(),
+            "email_sent": email_sent,
         }
     )
 
