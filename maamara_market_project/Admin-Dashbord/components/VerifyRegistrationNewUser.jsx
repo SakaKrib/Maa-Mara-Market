@@ -14,6 +14,13 @@ const getCookie = (name) => {
   return ""
 }
 
+const getSecondsUntil = (expiresAt) => {
+  if (!expiresAt) return 0
+  const expiryTime = new Date(expiresAt).getTime()
+  if (!Number.isFinite(expiryTime)) return 0
+  return Math.max(0, Math.floor((expiryTime - Date.now()) / 1000))
+}
+
 const VerifyRegistrationNewUser = () => {
   const [searchParams] = useSearchParams()
   const navigate = useNavigate()
@@ -23,7 +30,7 @@ const VerifyRegistrationNewUser = () => {
   const [otp, setOtp] = useState("")
   const [loading, setLoading] = useState(false)
   const [resending, setResending] = useState(false)
-  const [timer, setTimer] = useState(0)
+  const [timer, setTimer] = useState(() => getSecondsUntil(expiresAt))
   const [csrfToken, setCsrfToken] = useState("")
   const [snackbar, setSnackbar] = useState({
     open: false,
@@ -50,15 +57,12 @@ const VerifyRegistrationNewUser = () => {
   }, [email, navigate])
 
   useEffect(() => {
-    if (!expiresAt) {
-      setTimer(90)
-      return
-    }
+    setTimer(getSecondsUntil(expiresAt))
 
-    const expiryDate = new Date(expiresAt)
+    if (!expiresAt) return
+
     const updateTimer = () => {
-      const diff = Math.floor((expiryDate - new Date()) / 1000)
-      setTimer(diff > 0 ? diff : 0)
+      setTimer(getSecondsUntil(expiresAt))
     }
 
     updateTimer()
@@ -148,14 +152,7 @@ const VerifyRegistrationNewUser = () => {
         })
         setOtp("")
 
-        if (response.data.expires_at) {
-          const diff = Math.floor(
-            (new Date(response.data.expires_at) - new Date()) / 1000
-          )
-          setTimer(diff > 0 ? diff : 0)
-        } else {
-          setTimer(90)
-        }
+        setTimer(getSecondsUntil(response.data.expires_at))
       } else {
         setSnackbar({
           open: true,
