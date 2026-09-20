@@ -107,6 +107,12 @@ def user_account_view(request):
         wallet = Wallet.objects.filter(user=user).first()
         vouchers = Voucher.objects.filter(user=user, active=True, redeemed=False)
         referral = Referral.objects.filter(referrer=user).first()
+        # Count only completed referrals. The Referral row that stores a user's
+        # own referral code is not itself a successful referral.
+        referral_count = Referral.objects.filter(
+            referrer=user,
+            invited_user__isnull=False,
+        ).count()
         user_data = {
             "id": user.id,
             "username": user.username,
@@ -196,7 +202,7 @@ def user_account_view(request):
         } for voucher in vouchers],
         "referral": referral and {
             "referral_code": referral.referral_code,
-            "total_referrals": referral.total_referrals,
+            "total_referrals": referral_count,
         },
     })
 
