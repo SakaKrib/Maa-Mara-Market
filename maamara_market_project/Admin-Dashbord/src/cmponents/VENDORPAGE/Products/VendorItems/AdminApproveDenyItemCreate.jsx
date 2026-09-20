@@ -61,8 +61,6 @@ const VendorItemCreateRequests = ({ onCountChange }) => {
     } finally {
       if (!silent) setLoading(false);
     }
-  };
-
   }, [onCountChange]);
 
   useEffect(() => {
