@@ -246,7 +246,7 @@ const Dashboard = () => {
         />
       </div>
 
-      <div className="grid min-w-0 grid-cols-1 gap-5 xl:grid-cols-2">
+      <div className="grid min-w-0 gap-5 xl:grid-cols-[minmax(0,1.7fr)_minmax(320px,0.8fr)]">
         <Link
           to="/admin-dashboard/sales-Analytics"
           className="min-w-0 w-full overflow-hidden rounded-2xl border border-border bg-card shadow-sm transition hover:shadow-md"
