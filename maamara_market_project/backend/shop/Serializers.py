@@ -329,3 +329,18 @@ class WishlistSerializer(serializers.ModelSerializer):
     class Meta:
         model = Wishlist
         fields = ['id', 'item', 'item_id', 'created_at', 'user', 'visitor_id']
+
+class CareerVacancySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CareerVacancy
+        fields = "__all__"
+
+
+class JobApplicationSerializer(serializers.ModelSerializer):
+    vacancy_title = serializers.CharField(source="vacancy.title", read_only=True)
+    vacancy_location = serializers.CharField(source="vacancy.location", read_only=True)
+
+    class Meta:
+        model = JobApplication
+        fields = "__all__"
+        read_only_fields = ["applied_at", "seen"]
