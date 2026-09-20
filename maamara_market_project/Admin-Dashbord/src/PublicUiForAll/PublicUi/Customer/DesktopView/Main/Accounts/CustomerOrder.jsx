@@ -41,11 +41,11 @@ const CustomerOrdersDashboard = ({ wallet, vouchers = [], orders = [] }) => {
   );
 
   return (
-    <section className="mm-page">
-      <div className="mm-container py-6 sm:py-8">
+    <section className="mm-page min-h-screen bg-[#faf8f4] text-[#29251f]">
+      <div className="mm-container px-4 py-8 sm:px-6 sm:py-10">
         <div className="space-y-6">
-          <Card className="overflow-hidden rounded-2xl border-0 bg-gradient-to-r from-violet-600 to-indigo-600 text-white">
-            <CardContent className="p-5 sm:p-6">
+          <Card className="overflow-hidden rounded-3xl border border-[#e5dfd4] bg-[#f6f2ea] text-[#29251f] shadow-[0_10px_35px_rgba(54,45,32,0.08)]">
+            <CardContent className="p-6 sm:p-7">
               <div className="mb-2 flex items-center gap-3">
                 <Wallet className="h-6 w-6 shrink-0" aria-hidden="true" />
                 <span className="text-sm opacity-90">Wallet Balance</span>
@@ -62,7 +62,7 @@ const CustomerOrdersDashboard = ({ wallet, vouchers = [], orders = [] }) => {
           </Card>
 
           <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-4">
-            <Card>
+            <Card className="rounded-2xl border-[#e5dfd4] bg-white shadow-sm">
               <CardContent className="p-4 text-center">
                 <ShoppingBag className="mx-auto mb-2 h-5 w-5" aria-hidden="true" />
                 <h3 className="text-2xl font-bold">{safeOrders.length}</h3>
@@ -70,7 +70,7 @@ const CustomerOrdersDashboard = ({ wallet, vouchers = [], orders = [] }) => {
               </CardContent>
             </Card>
 
-            <Card>
+            <Card className="rounded-2xl border-[#e5dfd4] bg-white shadow-sm">
               <CardContent className="p-4 text-center">
                 <Gift className="mx-auto mb-2 h-5 w-5" aria-hidden="true" />
                 <h3 className="text-2xl font-bold">{safeVouchers.length}</h3>
@@ -78,7 +78,7 @@ const CustomerOrdersDashboard = ({ wallet, vouchers = [], orders = [] }) => {
               </CardContent>
             </Card>
 
-            <Card>
+            <Card className="rounded-2xl border-[#e5dfd4] bg-white shadow-sm">
               <CardContent className="p-4 text-center">
                 <Clock3 className="mx-auto mb-2 h-5 w-5" aria-hidden="true" />
                 <h3 className="text-2xl font-bold">{pendingOrders.length}</h3>
@@ -86,7 +86,7 @@ const CustomerOrdersDashboard = ({ wallet, vouchers = [], orders = [] }) => {
               </CardContent>
             </Card>
 
-            <Card>
+            <Card className="rounded-2xl border-[#e5dfd4] bg-white shadow-sm">
               <CardContent className="p-4 text-center">
                 <CheckCircle2 className="mx-auto mb-2 h-5 w-5" aria-hidden="true" />
                 <h3 className="text-2xl font-bold">{completedOrders.length}</h3>
@@ -95,7 +95,7 @@ const CustomerOrdersDashboard = ({ wallet, vouchers = [], orders = [] }) => {
             </Card>
           </div>
 
-          <Card>
+          <Card className="rounded-3xl border-[#e5dfd4] bg-white shadow-sm">
             <CardHeader className="p-5 pb-2">
               <CardTitle className="flex items-center gap-2 text-base">
                 <Gift className="h-4 w-4" aria-hidden="true" />
@@ -108,7 +108,7 @@ const CustomerOrdersDashboard = ({ wallet, vouchers = [], orders = [] }) => {
                   {safeVouchers.map((voucher) => (
                     <div
                       key={voucher.id ?? voucher.code}
-                      className="flex flex-col gap-2 rounded-xl border p-3 sm:flex-row sm:items-center sm:justify-between"
+                      className="flex flex-col gap-2 rounded-2xl border border-[#e5dfd4] bg-[#faf8f4] p-4 shadow-sm transition-shadow hover:shadow-md sm:flex-row sm:items-center sm:justify-between"
                     >
                       <div>
                         <p className="font-mono font-semibold">{voucher.code}</p>
@@ -127,7 +127,7 @@ const CustomerOrdersDashboard = ({ wallet, vouchers = [], orders = [] }) => {
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="rounded-3xl border-[#e5dfd4] bg-white shadow-sm">
             <CardHeader className="p-5 pb-2">
               <CardTitle className="text-base">Pending Orders</CardTitle>
             </CardHeader>
@@ -135,8 +135,8 @@ const CustomerOrdersDashboard = ({ wallet, vouchers = [], orders = [] }) => {
               {pendingOrders.length > 0 ? (
                 <div className="space-y-4">
                   {pendingOrders.map((order) => (
-                    <div key={order.id ?? order.paypal_order_id} className="rounded-xl border p-4">
-                      <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+                    <div key={order.id ?? order.paypal_order_id} className="rounded-2xl border border-[#e5dfd4] bg-[#faf8f4] p-4 shadow-sm transition-shadow hover:shadow-md">
+                      <div className="mb-3 flex flex-wrap items-center justify-between gap-2 border-b border-[#e5dfd4] pb-3">
                         <span className="font-semibold">
                           #{order.id ?? order.paypal_order_id ?? "—"}
                         </span>
@@ -159,7 +159,7 @@ const CustomerOrdersDashboard = ({ wallet, vouchers = [], orders = [] }) => {
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="rounded-3xl border-[#e5dfd4] bg-white shadow-sm">
             <CardHeader className="p-5 pb-2">
               <CardTitle className="text-base">Completed Orders</CardTitle>
             </CardHeader>
@@ -167,8 +167,8 @@ const CustomerOrdersDashboard = ({ wallet, vouchers = [], orders = [] }) => {
               {completedOrders.length > 0 ? (
                 <div className="space-y-4">
                   {completedOrders.map((order) => (
-                    <div key={order.id ?? order.paypal_order_id} className="rounded-xl border p-4">
-                      <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+                    <div key={order.id ?? order.paypal_order_id} className="rounded-2xl border border-[#e5dfd4] bg-[#faf8f4] p-4 shadow-sm transition-shadow hover:shadow-md">
+                      <div className="mb-3 flex flex-wrap items-center justify-between gap-2 border-b border-[#e5dfd4] pb-3">
                         <span className="font-semibold">
                           #{order.id ?? order.paypal_order_id ?? "—"}
                         </span>
