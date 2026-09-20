@@ -148,7 +148,7 @@ const NavBar = ({ open = false, onClose }) => {
             onClick={logout}
             className="mt-1 flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-medium text-slate-600 hover:bg-red-50 hover:text-red-600 dark:text-slate-300 dark:hover:bg-red-500/10 dark:hover:text-red-300"
           >
-            <IonIcon icon={informationCircleOutline} className="text-lg" />
+            <IonIcon icon={logOutOutline} className="text-lg" />
             Sign out
           </button>
         </div>
