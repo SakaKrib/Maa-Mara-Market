@@ -20,6 +20,7 @@ import {
 } from "ionicons/icons";
 import { Link, useLocation } from "react-router-dom";
 import { useAuth } from "../../Auth/AuthContext/Context";
+import Maamara from "../../../assets/Logo/Maamara.jpg";
 
 const navigation = [
   {
@@ -85,9 +86,11 @@ const NavBar = ({ open = false, onClose }) => {
       >
         <div className="flex h-[72px] shrink-0 items-center justify-between border-b border-slate-200 px-5 dark:border-slate-800">
           <Link to="/admin-dashboard" onClick={onClose} className="flex items-center gap-3">
-            <span className="grid h-10 w-10 place-items-center rounded-xl bg-indigo-600 text-lg font-black text-white shadow-sm">
-              M
-            </span>
+            <img
+              src={Maamara}
+              alt="Maa Mara Market"
+              className="h-10 w-10 shrink-0 rounded-xl border border-border object-cover shadow-sm"
+            />
             <span className="leading-tight">
               <strong className="block text-sm font800 font-semibold tracking-tight text-slate-900 dark:text-white">Maa Mara</strong>
               <span className="block text-xs text-slate-500 dark:text-slate-400">Shop Manager</span>
