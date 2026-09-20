@@ -131,6 +131,7 @@ import VendorSuccessPage from "./cmponents/VENDORPAGE/VendorRegistration/VendorS
 import CreateItemModal from "./cmponents/AdminPages/Notifications/ApproveCreatedItem";
 import AdminBannerApprovalPage from "./cmponents/Admin/ApproveBanner/ApproveBanner";
 import AdminPostCareer from "./cmponents/AdminPages/Notifications/PostCareers/AdminPostCareer";
+import SupportAdminPanel from "./cmponents/AdminPages/Notifications/Support/SupportMessages";
 import VendorBannerManager from "./cmponents/VENDORPAGE/VendorSections/NotificationPages/SingleBannerPage";
 import VendorBlogManagerNotification from "./cmponents/VENDORPAGE/VendorSections/NotificationPages/BlogsSinglePage";
 import SearchGlobalResultsPage from "./cmponents/SearchPage/SearchResultsPage";
@@ -274,6 +275,8 @@ function AppContent() {
               {/* returns for approval */}
               <Route path="customer-requests" element={<CustomerToAdminRequests />} />
               <Route path="careers" element={<AdminPostCareer />} />
+              <Route path="create-career" element={<AdminPostCareer />} />
+              <Route path="create-support" element={<SupportAdminPanel />} />
 
               {/* vendor create new item */}
               <Route path="vendor/create-item/:requestId" element={<CreateItemModal />} />
