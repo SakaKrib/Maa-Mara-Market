@@ -8,164 +8,102 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from "recharts";
-import { useTheme, Box, Button, Typography, Divider } from "@mui/material";
-import { tokens } from "../../theme";
 import api from "../../Services/Api";
 
-const CustomAreaChart = ({showSummary = true }) => {
-  const theme = useTheme();
-  const colors = tokens(theme.palette.mode);
+const cssVar = (name, fallback) => {
+  if (typeof window === "undefined") return fallback;
+  return getComputedStyle(document.documentElement).getPropertyValue(name).trim() || fallback;
+};
 
-  const [data, setData] = useState([]);
+const CustomAreaChart = ({ showSummary = true, data: suppliedData = [] }) => {
+  const [data, setData] = useState(Array.isArray(suppliedData) ? suppliedData : []);
   const [summaryOpen, setSummaryOpen] = useState(false);
 
   useEffect(() => {
-    api.get("/api/revenue-analytics/").then((res) => {
-      setData(res.data);
-    });
-  }, []);
+    if (Array.isArray(suppliedData) && suppliedData.length) {
+      setData(suppliedData);
+      return;
+    }
 
-  const totalRevenue = data.reduce((sum, d) => sum + (d.revenue || 0), 0);
-  const totalOrders = data.reduce((sum, d) => sum + (d.orders || 0), 0);
+    let active = true;
+    api.get("/api/revenue-analytics/").then((res) => {
+      if (!active) return;
+      const payload = res.data;
+      const rows = Array.isArray(payload) ? payload : payload?.monthly_revenue || [];
+      setData(Array.isArray(rows) ? rows : []);
+    }).catch((error) => {
+      console.error("Revenue chart load failed:", error);
+      if (active) setData([]);
+    });
+
+    return () => { active = false; };
+  }, [suppliedData]);
+
+  const totalRevenue = data.reduce((sum, d) => sum + Number(d.revenue || 0), 0);
+  const totalOrders = data.reduce((sum, d) => sum + Number(d.orders || 0), 0);
+
+  const primary = cssVar("--primary", "120 100% 40%");
+  const foreground = cssVar("--foreground", "0 0% 10%");
+  const muted = cssVar("--muted-foreground", "0 0% 45%");
+  const border = cssVar("--border", "0 0% 85%");
+  const chart1 = cssVar("--chart-1", "142 71% 45%");
+  const chart2 = cssVar("--chart-2", "217 91% 60%");
 
   return (
-    <Box sx={{ width: "100%", height: 380, position: "relative" }}>
-
-      {/* 🔘 SUMMARY BUTTON (THEMED) */}
+    <div className="relative h-full min-h-0 w-full">
       {showSummary && (
-      <Box sx={{ position: "absolute", top: 12, right: 12, zIndex: 10 }}>
-        <Button
-          size="small"
-          variant="contained"
+        <button
+          type="button"
           onClick={() => setSummaryOpen(true)}
-          sx={{
-            backgroundColor: colors.greenAccent[600],
-            color: colors.gray[100],
-            fontWeight: 600,
-            textTransform: "none",
-            borderRadius: "8px",
-            boxShadow: `0px 4px 12px ${colors.primary[900]}`,
-            "&:hover": {
-              backgroundColor: colors.greenAccent[700],
-            },
-          }}
+          className="absolute right-2 top-1 z-10 rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground shadow-sm transition hover:bg-primary/90"
         >
           Summary
-        </Button>
-      </Box>)}
+        </button>
+      )}
 
-      {/* 📊 CHART */}
       <ResponsiveContainer width="100%" height="100%">
-        <AreaChart data={data} margin={{ top: 20, right: 30, left: 0, bottom: 0 }}>
-
+        <AreaChart data={data} margin={{ top: 12, right: 8, left: -18, bottom: 4 }}>
           <defs>
-            <linearGradient id="revenueColor" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="5%" stopColor={colors.greenAccent[500]} stopOpacity={0.8} />
-              <stop offset="95%" stopColor={colors.greenAccent[500]} stopOpacity={0} />
+            <linearGradient id="adminRevenueFill" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="5%" stopColor={`hsl(${chart1})`} stopOpacity={0.35} />
+              <stop offset="95%" stopColor={`hsl(${chart1})`} stopOpacity={0} />
             </linearGradient>
-
-            <linearGradient id="ordersColor" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="5%" stopColor={colors.blueAccent[500]} stopOpacity={0.8} />
-              <stop offset="95%" stopColor={colors.blueAccent[500]} stopOpacity={0} />
+            <linearGradient id="adminOrdersFill" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="5%" stopColor={`hsl(${chart2})`} stopOpacity={0.25} />
+              <stop offset="95%" stopColor={`hsl(${chart2})`} stopOpacity={0} />
             </linearGradient>
           </defs>
-
-          <XAxis
-            dataKey="month"
-            stroke={colors.gray[300]}
-            tick={{ fill: colors.gray[300] }}
+          <CartesianGrid strokeDasharray="3 3" stroke={`hsl(${border})`} />
+          <XAxis dataKey="month" tick={{ fill: `hsl(${muted})`, fontSize: 10 }} axisLine={{ stroke: `hsl(${border})` }} tickLine={false} />
+          <YAxis tick={{ fill: `hsl(${muted})`, fontSize: 10 }} axisLine={false} tickLine={false} width={42} />
+          <Tooltip
+            contentStyle={{
+              background: `hsl(var(--card))`,
+              border: `1px solid hsl(${border})`,
+              borderRadius: 10,
+              color: `hsl(${foreground})`,
+            }}
           />
-
-          <YAxis
-            stroke={colors.gray[300]}
-            tick={{ fill: colors.gray[300] }}
-          />
-
-          <CartesianGrid strokeDasharray="3 3" stroke={colors.primary[700]} />
-          <Tooltip />
-
-          <Area
-            type="monotone"
-            dataKey="revenue"
-            name="Revenue (KES)"
-            stroke={colors.greenAccent[500]}
-            fill="url(#revenueColor)"
-          />
-
-          <Area
-            type="monotone"
-            dataKey="orders"
-            name="Orders"
-            stroke={colors.blueAccent[500]}
-            fill="url(#ordersColor)"
-          />
-
+          <Area type="monotone" dataKey="revenue" name="Revenue (KES)" stroke={`hsl(${chart1})`} fill="url(#adminRevenueFill)" strokeWidth={2} />
+          <Area type="monotone" dataKey="orders" name="Orders" stroke={`hsl(${chart2})`} fill="url(#adminOrdersFill)" strokeWidth={2} />
         </AreaChart>
       </ResponsiveContainer>
 
-      {/* 📋 SUMMARY PANEL (FULL MUI STYLE) */}
       {summaryOpen && (
-        <Box
-          sx={{
-            position: "absolute",
-            top: 60,
-            right: 12,
-            width: 280,
-            backgroundColor: colors.primary[600],
-            borderRadius: "12px",
-            p: 2,
-            boxShadow: `0 8px 24px rgba(0,0,0,0.35)`,
-            border: `1px solid ${colors.primary[700]}`,
-          }}
-        >
-          <Typography variant="h6" fontWeight="bold" color={colors.gray[100]}>
-            Revenue Summary
-          </Typography>
-
-          <Divider sx={{ my: 1, borderColor: colors.primary[700] }} />
-
-          <Typography fontSize={14} color={colors.gray[300]}>
-            📊 Months: {data.length}
-          </Typography>
-
-          <Typography fontSize={14} color={colors.gray[300]}>
-            💰 Total Revenue
-          </Typography>
-
-          <Typography fontWeight="bold" color={colors.greenAccent[500]}>
-            KES {totalRevenue.toLocaleString()}
-          </Typography>
-
-          <Box mt={1} />
-
-          <Typography fontSize={14} color={colors.gray[300]}>
-            📦 Total Orders
-          </Typography>
-
-          <Typography fontWeight="bold" color={colors.blueAccent[500]}>
-            {totalOrders}
-          </Typography>
-
-          <Box mt={2} />
-
-          <Button
-            fullWidth
-            size="small"
-            onClick={() => setSummaryOpen(false)}
-            sx={{
-              backgroundColor: colors.primary[700],
-              color: colors.gray[100],
-              textTransform: "none",
-              "&:hover": {
-                backgroundColor: colors.primary[800],
-              },
-            }}
-          >
+        <div className="absolute inset-x-2 top-12 z-20 rounded-xl border border-border bg-card p-4 shadow-xl sm:left-auto sm:w-72">
+          <h3 className="font-semibold text-foreground">Revenue Summary</h3>
+          <div className="my-2 border-t border-border" />
+          <p className="text-sm text-muted-foreground">Months: {data.length}</p>
+          <p className="mt-2 text-sm text-muted-foreground">Total Revenue</p>
+          <p className="font-bold text-primary">KES {totalRevenue.toLocaleString()}</p>
+          <p className="mt-2 text-sm text-muted-foreground">Total Orders</p>
+          <p className="font-bold text-foreground">{totalOrders.toLocaleString()}</p>
+          <button type="button" onClick={() => setSummaryOpen(false)} className="mt-4 w-full rounded-lg bg-muted px-3 py-2 text-sm font-semibold text-foreground hover:bg-muted/80">
             Close
-          </Button>
-        </Box>
+          </button>
+        </div>
       )}
-    </Box>
+    </div>
   );
 };
 
