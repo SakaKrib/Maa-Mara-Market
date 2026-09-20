@@ -3,7 +3,6 @@ import { IonIcon } from "@ionic/react";
 import { menuOutline, searchOutline, sunnyOutline, moon, closeOutline, cameraOutline, notificationsOutline } from "ionicons/icons";
 import { useAuth } from "../../Auth/AuthContext/Context";
 import { useCsrfToken } from "../../Hooks/AccessCRF/UseCSRFToken";
-import { baseUrl } from "../../Constant/Constant";
 import api from "../../../Services/Api";
 import { ColourModeContext } from "../../../theme";
 import LogoutButton from "../../Auth/AdminLogin/Logout";
@@ -39,11 +38,7 @@ const HeaderTop = ({ onMenuToggle }) => {
   const displayName = form.first_name?.trim() || user?.username || "Admin";
   const shortDisplayName = displayName.length > 12 ? `${displayName.slice(0, 12)}…` : displayName;
 
-  const profilePicture = profile?.profile?.profile_picture
-    ? profile.profile.profile_picture.startsWith("http")
-      ? profile.profile.profile_picture
-      : `${baseUrl}${profile.profile.profile_picture}`
-    : "/default-avatar.png";
+  const profilePicture = profile?.profile?.profile_picture || "/default-avatar.png";
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -162,7 +157,7 @@ const HeaderTop = ({ onMenuToggle }) => {
 
   return (
     <>
-      <header className="fixed left-0 right-0 top-0 z-40 h-[72px] border-b border-slate-200 bg-white/95 backdrop-blur dark:border-slate-800 dark:bg-slate-950/95 lg:left-64">
+      <header className="fixed left-0 right-0 top-0 z-40 h-[72px] border-b border-border bg-background/95 text-foreground backdrop-blur lg:left-64">
         <div className="flex h-full items-center gap-2 px-3 sm:gap-3 sm:px-5 lg:px-7">
           <button
             type="button"
@@ -173,17 +168,23 @@ const HeaderTop = ({ onMenuToggle }) => {
             <IonIcon icon={menuOutline} className="text-xl" />
           </button>
 
-          <div className="hidden shrink-0 items-center gap-2 sm:flex">
-            <span className="grid h-9 w-9 place-items-center rounded-lg bg-indigo-600 text-sm font-black text-white">M</span>
-            <div className="leading-tight">
-              <span className="block text-sm font-bold text-slate-900 dark:text-white">Maa Mara</span>
-              <span className="block text-[10px] text-slate-400">Admin workspace</span>
-            </div>
+          <div className="logo flex min-w-0 shrink-0 items-center">
+            <a
+              href="/"
+              aria-label="Maa Mara Market"
+              className="flex w-auto items-center gap-0.5 rounded-[5px] border border-yellow-500 bg-background p-0.5 font-[Poppins] text-[1.05rem] leading-none tracking-tight text-foreground sm:text-[1.3rem]"
+            >
+              <span className="whitespace-nowrap">Maa</span>
+              <span className="relative whitespace-nowrap rounded-l-[5px] border-l-[5px] border-green-500 bg-red-500/20 px-2 py-1">
+                Mara
+              </span>
+              <span className="whitespace-nowrap font-bold text-green-600">Market</span>
+            </a>
           </div>
 
-          <div className="hidden min-w-0 max-w-2xl flex-1 sm:block">
-            <div className="relative">
-              <IonIcon icon={searchOutline} className="pointer-events-none absolute left-3 top-1/2 z-10 -translate-y-1/2 text-slate-400" />
+          <div className="hidden min-w-0 max-w-2xl flex-1 md:block">
+            <div className="relative min-w-0">
+              <IonIcon icon={searchOutline} className="pointer-events-none absolute left-3 top-1/2 z-10 -translate-y-1/2 text-muted-foreground" />
               <SearchBarForVendorAdmin />
             </div>
           </div>
