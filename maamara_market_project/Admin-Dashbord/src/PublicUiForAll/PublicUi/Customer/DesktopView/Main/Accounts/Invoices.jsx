@@ -84,8 +84,8 @@ export default function Invoices({ open: controlledOpen, onClose, compact = fals
       {!isControlled && trigger}
 
       {open && (
-        <div className="fixed inset-0 z-[100] flex items-end justify-center bg-black/35 p-3 sm:items-center">
-          <div className="w-full max-w-2xl overflow-hidden rounded-3xl border border-[#e5dfd4] bg-[#faf8f4] shadow-2xl">
+        <div className="fixed inset-0 z-[100] flex items-end justify-center bg-black/35 p-3 pb-14 sm:items-center sm:pb-3">
+          <div className="w-full max-w-2xl overflow-hidden rounded-3xl border border-[#e5dfd4] bg-white shadow-2xl">
             <div className="flex items-center justify-between border-b border-[#e5dfd4] bg-white px-5 py-4">
               <div>
                 <p className="text-lg font-semibold text-[#29251f]">Invoices</p>
@@ -101,7 +101,7 @@ export default function Invoices({ open: controlledOpen, onClose, compact = fals
               </button>
             </div>
 
-            <div className="max-h-[70vh] overflow-y-auto p-4 sm:p-5">
+            <div className="max-h-[70vh] overflow-y-auto p-4 pb-8 sm:p-5 sm:pb-10">
               {loading ? (
                 <div className="flex min-h-32 items-center justify-center">
                   <Loader2 className="animate-spin" size={24} />
@@ -130,7 +130,7 @@ export default function Invoices({ open: controlledOpen, onClose, compact = fals
                           <p className="font-semibold text-[#29251f]">{invoice.invoice_number}</p>
                           <p className="text-xs text-[#6f675c]">{invoiceTitle(invoice)}</p>
                         </div>
-                        <span className="rounded-full bg-[#f6f2ea] px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide text-[#625b51]">
+                        <span className="rounded-full border border-[#e5dfd4] bg-white px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide text-[#625b51]">
                           {invoice.status}
                         </span>
                       </div>
