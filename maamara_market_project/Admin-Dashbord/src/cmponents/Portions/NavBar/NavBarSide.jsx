@@ -14,7 +14,6 @@ import {
   briefcaseOutline,
   closeOutline,
   cubeOutline,
-  storefrontOutline,
   cardOutline,
   shieldCheckmarkOutline,
 } from "ionicons/icons";
@@ -35,7 +34,6 @@ const navigation = [
       { label: "Vendors", to: "/admin-dashboard/vendors", icon: peopleOutline },
       { label: "Vendor requests", to: "/admin-dashboard/vendor-requests", icon: shieldCheckmarkOutline },
       { label: "Item requests", to: "/admin-dashboard/vendor/create-items/requests", icon: cubeOutline },
-      { label: "Listings", to: "/admin-dashboard/approve-banner", icon: storefrontOutline },
       { label: "Returns & customer requests", to: "/admin-dashboard/customer-requests", icon: clipboardOutline },
     ],
   },
