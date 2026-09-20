@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import api from "../../../Services/Api";
 
-export default function useDashboardData() {
+export default function useDashboardData(selectedDate = "") {
   const [data, setData] = useState({
     accounts: {},
     summary: {},
@@ -17,7 +17,8 @@ export default function useDashboardData() {
       try {
         setLoading(true);
 
-        const res = await api.get("/api/dashboard/summary/");
+        const params = selectedDate ? { date: selectedDate } : undefined;
+        const res = await api.get("/api/dashboard/summary/", { params, withCredentials: true });
         const json = res.data;
 
         setData({
@@ -39,7 +40,7 @@ export default function useDashboardData() {
     };
 
     fetchDashboardData();
-  }, []);
+  }, [selectedDate]);
 
   return { data, loading, error };
 }
