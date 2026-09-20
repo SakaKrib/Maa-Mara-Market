@@ -35,6 +35,7 @@ urlpatterns = [
     path('api/check-auth/', HybridCheckAuthView.as_view()),
     path('api/logout/',logout_view),
     path('api/user/account/', user_account_view, name='user-account'),
+    path('api/user-profile/', user_account_view, name='user-profile'),
     path('api/user/update/', update_account_view, name='user-update'),
 
     # google login
