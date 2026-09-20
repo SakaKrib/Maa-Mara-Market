@@ -93,7 +93,7 @@ const MobileAccountModal = ({ open, onClose, user }) => {
   return (
     <MobileBottomSheet open={open} onClose={onClose} title="Your Account">
       <div className="space-y-4">
-        <div className="mm-account-profile-card rounded-2xl border border-[#e5dfd4] bg-[#f6f2ea] p-5 text-[#29251f] shadow-sm">
+        <div className="mm-account-profile-card rounded-2xl border border-[#e5dfd4] bg-white p-5 text-[#29251f] shadow-sm">
           <div className="flex items-center gap-3">
             <div className="flex h-14 w-14 items-center justify-center rounded-full bg-white text-lg font-semibold shadow-sm ring-1 ring-[#e5dfd4]">
               {(displayName.charAt(0) || "M").toUpperCase()}
@@ -101,7 +101,7 @@ const MobileAccountModal = ({ open, onClose, user }) => {
             <div className="min-w-0">
               <p className="font-semibold truncate">{displayName}</p>
               <p className="text-xs text-[#6f675c] truncate">{email || "Visitor profile"}</p>
-              <span className="mt-1 inline-flex rounded-full bg-white px-2 py-0.5 text-[10px] font-medium text-[#625b51] ring-1 ring-[#e5dfd4]">
+              <span className="mt-1 inline-flex rounded-full border border-[#e5dfd4] bg-transparent px-2 py-0.5 text-[10px] font-medium text-[#625b51]">
                 {isVisitor ? "Visitor account" : "Signed-in account"}
               </span>
             </div>
