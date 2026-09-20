@@ -590,13 +590,13 @@ def user_account_view(request):
         wallet = Wallet.objects.filter(user=user).first()
         vouchers = Voucher.objects.filter(user=user, active=True)
         referral = Referral.objects.filter(referrer=user).first()
-        orders = Order.objects.filter(user=user, status="completed").order_by("-created_at")
+        orders = Order.objects.filter(user=user, status__in=["pending", "completed"]).order_by("-created_at")
     else:
         profile = None
         wallet = None
         vouchers = []
         referral = None
-        orders = Order.objects.filter(visitor_id=visitor_id, status="completed").order_by("-created_at")
+        orders = Order.objects.filter(visitor_id=visitor_id, status__in=["pending", "completed"]).order_by("-created_at")
 
 
     # 4️⃣ Build order data (including items)
@@ -611,6 +611,7 @@ def user_account_view(request):
     # 5️⃣ Combine all into response
     data = {
         "is_authenticated": bool(user),
+        "authType": "user" if user else "visitor",
         "user": {
             "id": user.id if user else None,
             "first_name": getattr(user or visitor, "first_name", None),
