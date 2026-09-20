@@ -20,7 +20,7 @@ export const getWebSocketUrl = (path = "/") => {
 
 export const resolveApiAssetUrl = (value) => {
   if (!value) return null;
-  if (/^https?:\\/\\//i.test(value)) return value;
+  if (/^https?:\/\//i.test(value)) return value;
   return new URL(value, `${baseURL}/`).toString();
 };
 
