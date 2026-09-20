@@ -29,7 +29,7 @@ const MobileAccountModal = ({ open, onClose, user }) => {
 
     let active = true;
     Promise.allSettled([
-      api.get("/api/user/account/", { withCredentials: true }),
+      api.get("/api/user-profile/", { withCredentials: true }),
       api.get("/api/vendor-draft/", { withCredentials: true }),
       api.get("/api/user-visitor-notifications/", { withCredentials: true }),
     ]).then(([accountResult, draftResult, notificationResult]) => {
@@ -86,7 +86,7 @@ const MobileAccountModal = ({ open, onClose, user }) => {
   const displayName = [firstName, lastName].filter(Boolean).join(" ") ||
     (isVisitor ? "Guest account" : account?.user?.username || "My Account");
   const email = account?.user?.email || "";
-  const orderCount = account?.orders?.length || 0;
+  const orderCount = Array.isArray(account?.orders) ? account.orders.length : 0;
 
   return (
     <MobileBottomSheet open={open} onClose={onClose} title="Your Account">
