@@ -1,135 +1,73 @@
 import React, { useState } from "react";
-import { useTheme } from "@mui/material";
-import { tokens } from "../../../../theme";
 import { IonIcon } from "@ionic/react";
 import { addCircleOutline } from "ionicons/icons";
-import useDashboardSummary from "../../../Hooks/AccountSummary/AccountSummaryHook";
+import useDashboardData from "../../../Hooks/AccountSummary/AccountSummaryHook";
 import AddPaymentModal from "./AddPaymentModal";
 import api from "../../../../Services/Api";
 
 export default function FastPayment() {
-  const theme = useTheme();
-  const colors = tokens(theme.palette.mode);
-
-  // handle add payment modal state
   const [openModal, setOpenModal] = useState(false);
-
-  const { data, loading, error, refetch } = useDashboardSummary();
-
-  if (loading) return <p>Loading...</p>;
-  if (error || !data)
-    return (
-      <p style={{ color: colors.redAccent[500], padding: "10px 20px" }}>
-        Error loading payments.
-      </p>
-    );
+  const [notice, setNotice] = useState("");
+  const { data, loading, error, refetch } = useDashboardData();
 
   const payments = data?.payments || {};
-
-  // Debug: Log payments object to confirm structure and keys
-  console.log("Payments from API:", data);
-
-  const badgeColors = {
-    Vendors: "#4caf5",
-    Staffs: "#f44336",
-    "KRA Licenses": "#ff9800",
-    Refund: "#4caf50",
-    Training: "#4caf50",
-    Subscriptions: "#f44336",
-    Rent: "#ff9800",
+  const badge = {
+    Vendors: "bg-primary/10 text-primary",
+    Staffs: "bg-red-500/10 text-red-600 dark:text-red-300",
+    "KRA Licenses": "bg-orange-500/10 text-orange-600 dark:text-orange-300",
+    Refund: "bg-green-500/10 text-green-600 dark:text-green-300",
+    Training: "bg-teal-500/10 text-teal-600 dark:text-teal-300",
+    Subscriptions: "bg-purple-500/10 text-purple-600 dark:text-purple-300",
+    Rent: "bg-yellow-500/10 text-yellow-700 dark:text-yellow-300",
   };
 
-  // add payment API call
   const handleAddPayment = async (form) => {
+    setNotice("");
     try {
-      await api.post("/api/transactions/", form);
-      await refetch(true);
+      await api.post("/api/transactions/", form, { withCredentials: true });
+      await refetch();
+      setNotice("Payment added successfully.");
     } catch (err) {
-      console.error("Failed to add payment", err);
+      setNotice(err?.response?.data?.error || err?.response?.data?.detail || "Failed to add payment.");
+      throw err;
     }
   };
 
   return (
-    <div className="fast-payment p-4 mb-4">
-      <h2 className="text-xl" style={{ color: colors.gray[100] }}>
-        Payments Summary
-      </h2>
-
-      <div
-        className="badges w-full"
-        style={{ display: "flex", gap: 12, flexWrap: "wrap" }}
-      >
-        {/* ADD NEW TRANSACTION BUTTON */}
-        <div
-          onClick={() => setOpenModal(true)}
-          style={{
-            backgroundColor: colors.primary[600],
-            width: 52,
-            height: 52,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            borderRadius: 10,
-            cursor: "pointer",
-          }}
-        >
-          <IonIcon
-            icon={addCircleOutline}
-            style={{ color: colors.greenAccent[500], fontSize: 32 }}
-          />
-        </div>
-
-        {/* PAYMENTS */}
-        {Object.entries(payments).map(([title, amount]) => {
-          // Debug log each badge render to confirm values
-          console.log("Rendering badge:", title, amount);
-
-          // Ensure amount is a number and > 0
-          const numericAmount = Number(amount);
-          if (isNaN(numericAmount) || numericAmount <= 0) return null;
-
-          return (
-            <div
-              key={title}
-              className="badge shadow-custom items-center"
-              style={{
-                backgroundColor: colors.primary[600],
-                padding: "12px",
-                borderRadius: 10,
-                minWidth: 150,
-                // border: `1px solid ${colors.greenAccent[500]}`, 
-                color: colors.gray[100],
-              }}
-            >
-              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                <span
-                  style={{
-                    width: 10,
-                    height: 10,
-                    borderRadius: "50%",
-                    backgroundColor: badgeColors[title] || "#999",
-                  }}
-                />
-                <h5>{title}</h5>
-              </div>
-
-              <h4
-                className="text-sm flex items-center"
-                style={{ color: colors.blueAccent[100], marginTop: 6 }}
-              >
-                KES {numericAmount.toLocaleString()}
-              </h4>
-            </div>
-          );
-        })}
+    <section className="mb-5 rounded-2xl border border-border bg-card p-4 shadow-custom sm:p-5">
+      <div className="mb-4">
+        <h2 className="text-base font-bold text-card-foreground sm:text-lg">Payments Summary</h2>
+        <p className="text-xs text-muted-foreground">Manual ledger categories and current totals.</p>
       </div>
 
-      {/* MODAL */}
-      <AddPaymentModal
-        open={openModal}
-        onClose={() => setOpenModal(false)}
-        onSubmit={handleAddPayment}
-      />
-    </div>
+      {notice && <div className="mb-3 rounded-xl border border-primary/20 bg-primary/5 p-3 text-sm text-primary">{notice}</div>}
+      {loading ? (
+        <div className="flex gap-3"><div className="h-14 w-14 animate-pulse rounded-xl bg-muted" /><div className="h-14 w-40 animate-pulse rounded-xl bg-muted" /></div>
+      ) : error ? (
+        <div className="rounded-xl border border-red-500/30 bg-red-500/10 p-4 text-sm text-red-600 dark:text-red-300">Error loading payment totals.</div>
+      ) : (
+        <div className="flex flex-wrap gap-3">
+          <button type="button" onClick={() => setOpenModal(true)} className="grid h-14 w-14 place-items-center rounded-xl border border-border bg-background text-primary transition hover:bg-primary/5" aria-label="Add payment">
+            <IonIcon icon={addCircleOutline} className="text-2xl" />
+          </button>
+
+          {Object.entries(payments).map(([title, amount]) => {
+            const numericAmount = Number(amount);
+            if (!Number.isFinite(numericAmount) || numericAmount <= 0) return null;
+            return (
+              <div key={title} className="min-w-[145px] rounded-xl border border-border bg-background p-3 shadow-sm">
+                <div className="flex items-center gap-2">
+                  <span className={"h-2.5 w-2.5 rounded-full " + (badge[title] || "bg-muted")} />
+                  <p className="text-xs font-semibold text-card-foreground">{title}</p>
+                </div>
+                <p className="mt-2 text-sm font-bold text-primary">KES {numericAmount.toLocaleString("en-KE", { minimumFractionDigits: 2 })}</p>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      <AddPaymentModal open={openModal} onClose={() => setOpenModal(false)} onSubmit={handleAddPayment} />
+    </section>
   );
 }
