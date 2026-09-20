@@ -99,7 +99,7 @@ const Footer = () => {
               <a href="mailto:maamaramarket@gmail.com?subject=About%20Maa%20Mara%20Market">About Us</a>
               <a href="mailto:maamaramarket@gmail.com?subject=Contact%20Maa%20Mara%20Market">Contact us</a>
               <Link to="/customer-order">Order History</Link>
-              <Link to="/request-returns">Returns</Link>
+              <Link to="/request-returns">Return Policy &amp; Returns</Link>
               <a href="mailto:maamaramarket@gmail.com?subject=Shipping%20Question">Shipping</a>
               <a href="mailto:maamaramarket@gmail.com?subject=Career%20Enquiry">Career</a>
             </div>
