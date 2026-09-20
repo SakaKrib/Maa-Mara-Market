@@ -1,5 +1,4 @@
 import { useEffect, useState } from "react";
-import { baseUrl } from "../../Constant/Constant"; 
 import api from "../../../Services/Api";
 
 const useVendors = () => {
