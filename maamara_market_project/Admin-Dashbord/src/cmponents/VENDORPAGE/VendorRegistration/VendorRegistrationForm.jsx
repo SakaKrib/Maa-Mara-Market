@@ -493,14 +493,12 @@ useEffect(() => {
 
                 }
 
-
-
-
                 return {
                     name: item.name || "",
                     description: item.description || "",
                     price: Number(item.price) || 0,
                     image,
+                    image_asset_id: item.image_asset_id ?? null,
                 };
             });
 
@@ -575,7 +573,12 @@ useEffect(() => {
               ? index
               : null,
 
-          // keep restored images
+          // Keep the authoritative backend asset reference for unchanged images.
+          image_asset_id:
+            item.image instanceof File
+              ? null
+              : item.image_asset_id ?? null,
+
           image:
             typeof item.image === "string"
               ? item.image
@@ -741,6 +744,12 @@ const onSubmit = async (data) => {
       };
     }
 
+    // Preserve the draft identity so approval can resolve unchanged
+    // backend-stored assets instead of requiring another upload.
+    if (watchedValues.draft_id) {
+      vendorData.draft_id = watchedValues.draft_id;
+    }
+
     // Append vendor_data JSON
     formData.append("vendor_data", JSON.stringify(vendorData));
 
@@ -782,6 +791,10 @@ const onSubmit = async (data) => {
           ...item,
           price: Number(item.price),
           image: imageKey,
+          image_asset_id:
+            item.image instanceof File
+              ? null
+              : item.image_asset_id ?? null,
         };
       });
 
