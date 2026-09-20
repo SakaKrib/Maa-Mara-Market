@@ -91,21 +91,21 @@ const MobileAccountModal = ({ open, onClose, user }) => {
   return (
     <MobileBottomSheet open={open} onClose={onClose} title="Your Account">
       <div className="space-y-4">
-        <div className="rounded-2xl bg-gradient-to-br from-slate-900 to-slate-700 p-5 text-white">
+        <div className="mm-account-profile-card rounded-2xl border border-[#e5dfd4] bg-[#f6f2ea] p-5 text-[#29251f] shadow-sm">
           <div className="flex items-center gap-3">
-            <div className="flex h-14 w-14 items-center justify-center rounded-full bg-white/15 text-lg font-semibold">
+            <div className="flex h-14 w-14 items-center justify-center rounded-full bg-white text-lg font-semibold shadow-sm ring-1 ring-[#e5dfd4]">
               {(displayName.charAt(0) || "M").toUpperCase()}
             </div>
             <div className="min-w-0">
               <p className="font-semibold truncate">{displayName}</p>
-              <p className="text-xs text-white/70 truncate">{email || "Visitor profile"}</p>
-              <span className="mt-1 inline-flex rounded-full bg-white/15 px-2 py-0.5 text-[10px]">
+              <p className="text-xs text-[#6f675c] truncate">{email || "Visitor profile"}</p>
+              <span className="mt-1 inline-flex rounded-full bg-white px-2 py-0.5 text-[10px] font-medium text-[#625b51] ring-1 ring-[#e5dfd4]">
                 {isVisitor ? "Visitor account" : "Signed-in account"}
               </span>
             </div>
           </div>
           {isVisitor && (
-            <p className="mt-3 text-xs leading-5 text-white/75">
+            <p className="mt-3 text-xs leading-5 text-[#6f675c]">
               Your visitor account keeps your cart, orders, activity and profile connected to this browser.
             </p>
           )}
@@ -155,7 +155,7 @@ const MobileAccountModal = ({ open, onClose, user }) => {
             </div>
 
             {isVisitor && (
-              <Button variant="outline" className="w-full" onClick={() => go("/customer-login")}>
+              <Button variant="outline" className="mm-auth-light-button w-full" onClick={() => go("/customer-login")}>
                 <LogIn size={16} className="mr-2" /> Sign in / Create full account
               </Button>
             )}
@@ -170,20 +170,20 @@ const MobileAccountModal = ({ open, onClose, user }) => {
             </div>
 
             <div className="grid grid-cols-2 gap-3">
-              <Input placeholder="First name" value={form.first_name} onChange={(e) => setForm({ ...form, first_name: e.target.value })} />
-              <Input placeholder="Last name" value={form.last_name} onChange={(e) => setForm({ ...form, last_name: e.target.value })} />
+              <div><label htmlFor="mobile-account-first-name" className="mb-1.5 block text-xs font-medium text-[#514a41]">First name</label><Input className="mm-auth-input" id="mobile-account-first-name" placeholder="First name" value={form.first_name} onChange={(e) => setForm({ ...form, first_name: e.target.value })} /></div>
+              <div><label htmlFor="mobile-account-last-name" className="mb-1.5 block text-xs font-medium text-[#514a41]">Last name</label><Input className="mm-auth-input" id="mobile-account-last-name" placeholder="Last name" value={form.last_name} onChange={(e) => setForm({ ...form, last_name: e.target.value })} /></div>
             </div>
-            <Input placeholder="Phone number" value={form.phone_number} onChange={(e) => setForm({ ...form, phone_number: e.target.value })} />
-            <Input placeholder="Address" value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} />
+            <div><label htmlFor="mobile-account-phone" className="mb-1.5 block text-xs font-medium text-[#514a41]">Phone number</label><Input className="mm-auth-input" id="mobile-account-phone" placeholder="Phone number" value={form.phone_number} onChange={(e) => setForm({ ...form, phone_number: e.target.value })} /></div>
+            <div><label htmlFor="mobile-account-address" className="mb-1.5 block text-xs font-medium text-[#514a41]">Address</label><Input className="mm-auth-input" id="mobile-account-address" placeholder="Address" value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} /></div>
             <div className="grid grid-cols-2 gap-3">
-              <Input placeholder="City" value={form.city} onChange={(e) => setForm({ ...form, city: e.target.value })} />
-              <Input placeholder="Country" value={form.country} onChange={(e) => setForm({ ...form, country: e.target.value })} />
+              <div><label htmlFor="mobile-account-city" className="mb-1.5 block text-xs font-medium text-[#514a41]">City</label><Input className="mm-auth-input" id="mobile-account-city" placeholder="City" value={form.city} onChange={(e) => setForm({ ...form, city: e.target.value })} /></div>
+              <div><label htmlFor="mobile-account-country" className="mb-1.5 block text-xs font-medium text-[#514a41]">Country</label><Input className="mm-auth-input" id="mobile-account-country" placeholder="Country" value={form.country} onChange={(e) => setForm({ ...form, country: e.target.value })} /></div>
             </div>
-            <Input placeholder="Location" value={form.location} onChange={(e) => setForm({ ...form, location: e.target.value })} />
+            <div><label htmlFor="mobile-account-location" className="mb-1.5 block text-xs font-medium text-[#514a41]">Location</label><Input className="mm-auth-input" id="mobile-account-location" placeholder="Location" value={form.location} onChange={(e) => setForm({ ...form, location: e.target.value })} /></div>
 
             <div className="flex gap-2 pt-2">
-              <Button variant="outline" className="flex-1" onClick={() => setEditing(false)}>Back</Button>
-              <Button className="flex-1" disabled={saving} onClick={handleSave}>
+              <Button variant="outline" className="mm-auth-light-button flex-1" onClick={() => setEditing(false)}>Cancel</Button>
+              <Button className="mm-auth-submit flex-1" disabled={saving} onClick={handleSave}>
                 <Save size={16} className="mr-2" /> {saving ? "Saving..." : "Save"}
               </Button>
             </div>
