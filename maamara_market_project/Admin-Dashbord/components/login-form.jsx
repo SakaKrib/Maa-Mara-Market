@@ -139,7 +139,7 @@ export function LoginForm({ className, ...props }) {
               <div className="mm-auth-form flex flex-col gap-6">
                 <div className="flex flex-col items-center text-center">
                   <h1 className="text-2xl font-bold mm-auth-title">Welcome back</h1>
-                  <p className="text-balance text-muted-foreground mm-auth-subtitle">
+                  <p className="text-balance xxs:text-sm text-muted-foreground mm-auth-subtitle">
                     Login to your Maamara Market account
                   </p>
                 </div>
@@ -274,7 +274,7 @@ export function LoginForm({ className, ...props }) {
         open={snackbar.open}
         autoHideDuration={6000}
         onClose={handleSnackbarClose}
-        anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
+        anchorOrigin={{ vertical: "top", horizontal: "right" }}
       >
         <Alert
           onClose={handleSnackbarClose}
