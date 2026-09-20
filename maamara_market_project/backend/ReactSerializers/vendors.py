@@ -556,7 +556,7 @@ def update_vendor_info(request, vendor_request_id):
     updated_vendor_data = {k: sanitize(v) for k, v in updated_vendor_data.items()}
 
     # Update the existing vendor_data dict
-    vendor_data = vendor_request.vendor_data or {}
+    vendor_data = dict(vendor_request.vendor_data or {})
     vendor_data.update(updated_vendor_data)
 
     vendor_request.vendor_data = vendor_data
@@ -608,11 +608,9 @@ def approve_vendor(request, vendor_request_id):
     try:
         vendor_request = VendorRequest.objects.get(id=vendor_request_id)
     except VendorRequest.DoesNotExist:
-        logger.warning("Vendor request not found")
         return Response({'error': 'Vendor request not found.'}, status=404)
 
     if vendor_request.status != 'verified':
-        logger.warning("Vendor is not verified yet")
         return Response({'error': 'Vendor is not verified yet.'}, status=400)
 
     user = vendor_request.user
@@ -621,6 +619,7 @@ def approve_vendor(request, vendor_request_id):
     # ✅ BRAND HANDLING
     brand_instance = None
     brand_data = vendor_data.pop("brand", None)
+    draft_id = vendor_data.pop("draft_id", None)
     vendor_logo_path = vendor_data.get("vendor_company_logo")
     decoded_path = unquote(vendor_logo_path) if vendor_logo_path else None
 
@@ -678,7 +677,6 @@ def approve_vendor(request, vendor_request_id):
     # 🧪 Check item list
     item_list = vendor_request.item_list or []
     if not item_list:
-        logger.warning("No item data provided")
         return Response({'error': 'No item data provided or invalid format.'}, status=400)
 
     # 🏪 Create Vendor
@@ -686,9 +684,42 @@ def approve_vendor(request, vendor_request_id):
 
     created_items = []
 
+    # Resolve saved draft assets once, before creating final Item records.
+    source_draft = None
+    if draft_id:
+        try:
+            source_draft = VendorDraft.objects.get(
+                id=draft_id,
+                user=user,
+                status="DRAFT",
+            )
+        except VendorDraft.DoesNotExist:
+            return Response(
+                {"error": "The saved vendor draft is no longer available."},
+                status=400,
+            )
+
     for item in item_list:
         try:
             normalized_item = {k.lower(): v for k, v in item.items()}
+
+            # Prefer the authoritative stored draft image. This means an
+            # unchanged image is promoted directly from the draft asset;
+            # a replacement already has a new asset/path from submission.
+            image_asset_id = item.get("image_asset_id")
+            raw_path = item.get("image")
+            if image_asset_id and source_draft:
+                try:
+                    draft_image = VendorDraftImage.objects.get(
+                        id=image_asset_id,
+                        draft=source_draft,
+                    )
+                except VendorDraftImage.DoesNotExist:
+                    return Response(
+                        {"error": "A saved item image could not be resolved."},
+                        status=400,
+                    )
+                raw_path = draft_image.image.name
 
             # SECTION / DEPARTMENT / CATEGORY
             section_name = sanitize(item.get('section')) if item.get('section') else None
@@ -716,7 +747,6 @@ def approve_vendor(request, vendor_request_id):
             else:
                 brand = brand_instance
 
-            raw_path = item.get('image')
             relative_path = raw_path.lstrip('/').removeprefix('media/') if raw_path else None
 
             name = sanitize(item.get('name') or "")
@@ -791,7 +821,7 @@ def approve_vendor(request, vendor_request_id):
                         unit=sanitize(item['weight'].get('unit', 'kg'))
                     )
                 except Exception:
-                    logger.warning("Error saving weight", exc_info=True)
+
 
             if item.get('length'):
                 try:
@@ -801,13 +831,15 @@ def approve_vendor(request, vendor_request_id):
                         unit=sanitize(item['length'].get('unit', 'cm'))
                     )
                 except Exception:
-                    logger.warning("Error saving length", exc_info=True)
+
 
             created_items.append(created_item.id)
 
         except Exception:
-            traceback.print_exc()
-            logger.error("Error processing an item", exc_info=True)
+            return Response(
+                {"error": "One or more vendor items could not be created."},
+                status=400,
+            )
 
     vendor_request.status = 'approved'
     vendor_request.save()
@@ -851,7 +883,11 @@ def approve_vendor(request, vendor_request_id):
         description=f"Admin approved vendor for user '{vendor.user.username}'"
     )
 
-    logger.info("Vendor approved successfully with %d items created", total_items)
+    # The draft has now been promoted. Delete only its database record;
+    # the stored files remain in media storage because Item.image references
+    # the same paths.
+    if source_draft:
+        source_draft.delete()
 
     return Response({
         'message': 'Vendor approved, items created, email sent.',
