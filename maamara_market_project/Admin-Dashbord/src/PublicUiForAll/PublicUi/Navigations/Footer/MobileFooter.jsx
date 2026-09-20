@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import api from "../../../../Services/Api";
 import { TrendingUp, UserRound, Heart, Search, ShoppingCart } from "lucide-react";
 import MobileCartModal from "./MobileModals/MobileCartMadals";
 import MobileWishlistModal from "./MobileModals/MobileWishList";
@@ -13,8 +14,21 @@ const MobileMenu = () => {
   const navigate = useNavigate();
   const { user, logout } = useAuth();
   const [activeSheet, setActiveSheet] = useState(null);
+  const [notificationCount, setNotificationCount] = useState(0);
   const { order } = useCartContext();
   const { wishlist = [] } = useWishlistContext();
+
+  useEffect(() => {
+    let active = true;
+    api.get("/api/user-visitor-notifications/", { withCredentials: true })
+      .then(({ data }) => {
+        if (active) setNotificationCount(Number(data?.unread_count || 0));
+      })
+      .catch(() => {
+        if (active) setNotificationCount(0);
+      });
+    return () => { active = false; };
+  }, []);
 
   const cartCount = Number(order?.order?.total_qty || order?.items?.length || 0);
   const wishlistCount = wishlist.length;
@@ -23,7 +37,7 @@ const MobileMenu = () => {
 
   const items = useMemo(() => [
     { key: "trending", label: "Trending", Icon: TrendingUp, action: () => navigate("/") },
-    { key: "account", label: "Account", Icon: UserRound, action: () => open("account") },
+    { key: "account", label: "Account", Icon: UserRound, badge: notificationCount, action: () => open("account") },
     { key: "wishlist", label: "Wishlist", Icon: Heart, badge: wishlistCount, action: () => open("wishlist") },
     { key: "search", label: "Search", Icon: Search, action: () => open("search") },
     { key: "cart", label: "Cart", Icon: ShoppingCart, badge: cartCount, action: () => open("cart") },
