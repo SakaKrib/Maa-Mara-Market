@@ -1,216 +1,68 @@
 import React, { useState } from "react";
-import MonthlyReport from "./Reports/ReportsLedger";
-import { useTheme } from "@mui/material";
-import { tokens } from "../../../theme";
+import { IonIcon } from "@ionic/react";
+import { calendarOutline, logoPaypal, phonePortraitOutline } from "ionicons/icons";
 import useDashboardData from "../../Hooks/AccountSummary/AccountSummaryHook";
-
-/**
- * PaymentsOverview
- * Props:
- *  - date (string) optional ISO date value for the date input
- *  - cards (array) optional list of card-like payment items:
- *      [{ id, provider, balanceText, holderName, meta1Label, meta1Value, meta2Label, meta2Value }]
- */
+import MonthlyReport from "./Reports/ReportsLedger";
 
 export default function PaymentsOverview({ date = "", cards = null }) {
-  // date filter state
   const [selectedDate, setSelectedDate] = useState(date);
-
-  // fetch data based on selectedDate
   const { data, loading, error } = useDashboardData(selectedDate);
 
-  // Get amounts safely
-  const paypal_total = data.accounts?.paypal?.amount || 0;
-  const mpesa_total = data.accounts?.mpesa?.amount || 0;
-
-  // Format totals with commas
-  const formattedPaypalTotal = Number(paypal_total).toLocaleString();
-  const formattedMpesaTotal = Number(mpesa_total).toLocaleString();
+  const paypal = data.accounts?.paypal || {};
+  const mpesa = data.accounts?.mpesa || {};
 
   const defaultCards = [
-    {
-      id: "paypal",
-      provider: "PayPal",
-      balanceText: `KES ${formattedPaypalTotal}`,
-      holderName: data.accounts?.paypal?.holder || "Maa Mara Market",
-      meta1Label: "Account",
-      meta1Value: data.accounts?.paypal?.account || "merchant@paypal.example",
-      meta2Label: "Status",
-      meta2Value: data.accounts?.paypal?.status || "Verified",
-    },
-    {
-      id: "mpesa",
-      provider: "M-Pesa",
-      balanceText: `KES ${formattedMpesaTotal}`,
-      holderName: data.accounts?.mpesa?.holder || "Maa Mara Market",
-      meta1Label: "Till",
-      meta1Value: data.accounts?.mpesa?.till || "123456",
-      meta2Label: "Agent",
-      meta2Value: data.accounts?.mpesa?.agent_status || "Active",
-    },
+    { id: "paypal", provider: "PayPal", icon: logoPaypal, balance: paypal.amount || 0, holder: paypal.holder || "Maa Mara Market", primaryLabel: "Account", primaryValue: paypal.account || "merchant@paypal.example", secondaryLabel: "Status", secondaryValue: paypal.status || "Verified" },
+    { id: "mpesa", provider: "M-Pesa", icon: phonePortraitOutline, balance: mpesa.amount || 0, holder: mpesa.holder || "Maa Mara Market", primaryLabel: "Till", primaryValue: mpesa.till || "123456", secondaryLabel: "Status", secondaryValue: mpesa.agent_status || "Active" },
   ];
 
   const items = cards || defaultCards;
-
-  const theme = useTheme();
-  const colors = tokens(theme.palette.mode);
-
-  if (loading) return <p style={{ color: colors.gray[100] }}>Loading...</p>;
-  if (error) return <p style={{ color: colors.redAccent[500] }}>Error loading data</p>;
-
-  // Handle date change
-  const handleDateChange = (e) => {
-    setSelectedDate(e.target.value);
-    // No refetch here because useDashboardData fetches automatically on selectedDate change
-  };
+  const formatKES = (value) => "KES " + Number(value || 0).toLocaleString("en-KE", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
   return (
-    <section className="middle p-6 mb-6">
-      <div className="heading flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-semibold" style={{ color: colors.blueAccent[100] }}>
-          Overview
-        </h1>
-        <input
-          type="date"
-          value={selectedDate}
-          onChange={handleDateChange}
-          className="px-3 py-2 border rounded-md"
-          style={{ backgroundColor: colors.primary[600] }}
-        />
+    <section className="mb-5 rounded-2xl border border-border bg-card p-4 shadow-custom sm:p-5">
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+        <div><h2 className="text-base font-bold text-card-foreground sm:text-lg">Payment Accounts</h2><p className="text-xs text-muted-foreground">Balances and account status.</p></div>
+        <label className="flex items-center gap-2 rounded-xl border border-border bg-background px-3 py-2">
+          <IonIcon icon={calendarOutline} className="text-sm text-muted-foreground" />
+          <span className="sr-only">Filter by date</span>
+          <input type="date" value={selectedDate} onChange={(e) => setSelectedDate(e.target.value)} className="bg-transparent text-xs text-foreground outline-none" />
+        </label>
       </div>
 
-      <div className="debit-cards grid grid-cols-1 md:grid-cols-2 gap-6 mb-10">
-        {items.map((c) => (
-          <div
-            key={c.id}
-            className="card bg-white shadow-md rounded-lg overflow-hidden"
-            style={{ color: colors.gray[100], backgroundColor: colors.primary[600] }}
-          >
-            <div className="top flex items-center justify-between px-6 py-4 border-b">
-              <div className="left flex items-center gap-3">
-                <ProviderIcon provider={c.provider} />
-                <h2 className="text-lg font-semibold" style={{ color: colors.gray[100] }}>
-                  {c.provider}
-                </h2>
+      {loading ? (
+        <div className="grid gap-4 md:grid-cols-2">{[1, 2].map((item) => <div key={item} className="h-44 animate-pulse rounded-2xl bg-muted" />)}</div>
+      ) : error ? (
+        <div className="rounded-xl border border-red-500/30 bg-red-500/10 p-4 text-sm text-red-600 dark:text-red-300">Error loading payment accounts.</div>
+      ) : (
+        <div className="grid min-w-0 gap-4 md:grid-cols-2">
+          {items.map((item) => (
+            <article key={item.id} className="min-w-0 overflow-hidden rounded-2xl border border-border bg-background">
+              <div className="flex items-center justify-between gap-3 border-b border-border p-4">
+                <div className="flex min-w-0 items-center gap-3">
+                  <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary"><IonIcon icon={item.icon || walletFallback(item.provider)} className="text-xl" /></div>
+                  <div className="min-w-0"><h3 className="truncate text-sm font-bold text-card-foreground">{item.provider}</h3><p className="text-xs text-muted-foreground">{item.primaryValue}</p></div>
+                </div>
+                <span className="rounded-full bg-primary/10 px-2.5 py-1 text-[10px] font-bold text-primary">{item.secondaryValue}</span>
               </div>
-              <div className="right text-right">
-                <span className="text-sm text-gray-500" style={{ color: colors.gray[100] }}>
-                  {c.meta1Label}
-                </span>
-                <div className="text-sm font-medium" style={{ color: colors.gray[100] }}>
-                  {c.meta1Value}
+              <div className="p-4">
+                <p className="text-xs text-muted-foreground">Available balance</p>
+                <p className="mt-1 text-2xl font-bold tracking-tight text-card-foreground">{formatKES(item.balance)}</p>
+                <div className="mt-4 grid grid-cols-2 gap-3 border-t border-border pt-3">
+                  <div className="min-w-0"><p className="text-[10px] uppercase tracking-wide text-muted-foreground">Holder</p><p className="mt-1 truncate text-xs font-semibold text-card-foreground">{item.holder}</p></div>
+                  <div className="min-w-0 text-right"><p className="text-[10px] uppercase tracking-wide text-muted-foreground">{item.secondaryLabel}</p><p className="mt-1 truncate text-xs font-semibold text-card-foreground">{item.secondaryValue}</p></div>
                 </div>
               </div>
-            </div>
+            </article>
+          ))}
+        </div>
+      )}
 
-            <div className="middle-content px-6 py-6 flex items-center justify-between">
-              <h2 className="text-2xl font-bold">{c.balanceText}</h2>
-              <div className="chip hidden sm:block">
-                <svg
-                  width="48"
-                  height="32"
-                  viewBox="0 0 48 32"
-                  fill="none"
-                  xmlns="http://www.w3.org/2000/svg"
-                >
-                  <rect x="0" y="0" width="48" height="32" rx="4" fill="#E9E9E9" />
-                  <rect x="6" y="6" width="36" height="20" rx="3" fill={colors.primary[600]} />
-                </svg>
-              </div>
-            </div>
-
-            <div className="bottom px-6 py-4 flex items-center justify-between border-t">
-              <div className="left">
-                <small className="text-xs" style={{ color: colors.gray[100] }}>
-                  Account / Holder
-                </small>
-                <h5 className="text-sm font-medium mt-1">{c.holderName}</h5>
-              </div>
-
-              <div className="right text-right">
-                <div className="expiry">
-                  <small className="text-xs" style={{ color: colors.gray[100] }}>
-                    {c.meta1Label}
-                  </small>
-                  <h5 className="text-sm font-medium mt-1">{c.meta1Value}</h5>
-                </div>
-
-                <div className="cvv mt-2">
-                  <small className="text-xs" style={{ color: colors.gray[100] }}>
-                    {c.meta2Label}
-                  </small>
-                  <h5 className="text-sm font-medium mt-1">{c.meta2Value}</h5>
-                </div>
-              </div>
-            </div>
-          </div>
-        ))}
-      </div>
-      <MonthlyReport />
+      <div className="mt-5"><MonthlyReport /></div>
     </section>
   );
 }
 
-/** small icon component for providers (inline SVGs) */
-function ProviderIcon({ provider }) {
-  const name = (provider || "").toLowerCase();
-  if (name.includes("paypal")) {
-    return (
-      <svg
-        width="48"
-        height="28"
-        viewBox="0 0 48 28"
-        fill="none"
-        className="provider-icon"
-      >
-        <rect width="48" height="28" rx="6" fill="#003087" />
-        <text
-          x="8"
-          y="18"
-          fill="#FFD700"
-          fontWeight="700"
-          fontSize="10"
-        >
-          PayPal
-        </text>
-      </svg>
-    );
-  }
-  if (name.includes("m-pesa") || name.includes("mpesa")) {
-    return (
-      <svg
-        width="48"
-        height="28"
-        viewBox="0 0 48 28"
-        fill="none"
-        className="provider-icon"
-      >
-        <rect width="48" height="28" rx="6" fill="#009639" />
-        <text
-          x="6"
-          y="18"
-          fill="#fff"
-          fontWeight="700"
-          fontSize="10"
-        >
-          M-Pesa
-        </text>
-      </svg>
-    );
-  }
-  // fallback generic icon
-  return (
-    <svg
-      width="48"
-      height="28"
-      viewBox="0 0 48 28"
-      fill="none"
-      className="provider-icon"
-    >
-      <rect width="48" height="28" rx="6" fill="#6B7280" />
-      <text x="10" y="18" fill="#fff" fontWeight="700" fontSize="10">
-        PAY
-      </text>
-    </svg>
-  );
+function walletFallback(provider) {
+  return provider?.toLowerCase().includes("paypal") ? logoPaypal : phonePortraitOutline;
 }
