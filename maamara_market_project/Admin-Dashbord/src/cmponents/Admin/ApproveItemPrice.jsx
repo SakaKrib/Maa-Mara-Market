@@ -86,13 +86,6 @@ const AdminPriceApproval = ({ onCountChange }) => {
   useEffect(() => {
     fetchRequests(false);
     fetchHistory();
-
-    const interval = setInterval(() => {
-      fetchRequests(true);
-      fetchHistory();
-    }, 10000);
-
-    return () => clearInterval(interval);
   }, []);
 
   // =========================
