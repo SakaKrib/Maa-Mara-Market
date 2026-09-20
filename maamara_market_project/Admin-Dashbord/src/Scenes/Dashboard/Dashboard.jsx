@@ -29,17 +29,17 @@ const StatCard = ({ icon, label, value, detail, to, onClick }) => {
   const card = (
     <div
       onClick={onClick}
-      className="group flex min-h-32 cursor-pointer items-start justify-between rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md dark:border-slate-800 dark:bg-slate-900"
+      className="group flex min-h-32 cursor-pointer items-start justify-between rounded-2xl border border-border bg-card p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md dark:border-border dark:bg-card"
     >
       <div className="min-w-0">
-        <div className="mb-4 grid h-10 w-10 place-items-center rounded-xl bg-indigo-50 text-indigo-600 dark:bg-indigo-500/15 dark:text-indigo-300">
+        <div className="mb-4 grid h-10 w-10 place-items-center rounded-xl bg-primary/10 text-primary dark:bg-primary/100/15 dark:text-primary">
           <IonIcon icon={icon} className="text-xl" />
         </div>
-        <p className="truncate text-xs font-semibold uppercase tracking-wider text-slate-400">{label}</p>
-        <p className="mt-1 text-2xl font-bold tracking-tight text-slate-900 dark:text-white">{value}</p>
-        <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">{detail}</p>
+        <p className="truncate text-xs font-semibold uppercase tracking-wider text-muted-foreground">{label}</p>
+        <p className="mt-1 text-2xl font-bold tracking-tight text-card-foreground dark:text-card-foreground">{value}</p>
+        <p className="mt-1 text-xs text-muted-foreground dark:text-muted-foreground">{detail}</p>
       </div>
-      <span className="mt-1 h-2 w-2 rounded-full bg-emerald-500 opacity-70 transition group-hover:scale-125" />
+      <span className="mt-1 h-2 w-2 rounded-full bg-[hsl(var(--chart-2))] opacity-70 transition group-hover:scale-125" />
     </div>
   );
 
@@ -67,6 +67,8 @@ const Dashboard = () => {
     total_revenue: 0,
   });
   const [unseenVendorRequests, setUnseenVendorRequests] = useState(0);
+  const [vendorProgress, setVendorProgress] = useState(0);
+  const [vendorIncrease, setVendorIncrease] = useState("+0%");
   const [jobsCount, setJobsCount] = useState(0);
   const [supportCount, setSupportCount] = useState(0);
   const [analytics, setAnalytics] = useState({ total_revenue: 0, monthly_revenue: [] });
@@ -87,6 +89,8 @@ const Dashboard = () => {
 
         setAnalytics(revenue.data || { total_revenue: 0, monthly_revenue: [] });
         setUnseenVendorRequests(vendorRequests.data?.unseen_count ?? 0);
+        setVendorProgress(vendorRequests.data?.progress ?? 0);
+        setVendorIncrease(vendorRequests.data?.increase ?? "+0%");
         setTransactions(transactionsResponse.data?.results || []);
         setTransactionSummary(
           transactionsResponse.data?.summary || { total_transactions: 0, total_revenue: 0 }
@@ -108,6 +112,8 @@ const Dashboard = () => {
           api.get("/api/notifications/"),
         ]);
         setUnseenVendorRequests(vendorRequests.data?.unseen_count ?? 0);
+        setVendorProgress(vendorRequests.data?.progress ?? 0);
+        setVendorIncrease(vendorRequests.data?.increase ?? "+0%");
         setActivityLogs(Array.isArray(activity.data) ? activity.data : []);
         const nextNotifications = Array.isArray(notificationList.data) ? notificationList.data : [];
         setNotifications(nextNotifications);
@@ -172,13 +178,13 @@ const Dashboard = () => {
 
   return (
     <section className="space-y-5">
-      <div className="flex flex-col gap-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900 sm:p-6 lg:flex-row lg:items-center lg:justify-between">
+      <div className="flex flex-col gap-4 rounded-2xl border border-border bg-card p-5 shadow-sm dark:border-border dark:bg-card sm:p-6 lg:flex-row lg:items-center lg:justify-between">
         <div>
-          <p className="text-xs font-bold uppercase tracking-[0.16em] text-indigo-600 dark:text-indigo-300">Admin workspace</p>
-          <h1 className="mt-1 text-2xl font-bold tracking-tight text-slate-900 dark:text-white sm:text-3xl">
+          <p className="text-xs font-bold uppercase tracking-[0.16em] text-primary dark:text-primary">Admin workspace</p>
+          <h1 className="mt-1 text-2xl font-bold tracking-tight text-card-foreground dark:text-card-foreground sm:text-3xl">
             Welcome{user?.first_name ? `, ${user.first_name}` : user?.username ? `, ${user.username}` : ""}
           </h1>
-          <p className="mt-1 max-w-2xl text-sm text-slate-500 dark:text-slate-400">
+          <p className="mt-1 max-w-2xl text-sm text-muted-foreground dark:text-muted-foreground">
             Monitor marketplace activity, vendors, revenue and customer operations from one place.
           </p>
         </div>
@@ -186,15 +192,23 @@ const Dashboard = () => {
         <div className="grid grid-cols-2 gap-2 sm:flex">
           <button
             type="button"
+            title="Dashboard export"
+            className="inline-flex items-center justify-center gap-2 rounded-xl border border-border bg-card px-4 py-2.5 text-xs font-semibold text-foreground transition hover:bg-muted"
+          >
+            <IonIcon icon={downloadOutline} />
+            Export
+          </button>
+          <button
+            type="button"
             onClick={() => { setFilter("sent"); setOpenEmailPanel(true); }}
-            className="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
+            className="inline-flex items-center justify-center gap-2 rounded-xl border border-border bg-card px-4 py-2.5 text-xs font-semibold text-foreground hover:bg-muted dark:border-slate-700 dark:bg-card dark:text-foreground dark:hover:bg-muted"
           >
             <IonIcon icon={mailOutline} />
             Email
           </button>
           <Link
             to="/admin-dashboard/sales-Analytics"
-            className="inline-flex items-center justify-center gap-2 rounded-xl bg-indigo-600 px-4 py-2.5 text-xs font-semibold text-white hover:bg-indigo-700"
+            className="inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-xs font-semibold text-card-foreground hover:bg-primary/90"
           >
             <IonIcon icon={statsChartOutline} />
             Analytics
@@ -221,33 +235,32 @@ const Dashboard = () => {
           icon={personAddOutline}
           label="Vendor approvals"
           value={unseenVendorRequests.toLocaleString()}
-          detail="Requests waiting for review"
+          detail={`${vendorIncrease} • ${Math.round(Number(vendorProgress) * 100)}% progress`}
           to="/admin-dashboard/vendor-requests"
         />
         <StatCard
-          icon={notificationsOutline}
-          label="Notifications"
-          value={unreadNotifications.toLocaleString()}
-          detail="Unread admin notifications"
-          onClick={() => setSelectedListView("notifications")}
+          icon={personAddOutline}
+          label="Traffic inbound"
+          value="100,123,631"
+          detail="+67% inbound traffic"
         />
       </div>
 
       <div className="grid gap-5 xl:grid-cols-[minmax(0,1.7fr)_minmax(320px,0.8fr)]">
         <Link
           to="/admin-dashboard/sales-Analytics"
-          className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition hover:shadow-md dark:border-slate-800 dark:bg-slate-900"
+          className="overflow-hidden rounded-2xl border border-border bg-card shadow-sm transition hover:shadow-md dark:border-border dark:bg-card"
         >
-          <div className="flex flex-col gap-3 border-b border-slate-100 p-5 sm:flex-row sm:items-center sm:justify-between dark:border-slate-800">
+          <div className="flex flex-col gap-3 border-b border-border p-5 sm:flex-row sm:items-center sm:justify-between dark:border-border">
             <div>
-              <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">Financial overview</p>
-              <h2 className="mt-1 text-lg font-bold text-slate-900 dark:text-white">Revenue generated</h2>
+              <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Financial overview</p>
+              <h2 className="mt-1 text-lg font-bold text-card-foreground dark:text-card-foreground">Revenue generated</h2>
             </div>
             <div className="text-left sm:text-right">
-              <p className="text-xl font-bold text-slate-900 dark:text-white">
+              <p className="text-xl font-bold text-card-foreground dark:text-card-foreground">
                 KES {Number(analytics.total_revenue || 0).toLocaleString()}
               </p>
-              <span className="text-xs text-slate-500">View full analytics →</span>
+              <span className="text-xs text-muted-foreground">View full analytics →</span>
             </div>
           </div>
           <div className="h-[320px] p-3 sm:h-[360px] sm:p-5">
@@ -255,8 +268,8 @@ const Dashboard = () => {
           </div>
         </Link>
 
-        <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-          <div className="mb-3 flex items-center gap-1 rounded-xl bg-slate-100 p-1 dark:bg-slate-800">
+        <div className="rounded-2xl border border-border bg-card p-4 shadow-sm dark:border-border dark:bg-card">
+          <div className="mb-3 flex items-center gap-1 rounded-xl bg-muted p-1 dark:bg-muted">
             {[
               ["activities", "Activity", activityLogs.length],
               ["notifications", "Notifications", unreadNotifications],
@@ -266,7 +279,7 @@ const Dashboard = () => {
                 key={key}
                 type="button"
                 onClick={() => setSelectedListView(key)}
-                className={`min-w-0 flex-1 rounded-lg px-2 py-2 text-xs font-semibold transition ${selectedListView === key ? "bg-white text-indigo-700 shadow-sm dark:bg-slate-700 dark:text-indigo-200" : "text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white"}`}
+                className={`min-w-0 flex-1 rounded-lg px-2 py-2 text-xs font-semibold transition ${selectedListView === key ? "bg-card text-primary shadow-sm dark:bg-card dark:text-indigo-200" : "text-muted-foreground hover:text-card-foreground dark:text-muted-foreground dark:hover:text-card-foreground"}`}
               >
                 <span className="block truncate">{label}</span>
                 <span className="text-[10px] opacity-70">{count}</span>
@@ -277,11 +290,11 @@ const Dashboard = () => {
           <div className="h-[300px] space-y-2 overflow-y-auto pr-1">
             {selectedListView === "activities" &&
               (activityLogs.length ? activityLogs.map((log) => (
-                <div key={log.id} className="rounded-xl bg-slate-50 p-3 dark:bg-slate-800/60">
-                  <p className="text-xs font-medium text-slate-800 dark:text-slate-100">{log.description}</p>
-                  <p className="mt-1 text-[10px] text-slate-400">{new Date(log.timestamp).toLocaleString()}</p>
+                <div key={log.id} className="rounded-xl bg-muted p-3 dark:bg-muted">
+                  <p className="text-xs font-medium text-card-foreground dark:text-card-foreground">{log.description}</p>
+                  <p className="mt-1 text-[10px] text-muted-foreground">{new Date(log.timestamp).toLocaleString()}</p>
                 </div>
-              )) : <p className="p-4 text-sm text-slate-400">No recent activity found.</p>)}
+              )) : <p className="p-4 text-sm text-muted-foreground">No recent activity found.</p>)}
 
             {selectedListView === "notifications" &&
               (notifications.length ? notifications.map((note) => (
@@ -289,47 +302,47 @@ const Dashboard = () => {
                   key={note.id}
                   type="button"
                   onClick={() => handleNotificationClick(note)}
-                  className="block w-full rounded-xl bg-slate-50 p-3 text-left hover:bg-indigo-50 dark:bg-slate-800/60 dark:hover:bg-indigo-500/10"
+                  className="block w-full rounded-xl bg-muted p-3 text-left hover:bg-primary/10 dark:bg-muted dark:hover:bg-primary/100/10"
                 >
                   <div className="flex items-start gap-2">
-                    <span className={`mt-1.5 h-2 w-2 shrink-0 rounded-full ${note.seen ? "bg-slate-300" : "bg-indigo-500"}`} />
+                    <span className={`mt-1.5 h-2 w-2 shrink-0 rounded-full ${note.seen ? "bg-slate-300" : "bg-primary/100"}`} />
                     <div className="min-w-0">
-                      <p className={`text-xs ${note.seen ? "text-slate-600 dark:text-slate-300" : "font-semibold text-slate-900 dark:text-white"}`}>{note.message}</p>
-                      <p className="mt-1 text-[10px] text-slate-400">{new Date(note.created_at).toLocaleString()}</p>
+                      <p className={`text-xs ${note.seen ? "text-foreground dark:text-muted-foreground" : "font-semibold text-card-foreground dark:text-card-foreground"}`}>{note.message}</p>
+                      <p className="mt-1 text-[10px] text-muted-foreground">{new Date(note.created_at).toLocaleString()}</p>
                     </div>
                   </div>
                 </button>
-              )) : <p className="p-4 text-sm text-slate-400">No notifications found.</p>)}
+              )) : <p className="p-4 text-sm text-muted-foreground">No notifications found.</p>)}
 
             {selectedListView === "transactions" &&
               (transactions.length ? transactions.map((transaction, index) => (
-                <div key={transaction.id || index} className="flex items-center justify-between gap-3 rounded-xl bg-slate-50 p-3 dark:bg-slate-800/60">
+                <div key={transaction.id || index} className="flex items-center justify-between gap-3 rounded-xl bg-muted p-3 dark:bg-muted">
                   <div className="min-w-0">
-                    <p className="truncate text-xs font-semibold text-slate-800 dark:text-white">
+                    <p className="truncate text-xs font-semibold text-card-foreground dark:text-card-foreground">
                       TX: {transaction.txid || transaction.id}
                     </p>
-                    <p className="truncate text-[10px] text-slate-400">
+                    <p className="truncate text-[10px] text-muted-foreground">
                       {transaction.user?.username || transaction.payer_email || "Unknown user"}
                     </p>
                   </div>
                   <div className="shrink-0 text-right">
-                    <p className="text-[10px] text-slate-400">{new Date(transaction.created_at).toLocaleString()}</p>
-                    <p className="text-xs font-bold text-emerald-600 dark:text-emerald-400">
+                    <p className="text-[10px] text-muted-foreground">{new Date(transaction.created_at).toLocaleString()}</p>
+                    <p className="text-xs font-bold text-[hsl(var(--chart-2))] dark:text-[hsl(var(--chart-2))]">
                       KES {Number(transaction.amount || 0).toLocaleString()}
                     </p>
                   </div>
                 </div>
-              )) : <p className="p-4 text-sm text-slate-400">No transactions found.</p>)}
+              )) : <p className="p-4 text-sm text-muted-foreground">No transactions found.</p>)}
           </div>
 
-          <div className="mt-3 grid grid-cols-2 gap-2 border-t border-slate-100 pt-3 dark:border-slate-800">
+          <div className="mt-3 grid grid-cols-2 gap-2 border-t border-border pt-3 dark:border-border">
             <div>
-              <p className="text-[10px] uppercase tracking-wider text-slate-400">Transactions</p>
-              <p className="text-sm font-bold text-slate-900 dark:text-white">{Number(transactionSummary.total_transactions || 0).toLocaleString()}</p>
+              <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Transactions</p>
+              <p className="text-sm font-bold text-card-foreground dark:text-card-foreground">{Number(transactionSummary.total_transactions || 0).toLocaleString()}</p>
             </div>
             <div className="text-right">
-              <p className="text-[10px] uppercase tracking-wider text-slate-400">Revenue</p>
-              <p className="text-sm font-bold text-slate-900 dark:text-white">KES {Number(transactionSummary.total_revenue || 0).toLocaleString()}</p>
+              <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Revenue</p>
+              <p className="text-sm font-bold text-card-foreground dark:text-card-foreground">KES {Number(transactionSummary.total_revenue || 0).toLocaleString()}</p>
             </div>
           </div>
         </div>
@@ -338,53 +351,53 @@ const Dashboard = () => {
       <div className="grid gap-5 lg:grid-cols-2">
         <Link
           to="/admin-dashboard/pie-chart"
-          className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm transition hover:shadow-md dark:border-slate-800 dark:bg-slate-900"
+          className="rounded-2xl border border-border bg-card p-4 shadow-sm transition hover:shadow-md dark:border-border dark:bg-card"
         >
           <div className="mb-2 flex items-center justify-between">
             <div>
-              <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">Marketplace mix</p>
-              <h2 className="text-lg font-bold text-slate-900 dark:text-white">Category distribution</h2>
+              <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Marketplace mix</p>
+              <h2 className="text-lg font-bold text-card-foreground dark:text-card-foreground">Category distribution</h2>
             </div>
-            <IonIcon icon={statsChartOutline} className="text-indigo-500" />
+            <IonIcon icon={statsChartOutline} className="text-primary" />
           </div>
           <div className="h-[320px]"><PieGraph isDashboard /></div>
         </Link>
 
         <Link
           to="/admin-dashboard/bar-chart"
-          className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm transition hover:shadow-md dark:border-slate-800 dark:bg-slate-900"
+          className="rounded-2xl border border-border bg-card p-4 shadow-sm transition hover:shadow-md dark:border-border dark:bg-card"
         >
           <div className="mb-2 flex items-center justify-between">
             <div>
-              <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">Performance</p>
-              <h2 className="text-lg font-bold text-slate-900 dark:text-white">Sales activity</h2>
+              <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Performance</p>
+              <h2 className="text-lg font-bold text-card-foreground dark:text-card-foreground">Sales activity</h2>
             </div>
-            <IonIcon icon={statsChartOutline} className="text-indigo-500" />
+            <IonIcon icon={statsChartOutline} className="text-primary" />
           </div>
           <div className="h-[320px]"><BarChart isDashboard /></div>
         </Link>
       </div>
 
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <button onClick={() => setOpenCareerPanel(true)} className="rounded-2xl border border-slate-200 bg-white p-4 text-left shadow-sm hover:border-indigo-300 dark:border-slate-800 dark:bg-slate-900">
-          <IonIcon icon={briefcaseOutline} className="text-xl text-indigo-600" />
-          <p className="mt-3 text-sm font-bold text-slate-900 dark:text-white">Careers</p>
-          <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">{jobsCount} unseen applications</p>
+        <button onClick={() => setOpenCareerPanel(true)} className="rounded-2xl border border-border bg-card p-4 text-left shadow-sm hover:border-primary dark:border-border dark:bg-card">
+          <IonIcon icon={briefcaseOutline} className="text-xl text-primary" />
+          <p className="mt-3 text-sm font-bold text-card-foreground dark:text-card-foreground">Careers</p>
+          <p className="mt-1 text-xs text-muted-foreground dark:text-muted-foreground">{jobsCount} unseen applications</p>
         </button>
-        <button onClick={() => setOpenSupportPanel(true)} className="rounded-2xl border border-slate-200 bg-white p-4 text-left shadow-sm hover:border-indigo-300 dark:border-slate-800 dark:bg-slate-900">
-          <IonIcon icon={helpCircleOutline} className="text-xl text-indigo-600" />
-          <p className="mt-3 text-sm font-bold text-slate-900 dark:text-white">Support</p>
-          <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">{supportCount} pending messages</p>
+        <button onClick={() => setOpenSupportPanel(true)} className="rounded-2xl border border-border bg-card p-4 text-left shadow-sm hover:border-primary dark:border-border dark:bg-card">
+          <IonIcon icon={helpCircleOutline} className="text-xl text-primary" />
+          <p className="mt-3 text-sm font-bold text-card-foreground dark:text-card-foreground">Support</p>
+          <p className="mt-1 text-xs text-muted-foreground dark:text-muted-foreground">{supportCount} pending messages</p>
         </button>
-        <button onClick={() => setOpenAboutPanel(true)} className="rounded-2xl border border-slate-200 bg-white p-4 text-left shadow-sm hover:border-indigo-300 dark:border-slate-800 dark:bg-slate-900">
-          <IonIcon icon={informationCircleOutline} className="text-xl text-indigo-600" />
-          <p className="mt-3 text-sm font-bold text-slate-900 dark:text-white">About Maa Mara</p>
-          <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">Update public company information</p>
+        <button onClick={() => setOpenAboutPanel(true)} className="rounded-2xl border border-border bg-card p-4 text-left shadow-sm hover:border-primary dark:border-border dark:bg-card">
+          <IonIcon icon={informationCircleOutline} className="text-xl text-primary" />
+          <p className="mt-3 text-sm font-bold text-card-foreground dark:text-card-foreground">About Maa Mara</p>
+          <p className="mt-1 text-xs text-muted-foreground dark:text-muted-foreground">Update public company information</p>
         </button>
-        <Link to="/admin-dashboard/vendor-payout/payment-trigger" className="rounded-2xl border border-slate-200 bg-white p-4 text-left shadow-sm hover:border-indigo-300 dark:border-slate-800 dark:bg-slate-900">
-          <IonIcon icon={downloadOutline} className="text-xl text-indigo-600" />
-          <p className="mt-3 text-sm font-bold text-slate-900 dark:text-white">Payouts</p>
-          <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">Generate vendor payments</p>
+        <Link to="/admin-dashboard/vendor-payout/payment-trigger" className="rounded-2xl border border-border bg-card p-4 text-left shadow-sm hover:border-primary dark:border-border dark:bg-card">
+          <IonIcon icon={downloadOutline} className="text-xl text-primary" />
+          <p className="mt-3 text-sm font-bold text-card-foreground dark:text-card-foreground">Payouts</p>
+          <p className="mt-1 text-xs text-muted-foreground dark:text-muted-foreground">Generate vendor payments</p>
         </Link>
       </div>
 
