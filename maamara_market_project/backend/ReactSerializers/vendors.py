@@ -651,12 +651,7 @@ def approve_vendor(request, vendor_request_id):
     if not item_list:
         return Response({'error': 'No item data provided or invalid format.'}, status=400)
 
-    # 🏪 Create Vendor
-    vendor = Vendor.objects.create(user=user, brand=brand_instance, **vendor_data)
-
-    created_items = []
-
-    # Resolve saved draft assets once, before creating final Item records.
+    # Resolve the source draft before creating any permanent vendor records.
     source_draft = None
     if draft_id:
         try:
@@ -670,6 +665,11 @@ def approve_vendor(request, vendor_request_id):
                 {"error": "The saved vendor draft is no longer available."},
                 status=400,
             )
+
+    # 🏪 Create Vendor
+    vendor = Vendor.objects.create(user=user, brand=brand_instance, **vendor_data)
+
+    created_items = []
 
     for item in item_list:
         try:
