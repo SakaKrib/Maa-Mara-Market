@@ -365,3 +365,48 @@ class Wishlist(models.Model):
     def __str__(self):
         return f"{self.user.username if self.user else self.visitor_id} - {self.item.name}"
 
+
+
+class CareerVacancy(models.Model):
+    EMPLOYMENT_TYPES = [
+        ("full_time", "Full Time"),
+        ("part_time", "Part Time"),
+        ("contract", "Contract"),
+        ("internship", "Internship"),
+        ("remote", "Remote"),
+    ]
+
+    title = models.CharField(max_length=255)
+    department = models.CharField(max_length=255)
+    location = models.CharField(max_length=255)
+    employment_type = models.CharField(max_length=20, choices=EMPLOYMENT_TYPES, default="full_time")
+    description = models.TextField()
+    requirements = models.TextField(blank=True)
+    responsibilities = models.TextField(blank=True)
+    salary = models.CharField(max_length=100, blank=True)
+    application_deadline = models.DateField(null=True, blank=True)
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(default=timezone.now)
+
+    class Meta:
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return self.title
+
+
+class JobApplication(models.Model):
+    vacancy = models.ForeignKey(CareerVacancy, on_delete=models.CASCADE, related_name="applications")
+    full_name = models.CharField(max_length=255)
+    email = models.EmailField()
+    phone = models.CharField(max_length=50)
+    cv = models.FileField(upload_to="job_applications/")
+    cover_letter = models.TextField(blank=True)
+    applied_at = models.DateTimeField(auto_now_add=True)
+    seen = models.BooleanField(default=False)
+
+    class Meta:
+        ordering = ["-applied_at"]
+
+    def __str__(self):
+        return f"{self.full_name} — {self.vacancy.title}"
