@@ -4,7 +4,8 @@ from django.db.models.signals import post_delete, post_save
 from django.dispatch import receiver
 from channels.layers import get_channel_layer
 
-from .models import Vendor, VendorRequest, VendorItemRequest, PriceChangeRequest, ReturnRequest, VendorPayout
+from .models import Vendor, VendorRequest, VendorItemRequest, ReturnRequest, VendorPayout
+from ReactSerializers.models import PriceChangeRequest
 
 
 def _broadcast(group, resource, action, object_id):
