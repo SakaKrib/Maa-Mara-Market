@@ -51,7 +51,7 @@ export default function PublicProfile() {
 
   if (loading) {
     return (
-      <div className="flex flex-col py-2 px-0 bg-white min-h-screen">
+      <div className="mm-page min-h-screen bg-[#faf8f4] text-[#29251f]">
       {/* --- Header --- */}
       <div className="logo flex items-center justify-between border-b border-gray-300 pb-4 mb-6 fixed w-full px-4 bg-white z-10">
         <a href="#" className="flex items-center space-x-2 text-2xl font-bold text-gray-800">
@@ -101,9 +101,9 @@ export default function PublicProfile() {
           go to shop
         </span>
       </div>
-    <div className="flex justify-center mt-20 px-4 h-max">
-      <Card className="w-full max-w-2xl border shadow-md rounded-2xl">
-        <CardHeader className="flex flex-col items-center text-center space-y-3">
+    <div className="flex justify-center px-4 pt-24 pb-8 sm:pt-28">
+      <Card className="mm-profile-card w-full max-w-3xl overflow-hidden rounded-3xl border-[#e5dfd4] bg-white shadow-[0_10px_35px_rgba(54,45,32,0.08)]">
+        <CardHeader className="flex flex-col items-center text-center space-y-3 border-b border-[#eee8de] bg-[#f6f2ea] px-6 py-8">
           <Avatar className="h-24 w-24">
             <AvatarImage
               src={profileDetails?.avatar || user?.profile_picture || "/default-avatar.png"}
@@ -122,10 +122,10 @@ export default function PublicProfile() {
           </div>
         </CardHeader>
 
-        <CardContent className="space-y-6">
+        <CardContent className="space-y-7 p-5 sm:p-7">
           {/* About */}
           <div>
-            <h3 className="font-medium text-lg mb-2 flex items-center gap-2">
+            <h3 className="mb-3 flex items-center gap-2 text-lg font-semibold text-[#29251f]">
               <Calendar className="h-4 w-4" /> About
             </h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm text-muted-foreground">
@@ -327,10 +327,10 @@ export default function PublicProfile() {
     </div>
     {/* show notifications here */}
     {/* --- Notifications & Activity Section --- */}
-    <div className="flex justify-center px-4 mt-8 mb-20">
+    <div className="flex justify-center px-4 pb-24 pt-2 sm:pb-20">
       <div className="w-full max-w-2xl space-y-8">
         {/* Notifications */}
-        <Card className="border rounded-2xl shadow-sm">
+        <Card className="overflow-hidden rounded-3xl border-[#e5dfd4] bg-white shadow-[0_8px_28px_rgba(54,45,32,0.06)]">
           <CardHeader>
             <h3 className="text-lg font-semibold flex items-center gap-2">
               <Bell className="h-4 w-4" />
