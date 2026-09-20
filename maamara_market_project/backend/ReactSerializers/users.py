@@ -21,14 +21,16 @@ from rest_framework.response import Response
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.decorators import permission_classes, api_view
 from rest_framework.authentication import SessionAuthentication
+from oder.views import IsAuthenticatedOrVisitor
 
 from rest_framework_simplejwt.tokens import AccessToken, RefreshToken
 from rest_framework_simplejwt.authentication import JWTAuthentication
 from rest_framework_simplejwt.serializers import TokenRefreshSerializer
 from rest_framework_simplejwt.exceptions import InvalidToken, TokenError
 
-from core.models import Profile
+from core.models import Profile, Wallet, Voucher, Referral
 from vendorDashboard.models import Vendor
+from oder.models import Customer, Order
 from core.mergeVisitortoUserData import merge_visitor_data_to_user
 from .registration import register, verify_otp_register_otp, resend_otp_register_otp
 
@@ -88,6 +90,148 @@ class ProfileView(APIView):
         profile.save()
 
         return self.get(request)
+
+@api_view(["GET"])
+@permission_classes([IsAuthenticatedOrVisitor])
+def user_account_view(request):
+    """
+    Return the account view for either an authenticated user or the current
+    visitor. Visitors are identified only by their server-issued visitorId.
+    """
+    visitor_id = request.COOKIES.get("visitorId")
+
+    if request.user.is_authenticated:
+        user = request.user
+        profile, _ = Profile.objects.get_or_create(user=user)
+        orders = Order.objects.filter(user=user).order_by("-created_at")
+        wallet = Wallet.objects.filter(user=user).first()
+        vouchers = Voucher.objects.filter(user=user, active=True, redeemed=False)
+        referral = Referral.objects.filter(referrer=user).first()
+        user_data = {
+            "id": user.id,
+            "username": user.username,
+            "first_name": user.first_name,
+            "last_name": user.last_name,
+            "email": user.email,
+        }
+        profile_data = {
+            "profile_picture": profile.profile_picture.url if profile.profile_picture else None,
+            "date_of_birth": profile.date_of_birth,
+            "location": profile.location,
+            "phone_number": profile.phone_number,
+            "address": profile.address,
+            "city": profile.city,
+            "country": profile.country,
+        }
+    else:
+        if not visitor_id:
+            return Response({
+                "success": True,
+                "authType": "anonymous",
+                "user": None,
+                "profile": None,
+                "orders": [],
+                "wallet": None,
+                "vouchers": [],
+                "referral": None,
+            })
+
+        customer = Customer.objects.filter(visitor_id=visitor_id).order_by("-updated_at").first()
+        orders = Order.objects.filter(visitor_id=visitor_id).order_by("-created_at")
+        user_data = None
+        profile_data = {
+            "profile_picture": None,
+            "date_of_birth": None,
+            "location": getattr(customer, "city", None) if customer else None,
+            "phone_number": getattr(customer, "phone_number", None) if customer else None,
+            "address": getattr(customer, "address", None) if customer else None,
+            "city": getattr(customer, "city", None) if customer else None,
+            "country": getattr(customer, "country", None) if customer else None,
+        }
+        if customer:
+            user_data = {
+                "id": None,
+                "username": None,
+                "first_name": customer.first_name or "",
+                "last_name": customer.last_name or "",
+                "email": customer.email or "",
+            }
+
+        wallet = None
+        vouchers = []
+        referral = None
+
+    return Response({
+        "success": True,
+        "authType": "user" if request.user.is_authenticated else "visitor",
+        "user": user_data,
+        "profile": profile_data,
+        "orders": [{
+            "id": order.id,
+            "paypal_order_id": order.paypal_order_id,
+            "status": order.status,
+            "ordered_date": order.ordered_date,
+            "created_at": order.created_at,
+            "final_total": order.final_total_of_cart(),
+            "items": [{
+                "id": item.id,
+                "quantity": item.quantity,
+                "item": {
+                    "id": item.item.id,
+                    "name": item.item.name,
+                },
+            } for item in order.items.all()],
+        } for order in orders],
+        "wallet": wallet and {
+            "balance": wallet.balance,
+            "earned_coins": wallet.earned_coins,
+            "redeem_limit": wallet.redeem_limit,
+            "min_redeemable": wallet.min_redeemable,
+        },
+        "vouchers": [{
+            "id": voucher.id,
+            "code": voucher.code,
+            "discount": voucher.discount,
+            "expiry_date": voucher.expiry_date,
+        } for voucher in vouchers],
+        "referral": referral and {
+            "referral_code": referral.referral_code,
+            "total_referrals": referral.total_referrals,
+        },
+    })
+
+
+@api_view(["POST"])
+@permission_classes([IsAuthenticatedOrVisitor])
+def update_account_view(request):
+    visitor_id = request.COOKIES.get("visitorId")
+
+    fields = ("first_name", "last_name", "phone_number", "address", "city", "country", "location")
+    if request.user.is_authenticated:
+        user = request.user
+        for field in ("first_name", "last_name"):
+            if field in request.data:
+                setattr(user, field, request.data[field])
+        user.save(update_fields=["first_name", "last_name"])
+        profile, _ = Profile.objects.get_or_create(user=user)
+        for field in fields[2:]:
+            if field in request.data:
+                setattr(profile, field, request.data[field])
+        profile.save()
+        return user_account_view(request)
+
+    if not visitor_id:
+        return Response({"success": False, "message": "Visitor session not found."}, status=400)
+
+    customer, _ = Customer.objects.get_or_create(visitor_id=visitor_id)
+    for field in fields:
+        if field in request.data:
+            setattr(customer, field, request.data[field])
+    if "first_name" in request.data or "last_name" in request.data:
+        customer.full_name = f"{customer.first_name or ''} {customer.last_name or ''}".strip()
+    customer.save()
+    return user_account_view(request)
+
 
 class HybridCheckAuthView(APIView):
     """
