@@ -666,6 +666,30 @@ def approve_vendor(request, vendor_request_id):
                 status=400,
             )
 
+    # Validate and resolve every persisted draft image before creating
+    # the vendor or any final item records.
+    resolved_draft_images = {}
+    for item in item_list:
+        image_asset_id = item.get("image_asset_id")
+        if not image_asset_id:
+            continue
+        if not source_draft:
+            return Response(
+                {"error": "A saved item image requires a valid vendor draft."},
+                status=400,
+            )
+        try:
+            draft_image = VendorDraftImage.objects.get(
+                id=image_asset_id,
+                draft=source_draft,
+            )
+        except VendorDraftImage.DoesNotExist:
+            return Response(
+                {"error": "A saved item image could not be resolved."},
+                status=400,
+            )
+        resolved_draft_images[image_asset_id] = draft_image.image.name
+
     # 🏪 Create Vendor
     vendor = Vendor.objects.create(user=user, brand=brand_instance, **vendor_data)
 
@@ -680,18 +704,8 @@ def approve_vendor(request, vendor_request_id):
             # a replacement already has a new asset/path from submission.
             image_asset_id = item.get("image_asset_id")
             raw_path = item.get("image")
-            if image_asset_id and source_draft:
-                try:
-                    draft_image = VendorDraftImage.objects.get(
-                        id=image_asset_id,
-                        draft=source_draft,
-                    )
-                except VendorDraftImage.DoesNotExist:
-                    return Response(
-                        {"error": "A saved item image could not be resolved."},
-                        status=400,
-                    )
-                raw_path = draft_image.image.name
+            if image_asset_id:
+                raw_path = resolved_draft_images[image_asset_id]
 
             # SECTION / DEPARTMENT / CATEGORY
             section_name = sanitize(item.get('section')) if item.get('section') else None
