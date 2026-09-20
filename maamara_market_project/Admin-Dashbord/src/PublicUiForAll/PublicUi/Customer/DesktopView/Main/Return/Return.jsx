@@ -1,259 +1,387 @@
-import React, { useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import api from "../../../../../../Services/Api";
-import {
-  Card,
-  CardHeader,
-  CardTitle,
-  CardContent,
-} from "../../../../../../../components/ui/card";
 import { Button } from "../../../../../../../components/ui/button";
-import { Input } from "../../../../../../../components/ui/input";
-import {
-  Select,
-  SelectTrigger,
-  SelectValue,
-  SelectContent,
-  SelectItem,
-} from "../../../../../../../components/ui/select";
-import { Textarea } from "../../../../../../../components/ui/textarea";
-import { Label } from "../../../../../../../components/ui/label";
+import { Loader2, PackageCheck, UploadCloud, Undo2 } from "lucide-react";
 import Snackbar from "@mui/material/Snackbar";
 import MuiAlert from "@mui/material/Alert";
 import { Link } from "react-router-dom";
 
-const RequestReturnForm = ({ selectedItem }) => {
+const reasonOptions = [
+  { value: "damaged", label: "The item was delivered broken." },
+  { value: "not_exact", label: "Not the exact item I expected." },
+  { value: "missing", label: "The item is missing." },
+  { value: "rejected", label: "I've changed my mind — I don't want it anymore." },
+  { value: "get_something_else", label: "I want to get something else instead." },
+  { value: "broken", label: "I broke the item unknowingly. Can it be fixed?" },
+  { value: "dont_want_to_explain", label: "I don't want to explain." },
+  { value: "custom", label: "Other (write your own reason)" },
+];
+
+const RequestReturnForm = ({ selectedItem = null }) => {
+  const [orders, setOrders] = useState([]);
+  const [orderId, setOrderId] = useState(selectedItem?.order?.id ? String(selectedItem.order.id) : "");
+  const [itemId, setItemId] = useState(selectedItem?.id ? String(selectedItem.id) : "");
   const [reason, setReason] = useState("");
   const [customReason, setCustomReason] = useState("");
   const [preference, setPreference] = useState("refund");
   const [description, setDescription] = useState("");
   const [image, setImage] = useState(null);
+  const [loadingOrders, setLoadingOrders] = useState(true);
   const [loading, setLoading] = useState(false);
-  const [message, setMessage] = useState("");
-  const [error, setError] = useState("");
+  const [snackbar, setSnackbar] = useState({ open: false, message: "", severity: "success" });
 
+  useEffect(() => {
+    let active = true;
+    api.get("/api/user/account/", { withCredentials: true })
+      .then(({ data }) => {
+        if (!active) return;
+        const completed = (data?.orders || []).filter(
+          (order) => String(order.status || "").toLowerCase() === "completed"
+        );
+        setOrders(completed);
+      })
+      .catch((error) => {
+        console.error("Unable to load completed orders:", error);
+        if (active) {
+          setSnackbar({
+            open: true,
+            severity: "error",
+            message: "We could not load your completed orders.",
+          });
+        }
+      })
+      .finally(() => {
+        if (active) setLoadingOrders(false);
+      });
+    return () => { active = false; };
+  }, []);
 
-  // Snackbar state
-  const [snackbarOpen, setSnackbarOpen] = useState(false);
-  const [snackbarSeverity, setSnackbarSeverity] = useState("success");
+  const selectedOrder = useMemo(
+    () => orders.find((order) => String(order.id) === String(orderId)),
+    [orders, orderId]
+  );
 
-  const token = localStorage.getItem("accessToken");
+  const selectedOrderItem = useMemo(
+    () =>
+      selectedOrder?.items?.find((orderItem) => String(orderItem.id) === String(itemId)) ||
+      (selectedItem?.id && String(selectedItem.id) === String(itemId) ? selectedItem : null),
+    [selectedOrder, itemId, selectedItem]
+  );
 
-  const reasonOptions = [
-    { value: "damaged", label: "The item was delivered broken." },
-    { value: "not exact", label: "Not the exact item I expected." },
-    { value: "missing", label: "The item is missing." },
-    { value: "rejected", label: "I've changed my mind — I don’t want it anymore." },
-    { value: "get something else", label: "I want to get something else instead." },
-    { value: "broken", label: "I broke the item unknowingly. Can it be fixed?" },
-    { value: "dont want to explain", label: "I don’t want to explain!" },
-    { value: "custom", label: "Other (write your own reason)" },
-  ];
+  const availableItems = selectedOrder?.items || [];
 
-  console.log(selectedItem)
+  const showMessage = (message, severity = "error") =>
+    setSnackbar({ open: true, message, severity });
 
-  const preferenceOptions = [
-    { value: "refund", label: "Refund" },
-    { value: "exchange", label: "Exchange" },
-  ];
-
-  const handleCloseSnackbar = (_, reason) => {
-    if (reason === "clickaway") return;
-    setSnackbarOpen(false);
+  const resetForm = () => {
+    setReason("");
+    setCustomReason("");
+    setPreference("refund");
+    setDescription("");
+    setImage(null);
+    const fileInput = document.getElementById("return-image");
+    if (fileInput) fileInput.value = "";
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (!selectedItem?.id) {
-      setError("Invalid item selected for return.");
-      setSnackbarSeverity("error");
-      setSnackbarOpen(true);
+  const handleOrderChange = (value) => {
+    setOrderId(value);
+    setItemId("");
+    setReason("");
+    setCustomReason("");
+  };
+
+  const handleSubmit = async (event) => {
+    event.preventDefault();
+
+    if (!selectedOrder) {
+      showMessage("Please select a completed order before requesting a return.");
+      return;
+    }
+
+    if (!selectedOrderItem?.id) {
+      showMessage("Please select the item you want to return.");
+      return;
+    }
+
+    if (String(selectedOrder.status).toLowerCase() !== "completed") {
+      showMessage("Only completed orders are eligible for returns.");
+      return;
+    }
+
+    const finalReason = reason === "custom" ? customReason.trim() : reason;
+    if (!finalReason) {
+      showMessage("Please select or provide a reason for the return.", "warning");
       return;
     }
 
     setLoading(true);
-    setError("");
-    setMessage("");
-
-   
-
-    const finalReason = reason === "custom" ? customReason : reason;
-    if (!finalReason) {
-      setError("Please select or write a reason for return.");
-      setSnackbarSeverity("warning");
-      setSnackbarOpen(true);
-      setLoading(false);
-      return;
-    }
-
-    const formData = new FormData();
-    formData.append("reason", finalReason);
-    formData.append("customer_preference", preference);
-    formData.append("description", description);
-    formData.append("item_id", selectedItem.id); // ✅ Include selected item ID
-    if (image) formData.append("image", image);
-
     try {
-      const res = await api.post(`/api/returns-request/${selectedItem.id}/`, formData, {
-        headers: {
-          "Content-Type": "multipart/form-data",
-        },
-        withCredentials: true
-      });
+      const formData = new FormData();
+      formData.append("reason", reason);
+      formData.append("custom_reason", reason === "custom" ? finalReason : "");
+      formData.append("customer_preference", preference);
+      formData.append("description", description.trim());
+      formData.append("item_id", String(selectedOrderItem.id));
+      if (image) formData.append("image", image);
 
-      if (res.data.success) {
-        setMessage("✅ Return request submitted successfully.");
-        setSnackbarSeverity("success");
-        setSnackbarOpen(true);
-        setReason("");
-        setCustomReason("");
-        setDescription("");
-        setImage(null);
+      const response = await api.post(
+        `/api/returns-request/${selectedOrderItem.id}/`,
+        formData,
+        { headers: { "Content-Type": "multipart/form-data" }, withCredentials: true }
+      );
+
+      if (response.data?.success) {
+        showMessage(
+          response.data.message || "Your return request has been submitted.",
+          "success"
+        );
+        resetForm();
       } else {
-        const errMsg = res.data.errors
-          ? JSON.stringify(res.data.errors)
-          : "Failed to submit return request.";
-        setError(errMsg);
-        setSnackbarSeverity("error");
-        setSnackbarOpen(true);
+        showMessage(response.data?.error || "The return request could not be submitted.");
       }
-    } catch (err) {
-      console.error("Return request error:", err);
-      setError(err.response?.data?.error || "An unexpected error occurred.");
-      setSnackbarSeverity("error");
-      setSnackbarOpen(true);
+    } catch (error) {
+      console.error("Return request error:", error);
+      const message =
+        error.response?.data?.error ||
+        error.response?.data?.errors?.item?.[0] ||
+        "The return request could not be submitted. Please try again.";
+      showMessage(message);
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <>
-    <div>
-      <h5 className="text-lg border-b p-2">Return policy</h5>
-      <p className="text-gray-600 mt-4 text-sm">
-  <strong className='text-gray-500'>We take great pride</strong> in our handmade creations — each piece is uniquely crafted, meaning slight variations in size, color, or shape are part of their natural charm. We want you to love your purchase, but if you’re not completely satisfied, we accept returns and exchanges within <strong className='text-gray-500'>2 weeks</strong> of purchase. To be eligible, the item must be in the <strong className='text-gray-500'>same quality and condition</strong> as when it was received — unused, unwashed, and in its original packaging. Because our products are handmade, these small differences are what make them special and are not considered defects. Please note that <strong className='text-gray-500'>shipping costs for returns are the customer’s responsibility</strong> and will be <strong className='text-gray-500'>deducted from your refund</strong>. We only process refunds or exchanges <strong className='text-gray-500'>after confirming that the item has been returned</strong> to the shipping company or our dispatch center. <strong className='text-gray-500'>Our goal is to make every experience delightful</strong>, so if you have any questions or concerns, our friendly team is always happy to help. <br /> <Link className="hover:underline cursor-pointer hover:text-blue-500 text-blue-700" to='return-policy'> Return Policy</Link> to find out more.
-</p>
+    <main className="mm-return-page">
+      <div className="mm-return-shell">
+        <section className="mm-return-intro">
+          <p className="mm-return-eyebrow">Returns & exchanges</p>
+          <h1 className="mm-return-title">Return Policy</h1>
+          <p className="mm-return-lead">
+            We take great pride in our handmade creations. If you are not completely
+            satisfied, eligible returns and exchanges can be requested within <strong>2 weeks</strong> of purchase.
+          </p>
 
-    </div>
-      <Card className="max-w-md mx-auto shadow-md border rounded-xl">
-        <CardHeader>
-          <CardTitle className="text-lg font-semibold text-gray-800">
-            Request a Return
-          </CardTitle>
-          {selectedItem && (
-            <div className="text-sm text-gray-600 mt-1">
+          <div className="mm-return-policy-grid">
+            <div>
+              <h2>Eligibility</h2>
               <p>
-                <strong>Item:</strong> {selectedItem.item.name || selectedItem.title || "Unnamed item"}
+                The item must be in the same quality and condition as when it was received:
+                unused, unwashed, and in its original packaging.
               </p>
-             {selectedItem.item.discount_price ? (
-                <p>
-                <strong>Price:</strong> ${selectedItem.item.final_discounted_price}
+            </div>
+            <div>
+              <h2>Important</h2>
+              <p>
+                Shipping costs for returns are the customer's responsibility and will be
+                deducted from the refund. Refunds or exchanges are processed after the
+                returned item has been confirmed.
               </p>
-             ) : (
-                <p>
-                  <strong>Price:</strong> ${selectedItem.item.get_final_price}
-                </p>
-             )}
-                
-            
             </div>
-          )}
-        </CardHeader>
+          </div>
 
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            {/* Reason */}
-            <div className="space-y-1">
-              <Label>Reason</Label>
-              <Select onValueChange={setReason} value={reason}>
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Select a reason" />
-                </SelectTrigger>
-                <SelectContent>
-                  {reasonOptions.map((opt) => (
-                    <SelectItem key={opt.value} value={opt.value}>
-                      {opt.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+          <p className="mm-return-note">
+            Handmade items can have small variations in size, colour, or shape. These
+            natural differences are part of their character and are not considered defects.
+          </p>
+        </section>
+
+        <section className="mm-return-card">
+          <div className="mm-return-card-header">
+            <div>
+              <p className="mm-return-eyebrow">Request a return</p>
+              <h2>Select your purchase</h2>
+              <p>Returns can only be submitted for a completed, paid order.</p>
             </div>
+            <PackageCheck aria-hidden="true" />
+          </div>
 
-            {reason === "custom" && (
-              <div className="space-y-1">
-                <Label>Describe your reason</Label>
-                <Input
-                  type="text"
-                  value={customReason}
-                  onChange={(e) => setCustomReason(e.target.value)}
-                  placeholder="Write your reason here..."
+          {loadingOrders ? (
+            <div className="mm-return-state">
+              <Loader2 className="animate-spin" />
+              <span>Loading your completed orders…</span>
+            </div>
+          ) : orders.length === 0 ? (
+            <div className="mm-return-empty">
+              <PackageCheck aria-hidden="true" />
+              <h3>No completed orders available</h3>
+              <p>
+                You need a completed order before you can request a refund or exchange.
+                Your eligible purchases will appear here after checkout is completed.
+              </p>
+              <Link to="/customer-order" className="mm-return-secondary-button">
+                View Order History
+              </Link>
+            </div>
+          ) : (
+            <form onSubmit={handleSubmit} className="mm-return-form">
+              <div className="mm-return-field">
+                <label htmlFor="return-order">Completed order</label>
+                <select
+                  id="return-order"
+                  className="mm-return-input"
+                  value={orderId}
+                  onChange={(event) => handleOrderChange(event.target.value)}
                   required
+                >
+                  <option value="">Select a completed order</option>
+                  {orders.map((order) => (
+                    <option key={order.id} value={order.id}>
+                      Order #{order.paypal_order_id || order.id}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="mm-return-field">
+                <label htmlFor="return-item">Item to return</label>
+                <select
+                  id="return-item"
+                  className="mm-return-input"
+                  value={itemId}
+                  onChange={(event) => setItemId(event.target.value)}
+                  disabled={!selectedOrder}
+                  required
+                >
+                  <option value="">
+                    {selectedOrder ? "Select an item from this order" : "Select an order first"}
+                  </option>
+                  {availableItems.map((orderItem) => (
+                    <option key={orderItem.id} value={orderItem.id}>
+                      {orderItem.item?.name || `Item #${orderItem.id}`} · Qty {orderItem.quantity}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {selectedOrderItem && (
+                <div className="mm-return-selected">
+                  <div>
+                    <span>Selected item</span>
+                    <strong>{selectedOrderItem.item?.name || "Unnamed item"}</strong>
+                  </div>
+                  <div>
+                    <span>Quantity</span>
+                    <strong>{selectedOrderItem.quantity}</strong>
+                  </div>
+                </div>
+              )}
+
+              <div className="mm-return-field">
+                <label htmlFor="return-reason">Reason for return</label>
+                <select
+                  id="return-reason"
+                  className="mm-return-input"
+                  value={reason}
+                  onChange={(event) => setReason(event.target.value)}
+                  disabled={!selectedOrderItem}
+                  required
+                >
+                  <option value="">Select a reason</option>
+                  {reasonOptions.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {reason === "custom" && (
+                <div className="mm-return-field">
+                  <label htmlFor="custom-reason">Your reason</label>
+                  <input
+                    id="custom-reason"
+                    className="mm-return-input"
+                    value={customReason}
+                    onChange={(event) => setCustomReason(event.target.value)}
+                    placeholder="Tell us why you are returning the item"
+                    required
+                  />
+                </div>
+              )}
+
+              <div className="mm-return-field">
+                <label htmlFor="return-preference">What would you like?</label>
+                <select
+                  id="return-preference"
+                  className="mm-return-input"
+                  value={preference}
+                  onChange={(event) => setPreference(event.target.value)}
+                  disabled={!selectedOrderItem}
+                >
+                  <option value="refund">Refund</option>
+                  <option value="exchange">Exchange</option>
+                </select>
+              </div>
+
+              <div className="mm-return-field">
+                <label htmlFor="return-details">Additional details <span>(optional)</span></label>
+                <textarea
+                  id="return-details"
+                  className="mm-return-input mm-return-textarea"
+                  value={description}
+                  onChange={(event) => setDescription(event.target.value)}
+                  placeholder="Add any details that will help us understand the issue."
+                  rows={5}
+                  disabled={!selectedOrderItem}
                 />
               </div>
-            )}
 
-            {/* Preference */}
-            <div className="space-y-1">
-              <Label>What would you like to do?</Label>
-              <Select onValueChange={setPreference} value={preference}>
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Select a preference" />
-                </SelectTrigger>
-                <SelectContent>
-                  {preferenceOptions.map((opt) => (
-                    <SelectItem key={opt.value} value={opt.value}>
-                      {opt.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+              <div className="mm-return-field">
+                <label htmlFor="return-image">Photo <span>(optional)</span></label>
+                <label htmlFor="return-image" className="mm-return-upload">
+                  <UploadCloud aria-hidden="true" />
+                  <span>{image ? image.name : "Upload a photo of the item"}</span>
+                </label>
+                <input
+                  id="return-image"
+                  type="file"
+                  accept="image/*"
+                  className="mm-return-file"
+                  onChange={(event) => setImage(event.target.files?.[0] || null)}
+                  disabled={!selectedOrderItem}
+                />
+                <small>Optional. A clear photo can help us review damaged or incorrect items.</small>
+              </div>
 
-            {/* Description */}
-            <div className="space-y-1">
-              <Label>Additional details</Label>
-              <Textarea
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                placeholder="Add any other information here..."
-              />
-            </div>
+              <Button
+                type="submit"
+                className="mm-return-submit"
+                disabled={loading || !selectedOrderItem}
+              >
+                {loading ? (
+                  <>
+                    <Loader2 className="animate-spin" />
+                    Submitting…
+                  </>
+                ) : (
+                  <>
+                    <Undo2 />
+                    Submit Return Request
+                  </>
+                )}
+              </Button>
+            </form>
+          )}
+        </section>
+      </div>
 
-            {/* Image Upload */}
-            <div className="space-y-1">
-              <Label>Upload an image (optional)</Label>
-              <Input
-                type="file"
-                accept="image/*"
-                onChange={(e) => setImage(e.target.files[0])}
-              />
-            </div>
-
-            <Button type="submit" className="w-full" disabled={loading}>
-              {loading ? "Submitting..." : "Submit Return Request"}
-            </Button>
-          </form>
-        </CardContent>
-      </Card>
-
-      {/* Snackbar */}
       <Snackbar
-        open={snackbarOpen}
-        autoHideDuration={4000}
-        onClose={handleCloseSnackbar}
+        open={snackbar.open}
+        autoHideDuration={4500}
+        onClose={() => setSnackbar((previous) => ({ ...previous, open: false }))}
         anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
       >
         <MuiAlert
-          onClose={handleCloseSnackbar}
-          severity={snackbarSeverity}
+          severity={snackbar.severity}
           elevation={6}
           variant="filled"
-          sx={{ width: "100%" }}
+          onClose={() => setSnackbar((previous) => ({ ...previous, open: false }))}
         >
-          {error || message}
+          {snackbar.message}
         </MuiAlert>
       </Snackbar>
-    </>
+    </main>
   );
 };
 
