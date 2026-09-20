@@ -11,14 +11,18 @@ def _broadcast_vendor_change(action, vendor_id):
     if not channel_layer:
         return
 
-    async_to_sync(channel_layer.group_send)(
-        "admin_vendors",
-        {
-            "type": "vendor_changed",
-            "action": action,
-            "vendor_id": vendor_id,
-        },
-    )
+    try:
+        async_to_sync(channel_layer.group_send)(
+            "admin_vendors",
+            {
+                "type": "vendor_changed",
+                "action": action,
+                "vendor_id": vendor_id,
+            },
+        )
+    except Exception:
+        # Real-time delivery must never make vendor persistence fail.
+        return
 
 
 @receiver(post_save, sender=Vendor)
