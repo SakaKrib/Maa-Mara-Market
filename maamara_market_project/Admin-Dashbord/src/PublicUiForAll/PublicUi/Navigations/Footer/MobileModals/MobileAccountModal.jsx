@@ -50,7 +50,6 @@ const MobileAccountModal = ({ open, onClose, user }) => {
           ) : (
             <>
               <button type="button" onClick={() => go("/customer-login")}>Sign in <ExternalLink size={14} /></button>
-              <button type="button" onClick={() => go("/register")}>Sign up <ExternalLink size={14} /></button>
             </>
           )}
         </div>
