@@ -335,14 +335,22 @@ const Dashboard = () => {
               )) : <p className="p-4 text-sm text-muted-foreground">No transactions found.</p>)}
           </div>
 
-          <div className="mt-3 grid grid-cols-2 gap-2 border-t border-border pt-3 dark:border-border">
-            <div>
-              <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Transactions</p>
-              <p className="text-sm font-bold text-card-foreground dark:text-card-foreground">{Number(transactionSummary.total_transactions || 0).toLocaleString()}</p>
-            </div>
-            <div className="text-right">
-              <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Revenue</p>
-              <p className="text-sm font-bold text-card-foreground dark:text-card-foreground">KES {Number(transactionSummary.total_revenue || 0).toLocaleString()}</p>
+          <div className="mt-3 border-t border-border pt-3 dark:border-border">
+            <div className="rounded-xl bg-muted px-3 py-2.5">
+              <p className="text-[10px] uppercase tracking-wider text-muted-foreground">
+                {selectedListView === "activities"
+                  ? "Activity"
+                  : selectedListView === "notifications"
+                    ? "Notifications"
+                    : "Transactions"}
+              </p>
+              <p className="text-sm font-bold text-card-foreground dark:text-card-foreground">
+                {selectedListView === "activities"
+                  ? activityLogs.length
+                  : selectedListView === "notifications"
+                    ? unreadNotifications
+                    : transactions.length}
+              </p>
             </div>
           </div>
         </div>
