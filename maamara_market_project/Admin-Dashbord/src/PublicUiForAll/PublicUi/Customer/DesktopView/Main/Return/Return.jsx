@@ -4,7 +4,7 @@ import { Button } from "../../../../../../../components/ui/button";
 import { Loader2, PackageCheck, UploadCloud, Undo2 } from "lucide-react";
 import Snackbar from "@mui/material/Snackbar";
 import MuiAlert from "@mui/material/Alert";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 
 const reasonOptions = [
   { value: "damaged", label: "The item was delivered broken." },
@@ -18,9 +18,12 @@ const reasonOptions = [
 ];
 
 const RequestReturnForm = ({ selectedItem = null }) => {
+  const location = useLocation();
+  const routeSelectedItem = location.state?.selectedItem || null;
+  const initialSelectedItem = selectedItem || routeSelectedItem;
   const [orders, setOrders] = useState([]);
-  const [orderId, setOrderId] = useState(selectedItem?.order?.id ? String(selectedItem.order.id) : "");
-  const [itemId, setItemId] = useState(selectedItem?.id ? String(selectedItem.id) : "");
+  const [orderId, setOrderId] = useState(initialSelectedItem?.order?.id ? String(initialSelectedItem.order.id) : "");
+  const [itemId, setItemId] = useState(initialSelectedItem?.id ? String(initialSelectedItem.id) : "");
   const [reason, setReason] = useState("");
   const [customReason, setCustomReason] = useState("");
   const [preference, setPreference] = useState("refund");
@@ -64,7 +67,7 @@ const RequestReturnForm = ({ selectedItem = null }) => {
   const selectedOrderItem = useMemo(
     () =>
       selectedOrder?.items?.find((orderItem) => String(orderItem.id) === String(itemId)) ||
-      (selectedItem?.id && String(selectedItem.id) === String(itemId) ? selectedItem : null),
+      (selectedItem?.id && String(initialSelectedItem.id) === String(itemId) ? initialSelectedItem : null),
     [selectedOrder, itemId, selectedItem]
   );
 
