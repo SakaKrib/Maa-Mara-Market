@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
   Box,
   Button,
@@ -11,7 +11,7 @@ import {
   useTheme,
 } from "@mui/material";
 import { tokens } from "../../../../theme";
-import api from "../../../../Services/Api";
+import api, { getWebSocketUrl } from "../../../../Services/Api";
 import { useNavigate } from "react-router-dom";
 
 import CreateItemModal from "../../../../cmponents/AdminPages/Notifications/ApproveCreatedItem";
@@ -37,7 +37,7 @@ const VendorItemCreateRequests = ({ onCountChange }) => {
   // ======================
   // FETCH REQUESTS
   // ======================
-  const fetchRequests = async (silent = false) => {
+  const fetchRequests = useCallback(async (silent = false) => {
     if (!silent) setLoading(true);
 
     try {
