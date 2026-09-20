@@ -815,6 +815,49 @@ def vendor_transactions(request):
 
 
 
+@api_view(["POST"])
+@permission_classes([IsAdminUser])
+def create_admin_transaction(request):
+    category = str(request.data.get("category", "")).strip().lower()
+    payment_method = str(request.data.get("payment_method", "")).strip().lower()
+    amount_raw = request.data.get("amount")
+
+    allowed_categories = {choice[0] for choice in Transaction.CATEGORY_CHOICES}
+    if category not in allowed_categories:
+        return Response({"error": "Invalid payment category."}, status=400)
+
+    if payment_method not in {"mpesa", "paypal"}:
+        return Response({"error": "Invalid payment method."}, status=400)
+
+    try:
+        amount = Decimal(str(amount_raw))
+    except (InvalidOperation, TypeError, ValueError):
+        return Response({"error": "Amount must be a valid number."}, status=400)
+
+    if amount <= 0:
+        return Response({"error": "Amount must be greater than zero."}, status=400)
+
+    transaction_type = "PayPal" if payment_method == "paypal" else "B2C"
+
+    ledger_entry = Transaction.objects.create(
+        transaction_type=transaction_type,
+        payment_method=payment_method,
+        category=category,
+        amount=amount,
+        status="completed",
+        raw_data={
+            "source": "admin_accounts",
+            "created_by": request.user.pk,
+        },
+    )
+
+    return Response({
+        "success": True,
+        "message": "Payment added successfully.",
+        "id": ledger_entry.pk,
+    }, status=201)
+
+
 # get sale method
 @api_view(["GET"])
 @permission_classes([IsAdminUser])
