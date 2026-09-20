@@ -7,3 +7,7 @@ class OrderConfig(AppConfig):
     # Keep the historical Django app label so existing migration history
     # and database tables remain compatible during the package rename.
     label = "oder"
+
+
+    def ready(self):
+        from . import realtime_signals  # noqa: F401
