@@ -837,7 +837,7 @@ def create_admin_transaction(request):
     if amount <= 0:
         return Response({"error": "Amount must be greater than zero."}, status=400)
 
-    transaction_type = "PayPal" if payment_method == "paypal" else "B2C"
+    # Manual admin entries are ledger expenses, regardless of payment provider.\n    transaction_type = "B2C"
 
     ledger_entry = Transaction.objects.create(
         transaction_type=transaction_type,
