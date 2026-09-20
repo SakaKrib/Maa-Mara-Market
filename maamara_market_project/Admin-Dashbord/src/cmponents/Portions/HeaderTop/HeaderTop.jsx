@@ -8,6 +8,7 @@ import api from "../../../Services/Api";
 import { ColourModeContext } from "../../../theme";
 import LogoutButton from "../../Auth/AdminLogin/Logout";
 import SearchBarForVendorAdmin from "../../SearchPage/GlobalSearchPage";
+import Maamara from "../../../assets/Logo/Maamara.jpg";
 
 const HeaderTop = ({ onMenuToggle }) => {
   const colorMode = useContext(ColourModeContext);
