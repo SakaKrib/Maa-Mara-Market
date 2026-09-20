@@ -41,10 +41,10 @@ const CustomerOrdersDashboard = ({ wallet, vouchers = [], orders = [] }) => {
   );
 
   return (
-    <section className="mm-page min-h-screen bg-white text-[#29251f]">
+    <section className="mm-page min-h-screen text-[#29251f]">
       <div className="mm-container px-4 py-8 sm:px-6 sm:py-10">
         <div className="space-y-6">
-          <Card className="overflow-hidden rounded-3xl border border-[#e5dfd4] bg-white text-[#29251f] shadow-sm">
+          <Card className="overflow-hidden rounded-3xl border border-[#e5dfd4] text-[#29251f] shadow-sm">
             <CardContent className="p-6 sm:p-7">
               <div className="mb-2 flex items-center gap-3">
                 <Wallet className="h-6 w-6 shrink-0" aria-hidden="true" />

@@ -3221,7 +3221,7 @@ RESPONSIVE MENU -OFF CANVAS
 
 .mm-page{
   width:100%;
-  background:var(--mm-page-bg);
+  background: transparent;
   color:var(--mm-text);
 }
 .mm-container{
