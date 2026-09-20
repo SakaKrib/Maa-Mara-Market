@@ -29,17 +29,17 @@ const StatCard = ({ icon, label, value, detail, to, onClick }) => {
   const card = (
     <div
       onClick={onClick}
-      className="group flex min-h-32 cursor-pointer items-start justify-between rounded-2xl border border-border bg-card p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md dark:border-border dark:bg-card"
+      className="group flex min-h-[148px] w-full cursor-pointer flex-col items-center justify-center rounded-2xl border border-border bg-card p-4 text-center shadow-sm transition hover:-translate-y-0.5 hover:shadow-md sm:min-h-36 sm:p-5"
     >
-      <div className="min-w-0">
-        <div className="mb-4 grid h-10 w-10 place-items-center rounded-xl bg-primary/10 text-primary dark:bg-primary/100/15 dark:text-primary">
+      <div className="flex min-w-0 w-full flex-col items-center">
+        <div className="mb-3 grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary">
           <IonIcon icon={icon} className="text-xl" />
         </div>
-        <p className="truncate text-xs font-semibold uppercase tracking-wider text-muted-foreground">{label}</p>
-        <p className="mt-1 text-2xl font-bold tracking-tight text-card-foreground dark:text-card-foreground">{value}</p>
-        <p className="mt-1 text-xs text-muted-foreground dark:text-muted-foreground">{detail}</p>
+        <p className="w-full truncate text-xs font-semibold uppercase tracking-wider text-muted-foreground">{label}</p>
+        <p className="mt-1 text-2xl font-bold tracking-tight text-card-foreground">{value}</p>
+        <p className="mt-1 line-clamp-2 w-full text-xs text-muted-foreground">{detail}</p>
       </div>
-      <span className="mt-1 h-2 w-2 rounded-full bg-[hsl(var(--chart-2))] opacity-70 transition group-hover:scale-125" />
+      
     </div>
   );
 
@@ -208,7 +208,7 @@ const Dashboard = () => {
           </button>
           <Link
             to="/admin-dashboard/sales-Analytics"
-            className="inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-xs font-semibold text-card-foreground hover:bg-primary/90"
+            className="inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-xs font-semibold text-primary-foreground hover:bg-primary/90"
           >
             <IonIcon icon={statsChartOutline} />
             Analytics
@@ -246,10 +246,10 @@ const Dashboard = () => {
         />
       </div>
 
-      <div className="grid gap-5 xl:grid-cols-[minmax(0,1.7fr)_minmax(320px,0.8fr)]">
+      <div className="grid min-w-0 gap-5 xl:grid-cols-[minmax(0,1.7fr)_minmax(320px,0.8fr)]">
         <Link
           to="/admin-dashboard/sales-Analytics"
-          className="overflow-hidden rounded-2xl border border-border bg-card shadow-sm transition hover:shadow-md dark:border-border dark:bg-card"
+          className="min-w-0 overflow-hidden rounded-2xl border border-border bg-card shadow-sm transition hover:shadow-md"
         >
           <div className="flex flex-col gap-3 border-b border-border p-5 sm:flex-row sm:items-center sm:justify-between dark:border-border">
             <div>
@@ -263,13 +263,13 @@ const Dashboard = () => {
               <span className="text-xs text-muted-foreground">View full analytics →</span>
             </div>
           </div>
-          <div className="h-[320px] p-3 sm:h-[360px] sm:p-5">
+          <div className="h-[280px] min-w-0 p-2 sm:h-[360px] sm:p-5">
             <LineChart showSummary={false} data={analytics.monthly_revenue || []} isDashboard />
           </div>
         </Link>
 
-        <div className="rounded-2xl border border-border bg-card p-4 shadow-sm dark:border-border dark:bg-card">
-          <div className="mb-3 flex items-center gap-1 rounded-xl bg-muted p-1 dark:bg-muted">
+        <div className="min-w-0 rounded-2xl border border-border bg-card p-3 shadow-sm sm:p-4">
+          <div className="mb-3 grid grid-cols-3 gap-1 rounded-xl bg-muted p-1">
             {[
               ["activities", "Activity", activityLogs.length],
               ["notifications", "Notifications", unreadNotifications],
@@ -287,7 +287,7 @@ const Dashboard = () => {
             ))}
           </div>
 
-          <div className="h-[300px] space-y-2 overflow-y-auto pr-1">
+          <div className="h-[300px] min-w-0 space-y-2 overflow-x-hidden overflow-y-auto pr-1">
             {selectedListView === "activities" &&
               (activityLogs.length ? activityLogs.map((log) => (
                 <div key={log.id} className="rounded-xl bg-muted p-3 dark:bg-muted">
@@ -348,7 +348,7 @@ const Dashboard = () => {
         </div>
       </div>
 
-      <div className="grid gap-5 lg:grid-cols-2">
+      <div className="grid min-w-0 grid-cols-1 gap-5">
         <Link
           to="/admin-dashboard/pie-chart"
           className="rounded-2xl border border-border bg-card p-4 shadow-sm transition hover:shadow-md dark:border-border dark:bg-card"
@@ -360,7 +360,7 @@ const Dashboard = () => {
             </div>
             <IonIcon icon={statsChartOutline} className="text-primary" />
           </div>
-          <div className="h-[320px]"><PieGraph isDashboard /></div>
+          <div className="h-[320px] min-w-0 overflow-hidden"><PieGraph isDashboard /></div>
         </Link>
 
         <Link
@@ -374,7 +374,7 @@ const Dashboard = () => {
             </div>
             <IonIcon icon={statsChartOutline} className="text-primary" />
           </div>
-          <div className="h-[320px]"><BarChart isDashboard /></div>
+          <div className="h-[320px] min-w-0 overflow-hidden"><BarChart isDashboard /></div>
         </Link>
       </div>
 
