@@ -1,4 +1,5 @@
 from rest_framework import serializers
+from django.utils import timezone
 from ReactSerializers.models import Section, Department, Category, SubCategory, Brand, Item
 from core.Serializer import *
 from .models import *
@@ -344,3 +345,20 @@ class JobApplicationSerializer(serializers.ModelSerializer):
         model = JobApplication
         fields = "__all__"
         read_only_fields = ["applied_at", "seen"]
+
+    def validate_vacancy(self, vacancy):
+        if not vacancy.is_active:
+            raise serializers.ValidationError("This position is no longer accepting applications.")
+        if vacancy.application_deadline and vacancy.application_deadline < timezone.localdate():
+            raise serializers.ValidationError("The application deadline has passed.")
+        return vacancy
+
+    def validate_cv(self, value):
+        allowed = {".pdf", ".doc", ".docx"}
+        name = (value.name or "").lower()
+        extension = "." + name.rsplit(".", 1)[-1] if "." in name else ""
+        if extension not in allowed:
+            raise serializers.ValidationError("CV must be a PDF, DOC, or DOCX file.")
+        if value.size > 5 * 1024 * 1024:
+            raise serializers.ValidationError("CV must be smaller than 5 MB.")
+        return value
