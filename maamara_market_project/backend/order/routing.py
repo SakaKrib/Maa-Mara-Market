@@ -8,7 +8,7 @@ from .consumers import (
     VendorNotificationsConsumer,
     ActivityLogsConsumer,
 )
-from vendorDashboard.consumers import VendorPayoutConsumer, VendorDirectoryConsumer
+from vendorDashboard.consumers import VendorPayoutConsumer, VendorDirectoryConsumer, AdminVendorRequestsConsumer
 from .currency_consumer import CurrencyConsumer
 
 websocket_urlpatterns = [
@@ -20,6 +20,7 @@ websocket_urlpatterns = [
     re_path(r"ws/vendor-orders/$", VendorOrdersConsumer.as_asgi()),
     re_path(r"ws/vendor-notifications/$", VendorNotificationsConsumer.as_asgi()),
     re_path(r"ws/admin/vendors/$", VendorDirectoryConsumer.as_asgi()),
+    re_path(r"ws/admin/vendor-requests/$", AdminVendorRequestsConsumer.as_asgi()),
     re_path(r"ws/activity-logs/$", ActivityLogsConsumer.as_asgi()),
     re_path(r"ws/currency/$", CurrencyConsumer.as_asgi()),
 ]
