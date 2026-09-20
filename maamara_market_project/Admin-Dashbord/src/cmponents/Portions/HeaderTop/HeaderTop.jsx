@@ -1,209 +1,137 @@
-import { useRef, useState, useEffect } from "react";
-import { IonIcon } from '@ionic/react';
-import "../../../index.css";
-import {
-  menuOutline,
-  searchOutline
-} from 'ionicons/icons';
-import useDashboardInteractions from '../../../interaction';
-import { useAuth } from '../../Auth/AuthContext/Context';
-import CloseIcon from "@mui/icons-material/Close";
-import { 
-  useTheme, 
-  Box,
-  Modal,
-  Typography,
-  Avatar,
-  Button,
-  IconButton
- } from '@mui/material';
-import { tokens } from '../../../theme';
-import LogoutButton from '../../Auth/AdminLogin/Logout';
-import { useCsrfToken } from '../../Hooks/AccessCRF/UseCSRFToken';
-import { baseUrl } from '../../Constant/Constant';
-import api from '../../../Services/Api';
-import { sunnyOutline, moon } from "ionicons/icons";
-import { useContext } from "react";
+import { useRef, useState, useEffect, useContext } from "react";
+import { IonIcon } from "@ionic/react";
+import { menuOutline, searchOutline, sunnyOutline, moon, closeOutline, cameraOutline } from "ionicons/icons";
+import { useAuth } from "../../Auth/AuthContext/Context";
+import { useCsrfToken } from "../../Hooks/AccessCRF/UseCSRFToken";
+import { baseUrl } from "../../Constant/Constant";
+import api from "../../../Services/Api";
 import { ColourModeContext } from "../../../theme";
+import LogoutButton from "../../Auth/AdminLogin/Logout";
 import SearchBarForVendorAdmin from "../../SearchPage/GlobalSearchPage";
 
-const HeaderTop = () => {
-  useDashboardInteractions();
-  const theme = useTheme();
-  const colors = tokens(theme.palette.mode);
-
-const [openProfile, setOpenProfile] = useState(false);
-const [activeView, setActiveView] = useState("main");
-const [editMode, setEditMode] = useState(false);
-
-const handleCloseProfile = () => {
-  setOpenProfile(false);
-  setActiveView("main");
-  setEditMode(false);
-};
-
-  // function to mange modals
-
-// theme change
-const colorMode = useContext(ColourModeContext);
-
-
-
-// handle change
-const [form, setForm] = useState({
-  username: "",
-  email: "",
-  first_name: "",
-  last_name: "",
-  location: "",
-  phone_number: "",
-  address: "",
-  city: "",
-  country: "",
-  date_of_birth: "",
-}); 
-
-
-const handleChange = (e) => {
-  const { name, value } = e.target;
-
-  setForm((prev) => ({
-    ...prev,
-    [name]: value,
-  }));
-};
-const fileInputRef = useRef(null);
-const [previewImage, setPreviewImage] = useState(null);
-
-// ✅ KEEP ONLY ONE FILE STATE (this is the one you already use in handleSave)
-const [imageFile, setImageFile] = useState(null);
-
+const HeaderTop = ({ onMenuToggle }) => {
+  const colorMode = useContext(ColourModeContext);
   const { isAuthenticated, loading, user } = useAuth();
-  const [profile, setProfile] = useState(null);
   const csrfToken = useCsrfToken();
 
-  const profilePicture =
-  profile?.profile?.profile_picture
+  const [openProfile, setOpenProfile] = useState(false);
+  const [activeView, setActiveView] = useState("main");
+  const [editMode, setEditMode] = useState(false);
+  const [profile, setProfile] = useState(null);
+  const [previewImage, setPreviewImage] = useState(null);
+  const [imageFile, setImageFile] = useState(null);
+  const fileInputRef = useRef(null);
+
+  const [form, setForm] = useState({
+    username: "",
+    email: "",
+    first_name: "",
+    last_name: "",
+    location: "",
+    phone_number: "",
+    address: "",
+    city: "",
+    country: "",
+    date_of_birth: "",
+  });
+
+  const profilePicture = profile?.profile?.profile_picture
     ? profile.profile.profile_picture.startsWith("http")
       ? profile.profile.profile_picture
       : `${baseUrl}${profile.profile.profile_picture}`
     : "/default-avatar.png";
 
-
-  const handleImageChange = async (e) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-  
-    setImageFile(file);
-    setPreviewImage(URL.createObjectURL(file));
-  
-    const formData = new FormData();
-    formData.append("profile_picture", file);
-  
-    try {
-      const res = await api.post("/api/user/update/", formData, {
-        withCredentials: true,
-      });
-  
-      // update UI instantly
-      setProfile((prev) => ({
-        ...prev,
-        profile: {
-          ...prev.profile,
-          profile_picture: res.data.profile.profile_picture,
-        },
-      }));
-  
-      setPreviewImage(null);
-      setImageFile(null);
-    } catch (err) {
-      console.error("Upload failed", err);
-    }
-  };
-  
-  // ================= FETCH PROFILE (FIXED) =================
   useEffect(() => {
     const fetchProfile = async () => {
       try {
-        const response = await api.get(`api/user/account/`, {
+        const response = await api.get("/api/user/account/", {
           withCredentials: true,
-          headers: {
-            "X-CSRFToken": csrfToken,
-          },
+          headers: csrfToken ? { "X-CSRFToken": csrfToken } : undefined,
         });
+        const data = response.data || {};
+        const nextUser = data.user || {};
+        const nextProfile = data.profile || {};
 
-        const data = response.data;
-        const user = data.user || {};
-        const profileData = data.profile || {};
-
-        setProfile({
-          user: data.user,
-          profile: data.profile,
-          wallet: data.wallet,
-          referrals: data.referrals,
-          voucher: data.voucher,
-        });
-
+        setProfile(data);
         setForm({
-          first_name: user.first_name || "",
-          last_name: user.last_name || "",
-          email: user.email || "",
-          phone_number: profileData.phone_number || "",
-          location: profileData.location || "",
-          address: profileData.address || "",
-          city: profileData.city || "",
-          country: profileData.country || "",
-          date_of_birth: profileData.date_of_birth || "",
+          username: nextUser.username || "",
+          first_name: nextUser.first_name || "",
+          last_name: nextUser.last_name || "",
+          email: nextUser.email || "",
+          phone_number: nextProfile.phone_number || "",
+          location: nextProfile.location || "",
+          address: nextProfile.address || "",
+          city: nextProfile.city || "",
+          country: nextProfile.country || "",
+          date_of_birth: nextProfile.date_of_birth || "",
         });
-
       } catch (error) {
-        console.error("Profile fetch error:", error);
+        console.error("Admin profile fetch failed:", error);
       }
     };
 
-    if (isAuthenticated && !loading) {
-      fetchProfile();
-    }
+    if (isAuthenticated && !loading) fetchProfile();
   }, [isAuthenticated, loading, csrfToken]);
 
-  // ================= SAVE PROFILE (FIXED FOR DJANGO) =================
-  const handleSave = async () => {
-    const data = new FormData();
+  const handleChange = (event) => {
+    const { name, value } = event.target;
+    setForm((current) => ({ ...current, [name]: value }));
+  };
 
-    // User model
-    data.append("first_name", form.first_name);
-    data.append("last_name", form.last_name);
-    data.append("email", form.email);
+  const handleImageChange = async (event) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
 
-    // Profile model
-    data.append("phone_number", form.phone_number);
-    data.append("location", form.location);
-    data.append("address", form.address);
-    data.append("city", form.city);
-    data.append("country", form.country);
-    data.append("date_of_birth", form.date_of_birth);
+    setImageFile(file);
+    setPreviewImage(URL.createObjectURL(file));
 
-    // Image
-    if (imageFile) {
-      data.append("profile_picture", imageFile);
-    }
+    const formData = new FormData();
+    formData.append("profile_picture", file);
 
     try {
-      const res = await api.post(
-        `api/user/update/`,
-        data,
-        {
-          withCredentials: true,
-          headers: {
-            "X-CSRFToken": csrfToken,
-          },
-        }
-      );
+      const response = await api.post("/api/user/update/", formData, { withCredentials: true });
+      setProfile((current) => ({
+        ...current,
+        profile: {
+          ...current?.profile,
+          profile_picture: response.data?.profile?.profile_picture,
+        },
+      }));
+      setImageFile(null);
+      setPreviewImage(null);
+    } catch (error) {
+      console.error("Admin profile image upload failed:", error);
+    }
+  };
 
-      const updatedUser = res.data.user || {};
-      const updatedProfile = res.data.profile || {};
+  const handleSave = async () => {
+    const data = new FormData();
+    Object.entries({
+      first_name: form.first_name,
+      last_name: form.last_name,
+      email: form.email,
+      phone_number: form.phone_number,
+      location: form.location,
+      address: form.address,
+      city: form.city,
+      country: form.country,
+      date_of_birth: form.date_of_birth,
+    }).forEach(([key, value]) => data.append(key, value || ""));
 
-      setForm({
+    if (imageFile) data.append("profile_picture", imageFile);
+
+    try {
+      const response = await api.post("/api/user/update/", data, {
+        withCredentials: true,
+        headers: csrfToken ? { "X-CSRFToken": csrfToken } : undefined,
+      });
+
+      const updatedUser = response.data?.user || {};
+      const updatedProfile = response.data?.profile || {};
+      setProfile((current) => ({ ...current, user: updatedUser, profile: updatedProfile }));
+      setForm((current) => ({
+        ...current,
+        username: updatedUser.username || current.username,
         first_name: updatedUser.first_name || "",
         last_name: updatedUser.last_name || "",
         email: updatedUser.email || "",
@@ -213,501 +141,210 @@ const [imageFile, setImageFile] = useState(null);
         city: updatedProfile.city || "",
         country: updatedProfile.country || "",
         date_of_birth: updatedProfile.date_of_birth || "",
-      });
-
+      }));
       setEditMode(false);
       setImageFile(null);
       setPreviewImage(null);
-    
-
     } catch (error) {
-      console.error("Profile update failed:", error);
+      console.error("Admin profile update failed:", error);
     }
   };
 
-  
-  // input styling helper
-  const inputStyle = (colors) => ({
-    padding: "10px",
-    borderRadius: "8px",
-    border: `1px solid ${colors.primary[400]}`,
-    background: colors.primary[500],
-    color: colors.gray[100],
-    outline: "none",
-  });
- 
-  
-
- 
+  const closeProfile = () => {
+    setOpenProfile(false);
+    setActiveView("main");
+    setEditMode(false);
+  };
 
   return (
-      <Box
-      className="header-top"
-      sx={{
-        backgroundColor: colors.primary[600],
-        width: {
-          xs: "100%",
-          md: "calc(100% - 80px)",
-        },
-        px: {
-          xs: 1,
-          sm: 2,
-          md: 3,
-        },
-        zIndex: {
-          xs: 99
-        }
-      }}
-    >
-      <Box
-        className="topbar sm:w-full"
-        sx={{
-          display: "flex",
-          alignItems: "center",
-          gap: {
-            xs: 1,
-            sm: 1.5,
-            md: 2,
-          },
-          width: "100%",
-        }}
-      >
-        <Box
-          className="toggle"
-          sx={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent:'center',
-            fontSize: {
-              xs: "20px",
-              sm: "24px",
-              md: "28px",
-            },
-          }}
-        >
-          <IonIcon icon={menuOutline} />
-        </Box>
-
-        <Box
-          className="title-head"
-          style={{ "--span-color": colors.gray[100] }}
-          sx={{
-            fontSize: {
-              xs: "0.8rem",
-              sm: "0.95rem",
-              md: "1.1rem",
-            },
-            whiteSpace: "nowrap",
-            flexShrink: 0,
-          }}
-        >
-          <span className="header">
-            Maa <strong>Mara</strong><span className="mkt">Market</span>
-          </span>
-        </Box>
-
-        <Box
-          sx={{
-            flex: 1,
-            minWidth: 0,
-            mx: {
-              xs: 0.5,
-              sm: 1,
-              md: 2,
-            },
-          }}
-          style={{ "--placeholder-color": colors.gray[100] }}
-        >
-          <SearchBarForVendorAdmin />
-        </Box>
-
-        <Box
-          sx={{
-            mb: "1.5em",
-            display: {
-              xs: "none",
-              sm: "none",
-              md: "none",
-              lg: "block",
-            },
-          }}
-        >
-          <LogoutButton />
-        </Box>
-
-        <Box
-            className="users"
-            onClick={(e) => {
-              e.stopPropagation();
-              setOpenProfile(true);
-              setActiveView("main");
-            }}
-            sx={{ cursor: "pointer" }}
+    <>
+      <header className="fixed left-0 right-0 top-0 z-40 h-[72px] border-b border-slate-200 bg-white/95 backdrop-blur dark:border-slate-800 dark:bg-slate-950/95 lg:left-64">
+        <div className="flex h-full items-center gap-2 px-3 sm:gap-3 sm:px-5 lg:px-7">
+          <button
+            type="button"
+            aria-label="Open admin navigation"
+            onClick={onMenuToggle}
+            className="grid h-10 w-10 shrink-0 place-items-center rounded-xl text-slate-600 hover:bg-slate-100 lg:hidden dark:text-slate-200 dark:hover:bg-slate-800"
           >
-           <Avatar
-              src={previewImage || profilePicture}
-              alt="User Profile"
-              sx={{
-                width: {
-                  xs: 34,
-                  sm: 38,
-                  md: 42,
-                },
-                height: {
-                  xs: 34,
-                  sm: 38,
-                  md: 42,
-                },
-              }}
-            />
+            <IonIcon icon={menuOutline} className="text-xl" />
+          </button>
 
-            {/* hidden file input */}
-            <input
-              type="file"
-              hidden
-              ref={fileInputRef}
-              accept="image/*"
-              onChange={handleImageChange}
-            />
+          <div className="hidden shrink-0 items-center gap-2 sm:flex">
+            <span className="grid h-9 w-9 place-items-center rounded-lg bg-indigo-600 text-sm font-black text-white">M</span>
+            <div className="leading-tight">
+              <span className="block text-sm font-bold text-slate-900 dark:text-white">Maa Mara</span>
+              <span className="block text-[10px] text-slate-400">Admin workspace</span>
+            </div>
+          </div>
 
-              <Modal
-                open={openProfile}
-                onClose={handleCloseProfile}
-              >
-              <Box
-                onClick={(e) => e.stopPropagation()}
-                sx={{
-                  position: "absolute",
-                  top: "50%",
-                  left: "50%",
-                  transform: "translate(-50%, -50%)",
-                  width: {
-                    xs: "95%",
-                    sm: "90%",
-                    md: 420,
-                  },
-                  maxHeight: "90vh",
-                  overflowY: "auto",
-                  bgcolor: colors.primary[600],
-                  borderRadius: "16px",
-                  boxShadow: 24,
-                  p: 3,
-                  outline: "none",
-                  backdropFilter: "blur(10px)",
-                }}
-                
-              >
-                {/* Close */}
-                <IconButton
-                  onClick={handleCloseProfile}
-                  sx={{
-                    position: "absolute",
-                    top: 8,
-                    right: 8,
-                    color: colors.gray[100],
-                  }}
-                >
-                  <CloseIcon />
-                </IconButton>
+          <div className="min-w-0 flex-1 max-w-2xl">
+            <div className="relative">
+              <IonIcon icon={searchOutline} className="pointer-events-none absolute left-3 top-1/2 z-10 -translate-y-1/2 text-slate-400" />
+              <SearchBarForVendorAdmin />
+            </div>
+          </div>
 
-                {/* ================= AVATAR ================= */}
-                <Box display="flex" justifyContent="center" mb={2}>
-                <Avatar
-                  src={previewImage || profilePicture}
-                  onClick={() => fileInputRef.current.click()}
-                  sx={{
-                    width: {
-                      xs: 70,
-                      sm: 80,
-                    },
-                    height: {
-                      xs: 70,
-                      sm: 80,
-                    },
-                    border: `2px solid ${colors.primary[400]}`,
-                    cursor: "pointer",
-                  }}
-                />
-                </Box>
+          <div className="ml-auto flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setOpenProfile(true)}
+              className="flex items-center gap-2 rounded-xl p-1.5 pr-2 hover:bg-slate-100 dark:hover:bg-slate-800"
+              aria-label="Open admin profile"
+            >
+              <img
+                src={previewImage || profilePicture}
+                alt="Admin profile"
+                className="h-9 w-9 rounded-full border border-slate-200 object-cover dark:border-slate-700"
+              />
+              <span className="hidden max-w-28 truncate text-left text-xs font-semibold text-slate-700 sm:block dark:text-slate-200">
+                {form.first_name || user?.username || "Admin"}
+              </span>
+            </button>
+          </div>
+        </div>
+      </header>
 
-                {/* ================= MAIN MENU ================= */}
-                {activeView === "main" && (
-                  <Box display="flex" flexDirection="column" gap={1} >
-                    <Button sx={{color:colors.gray[100]}} onClick={() => setActiveView("view")}>
-                      View Account
-                    </Button>
+      {openProfile && (
+        <div className="fixed inset-0 z-[70] flex items-center justify-center bg-slate-950/55 p-3" onMouseDown={closeProfile}>
+          <div
+            className="max-h-[92vh] w-full max-w-lg overflow-y-auto rounded-2xl border border-slate-200 bg-white p-5 shadow-2xl dark:border-slate-700 dark:bg-slate-900 sm:p-6"
+            onMouseDown={(event) => event.stopPropagation()}
+          >
+            <div className="mb-5 flex items-start justify-between">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-widest text-indigo-600 dark:text-indigo-300">Administrator</p>
+                <h2 className="mt-1 text-xl font-bold text-slate-900 dark:text-white">Account</h2>
+              </div>
+              <button type="button" onClick={closeProfile} className="rounded-lg p-2 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800">
+                <IonIcon icon={closeOutline} className="text-xl" />
+              </button>
+            </div>
 
-                    <Button sx={{color:colors.gray[100]}} onClick={() => setActiveView("edit")}>
-                      Edit Profile
-                    </Button>
+            <div className="flex items-center gap-4 rounded-2xl bg-slate-50 p-4 dark:bg-slate-800/60">
+              <button type="button" onClick={() => fileInputRef.current?.click()} className="relative shrink-0">
+                <img src={previewImage || profilePicture} alt="Profile" className="h-20 w-20 rounded-full border-2 border-indigo-200 object-cover dark:border-indigo-500/40" />
+                <span className="absolute bottom-0 right-0 grid h-7 w-7 place-items-center rounded-full bg-indigo-600 text-white">
+                  <IonIcon icon={cameraOutline} />
+                </span>
+              </button>
+              <div className="min-w-0">
+                <p className="truncate font-semibold text-slate-900 dark:text-white">{form.first_name || "Administrator"} {form.last_name}</p>
+                <p className="truncate text-sm text-slate-500 dark:text-slate-400">{form.email || user?.username}</p>
+                <input ref={fileInputRef} type="file" accept="image/*" hidden onChange={handleImageChange} />
+              </div>
+            </div>
 
-                    <Button sx={{color:colors.gray[100]}} onClick={() => setActiveView("manage")}>
-                      Manage Account
-                    </Button>
+            {activeView === "main" && (
+              <div className="mt-5 grid gap-2 sm:grid-cols-2">
+                <button onClick={() => setActiveView("view")} className="rounded-xl border border-slate-200 px-4 py-3 text-left text-sm font-semibold hover:bg-slate-50 dark:border-slate-700 dark:hover:bg-slate-800">View account</button>
+                <button onClick={() => setActiveView("edit")} className="rounded-xl border border-slate-200 px-4 py-3 text-left text-sm font-semibold hover:bg-slate-50 dark:border-slate-700 dark:hover:bg-slate-800">Edit profile</button>
+                <button onClick={() => setActiveView("manage")} className="rounded-xl border border-slate-200 px-4 py-3 text-left text-sm font-semibold hover:bg-slate-50 dark:border-slate-700 dark:hover:bg-slate-800">Manage account</button>
+                <button onClick={() => setActiveView("logout")} className="rounded-xl bg-red-50 px-4 py-3 text-left text-sm font-semibold text-red-600 hover:bg-red-100 dark:bg-red-500/10 dark:text-red-300">Sign out</button>
+              </div>
+            )}
 
-                  
+            {activeView === "view" && (
+              <div className="mt-5 space-y-2 text-sm">
+                {[
+                  ["First name", form.first_name],
+                  ["Last name", form.last_name],
+                  ["Email", form.email],
+                  ["Phone", form.phone_number],
+                  ["Location", form.location],
+                  ["Address", form.address],
+                  ["City", form.city],
+                  ["Country", form.country],
+                  ["Date of birth", form.date_of_birth],
+                ].map(([label, value]) => (
+                  <div key={label} className="flex items-center justify-between gap-4 border-b border-slate-100 py-2.5 dark:border-slate-800">
+                    <span className="text-slate-500 dark:text-slate-400">{label}</span>
+                    <span className="max-w-[65%] truncate text-right font-medium text-slate-900 dark:text-slate-100">{value || "—"}</span>
+                  </div>
+                ))}
+                <button onClick={() => setActiveView("main")} className="mt-3 w-full rounded-xl bg-slate-100 px-4 py-2.5 text-sm font-semibold dark:bg-slate-800">Back</button>
+              </div>
+            )}
 
-                    <Button sx={{color:colors.gray[100]}} onClick={() => setActiveView("logout")}>
-                      Logout
-                    </Button>
-                  </Box>
-                )}
-
-                {/* ================= VIEW ACCOUNT ================= */}
-                  {activeView === "view" && (
-                    <Box display="flex" flexDirection="column" gap={0.5}>
-
-                      <Typography sx={{display:'flex', justifyContent:'space-between'}}>
-                        First Name: <strong>{form.first_name}</strong>
-                      </Typography>
-
-                      <Typography sx={{display:'flex', justifyContent:'space-between'}}>
-                        Last Name: <strong>{form.last_name}</strong>
-                      </Typography>
-
-                      <Typography sx={{display:'flex', justifyContent:'space-between'}}>
-                        Email: <strong>{form.email}</strong>
-                      </Typography>
-
-                      <Typography sx={{display:'flex', justifyContent:'space-between'}}>
-                        Phone Number: <strong>{form.phone_number}</strong>
-                      </Typography>
-
-                      <Typography sx={{display:'flex', justifyContent:'space-between'}}>
-                        Location: <strong>{form.location}</strong>
-                      </Typography>
-
-                      <Typography sx={{display:'flex', justifyContent:'space-between'}}>
-                        Address: <strong>{form.address}</strong>
-                      </Typography>
-
-                      <Typography sx={{display:'flex', justifyContent:'space-between'}}>
-                        City: <strong>{form.city}</strong>
-                      </Typography>
-
-                      <Typography sx={{display:'flex', justifyContent:'space-between'}}>
-                        Country: <strong>{form.country}</strong>
-                      </Typography>
-
-                      <Typography sx={{display:'flex', justifyContent:'space-between'}}>
-                        Date of Birth: <strong>{form.date_of_birth}</strong>
-                      </Typography>
-
-                      <Button onClick={() => setActiveView("main")} sx={{color:colors.gray[100], backgroundColor:colors.primary[500]}}>
-                        Back
-                      </Button>
-                    </Box>
-                  )}
-
-               {/* ================= EDIT PROFILE ================= */}
-                {activeView === "edit" && (
-                  <Box display="flex" flexDirection="column" gap={1}>
-                    <input
-                      name="username"
-                      value={form.username}
-                      onChange={handleChange}
-                      disabled={!editMode}
-                      placeholder="Username"
-                      style={inputStyle(colors)}
-                    />
-
-                    <input
-                      name="email"
-                      value={form.email}
-                      onChange={handleChange}
-                      disabled={!editMode}
-                      placeholder="Email"
-                      style={inputStyle(colors)}
-                    />
-
-                    <input
-                      name="first_name"
-                      value={form.first_name}
-                      onChange={handleChange}
-                      disabled={!editMode}
-                      placeholder="First Name"
-                      style={inputStyle(colors)}
-                    />
-
-                    <input
-                      name="last_name"
-                      value={form.last_name}
-                      onChange={handleChange}
-                      disabled={!editMode}
-                      placeholder="Last Name"
-                      style={inputStyle(colors)}
-                    />
-
-                    {/* EXISTING FIELD (kept) */}
-                    <input
-                      name="location"
-                      value={form.location}
-                      onChange={handleChange}
-                      disabled={!editMode}
-                      placeholder="Location"
-                      style={inputStyle(colors)}
-                    />
-
-                    {/* ✅ ADDED MISSING DJANGO FIELDS */}
-                    <input
-                      name="phone_number"
-                      value={form.phone_number}
-                      onChange={handleChange}
-                      disabled={!editMode}
-                      placeholder="Phone Number"
-                      style={inputStyle(colors)}
-                    />
-
-                    <input
-                      name="address"
-                      value={form.address}
-                      onChange={handleChange}
-                      disabled={!editMode}
-                      placeholder="Address"
-                      style={inputStyle(colors)}
-                    />
-
-                    <input
-                      name="city"
-                      value={form.city}
-                      onChange={handleChange}
-                      disabled={!editMode}
-                      placeholder="City"
-                      style={inputStyle(colors)}
-                    />
-
-                    <input
-                      name="country"
-                      value={form.country}
-                      onChange={handleChange}
-                      disabled={!editMode}
-                      placeholder="Country"
-                      style={inputStyle(colors)}
-                    />
-
+            {activeView === "edit" && (
+              <div className="mt-5">
+                <div className="grid gap-3 sm:grid-cols-2">
+                  {[
+                    ["username", "Username"],
+                    ["email", "Email"],
+                    ["first_name", "First name"],
+                    ["last_name", "Last name"],
+                    ["location", "Location"],
+                    ["phone_number", "Phone number"],
+                    ["address", "Address"],
+                    ["city", "City"],
+                    ["country", "Country"],
+                  ].map(([name, label]) => (
+                    <label key={name} className="grid gap-1.5 text-xs font-semibold text-slate-600 dark:text-slate-300">
+                      {label}
+                      <input
+                        name={name}
+                        value={form[name] || ""}
+                        onChange={handleChange}
+                        disabled={!editMode}
+                        className="h-10 rounded-xl border border-slate-200 bg-transparent px-3 text-sm text-slate-900 outline-none ring-indigo-500 focus:ring-2 disabled:cursor-not-allowed disabled:opacity-60 dark:border-slate-700 dark:text-white"
+                      />
+                    </label>
+                  ))}
+                  <label className="grid gap-1.5 text-xs font-semibold text-slate-600 dark:text-slate-300">
+                    Date of birth
                     <input
                       type="date"
                       name="date_of_birth"
                       value={form.date_of_birth || ""}
                       onChange={handleChange}
                       disabled={!editMode}
-                      style={inputStyle(colors)}
+                      className="h-10 rounded-xl border border-slate-200 bg-transparent px-3 text-sm text-slate-900 outline-none ring-indigo-500 focus:ring-2 disabled:cursor-not-allowed disabled:opacity-60 dark:border-slate-700 dark:text-white"
                     />
+                  </label>
+                </div>
 
-                  <Box display="flex" gap={1}>
-                    {!editMode ? (
-                      <Button
-                        variant="contained"
-                        onClick={() => setEditMode(true)}
-                        sx={{ backgroundColor: colors.purpleAccent[500], color: colors.gray[100] }}
-                      >
-                        Edit
-                      </Button>
-                    ) : (
-                      <Button
-                        variant="contained"
-                        onClick={handleSave}
-                        sx={{ backgroundColor: colors.greenAccent[900], color: colors.gray[100] }}
-                      >
-                        Save
-                      </Button>
-                    )}
+                <div className="mt-5 flex flex-wrap gap-2">
+                  {!editMode ? (
+                    <button onClick={() => setEditMode(true)} className="rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-indigo-700">Edit profile</button>
+                  ) : (
+                    <button onClick={handleSave} className="rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-emerald-700">Save changes</button>
+                  )}
+                  <button onClick={() => { setEditMode(false); setActiveView("main"); }} className="rounded-xl bg-slate-100 px-4 py-2.5 text-sm font-semibold dark:bg-slate-800">Back</button>
+                </div>
+              </div>
+            )}
 
-                    <Button
-                      variant="outlined"
-                      onClick={() => {
-                        setEditMode(false);
-                        setActiveView("main");
-                      }}
-                      sx={{ color: colors.gray[100] }}
-                    >
-                      Back
-                    </Button>
-                  </Box>
-                  </Box>
-                )}
+            {activeView === "manage" && (
+              <div className="mt-5 rounded-xl border border-slate-200 p-4 text-sm dark:border-slate-700">
+                <h3 className="font-semibold text-slate-900 dark:text-white">Account settings</h3>
+                <p className="mt-1 text-slate-500 dark:text-slate-400">Security and account management controls can be added here.</p>
+                <button onClick={() => setActiveView("main")} className="mt-4 rounded-xl bg-slate-100 px-4 py-2.5 font-semibold dark:bg-slate-800">Back</button>
+              </div>
+            )}
 
-                {/* ================= MANAGE ACCOUNT ================= */}
-                {activeView === "manage" && (
-                  <Box>
-                    <Typography variant="h6">Account Settings</Typography>
+            {activeView === "logout" && (
+              <div className="mt-5 rounded-xl border border-red-200 bg-red-50 p-4 dark:border-red-500/20 dark:bg-red-500/10">
+                <p className="font-semibold text-red-700 dark:text-red-300">Sign out of the admin workspace?</p>
+                <LogoutButton />
+                <button onClick={() => setActiveView("main")} className="mt-2 w-full rounded-xl bg-white px-4 py-2.5 text-sm font-semibold dark:bg-slate-900">Cancel</button>
+              </div>
+            )}
 
-                    <Typography>Security settings coming soon</Typography>
-
-                    <Button onClick={() => setActiveView("main")} sx={{color:colors.gray[100], backgroundColor:colors.primary[500]}}>
-                      Back
-                    </Button>
-                  </Box>
-                )}
-
-                {/* ================= THEME =================
-                {activeView === "theme" && (
-                  <Box>
-                    <Typography variant="h6">Theme</Typography>
-
-                    <Button
-                      onClick={() => {
-                        // hook into your theme context if available
-                      }}
-                    >
-                      Toggle Dark/Light Mode
-                    </Button>
-
-                    <Button onClick={() => setActiveView("main")}>
-                      Back
-                    </Button>
-                  </Box>
-                )} */}
-
-                {/* ================= LOGOUT ================= */}
-                {activeView === "logout" && (
-                  <Box>
-                    <Typography>Are you sure you want to logout?</Typography>
-
-                    <Box mt={1}>
-                      <LogoutButton />
-                    </Box>
-
-                    <Button onClick={() => setActiveView("main")} sx={{color:colors.gray[100], backgroundColor:colors.primary[500]}}>
-                      Cancel
-                    </Button>
-                  </Box>
-                )}
-
-              {activeView === "main" && (
-                <Box display="flex" gap={1} mt={2}>
-                  <Button
-                    onClick={() => colorMode.setLightMode()}
-                    startIcon={<IonIcon icon={sunnyOutline} />}
-                    sx={{
-                      flex: 1,
-                      backgroundColor: "#f5f5f5",
-                      color: "#111",
-                      "&:hover": { backgroundColor: "#e0e0e0" },
-                    }}
-                  >
-                    Light
-                  </Button>
-
-                  <Button
-                    onClick={() => colorMode.setDarkMode()}
-                    startIcon={<IonIcon icon={moon} />}
-                    sx={{
-                      flex: 1,
-                      backgroundColor: "#1e1e1e",
-                      color: "#fff",
-                      "&:hover": { backgroundColor: "#333" },
-                    }}
-                  >
-                    Dark
-                  </Button>
-                </Box>)}
-              </Box>
-            </Modal>
-
-        </Box>
-      </Box>
-    </Box>
+            <div className="mt-6 border-t border-slate-200 pt-4 dark:border-slate-800">
+              <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-slate-400">Appearance</p>
+              <div className="grid grid-cols-2 gap-2">
+                <button onClick={() => colorMode.setLightMode()} className="rounded-xl border border-slate-200 px-3 py-2.5 text-sm font-semibold hover:bg-slate-50 dark:border-slate-700 dark:hover:bg-slate-800">
+                  <IonIcon icon={sunnyOutline} className="mr-2 align-middle" /> Light
+                </button>
+                <button onClick={() => colorMode.setDarkMode()} className="rounded-xl border border-slate-200 px-3 py-2.5 text-sm font-semibold hover:bg-slate-50 dark:border-slate-700 dark:hover:bg-slate-800">
+                  <IonIcon icon={moon} className="mr-2 align-middle" /> Dark
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
   );
 };
 
