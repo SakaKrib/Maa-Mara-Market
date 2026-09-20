@@ -321,6 +321,7 @@ def convert_decimal(obj):
 @api_view(['POST'])
 @parser_classes([MultiPartParser, FormParser, JSONParser])
 @permission_classes([IsAuthenticated])
+@transaction.atomic
 def submit_vendor_request(request):
     user = request.user
     decoded = {}
