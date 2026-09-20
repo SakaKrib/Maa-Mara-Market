@@ -200,6 +200,7 @@ const RegistrationForm = () => {
               MaamaraMarket.com All rights reserved. <a href="/login" className="underline">Terms & Policies</a>.
             </p>
           </CardFooter>
+          </CardContent>
         </Card>
 
         {/* MUI Snackbar */}
