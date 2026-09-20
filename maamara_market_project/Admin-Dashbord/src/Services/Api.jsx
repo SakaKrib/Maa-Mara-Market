@@ -18,6 +18,12 @@ export const getWebSocketUrl = (path = "/") => {
   return baseURL.replace(/^http/i, "ws") + normalizedPath;
 };
 
+export const resolveApiAssetUrl = (value) => {
+  if (!value) return null;
+  if (/^https?:\\/\\//i.test(value)) return value;
+  return new URL(value, `${baseURL}/`).toString();
+};
+
 const api = axios.create({ baseURL, withCredentials: true });
 
 let isRefreshing = false;
