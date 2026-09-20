@@ -28,7 +28,7 @@ from rest_framework_simplejwt.authentication import JWTAuthentication
 from rest_framework_simplejwt.serializers import TokenRefreshSerializer
 from rest_framework_simplejwt.exceptions import InvalidToken, TokenError
 
-from core.models import Profile, Wallet, Voucher, Referral
+from core.models import Profile, Wallet, Voucher, Referral, Notification, ActivityLog
 from vendorDashboard.models import Vendor
 from oder.models import Customer, Order
 from core.mergeVisitortoUserData import merge_visitor_data_to_user
@@ -231,6 +231,61 @@ def update_account_view(request):
         customer.full_name = f"{customer.first_name or ''} {customer.last_name or ''}".strip()
     customer.save()
     return user_account_view(request)
+
+
+@api_view(["GET"])
+@permission_classes([IsAuthenticatedOrVisitor])
+def user_visitor_notifications_view(request):
+    """Return notifications for the signed-in user or current visitor."""
+    visitor_id = request.COOKIES.get("visitorId")
+    if request.user.is_authenticated:
+        notifications = Notification.objects.filter(user=request.user)
+    elif visitor_id:
+        notifications = Notification.objects.filter(visitor_id=visitor_id)
+    else:
+        notifications = Notification.objects.none()
+
+    notifications = notifications.order_by("-created_at")[:50]
+    return Response({
+        "success": True,
+        "results": [{
+            "id": n.id,
+            "title": n.title or "Notification",
+            "message": n.message,
+            "seen": n.seen,
+            "is_read": n.is_read,
+            "url": n.url,
+            "created_at": n.created_at,
+        } for n in notifications],
+        "unread_count": notifications.filter(is_read=False).count() if hasattr(notifications, "filter") else sum(1 for n in notifications if not n.is_read),
+    })
+
+
+@api_view(["GET"])
+@permission_classes([IsAuthenticatedOrVisitor])
+def user_visitor_activity_view(request):
+    """Return recent activity for the signed-in user or current visitor."""
+    visitor_id = request.COOKIES.get("visitorId")
+    if request.user.is_authenticated:
+        activities = ActivityLog.objects.filter(user=request.user)
+    elif visitor_id:
+        activities = ActivityLog.objects.filter(visitor_id=visitor_id)
+    else:
+        activities = ActivityLog.objects.none()
+
+    activities = activities.order_by("-timestamp")[:50]
+    return Response({
+        "success": True,
+        "results": [{
+            "id": a.id,
+            "action": a.get_action_display(),
+            "description": a.description,
+            "timestamp": a.timestamp,
+            "related_url": a.related_url,
+        } for a in activities],
+    })
+
+
 
 
 class HybridCheckAuthView(APIView):
