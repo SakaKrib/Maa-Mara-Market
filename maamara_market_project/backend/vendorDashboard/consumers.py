@@ -51,3 +51,29 @@ class VendorDirectoryConsumer(AsyncWebsocketConsumer):
             "action": event.get("action", "updated"),
             "vendor_id": event.get("vendor_id"),
         }))
+
+
+class AdminVendorRequestsConsumer(AsyncWebsocketConsumer):
+    """Real-time invalidation channel for the admin vendor-request workspace."""
+
+    group_name = "admin_vendor_requests"
+
+    async def connect(self):
+        user = self.scope.get("user")
+        if not user or not user.is_authenticated or not user.is_staff:
+            await self.close(code=4403)
+            return
+
+        await self.channel_layer.group_add(self.group_name, self.channel_name)
+        await self.accept()
+
+    async def disconnect(self, close_code):
+        await self.channel_layer.group_discard(self.group_name, self.channel_name)
+
+    async def request_changed(self, event):
+        await self.send(text_data=json.dumps({
+            "type": "vendor_request.changed",
+            "resource": event.get("resource"),
+            "action": event.get("action", "updated"),
+            "object_id": event.get("object_id"),
+        }))
