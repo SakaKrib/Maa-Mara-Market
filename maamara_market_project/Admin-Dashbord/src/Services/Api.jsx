@@ -13,6 +13,11 @@ const resolveApiOrigin = () => {
 
 export const baseURL = resolveApiOrigin();
 
+export const getWebSocketUrl = (path = "/") => {
+  const normalizedPath = path.startsWith("/") ? path : `/${path}`;
+  return baseURL.replace(/^http/i, "ws") + normalizedPath;
+};
+
 const api = axios.create({ baseURL, withCredentials: true });
 
 let isRefreshing = false;
