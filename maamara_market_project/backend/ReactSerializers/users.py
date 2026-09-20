@@ -21,7 +21,7 @@ from rest_framework.response import Response
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.decorators import permission_classes, api_view
 from rest_framework.authentication import SessionAuthentication
-from oder.views import IsAuthenticatedOrVisitor
+from order.views import IsAuthenticatedOrVisitor
 
 from rest_framework_simplejwt.tokens import AccessToken, RefreshToken
 from rest_framework_simplejwt.authentication import JWTAuthentication
