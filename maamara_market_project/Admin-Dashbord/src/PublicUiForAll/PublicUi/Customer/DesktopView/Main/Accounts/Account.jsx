@@ -164,19 +164,19 @@ export default function UserAccount() {
 
   return (
     <>
-      <div className="p-6 flex justify-center">
-        <Card className="w-full max-w-3xl bg-white dark:bg-gray-900 rounded-2xl shadow-lg">
-          <CardContent className="p-8 space-y-6">
+      <div className="mm-account-page px-2 py-4 md:px-6 md:py-6 flex justify-center">
+        <Card className="mm-account-card w-full max-w-3xl bg-white dark:bg-gray-900 rounded-2xl shadow-lg">
+          <CardContent className="mm-account-content p-4 md:p-8 space-y-6">
             {/* Header */}
-            <div className="flex justify-between items-center">
-              <div className="flex items-center gap-3">
+            <div className="mm-account-header flex justify-between items-center gap-3">
+              <div className="flex items-center gap-3 min-w-0">
                 <User className="w-6 h-6 text-blue-500" />
-                <h2 className="text-xl font-semibold">Account Settings</h2>
+                <h2 className="text-xl font-semibold mm-account-title">Account Settings</h2>
               </div>
               <Button
                 variant="secondary"
                 onClick={() => (editing ? handleSave() : setEditing(true))}
-                className="flex items-center gap-2"
+                className="mm-account-edit-button flex items-center gap-2"
               >
                 {editing ? <Save className="w-4 h-4" /> : <Edit2 className="w-4 h-4" />}
                 {editing ? "Save" : "Edit"}
@@ -184,14 +184,14 @@ export default function UserAccount() {
             </div>
 
             {/* Profile Picture */}
-            <div className="flex items-center gap-4 mt-4">
+            <div className="mm-account-profile flex items-center gap-4 mt-4">
               <img
                 src={preview || profile?.profile_picture || "/default-avatar.png"}
                 alt="Profile"
-                className="w-24 h-24 rounded-full object-cover border-2 border-gray-300"
+                className="mm-account-avatar w-24 h-24 rounded-full object-cover border-2 border-gray-300"
               />
               {editing && (
-                <label className="flex items-center gap-2 text-sm cursor-pointer text-blue-500">
+                <label className="mm-account-upload flex items-center gap-2 text-sm cursor-pointer text-blue-500">
                   <ImagePlus className="w-4 h-4" />
                   <span>Upload New</span>
                   <input
@@ -205,10 +205,10 @@ export default function UserAccount() {
             </div>
 
             {/* User Info */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="mm-account-form grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="text-sm text-gray-500">First Name</label>
-                <Input
+                <label className="mm-account-label text-sm text-gray-500">First Name</label>
+                <Input className="mm-account-input"
                   name="first_name"
                   value={formData.first_name}
                   onChange={handleChange}
@@ -216,17 +216,17 @@ export default function UserAccount() {
                 />
               </div>
               <div>
-                <label className="text-sm text-gray-500">Last Name</label>
-                <Input
+                <label className="mm-account-label text-sm text-gray-500">Last Name</label>
+                <Input className="mm-account-input"
                   name="last_name"
                   value={formData.last_name}
                   onChange={handleChange}
                   disabled={!editing}
                 />
               </div>
-              <div className="col-span-2">
-                <label className="text-sm text-gray-500">Email</label>
-                <Input
+              <div className="col-span-1 md:col-span-2">
+                <label className="mm-account-label text-sm text-gray-500">Email</label>
+                <Input className="mm-account-input"
                   name="email"
                   value={formData.email}
                   onChange={handleChange}
@@ -234,10 +234,10 @@ export default function UserAccount() {
                 />
               </div>
               <div>
-                <label className="text-sm text-gray-500 flex items-center gap-1">
+                <label className="mm-account-label text-sm text-gray-500 flex items-center gap-1">
                   <Calendar className="w-4 h-4" /> Date of Birth
                 </label>
-                <Input
+                <Input className="mm-account-input"
                   type="date"
                   name="date_of_birth"
                   value={formData.date_of_birth}
@@ -248,10 +248,10 @@ export default function UserAccount() {
 
                {/* 🆕 Phone Number */}
                <div>
-                <label className="text-sm text-gray-500 flex items-center gap-1">
+                <label className="mm-account-label text-sm text-gray-500 flex items-center gap-1">
                   📞 Phone Number
                 </label>
-                <Input
+                <Input className="mm-account-input"
                   name="phone_number"
                   value={formData.phone_number || ""}
                   onChange={handleChange}
@@ -260,10 +260,10 @@ export default function UserAccount() {
               </div>
 
               <div>
-                <label className="text-sm text-gray-500 flex items-center gap-1">
+                <label className="mm-account-label text-sm text-gray-500 flex items-center gap-1">
                   <MapPin className="w-4 h-4" /> Location
                 </label>
-                <Input
+                <Input className="mm-account-input"
                   name="location"
                   value={formData.location}
                   onChange={handleChange}
@@ -274,10 +274,10 @@ export default function UserAccount() {
 
               {/* 🆕 City */}
               <div>
-                <label className="text-sm text-gray-500 flex items-center gap-1">
+                <label className="mm-account-label text-sm text-gray-500 flex items-center gap-1">
                   Country
                 </label>
-                <Input
+                <Input className="mm-account-input"
                   name="country"
                   value={formData.country || ""}
                   onChange={handleChange}
@@ -287,10 +287,10 @@ export default function UserAccount() {
 
               {/* 🆕 City */}
               <div>
-                <label className="text-sm text-gray-500 flex items-center gap-1">
+                <label className="mm-account-label text-sm text-gray-500 flex items-center gap-1">
                   🏙️ City / State
                 </label>
-                <Input
+                <Input className="mm-account-input"
                   name="city"
                   value={formData.city || ""}
                   onChange={handleChange}
@@ -300,10 +300,10 @@ export default function UserAccount() {
 
               {/* 🆕 Address */}
               <div className="col-span-1">
-                <label className="text-sm text-gray-500 flex items-center gap-1">
+                <label className="mm-account-label text-sm text-gray-500 flex items-center gap-1">
                   🏠 Address
                 </label>
-                <Input
+                <Input className="mm-account-input"
                   name="address"
                   value={formData.address || ""}
                   onChange={handleChange}
@@ -312,9 +312,9 @@ export default function UserAccount() {
               </div>
             </div>
 
-            <div className=" flex justify-center">
-              <Button className='bg-blue-500 hover:bg-blue-400' >
-                invite A Friend
+            <div className="mm-account-invite flex justify-center">
+              <Button className='mm-account-primary-button w-full sm:w-auto' >
+                Invite a Friend
               </Button>
             </div>
 
@@ -323,7 +323,7 @@ export default function UserAccount() {
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.4 }}
-              className="bg-gray-50 dark:bg-gray-800 p-5 rounded-xl shadow-sm space-y-4"
+              className="mm-account-section bg-gray-50 dark:bg-gray-800 p-4 md:p-5 rounded-xl shadow-sm space-y-4"
             >
               <h3 className="font-semibold text-lg flex items-center gap-2 text-gray-800 dark:text-gray-100">
                 <ShoppingBag className="w-5 h-5 text-indigo-500" />
@@ -392,7 +392,7 @@ export default function UserAccount() {
             <motion.div
               initial={{ opacity: 0, y: 5 }}
               animate={{ opacity: 1, y: 0 }}
-              className="bg-gray-50 dark:bg-gray-800 p-5 rounded-xl space-y-3"
+              className="mm-account-section bg-gray-50 dark:bg-gray-800 p-4 md:p-5 rounded-xl space-y-3"
             >
               <h3 className="font-semibold flex items-center gap-2">
                 <Wallet className="w-5 h-5 text-emerald-500" />
@@ -415,7 +415,7 @@ export default function UserAccount() {
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.4 }}
-              className="bg-gray-50 dark:bg-gray-800 p-5 rounded-xl shadow-sm space-y-4 border border-gray-100 dark:border-gray-700"
+              className="mm-account-section bg-gray-50 dark:bg-gray-800 p-4 md:p-5 rounded-xl shadow-sm space-y-4 border border-gray-100 dark:border-gray-700"
             >
               {/* Header */}
               <h3 className="font-semibold text-lg flex items-center gap-2 text-gray-800 dark:text-gray-100">
@@ -487,7 +487,7 @@ export default function UserAccount() {
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.4 }}
-              className="bg-gray-50 dark:bg-gray-800 p-5 rounded-xl space-y-3 shadow-sm"
+              className="mm-account-section bg-gray-50 dark:bg-gray-800 p-4 md:p-5 rounded-xl space-y-3 shadow-sm"
             >
               {/* Header */}
               <h3 className="font-semibold text-lg flex items-center gap-2 text-gray-800 dark:text-gray-100">
