@@ -39,7 +39,6 @@ import AdminLayout from "./cmponents/Auth/Routes/RoutesLayout/AdminLayot";
 import VendorLayout from "./cmponents/Auth/Routes/RoutesLayout/VendorLayout";
 
 // vendor requests
-import useDashboardInteractions from "./interaction";
 import VendorItems from "./cmponents/VENDORPAGE/Products/VendorItems/ItemList";
 import VendorItemCreateRequests from "./cmponents/VENDORPAGE/Products/VendorItems/AdminApproveDenyItemCreate";
 
@@ -412,7 +411,6 @@ function AppContent() {
 }
 
 function App() {
-  useDashboardInteractions();
   useMobileMenu();
 
   const [visitorReady, setVisitorReady] = useState(false);
