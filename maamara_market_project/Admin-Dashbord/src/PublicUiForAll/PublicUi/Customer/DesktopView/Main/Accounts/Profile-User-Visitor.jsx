@@ -74,7 +74,7 @@ export default function PublicProfile() {
     <div className="mm-page flex flex-col py-2 px-0 bg-white text-[#29251f] min-h-screen">
     <div className="flex justify-center px-4 pt-6 pb-8 sm:pt-8">
       <Card className="mm-profile-card w-full max-w-3xl overflow-hidden rounded-3xl border-[#e5dfd4] bg-white shadow-sm">
-        <CardHeader className="flex flex-col items-center text-center space-y-3 border-b border-[#eee8de] bg-[#f6f2ea] px-6 py-8">
+        <CardHeader className="flex flex-col items-center text-center space-y-3 border-b border-[#eee8de] bg-white px-6 py-8">
           <Avatar className="h-24 w-24">
             <AvatarImage
               src={profileDetails?.avatar || user?.profile_picture || "/default-avatar.png"}
