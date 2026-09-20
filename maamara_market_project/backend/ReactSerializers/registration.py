@@ -183,9 +183,13 @@ def verify_otp_register_otp(request):
     )
     Wallet.objects.get_or_create(user=user, defaults={"balance": 0, "earned_coins": 0})
 
-    # Merge before the visitor cookies are cleared. Login performs the same
-    # idempotent operation as a second safety net.
-    merge_result = merge_visitor_data_to_user(user, visitor_id)
+    # Do not merge visitor-owned records during OTP verification.
+    # Verification must remain responsible only for validating the OTP and
+    # creating the account. The normal login flow already performs the
+    # idempotent visitor-to-user merge while the visitor cookie is available.
+    # Keeping that migration out of this transaction prevents unrelated cart,
+    # order, profile, or visitor-data issues from rolling back a valid OTP.
+    merge_result = {"moved": 0, "deduplicated": 0, "deferred_to_login": True}
 
     referral_tracked = False
     voucher_generated = False
