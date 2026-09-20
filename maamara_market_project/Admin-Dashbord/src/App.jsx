@@ -97,6 +97,8 @@ import Brands from "./PublicUiForAll/PublicUi/Customer/DesktopView/Main/Trending
 import PublicProfile from "./PublicUiForAll/PublicUi/Customer/DesktopView/Main/Accounts/Profile-User-Visitor";
 import CartPage from "./PublicUiForAll/PublicUi/Customer/DesktopView/Main/CartHook/CartPage";
 import RequestReturnForm from "./PublicUiForAll/PublicUi/Customer/DesktopView/Main/Return/Return";
+import CareerPage from "./PublicUiForAll/PublicUi/Navigations/Footer/Career/Career";
+import CareerDetails from "./PublicUiForAll/PublicUi/Navigations/Footer/Career/CareerDetails";
 import CustomerToAdminRequests from "./cmponents/Admin/CustomerRequests/CustomerRequests";
 import VendorPendingOrdersTable from "./cmponents/VENDORPAGE/Home/Orders/VendorPendingOrders";
 import AdminPayoutTriggerPayment from "./cmponents/VendorPayoutReport/vendorPayouts/Business2Customer";
@@ -223,6 +225,8 @@ function AppContent() {
                 <Route path="shopping-cart" element={<CartPage />} />
                 <Route path="organic" element={<OrganicPage />} />
                 <Route path="request-returns" element={<RequestReturnForm />} />
+                <Route path="careers/jobs" element={<CareerPage />} />
+                <Route path="careers/:id" element={<CareerDetails />} />
                 <Route path="customer-join-chat" element={<Join />} />
                 <Route path="chat" element={<Chat />} />
               </Route>
