@@ -96,11 +96,14 @@ class Referral(models.Model):
         super().save(*args, **kwargs)
 
     def update_total_referrals(self):
-        """Update total referral count efficiently."""
-        new_count = Referral.objects.filter(referrer=self.referrer).count()
-        if self.total_referrals != new_count:  # Update only if changed
+        """Update the count using only completed referrals."""
+        new_count = Referral.objects.filter(
+            referrer=self.referrer,
+            invited_user__isnull=False,
+        ).count()
+        if self.total_referrals != new_count:
             self.total_referrals = new_count
-            self.save()
+            self.save(update_fields=["total_referrals"])
 
     @receiver(post_save, sender="core.Referral")
     def update_referrer_count(sender, instance, **kwargs):
