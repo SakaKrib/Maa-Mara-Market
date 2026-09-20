@@ -201,7 +201,7 @@ const Dashboard = () => {
           <button
             type="button"
             onClick={() => { setFilter("sent"); setOpenEmailPanel(true); }}
-            className="inline-flex items-center justify-center gap-2 rounded-xl border border-border bg-card px-4 py-2.5 text-xs font-semibold text-foreground hover:bg-muted dark:border-slate-700 dark:bg-card dark:text-foreground dark:hover:bg-muted"
+            className="inline-flex items-center justify-center gap-2 rounded-xl border border-border bg-card px-4 py-2.5 text-xs font-semibold text-foreground hover:bg-muted dark:border-border dark:bg-card dark:text-foreground dark:hover:bg-muted"
           >
             <IonIcon icon={mailOutline} />
             Email
@@ -279,7 +279,7 @@ const Dashboard = () => {
                 key={key}
                 type="button"
                 onClick={() => setSelectedListView(key)}
-                className={`min-w-0 flex-1 rounded-lg px-2 py-2 text-xs font-semibold transition ${selectedListView === key ? "bg-card text-primary shadow-sm dark:bg-card dark:text-indigo-200" : "text-muted-foreground hover:text-card-foreground dark:text-muted-foreground dark:hover:text-card-foreground"}`}
+                className={`min-w-0 flex-1 rounded-lg px-2 py-2 text-xs font-semibold transition ${selectedListView === key ? "bg-card text-primary shadow-sm dark:bg-card dark:text-primary" : "text-muted-foreground hover:text-card-foreground dark:text-muted-foreground dark:hover:text-card-foreground"}`}
               >
                 <span className="block truncate">{label}</span>
                 <span className="text-[10px] opacity-70">{count}</span>
