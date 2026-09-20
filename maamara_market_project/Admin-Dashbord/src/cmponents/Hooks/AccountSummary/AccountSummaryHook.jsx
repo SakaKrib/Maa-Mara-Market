@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import api from "../../../Services/Api";
 
 export default function useDashboardData(selectedDate = "") {
@@ -12,8 +12,7 @@ export default function useDashboardData(selectedDate = "") {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  useEffect(() => {
-    const fetchDashboardData = async () => {
+  const fetchDashboardData = useCallback(async () => {
       try {
         setLoading(true);
 
@@ -39,9 +38,12 @@ export default function useDashboardData(selectedDate = "") {
       }
     };
 
-    fetchDashboardData();
   }, [selectedDate]);
 
-  return { data, loading, error };
+  useEffect(() => {
+    fetchDashboardData();
+  }, [fetchDashboardData]);
+
+  return { data, loading, error, refetch: fetchDashboardData };
 }
 
