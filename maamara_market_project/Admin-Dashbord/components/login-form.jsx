@@ -34,7 +34,6 @@ export function LoginForm({ className, ...props }) {
   const navigate = useNavigate()
   const { login } = useAuth()
   
-
   // Snackbar state
   const [snackbar, setSnackbar] = useState({ open: false, severity: "error", message: "" })
 
@@ -97,11 +96,10 @@ export function LoginForm({ className, ...props }) {
       if (contentType && contentType.includes("application/json")) {
         const data = await response.json()
         if (data.success) {
-          login(data.user) // update auth context
+          login(data.user)
           setUsername("")
           setPassword("")
           console.log("Redirecting to:", from)
-          // Redirect to previous page (or fallback)
           navigate(from, { replace: true })
         } else {
           const msg = data.error || "Login failed. Please try again."
@@ -158,8 +156,6 @@ export function LoginForm({ className, ...props }) {
                     onChange={(e) => setUsername(e.target.value)}
                     required
                   />
-
-                 
                 </div>
 
                 <div className="flex flex-col gap-2">
@@ -175,6 +171,7 @@ export function LoginForm({ className, ...props }) {
                   <Input
                     id="password"
                     type={showPassword ? "text" : "password"}
+                    autoComplete="new-password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     required
@@ -199,10 +196,7 @@ export function LoginForm({ className, ...props }) {
                     variant="outline"
                     className="mm-auth-google w-full flex items-center justify-center gap-2"
                     onClick={() => {
-                      // optional: store redirect after login
                       sessionStorage.setItem("postLoginRedirect", from)
-
-                      // redirect to Django Google auth
                       window.location.href = `${baseUrl}/accounts/google/login/`
                     }}
                   >
