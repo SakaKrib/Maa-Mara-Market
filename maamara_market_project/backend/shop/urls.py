@@ -51,4 +51,14 @@ urlpatterns = [
     path("api/wishlist/remove/<int:pk>/", WishlistAPIView.as_view(), name="wishlist-remove"),
     path("api/rate-V/<int:vendor_id>/rate/", VendorRatingView.as_view(), name="vendor-rate"),
     path("api/vendor-reviews/", VendorReviewsUnifiedView.as_view(), name="vendor-rating-page"),
+
+    # Careers
+    path("api/careers/", career_vacancies_api, name="career-vacancies"),
+    path("api/careers/<int:pk>/", career_vacancy_detail_api, name="career-vacancy-detail"),
+    path("api/opening/<int:pk>/", job_vacancy_detail_api, name="job-vacancy-detail"),
+    path("api/careers/stats/", career_stats_api, name="career-stats"),
+    path("api/careers/apply/", apply_for_job_api, name="career-apply"),
+    path("api/applications/", get_job_applications_api, name="job-applications"),
+    path("api/applications/unseen/", unseen_applications_count_api, name="unseen-applications-count"),
+    path("api/applications/<int:pk>/seen/", mark_application_seen, name="mark-application-seen"),
 ]
