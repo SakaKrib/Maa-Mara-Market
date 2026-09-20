@@ -4,6 +4,8 @@ from django.db import transaction
 
 from vendorDashboard.models import SoldItem
 
+from .invoice_services import create_customer_invoice
+
 
 def _deduct_stock(order_item):
     """Lock and deduct the exact stock represented by an order line."""
@@ -73,11 +75,10 @@ def _deduct_stock(order_item):
 @transaction.atomic
 def complete_paid_order(order, payment, *, transaction_id=None):
     """
-    Atomically finalize a paid order.
+    Atomically finalize a paid order and issue its customer invoice.
 
-    The order row is locked so duplicate provider callbacks cannot create
-    duplicate sales or deduct stock twice. All stock changes and SoldItem
-    rows are committed together with the payment/order state.
+    Duplicate provider callbacks are safe: the locked order prevents duplicate
+    stock/sale processing and the payment-backed invoice is unique.
     """
     locked_order = order.__class__.objects.select_for_update().get(pk=order.pk)
     locked_payment = payment.__class__.objects.select_for_update().get(pk=payment.pk)
@@ -87,8 +88,6 @@ def complete_paid_order(order, payment, *, transaction_id=None):
     if locked_payment.amount is None or locked_payment.amount <= Decimal("0.00"):
         raise ValueError("Paid order has an invalid payment amount.")
 
-    # A completed order is already stock-finalized. Never run the
-    # fulfillment loop again merely because a payment row is still pending.
     if locked_order.status == "completed":
         if locked_payment.status != "completed":
             locked_payment.status = "completed"
@@ -98,6 +97,11 @@ def complete_paid_order(order, payment, *, transaction_id=None):
             if transaction_id:
                 fields.append("transaction_id")
             locked_payment.save(update_fields=fields)
+
+        create_customer_invoice(
+            locked_order,
+            locked_payment,
+        )
         return locked_order, False
 
     if locked_payment.status != "completed":
@@ -124,7 +128,6 @@ def complete_paid_order(order, payment, *, transaction_id=None):
     if not order_items:
         raise ValueError("Cannot complete an order without order items.")
 
-    # Validate/deduct stock and create sale records in the same transaction.
     for order_item in order_items:
         _deduct_stock(order_item)
 
@@ -144,13 +147,16 @@ def complete_paid_order(order, payment, *, transaction_id=None):
                 else order_item.item.get_current_price()
             ),
         )
-        # SoldItem.save historically deducts stock itself. Tell it that this
-        # service already performed the locked deduction.
         sold_item._stock_already_deducted = True
         sold_item.save()
 
     locked_order.status = "completed"
     locked_order.payment = locked_payment
     locked_order.save(update_fields=["status", "payment"])
+
+    create_customer_invoice(
+        locked_order,
+        locked_payment,
+    )
 
     return locked_order, True
