@@ -17,7 +17,6 @@ import {
   storefrontOutline,
   cardOutline,
   shieldCheckmarkOutline,
-  returnDownBackOutline,
 } from "ionicons/icons";
 import { Link, useLocation } from "react-router-dom";
 import { useAuth } from "../../Auth/AuthContext/Context";
@@ -37,7 +36,7 @@ const navigation = [
       { label: "Vendor requests", to: "/admin-dashboard/vendor-requests", icon: shieldCheckmarkOutline },
       { label: "Item requests", to: "/admin-dashboard/vendor/create-items/requests", icon: cubeOutline },
       { label: "Listings", to: "/admin-dashboard/approve-banner", icon: storefrontOutline },
-      { label: "Returns & customer requests", to: "/admin-dashboard/customer-requests", icon: returnDownBackOutline },
+      { label: "Returns & customer requests", to: "/admin-dashboard/customer-requests", icon: clipboardOutline },
     ],
   },
   {
