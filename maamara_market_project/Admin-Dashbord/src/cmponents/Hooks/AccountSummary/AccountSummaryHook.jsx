@@ -6,38 +6,34 @@ export default function useDashboardData(selectedDate = "") {
     accounts: {},
     summary: {},
     payments: {},
-    monthly_summary: [], // ✅ ADD THIS
+    monthly_summary: [],
   });
-
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
   const fetchDashboardData = useCallback(async () => {
-      try {
-        setLoading(true);
+    try {
+      setLoading(true);
+      const params = selectedDate ? { date: selectedDate } : undefined;
+      const response = await api.get("/api/dashboard/summary/", {
+        params,
+        withCredentials: true,
+      });
+      const json = response.data || {};
 
-        const params = selectedDate ? { date: selectedDate } : undefined;
-        const res = await api.get("/api/dashboard/summary/", { params, withCredentials: true });
-        const json = res.data;
-
-        setData({
-          accounts: json.accounts ?? {},
-          summary: json.summary_cards ?? {},
-          payments: json.payments_for_month ?? {},
-          monthly_summary: json.monthly_summary ?? [], // ✅ ADD THIS
-        });
-
-        // console.log("Dashboard API data:", json);
-        // console.log("Monthly summary:", json.monthly_summary);
-
-      } catch (err) {
-        console.error(err);
-        setError(err.message || "Failed to fetch dashboard data");
-      } finally {
-        setLoading(false);
-      }
-    };
-
+      setData({
+        accounts: json.accounts ?? {},
+        summary: json.summary_cards ?? {},
+        payments: json.payments_for_month ?? {},
+        monthly_summary: json.monthly_summary ?? [],
+      });
+      setError(null);
+    } catch (err) {
+      console.error("Error loading account summary:", err);
+      setError(err?.message || "Failed to fetch dashboard data");
+    } finally {
+      setLoading(false);
+    }
   }, [selectedDate]);
 
   useEffect(() => {
@@ -46,4 +42,3 @@ export default function useDashboardData(selectedDate = "") {
 
   return { data, loading, error, refetch: fetchDashboardData };
 }
-
