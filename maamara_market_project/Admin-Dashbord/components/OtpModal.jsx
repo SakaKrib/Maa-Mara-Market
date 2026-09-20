@@ -136,7 +136,7 @@ const OTPModal = ({ email, onVerify, expiresAt }) => {
 
   return (
     <div className="fixed inset-0 bg-opacity-50 flex items-center justify-center z-50 bg-black/30">
-      <div className="bg-white p-6 rounded-lg shadow-lg w-full max-w-sm">
+      <div className="bg-white p-6 rounded-[20px] md:p-8 xxs:px-2 shadow-lg w-full max-w-sm">
         <div className="flex justify-center mb-4">
           <div className="flex gap-4 items-center">
             <img src={Maamara} alt="maamara-logo" className="w-5 h-5" />
@@ -180,6 +180,7 @@ const OTPModal = ({ email, onVerify, expiresAt }) => {
           </InputOTPGroup>
         </InputOTP>
 
+      <div className="flex flex-col gap-2 justify-center items-center mt-4 text-center">
         <Button
           className="primary-button w-full mt-6"
           onClick={handleVerify}
@@ -188,7 +189,7 @@ const OTPModal = ({ email, onVerify, expiresAt }) => {
           {loading ? "Verifying..." : timer <= 0 ? "OTP Expired" : "Verify OTP"}
         </Button>
 
-        <div className="mt-4 text-center">
+        
           <Button
             variant="outline"
             className="light-button w-full"
