@@ -8,7 +8,7 @@ import {
   notificationsOutline,
   personAddOutline,
   statsChartOutline,
-  supportOutline,
+  helpCircleOutline,
   informationCircleOutline,
   cashOutline,
 } from "ionicons/icons";
@@ -372,7 +372,7 @@ const Dashboard = () => {
           <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">{jobsCount} unseen applications</p>
         </button>
         <button onClick={() => setOpenSupportPanel(true)} className="rounded-2xl border border-slate-200 bg-white p-4 text-left shadow-sm hover:border-indigo-300 dark:border-slate-800 dark:bg-slate-900">
-          <IonIcon icon={supportOutline} className="text-xl text-indigo-600" />
+          <IonIcon icon={helpCircleOutline} className="text-xl text-indigo-600" />
           <p className="mt-3 text-sm font-bold text-slate-900 dark:text-white">Support</p>
           <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">{supportCount} pending messages</p>
         </button>
