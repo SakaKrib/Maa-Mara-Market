@@ -708,12 +708,9 @@ def approve_vendor(request, vendor_request_id):
     resolved_draft_images = {}
     for index, item in enumerate(item_list):
         image_asset_id = item.get("image_asset_id")
-        if source_draft and item.get("image") and not image_asset_id:
-            return Response(
-                {"error": f"Item image {index + 1} must reference its saved draft asset."},
-                status=400,
-            )
         if not image_asset_id:
+            # No persisted draft asset: this is a fresh registration image.
+            # Its submitted image path is used directly when the Item is created.
             continue
         if not source_draft:
             return Response(
