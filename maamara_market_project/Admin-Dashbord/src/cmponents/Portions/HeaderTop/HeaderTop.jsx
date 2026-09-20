@@ -36,6 +36,9 @@ const HeaderTop = ({ onMenuToggle }) => {
     date_of_birth: "",
   });
 
+  const displayName = form.first_name?.trim() || user?.username || "Admin";
+  const shortDisplayName = displayName.length > 12 ? `${displayName.slice(0, 12)}…` : displayName;
+
   const profilePicture = profile?.profile?.profile_picture
     ? profile.profile.profile_picture.startsWith("http")
       ? profile.profile.profile_picture
