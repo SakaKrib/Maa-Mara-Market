@@ -4,7 +4,6 @@ import CombinedVendorStatsChart from "../ChartBox/PieChart2";
 import BarVendor from "../ChartBox/Bar/Bar";
 import Activities from "../ChartBox/Bar/RecentActivities/Activities";
 import useVendorStatsBox from "../../Hooks/ItemStats/ItemStatsHook";
-import VendorStatsBox from "../ItemStats/ItemStats";
 import VendorNotifications from "./notifications/Notifications_vendor";
 import { useMonthlySales } from "../ChartBox/ChartData/HomeChartData/SalesReport";
 import { useVendorItemGrowthStats } from "../../Hooks/ItemStats/VendorItemStats";
