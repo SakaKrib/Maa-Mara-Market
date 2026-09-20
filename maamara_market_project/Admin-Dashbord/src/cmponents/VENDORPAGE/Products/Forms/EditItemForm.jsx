@@ -1,6 +1,4 @@
 import React, { useState, useEffect } from "react";
-import axios from "axios";
-import { baseUrl } from "../../../../cmponents/Constant/Constant";
 import { Snackbar, Alert } from "@mui/material";
 import {
     Form,
@@ -19,7 +17,7 @@ import { Select, SelectItem  } from "../../../../../components/ui/select";
 import { useTheme } from "@mui/material";
 import { tokens } from "../../../../theme";
 import Checkbox from "../../../../../components/ui/checkbox";
-import api from "../../../../Services/Api/";
+import api, { resolveApiAssetUrl } from "../../../../Services/Api/";
 import { useVendor } from "../vendorhooks";
 import { organicAttributes, inorganicAttributes } from "./itemattribute";
 import FormControlLabel from "@mui/material/FormControlLabel";
@@ -497,7 +495,7 @@ if (data.shipping_dimension_data) {
 
     // ✅ API call
     const response = await api.put(
-      `${baseUrl}/api/item-post/update/${itemId}/`,
+      `/api/item-post/update/${itemId}/`,
       formData,
       { headers: { "Content-Type": "multipart/form-data" } }
     );
@@ -780,9 +778,7 @@ if (data.shipping_dimension_data) {
         {typeof field.value === "string" && (
         <img
         src={
-          field.value.startsWith("http")
-            ? field.value
-            : `${baseUrl}${field.value}`
+          resolveApiAssetUrl(field.value)
         }
         alt="Item preview"
         className="mt-2 w-32 h-32 object-cover border"
