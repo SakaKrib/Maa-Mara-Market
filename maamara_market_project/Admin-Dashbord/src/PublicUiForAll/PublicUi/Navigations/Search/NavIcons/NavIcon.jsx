@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { IonIcon } from "@ionic/react";
-import { cartOutline, heartOutline } from "ionicons/icons";
+import { cartOutline, heartOutline, notificationsOutline } from "ionicons/icons";
 import { Link, useNavigate } from "react-router-dom";
 import profileImage from "../../../../../../src/assets/profile/default-sender.jpg";
 import "../../../../../index.css";
@@ -15,13 +15,26 @@ const NavIcons = () => {
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isWishlistOpen, setIsWishlistOpen] = useState(false);
   const [isCartOpen, setIsCartOpen] = useState(false);
+  const [unreadNotifications, setUnreadNotifications] = useState(0);
 
   const { order } = useCartContext();
   const { wishlist } = useWishlistContext();
   const { user, logout, isAuthenticated } = useAuth();
 
   const navigate = useNavigate();
-   // 🔗 Refs for detecting outside clicks
+   useEffect(() => {
+    let active = true;
+    api.get("/api/user-visitor-notifications/", { withCredentials: true })
+      .then(({ data }) => {
+        if (active) setUnreadNotifications(Number(data?.unread_count || 0));
+      })
+      .catch(() => {
+        if (active) setUnreadNotifications(0);
+      });
+    return () => { active = false; };
+  }, [isAuthenticated]);
+
+  // 🔗 Refs for detecting outside clicks
   const profileRef = useRef(null);
    
     const wishlistRef = useRef(null);
@@ -136,6 +149,25 @@ const NavIcons = () => {
             )}
           </div>
         )}
+      </li>
+
+      {/* --- Notifications --- */}
+      <li className="relative hidden md:block">
+        <button
+          type="button"
+          className="flex items-center"
+          onClick={() => navigate("/profile")}
+          aria-label={unreadNotifications ? (unreadNotifications + " unread notifications") : "Notifications"}
+        >
+          <div className="relative text-xl">
+            <IonIcon icon={notificationsOutline} />
+            {unreadNotifications > 0 && (
+              <span className="absolute -top-2 -right-2 bg-black text-white text-[10px] min-w-[18px] h-[18px] px-1 rounded-full flex items-center justify-center">
+                {unreadNotifications > 99 ? "99+" : unreadNotifications}
+              </span>
+            )}
+          </div>
+        </button>
       </li>
 
       {/* --- Wishlist --- */}
