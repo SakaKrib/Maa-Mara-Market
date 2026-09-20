@@ -1,75 +1,38 @@
 import React from "react";
-import { useTheme } from "@mui/material";
-import { tokens } from "../../../../theme";
 import useDashboardData from "../../../Hooks/AccountSummary/AccountSummaryHook";
 
 export default function MonthlyReport() {
-  const theme = useTheme();
-  const colors = tokens(theme.palette.mode);
   const { data, loading, error } = useDashboardData();
+  const summary = data.summary || {};
+  const paymentsForVendors = Number(data.payments?.Vendors || 0);
 
-  if (loading) {
-    return <p style={{ color: colors.gray[100] }}>Loading...</p>;
-  }
+  const formatKES = (value) => "KES " + Number(value || 0).toLocaleString("en-KE", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
-  if (error) {
-    return <p style={{ color: colors.redAccent[500] }}>Error loading data</p>;
-  }
+  if (loading) return <div className="h-32 animate-pulse rounded-2xl bg-muted" />;
+  if (error) return <div className="rounded-xl border border-red-500/30 bg-red-500/10 p-4 text-sm text-red-600 dark:text-red-300">Error loading financial summary.</div>;
 
-  // Extract values from the hook state (summary, payments)
-  const incomeAmount = data.summary?.income?.amount || 0;
-  const incomeComparison = data.summary?.income?.comparison || "";
-
-  const expensesAmount = data.summary?.expenses?.amount || 0;
-  const expensesComparison = data.summary?.expenses?.comparison || "";
-
-  const cashbookAmount = data.summary?.cashbook?.amount || 0;
-  const cashbookComparison = data.summary?.cashbook?.comparison || "";
-
-  const paymentsForVendors = data.payments?.Vendors || 0;
-
-  // Format KES currency
-  const formatKES = (num) =>
-    Number(num).toLocaleString("en-KE", { minimumFractionDigits: 2 });
+  const cards = [
+    { title: "Income", amount: summary.income?.amount, comparison: summary.income?.comparison, tone: "bg-green-500/10 text-green-600 dark:text-green-300" },
+    { title: "Expenses", amount: summary.expenses?.amount, comparison: summary.expenses?.comparison, tone: "bg-orange-500/10 text-orange-600 dark:text-orange-300" },
+    { title: "Cashbook", amount: summary.cashbook?.amount, comparison: summary.cashbook?.comparison, tone: "bg-primary/10 text-primary" },
+    { title: "Vendor Payments", amount: paymentsForVendors, comparison: "Payments for this month", tone: "bg-purple-500/10 text-purple-600 dark:text-purple-300" },
+  ];
 
   return (
-    <div className="monthly-report flex justify-center">
-      <div className="report" style={{ backgroundColor: colors.primary[600] }}>
-        <h2 style={{ color: colors.blueAccent[100] }}>Income</h2>
-        <details>
-          <h2>KES {formatKES(incomeAmount)}</h2>
-          <h5 className="success" style={{ backgroundColor: colors.gray[700] }}>{incomeComparison}</h5>
-        </details>
-        <p className="text-muted">compared to last month</p>
+    <section className="rounded-2xl border border-border bg-card p-4 shadow-custom sm:p-5">
+      <div className="mb-4"><h2 className="text-base font-bold text-card-foreground sm:text-lg">Financial Summary</h2><p className="text-xs text-muted-foreground">Income, expenses, cashbook and vendor payments.</p></div>
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        {cards.map((card) => (
+          <article key={card.title} className="min-w-0 rounded-xl border border-border bg-background p-4">
+            <div className="flex items-center justify-between gap-2">
+              <p className="text-xs font-semibold text-muted-foreground">{card.title}</p>
+              <span className={"rounded-full px-2 py-1 text-[9px] font-bold " + card.tone}>KES</span>
+            </div>
+            <p className="mt-3 break-words text-lg font-bold tracking-tight text-card-foreground">{formatKES(card.amount)}</p>
+            <p className="mt-2 text-[11px] leading-5 text-muted-foreground">{card.comparison || "No comparison available"}</p>
+          </article>
+        ))}
       </div>
-
-      <div className="report" style={{ backgroundColor: colors.primary[600] }}>
-        <h2 style={{ color: colors.blueAccent[100] }}>Expenses</h2>
-        <details>
-          <h2>KES {formatKES(expensesAmount)}</h2>
-          <h5 className="warning" style={{ backgroundColor: colors.gray[700] }}>{expensesComparison}</h5>
-        </details>
-        <p className="text-muted">compared to last month</p>
-      </div>
-
-      <div className="report" style={{ backgroundColor: colors.primary[600] }}>
-        <h2 style={{ color: colors.blueAccent[100] }}>Cashbook</h2>
-        <details>
-          <h2>KES {formatKES(cashbookAmount)}</h2>
-          <h5 className="danger" style={{ backgroundColor: colors.gray[700] }}>{cashbookComparison}</h5>
-        </details>
-        <p className="text-muted">compared to last month</p>
-      </div>
-
-      <div className="report" style={{ backgroundColor: colors.primary[600] }}>
-        <h2 style={{ color: colors.blueAccent[100] }}>Payments for Vendors</h2>
-        <details>
-          <h2>KES {formatKES(paymentsForVendors)}</h2>
-          <h5 className="info" style={{ backgroundColor: colors.gray[700] }}>Payments for this month</h5>
-        </details>
-        <p className="text-muted">vendor salary</p>
-
-      </div>
-    </div>
+    </section>
   );
 }
