@@ -9,6 +9,7 @@ import { Badge } from "../../../../../../../components/ui/badge";
 import { Skeleton } from "../../../../../../../components/ui/skeleton";
 import { Button } from "../../../../../../../components/ui/button";
 import RequestReturnForm from "../Return/Return";
+import Invoices from "./Invoices";
 import { useUserExtras } from "../../../../../../cmponents/Hooks/UserVisitorLogs/VisitorUserLogs";
 
 import {
@@ -284,10 +285,8 @@ export default function PublicProfile() {
               >
                 Login to View Account
               </Button>
-              <div className="flex justify-center items-center mt-4">
-                <div className="mm-auth-light-button w-max cursor-pointer">
-                  Invoices
-                </div>
+              <div className="mt-4">
+                <Invoices />
               </div>
             </div>
             
