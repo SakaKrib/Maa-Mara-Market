@@ -8,10 +8,10 @@ from core.models import PendingRegistration
 
 
 class Command(BaseCommand):
-    help = "Delete registration records whose OTP has expired."
+    help = "Delete pending registrations that have remained unverified for 24 hours."
 
     def handle(self, *args, **options):
-        cutoff = timezone.now() - timedelta(minutes=3)
+        cutoff = timezone.now() - timedelta(hours=24)
 
         deleted, _ = PendingRegistration.objects.filter(
             Q(otp_sent_at__lt=cutoff)
