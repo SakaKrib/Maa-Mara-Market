@@ -9,6 +9,7 @@ from django.utils import timezone
 from core.models import ActivityLog, Notification
 from core.realtime import broadcast_event
 from order.models import Transaction
+from order.invoice_services import create_vendor_payout_invoice
 from order.paypalApis import get_paypal_access_token
 from vendorDashboard.models import VendorPayout
 
@@ -163,6 +164,9 @@ def apply_paypal_payout_status(
                     paypal_transaction_id=transaction_id,
                     **tx_defaults,
                 )
+
+        if status == "SUCCESS" and payout.paid:
+            create_vendor_payout_invoice(payout)
 
         if state_changed:
             vendor_user = getattr(payout.vendor, "user", None)
