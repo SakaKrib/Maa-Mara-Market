@@ -41,7 +41,7 @@ const CustomerOrdersDashboard = ({ wallet, vouchers = [], orders = [] }) => {
   );
 
   return (
-    <section className="mm-page min-h-screen bg-[#faf8f4] text-[#29251f]">
+    <section className="mm-page min-h-screen bg-white text-[#29251f]">
       <div className="mm-container px-4 py-8 sm:px-6 sm:py-10">
         <div className="space-y-6">
           <Card className="overflow-hidden rounded-3xl border border-[#e5dfd4] bg-[#f6f2ea] text-[#29251f] shadow-[0_10px_35px_rgba(54,45,32,0.08)]">
