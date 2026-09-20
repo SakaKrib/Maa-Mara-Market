@@ -245,7 +245,9 @@ def user_visitor_notifications_view(request):
     else:
         notifications = Notification.objects.none()
 
-    notifications = notifications.order_by("-created_at")[:50]
+    notifications = notifications.order_by("-created_at")
+    unread_count = notifications.filter(is_read=False).count()
+    notifications = notifications[:50]
     return Response({
         "success": True,
         "results": [{
@@ -257,7 +259,7 @@ def user_visitor_notifications_view(request):
             "url": n.url,
             "created_at": n.created_at,
         } for n in notifications],
-        "unread_count": notifications.filter(is_read=False).count() if hasattr(notifications, "filter") else sum(1 for n in notifications if not n.is_read),
+        "unread_count": unread_count,
     })
 
 
