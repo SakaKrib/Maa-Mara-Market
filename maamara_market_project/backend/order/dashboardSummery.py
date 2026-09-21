@@ -104,6 +104,7 @@ class DashboardSummaryView(APIView):
         # Completed customer refunds are real cash outflows.
         completed_refunds = Refund.objects.filter(status="completed", completed_at__gte=period_start, completed_at__lte=period_end)
         refund_total = completed_refunds.aggregate(total=Sum("amount"))["total"] or Decimal("0.00")
+        category_totals["Refund"] = category_totals.get("Refund", 0) + float(refund_total)
 
         # Actual vendor settlements are authoritative from VendorPayout. They
         # are separate from manual ledger entries and are included in total
