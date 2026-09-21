@@ -104,7 +104,7 @@ const VendorItemRequestDetail = () => {
       <div className="min-h-[320px] bg-background p-4 sm:p-6">
         <div className="mx-auto max-w-3xl rounded-2xl border border-border bg-card p-6 text-center">
           <p className="text-sm text-muted-foreground">{error || "Request not found."}</p>
-          <button type="button" onClick={() => navigate(-1)} className="mt-5 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground">Go Back</button>
+          <button type="button" onClick={() => navigate(-1)} className="mt-5 rounded-[20px] bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700">Go Back</button>
         </div>
       </div>
     );
@@ -162,9 +162,9 @@ const VendorItemRequestDetail = () => {
               <h2 className="text-sm font-bold text-card-foreground">Request Actions</h2>
               <p className="mt-1 text-xs leading-5 text-muted-foreground">Use the same approval workflow as the request list.</p>
               <div className="mt-5 grid gap-2">
-                <button type="button" disabled={status === "approved" || actionLoading !== ""} onClick={() => handleAction("approve")} className="rounded-xl bg-green-600 px-4 py-2.5 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50">{actionLoading === "approve" ? "Approving..." : status === "approved" ? "Approved" : "Approve"}</button>
-                <button type="button" disabled={status === "denied" || actionLoading !== ""} onClick={() => handleAction("deny")} className="rounded-xl bg-red-600 px-4 py-2.5 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50">{actionLoading === "deny" ? "Denying..." : status === "denied" ? "Denied" : "Deny"}</button>
-                <button type="button" onClick={() => navigate(`/admin-dashboard/vendor/create-item/${id}`, { state: request })} className="rounded-xl border border-border bg-card px-4 py-2.5 text-sm font-semibold text-card-foreground hover:bg-muted">Create Item</button>
+                <button type="button" disabled={status === "approved" || actionLoading !== ""} onClick={() => handleAction("approve")} className="rounded-[20px] bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50">{actionLoading === "approve" ? "Approving..." : status === "approved" ? "Approved" : "Approve"}</button>
+                <button type="button" disabled={status === "denied" || actionLoading !== ""} onClick={() => handleAction("deny")} className="rounded-[20px] bg-red-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-50">{actionLoading === "deny" ? "Denying..." : status === "denied" ? "Denied" : "Deny"}</button>
+                <button type="button" onClick={() => navigate(`/admin-dashboard/vendor/create-item/${id}`, { state: request })} className="rounded-[20px] border border-border bg-transparent px-4 py-2.5 text-sm font-semibold text-foreground hover:bg-muted">Create Item</button>
               </div>
             </aside>
           </div>
