@@ -173,7 +173,7 @@ def support_faq_candidates(request):
         .annotate(normalized_subject=Lower(Trim("subject")))
         .values("normalized_subject", "category")
         .annotate(question_count=Count("id"))
-        .filter(question_count__gte=2)
+        .filter(question_count__gte=3)
         .order_by("-question_count", "normalized_subject")[:50]
     )
     return Response([
