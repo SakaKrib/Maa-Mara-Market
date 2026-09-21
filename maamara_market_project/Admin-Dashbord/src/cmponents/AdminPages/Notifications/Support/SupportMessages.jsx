@@ -16,8 +16,6 @@ const SupportAdminPanel = ({ open, onClose }) => {
   const [sending, setSending] = useState(false);
   const [error, setError] = useState("");
 
-  if (!open) return null;
-
   const fetchTickets = async () => {
     try {
       setError("");
@@ -63,6 +61,8 @@ const SupportAdminPanel = ({ open, onClose }) => {
       setSending(false);
     }
   };
+
+  if (!open) return null;
 
   return (
     <div className="min-h-[calc(100vh-72px)] w-full bg-background p-2 text-foreground sm:p-4 lg:p-6">
