@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Bell, Check, ChevronRight, Globe2, KeyRound, LogOut, Monitor, RefreshCw, Save, Settings as SettingsIcon, ShieldCheck, UserRound, X } from "lucide-react";
+import { Bell, Check, ChevronRight, Globe2, KeyRound, LogOut, Monitor, RefreshCw, Save, Settings as SettingsIcon, ShieldCheck, UserRound, X, Eye, EyeOff } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../Auth/AuthContext/Context";
 import api from "../../Services/Api";
@@ -34,6 +34,13 @@ const Settings = () => {
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [passwordForm, setPasswordForm] = useState({ current_password: "", new_password: "", confirm_password: "" });
+  const [passwordBusy, setPasswordBusy] = useState(false);
+  const [passwordError, setPasswordError] = useState("");
 
   useEffect(() => {
     const load = async () => {
@@ -81,12 +88,51 @@ const Settings = () => {
     }
   };
 
-  const updatePreference = (key, value) => {
+  const updatePreference = async (key, value) => {
+    if (key === "browserAlerts" && value && typeof window !== "undefined" && "Notification" in window && Notification.permission === "default") {
+      try {
+        const permission = await Notification.requestPermission();
+        if (permission === "denied") value = false;
+      } catch {
+        value = false;
+      }
+    }
     const next = { ...preferences, [key]: value };
     setPreferences(next);
     localStorage.setItem("maamara-admin-preferences", JSON.stringify(next));
-    setMessage("Preference updated.");
+    setMessage(value ? `${key === "notifications" ? "Admin notifications" : key === "compactMode" ? "Compact workspace" : "Browser alerts"} enabled.` : `${key === "notifications" ? "Admin notifications" : key === "compactMode" ? "Compact workspace" : "Browser alerts"} disabled.`);
     setError("");
+  };
+
+  const openPasswordModal = () => {
+    setPasswordForm({ current_password: "", new_password: "", confirm_password: "" });
+    setPasswordError("");
+    setShowPasswordModal(true);
+  };
+
+  const changePassword = async (event) => {
+    event.preventDefault();
+    if (passwordBusy) return;
+    if (passwordForm.new_password !== passwordForm.confirm_password) {
+      setPasswordError("New passwords do not match.");
+      return;
+    }
+    setPasswordBusy(true);
+    setPasswordError("");
+    try {
+      await api.post("/api/admin/change-password/", {
+        current_password: passwordForm.current_password,
+        new_password: passwordForm.new_password,
+      });
+      setShowPasswordModal(false);
+      setPasswordForm({ current_password: "", new_password: "", confirm_password: "" });
+      setMessage("Password changed successfully.");
+      setError("");
+    } catch (err) {
+      setPasswordError(err.response?.data?.detail || "Could not change the password.");
+    } finally {
+      setPasswordBusy(false);
+    }
   };
 
   const resetPreferences = () => {
@@ -111,15 +157,15 @@ const Settings = () => {
   return (
     <section className="min-h-full bg-background p-2 text-foreground sm:p-4 lg:p-6">
       <div className="mx-auto max-w-6xl space-y-5">
-        <header className="flex items-start justify-between gap-4 rounded-2xl border border-border bg-card p-5 shadow-sm sm:p-6">
+        <header className="flex items-start justify-between gap-4 rounded-2xl border border-border bg-card p-4 shadow-sm sm:p-5">
           <div className="flex min-w-0 items-start gap-3">
             <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
               <SettingsIcon size={21} />
             </div>
             <div>
               <p className="text-xs font-bold uppercase tracking-[0.16em] text-primary">Admin workspace</p>
-              <h1 className="mt-1 text-2xl font-bold tracking-tight text-card-foreground">Settings</h1>
-              <p className="mt-1 text-sm text-muted-foreground">Manage your administrator profile, preferences and account security.</p>
+              <h1 className="mt-1 text-xl font-bold tracking-tight text-card-foreground">Settings</h1>
+              <p className="mt-1 text-xs text-muted-foreground">Manage your administrator profile, preferences and account security.</p>
             </div>
           </div>
           <button type="button" onClick={() => navigate("/admin-dashboard")} aria-label="Close settings" className="shrink-0 rounded-xl border border-border bg-muted p-2 text-muted-foreground transition hover:bg-primary hover:text-primary-foreground">
@@ -131,13 +177,13 @@ const Settings = () => {
         {error && <div className="rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-700 dark:text-red-300">{error}</div>}
 
         {loading ? (
-          <div className="grid gap-5 lg:grid-cols-[1.5fr_1fr]">
+          <div className="grid gap-4 lg:grid-cols-[1.15fr_.85fr]">
             <div className="h-96 animate-pulse rounded-2xl bg-muted" />
             <div className="h-96 animate-pulse rounded-2xl bg-muted" />
           </div>
         ) : (
           <div className="grid gap-5 lg:grid-cols-[1.5fr_1fr]">
-            <form onSubmit={updateProfile} className="rounded-2xl border border-border bg-card p-5 shadow-sm sm:p-6">
+            <form onSubmit={updateProfile} className="rounded-2xl border border-border bg-card p-4 shadow-sm sm:p-5">
               <div className="mb-5 flex items-center justify-between gap-3 border-b border-border pb-4">
                 <div>
                   <h2 className="font-bold text-card-foreground">Profile details</h2>
@@ -177,7 +223,7 @@ const Settings = () => {
                     ["compactMode", "Compact workspace", "Use a tighter layout where supported.", Monitor],
                     ["browserAlerts", "Browser alerts", "Allow browser notification preferences when supported.", Globe2],
                   ].map(([key, title, description, Icon]) => (
-                    <button key={key} type="button" onClick={() => updatePreference(key, !preferences[key])} className="flex w-full items-center gap-3 rounded-xl border border-border p-3 text-left transition hover:bg-muted">
+                    <button key={key} type="button" onClick={() => updatePreference(key, !preferences[key])} className={`flex w-full items-center gap-3 rounded-xl border border-border p-3 text-left transition ${preferences[key] ? "bg-muted/80" : "bg-card"} hover:bg-muted`}>
                       <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${preferences[key] ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground"}`}><Icon size={17} /></div>
                       <span className="min-w-0 flex-1"><strong className="block text-sm text-card-foreground">{title}</strong><small className="mt-0.5 block text-xs text-muted-foreground">{description}</small></span>
                       <span className={`h-5 w-9 rounded-full p-0.5 transition ${preferences[key] ? "bg-primary" : "bg-muted"}`}><span className={`block h-4 w-4 rounded-full bg-white shadow transition ${preferences[key] ? "translate-x-4" : ""}`} /></span>
@@ -193,9 +239,9 @@ const Settings = () => {
                   <div><h2 className="font-bold text-card-foreground">Security</h2><p className="text-xs text-muted-foreground">Account access and session controls.</p></div>
                 </div>
                 <div className="space-y-2">
-                  <button type="button" onClick={() => navigate("/forgot-password")} className="flex w-full items-center gap-3 rounded-xl border border-border p-3 text-left hover:bg-muted">
+                  <button type="button" onClick={openPasswordModal} className="flex w-full items-center gap-3 rounded-xl border border-border p-3 text-left hover:bg-muted">
                     <KeyRound size={17} className="text-primary" />
-                    <span className="flex-1"><strong className="block text-sm text-card-foreground">Reset password</strong><small className="text-xs text-muted-foreground">Start the existing secure password recovery flow.</small></span>
+                    <span className="flex-1"><strong className="block text-sm text-card-foreground">Reset password</strong><small className="text-xs text-muted-foreground">Verify your current password before choosing a new one.</small></span>
                     <ChevronRight size={16} className="text-muted-foreground" />
                   </button>
                   <button type="button" onClick={logout} className="flex w-full items-center gap-3 rounded-xl border border-red-500/20 p-3 text-left text-red-600 hover:bg-red-500/10 dark:text-red-300">
