@@ -42,7 +42,7 @@ const CreateItemModal = ({ open, onClose, item, onSave }) => {
   return (
     <Dialog
       open={isOpen}
-      onClose={onClose}
+      onClose={() => (routeMode ? navigate(-1) : onClose?.())}
       fullWidth
       maxWidth="lg"
       scroll="paper"
