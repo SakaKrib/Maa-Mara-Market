@@ -97,6 +97,7 @@ import CartPage from "./PublicUiForAll/PublicUi/Customer/DesktopView/Main/CartHo
 import RequestReturnForm from "./PublicUiForAll/PublicUi/Customer/DesktopView/Main/Return/Return";
 import CareerPage from "./PublicUiForAll/PublicUi/Navigations/Footer/Career/Career";
 import CareerDetails from "./PublicUiForAll/PublicUi/Navigations/Footer/Career/CareerDetails";
+import CustomerFAQ from "./PublicUiForAll/PublicUi/Navigations/Footer/FAQ/CustomerFAQ";
 import CustomerToAdminRequests from "./cmponents/Admin/CustomerRequests/CustomerRequests";
 import VendorPendingOrdersTable from "./cmponents/VENDORPAGE/Home/Orders/VendorPendingOrders";
 import AdminPayoutTriggerPayment from "./cmponents/VendorPayoutReport/vendorPayouts/Business2Customer";
@@ -226,6 +227,7 @@ function AppContent() {
                 <Route path="request-returns" element={<RequestReturnForm />} />
                 <Route path="careers/jobs" element={<CareerPage />} />
                 <Route path="careers/:id" element={<CareerDetails />} />
+                <Route path="faq" element={<CustomerFAQ />} />
                 <Route path="messages" element={<Messaging />} />
               </Route>
 
