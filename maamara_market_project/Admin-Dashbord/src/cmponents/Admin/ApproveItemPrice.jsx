@@ -5,7 +5,6 @@ import {
   Typography,
   Button,
   CircularProgress,
-  useTheme,
   Divider,
   Chip,
   Stack,
@@ -18,13 +17,8 @@ import PersonIcon from "@mui/icons-material/Person";
 import NotesIcon from "@mui/icons-material/Notes";
 import Inventory2Icon from "@mui/icons-material/Inventory2";
 
-import { tokens } from "../../theme";
-
 
 const AdminPriceApproval = ({ onCountChange }) => {
-  const theme = useTheme();
-  const colors = tokens(theme.palette.mode);
-
   const [requests, setRequests] = useState([]);
   const [history, setHistory] = useState([]);
 
@@ -175,7 +169,7 @@ const AdminPriceApproval = ({ onCountChange }) => {
                       variant="contained"
                       onClick={() => handleApprove(req.id)}
                       disabled={approvingId === req.id}
-                      className="!w-full !rounded-[20px] !bg-primary !px-4 !py-3 !text-sm !font-semibold !normal-case !text-primary-foreground hover:!bg-primary/90"
+                      className="!w-full !rounded-[20px] !bg-blue-600 !px-4 !py-3 !text-sm !font-semibold !normal-case !text-white hover:!bg-blue-700"
                     >
                       {approvingId === req.id ? <CircularProgress size={20} color="inherit" /> : "Approve price change"}
                     </Button>
