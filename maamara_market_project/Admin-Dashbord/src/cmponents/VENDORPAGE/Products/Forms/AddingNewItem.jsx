@@ -211,9 +211,22 @@ useEffect(() => {
    if (activeData === organicDepartmentMap) {
      form.reset({ ...emptyValues, section: "organic" });
    } else if (activeData === departmentMap) {
-     form.reset({ ...emptyValues, section: "general" });
+     form.reset({ ...emptyValues, section: "inorganic" });
    }
  }, [activeData, form, initialItem]);
+
+ // Organic-only fields must never remain active when the form is switched
+ // to Handmade/Inorganic. This keeps vendor and admin approval flows aligned.
+ useEffect(() => {
+   if (selectedSection !== "organic") {
+     setValue("is_organic", false);
+     setValue("is_fresh_food", false);
+     setValue("manufactured_date", "");
+     setValue("expiry_date", "");
+     setValue("roast_type", "");
+     setValue("coffee_state", "");
+   }
+ }, [selectedSection, setValue]);
  
  
    
@@ -399,7 +412,7 @@ useEffect(() => {
               />
               <span
                 className={`px-2 py-2 rounded-[20px] px-3 py-2 text-sm font-medium border transition
-                  ${selectedSection === "normal"
+                  ${selectedSection === "inorganic"
                     ? "bg-blue-600 text-white border-blue-600"
                     : "bg-card text-muted-foreground border-border hover:border-primary/50"}
                 `}
