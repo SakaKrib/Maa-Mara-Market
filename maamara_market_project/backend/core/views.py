@@ -6,7 +6,7 @@ from rest_framework import status, permissions, viewsets
 from rest_framework import viewsets, permissions
 from rest_framework.views import APIView
 from ReactSerializers.models import Item
-from core.models import Notification, EmailLog, SupportMessage
+from core.models import Notification, EmailLog, SupportMessage, AboutPage
 from .Serializer import NotificationSerializer, ItemSerializer, ReviewSerializer, ReactionSerializer
 from vendorDashboard.models import Vendor
 from shop.models import  Review, Reaction
@@ -61,6 +61,53 @@ class AllNotificationsView(APIView):
             for k, v in n.items():
                 n[k] = sanitize(v)
         return Response(data)
+
+# -------------------------------
+# About page content
+# -------------------------------
+def _about_payload(request, about):
+    return {
+        "id": about.id,
+        "hero_image": request.build_absolute_uri(about.hero_image.url) if about.hero_image else None,
+        "hero_title": about.hero_title,
+        "hero_subtitle": about.hero_subtitle,
+        "about_title": about.about_title,
+        "impact_title": about.impact_title,
+        "impact_content": about.impact_content,
+        "products_title": about.products_title,
+        "products_content": about.products_content,
+        "materials_content": about.materials_content,
+        "updated_at": about.updated_at,
+    }
+
+
+@api_view(["GET", "POST"])
+@permission_classes([IsAdminUser])
+def admin_about(request):
+    about, _ = AboutPage.objects.get_or_create(pk=1)
+
+    if request.method == "GET":
+        return Response(_about_payload(request, about))
+
+    for field in (
+        "hero_title",
+        "hero_subtitle",
+        "about_title",
+        "impact_title",
+        "impact_content",
+        "products_title",
+        "products_content",
+        "materials_content",
+    ):
+        if field in request.data:
+            setattr(about, field, request.data.get(field, ""))
+
+    if request.FILES.get("hero_image"):
+        about.hero_image = request.FILES["hero_image"]
+
+    about.save()
+    return Response(_about_payload(request, about))
+
 
 # -------------------------------
 # Customer support
