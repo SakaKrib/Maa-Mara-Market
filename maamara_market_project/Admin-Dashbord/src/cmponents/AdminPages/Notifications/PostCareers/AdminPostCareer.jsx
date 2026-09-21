@@ -9,7 +9,7 @@ const emptyForm = {
   application_deadline: "", is_active: true,
 };
 
-const AdminPostCareer = () => {
+const AdminPostCareer = ({ open, onClose }) => {
   const [jobs, setJobs] = useState([]);
   const [applications, setApplications] = useState([]);
   const [form, setForm] = useState(emptyForm);
@@ -17,7 +17,7 @@ const AdminPostCareer = () => {
   const [tab, setTab] = useState("jobs");
   const [selectedApplication, setSelectedApplication] = useState(null);
   const [message, setMessage] = useState("");
-  const [saving, setSaving] = useState(false);
+  const [saving, setSaving] = useState(false);\n\n  if (!open) return null;
 
   const loadJobs = () => api.get("/api/careers/").then((r) => setJobs(r.data || []));
   const loadApplications = () => api.get("/api/applications/").then((r) => setApplications(r.data || []));
