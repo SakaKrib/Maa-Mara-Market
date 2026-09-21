@@ -275,6 +275,7 @@ function AppContent() {
               <Route path="customer-requests" element={<CustomerToAdminRequests />} />
               <Route path="careers" element={<AdminPostCareer />} />
               <Route path="create-career" element={<AdminPostCareer />} />
+              <Route path="support" element={<SupportAdminPanel />} />
               <Route path="create-support" element={<SupportAdminPanel />} />
 
               {/* vendor create new item */}
