@@ -91,6 +91,7 @@ const ItemAddNew = ({ initialItem, vendorId, itemId, onSave, vendor }) => {
     initialItem?.section === "inorganic" ? "inorganic" : "organic"
   );
   const [showExtraFields, setShowExtraFields] = useState(false);
+  const isEditing = Boolean(initialItem?.id || itemId);
 
 
   
@@ -170,7 +171,7 @@ useEffect(() => {
       selectedSection === "organic" ? "organic" : "inorganic"
     );
   }
-}, [vendor, selectedSection, setValue]);
+}, [vendor, selectedSection, setValue, isEditing, initialItem, organicDepartmentMap, departmentMap]);
  
  
    //reset form inputs when togle for both
@@ -375,7 +376,7 @@ useEffect(() => {
         
   
          {/* 🔀 Toggle switch (only for organicDepartmentMap or departmentMap) */}
-       {vendor.vendor_data?.product_type === "both" && (
+       {!isEditing && vendor.vendor_data?.product_type === "both" && (
         <div className="my-4 space-y-2">
           <label className="block text-sm leading-6 font-semibold text-foreground">Select Form</label>
           <div className="flex flex-wrap gap-2">
@@ -708,6 +709,7 @@ useEffect(() => {
               type="number"
               step="0.01"
               min="0.01"
+              disabled={isEditing}
               value={isNaN(field.value) ? "" : field.value}
               onChange={(e) => {
                 const val = parseFloat(e.target.value);
