@@ -1,4 +1,5 @@
 from django.db.models import Case, F, IntegerField, Q, Sum, Avg, Count, Value, When, OuterRef, Subquery
+from django.db.models.functions import Coalesce
 from rest_framework import serializers
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import AllowAny
@@ -17,6 +18,7 @@ class DiscoveryProductSerializer(serializers.ModelSerializer):
     average_rating = serializers.FloatField(read_only=True)
     review_count = serializers.IntegerField(read_only=True)
     sales_count = serializers.IntegerField(read_only=True)
+    best_seller = serializers.SerializerMethodField()
     offer = serializers.SerializerMethodField()
 
     class Meta:
@@ -25,8 +27,11 @@ class DiscoveryProductSerializer(serializers.ModelSerializer):
             "id","name","image","price","discount_price","in_stock","available",
             "returnable","slug","likes","views","created_at","updated",
             "percentage_discount","in_offer","offer","final_price","final_discounted_price",
-            "save_upto","average_rating","review_count","sales_count",
+            "save_upto","average_rating","review_count","sales_count","best_seller",
         ]
+
+    def get_best_seller(self, obj):
+        return int(getattr(obj, "sales_count", 0) or 0) >= BEST_SELLER_MIN_UNITS
 
     def get_offer(self, obj):
         offer = getattr(obj, "offer", None)
@@ -103,7 +108,7 @@ def _catalog_queryset():
         Item.objects.filter(available=True, in_stock__gt=0)
         .select_related("section", "department", "category", "subcategory", "brand")
         .annotate(
-            sales_count=_completed_sales_subquery(sales_since),
+            sales_count=Coalesce(_completed_sales_subquery(sales_since), Value(0)),
             average_rating=Avg("reviews__rating"),
             review_count=Count("reviews", distinct=True),
         )
@@ -127,8 +132,8 @@ def discovery_feed(request):
     sales_since = now - timedelta(days=BEST_SELLER_WINDOW_DAYS)
 
     base = _catalog_queryset().annotate(
-        recent_views=_recent_view_subquery(trend_since),
-        recent_sales=_completed_sales_subquery(sales_since),
+        recent_views=Coalesce(_recent_view_subquery(trend_since), Value(0)),
+        recent_sales=Coalesce(_completed_sales_subquery(sales_since), Value(0)),
     )
 
     # "Trending" is recent, measurable shopper activity rather than lifetime
@@ -162,7 +167,13 @@ def discovery_feed(request):
 
     wanted = (
         base
-        .annotate(recent_wishlist_count=Count("wishlist_items", distinct=True))
+        .annotate(
+            recent_wishlist_count=Count(
+                "wishlisted_by",
+                filter=Q(wishlisted_by__created_at__gte=trend_since),
+                distinct=True,
+            )
+        )
         .order_by(
             F("recent_wishlist_count").desc(nulls_last=True),
             F("recent_views").desc(nulls_last=True),
@@ -217,9 +228,9 @@ def multi_collections(request):
             department.items.filter(available=True, in_stock__gt=0)
             .select_related("category","subcategory","brand")
             .annotate(
-                sales_count=_completed_sales_subquery(
+                sales_count=Coalesce(_completed_sales_subquery(
                     timezone.now() - timedelta(days=BEST_SELLER_WINDOW_DAYS)
-                ),
+                ), Value(0)),
                 average_rating=Avg("reviews__rating"),
                 review_count=Count("reviews", distinct=True),
             )
