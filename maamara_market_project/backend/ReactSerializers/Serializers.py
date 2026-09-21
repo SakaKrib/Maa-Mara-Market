@@ -90,6 +90,10 @@ class VendorPayoutSerializer(serializers.ModelSerializer):
 
 ## converting and sending vendor rrelated items
 class ItemSerializer(serializers.ModelSerializer):
+    additional_images = ItemAdditionalImageSerializer(many=True, read_only=True)
+    image = serializers.ImageField(use_url=True, allow_null=True)
+    video = serializers.FileField(use_url=True, allow_null=True)
+
     class Meta:
         model = Item
         fields = '__all__'
