@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import DOMPurify from "dompurify";
 import { IonIcon } from "@ionic/react";
 import { chevronDownOutline, searchOutline } from "ionicons/icons";
-import api from "../../../../../../Services/Api";
+import api from "../../../../../Services/Api";
 
 const CustomerFAQ = () => {
   const [faqs, setFaqs] = useState([]);
