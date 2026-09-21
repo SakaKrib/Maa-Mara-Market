@@ -248,20 +248,22 @@ const Settings = () => {
               <label className="block">
                 <span className="mb-1.5 block text-xs font-semibold text-muted-foreground">Current password</span>
                 <div className="relative">
-                  <input required minLength={i===0?1:8} type={showCurrentPassword ? "text" : "password"} value={passwordForm.current_password} onChange={(event) => setPasswordForm((current) => ({ ...current, current_password: event.target.value }))} className="w-full rounded-[20px] border border-border bg-background px-4 py-3 pr-12 text-sm text-foreground outline-none transition focus:border-primary focus:ring-4 focus:ring-primary/10" />
-                  <button type="button" onClick={() => setShowCurrentPassword((value) => !value)} className="absolute right-2 top-1/2 -translate-y-1/2 rounded-xl p-2 text-muted-foreground hover:bg-muted" aria-label="Toggle password visibility">{showCurrentPassword} ? <EyeOff size={17} /> : <Eye size={17} /></button>
+                  <input required type={showCurrentPassword ? "text" : "password"} value={passwordForm.current_password} onChange={(event) => setPasswordForm((current) => ({ ...current, current_password: event.target.value }))} className="w-full rounded-[20px] border border-border bg-background px-4 py-3 pr-12 text-sm text-foreground outline-none transition focus:border-primary focus:ring-4 focus:ring-primary/10" />
+                  <button type="button" onClick={() => setShowCurrentPassword((value) => !value)} className="absolute right-2 top-1/2 -translate-y-1/2 rounded-xl p-2 text-muted-foreground hover:bg-muted" aria-label="Toggle current password visibility">{showCurrentPassword ? <EyeOff size={17} /> : <Eye size={17} />}</button>
                 </div>
-              </label><label className="block">
+              </label>
+              <label className="block">
                 <span className="mb-1.5 block text-xs font-semibold text-muted-foreground">New password</span>
                 <div className="relative">
-                  <input required minLength={i===0?1:8} type={showNewPassword ? "text" : "password"} value={passwordForm.new_password} onChange={(event) => setPasswordForm((current) => ({ ...current, new_password: event.target.value }))} className="w-full rounded-[20px] border border-border bg-background px-4 py-3 pr-12 text-sm text-foreground outline-none transition focus:border-primary focus:ring-4 focus:ring-primary/10" />
-                  <button type="button" onClick={() => setShowNewPassword((value) => !value)} className="absolute right-2 top-1/2 -translate-y-1/2 rounded-xl p-2 text-muted-foreground hover:bg-muted" aria-label="Toggle password visibility">{showNewPassword} ? <EyeOff size={17} /> : <Eye size={17} /></button>
+                  <input required minLength={8} type={showNewPassword ? "text" : "password"} value={passwordForm.new_password} onChange={(event) => setPasswordForm((current) => ({ ...current, new_password: event.target.value }))} className="w-full rounded-[20px] border border-border bg-background px-4 py-3 pr-12 text-sm text-foreground outline-none transition focus:border-primary focus:ring-4 focus:ring-primary/10" />
+                  <button type="button" onClick={() => setShowNewPassword((value) => !value)} className="absolute right-2 top-1/2 -translate-y-1/2 rounded-xl p-2 text-muted-foreground hover:bg-muted" aria-label="Toggle new password visibility">{showNewPassword ? <EyeOff size={17} /> : <Eye size={17} />}</button>
                 </div>
-              </label><label className="block">
+              </label>
+              <label className="block">
                 <span className="mb-1.5 block text-xs font-semibold text-muted-foreground">Confirm new password</span>
                 <div className="relative">
-                  <input required minLength={i===0?1:8} type={showNewPassword ? "text" : "password"} value={passwordForm.confirm_password} onChange={(event) => setPasswordForm((current) => ({ ...current, confirm_password: event.target.value }))} className="w-full rounded-[20px] border border-border bg-background px-4 py-3 pr-12 text-sm text-foreground outline-none transition focus:border-primary focus:ring-4 focus:ring-primary/10" />
-                  <button type="button" onClick={() => setShowConfirmPassword((value) => !value)} className="absolute right-2 top-1/2 -translate-y-1/2 rounded-xl p-2 text-muted-foreground hover:bg-muted" aria-label="Toggle password visibility">{showNewPassword} ? <EyeOff size={17} /> : <Eye size={17} /></button>
+                  <input required minLength={8} type={showConfirmPassword ? "text" : "password"} value={passwordForm.confirm_password} onChange={(event) => setPasswordForm((current) => ({ ...current, confirm_password: event.target.value }))} className="w-full rounded-[20px] border border-border bg-background px-4 py-3 pr-12 text-sm text-foreground outline-none transition focus:border-primary focus:ring-4 focus:ring-primary/10" />
+                  <button type="button" onClick={() => setShowConfirmPassword((value) => !value)} className="absolute right-2 top-1/2 -translate-y-1/2 rounded-xl p-2 text-muted-foreground hover:bg-muted" aria-label="Toggle confirmation password visibility">{showConfirmPassword ? <EyeOff size={17} /> : <Eye size={17} />}</button>
                 </div>
               </label>
             </div>
