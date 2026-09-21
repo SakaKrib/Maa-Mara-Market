@@ -4,6 +4,8 @@ import HomepageHero from "./HomepageHero";
 import CategoryWithItems from "./Trending/Category/CategoryWithItemList";
 import MarketplaceDiscovery from "./Discovery/MarketplaceDiscovery";
 import AccountHighlights from "./AccountHighlights";
+import Banners from "./Trending/Banner";
+import AdvertBlogs from "../../../../../cmponents/Hooks/BlogHooksNew/BlogAdvert";
 
 const Main = () => (
   <main className="mm-page">
@@ -16,6 +18,8 @@ const Main = () => (
       </div>
     </section>
 
+    <Banners />
+    <AdvertBlogs />
     <MarketplaceDiscovery />
   </main>
 );
