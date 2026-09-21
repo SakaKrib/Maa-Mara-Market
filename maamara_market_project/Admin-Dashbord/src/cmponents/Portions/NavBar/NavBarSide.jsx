@@ -51,7 +51,7 @@ const navigation = [
     items: [
       { label: "Messages", to: "/admin-dashboard/messages", icon: chatboxOutline },
       { label: "Careers", to: "/admin-dashboard/create-career", icon: briefcaseOutline },
-      { label: "Support", to: "/admin-dashboard/create-support", icon: helpCircleOutline },
+      { label: "Support", to: "/admin-dashboard/support", icon: helpCircleOutline },
     ],
   },
   {
@@ -115,9 +115,9 @@ const NavBar = ({ open = false, onClose }) => {
                       key={item.label}
                       to={item.to}
                       onClick={onClose}
-                      className={`group flex min-h-10 items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition ${active ? "bg-indigo-50 text-indigo-700 dark:bg-indigo-500/15 dark:text-indigo-300" : "text-slate-600 hover:bg-slate-100 hover:text-slate-950 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-white"}`}
+                      className={`group flex min-h-10 items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition ${active ? "bg-primary/10 text-primary" : "text-slate-600 hover:bg-slate-100 hover:text-slate-950 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-white"}`}
                     >
-                      <IonIcon icon={item.icon} className={`shrink-0 text-lg ${active ? "text-indigo-600 dark:text-indigo-300" : "text-slate-400 group-hover:text-slate-700 dark:group-hover:text-slate-200"}`} />
+                      <IonIcon icon={item.icon} className={`shrink-0 text-lg ${active ? "text-primary" : "text-slate-400 group-hover:text-slate-700 dark:group-hover:text-slate-200"}`} />
                       <span className="truncate">{item.label}</span>
                     </Link>
                   );
