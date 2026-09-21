@@ -73,7 +73,7 @@ const SearchResultsPage = () => {
       });
 
     return () => controller.abort();
-  }, [searchTerm, requestedPage]);
+  }, [searchTerm, categoryId, requestedPage]);
 
   const goToPage = (nextPage) => {
     if (nextPage < 1 || nextPage > totalPages) return;
@@ -103,7 +103,9 @@ const SearchResultsPage = () => {
               <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">
                 {searchTerm
                   ? `Search results for “${searchTerm}”`
-                  : "Search the marketplace"}
+                  : categoryName
+                    ? categoryName
+                    : "Search the marketplace"}
               </h1>
               {(searchTerm || categoryId) && !loading && (
                 <p className="text-sm text-gray-500 mt-1">
@@ -134,7 +136,7 @@ const SearchResultsPage = () => {
             </div>
           )}
 
-          {!loading && !error && searchTerm.trim() && results.length === 0 && (
+          {!loading && !error && (searchTerm.trim() || categoryId) && results.length === 0 && (
             <div className="mm-card p-10 text-center">
               <h2 className="text-lg font-semibold mb-2">No products found</h2>
               <p className="text-sm text-gray-500">
