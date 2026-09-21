@@ -1,4 +1,5 @@
 import React from "react";
+import { Link } from "react-router-dom";
 import { useWishlistContext } from "../../../../../../cmponents/Hooks/WishListHook/Wishlist";
 import useTrendingProducts from "./useTrendingProducts";
 import FeaturedOffer from "./FeaturedOffer";
@@ -28,48 +29,40 @@ const TrendingProducts = () => {
 
   const featuredOfferItem = items.find((item) => item.in_offer && item.offer?.end_date);
   const regularItems = items.filter((item) => item.in_offer === false);
+  const visibleItems = regularItems.slice(0, 6);
+
 
   return (
     <section className="py-10 px-4 md:px-10 bg-white">
       <div className="max-w-7xl mx-auto">
-        <div className="mb-6 text-center">
-          <h2 className="text-2xl md:text-3xl font-bold text-gray-800">Trending Products</h2>
-        </div>
-
         <FeaturedOffer item={featuredOfferItem} />
 
-        <div className="product-card-grid grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2 sm:gap-4 lg:gap-6">
-          {regularItems.map((item) => {
-            const isWishlisted = wishlist.some((entry) => entry.item?.id === item.id || entry.id === item.id);
-            const toggleWishlist = async (event) => {
-              event.stopPropagation();
-              if (isWishlisted) await removeFromWishlist(item.id);
-              else await addToWishlist(item.id);
-            };
+        {visibleItems.length > 0 && (
+          <div className="mm-market-product-section">
+            <div className="mm-market-section-header">
+              <h2 className="mm-market-section-title">Popular Right Now</h2>
+              <Link to="/list" className="mm-market-view-all">View all</Link>
+            </div>
 
-            return (
-              <TrendingProductCard
-                key={item.id}
-                item={item}
-                isWishlisted={isWishlisted}
-                onToggleWishlist={toggleWishlist}
-              />
-            );
-          })}
-        </div>
+            <div className="product-card-grid grid grid-cols-2 gap-2 sm:gap-4 lg:grid-cols-3 lg:gap-6 xl:grid-cols-4">
+              {visibleItems.map((item) => {
+                const isWishlisted = wishlist.some((entry) => entry.item?.id === item.id || entry.id === item.id);
+                const toggleWishlist = async (event) => {
+                  event.stopPropagation();
+                  if (isWishlisted) await removeFromWishlist(item.id);
+                  else await addToWishlist(item.id);
+                };
 
-        {(prevUrl || nextUrl) && (
-          <div className="flex justify-between items-center mt-10">
-            {prevUrl ? (
-              <button type="button" onClick={() => fetchItems(prevUrl)} className="secondary-button px-4 py-2 rounded-md text-white">
-                Previous
-              </button>
-            ) : <span />}
-            {nextUrl && (
-              <button type="button" onClick={() => fetchItems(nextUrl)} className="secondary-button px-4 py-2 rounded-md text-white">
-                Next
-              </button>
-            )}
+                return (
+                  <TrendingProductCard
+                    key={item.id}
+                    item={item}
+                    isWishlisted={isWishlisted}
+                    onToggleWishlist={toggleWishlist}
+                  />
+                );
+              })}
+            </div>
           </div>
         )}
       </div>

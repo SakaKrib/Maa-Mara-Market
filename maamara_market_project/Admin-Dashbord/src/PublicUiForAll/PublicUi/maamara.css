@@ -5496,3 +5496,47 @@ h1,h2,h3,h4{font-family:'regular','Poppins',Arial,sans-serif}
   .mm-calendar-header p{font-size:11px;}
   .mm-calendar-close{width:34px;height:34px;}
 }
+
+
+/* Maa Mara marketplace discovery typography and compact product sections */
+.mm-market-product-section {
+  margin-top: 1.5rem;
+}
+
+.mm-market-section-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.mm-market-section-title {
+  margin: 0;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: clamp(1.45rem, 3vw, 2rem);
+  line-height: 1.15;
+  font-weight: 700;
+  letter-spacing: -0.015em;
+  color: var(--mm-text, #222);
+}
+
+.mm-market-view-all {
+  flex: 0 0 auto;
+  font-family: 'regular', 'Poppins', Arial, sans-serif;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--mm-text, #222);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.mm-market-view-all:hover {
+  opacity: 0.72;
+}
+
+.mm-product-card h3 {
+  font-family: Georgia, "Times New Roman", serif;
+  font-weight: 700;
+  line-height: 1.25;
+}
