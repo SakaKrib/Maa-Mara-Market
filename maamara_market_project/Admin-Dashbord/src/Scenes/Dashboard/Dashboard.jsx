@@ -49,7 +49,7 @@ const StatCard = ({ icon, label, value, detail, to, onClick }) => {
 
 const Dashboard = () => {
   const { user } = useAuth();
-  const { preferences, notifyBrowser } = useAdminPreferences();
+  const { preferences } = useAdminPreferences();
   const { toast } = useToast();
   const navigate = useNavigate();
   const { stats } = useDashboardStats();
@@ -98,7 +98,7 @@ const Dashboard = () => {
           transactionsResponse.data?.summary || { total_transactions: 0, total_revenue: 0 }
         );
         setActivityLogs(Array.isArray(activity.data) ? activity.data : []);
-        setNotifications(Array.isArray(notificationList.data) ? notificationList.data : []);
+        setNotifications(Array.isArray(notificationList.data) ? notificationList.data : (Array.isArray(notificationList.data?.results) ? notificationList.data.results : []));
       } catch (error) {
         console.error("Admin dashboard data load failed:", error);
       }
@@ -117,7 +117,7 @@ const Dashboard = () => {
         setVendorProgress(vendorRequests.data?.progress ?? 0);
         setVendorIncrease(vendorRequests.data?.increase ?? "+0%");
         setActivityLogs(Array.isArray(activity.data) ? activity.data : []);
-        const nextNotifications = Array.isArray(notificationList.data) ? notificationList.data : [];
+        const nextNotifications = Array.isArray(notificationList.data) ? notificationList.data : (Array.isArray(notificationList.data?.results) ? notificationList.data.results : []);
         setNotifications(nextNotifications);
       } catch (error) {
         console.error("Admin dashboard refresh failed:", error);
@@ -155,8 +155,7 @@ const Dashboard = () => {
         duration: 5000,
       });
     }
-    notifyBrowser("Maa Mara Market", { body: latest.message });
-  }, [notifications, toast, preferences.notifications, notifyBrowser]);
+  }, [notifications, toast, preferences.notifications]);
 
   const markAsSeen = async (id) => {
     try {
