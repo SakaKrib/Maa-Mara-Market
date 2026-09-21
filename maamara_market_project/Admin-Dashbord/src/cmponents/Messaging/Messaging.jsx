@@ -201,8 +201,8 @@ export default function Messaging() {
     <div className="min-h-screen bg-background p-2 text-foreground sm:p-4 lg:p-6">
       <div className="mx-auto flex min-h-[calc(100vh-110px)] max-w-7xl overflow-hidden rounded-2xl border border-border bg-card shadow-custom">
         <aside className={(mobileThread ? "hidden lg:flex" : "flex") + " w-full shrink-0 flex-col border-r border-border lg:w-[340px]"}>
-          <div className="border-b border-border p-4">
-            <div className="flex items-center gap-3">
+          <div className="border-b border-border p-4 text-center">
+            <div className="flex flex-col items-center gap-3">
               <div className="grid h-11 w-11 place-items-center rounded-xl bg-primary/10 text-primary"><IonIcon icon={chatbubbleEllipsesOutline} className="text-xl" /></div>
               <div><h1 className="text-lg font-bold text-card-foreground">Messages</h1><p className="text-xs text-muted-foreground">{isAdmin ? "Users and vendors" : "Chat with Maa Mara Admin"}</p></div>
             </div>
