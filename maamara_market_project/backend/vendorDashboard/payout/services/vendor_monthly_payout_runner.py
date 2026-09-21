@@ -209,6 +209,23 @@ def pay_single_vendor_payout(request, reference):
                 )
 
         if method == "MOBILE_MONEY":
+            # A failed M-Pesa attempt must not leave its old correlation IDs
+            # attached to the payout. Otherwise a late callback from that
+            # failed attempt could be mistaken for the new submission.
+            if payout.mpesa_result_code not in (None, 0):
+                payout.mpesa_conversation_id = None
+                payout.mpesa_originator_conversation_id = None
+                payout.mpesa_transaction_id = None
+                payout.mpesa_result_code = None
+                payout.mpesa_result_desc = None
+                payout.save(update_fields=[
+                    "mpesa_conversation_id",
+                    "mpesa_originator_conversation_id",
+                    "mpesa_transaction_id",
+                    "mpesa_result_code",
+                    "mpesa_result_desc",
+                ])
+
             response = call_mpesa_b2c(vendor, amount, mpesa_config, payout=payout)
         elif method == "PAYPAL":
             response = call_paypal_payout(payout, vendor.paypal_email, amount, paypal_config)
