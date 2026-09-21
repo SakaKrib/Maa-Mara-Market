@@ -11,6 +11,7 @@ const emptySections = {
 const useTrendingProducts = () => {
   const [items, setItems] = useState([]);
   const [sections, setSections] = useState(emptySections);
+  const [collections, setCollections] = useState([]);
   const [metadata, setMetadata] = useState({
     has_activity: false,
     has_search_history: false,
@@ -23,10 +24,14 @@ const useTrendingProducts = () => {
     setLoading(true);
 
     try {
-      const response = await api.get("/api/recommendations/", {
+      const [response, collectionsResponse] = await Promise.all([
+        api.get("/api/recommendations/", {
         params: { limit: 6 },
-      });
+        }),
+        api.get("/api/homepage-collections/", { params: { items: 6, sections: 8 } }),
+      ]);
       const data = response.data || {};
+      const collectionData = Array.isArray(collectionsResponse.data) ? collectionsResponse.data : [];
 
       const nextSections = {
         personalized: Array.isArray(data.personalized) ? data.personalized : [],
@@ -36,6 +41,7 @@ const useTrendingProducts = () => {
       };
 
       setSections(nextSections);
+      setCollections(collectionData);
       setItems(nextSections.popular);
       setMetadata({
         has_activity: Boolean(data.has_activity),
@@ -45,6 +51,7 @@ const useTrendingProducts = () => {
       });
     } catch {
       setSections(emptySections);
+      setCollections([]);
       setItems([]);
       setMetadata({
         has_activity: false,
@@ -79,6 +86,7 @@ const useTrendingProducts = () => {
   return {
     items,
     sections,
+    collections,
     metadata,
     loading,
     nextUrl: null,
