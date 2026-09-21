@@ -1,4 +1,6 @@
 import { useState } from "react";
+import { CalendarDays, X } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import FullCalendar from "@fullcalendar/react";
 import { formatDate } from "@fullcalendar/core";
 import dayGridPlugin from "@fullcalendar/daygrid";
@@ -22,11 +24,11 @@ import {
   FormControlLabel,
   Checkbox,
 } from "@mui/material";
-import Header from "../../Header/Header";
 import { tokens } from "../../theme";
 import useCalendarEvents from "./CalendarHook";
 
 const Calendar = () => {
+  const navigate = useNavigate();
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
   const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
@@ -111,8 +113,17 @@ const Calendar = () => {
   };
 
   return (
-    <Box className="mm-calendar-page" m="20px 0" padding="1em 1.5em">
-      <Header title="Calendar" subtitle="Full Calendar For Interactive Events & Functions" />
+    <Box className="mm-calendar-page" m="20px 0" padding="8px">
+      <Box className="mm-calendar-header">
+        <div className="mm-calendar-header-copy">
+          <span className="mm-calendar-eyebrow"><CalendarDays size={15} /> Schedule</span>
+          <h1>Calendar</h1>
+          <p>Plan, review and manage your marketplace events.</p>
+        </div>
+        <button type="button" className="mm-calendar-close" onClick={() => navigate("/admin-dashboard")} aria-label="Close calendar">
+          <X size={18} />
+        </button>
+      </Box>
 
       <Box display="flex" flexDirection={isMobile ? "column" : "row"} gap={2}>
         {/* Sidebar */}
@@ -120,7 +131,7 @@ const Calendar = () => {
           className="mm-calendar-sidebar"
           flex={isMobile ? "1 1 auto" : "1 1 20%"}
           backgroundColor={colors.primary[600]}
-          padding="15px"
+          padding="8px"
           borderRadius="4px"
           mb={isMobile ? 2 : 0}
         >
