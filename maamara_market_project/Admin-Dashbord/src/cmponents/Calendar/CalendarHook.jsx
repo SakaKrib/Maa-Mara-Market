@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import api from "../../Services/Api"; // use your API instance
+import api, { getWebSocketUrl } from "../../Services/Api"; // use your API instance
 
 const useCalendarEvents = () => {
   const [events, setEvents] = useState([]);
@@ -53,6 +53,44 @@ const useCalendarEvents = () => {
 
   useEffect(() => {
     fetchEvents();
+
+    let socket;
+    let reconnectTimer;
+    let attempts = 0;
+    let closed = false;
+
+    const connect = () => {
+      if (closed) return;
+      socket = new WebSocket(getWebSocketUrl("/ws/realtime/"));
+
+      socket.onopen = () => { attempts = 0; };
+      socket.onmessage = (event) => {
+        try {
+          const message = JSON.parse(event.data);
+          if (message?.model === "CalendarEvent") {
+            fetchEvents();
+          }
+        } catch {
+          // Ignore malformed realtime frames.
+        }
+      };
+      socket.onclose = () => {
+        if (closed) return;
+        reconnectTimer = window.setTimeout(
+          connect,
+          Math.min(1000 * 2 ** attempts++, 15000)
+        );
+      };
+      socket.onerror = () => socket.close();
+    };
+
+    connect();
+
+    return () => {
+      closed = true;
+      if (reconnectTimer) window.clearTimeout(reconnectTimer);
+      if (socket) socket.close();
+    };
   }, []);
 
   return { events, addEvent, deleteEvent };
