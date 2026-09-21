@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { Bell, ChevronRight, Compass, FilePenLine, Loader2, MessageCircle } from "lucide-react";
+import { ChevronRight, Compass, FilePenLine, Loader2, MessageCircle } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import api from "../../../../../Services/Api";
 import "./AccountHighlights.css";
@@ -10,6 +10,21 @@ const AccountHighlights = () => {
   const [messageUnreadCount, setMessageUnreadCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [activeIndex, setActiveIndex] = useState(0);
+
+  const loadMessageCount = async () => {
+    try {
+      const response = await api.get("/api/messaging/conversations/", { withCredentials: true });
+      const conversations = response.data?.results || [];
+      setMessageUnreadCount(
+        conversations.reduce(
+          (total, conversation) => total + Number(conversation?.unread_count || 0),
+          0
+        )
+      );
+    } catch (_) {
+      setMessageUnreadCount(0);
+    }
+  };
 
   useEffect(() => {
     let active = true;
@@ -48,6 +63,12 @@ const AccountHighlights = () => {
     return () => {
       active = false;
     };
+  }, []);
+
+  useEffect(() => {
+    const refreshMessages = () => loadMessageCount();
+    window.addEventListener("maa-mara-messages-updated", refreshMessages);
+    return () => window.removeEventListener("maa-mara-messages-updated", refreshMessages);
   }, []);
 
   const unreadMessages = messageUnreadCount;
