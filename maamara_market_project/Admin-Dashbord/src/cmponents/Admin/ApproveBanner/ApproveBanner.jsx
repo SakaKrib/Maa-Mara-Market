@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
+import { IonIcon } from "@ionic/react";
+import { megaphoneOutline, refreshOutline } from "ionicons/icons";
 import api from "../../../Services/Api";
-import { useTheme } from "@emotion/react";
-import { tokens } from "../../../theme";
 
 const POLL_INTERVAL = 10000;
 
@@ -10,16 +10,11 @@ export default function AdminBannerApprovalPage({ onCountChange }) {
   const [loading, setLoading] = useState(true);
   const [processingId, setProcessingId] = useState(null);
 
-  const theme = useTheme();
-  const colors = tokens(theme.palette.mode);
-
   const fetchBanners = async (silent = false) => {
     if (!silent) setLoading(true);
-
     try {
       const res = await api.get("/api/moderation/banners/");
       const list = res.data?.results || res.data || [];
-
       setBanners(list);
       onCountChange?.(list.length);
     } catch (err) {
@@ -31,123 +26,92 @@ export default function AdminBannerApprovalPage({ onCountChange }) {
 
   useEffect(() => {
     fetchBanners(false);
-
-    const interval = setInterval(() => {
-      fetchBanners(true);
-    }, POLL_INTERVAL);
-
+    const interval = setInterval(() => fetchBanners(true), POLL_INTERVAL);
     return () => clearInterval(interval);
   }, []);
 
-  const handleApprove = async (id) => {
+  const handleAction = async (id, action) => {
     setProcessingId(id);
-
     try {
-      await api.post(`/api/moderation/banners/${id}/approve/`);
-
+      await api.post(`/api/moderation/banners/${id}/${action}/`);
       setBanners((prev) => {
         const updated = prev.filter((b) => b.id !== id);
         onCountChange?.(updated.length);
         return updated;
       });
     } catch (err) {
-      console.error("Approve failed:", err);
+      console.error(`${action} banner failed:`, err);
     } finally {
       setProcessingId(null);
     }
   };
-
-  const handleReject = async (id) => {
-    setProcessingId(id);
-
-    try {
-      await api.post(`/api/moderation/banners/${id}/reject/`);
-
-      setBanners((prev) => {
-        const updated = prev.filter((b) => b.id !== id);
-        onCountChange?.(updated.length);
-        return updated;
-      });
-    } catch (err) {
-      console.error("Reject failed:", err);
-    } finally {
-      setProcessingId(null);
-    }
-  };
-
-  if (loading) return <div className="p-6 text-center">Loading banners...</div>;
-
-  if (banners.length === 0)
-    return (
-      <div
-        style={{ color: colors.gray[100], backgroundColor: colors.primary[500] }}
-        className="p-6 text-center"
-      >
-        No pending banners.
-      </div>
-    );
 
   return (
-    <div
-      className="max-w-5xl mx-auto p-4"
-      style={{ backgroundColor: colors.primary[500] }}
-    >
-      <h1 style={{ color: colors.gray[100] }} className="text-2xl font-bold mb-4">
-        Pending Banner Approvals
-      </h1>
-
-      <div className="space-y-4" style={{ backgroundColor: colors.primary[600] }}>
-        {banners.map((banner) => (
-          <div key={banner.id} className="border rounded p-4 shadow">
-            <h2 style={{ color: colors.gray[100] }} className="text-xl font-semibold">
-              {banner.title}
-            </h2>
-
-            {banner.subtitle && (
-              <p style={{ color: colors.gray[100] }}>{banner.subtitle}</p>
-            )}
-
-            {banner.image && (
-              <img
-                src={banner.image}
-                alt={banner.title}
-                className="w-full h-48 object-cover rounded mt-2"
-              />
-            )}
-
-            <div className="flex justify-between items-center mt-3">
-              <span style={{ color: colors.gray[100] }} className="text-sm">
-                Vendor: {banner.vendor_name}
-              </span>
-
-              <div className="flex gap-2">
-                <button
-                  onClick={() => handleApprove(banner.id)}
-                  disabled={processingId === banner.id}
-                  style={{
-                    backgroundColor: colors.greenAccent[700],
-                    color: colors.gray[100],
-                  }}
-                  className="px-3 py-1 rounded"
-                >
-                  Approve
-                </button>
-
-                <button
-                  onClick={() => handleReject(banner.id)}
-                  disabled={processingId === banner.id}
-                  style={{
-                    backgroundColor: colors.redAccent[500],
-                    color: colors.gray[100],
-                  }}
-                  className="px-3 py-1 rounded"
-                >
-                  Reject
-                </button>
-              </div>
+    <div className="min-h-[calc(100vh-72px)] w-full bg-background text-foreground">
+      <div className="mx-auto w-full max-w-6xl px-4 py-6 sm:px-6 lg:px-8">
+        <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex min-w-0 items-center gap-3">
+            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-muted">
+              <IonIcon icon={megaphoneOutline} className="text-xl" />
+            </div>
+            <div className="min-w-0">
+              <p className="text-sm text-muted-foreground">Marketing &amp; promotions</p>
+              <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">Banner Approvals</h1>
+              <p className="mt-1 text-sm text-muted-foreground">Review vendor banners before they appear on the marketplace.</p>
             </div>
           </div>
-        ))}
+          <button
+            type="button"
+            onClick={() => fetchBanners(false)}
+            disabled={loading}
+            className="inline-flex min-h-10 items-center justify-center gap-2 rounded-xl border border-border bg-card px-4 text-sm font-medium text-card-foreground shadow-sm hover:bg-muted disabled:opacity-60"
+          >
+            <IonIcon icon={refreshOutline} />
+            Refresh
+          </button>
+        </div>
+
+        <div className="rounded-2xl border border-border bg-card shadow-sm">
+          <div className="border-b border-border px-4 py-4 sm:px-6">
+            <h2 className="font-semibold">Pending banners</h2>
+            <p className="mt-1 text-sm text-muted-foreground">
+              {banners.length} {banners.length === 1 ? "banner" : "banners"} awaiting review.
+            </p>
+          </div>
+
+          {loading ? (
+            <div className="p-8 text-center text-sm text-muted-foreground">Loading banners…</div>
+          ) : banners.length === 0 ? (
+            <div className="p-10 text-center">
+              <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-xl bg-muted">
+                <IonIcon icon={megaphoneOutline} className="text-xl text-muted-foreground" />
+              </div>
+              <h3 className="font-medium">No pending banners</h3>
+              <p className="mt-1 text-sm text-muted-foreground">New vendor submissions will appear here for review.</p>
+            </div>
+          ) : (
+            <div className="divide-y divide-border">
+              {banners.map((banner) => (
+                <article key={banner.id} className="p-4 sm:p-6">
+                  <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                    <div className="min-w-0 flex-1">
+                      <h3 className="text-lg font-semibold">{banner.title}</h3>
+                      {banner.subtitle && <p className="mt-1 text-sm text-muted-foreground">{banner.subtitle}</p>}
+                      {banner.image && (
+                        <img src={banner.image} alt={banner.title || "Banner"} className="mt-4 aspect-[16/6] w-full rounded-xl border border-border object-cover" />
+                      )}
+                      <p className="mt-3 text-sm text-muted-foreground">Vendor: {banner.vendor_name || "Unknown"}</p>
+                    </div>
+                    <div className="flex shrink-0 gap-2">
+                      <button type="button" onClick={() => handleAction(banner.id, "approve")} disabled={processingId === banner.id} className="min-h-10 rounded-xl bg-primary px-4 text-sm font-medium text-primary-foreground disabled:opacity-60">Approve</button>
+                      <button type="button" onClick={() => handleAction(banner.id, "reject")} disabled={processingId === banner.id} className="min-h-10 rounded-xl border border-border bg-card px-4 text-sm font-medium text-card-foreground hover:bg-muted disabled:opacity-60">Reject</button>
+                    </div>
+                  </div>
+                </article>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
