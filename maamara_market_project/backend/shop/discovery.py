@@ -17,15 +17,27 @@ class DiscoveryProductSerializer(serializers.ModelSerializer):
     average_rating = serializers.FloatField(read_only=True)
     review_count = serializers.IntegerField(read_only=True)
     sales_count = serializers.IntegerField(read_only=True)
+    offer = serializers.SerializerMethodField()
 
     class Meta:
         model = Item
         fields = [
             "id","name","image","price","discount_price","in_stock","available",
             "returnable","slug","likes","views","created_at","updated",
-            "percentage_discount","in_offer","final_price","final_discounted_price",
+            "percentage_discount","in_offer","offer","final_price","final_discounted_price",
             "save_upto","average_rating","review_count","sales_count",
         ]
+
+    def get_offer(self, obj):
+        offer = getattr(obj, "offer", None)
+        if not offer:
+            return None
+        return {
+            "discount_percentage": offer.discount_percentage,
+            "start_date": offer.start_date,
+            "end_date": offer.end_date,
+            "final_price": offer.final_price,
+        }
 
     def get_final_price(self, obj):
         return round(obj.get_item_final_price(), 2)
