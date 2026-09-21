@@ -33,7 +33,7 @@ export default function AddPaymentModal({ open, onClose, onSubmit }) {
       <div className="w-full max-w-md rounded-2xl border border-border bg-card p-5 shadow-2xl sm:p-6" onMouseDown={(event) => event.stopPropagation()}>
         <div className="mb-5">
           <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">Accounts</p>
-          <h2 className="mt-1 text-xl font-bold text-card-foreground">Add Payment</h2>
+          <h2 className="mt-1 text-xl font-bold text-card-foreground">Add Bookkeeping Entry</h2>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -65,7 +65,7 @@ export default function AddPaymentModal({ open, onClose, onSubmit }) {
 
           <div className="flex flex-col-reverse gap-2 pt-2 sm:flex-row sm:justify-end">
             <button type="button" onClick={onClose} disabled={saving} className="rounded-xl border border-border px-4 py-2.5 text-sm font-semibold text-card-foreground hover:bg-muted disabled:opacity-50">Cancel</button>
-            <button type="submit" disabled={saving} className="rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50">{saving ? "Saving..." : "Save Payment"}</button>
+            <button type="submit" disabled={saving} className="rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50">{saving ? "Saving..." : "Save Entry"}</button>
           </div>
         </form>
       </div>
