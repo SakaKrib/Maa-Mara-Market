@@ -232,28 +232,29 @@ def search_items(request):
             tokens[1:],
             _search_fields_for_token(tokens[0]),
         )
-        queryset = queryset.filter(search_filter)
-        .select_related(
-            "section",
-            "department",
-            "category",
-            "subcategory",
-            "brand",
+        queryset = (
+            queryset.filter(search_filter)
+            .select_related(
+                "section",
+                "department",
+                "category",
+                "subcategory",
+                "brand",
+            )
+            .prefetch_related(
+                "variants",
+                "reviews",
+                "kids_sizes",
+                "shoe_input",
+            )
+            .annotate(
+                search_relevance=_relevance_expression(query, tokens)
+                if tokens
+                else Value(0, output_field=IntegerField())
+            )
+            .distinct()
+            .order_by("-search_relevance", "-views", "-likes", "-created_at", "name")
         )
-        .prefetch_related(
-            "variants",
-            "reviews",
-            "kids_sizes",
-            "shoe_input",
-        )
-        .annotate(
-            search_relevance=_relevance_expression(query, tokens)
-            if tokens
-            else Value(0, output_field=IntegerField())
-        )
-        .distinct()
-        .order_by("-search_relevance", "-views", "-likes", "-created_at", "name")
-    )
 
     paginator = Paginator(queryset, page_size)
     total = paginator.count
