@@ -16,6 +16,7 @@ const FAQ = () => {
   const [editedAnswer, setEditedAnswer] = useState("");
   const [newFaq, setNewFaq] = useState({ question: "", answer: "", category: "" });
   const [saving, setSaving] = useState(false);
+  const [faqCandidates, setFaqCandidates] = useState([]);
 
   const fetchFaqs = async (silent = false) => {
     if (!silent) setLoading(true);
@@ -33,6 +34,9 @@ const FAQ = () => {
 
   useEffect(() => {
     fetchFaqs(false);
+    api.get("/api/support/faq-candidates/", { withCredentials: true })
+      .then((response) => setFaqCandidates(Array.isArray(response.data) ? response.data : []))
+      .catch(() => setFaqCandidates([]));
   }, []);
 
   useEffect(() => {
@@ -127,17 +131,44 @@ const FAQ = () => {
         <section className="mb-5 rounded-2xl border border-border bg-card p-4 shadow-custom sm:p-5">
           <h2 className="text-base font-bold text-card-foreground">Create FAQ</h2>
           <div className="mt-4 grid gap-3 sm:grid-cols-2">
-            <input
-              value={newFaq.question}
-              onChange={(e) => setNewFaq({ ...newFaq, question: e.target.value })}
-              placeholder="Question"
-              className="min-h-11 w-full min-w-0 rounded-xl border border-border bg-transparent px-4 text-sm text-card-foreground outline-none focus:ring-2 focus:ring-primary/20"
-            />
+            <div className="min-w-0">
+              <label className="mb-2 block text-xs font-semibold text-muted-foreground">Question</label>
+              <input
+                value={newFaq.question}
+                onChange={(e) => setNewFaq({ ...newFaq, question: e.target.value })}
+                placeholder="Type the customer question"
+                className="min-h-11 w-full min-w-0 rounded-xl border border-border bg-transparent px-4 text-sm text-card-foreground outline-none focus:ring-2 focus:ring-primary/20"
+              />
+              {faqCandidates.length > 0 && (
+                <select
+                  value=""
+                  onChange={(e) => {
+                    const candidate = faqCandidates.find((item) => String(item.question) === e.target.value);
+                    if (candidate) {
+                      setNewFaq((current) => ({
+                        ...current,
+                        question: candidate.question,
+                        category: current.category || candidate.category || "",
+                      }));
+                    }
+                  }}
+                  className="mt-2 min-h-10 w-full min-w-0 rounded-xl border border-border bg-card px-3 text-xs text-card-foreground outline-none focus:ring-2 focus:ring-primary/20"
+                  aria-label="Repeated support questions"
+                >
+                  <option value="">Use a repeated support question (3+ requests)</option>
+                  {faqCandidates.map((candidate) => (
+                    <option key={candidate.question} value={candidate.question}>
+                      {candidate.question} — {candidate.question_count} requests
+                    </option>
+                  ))}
+                </select>
+              )}
+            </div>
             <input
               value={newFaq.category}
               onChange={(e) => setNewFaq({ ...newFaq, category: e.target.value })}
               placeholder="Category"
-              className="min-h-11 rounded-xl border border-border bg-transparent px-4 text-sm text-card-foreground outline-none focus:ring-2 focus:ring-primary/20"
+              className="min-h-11 w-full min-w-0 rounded-xl border border-border bg-transparent px-4 text-sm text-card-foreground outline-none focus:ring-2 focus:ring-primary/20"
             />
           </div>
           <div className="mt-3">
