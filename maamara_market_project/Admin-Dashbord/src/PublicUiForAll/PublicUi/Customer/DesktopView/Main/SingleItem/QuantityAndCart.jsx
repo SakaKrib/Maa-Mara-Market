@@ -26,7 +26,7 @@ const QuantityAndCart = ({ item, quantity, setQuantity, availableStock, remainin
             onClick={() => setQuantity((q) => Math.min(q + 1, availableStock))}
             disabled={quantity >= availableStock}
             aria-label="Increase quantity"
-            className="px-1 text-sm font-semibold text-card-foreground disabled:opacity-40"
+            className="flex h-7 w-7 items-center justify-center rounded-full border border-gray-300 bg-background text-sm font-semibold text-card-foreground transition-colors hover:bg-muted disabled:opacity-40"
           >
             +
           </button>
