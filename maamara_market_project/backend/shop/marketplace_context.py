@@ -101,12 +101,10 @@ def item_marketplace_context_v2(request, pk):
         item.item_attribute,
     ]
 
-    # Use the product/taxonomy vocabulary to find actual marketplace searches
-    # that other shoppers have made, then rank them by frequency.
     name_tokens = [
-        token.strip(".,!?;:/\\\\()[]{}").lower()
+        token.strip(".,!?;:/\\()[]{}").lower()
         for token in str(item.name or "").split()
-        if len(token.strip(".,!?;:/\\\\()[]{}")) >= 3
+        if len(token.strip(".,!?;:/\\()[]{}")) >= 3
     ][:6]
 
     related_search_terms = []
@@ -223,24 +221,23 @@ def item_marketplace_context_v2(request, pk):
             vendor=item.vendor
         ).select_related("user")
 
-        aggregates = vendor_ratings.aggregate(
-            quality=Avg("quality"),
-            communication=Avg("communication"),
-            shipping=Avg("shipping"),
+        # Use unique alias names for the averages and conditional counts.
+        # This prevents Django from interpreting a model field such as
+        # "quality" as an aggregate alias when the same aggregate call also
+        # contains Count(..., filter=Q(quality__gte=4)).
+        rating_stats = vendor_ratings.aggregate(
+            quality_avg=Avg("quality"),
+            communication_avg=Avg("communication"),
+            shipping_avg=Avg("shipping"),
+            quality_4_plus=Count("id", filter=Q(quality__gte=4)),
+            communication_4_plus=Count("id", filter=Q(communication__gte=4)),
+            shipping_4_plus=Count("id", filter=Q(shipping__gte=4)),
         )
 
-        # Badge eligibility is based on the number of individual vendor
-        # ratings that are 4 stars or higher in each category. Keep these
-        # counts as separate queries so they cannot conflict with the
-        # aggregate aliases above.
-        quality_4_plus = vendor_ratings.filter(quality__gte=4).count()
-        communication_4_plus = vendor_ratings.filter(communication__gte=4).count()
-        shipping_4_plus = vendor_ratings.filter(shipping__gte=4).count()
-
         rating_values = [
-            aggregates["quality"],
-            aggregates["communication"],
-            aggregates["shipping"],
+            rating_stats["quality_avg"],
+            rating_stats["communication_avg"],
+            rating_stats["shipping_avg"],
         ]
         valid_values = [float(value) for value in rating_values if value is not None]
 
@@ -249,27 +246,27 @@ def item_marketplace_context_v2(request, pk):
             if valid_values
             else 0,
             "review_count": vendor_ratings.count(),
-            "quality": round(float(aggregates["quality"]), 1)
-            if aggregates["quality"] is not None
+            "quality": round(float(rating_stats["quality_avg"]), 1)
+            if rating_stats["quality_avg"] is not None
             else 0,
-            "communication": round(float(aggregates["communication"]), 1)
-            if aggregates["communication"] is not None
+            "communication": round(float(rating_stats["communication_avg"]), 1)
+            if rating_stats["communication_avg"] is not None
             else 0,
-            "shipping": round(float(aggregates["shipping"]), 1)
-            if aggregates["shipping"] is not None
+            "shipping": round(float(rating_stats["shipping_avg"]), 1)
+            if rating_stats["shipping_avg"] is not None
             else 0,
             "badges": {
                 "quality": {
-                    "eligible": quality_4_plus >= 10,
-                    "count": quality_4_plus,
+                    "eligible": (rating_stats["quality_4_plus"] or 0) >= 10,
+                    "count": int(rating_stats["quality_4_plus"] or 0),
                 },
                 "communication": {
-                    "eligible": communication_4_plus >= 10,
-                    "count": communication_4_plus,
+                    "eligible": (rating_stats["communication_4_plus"] or 0) >= 10,
+                    "count": int(rating_stats["communication_4_plus"] or 0),
                 },
                 "shipping": {
-                    "eligible": shipping_4_plus >= 10,
-                    "count": shipping_4_plus,
+                    "eligible": (rating_stats["shipping_4_plus"] or 0) >= 10,
+                    "count": int(rating_stats["shipping_4_plus"] or 0),
                 },
             },
         }
