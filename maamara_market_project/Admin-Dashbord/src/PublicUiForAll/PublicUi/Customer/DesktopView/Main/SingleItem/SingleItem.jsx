@@ -8,6 +8,7 @@ import ProductDetails from "./ProductDetails";
 import ProductReviews from "./ProductReviews";
 import FormattedCurrency from "../Currency/FormattedCurrency";
 import { useWishlistContext } from "../../../../../../cmponents/Hooks/WishListHook/Wishlist";
+import MarketplaceItemContext from "./MarketplaceItemContext";
 
 const SingleItem = () => {
   const {
@@ -89,6 +90,8 @@ const SingleItem = () => {
         </div>
 
         <ProductReviews item={item} />
+
+        <MarketplaceItemContext item={item} availableStock={availableStock} />
       </section>
     </div>
   );
