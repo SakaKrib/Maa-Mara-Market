@@ -1,5 +1,4 @@
 import React from "react";
-import { Link } from "react-router-dom";
 import useSingleItem from "./useSingleItem";
 import ProductGallery from "./ProductGallery";
 import ProductOptions from "./ProductOptions";
@@ -9,6 +8,7 @@ import ProductReviews from "./ProductReviews";
 import FormattedCurrency from "../Currency/FormattedCurrency";
 import { useWishlistContext } from "../../../../../../cmponents/Hooks/WishListHook/Wishlist";
 import MarketplaceItemContext from "./MarketplaceItemContext";
+import TrendingProduct from "../Trending/TrendingProduct";
 
 const truncateWords = (text, limit = 15) => {
   const words = String(text || "").trim().split(/\s+/).filter(Boolean);
@@ -107,6 +107,8 @@ const SingleItem = () => {
         </div>
 
         <ProductDetails item={item} />
+
+        <TrendingProduct itemId={item.id} title="You may also like" />
 
         <ProductReviews item={item} />
 
