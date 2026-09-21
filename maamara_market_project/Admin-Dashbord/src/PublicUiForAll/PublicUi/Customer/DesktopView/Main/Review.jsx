@@ -3,7 +3,6 @@ import api from "../../../../../Services/Api";
 import Snackbar from "@mui/material/Snackbar";
 import MuiAlert from "@mui/material/Alert";
 import Avatar from "@mui/material/Avatar";
-import VendorRatingForm from "./VendorRatingsAndShop";
 
 // MUI Alert wrapper
 const Alert = React.forwardRef(function Alert(props, ref) {
@@ -23,7 +22,6 @@ const ReviewSection = ({ item }) => {
 
   const handleSnackbarClose = () => setSnackbar(prev => ({ ...prev, open: false }));
 
-  // Fetch reviews
   const fetchReviews = async () => {
     try {
       setLoadingReviews(true);
@@ -45,7 +43,6 @@ const ReviewSection = ({ item }) => {
     fetchReviews();
   }, [item?.id]);
 
-  // Submit item review
   const handleSubmitReview = async (e) => {
     e.preventDefault();
     if (!reviewText.trim() || rating < 1 || rating > 5) {
@@ -79,7 +76,6 @@ const ReviewSection = ({ item }) => {
 
   return (
     <div className="mt-12 space-y-6">
-      {/* Snackbar */}
       <Snackbar open={snackbar.open} autoHideDuration={4000} onClose={handleSnackbarClose}
         anchorOrigin={{ vertical: "top", horizontal: "right" }}>
         <Alert onClose={handleSnackbarClose} severity={snackbar.severity} sx={{ width: "100%" }}>
@@ -165,14 +161,6 @@ const ReviewSection = ({ item }) => {
           )}
         </div>
       </section>
-
-      {/* Shop rating form remains separate for the shop-review workflow; shop rating summaries are shown in the marketplace shop section. */}
-      {item?.vendor?.id && (
-        <VendorRatingForm
-          vendorId={item.vendor.id}
-          onRated={() => {}}
-        />
-      )}
     </div>
   );
 };
