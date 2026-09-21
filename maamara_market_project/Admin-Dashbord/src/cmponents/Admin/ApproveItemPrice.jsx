@@ -119,283 +119,147 @@ const AdminPriceApproval = ({ onCountChange }) => {
   };
 
   return (
-    <Box sx={{ p: 2 }}>
-      {/* =========================
-          PENDING APPROVALS
-      ========================= */}
-      <Box
-        sx={{
-          backgroundColor: colors.primary[500],
-          borderRadius: "16px",
-          p: 3,
-          mb: 4,
-          boxShadow: 3,
-        }}
-      >
-        <Typography
-          variant="h6"
-          sx={{
-            mb: 3,
-            color: colors.gray[100],
-            
-          }}
-        >
-          Pending Price Change Requests
-        </Typography>
+    <div className="min-w-0 space-y-4">
+      <section className="rounded-2xl border border-border bg-card p-4 shadow-sm sm:p-5">
+        <div className="flex items-start gap-3">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+            <MonetizationOnIcon />
+          </div>
+          <div className="min-w-0">
+            <h3 className="text-base font-bold text-card-foreground sm:text-lg">Pending price change requests</h3>
+            <p className="mt-1 text-xs text-muted-foreground sm:text-sm">
+              Review vendor price updates before they are applied to marketplace items.
+            </p>
+          </div>
+        </div>
 
-        {loading ? (
-          <Box
-            sx={{
-              display: "flex",
-              justifyContent: "center",
-              py: 5,
-            }}
-          >
-            <CircularProgress />
-          </Box>
-        ) : requests.length === 0 ? (
-          <Typography
-            sx={{
-              textAlign: "center",
-              color: colors.gray[400],
-              py: 3,
-            }}
-          >
-            No pending requests.
-          </Typography>
-        ) : (
-          <Stack spacing={3}>
-            {requests.map((req) => (
-              <Paper
-                key={req.id}
-                elevation={4}
-                sx={{
-                  p: 3,
-                  borderRadius: "16px",
-                  backgroundColor: colors.primary[400],
-                  border: `1px solid ${colors.primary[300]}`,
-                }}
-              >
-                <Stack spacing={2}>
-                  {/* ITEM */}
-                  <Box
-                    sx={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: 1,
-                    }}
-                  >
-                    <Inventory2Icon sx={{ color: colors.greenAccent[400] }} />
+        <div className="mt-4">
+          {loading ? (
+            <div className="flex justify-center rounded-xl border border-border bg-muted/40 py-10">
+              <CircularProgress />
+            </div>
+          ) : requests.length === 0 ? (
+            <div className="rounded-xl border border-border bg-muted/40 p-6 text-center">
+              <p className="text-sm font-medium text-card-foreground">No pending price updates.</p>
+              <p className="mt-1 text-xs text-muted-foreground">New vendor requests will appear here.</p>
+            </div>
+          ) : (
+            <div className="grid gap-3">
+              {requests.map((req) => (
+                <article key={req.id} className="rounded-2xl border border-border bg-card p-4 shadow-sm sm:p-5">
+                  <div className="flex min-w-0 flex-col gap-4">
+                    <div className="flex min-w-0 items-start gap-3">
+                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-muted text-primary">
+                        <Inventory2Icon />
+                      </div>
+                      <div className="min-w-0">
+                        <h4 className="truncate text-sm font-bold text-card-foreground sm:text-base">{req.item_name || "Marketplace item"}</h4>
+                        <p className="mt-1 text-xs text-muted-foreground">
+                          Requested by <span className="font-semibold text-card-foreground">{req.requested_by_name || "Vendor"}</span>
+                        </p>
+                      </div>
+                    </div>
 
-                    <Typography
-                      variant="h6"
-                      sx={{
-                        color: colors.gray[100],
-                        fontWeight: 700,
-                      }}
-                    >
-                      {req.item_name}
-                    </Typography>
-                  </Box>
+                    <div className="grid gap-2 sm:grid-cols-2">
+                      <div className="rounded-xl border border-border bg-muted/40 p-3">
+                        <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">New price</p>
+                        <p className="mt-1 text-base font-bold text-card-foreground">KES {req.new_price}</p>
+                      </div>
+                      <div className="rounded-xl border border-border bg-muted/40 p-3">
+                        <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Reason</p>
+                        <p className="mt-1 break-words text-sm text-card-foreground">{req.reason || "No reason provided."}</p>
+                      </div>
+                    </div>
 
-                  {/* REQUESTED BY */}
-                  <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                    <PersonIcon sx={{ color: colors.blueAccent[300] }} />
-
-                    <Typography sx={{ color: colors.gray[200] }}>
-                      Requested by:{" "}
-                      <strong>{req.requested_by_name || "Vendor"}</strong>
-                    </Typography>
-                  </Box>
-
-                  {/* PRICE */}
-                  <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                    <MonetizationOnIcon
-                      sx={{ color: colors.greenAccent[400] }}
-                    />
-
-                    <Typography sx={{ color: colors.gray[100] }}>
-                      New Price:{" "}
-                      <strong>KES {req.new_price}</strong>
-                    </Typography>
-                  </Box>
-
-                  {/* REASON */}
-                  <Box sx={{ display: "flex", alignItems: "flex-start", gap: 1 }}>
-                    <NotesIcon sx={{ color: colors.redAccent[300] }} />
-
-                    <Typography sx={{ color: colors.gray[300] }}>
-                      {req.reason}
-                    </Typography>
-                  </Box>
-
-                  {/* BUTTON */}
-                  <Box sx={{ pt: 1 }}>
                     <Button
                       variant="contained"
                       onClick={() => handleApprove(req.id)}
                       disabled={approvingId === req.id}
-                      sx={{
-                        px: 4,
-                        py: 1.2,
-                        borderRadius: "12px",
-                        textTransform: "none",
-                        fontWeight: "bold",
-                        backgroundColor: colors.greenAccent[500],
-                        color: "#fff",
-                        "&:hover": {
-                          backgroundColor: colors.greenAccent[600],
-                        },
-                      }}
+                      className="!w-full !rounded-[20px] !bg-primary !px-4 !py-3 !text-sm !font-semibold !normal-case !text-primary-foreground hover:!bg-primary/90"
                     >
-                      {approvingId === req.id ? (
-                        <CircularProgress size={20} color="inherit" />
-                      ) : (
-                        "Approve Price Change"
-                      )}
+                      {approvingId === req.id ? <CircularProgress size={20} color="inherit" /> : "Approve price change"}
                     </Button>
-                  </Box>
-                </Stack>
-              </Paper>
-            ))}
-          </Stack>
-        )}
-      </Box>
+                  </div>
+                </article>
+              ))}
+            </div>
+          )}
+        </div>
+      </section>
 
-      {/* =========================
-          APPROVAL HISTORY
-      ========================= */}
-      <Box
-        sx={{
-          backgroundColor: colors.primary[500],
-          borderRadius: "16px",
-          p: 3,
-          boxShadow: 3,
-        }}
-      >
-        <Typography
-          variant="h6"
-          sx={{
-            mb: 3,
-            color: colors.gray[100],
-            
-          }}
-        >
-          Approval History
-        </Typography>
+      <section className="rounded-2xl border border-border bg-card p-4 shadow-sm sm:p-5">
+        <div className="flex items-start gap-3">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+            <CheckCircleIcon />
+          </div>
+          <div className="min-w-0">
+            <h3 className="text-base font-bold text-card-foreground sm:text-lg">Approval history</h3>
+            <p className="mt-1 text-xs text-muted-foreground sm:text-sm">
+              Recently approved vendor price changes.
+            </p>
+          </div>
+        </div>
 
-        {historyLoading ? (
-          <Box
-            sx={{
-              display: "flex",
-              justifyContent: "center",
-              py: 5,
-            }}
-          >
-            <CircularProgress />
-          </Box>
-        ) : history.length === 0 ? (
-          <Typography
-            sx={{
-              textAlign: "center",
-              color: colors.gray[400],
-            }}
-          >
-            No approval history yet.
-          </Typography>
-        ) : (
-          <Stack spacing={3}>
-            {history.map((item) => (
-              <Paper
-                key={item.id}
-                elevation={3}
-                sx={{
-                  p: 3,
-                  borderRadius: "16px",
-                  backgroundColor: colors.primary[400],
-                  borderLeft: `5px solid ${colors.greenAccent[500]}`,
-                }}
-              >
-                <Stack spacing={2}>
-                  {/* TITLE */}
-                  <Box
-                    sx={{
-                      display: "flex",
-                      justifyContent: "space-between",
-                      flexWrap: "wrap",
-                      gap: 2,
-                    }}
-                  >
-                    <Typography
-                      variant="h6"
-                      sx={{
-                        color: colors.gray[100],
-                        fontWeight: "bold",
-                      }}
-                    >
-                      {item.item_name} - KES {item.new_price}
-                    </Typography>
+        <div className="mt-4">
+          {historyLoading ? (
+            <div className="flex justify-center rounded-xl border border-border bg-muted/40 py-10">
+              <CircularProgress />
+            </div>
+          ) : history.length === 0 ? (
+            <div className="rounded-xl border border-border bg-muted/40 p-6 text-center">
+              <p className="text-sm font-medium text-card-foreground">No approval history yet.</p>
+            </div>
+          ) : (
+            <div className="grid gap-3">
+              {history.map((item) => (
+                <article key={item.id} className="rounded-2xl border border-border bg-card p-4 shadow-sm sm:p-5">
+                  <div className="flex min-w-0 flex-col gap-4">
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                      <div className="min-w-0">
+                        <h4 className="break-words text-sm font-bold text-card-foreground sm:text-base">
+                          {item.item_name || "Marketplace item"}
+                        </h4>
+                        <p className="mt-1 text-base font-bold text-primary">KES {item.new_price}</p>
+                      </div>
+                      <span className="inline-flex w-fit items-center gap-1 rounded-full border border-primary/20 bg-primary/10 px-3 py-1 text-xs font-semibold text-primary">
+                        <CheckCircleIcon sx={{ fontSize: 16 }} />
+                        Approved
+                      </span>
+                    </div>
 
-                    <Chip
-                      icon={<CheckCircleIcon />}
-                      label="Approved"
-                      sx={{
-                        backgroundColor: colors.greenAccent[500],
-                        color: "#fff",
-                        fontWeight: "bold",
-                      }}
-                    />
-                  </Box>
+                    <div className="grid gap-2 sm:grid-cols-2">
+                      <div className="rounded-xl border border-border bg-muted/40 p-3">
+                        <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Requested by</p>
+                        <p className="mt-1 text-sm text-card-foreground">{item.requested_by_name || "Vendor"}</p>
+                      </div>
+                      <div className="rounded-xl border border-border bg-muted/40 p-3">
+                        <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Approved by</p>
+                        <p className="mt-1 text-sm text-card-foreground">{item.approved_by_name || "Admin"}</p>
+                      </div>
+                      <div className="rounded-xl border border-border bg-muted/40 p-3 sm:col-span-2">
+                        <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Reason</p>
+                        <p className="mt-1 break-words text-sm text-card-foreground">{item.reason || "No reason provided."}</p>
+                      </div>
+                    </div>
 
-                  <Divider />
-
-                  {/* DETAILS */}
-                  <Stack spacing={1.5}>
-                    <Typography sx={{ color: colors.gray[200] }}>
-                      <strong>Requested by:</strong>{" "}
-                      {item.requested_by_name || "Vendor"}
-                    </Typography>
-
-                    <Typography sx={{ color: colors.gray[200] }}>
-                      <strong>Reason:</strong> {item.reason}
-                    </Typography>
-
-                    <Typography sx={{ color: colors.gray[200] }}>
-                      <strong>Approved by:</strong>{" "}
-                      {item.approved_by_name || "Admin"}
-                    </Typography>
-
-                    {/* DATE */}
-                    <Box
-                      sx={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: 1,
-                        mt: 1,
-                      }}
-                    >
-                      <AccessTimeIcon
-                        sx={{ color: colors.blueAccent[300] }}
-                      />
-
-                      <Typography sx={{ color: colors.gray[300] }}>
-                        Approved at:{" "}
-                        <strong>
-                          {item.approved_at
-                            ? new Date(item.approved_at).toLocaleString()
-                            : "N/A"}
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                      <AccessTimeIcon sx={{ fontSize: 17 }} />
+                      <span>
+                        Approved at{" "}
+                        <strong className="text-card-foreground">
+                          {item.approved_at ? new Date(item.approved_at).toLocaleString() : "N/A"}
                         </strong>
-                      </Typography>
-                    </Box>
-                  </Stack>
-                </Stack>
-              </Paper>
-            ))}
-          </Stack>
-        )}
-      </Box>
-    </Box>
-  );
+                      </span>
+                    </div>
+                  </div>
+                </article>
+              ))}
+            </div>
+          )}
+        </div>
+      </section>
+    </div>
+  
 };
 
 export default AdminPriceApproval;
