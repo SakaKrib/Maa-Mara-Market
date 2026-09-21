@@ -1,4 +1,6 @@
-from datetime import timedelta
+from datetime import datetime, timedelta
+from asgiref.sync import async_to_sync
+from channels.layers import get_channel_layer
 from decimal import Decimal
 import logging
 import uuid
@@ -851,6 +853,21 @@ def create_admin_transaction(request):
             "created_by": request.user.pk,
         },
     )
+
+    channel_layer = get_channel_layer()
+    if channel_layer is not None:
+        try:
+            async_to_sync(channel_layer.group_send)(
+                "admin_accounts",
+                {
+                    "type": "account_changed",
+                    "resource": "transaction",
+                    "action": "created",
+                    "object_id": ledger_entry.id,
+                },
+            )
+        except Exception:
+            logger.exception("Failed to broadcast Accounts transaction update.")
 
     return Response({
         "success": True,
