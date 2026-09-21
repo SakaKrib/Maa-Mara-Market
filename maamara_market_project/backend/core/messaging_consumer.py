@@ -1,4 +1,5 @@
 from channels.generic.websocket import AsyncJsonWebsocketConsumer
+from channels.db import database_sync_to_async
 
 
 class MessagingConsumer(AsyncJsonWebsocketConsumer):
@@ -25,8 +26,6 @@ class MessagingConsumer(AsyncJsonWebsocketConsumer):
                 conversation_id = int(content.get("conversation_id"))
             except (TypeError, ValueError):
                 return
-
-            from channels.db import database_sync_to_async
 
             allowed = await self._can_access(conversation_id)
             if not allowed:
