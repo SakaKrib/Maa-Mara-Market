@@ -123,6 +123,20 @@ class Brand(models.Model):
         return self.name
 
 
+class Occasion(models.Model):
+    key = models.SlugField(max_length=50, unique=True)
+    name = models.CharField(max_length=100, unique=True)
+    description = models.CharField(max_length=255, blank=True)
+    is_active = models.BooleanField(default=True)
+    display_order = models.PositiveIntegerField(default=0)
+
+    class Meta:
+        ordering = ("display_order", "name")
+
+    def __str__(self):
+        return self.name
+
+
 class Item(models.Model):
         # Core fields
     section = models.ForeignKey(
