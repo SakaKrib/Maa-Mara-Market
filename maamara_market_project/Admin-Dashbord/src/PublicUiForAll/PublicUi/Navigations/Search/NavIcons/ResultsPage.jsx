@@ -100,7 +100,7 @@ const SearchResultsPage = () => {
               <p className="text-xs uppercase tracking-wide text-gray-500 mb-1">
                 Maa Mara Market
               </p>
-              <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">
+              <h1 className="mm-search-results-title text-2xl sm:text-3xl font-medium text-gray-900">
                 {searchTerm
                   ? `Search results for “${searchTerm}”`
                   : categoryName
@@ -116,8 +116,14 @@ const SearchResultsPage = () => {
           </div>
 
           {loading && (
-            <div className="mm-card p-8 text-center text-sm text-gray-500">
-              Finding products…
+            <div
+              className="mm-search-loading"
+              role="status"
+              aria-live="polite"
+              aria-label="Loading search results"
+            >
+              <span className="mm-search-spinner" aria-hidden="true" />
+              <span>Loading products</span>
             </div>
           )}
 
