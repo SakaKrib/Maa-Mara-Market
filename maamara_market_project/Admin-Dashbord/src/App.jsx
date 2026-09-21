@@ -371,6 +371,7 @@ function AppContent() {
                 <Route path="vendor/blogs/:id" element={<VendorBlogManagerNotification />} />
 
                 <Route path="search/global-results" element={<SearchGlobalResultsPage />} />
+                <Route path="messages" element={<Messaging />} />
                 
               </Route>
 
