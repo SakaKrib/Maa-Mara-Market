@@ -11,7 +11,6 @@ import BridgeToHTML from "./globalHtml";
 import LoginForm from "./cmponents/Auth/AdminLogin/AdminLogin";
 import { AuthProvider, useAuth } from "./cmponents/Auth/AuthContext/Context";
 import { useEffect, useState } from "react";
-import "./index.css";
 import "./main.css";
 import "../src/PublicUiForAll/PublicUi/maamara.css";
 
@@ -98,6 +97,7 @@ import RequestReturnForm from "./PublicUiForAll/PublicUi/Customer/DesktopView/Ma
 import CareerPage from "./PublicUiForAll/PublicUi/Navigations/Footer/Career/Career";
 import CareerDetails from "./PublicUiForAll/PublicUi/Navigations/Footer/Career/CareerDetails";
 import CustomerFAQ from "./PublicUiForAll/PublicUi/Navigations/Footer/FAQ/CustomerFAQ";
+import Support from "./PublicUiForAll/PublicUi/Navigations/Footer/Support/Support";
 import CustomerToAdminRequests from "./cmponents/Admin/CustomerRequests/CustomerRequests";
 import VendorPendingOrdersTable from "./cmponents/VENDORPAGE/Home/Orders/VendorPendingOrders";
 import AdminPayoutTriggerPayment from "./cmponents/VendorPayoutReport/vendorPayouts/Business2Customer";
@@ -228,6 +228,7 @@ function AppContent() {
                 <Route path="careers/jobs" element={<CareerPage />} />
                 <Route path="careers/:id" element={<CareerDetails />} />
                 <Route path="faq" element={<CustomerFAQ />} />
+                <Route path="support" element={<Support />} />
                 <Route path="messages" element={<Messaging />} />
               </Route>
 
