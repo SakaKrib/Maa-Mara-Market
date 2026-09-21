@@ -1,5 +1,4 @@
 import './SinglePage.css';
-import '../../index.css';
 import {
   LineChart,
   Line,
