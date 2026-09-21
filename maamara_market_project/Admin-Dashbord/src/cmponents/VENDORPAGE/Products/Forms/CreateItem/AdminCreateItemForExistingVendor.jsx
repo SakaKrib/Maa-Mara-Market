@@ -594,14 +594,14 @@ useEffect(() => {
           name="section"
           render={({ field }) => (
             <FormItem className='flex  flex-col'>
-              <FormLabel className="text-lg ">Section</FormLabel>
+              <FormLabel className="text-sm font-semibold text-card-foreground">Section</FormLabel>
               <FormControl>
                 <input
                   type="text"
                   {...field}
                   value={field.value}
                   disabled
-                  className="rounded p-2  text-center outline-none"
+                  className="w-full rounded-[20px] border border-border bg-card px-3 py-2 text-sm text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20 text-center"
                   
                 />
               </FormControl>
@@ -617,7 +617,7 @@ useEffect(() => {
           name="department"
           render={({ field }) => (
             <FormItem className='px-0 m-0'>
-              <FormLabel className='text-lg'>Department</FormLabel>
+              <FormLabel className="text-sm font-semibold text-card-foreground">Department</FormLabel>
               <FormControl className='flex flex-col justify-end h-65'>
                 <select
                   
@@ -654,7 +654,7 @@ useEffect(() => {
             name="category"
             render={({ field }) => (
               <FormItem className='flex flex-col justify-end h-65'>
-                <FormLabel className='text-lg'>Category</FormLabel>
+                <FormLabel className="text-sm font-semibold text-card-foreground">Category</FormLabel>
                 <FormControl>
                   <select
                     
@@ -690,7 +690,7 @@ useEffect(() => {
             name="subcategory"
             render={({ field }) => (
               <FormItem className='flex flex-col justify-end relative top-1'>
-                <FormLabel className='text-lg'>Subcategory</FormLabel>
+                <FormLabel className="text-sm font-semibold text-card-foreground">Subcategory</FormLabel>
                 <FormControl>
                   <select
                     
@@ -753,7 +753,7 @@ useEffect(() => {
           name="discount_price"
           render={({ field }) => (
             <FormItem>
-              <FormLabel className='text-lg'>Discount</FormLabel>
+              <FormLabel className="text-sm font-semibold text-card-foreground">Discount</FormLabel>
               <FormControl>
                 <Input
                   type="number"
@@ -887,7 +887,7 @@ useEffect(() => {
               name="description"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel className='text-lg'>Description</FormLabel>
+                  <FormLabel className="text-sm font-semibold text-card-foreground">Description</FormLabel>
                   <FormControl>
                     <Textarea {...field} placeholder="Item description..." />
                   </FormControl>
@@ -927,7 +927,7 @@ useEffect(() => {
                         <select
                           {...field}
                           value={field.value ?? ""}
-                          className="w-full rounded p-2"
+                          className="w-full rounded-[20px] border border-border bg-card px-3 py-2 text-sm text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
                           
                         >
                           <option value="">Select attribute</option>
@@ -1195,7 +1195,7 @@ useEffect(() => {
     
                   {/* Dropdown for unit */}
                   <select
-                    className="border rounded p-2 bg-white text-black"
+                    className="w-full rounded-[20px] border border-border bg-card px-3 py-2 text-sm text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
                     value={value?.unit ?? "g"}
                     onChange={(e) => handleUnitChange(e.target.value)}
                   >
@@ -1232,7 +1232,7 @@ useEffect(() => {
               <FormControl>
                 <select
                   {...field}
-                  className="border rounded p-2 bg-white text-black"
+                  className="w-full rounded-[20px] border border-border bg-card px-3 py-2 text-sm text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
                 >
                   <option value="">Select Shoe Type</option>
                   {shoeTypes.map((type) => (
@@ -1261,7 +1261,7 @@ useEffect(() => {
               <FormControl>
                 <select
                   {...field}
-                  className="border rounded p-2 bg-white text-black"
+                  className="w-full rounded-[20px] border border-border bg-card px-3 py-2 text-sm text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
                 >
                   <option value="">Select Gender</option>
                   {shoeGenders.map((gender) => (
@@ -1539,7 +1539,7 @@ useEffect(() => {
                   {...field}
                   value={field.value ?? ""} // keeps it controlled
                   onChange={(e) => field.onChange(e.target.value)}
-                  className="border rounded p-2 w-full"
+                  className="w-full rounded-[20px] border border-border bg-card px-3 py-2 text-sm text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
                   
                 >
                   <option value="">Select Roast Type</option>
@@ -1570,7 +1570,7 @@ useEffect(() => {
                   {...field}
                   value={field.value ?? ""} // keeps it controlled
                   onChange={(e) => field.onChange(e.target.value)}
-                  className="border rounded p-2 w-full"
+                  className="w-full rounded-[20px] border border-border bg-card px-3 py-2 text-sm text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
                   
                 >
                   <option value="">Select Coffee State</option>
@@ -2115,7 +2115,7 @@ useEffect(() => {
         
     
     
-            <Button type="submit" className=" px-4 mb-10 mt-10 " >
+            <Button type="submit" className="mt-6 mb-4 w-full rounded-[20px] bg-blue-600 px-4 py-3 text-sm font-semibold text-white hover:bg-blue-700">
               Save Changes
             </Button>
             </div>
