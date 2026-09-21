@@ -55,6 +55,9 @@ const SupportAdminPanel = ({ open, onClose }) => {
       setTickets((current) => current.map((ticket) => ticket.id === updated.id ? updated : ticket));
       setSelectedTicket(updated);
       setReply(updated.support_reply || "");
+      if (updated.email_sent === false) {
+        setError("Reply was saved to the support ticket, but the customer email could not be delivered. Check the backend email configuration/logs.");
+      }
     } catch (requestError) {
       setError(requestError?.response?.data?.detail || "Could not send the reply.");
     } finally {
