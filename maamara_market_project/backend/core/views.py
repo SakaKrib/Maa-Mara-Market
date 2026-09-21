@@ -5,8 +5,8 @@ from rest_framework.response import Response
 from rest_framework import status, permissions, viewsets
 from rest_framework import viewsets, permissions
 from rest_framework.views import APIView
-from ReactSerializers.models import Item
-from core.models import Notification, EmailLog, SupportMessage, AboutPage
+from ReactSerializers.models import Item, ItemView
+from core.models import Notification, EmailLog, SupportMessage, AboutPage, SearchEvent
 from .Serializer import NotificationSerializer, ItemSerializer, ReviewSerializer, ReactionSerializer
 from vendorDashboard.models import Vendor
 from shop.models import  Review, Reaction
@@ -16,7 +16,7 @@ from .UserVisitorSerializers import *
 import bleach # type: ignore
 from order.views import IsAuthenticatedOrVisitor
 from .CategorySerializers import SectionSerializerCat, CategorySerializerCat
-from django.db.models import Prefetch, Count, Min
+from django.db.models import F, Prefetch, Count, Min
 from order.views import IsAuthenticatedOrVisitor
 from django.core.mail import send_mail
 from rest_framework import generics
@@ -553,7 +553,112 @@ class CategoryListWithItems(generics.ListAPIView):
 
 class ItemDetailView(generics.RetrieveAPIView):
     queryset = Item.objects.all()
-    serializer_class = ItemSerializer    
+    serializer_class = ItemSerializer
+
+    def retrieve(self, request, *args, **kwargs):
+        item = self.get_object()
+        user = request.user if request.user and request.user.is_authenticated else None
+        visitor_id = None if user else request.COOKIES.get("visitorId")
+        new_visitor_id = None
+
+        if not user and not visitor_id:
+            new_visitor_id = uuid.uuid4().hex
+            visitor_id = new_visitor_id
+
+        # ItemView is the existing customer-view history model. Keep one
+        # logical view per item/account (or visitor) and only increment the
+        # public Item.views counter when a new history row is recorded.
+        if user:
+            _, created = ItemView.objects.get_or_create(
+                item=item,
+                user=user,
+                visitor_id=None,
+            )
+        else:
+            existing = ItemView.objects.filter(
+                item=item,
+                user__isnull=True,
+                visitor_id=visitor_id,
+            ).first()
+            created = existing is None
+            if created:
+                ItemView.objects.create(
+                    item=item,
+                    user=None,
+                    visitor_id=visitor_id,
+                )
+
+        if created:
+            Item.objects.filter(pk=item.pk).update(views=F("views") + 1)
+            item.refresh_from_db(fields=["views"])
+
+        serializer = self.get_serializer(item)
+        response = Response(serializer.data)
+
+        if new_visitor_id:
+            response.set_cookie(
+                "visitorId",
+                new_visitor_id,
+                httponly=True,
+                secure=not settings.DEBUG,
+                samesite="Lax",
+                max_age=30 * 24 * 3600,
+            )
+
+        return response
+
+
+@api_view(["POST"])
+@permission_classes([AllowAny])
+def record_search_event(request):
+    """
+    Record an intentional customer marketplace search.
+
+    Autocomplete/suggestion GET requests do not create events; the frontend
+    calls this endpoint only when the customer submits or selects a search.
+    """
+    query = str(request.data.get("query") or "").strip()
+    if not query:
+        return Response(
+            {"success": False, "error": "Search query is required."},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+    query = " ".join(query.split())[:255]
+    user = request.user if request.user and request.user.is_authenticated else None
+    visitor_id = None if user else request.COOKIES.get("visitorId")
+    new_visitor_id = None
+
+    if not user and not visitor_id:
+        new_visitor_id = uuid.uuid4().hex
+        visitor_id = new_visitor_id
+
+    event = SearchEvent.objects.create(
+        user=user,
+        visitor_id=visitor_id,
+        query=query,
+    )
+
+    response = Response(
+        {
+            "success": True,
+            "event_id": event.id,
+            "query": event.query,
+        },
+        status=status.HTTP_201_CREATED,
+    )
+
+    if new_visitor_id:
+        response.set_cookie(
+            "visitorId",
+            new_visitor_id,
+            httponly=True,
+            secure=not settings.DEBUG,
+            samesite="Lax",
+            max_age=30 * 24 * 3600,
+        )
+
+    return response
 
 # -------------------------------
 # item fetch bu sub category
