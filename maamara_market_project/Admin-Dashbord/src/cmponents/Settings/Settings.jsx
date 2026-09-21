@@ -43,6 +43,12 @@ const Settings = () => {
   const [passwordError, setPasswordError] = useState("");
 
   useEffect(() => {
+    if (typeof document !== "undefined") {
+      document.documentElement.classList.toggle("maamara-compact-workspace", preferences.compactMode);
+    }
+  }, [preferences.compactMode]);
+
+  useEffect(() => {
     const load = async () => {
       try {
         const response = await api.get("/api/user/account/");
@@ -184,9 +190,9 @@ const Settings = () => {
         ) : (
           <div className="grid gap-5 lg:grid-cols-[1.5fr_1fr]">
             <form onSubmit={updateProfile} className="rounded-2xl border border-border bg-card p-4 shadow-sm sm:p-5">
-              <div className="mb-5 flex items-center justify-between gap-3 border-b border-border pb-4">
+              <div className="mb-4 flex items-center justify-between gap-3 border-b border-border pb-3">
                 <div>
-                  <h2 className="font-bold text-card-foreground">Profile details</h2>
+                  <h2 className="text-sm font-semibold text-card-foreground">Profile details</h2>
                   <p className="mt-1 text-xs text-muted-foreground">Keep the administrator account information up to date.</p>
                 </div>
                 <UserRound size={19} className="text-primary" />
@@ -210,9 +216,9 @@ const Settings = () => {
 
             <div className="space-y-5">
               <div className="rounded-2xl border border-border bg-card p-5 shadow-sm sm:p-6">
-                <div className="mb-4 flex items-center justify-between">
+                <div className="mb-3 flex items-center justify-between">
                   <div>
-                    <h2 className="font-bold text-card-foreground">Workspace preferences</h2>
+                    <h2 className="text-sm font-semibold text-card-foreground">Workspace preferences</h2>
                     <p className="mt-1 text-xs text-muted-foreground">Saved for this browser and applied immediately.</p>
                   </div>
                   <Monitor size={19} className="text-primary" />
@@ -234,9 +240,9 @@ const Settings = () => {
               </div>
 
               <div className="rounded-2xl border border-border bg-card p-5 shadow-sm sm:p-6">
-                <div className="mb-4 flex items-center gap-3">
+                <div className="mb-3 flex items-center gap-3">
                   <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary"><ShieldCheck size={19} /></div>
-                  <div><h2 className="font-bold text-card-foreground">Security</h2><p className="text-xs text-muted-foreground">Account access and session controls.</p></div>
+                  <div><h2 className="text-sm font-semibold text-card-foreground">Security</h2><p className="text-xs text-muted-foreground">Account access and session controls.</p></div>
                 </div>
                 <div className="space-y-2">
                   <button type="button" onClick={openPasswordModal} className="flex w-full items-center gap-3 rounded-xl border border-border p-3 text-left hover:bg-muted">
