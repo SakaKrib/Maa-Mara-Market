@@ -476,7 +476,7 @@ useEffect(() => {
                 <FormControl>
                   <select
                     
-                    {...field}
+                    className="w-full rounded-[20px] border border-border bg-card px-2 py-2 text-sm leading-6 text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20" {...field}
                     onChange={(e) => {
                       const cat = e.target.value;
                       setSelectedCategory(cat);
@@ -512,8 +512,7 @@ useEffect(() => {
                 <FormControl>
                   <select
                     
-                    {...field}
-                  >
+                    className="w-full rounded-[20px] border border-border bg-card px-2 py-2 text-sm leading-6 text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20" {...field}>
                     <option value="">Select Subcategory</option>
                     {(activeData?.[selectedDepartment]?.subcategories?.[selectedCategory] || []).map((subcat) => (
                       <option
@@ -746,7 +745,7 @@ useEffect(() => {
                       <select
                         {...field}
                         value={field.value ?? ""}
-                        className="w-full rounded-[20px] border border-border bg-card px-2 py-2 text-sm text-foreground outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
+                        className="w-full rounded-[20px] border border-border bg-card px-2 py-2 text-sm leading-6 text-foreground outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
                       >
                         <option value="">Select attribute</option>
                         {attributes.map((attr) => (
@@ -1353,7 +1352,7 @@ useEffect(() => {
               <FormLabel className="text-sm leading-6 font-semibold text-foreground">Roast Type</FormLabel>
               <FormControl>
                 <select
-                  {...field}
+                  className="w-full rounded-[20px] border border-border bg-card px-2 py-2 text-sm leading-6 text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20" {...field}
                   value={field.value ?? ""} // keeps it controlled
                   onChange={(e) => field.onChange(e.target.value)}
                   className="w-full rounded-[20px] border border-border bg-card px-2 py-2 text-sm leading-6 text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
@@ -1384,7 +1383,7 @@ useEffect(() => {
               <FormLabel className="text-sm leading-6 font-semibold text-foreground">Coffee State</FormLabel>
               <FormControl>
                 <select
-                  {...field}
+                  className="w-full rounded-[20px] border border-border bg-card px-2 py-2 text-sm leading-6 text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20" {...field}
                   value={field.value ?? ""} // keeps it controlled
                   onChange={(e) => field.onChange(e.target.value)}
                   className="w-full rounded-[20px] border border-border bg-card px-2 py-2 text-sm leading-6 text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
