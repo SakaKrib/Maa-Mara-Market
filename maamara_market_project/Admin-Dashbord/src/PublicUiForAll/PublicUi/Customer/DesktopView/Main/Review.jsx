@@ -111,9 +111,11 @@ const ReviewSection = ({ item }) => {
               placeholder="Write your thoughts here..."
               className="w-full rounded-2xl border border-border bg-background px-3 py-2 text-sm text-card-foreground outline-none focus:ring-2 focus:ring-border"
             />
-            <button type="submit" disabled={posting} className="rounded-full bg-black px-5 py-2.5 text-sm font-semibold text-white disabled:opacity-50">
+            <div className="w-full">
+              <button type="submit" disabled={posting} className="rounded-full w-full bg-black px-5 py-2.5 text-sm font-semibold text-white disabled:opacity-50">
               {posting ? "Posting..." : "Submit Review"}
             </button>
+            </div>
           </form>
         </div>
 
