@@ -4,7 +4,6 @@ import StarterKit from "@tiptap/starter-kit";
 import Underline from "@tiptap/extension-underline";
 import TaskList from "@tiptap/extension-task-list";
 import TaskItem from "@tiptap/extension-task-item";
-import { sanitizeRichText } from "../../utils/sanitizeRichText";
 import TextAlign from "@tiptap/extension-text-align";
 
 import { useTheme, Box, Button, Stack } from "@mui/material";
@@ -200,7 +199,7 @@ const RichTextEditor = ({ value, onChange }) => {
     ],
     content: value || "",
     onUpdate: ({ editor }) => {
-      onChange(sanitizeRichText(editor.getHTML()));
+      onChange(editor.getHTML());
     },
   });
 
