@@ -54,9 +54,10 @@ def mark_notification_seen(request, notification_id):
             return Response({'error': 'Not authorized'}, status=403)
 
         notification.seen = True
-        notification.save()
+        notification.is_read = True
+        notification.save(update_fields=['seen', 'is_read'])
 
-        return Response({'status': 'seen'})
+        return Response({'status': 'read'})
     except Notification.DoesNotExist:
         return Response({'error': 'Notification not found'}, status=404)
 
