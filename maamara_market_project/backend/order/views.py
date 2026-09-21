@@ -862,6 +862,68 @@ def create_admin_transaction(request):
 # get sale method
 @api_view(["GET"])
 @permission_classes([IsAdminUser])
+def admin_transaction_history(request):
+    """
+    Read-only bookkeeping/provider transaction history for the Accounts page.
+    ?date=YYYY-MM-DD restricts results to that calendar day.
+    """
+    selected_date = request.query_params.get("date")
+    queryset = (
+        Transaction.objects
+        .select_related("vendor", "order")
+        .order_by("-created_at")
+    )
+
+    if selected_date:
+        try:
+            selected = datetime.strptime(selected_date, "%Y-%m-%d").date()
+        except ValueError:
+            return Response({"error": "Invalid date. Use YYYY-MM-DD."}, status=400)
+
+        start = timezone.make_aware(datetime.combine(selected, datetime.min.time()))
+        end = timezone.make_aware(datetime.combine(selected, datetime.max.time()))
+        queryset = queryset.filter(created_at__gte=start, created_at__lte=end)
+
+    results = []
+    for tx in queryset[:50]:
+        vendor_name = None
+        if tx.vendor:
+            vendor_name = getattr(tx.vendor, "company_name", None) or getattr(
+                tx.vendor, "username", None
+            )
+
+        results.append({
+            "id": tx.id,
+            "txid": (
+                tx.mpesa_receipt_number
+                or tx.paypal_transaction_id
+                or tx.account_reference
+                or f"TX-{tx.id}"
+            ),
+            "category": tx.get_category_display() if tx.category else None,
+            "category_key": tx.category,
+            "payment_method": tx.payment_method,
+            "transaction_type": tx.transaction_type,
+            "amount": float(tx.amount or 0),
+            "status": tx.status,
+            "vendor_name": vendor_name,
+            "created_at": tx.created_at,
+            "source": (
+                "manual"
+                if (tx.raw_data or {}).get("source") == "admin_accounts"
+                else "payment"
+            ),
+        })
+
+    return Response({
+        "date": selected_date,
+        "count": len(results),
+        "results": results,
+    })
+
+
+@api_view(["GET"])
+@permission_classes([IsAdminUser])
 def transaction_totals(request):
     data = {
         "paypal_total": Transaction.get_paypal_total(),
