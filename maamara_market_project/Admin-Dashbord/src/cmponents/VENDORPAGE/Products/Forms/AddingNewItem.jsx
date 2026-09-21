@@ -14,8 +14,7 @@ import {
   import { Input } from "../../../../../components/ui/input";
   import { Textarea } from "../../../../../components/ui/textarea";
   import { Button } from "../../../../../components/ui/button";
-import { useTheme, FormControlLabel } from "@mui/material";
-import { tokens } from "../../../../theme";
+import { FormControlLabel } from "@mui/material";
 import Checkbox from "../../../../../components/ui/checkbox";
 import api, { resolveApiAssetUrl } from "../../../../Services/Api/";
 import { useForm } from "react-hook-form";
@@ -233,8 +232,6 @@ import { color } from "framer-motion";
   
 
 const ItemAddNew = ({ initialItem, vendorId, itemId, onSave, vendor }) => {
-  const theme = useTheme();
-  const colors = tokens(theme.palette.mode);
   console.log('this is vendor', vendor)
 
   const [selectedDepartment, setSelectedDepartment] = useState("");
@@ -255,9 +252,14 @@ const ItemAddNew = ({ initialItem, vendorId, itemId, onSave, vendor }) => {
 
     //initialize the data
     useEffect(() => {
-      console.log("New initialItem received:", initialItem);
-      if (initialItem) form.reset(initialItem);
-    }, [initialItem]);
+      if (!initialItem) return;
+      form.reset({
+        ...initialItem,
+        image: initialItem.image || "",
+      });
+      setSelectedDepartment(initialItem.department || "");
+      setSelectedCategory(initialItem.category || "");
+    }, [initialItem, form]);
     
     
   
@@ -349,19 +351,13 @@ useEffect(() => {
  };
  
  useEffect(() => {
+   if (initialItem) return;
    if (activeData === organicDepartmentMap) {
-     form.reset({
-       ...emptyValues,
-       section: "organic", // ✅ override section
-     });
+     form.reset({ ...emptyValues, section: "organic" });
    } else if (activeData === departmentMap) {
-     form.reset({
-       ...emptyValues,
-       section: "general", // ✅ override section
-     });
-     
+     form.reset({ ...emptyValues, section: "general" });
    }
- }, [activeData, form]);
+ }, [activeData, form, initialItem]);
  
  
    
@@ -508,7 +504,7 @@ useEffect(() => {
   
       // separate
       <Form {...form}>
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 px-2 py-6 text-foreground custom-scroll-form [&_input]:rounded-[20px] [&_input]:border-border [&_input]:bg-card [&_input]:px-4 [&_input]:py-3 [&_textarea]:rounded-[20px] [&_textarea]:border-border [&_textarea]:bg-card [&_textarea]:px-4 [&_textarea]:py-3 [&_select]:rounded-[20px] [&_select]:border [&_select]:border-border [&_select]:bg-card [&_select]:px-4 [&_select]:py-3">
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 px-2 py-4 text-foreground custom-scroll-form">
       <div >
 
         
