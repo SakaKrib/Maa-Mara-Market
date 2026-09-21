@@ -502,6 +502,14 @@ def submit_vendor_request(request):
     if serializer.is_valid():
         vendor_request = serializer.save(user=user)
         vendor_request.generate_otp()
+
+        # The registration has now been submitted. Keep the draft record and
+        # its image assets available for admin approval, but stop exposing it
+        # through the customer "pick up where you left off" endpoint.
+        if draft:
+            draft.status = "SUBMITTED"
+            draft.save(update_fields=["status", "updated_at"])
+
         return Response({'message': 'Request submitted. OTP sent to email.'}, status=201)
 
     return Response(serializer.errors, status=400)
@@ -780,7 +788,7 @@ def approve_vendor(request, vendor_request_id):
             source_draft = VendorDraft.objects.get(
                 id=draft_id,
                 user=user,
-                status="DRAFT",
+                status__in=["DRAFT", "SUBMITTED"],
                 expires_at__gt=timezone.now(),
             )
         except VendorDraft.DoesNotExist:
