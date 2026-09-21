@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useAuth } from "../../../../../../cmponents/Auth/AuthContext/Context";
+import { useNavigate } from "react-router-dom";
 import api from "../../../../../../Services/Api";
 
 import { Card, CardHeader, CardContent } from "../../../../../../../components/ui/card";
@@ -27,11 +28,33 @@ import {
 
 export default function PublicProfile() {
   const { isAuthenticated } = useAuth();
+  const navigate = useNavigate();
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
   const [selectedItem, setSelectedItem] = useState(null);
   const {activities, notifications ,loadingExtras} = useUserExtras()
  
+  const handleNotificationClick = async (notification) => {
+    try {
+      await api.post(
+        "/api/notifications/" + notification.id + "/mark_seen/",
+        {},
+        { withCredentials: true }
+      );
+    } catch (error) {
+      console.error("Unable to mark notification as read:", error);
+    }
+
+    const target = notification.url;
+    if (target && typeof target === "string") {
+      if (/^https?:\/\//i.test(target)) {
+        window.location.href = target;
+      } else {
+        navigate(target.startsWith("/") ? target : "/" + target);
+      }
+    }
+  };
+
 
     
   
@@ -307,7 +330,7 @@ export default function PublicProfile() {
               <Bell className="h-4 w-4" />
               Notifications
               <span className="ml-auto text-xs font-semibold bg-blue-500 text-white rounded-full px-2 py-0.5">
-                {notifications.length}
+                {notifications.filter((n) => !n.is_read).length}
               </span>
             </h3>
           </CardHeader>
@@ -319,13 +342,23 @@ export default function PublicProfile() {
               <Skeleton className="h-20 w-full rounded-md" />
             ) : notifications.length ? (
               notifications.map((n) => (
-                <div key={n.id} className="border-b py-2 last:border-0 text-sm">
-                  <p className="font-medium">{n.title}</p>
+                <button
+                  key={n.id}
+                  type="button"
+                  onClick={() => handleNotificationClick(n)}
+                  className={"block w-full border-b py-2 last:border-0 text-left text-sm hover:bg-gray-50 " + (!n.is_read ? "bg-gray-50/80" : "")}
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <p className="font-medium">{n.title}</p>
+                    {!n.is_read && (
+                      <span className="mt-1 h-2 w-2 shrink-0 rounded-full bg-blue-500" aria-label="Unread" />
+                    )}
+                  </div>
                   <p className="text-gray-600 text-xs">{n.message}</p>
                   <p className="text-xs text-gray-400">
                     {new Date(n.created_at).toLocaleString()}
                   </p>
-                </div>
+                </button>
               ))
             ) : (
               <p className="text-sm text-muted-foreground">No notifications found.</p>
