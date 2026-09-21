@@ -2,6 +2,7 @@ from django.urls import path
 from . import views  # Make sure views.py exists
 from .Serializer import *
 from .views import *
+from .messaging import messaging_contacts, messaging_conversations, messaging_messages, messaging_mark_read
 from rest_framework.routers import DefaultRouter
 from .Referal import *
 from .SearchEngine import search_items
@@ -28,6 +29,11 @@ urlpatterns = [
     path('api/filtered-items/', filtered_items, name='item-query_list'),
     # filter options
     path("api/filter-options/", filter_options),
+
+    path("api/messaging/contacts/", messaging_contacts, name="messaging-contacts"),
+    path("api/messaging/conversations/", messaging_conversations, name="messaging-conversations"),
+    path("api/messaging/conversations/<int:conversation_id>/messages/", messaging_messages, name="messaging-messages"),
+    path("api/messaging/conversations/<int:conversation_id>/read/", messaging_mark_read, name="messaging-mark-read"),
 
     #chat view
     path('api/chat-user-data/', views.user_data, name='chat_user_data'),
