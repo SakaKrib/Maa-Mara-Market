@@ -227,10 +227,15 @@ def item_marketplace_context_v2(request, pk):
             quality=Avg("quality"),
             communication=Avg("communication"),
             shipping=Avg("shipping"),
-            quality_4_plus=Count("id", filter=Q(quality__gte=4)),
-            communication_4_plus=Count("id", filter=Q(communication__gte=4)),
-            shipping_4_plus=Count("id", filter=Q(shipping__gte=4)),
         )
+
+        # Badge eligibility is based on the number of individual vendor
+        # ratings that are 4 stars or higher in each category. Keep these
+        # counts as separate queries so they cannot conflict with the
+        # aggregate aliases above.
+        quality_4_plus = vendor_ratings.filter(quality__gte=4).count()
+        communication_4_plus = vendor_ratings.filter(communication__gte=4).count()
+        shipping_4_plus = vendor_ratings.filter(shipping__gte=4).count()
 
         rating_values = [
             aggregates["quality"],
@@ -255,16 +260,16 @@ def item_marketplace_context_v2(request, pk):
             else 0,
             "badges": {
                 "quality": {
-                    "eligible": int(aggregates["quality_4_plus"] or 0) >= 10,
-                    "count": int(aggregates["quality_4_plus"] or 0),
+                    "eligible": quality_4_plus >= 10,
+                    "count": quality_4_plus,
                 },
                 "communication": {
-                    "eligible": int(aggregates["communication_4_plus"] or 0) >= 10,
-                    "count": int(aggregates["communication_4_plus"] or 0),
+                    "eligible": communication_4_plus >= 10,
+                    "count": communication_4_plus,
                 },
                 "shipping": {
-                    "eligible": int(aggregates["shipping_4_plus"] or 0) >= 10,
-                    "count": int(aggregates["shipping_4_plus"] or 0),
+                    "eligible": shipping_4_plus >= 10,
+                    "count": shipping_4_plus,
                 },
             },
         }
