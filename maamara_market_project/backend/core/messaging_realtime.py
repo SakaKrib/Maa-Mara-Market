@@ -39,9 +39,18 @@ def direct_message_saved(sender, instance, created, **kwargs):
         "created_at": instance.created_at.isoformat(),
     }
 
-    _send(f"chat_conversation_{instance.conversation_id}", payload)
-    _send(f"chat_user_{instance.conversation.admin_id}", payload)
-    _send(f"chat_user_{instance.conversation.participant_id}", payload)
+    _send(f"chat_conversation_{instance.conversation_id}", {**payload, "type": "message.created"})
+    sidebar_payload = {
+        "type": "conversation.updated",
+        "conversation_id": instance.conversation_id,
+        "message_id": instance.id,
+        "sender_id": instance.sender_id,
+        "body": instance.body,
+        "has_image": bool(instance.image),
+        "created_at": instance.created_at.isoformat(),
+    }
+    _send(f"chat_user_{instance.conversation.admin_id}", sidebar_payload)
+    _send(f"chat_user_{instance.conversation.participant_id}", sidebar_payload)
 
 
 @receiver(post_save, sender=Conversation)
