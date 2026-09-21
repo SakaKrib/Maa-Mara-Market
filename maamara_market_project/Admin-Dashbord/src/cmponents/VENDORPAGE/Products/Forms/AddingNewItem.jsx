@@ -773,72 +773,68 @@ useEffect(() => {
               }}
             />
 
-              {/* Organic inorganic */}
-              <div className="my-4">
-  <FormLabel className="text-sm leading-6 font-semibold text-foreground">Product Type</FormLabel>
-  <FormControl>
-    <div className="flex gap-4">
+              {/* Organic product details */}
+              {selectedSection === "organic" && (
+                <div className="my-4">
+                  <FormLabel className="text-sm leading-6 font-semibold text-foreground">Product Type</FormLabel>
+                  <FormControl>
+                    <div className="flex flex-wrap items-center gap-4">
+                      {/* Organic */}
+                      <FormField
+                        control={form.control}
+                        name="is_organic"
+                        render={({ field }) => {
+                          const vendorType = vendor?.vendor_data?.product_type;
+                          const checked = vendorType === "organic" ? true : field.value ?? false;
 
-      {/* Organic */}
-      <FormField
-        control={form.control}
-        name="is_organic"
-        render={({ field }) => {
-          const vendorType = vendor?.vendor_data?.product_type;
+                          return (
+                            <label className="flex items-center gap-2 cursor-pointer">
+                              <input
+                                type="checkbox"
+                                {...field}
+                                checked={checked}
+                                disabled={vendorType === "organic"}
+                                onChange={(e) => field.onChange(e.target.checked)}
+                                className="h-4 w-4 shrink-0 rounded-[4px] border border-primary shadow-none focus-visible:outline-none focus-visible:ring-0"
+                              />
+                              <span className="leading-6">Organic</span>
+                            </label>
+                          );
+                        }}
+                      />
 
-          const checked = vendorType === "organic" ? true : field.value ?? false;
-          const disabled = vendorType === "inorganic";
+                      {/* Fresh Food */}
+                      <FormField
+                        control={form.control}
+                        name="is_fresh_food"
+                        render={({ field }) => {
+                          const vendorType = vendor?.vendor_data?.product_type;
+                          const checked = vendorType === "organic" ? true : field.value ?? false;
 
-          return (
-            <label className={`flex items-center gap-2 cursor-pointer ${disabled ? "opacity-50 cursor-not-allowed" : ""}`}>
-              <input
-                type="checkbox"
-                {...field}
-                checked={checked}
-                disabled={disabled}
-                onChange={(e) => field.onChange(e.target.checked)}
-                className="h-4 w-4 border-0 shadow-none focus-visible:outline-none focus-visible:ring-0"
-              />
-              <span>Organic</span>
-            </label>
-          );
-        }}
-      />
+                          return (
+                            <label className="flex items-center gap-2 cursor-pointer">
+                              <input
+                                type="checkbox"
+                                {...field}
+                                checked={checked}
+                                disabled={vendorType === "organic"}
+                                onChange={(e) => field.onChange(e.target.checked)}
+                                className="h-4 w-4 shrink-0 rounded-[4px] border border-primary shadow-none focus-visible:outline-none focus-visible:ring-0"
+                              />
+                              <span className="leading-6">Fresh Food</span>
+                            </label>
+                          );
+                        }}
+                      />
+                    </div>
+                  </FormControl>
+                  <FormDescription>
+                    These options apply to organic products. They are hidden for handmade products.
+                  </FormDescription>
+                  <FormMessage />
+                </div>
+              )}
 
-      {/* Fresh Food */}
-      <FormField
-        control={form.control}
-        name="is_fresh_food"
-        render={({ field }) => {
-          const vendorType = vendor?.vendor_data?.product_type;
-
-          const checked = vendorType === "organic" ? true : field.value ?? false;
-          const disabled = vendorType === "inorganic";
-
-          return (
-            <label className={`flex items-center gap-2 cursor-pointer ${disabled ? "opacity-50 cursor-not-allowed" : ""}`}>
-              <input
-                type="checkbox"
-                {...field}
-                checked={checked}
-                disabled={disabled}
-                onChange={(e) => field.onChange(e.target.checked)}
-                className="h-4 w-4 border-0 shadow-none focus-visible:outline-none focus-visible:ring-0"
-              />
-              <span>Fresh Food</span>
-            </label>
-          );
-        }}
-      />
-
-    </div>
-  </FormControl>
-  <FormDescription>
-    Organic: both auto-checked; Inorganic: both disabled; Both: user can select either.
-  </FormDescription>
-  <FormMessage />
-</div>    
-    
         {/* conditional rendering */}
         {activeData === departmentMap && (
           <>
