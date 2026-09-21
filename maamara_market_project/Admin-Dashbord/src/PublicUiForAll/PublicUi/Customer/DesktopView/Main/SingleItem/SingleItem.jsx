@@ -110,7 +110,13 @@ const SingleItem = () => {
 
         <ProductDetails item={item} />
 
-        <TrendingProduct itemId={item.id} title="You may also like" />
+        <TrendingProduct
+          itemId={item.id}
+          title="You may also like"
+          limit={8}
+          initialVisible={4}
+          scrollable={true}
+        />
 
         <ProductReviews item={item} />
 
