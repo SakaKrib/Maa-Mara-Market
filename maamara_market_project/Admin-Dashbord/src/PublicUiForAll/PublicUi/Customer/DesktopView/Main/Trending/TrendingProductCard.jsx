@@ -3,7 +3,6 @@ import { useWishlistContext } from "../../../../../../cmponents/Hooks/WishListHo
 import { IonIcon } from "@ionic/react";
 import { heart, heartOutline, eyeOutline, shareOutline } from "ionicons/icons";
 import { Link, useNavigate } from "react-router-dom";
-import AddToCartButton from "../CartActionButtons/AddToCartBtn";
 import FormattedCurrency from "../Currency/FormattedCurrency";
 
 const TrendingProductCard = ({ item, isWishlisted: controlledWishlist, onToggleWishlist, onOpen }) => {
@@ -16,6 +15,8 @@ const TrendingProductCard = ({ item, isWishlisted: controlledWishlist, onToggleW
     ? (item.final_discounted_price ?? item.discount_price ?? item.final_price ?? item.price ?? 0)
     : (item.final_price ?? item.price ?? 0);
   const originalPrice = item.original_price ?? item.price ?? item.final_price ?? 0;
+  const savings = Math.max(0, Number(originalPrice) - Number(currentPrice));
+  const discountPercent = Number(item.discount || item.percentage_discount || 0);
   const rating = item.rating ?? item.average_rating ?? 0;
   const reviewCount = item.review_count ?? item.reviews_count ?? item.reviews ?? 0;
   const stock = Number(item.in_stock ?? 0);
@@ -82,7 +83,7 @@ const TrendingProductCard = ({ item, isWishlisted: controlledWishlist, onToggleW
           <h3 className="text-sm sm:text-base font-semibold text-gray-800 mb-1 line-clamp-2">{item.name}</h3>
         </Link>
 
-        <p className="mm-product-rating text-xs sm:text-sm text-gray-500 mb-2" aria-label={`${rating} rating from ${reviewCount} reviews`}>
+        <p className="mm-product-rating text-xs sm:text-sm text-gray-500 mb-1" aria-label={`${rating} rating from ${reviewCount} reviews`}>
           <span aria-hidden="true">★</span> {Number(rating).toFixed(1)}
           <span> · {reviewCount} reviews</span>
         </p>
@@ -98,18 +99,20 @@ const TrendingProductCard = ({ item, isWishlisted: controlledWishlist, onToggleW
           )}
         </div>
 
-        <div className="mm-product-meta flex justify-between gap-2 text-[11px] sm:text-xs text-gray-500 mb-3">
-          <span>{item.sold || 0} sold</span>
-          <span>{stock} in stock</span>
-        </div>
 
-        <AddToCartButton
-          itemId={item.id}
-          quantity={1}
-          availableStock={stock}
-          remainingStock={stock}
-          disabled={stock <= 0}
-        />
+        {hasDiscount && Number(originalPrice) > Number(currentPrice) && (
+          <div className="mt-0.5 leading-tight">
+            {discountPercent > 0 && (
+              <span className="block text-[10px] sm:text-xs font-semibold text-red-600">{discountPercent}% OFF</span>
+            )}
+            {savings > 0 && (
+              <span className="block text-[10px] sm:text-xs font-medium text-green-600">
+                Save up to <FormattedCurrency value={savings} />
+              </span>
+            )}
+          </div>
+        )}
+
       </div>
     </article>
   );
