@@ -55,15 +55,17 @@ const ReviewSection = ({ item }) => {
     try {
       setPosting(true);
       await api.post(`/api/items/${item.id}/reviews/`, { rating, review_text: reviewText }, {
-       
         withCredentials: true,
       });
       setSnackbar({ open: true, message: "Review submitted!", severity: "success" });
-      setReviewText(""); setRating(5);
+      setReviewText("");
+      setRating(5);
       fetchReviews();
     } catch {
       setSnackbar({ open: true, message: "Failed to post review.", severity: "error" });
-    } finally { setPosting(false); }
+    } finally {
+      setPosting(false);
+    }
   };
 
   const renderStars = (num) => Array.from({ length: 5 }, (_, i) => (
@@ -73,13 +75,6 @@ const ReviewSection = ({ item }) => {
   const truncateReview = (text, limit = 24) => {
     const words = String(text || "").trim().split(/\s+/).filter(Boolean);
     return words.length > limit ? `${words.slice(0, limit).join(" ")}…` : String(text || "").trim();
-  };
-
-  return (
-      <div className="w-full bg-gray-200 rounded-full h-2">
-        <div className="bg-green-500 h-2 rounded-full" style={{ width: `${percentage}%` }} />
-      </div>
-    );
   };
 
   return (
