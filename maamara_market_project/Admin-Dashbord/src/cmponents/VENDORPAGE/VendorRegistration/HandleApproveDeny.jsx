@@ -107,28 +107,50 @@ export default function VendorApprovalPanel() {
   };
 
   return (
-    <div className="space-y-4 p-4" style={{ height: 'fit-content' }}>
-      <div style={{ backgroundColor: colors.primary[500], height: 'fit-content' }}>
-        {vendorRequests.length === 0 ? (
-          <p className="p-4" style={{color:colors.gray[100]}}>No approved vendor requests found.</p>
-        ) : (
-          vendorRequests.map((vendor, index) => (
-            <Card key={vendor.id ?? index} style={{ backgroundColor: colors.gray[800], border: 'none' }}>
-              <CardHeader>
-                <CardTitle style={{ color: colors.gray[100] }}>
-                  {vendor.vendor_data?.company_name || vendor.user?.email}
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                <div>
-                  <p className="text-sm" style={{ color: colors.gray[100] }}>
-                    {vendor.user?.email || `User ID: ${vendor.user}`}
-                  </p>
-                  <p style={{ color: colors.greenAccent[500] }}>
-                    Status: <strong>{vendor.status}</strong>
-                  </p>
+    <div className="min-w-0 space-y-4">
+      {vendorRequests.length === 0 ? (
+        <div className="rounded-2xl border border-border bg-muted/40 p-6 text-center">
+          <p className="text-sm font-medium text-card-foreground">No vendor requests awaiting approval.</p>
+          <p className="mt-1 text-xs text-muted-foreground">New verified vendor applications will appear here.</p>
+        </div>
+      ) : (
+        <div className="grid min-w-0 gap-4">
+          {vendorRequests.map((vendor, index) => (
+            <Card
+              key={vendor.id ?? index}
+              className="overflow-hidden rounded-2xl border border-border bg-card shadow-sm"
+            >
+              <CardHeader className="border-b border-border p-4 sm:p-5">
+                <div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                  <div className="min-w-0">
+                    <CardTitle className="truncate text-base font-bold text-card-foreground sm:text-lg">
+                      {vendor.vendor_data?.company_name || vendor.user?.email || "Vendor application"}
+                    </CardTitle>
+                    <p className="mt-1 truncate text-xs text-muted-foreground">
+                      {vendor.user?.email || `User ID: ${vendor.user}`}
+                    </p>
+                  </div>
+                  <span className="inline-flex w-fit shrink-0 items-center rounded-full border border-primary/20 bg-primary/10 px-3 py-1 text-xs font-semibold text-primary">
+                    {vendor.status || "Pending"}
+                  </span>
                 </div>
-                <div className="flex gap-2 flex-wrap">
+              </CardHeader>
+
+              <CardContent className="p-4 sm:p-5">
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <div className="rounded-xl border border-border bg-muted/50 p-3">
+                    <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Account</p>
+                    <p className="mt-1 break-all text-sm font-medium text-card-foreground">
+                      {vendor.user?.email || `User ID: ${vendor.user}`}
+                    </p>
+                  </div>
+                  <div className="rounded-xl border border-border bg-muted/50 p-3">
+                    <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Application</p>
+                    <p className="mt-1 text-sm font-medium text-card-foreground">Vendor registration</p>
+                  </div>
+                </div>
+
+                <div className="mt-4 grid gap-2 sm:grid-cols-3">
                   <Button
                     disabled={loading}
                     onClick={() => {
@@ -137,179 +159,143 @@ export default function VendorApprovalPanel() {
                       setEditItemList(vendor.item_list || []);
                       handleApprove(vendor.id, vendor.vendor_data || {}, vendor.item_list || []);
                     }}
-                    variant="outline"
+                    className="w-full rounded-[20px] bg-primary text-primary-foreground hover:bg-primary/90"
                   >
                     Approve
                   </Button>
-                  <Button variant="destructive" disabled={loading} onClick={() => handleDeny(vendor.id)}>
+                  <Button
+                    variant="destructive"
+                    disabled={loading}
+                    onClick={() => handleDeny(vendor.id)}
+                    className="w-full rounded-[20px]"
+                  >
                     Deny
                   </Button>
-                  <Button variant="outline" onClick={() => handleViewDetails(vendor)}>
-                    View Details
+                  <Button
+                    variant="outline"
+                    onClick={() => handleViewDetails(vendor)}
+                    className="w-full rounded-[20px] border-border bg-card text-foreground hover:bg-muted"
+                  >
+                    View details
                   </Button>
                 </div>
               </CardContent>
             </Card>
-          ))
-        )}
-      </div>
+          ))}
+        </div>
+      )}
 
-      {/* Vendor Details Modal */}
       <Dialog open={!!selectedVendor} onClose={handleCloseModal} fullWidth maxWidth="md">
-        <DialogTitle style={{ color: colors.blueAccent[100], backgroundColor: colors.primary[500] }}>
-          Vendor Details
+        <DialogTitle className="!border-b !border-border !bg-card !text-card-foreground">
+          Vendor details
         </DialogTitle>
-        <DialogContent dividers className="space-y-4">
+        <DialogContent dividers className="!border-border !bg-card">
           {selectedVendor && (
-            <div style={{ backgroundColor: colors.gray[800], color: colors.primary[100], padding: '1em' }}>
-              <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-5 py-2 text-card-foreground">
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                 {selectedVendor.vendor_data &&
                   Object.entries(selectedVendor.vendor_data).map(([key, value]) => {
-                    if (Array.isArray(value) || (typeof value === 'object' && value !== null)) {
-                      return null;
-                    }
+                    if (Array.isArray(value) || (typeof value === "object" && value !== null)) return null;
                     return (
-                      <p key={key}>
-                        <strong>{key.replace(/_/g, ' ')}:</strong> {String(value)}
-                      </p>
+                      <div key={key} className="rounded-xl border border-border bg-muted/40 p-3">
+                        <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                          {key.replace(/_/g, " ")}
+                        </p>
+                        <p className="mt-1 break-words text-sm text-card-foreground">{String(value)}</p>
+                      </div>
                     );
                   })}
               </div>
 
               {Array.isArray(selectedVendor.item_list) && selectedVendor.item_list.length > 0 && (
-                <div className="mt-6">
-                  <strong>Items:</strong>
-                  <ul className="divide-y divide-gray-200 mt-2">
+                <div>
+                  <div className="mb-3 flex items-center justify-between gap-3">
+                    <h3 className="text-sm font-semibold text-card-foreground">Items</h3>
+                    <span className="text-xs text-muted-foreground">{selectedVendor.item_list.length} item(s)</span>
+                  </div>
+                  <div className="space-y-3">
                     {selectedVendor.item_list.map((item, idx) => (
-                      <li key={`${item.name}-${idx}`} className="py-2">
-                        {Object.entries(item).map(([itemKey, itemValue]) => {
-                          if (itemKey === 'image' && itemValue) {
-                            const src = resolveApiAssetUrl(itemValue);
-                            return (
-                              <div key={itemKey} className="w-32 h-32 mt-2">
-                                <img src={src} alt={item.name} className="w-32 h-32 object-cover" />
-                              </div>
-                            );
-                          }
-                          if (itemKey !== 'image') {
-                            return (
-                              <p key={itemKey}>
-                                <strong>{itemKey.replace(/_/g, ' ')}:</strong> {String(itemValue)}
-                              </p>
-                            );
-                          }
-                          return null;
-                        })}
-                      </li>
+                      <div key={`${item.name}-${idx}`} className="rounded-xl border border-border bg-muted/40 p-3">
+                        <div className="flex flex-col gap-3 sm:flex-row">
+                          {item.image && (
+                            <img
+                              src={resolveApiAssetUrl(item.image)}
+                              alt={item.name || "Vendor item"}
+                              className="h-24 w-24 shrink-0 rounded-xl border border-border object-cover"
+                            />
+                          )}
+                          <div className="min-w-0 space-y-1 text-sm">
+                            {Object.entries(item).map(([itemKey, itemValue]) =>
+                              itemKey === "image" ? null : (
+                                <p key={itemKey} className="break-words text-muted-foreground">
+                                  <strong className="text-card-foreground">{itemKey.replace(/_/g, " ")}:</strong>{" "}
+                                  {String(itemValue)}
+                                </p>
+                              )
+                            )}
+                          </div>
+                        </div>
+                      </div>
                     ))}
-                  </ul>
+                  </div>
                 </div>
               )}
             </div>
           )}
         </DialogContent>
 
-        <DialogActions>
-          <div className="flex justify-between w-full">
-            <div className="flex gap-4">
-              <Button
-                variant="outline"
-                onClick={() => {
-                  setEditVendorInfo(selectedVendor.vendor_data || {});
-                  setShowVendorForm(true);
-                }}
-                style={{ color: colors.primary[500] }}
-              >
-                Edit Vendor Info
-              </Button>
-
-              <Button
-                variant="outline"
-                onClick={() => {
-                  setEditItemList(selectedVendor.item_list || []);
-                  setShowItemForm(true);
-                }}
-                style={{ color: colors.primary[500] }}
-              >
-                Edit Item List
-              </Button>
-            </div>
-
-            <div className="flex gap-4">
-              <Button disabled={loading} variant="success" onClick={() => handleApprove(selectedVendor.id)}>
-                Approve
-              </Button>
-
-              <Button disabled={loading} variant="destructive" onClick={() => handleDeny(selectedVendor.user)}>
-                Deny
-              </Button>
-
-              <Button onClick={handleCloseModal}>Close</Button>
-            </div>
+        <DialogActions className="!border-t !border-border !bg-card !p-4">
+          <div className="grid w-full gap-2 sm:grid-cols-2 lg:grid-cols-5">
+            <Button variant="outline" onClick={() => { setEditVendorInfo(selectedVendor.vendor_data || {}); setShowVendorForm(true); }} className="w-full rounded-[20px] border-border">
+              Edit vendor info
+            </Button>
+            <Button variant="outline" onClick={() => { setEditItemList(selectedVendor.item_list || []); setShowItemForm(true); }} className="w-full rounded-[20px] border-border">
+              Edit item list
+            </Button>
+            <Button disabled={loading} onClick={() => handleApprove(selectedVendor.id)} className="w-full rounded-[20px] bg-primary text-primary-foreground hover:bg-primary/90">
+              Approve
+            </Button>
+            <Button disabled={loading} variant="destructive" onClick={() => handleDeny(selectedVendor.user)} className="w-full rounded-[20px]">
+              Deny
+            </Button>
+            <Button onClick={handleCloseModal} className="w-full rounded-[20px]">
+              Close
+            </Button>
           </div>
         </DialogActions>
       </Dialog>
 
-      {/* Edit Vendor Info Modal */}
       <Dialog open={showVendorForm} onClose={() => setShowVendorForm(false)} fullWidth maxWidth="md">
-        <DialogTitle style={{ color: colors.blueAccent[100], backgroundColor: colors.primary[500] }}>
-          Edit Vendor Info
-        </DialogTitle>
-
-        <DialogContent style={{ backgroundColor: colors.gray[800], color: colors.primary[100] }}>
+        <DialogTitle className="!border-b !border-border !bg-card !text-card-foreground">Edit vendor info</DialogTitle>
+        <DialogContent dividers className="!border-border !bg-card">
           {editVendorInfo && (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4">
+            <div className="grid grid-cols-1 gap-4 py-2 md:grid-cols-2">
               {Object.entries(editVendorInfo).map(([key, value]) => {
-                const label = key.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+                const label = key.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
 
-                if (typeof value === 'string' && (value === 'yes' || value === 'no')) {
+                if (typeof value === "string" && (value === "yes" || value === "no")) {
                   return (
-                    <div key={key} className="flex items-center space-x-2">
-                      <label htmlFor={key} className="text-white">
-                        {label}:
-                      </label>
-                      <input
-                        id={key}
-                        type="checkbox"
-                        checked={value === 'yes'}
-                        onChange={(e) =>
-                          setEditVendorInfo({ ...editVendorInfo, [key]: e.target.checked ? 'yes' : 'no' })
-                        }
-                      />
+                    <label key={key} htmlFor={key} className="flex items-center gap-3 rounded-xl border border-border bg-muted/40 p-3 text-sm text-card-foreground">
+                      <input id={key} type="checkbox" checked={value === "yes"} onChange={(e) => setEditVendorInfo({ ...editVendorInfo, [key]: e.target.checked ? "yes" : "no" })} />
+                      <span>{label}</span>
+                    </label>
+                  );
+                }
+
+                if (key.toLowerCase().includes("description") || (typeof value === "string" && value.length > 50)) {
+                  return (
+                    <div key={key} className="md:col-span-2">
+                      <label htmlFor={key} className="mb-1.5 block text-xs font-semibold text-card-foreground">{label}</label>
+                      <textarea id={key} value={value || ""} onChange={(e) => setEditVendorInfo({ ...editVendorInfo, [key]: e.target.value })} placeholder={label} rows={4} className="w-full rounded-[20px] border border-border bg-card px-4 py-3 text-sm text-foreground outline-none transition placeholder:text-muted-foreground focus:border-primary focus:ring-2 focus:ring-primary/20" />
                     </div>
                   );
                 }
 
-                if (key.toLowerCase().includes('description') || (typeof value === 'string' && value.length > 50)) {
+                if (key === "payment_method") {
                   return (
-                    <div key={key} className="col-span-1 md:col-span-2">
-                      <label htmlFor={key} className="block text-white mb-1">
-                        {label}
-                      </label>
-                      <textarea
-                        id={key}
-                        value={value || ''}
-                        onChange={(e) => setEditVendorInfo({ ...editVendorInfo, [key]: e.target.value })}
-                        placeholder={label}
-                        rows={4}
-                        className="p-2 bg-gray-700 rounded w-full"
-                      />
-                    </div>
-                  );
-                }
-
-                if (key === 'payment_method') {
-                  return (
-                    <div key={key} className="col-span-1 md:col-span-2">
-                      <label htmlFor={key} className="block text-white mb-1">
-                        {label}
-                      </label>
-                      <select
-                        id={key}
-                        value={value || ''}
-                        onChange={(e) => setEditVendorInfo({ ...editVendorInfo, [key]: e.target.value })}
-                        className="p-2 bg-gray-700 rounded text-white w-full"
-                      >
+                    <div key={key} className="md:col-span-2">
+                      <label htmlFor={key} className="mb-1.5 block text-xs font-semibold text-card-foreground">{label}</label>
+                      <select id={key} value={value || ""} onChange={(e) => setEditVendorInfo({ ...editVendorInfo, [key]: e.target.value })} className="w-full rounded-[20px] border border-border bg-card px-4 py-3 text-sm text-foreground outline-none focus:border-primary focus:ring-2 focus:ring-primary/20">
                         <option value="">Select {label}</option>
                         <option value="BANK_TRANSFER">Bank Transfer</option>
                         <option value="MOBILE_MONEY">Mobile Money</option>
@@ -321,32 +307,18 @@ export default function VendorApprovalPanel() {
 
                 return (
                   <div key={key}>
-                    <label htmlFor={key} className="block text-white mb-1">
-                      {label}
-                    </label>
-                    <input
-                      id={key}
-                      type={key.toLowerCase().includes('email') ? 'email' : 'text'}
-                      value={value || ''}
-                      onChange={(e) => setEditVendorInfo({ ...editVendorInfo, [key]: e.target.value })}
-                      placeholder={label}
-                      className="p-2 bg-gray-700 rounded w-full"
-                    />
+                    <label htmlFor={key} className="mb-1.5 block text-xs font-semibold text-card-foreground">{label}</label>
+                    <input id={key} type={key.toLowerCase().includes("email") ? "email" : "text"} value={value || ""} onChange={(e) => setEditVendorInfo({ ...editVendorInfo, [key]: e.target.value })} placeholder={label} className="w-full rounded-[20px] border border-border bg-card px-4 py-3 text-sm text-foreground outline-none focus:border-primary focus:ring-2 focus:ring-primary/20" />
                   </div>
                 );
               })}
             </div>
           )}
         </DialogContent>
-
-        <DialogActions>
-          <Button variant="outline" onClick={() => setShowVendorForm(false)}>
-            Cancel
-          </Button>
-          <Button
-            disabled={loading}
-            variant="success"
-            onClick={async () => {
+        <DialogActions className="!border-t !border-border !bg-card !p-4">
+          <div className="flex w-full flex-col justify-end gap-2 sm:flex-row">
+            <Button variant="outline" onClick={() => setShowVendorForm(false)} className="w-full rounded-[20px] border-border sm:w-auto">Cancel</Button>
+            <Button disabled={loading} onClick={async () => {
               setLoading(true);
               try {
                 const response = await api.put(
@@ -354,78 +326,43 @@ export default function VendorApprovalPanel() {
                   { vendor_data: editVendorInfo },
                   { withCredentials: true }
                 );
-
-                const updatedVendor = {
-                  ...selectedVendor,
-                  vendor_data: response.data.vendor_data,
-                };
-
-                setVendorRequests((prev) =>
-                  prev.map((vendor) => (vendor.user === selectedVendor.user ? updatedVendor : vendor))
-                );
-
-                toast({ title: 'Vendor info updated successfully.' });
+                const updatedVendor = { ...selectedVendor, vendor_data: response.data.vendor_data };
+                setVendorRequests((prev) => prev.map((vendor) => (vendor.user === selectedVendor.user ? updatedVendor : vendor)));
+                toast({ title: "Vendor info updated successfully." });
                 setShowVendorForm(false);
               } catch (error) {
-                toast({
-                  title: 'Error',
-                  description: 'Something went wrong while updating vendor.',
-                  variant: 'destructive',
-                });
+                toast({ title: "Error", description: "Something went wrong while updating vendor.", variant: "destructive" });
               } finally {
                 setLoading(false);
               }
-            }}
-          >
-            Save
-          </Button>
+            }} className="w-full rounded-[20px] bg-primary text-primary-foreground hover:bg-primary/90 sm:w-auto">
+              Save
+            </Button>
+          </div>
         </DialogActions>
       </Dialog>
 
-      {/* Edit Item List Modal */}
       <Dialog open={showItemForm} onClose={() => setShowItemForm(false)} fullWidth maxWidth="md">
-        <DialogTitle style={{ color: colors.blueAccent[100], backgroundColor: colors.primary[500] }}>
-          Edit Item List
-        </DialogTitle>
-        <DialogContent style={{ background: colors.gray[800], color: colors.primary[100] }}>
+        <DialogTitle className="!border-b !border-border !bg-card !text-card-foreground">Edit item list</DialogTitle>
+        <DialogContent dividers className="!border-border !bg-card">
           {Array.isArray(editItemList) && editItemList.length > 0 ? (
             <div className="space-y-4">
               {editItemList.map((item, index) => (
-                <Card key={index} style={{ background: colors.primary[700] }}>
-                  <CardContent className="flex justify-between items-center">
-                    <div className="mt-5" style={{ color: colors.gray[100] }}>
-                      <p>
-                        <strong>{item.name}</strong>
-                      </p>
-                      <p>{item.description}</p>
-                      <p className="semi-bold">Price: KES {item.price != null ? item.price.toLocaleString() : 'N/A'}</p>
-                      {item.image && (
-                        <img
-                          src={item.image}
-                          alt={item.name}
-                          style={{ maxWidth: '150px', maxHeight: '100px', objectFit: 'contain' }}
-                        />
-                      )}
+                <Card key={index} className="rounded-2xl border border-border bg-card shadow-sm">
+                  <CardContent className="flex flex-col gap-4 p-4 sm:flex-row sm:items-center sm:justify-between">
+                    <div className="min-w-0 space-y-1 text-sm text-card-foreground">
+                      <p className="font-semibold">{item.name}</p>
+                      <p className="text-muted-foreground">{item.description}</p>
+                      <p><strong>Price:</strong> KES {item.price != null ? item.price.toLocaleString() : "N/A"}</p>
+                      {item.image && <img src={item.image} alt={item.name} className="mt-2 h-24 w-36 rounded-xl border border-border object-contain" />}
                     </div>
-                    <Button sx={{ '&:hover': { backgroundColor: colors.gray[100] } }} onClick={() => setEditingItemIndex(index)}>
-                      Edit
-                    </Button>
+                    <Button onClick={() => setEditingItemIndex(index)} className="w-full rounded-[20px] sm:w-auto">Edit</Button>
                   </CardContent>
                 </Card>
               ))}
-
-              {/* Edit single item modal */}
-              <Dialog
-                open={editingItemIndex !== null}
-                onClose={() => setEditingItemIndex(null)}
-                fullWidth
-                maxWidth="md"
-                sx={{ scrollbarWidth: '15px' }}
-              >
-                <DialogTitle style={{ color: colors.blueAccent[100], background: colors.primary[500] }}>
-                  Edit Item
-                </DialogTitle>
-                <DialogContent style={{ background: colors.gray[800], scrollbarWidth: '10px' }}>
+              <Dialog open={editingItemIndex !== null} onClose={() => setEditingItemIndex(null)} fullWidth maxWidth="md">
+                <DialogTitle className="!border-b !border-border !bg-card !text-card-foreground">Edit item</DialogTitle>
+                <DialogContent dividers className="!border-border !bg-card">
                   <ScrollArea className="h-screen">
                     {editingItemIndex !== null && (
                       <ItemAddNew
@@ -445,12 +382,11 @@ export default function VendorApprovalPanel() {
               </Dialog>
             </div>
           ) : (
-            <p>No items to edit.</p>
+            <p className="py-4 text-sm text-muted-foreground">No items to edit.</p>
           )}
         </DialogContent>
-
-        <DialogActions>
-          <Button onClick={() => setShowItemForm(false)}>Close</Button>
+        <DialogActions className="!border-t !border-border !bg-card !p-4">
+          <Button onClick={() => setShowItemForm(false)} className="w-full rounded-[20px] sm:w-auto">Close</Button>
         </DialogActions>
       </Dialog>
     </div>
