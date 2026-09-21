@@ -3,12 +3,15 @@ import { Link } from "react-router-dom";
 import api from "../../../../../../Services/Api";
 import FormattedCurrency from "../Currency/FormattedCurrency";
 
-const Stars = ({ value = 0 }) => (
-  <span aria-label={`${value} out of 5 stars`} className="text-xs tracking-wide">
-    {"★".repeat(Math.round(Number(value) || 0))}
-    <span className="text-gray-300">{"★".repeat(Math.max(0, 5 - Math.round(Number(value) || 0)))}</span>
-  </span>
-);
+const Stars = ({ value = 0 }) => {
+  const rounded = Math.min(5, Math.max(0, Math.round(Number(value) || 0)));
+  return (
+    <span aria-label={`${value} out of 5 stars`} className="text-xs tracking-wide text-amber-500">
+      {"★".repeat(rounded)}
+      <span className="text-amber-100">{"★".repeat(5 - rounded)}</span>
+    </span>
+  );
+};
 
 const ProductRail = ({ title, items }) => {
   if (!items?.length) return null;
@@ -53,6 +56,7 @@ const ProductRail = ({ title, items }) => {
 const MarketplaceItemContext = ({ item, availableStock }) => {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [descriptionOpen, setDescriptionOpen] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -111,6 +115,38 @@ const MarketplaceItemContext = ({ item, availableStock }) => {
         </div>
       </section>
 
+      {!!item.description && (
+        <section className="mt-6 rounded-2xl border border-border bg-card p-4 shadow-custom sm:p-5">
+          <button
+            type="button"
+            onClick={() => setDescriptionOpen((open) => !open)}
+            className="flex w-full items-center justify-between gap-4 text-left"
+            aria-expanded={descriptionOpen}
+          >
+            <span>
+              <span className="block text-base font-bold text-card-foreground sm:text-lg">Item description</span>
+              <span className="mt-1 block text-xs text-muted-foreground">
+                {descriptionOpen ? "Hide product details" : "View product details"}
+              </span>
+            </span>
+            <span
+              aria-hidden="true"
+              className="flex h-9 w-9 flex-none items-center justify-center rounded-full border border-border bg-background text-sm font-semibold text-card-foreground"
+            >
+              {descriptionOpen ? "−" : "+"}
+            </span>
+          </button>
+
+          {descriptionOpen && (
+            <div className="mt-4 border-t border-border pt-4">
+              <div className="rounded-2xl border border-border bg-background p-4 text-sm leading-6 text-card-foreground">
+                {item.description}
+              </div>
+            </div>
+          )}
+        </section>
+      )}
+
       {!!searchLinks.length && (
         <section className="mt-6 rounded-2xl border border-border bg-card p-4 shadow-custom sm:p-5">
           <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
@@ -150,7 +186,7 @@ const MarketplaceItemContext = ({ item, availableStock }) => {
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
               <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Shop</p>
-              <h2 className="mt-1 text-base font-semibold text-card-foreground sm:text-lg">{shop.name || "This shop"}</h2>
+              <h2 className="mt-1 text-base font-bold text-card-foreground sm:text-lg">{shop.name || "Mara Mara Market"}</h2>
               <div className="mt-1 flex items-center gap-2 text-sm text-muted-foreground">
                 <Stars value={shop.rating} />
                 <span>{shop.rating || 0} · {shop.review_count || 0} reviews</span>
