@@ -56,8 +56,8 @@ export default function AdminBannerApprovalPage({ onCountChange }) {
             </div>
             <div className="min-w-0">
               <p className="text-sm text-muted-foreground">Marketing &amp; promotions</p>
-              <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">Banner Approvals</h1>
-              <p className="mt-1 text-sm text-muted-foreground">Review vendor banners before they appear on the marketplace.</p>
+              <h1 className="text-xl font-semibold tracking-tight sm:text-2xl">Banner Approvals</h1>
+              <p className="mt-1 text-xs text-muted-foreground sm:text-sm">Review vendor banners before they appear on the marketplace.</p>
             </div>
           </div>
           <button
@@ -73,7 +73,7 @@ export default function AdminBannerApprovalPage({ onCountChange }) {
 
         <div className="rounded-2xl border border-border bg-card shadow-sm">
           <div className="border-b border-border px-4 py-4 sm:px-6">
-            <h2 className="font-semibold">Pending banners</h2>
+            <h2 className="text-base font-semibold sm:text-lg">Pending banners</h2>
             <p className="mt-1 text-sm text-muted-foreground">
               {banners.length} {banners.length === 1 ? "banner" : "banners"} awaiting review.
             </p>
@@ -82,11 +82,11 @@ export default function AdminBannerApprovalPage({ onCountChange }) {
           {loading ? (
             <div className="p-8 text-center text-sm text-muted-foreground">Loading banners…</div>
           ) : banners.length === 0 ? (
-            <div className="p-10 text-center">
+            <div className="p-6 text-center sm:p-8">
               <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-xl bg-muted">
                 <IonIcon icon={megaphoneOutline} className="text-xl text-muted-foreground" />
               </div>
-              <h3 className="font-medium">No pending banners</h3>
+              <h3 className="text-sm font-medium sm:text-base">No pending banners</h3>
               <p className="mt-1 text-sm text-muted-foreground">New vendor submissions will appear here for review.</p>
             </div>
           ) : (
