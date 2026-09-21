@@ -255,7 +255,7 @@ export default function VendorApprovalPanel() {
             <Button disabled={loading} variant="destructive" onClick={() => handleDeny(selectedVendor.user)} className="w-full rounded-[20px]">
               Deny
             </Button>
-            <Button onClick={handleCloseModal} className="w-full rounded-[20px]">
+            <Button onClick={handleCloseModal} className="w-full rounded-[20px] border border-border bg-transparent text-foreground hover:bg-muted">
               Close
             </Button>
           </div>
@@ -341,7 +341,7 @@ export default function VendorApprovalPanel() {
 
       <Dialog open={showItemForm} onClose={() => setShowItemForm(false)} fullWidth maxWidth="md">
         <DialogTitle className="!border-b !border-border !bg-card !text-card-foreground">Edit item list</DialogTitle>
-        <DialogContent dividers className="!border-border !bg-card">
+        <DialogContent dividers className="!border-border !bg-card !p-2 sm:!p-3">
           {Array.isArray(editItemList) && editItemList.length > 0 ? (
             <div className="space-y-4">
               {editItemList.map((item, index) => (
@@ -357,10 +357,10 @@ export default function VendorApprovalPanel() {
                   </CardContent>
                 </Card>
               ))}
-              <Dialog open={editingItemIndex !== null} onClose={() => setEditingItemIndex(null)} fullWidth maxWidth="md">
+              <Dialog open={editingItemIndex !== null} onClose={() => setEditingItemIndex(null)} fullWidth maxWidth="lg">
                 <DialogTitle className="!border-b !border-border !bg-card !text-card-foreground"><div><p className="text-xs font-semibold uppercase tracking-wider text-primary">Marketplace</p><h2 className="mt-1 text-lg font-bold">Edit item</h2><p className="mt-1 text-sm font-normal text-muted-foreground">Update the item details, pricing, inventory, and image before approval.</p></div></DialogTitle>
-                <DialogContent dividers className="!border-border !bg-card">
-                  <ScrollArea className="h-screen">
+                <DialogContent dividers className="!border-border !bg-card !p-2 sm:!p-3">
+                  <ScrollArea className="max-h-[70vh] pr-1">
                     {editingItemIndex !== null && (
                       <ItemAddNew
                         vendorId={selectedVendor?.id}
