@@ -6,10 +6,21 @@ const initialForm = {
   payment_method: "mpesa",
 };
 
-export default function AddPaymentModal({ open, onClose, onSubmit }) {
+export default function AddPaymentModal({ open, onClose, onSubmit, editingEntry = null }) {
   const [form, setForm] = useState(initialForm);
   const [saving, setSaving] = useState(false);
 
+  React.useEffect(() => {
+    if (editingEntry) {
+      setForm({
+        category: editingEntry.category_key || "vendors",
+        amount: editingEntry.amount == null ? "" : String(editingEntry.amount),
+        payment_method: editingEntry.payment_method || "mpesa",
+      });
+    } else if (open) {
+      setForm(initialForm);
+    }
+  }, [editingEntry, open]);
   if (!open) return null;
 
   const handleChange = (event) => {
@@ -33,7 +44,7 @@ export default function AddPaymentModal({ open, onClose, onSubmit }) {
       <div className="w-full max-w-md rounded-2xl border border-border bg-card p-5 shadow-2xl sm:p-6" onMouseDown={(event) => event.stopPropagation()}>
         <div className="mb-5">
           <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">Accounts</p>
-          <h2 className="mt-1 text-xl font-bold text-card-foreground">Add Bookkeeping Entry</h2>
+          <h2 className="mt-1 text-xl font-bold text-card-foreground">{editingEntry ? "Edit Bookkeeping Entry" : "Add Bookkeeping Entry"}</h2>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -65,7 +76,7 @@ export default function AddPaymentModal({ open, onClose, onSubmit }) {
 
           <div className="flex flex-col-reverse gap-2 pt-2 sm:flex-row sm:justify-end">
             <button type="button" onClick={onClose} disabled={saving} className="rounded-xl border border-border px-4 py-2.5 text-sm font-semibold text-card-foreground hover:bg-muted disabled:opacity-50">Cancel</button>
-            <button type="submit" disabled={saving} className="rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50">{saving ? "Saving..." : "Save Entry"}</button>
+            <button type="submit" disabled={saving} className="rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50">{saving ? "Saving..." : editingEntry ? "Update Entry" : "Save Entry"}</button>
           </div>
         </form>
       </div>
