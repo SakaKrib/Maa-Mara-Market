@@ -204,14 +204,14 @@ class DashboardSummaryView(APIView):
                 "account": None,
                 "holder": "Maa Mara Market",
                 "amount": float(paypal_income),
-                "status": "Configured" if paypal_income is not None else "Unknown",
+                "status": "Confirmed activity" if paypal_income > 0 else "No activity",
             },
             "mpesa": {
                 "type": "M-Pesa",
                 "till": None,
                 "holder": "Maa Mara Market",
                 "amount": float(mpesa_income),
-                "agent_status": "Configured" if mpesa_income is not None else "Unknown",
+                "agent_status": "Confirmed activity" if mpesa_income > 0 else "No activity",
             },
         }
 
