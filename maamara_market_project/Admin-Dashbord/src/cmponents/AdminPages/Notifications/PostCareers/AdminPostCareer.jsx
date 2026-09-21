@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Briefcase, Check, Edit3, Eye, Plus, Trash2, Users, X } from "lucide-react";
 import api from "../../../../Services/Api";
 import RichTextEditor from "../../../../cmponents/RichTextEditor/RichTextEdit";
@@ -84,13 +85,16 @@ const AdminPostCareer = ({ open = true, onClose }) => {
   if (!open) return null;
 
   return (
-    <div className="fixed inset-x-0 bottom-0 top-14 z-[80] overflow-y-auto bg-background/80 p-2 backdrop-blur-sm sm:top-16 sm:p-4">
+    <div className="fixed inset-x-0 bottom-0 top-20 z-[80] overflow-y-auto bg-background/80 p-2 backdrop-blur-sm sm:top-16 sm:p-4">
       <div className="relative mx-auto max-w-6xl overflow-hidden rounded-2xl border border-border bg-background shadow-2xl">
-        {onClose && (
-          <button type="button" onClick={onClose} aria-label="Close careers" className="absolute right-3 top-3 z-10 rounded-xl p-2 text-muted-foreground hover:bg-muted">
-            <X size={18} />
-          </button>
-        )}
+        <button
+          type="button"
+          onClick={() => (onClose ? onClose() : navigate("/admin-dashboard"))}
+          aria-label="Close careers"
+          className="absolute right-3 top-3 z-10 rounded-xl p-2 text-muted-foreground hover:bg-muted"
+        >
+          <X size={18} />
+        </button>
         <main className="mm-admin-careers">
       <div className="mm-admin-careers-header">
         <div>
