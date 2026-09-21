@@ -138,8 +138,8 @@ const Footer = () => {
               )}
               <Link to="/send-invitation">Invite friends</Link>
               <Link to="/chat">Chat with us</Link>
-              <a href="mailto:maamaramarket@gmail.com?subject=Support%20Request">Support</a>
-              <a href="mailto:maamaramarket@gmail.com?subject=Help%20Request">Help</a>
+              <Link to="/support">Support</Link>
+              <Link to="/support">Help</Link>
             </div>
 
             {isAuthenticated && (isAdmin || isVendor) && (
