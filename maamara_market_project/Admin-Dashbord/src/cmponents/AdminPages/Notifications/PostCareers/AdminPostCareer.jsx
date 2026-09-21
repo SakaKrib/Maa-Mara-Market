@@ -19,8 +19,6 @@ const AdminPostCareer = ({ open, onClose }) => {
   const [message, setMessage] = useState("");
   const [saving, setSaving] = useState(false);
 
-  if (!open) return null;
-
   const loadJobs = () => api.get("/api/careers/").then((r) => setJobs(r.data || []));
   const loadApplications = () => api.get("/api/applications/").then((r) => setApplications(r.data || []));
 
@@ -82,6 +80,8 @@ const AdminPostCareer = ({ open, onClose }) => {
       console.error(error);
     }
   };
+
+  if (!open) return null;
 
   return (
     <div className="fixed inset-x-0 bottom-0 top-14 z-[80] overflow-y-auto bg-background/80 p-2 backdrop-blur-sm sm:top-16 sm:p-4">
