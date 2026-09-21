@@ -2,14 +2,21 @@
 .mm-account-highlights-heading{display:flex;align-items:flex-end;justify-content:space-between;gap:20px;margin-bottom:14px}
 .mm-account-highlights-heading h2{margin:4px 0 0;color:#222;font-family:'regular',sans-serif;font-size:22px;font-weight:600;letter-spacing:-.02em}
 .mm-eyebrow,.mm-highlight-kicker{font-size:10px;font-weight:700;letter-spacing:.12em;color:#6f6a63}
-.mm-notification-summary{display:inline-flex;align-items:center;gap:6px;border:1px solid #e6e3de;background:#fff;border-radius:999px;padding:7px 12px;font:600 12px 'regular',sans-serif;cursor:pointer;color:#222}
-.mm-account-highlight-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
-.mm-progress-card,.mm-notification-card{display:flex;align-items:center;gap:13px;text-align:left;border:1px solid #e6e3de;background:#fff;border-radius:14px;padding:15px 16px;min-width:0;box-shadow:0 8px 24px rgba(34,34,34,.05);transition:transform .2s ease,border-color .2s ease,box-shadow .2s ease;cursor:pointer}
-.mm-progress-card:hover,.mm-notification-card:hover{transform:translateY(-1px);border-color:#cfc9c0;box-shadow:0 10px 28px rgba(34,34,34,.08)}
+.mm-update-indicators{display:flex;align-items:center;gap:6px;padding-bottom:4px}
+.mm-update-indicators button{width:7px;height:7px;padding:0;border:0;border-radius:50%;background:#d8d4ce;cursor:pointer;transition:transform .2s ease,background .2s ease}
+.mm-update-indicators button.active{background:#222;transform:scale(1.2)}
+.mm-account-highlight-card{display:flex;align-items:center;gap:13px;width:100%;text-align:left;border:1px solid #e6e3de;background:#fff;border-radius:14px;padding:15px 16px;min-width:0;box-shadow:0 8px 24px rgba(34,34,34,.05);transition:transform .2s ease,border-color .2s ease,box-shadow .2s ease;cursor:pointer}
+.mm-account-highlight-card:hover{transform:translateY(-1px);border-color:#cfc9c0;box-shadow:0 10px 28px rgba(34,34,34,.08)}
 .mm-highlight-icon{display:flex;align-items:center;justify-content:center;flex:0 0 42px;width:42px;height:42px;border-radius:50%;background:#f5f4f1;color:#222}
 .mm-highlight-copy{display:flex;flex-direction:column;gap:3px;min-width:0;flex:1}
 .mm-highlight-copy strong{font-size:14px;font-weight:700;color:#222;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .mm-highlight-copy>span:last-child{font-size:11px;line-height:1.45;color:#6f6a63;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .mm-highlight-arrow{flex:0 0 auto;color:#8a847c}
 .mm-account-highlight-loading{display:flex;align-items:center;justify-content:center;gap:8px;color:#6f6a63;font-size:12px;padding:18px;border:1px solid #e6e3de;border-radius:14px;background:#fff}
-@media(max-width:700px){.mm-account-highlights{margin-top:18px}.mm-account-highlights-heading{align-items:flex-start}.mm-account-highlights-heading h2{font-size:19px}.mm-account-highlight-grid{grid-template-columns:1fr}.mm-progress-card,.mm-notification-card{padding:13px}.mm-highlight-copy strong{font-size:13px}}
+@media(max-width:700px){
+  .mm-account-highlights{margin-top:18px}
+  .mm-account-highlights-heading{align-items:flex-start}
+  .mm-account-highlights-heading h2{font-size:19px}
+  .mm-account-highlight-card{padding:13px}
+  .mm-highlight-copy strong{font-size:13px}
+}
