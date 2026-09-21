@@ -846,7 +846,7 @@ useEffect(() => {
                           {OCCASION_OPTIONS.map((occasion) => (
                             <label
                               key={occasion.key}
-                              className="flex cursor-pointer items-center gap-2 text-sm text-foreground"
+                              className="flex cursor-pointer items-center gap-2 py-1 text-sm leading-6 text-foreground"
                             >
                               <Checkbox
                                 checked={selectedOccasions.includes(occasion.key)}
@@ -882,11 +882,12 @@ useEffect(() => {
                           const checked = vendorType === "organic" ? true : !!field.value;
 
                           return (
-                            <label className="flex cursor-pointer items-center gap-2 text-sm leading-5 text-foreground">
+                            <label className="flex cursor-pointer items-center gap-2 py-1 text-sm leading-6 text-foreground">
                               <Checkbox
                                 checked={checked}
                                 disabled={vendorType === "organic"}
                                 onCheckedChange={field.onChange}
+                                className="h-4 w-4 shrink-0 rounded-[4px] border-primary shadow-none focus-visible:ring-0"
                               />
                               <span className="leading-5">Is Organic</span>
                             </label>
@@ -902,11 +903,12 @@ useEffect(() => {
                           const checked = vendorType === "organic" ? true : !!field.value;
 
                           return (
-                            <label className="flex cursor-pointer items-center gap-2 text-sm text-foreground">
+                            <label className="flex cursor-pointer items-center gap-2 py-1 text-sm leading-6 text-foreground">
                               <Checkbox
                                 checked={checked}
                                 disabled={vendorType === "organic"}
                                 onCheckedChange={field.onChange}
+                                className="h-4 w-4 shrink-0 rounded-[4px] border-primary shadow-none focus-visible:ring-0"
                               />
                               <span className="leading-5">Is Fresh Food</span>
                             </label>
@@ -1286,7 +1288,7 @@ useEffect(() => {
     
                       return (
                         <div key={size} className="flex flex-col gap-1">
-                          <div className="flex items-center gap-2">
+                          <div className="flex min-w-0 items-center gap-2">
                             <Checkbox
                               
                               id={`size-${size}`}
@@ -1630,15 +1632,15 @@ useEffect(() => {
               control={form.control}
               name="in_offer"
               render={({ field }) => (
-                <FormItem className="flex items-center gap-2">
+                <FormItem className="flex items-center gap-2 py-1 leading-6">
                   <FormControl>
                     <Checkbox
-                      checked={field.value}
+                      checked={!!field.value}
                       onCheckedChange={field.onChange}
-                      
+                      className="h-4 w-4 shrink-0 rounded-[4px] border-primary shadow-none focus-visible:ring-0"
                     />
                   </FormControl>
-                  <FormLabel className="m-0 cursor-pointer text-sm font-medium leading-5 text-foreground">Mark item as on Offer</FormLabel>
+                  <FormLabel className="m-0 cursor-pointer text-sm font-medium leading-6 text-foreground">Mark item as on Offer</FormLabel>
                 </FormItem>
               )}
             />
@@ -1767,13 +1769,13 @@ useEffect(() => {
                   <div className="space-y-6">
                     {/* Color selection */}
                     <div
-                      className="grid grid-cols-3 gap-5 my-2"
+                      className="grid grid-cols-[repeat(auto-fit,minmax(150px,1fr))] gap-3 my-2"
                       
                     >
                       {colorOptions.map((color) => {
                         const checkboxId = `color-${color}`;
                         return (
-                          <div key={color} className="flex items-center gap-2">
+                          <div key={color} className="flex min-w-0 items-center gap-2">
                             <Checkbox
                               id={checkboxId}
                               checked={selectedColors.includes(color)}
@@ -1781,10 +1783,10 @@ useEffect(() => {
                               
                             />
                             <span
-                              className="inline-block h-5 w-5 shrink-0 rounded-full border"
+                              className="inline-block h-5 w-5 min-h-5 min-w-5 shrink-0 rounded-full border"
                               style={{ backgroundColor: colorMap[color] || "#ccc" }}
                             />
-                            <label htmlFor={checkboxId} className="min-w-0 cursor-pointer truncate text-xs leading-5">
+                            <label htmlFor={checkboxId} className="min-w-0 flex-1 cursor-pointer break-words text-xs leading-5">
                               {color}
                             </label>
                           </div>
