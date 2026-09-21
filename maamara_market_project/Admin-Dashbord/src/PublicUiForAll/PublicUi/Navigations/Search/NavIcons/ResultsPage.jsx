@@ -12,6 +12,8 @@ const SearchResultsPage = () => {
   const navigate = useNavigate();
   const query = useMemo(() => new URLSearchParams(location.search), [location.search]);
   const searchTerm = query.get("name") || "";
+  const categoryId = query.get("category_id") || "";
+  const categoryName = query.get("category_name") || "";
   const requestedPage = Math.max(1, Number(query.get("page") || 1));
 
   const [results, setResults] = useState([]);
@@ -22,7 +24,7 @@ const SearchResultsPage = () => {
   const [error, setError] = useState("");
 
   useEffect(() => {
-    if (!searchTerm.trim()) {
+    if (!searchTerm.trim() && !categoryId) {
       setResults([]);
       setTotalResults(0);
       setTotalPages(0);
@@ -36,7 +38,8 @@ const SearchResultsPage = () => {
 
     api.get("/api/search-items/", {
       params: {
-        q: searchTerm.trim(),
+        ...(searchTerm.trim() ? { q: searchTerm.trim() } : {}),
+        ...(categoryId ? { category_id: categoryId } : {}),
         page: requestedPage,
         page_size: ITEMS_PER_PAGE,
       },
@@ -74,7 +77,12 @@ const SearchResultsPage = () => {
 
   const goToPage = (nextPage) => {
     if (nextPage < 1 || nextPage > totalPages) return;
-    navigate(`/list?name=${encodeURIComponent(searchTerm)}&page=${nextPage}`);
+    const params = new URLSearchParams();
+    if (searchTerm) params.set("name", searchTerm);
+    if (categoryId) params.set("category_id", categoryId);
+    if (categoryName) params.set("category_name", categoryName);
+    params.set("page", nextPage);
+    navigate(`/list?${params.toString()}`);
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
@@ -97,7 +105,7 @@ const SearchResultsPage = () => {
                   ? `Search results for “${searchTerm}”`
                   : "Search the marketplace"}
               </h1>
-              {searchTerm && !loading && (
+              {(searchTerm || categoryId) && !loading && (
                 <p className="text-sm text-gray-500 mt-1">
                   {totalResults} result{totalResults === 1 ? "" : "s"}
                 </p>
@@ -117,7 +125,7 @@ const SearchResultsPage = () => {
             </div>
           )}
 
-          {!loading && !error && !searchTerm.trim() && (
+          {!loading && !error && !searchTerm.trim() && !categoryId && (
             <div className="mm-card p-10 text-center">
               <h2 className="text-lg font-semibold mb-2">What are you looking for?</h2>
               <p className="text-sm text-gray-500">
