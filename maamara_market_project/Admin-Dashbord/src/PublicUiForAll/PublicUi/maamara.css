@@ -5244,3 +5244,158 @@ h1,h2,h3,h4{font-family:'regular','Poppins',Arial,sans-serif}
  .mm-admin-career-actions button{flex:1;justify-content:center;}
  .mm-admin-applications,.mm-admin-form-grid{grid-template-columns:1fr;}
 }
+
+
+/* CALENDAR — Maa Mara Market admin/vendor styling */
+.fc{
+  --fc-border-color:var(--mm-border,#e6e3de);
+  --fc-page-bg-color:var(--mm-surface,#fff);
+  --fc-neutral-bg-color:var(--mm-surface-muted,#f5f4f1);
+  --fc-list-event-hover-bg-color:rgba(42,33,133,.05);
+  --fc-today-bg-color:rgba(42,33,133,.055);
+  --fc-button-bg-color:var(--blue,#2a2185);
+  --fc-button-border-color:var(--blue,#2a2185);
+  --fc-button-hover-bg-color:var(--dark-color,#0a021c);
+  --fc-button-hover-border-color:var(--dark-color,#0a021c);
+  --fc-button-active-bg-color:var(--dark-color,#0a021c);
+  --fc-button-active-border-color:var(--dark-color,#0a021c);
+  color:var(--mm-text,#222);
+  font-family:'regular',sans-serif;
+  background:var(--mm-surface,#fff);
+  border:1px solid var(--mm-border,#e6e3de);
+  border-radius:18px;
+  padding:12px;
+  box-shadow:0 12px 35px rgba(10,2,28,.06);
+}
+.fc .fc-toolbar{
+  gap:12px;
+  flex-wrap:wrap;
+  padding:6px 4px 14px;
+}
+.fc .fc-toolbar-title{
+  font-family:'regular',sans-serif!important;
+  font-size:clamp(18px,2.4vw,25px)!important;
+  font-weight:700;
+  color:var(--mm-text,#222);
+}
+.fc .fc-button{
+  min-height:36px;
+  border-radius:10px;
+  box-shadow:none!important;
+  font-family:'regular',sans-serif;
+  font-size:12px;
+  font-weight:600;
+  text-transform:none;
+}
+.fc .fc-button:focus{box-shadow:0 0 0 3px rgba(42,33,133,.12)!important;}
+.fc .fc-col-header-cell{
+  padding:8px 4px;
+  background:var(--mm-surface-muted,#f5f4f1);
+}
+.fc .fc-col-header-cell-cushion{
+  padding:4px;
+  color:var(--mm-text-muted,#6f6a63);
+  font-size:11px;
+  font-weight:700;
+  text-transform:uppercase;
+  letter-spacing:.05em;
+}
+.fc .fc-daygrid-day-number{
+  padding:8px;
+  color:var(--mm-text,#222);
+  font-size:12px;
+  font-weight:600;
+}
+.fc .fc-daygrid-day.fc-day-today .fc-daygrid-day-number{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  min-width:28px;
+  min-height:28px;
+  margin:4px;
+  padding:0;
+  border-radius:50%;
+  background:var(--blue,#2a2185);
+  color:#fff;
+}
+.fc .fc-daygrid-event{
+  margin:2px 4px;
+  padding:3px 6px;
+  border:0;
+  border-radius:7px;
+  background:rgba(42,33,133,.1);
+  color:var(--blue,#2a2185);
+  font-size:11px;
+  font-weight:600;
+}
+.fc .fc-daygrid-event-dot{
+  border-color:var(--blue,#2a2185);
+}
+.fc .fc-event{
+  cursor:pointer;
+}
+.fc .fc-timegrid-event{
+  border:0;
+  border-radius:8px;
+  padding:3px 5px;
+}
+.fc .fc-list{
+  border:0;
+}
+.fc .fc-list-day-cushion{
+  padding:9px 12px;
+  background:var(--mm-surface-muted,#f5f4f1);
+}
+.fc .fc-list-event-title a,.fc .fc-list-event-time{
+  color:var(--mm-text,#222);
+  font-size:12px;
+}
+.fc .fc-more-link{
+  color:var(--blue,#2a2185);
+  font-size:11px;
+  font-weight:600;
+}
+@media(max-width:767px){
+  .fc{
+    padding:7px;
+    border-radius:14px;
+  }
+  .fc .fc-toolbar{
+    display:grid;
+    grid-template-columns:1fr;
+    gap:8px;
+  }
+  .fc .fc-toolbar-chunk{
+    display:flex;
+    justify-content:center;
+    flex-wrap:wrap;
+    gap:5px;
+  }
+  .fc .fc-toolbar-title{
+    font-size:19px!important;
+  }
+  .fc .fc-button{
+    min-height:34px;
+    padding:5px 9px;
+    font-size:11px;
+  }
+  .fc .fc-daygrid-day-number{
+    padding:6px;
+    font-size:11px;
+  }
+}
+
+/* Calendar event sidebar */
+.mm-calendar-sidebar{
+  background:var(--mm-surface,#fff)!important;
+  border:1px solid var(--mm-border,#e6e3de);
+  border-radius:18px!important;
+  box-shadow:0 12px 35px rgba(10,2,28,.06);
+}
+.mm-calendar-sidebar > h6{
+  background:var(--dark-color,#0a021c)!important;
+  color:#fff!important;
+  border-radius:12px!important;
+  font-size:12px!important;
+  letter-spacing:.04em;
+}
