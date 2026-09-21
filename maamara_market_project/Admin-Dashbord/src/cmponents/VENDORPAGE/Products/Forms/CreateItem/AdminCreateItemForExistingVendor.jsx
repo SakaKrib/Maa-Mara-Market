@@ -13,7 +13,7 @@ import {
   import { Textarea } from "../../../../../../components/ui/textarea";
   import { Button } from "../../../../../../components/ui/button";
 import Checkbox from "../../../../../../components/ui/checkbox";
-import api from "../../../../../Services/Api/";
+import api, { resolveApiAssetUrl } from "../../../../../Services/Api/";
 import { useForm } from "react-hook-form";
 import { organicAttributes, inorganicAttributes } from "../itemattribute";
 import { Controller } from "react-hook-form";
@@ -812,17 +812,15 @@ useEffect(() => {
       <FormControl>
       <div className="flex flex-col gap-3">
           {field.value && (
-            <div className="relative w-32 h-32 border rounded-lg overflow-hidden">
+            <div className="relative h-32 w-32 overflow-hidden rounded-2xl border border-border bg-muted/40">
               <img
                 src={
                   typeof field.value === "string"
-                    ? field.value.startsWith("http")
-                      ? field.value
-                      : `${baseUrl.replace(/\/$/, "")}/media/${field.value.replace(/^\/+/, "")}`
+                    ? resolveApiAssetUrl(field.value)
                     : URL.createObjectURL(field.value)
                 }
                 alt="Item preview"
-                className="object-cover w-full h-full"
+                className="h-full w-full object-contain bg-card p-1"
               />
               {/* 📝 Show clean image path if it's a string */}
               {typeof field.value === "string" && (
