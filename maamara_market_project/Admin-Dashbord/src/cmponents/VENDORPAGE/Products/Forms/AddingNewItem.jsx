@@ -2014,7 +2014,7 @@ useEffect(() => {
          <Checkbox
            checked={!!field.value}
            onCheckedChange={field.onChange}
-         />/>
+         />
          <span>Returnable</span>
        </label>
      )}
