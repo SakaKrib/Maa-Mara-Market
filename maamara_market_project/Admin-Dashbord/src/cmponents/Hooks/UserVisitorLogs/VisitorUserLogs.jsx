@@ -27,5 +27,20 @@ export const useUserExtras = () => {
       fetchExtras();
     }, []);
   
-    return { notifications, activities, loadingExtras };
+    const markNotificationRead = async (notificationId) => {
+      await api.post(
+        "/api/notifications/" + notificationId + "/mark_seen/",
+        {},
+        { withCredentials: true }
+      );
+      setNotifications((current) =>
+        current.map((notification) =>
+          notification.id === notificationId
+            ? { ...notification, seen: true, is_read: true }
+            : notification
+        )
+      );
+    };
+
+    return { notifications, activities, loadingExtras, markNotificationRead };
   };
