@@ -7,12 +7,38 @@ from rest_framework.permissions import IsAuthenticated, IsAdminUser
 from rest_framework.response import Response
 from rest_framework import status
 from django.utils import timezone
+from django.core.exceptions import ValidationError
+from PIL import Image, UnidentifiedImageError
 
 from vendorDashboard.models import Vendor
 from .models import Conversation, DirectMessage, Profile
 
 User = get_user_model()
 MAX_IMAGE_BYTES = 5 * 1024 * 1024
+MAX_MESSAGE_LENGTH = 5000
+ALLOWED_IMAGE_FORMATS = {"JPEG", "PNG", "WEBP"}
+
+
+def _validate_message_image(image):
+    if not image:
+        return
+    if image.size > MAX_IMAGE_BYTES:
+        raise ValidationError("Image must be 5 MB or smaller.")
+    try:
+        image.seek(0)
+        with Image.open(image) as opened:
+            opened.verify()
+            image.seek(0)
+            with Image.open(image) as verified:
+                if verified.format not in ALLOWED_IMAGE_FORMATS:
+                    raise ValidationError("Only JPEG, PNG, or WebP images are allowed.")
+    except (UnidentifiedImageError, OSError, ValueError):
+        raise ValidationError("The uploaded file is not a valid image.")
+    finally:
+        try:
+            image.seek(0)
+        except Exception:
+            pass
 
 
 def _display_user(user):
@@ -100,7 +126,9 @@ def messaging_conversations(request):
         participant_id = request.data.get("participant_id")
         if not participant_id:
             return Response({"error": "participant_id is required."}, status=400)
-        participant = get_object_or_404(User, id=participant_id, is_active=True)
+        participant = get_object_or_404(User, id=participant_id, is_active=True, is_staff=False)
+        if participant.id == request.user.id:
+            return Response({"error": "You cannot start a conversation with yourself."}, status=400)
     else:
         admin = User.objects.filter(is_staff=True, is_active=True).order_by("id").first()
         if not admin:
@@ -134,8 +162,13 @@ def messaging_messages(request, conversation_id):
 
     if not body and not image:
         return Response({"error": "A message or image is required."}, status=400)
-    if image and image.size > MAX_IMAGE_BYTES:
-        return Response({"error": "Image must be 5 MB or smaller."}, status=400)
+    if len(body) > MAX_MESSAGE_LENGTH:
+        return Response({"error": "Message is too long. Maximum length is 5000 characters."}, status=400)
+    if image:
+        try:
+            _validate_message_image(image)
+        except ValidationError as exc:
+            return Response({"error": str(exc)}, status=400)
 
     message = DirectMessage.objects.create(
         conversation=conversation,
