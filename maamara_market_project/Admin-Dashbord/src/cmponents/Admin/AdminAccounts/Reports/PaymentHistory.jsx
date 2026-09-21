@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useState } from "react";
 import { IonIcon } from "@ionic/react";
 import { addCircleOutline, calendarOutline, createOutline, trashOutline } from "ionicons/icons";
+import ConfirmDialog from "./ConfirmDialog";
 import AddPaymentModal from "./AddPaymentModal";
 import api from "../../../../Services/Api";
 
@@ -38,6 +39,8 @@ export default function FastPayment({
 }) {
   const [openModal, setOpenModal] = useState(false);
   const [editingEntry, setEditingEntry] = useState(null);
+  const [deleteCandidate, setDeleteCandidate] = useState(null);
+  const [deleteBusy, setDeleteBusy] = useState(false);
   const [notice, setNotice] = useState("");
   const [history, setHistory] = useState([]);
   const [historyLoading, setHistoryLoading] = useState(true);
@@ -83,10 +86,10 @@ export default function FastPayment({
     }
   };
   const handleEditPayment = async (form) => {
-    if (!editingEntry?.id) return;
+    if (!editingEntry?.record_id) return;
     setNotice("");
     try {
-      await api.patch(`/api/transactions/${editingEntry.id}/`, form, { withCredentials: true });
+      await api.patch(`/api/transactions/${editingEntry.record_id}/`, form, { withCredentials: true });
       setEditingEntry(null);
       setOpenModal(false);
       await Promise.all([refetch?.(true), fetchHistory()]);
@@ -101,16 +104,16 @@ export default function FastPayment({
     }
   };
 
-  const handleDeletePayment = async (item) => {
-    if (!item?.id || item.source !== "manual") return;
-    const confirmed = window.confirm(
-      `Delete the ${item.category || "bookkeeping"} entry of ${formatKES(item.amount)}? This will remove it from Accounts totals and history.`
-    );
-    if (!confirmed) return;
+  const handleDeletePayment = async () => {
+    if (!deleteCandidate?.record_id || deleteCandidate.source !== "manual") return;
 
+    setDeleteBusy(true);
     setNotice("");
     try {
-      await api.delete(`/api/transactions/${item.id}/delete/`, { withCredentials: true });
+      await api.delete(`/api/transactions/${deleteCandidate.record_id}/delete/`, {
+        withCredentials: true,
+      });
+      setDeleteCandidate(null);
       await Promise.all([refetch?.(true), fetchHistory()]);
       setNotice("Bookkeeping entry deleted successfully.");
     } catch (err) {
@@ -119,6 +122,8 @@ export default function FastPayment({
           err?.response?.data?.detail ||
           "Failed to delete bookkeeping entry."
       );
+    } finally {
+      setDeleteBusy(false);
     }
   };
 
@@ -224,7 +229,7 @@ export default function FastPayment({
                   {history.map((item) => (
                     <tr key={item.id} className="bg-background">
                       <td className="px-4 py-3 text-muted-foreground">{formatDateTime(item.created_at)}</td>
-                      <td className="px-4 py-3 font-semibold text-card-foreground">{item.category || "Payment"}</td>
+                      <td className="px-4 py-3"><div className="font-semibold text-card-foreground">{item.category || "Payment"}</div><div className="mt-1 text-[11px] text-muted-foreground">{item.source_label || "Recorded transaction"}</div></td>
                       <td className="px-4 py-3 capitalize text-muted-foreground">{item.payment_method || "—"}</td>
                       <td className="px-4 py-3 font-bold text-card-foreground">{formatKES(item.amount)}</td>
                       <td className="px-4 py-3 capitalize text-muted-foreground">{item.status || "—"}</td>
@@ -235,7 +240,7 @@ export default function FastPayment({
                             <button type="button" onClick={() => { setEditingEntry(item); setOpenModal(true); }} className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-border bg-background text-muted-foreground hover:bg-muted hover:text-foreground" aria-label="Edit bookkeeping entry" title="Edit">
                               <IonIcon icon={createOutline} />
                             </button>
-                            <button type="button" onClick={() => handleDeletePayment(item)} className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-red-500/20 bg-red-500/5 text-red-600 hover:bg-red-500/10 dark:text-red-300" aria-label="Delete bookkeeping entry" title="Delete">
+                            <button type="button" onClick={() => setDeleteCandidate(item)} className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-red-500/20 bg-red-500/5 text-red-600 hover:bg-red-500/10 dark:text-red-300" aria-label="Delete bookkeeping entry" title="Delete">
                               <IonIcon icon={trashOutline} />
                             </button>
                           </div>
@@ -253,6 +258,7 @@ export default function FastPayment({
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
                       <p className="text-sm font-bold text-card-foreground">{item.category || "Payment"}</p>
+                      <p className="mt-1 text-xs text-muted-foreground">{item.source_label || "Recorded transaction"}</p>
                       <p className="mt-1 text-xs text-muted-foreground">{formatDateTime(item.created_at)}</p>
                     </div>
                     <p className="shrink-0 text-sm font-bold text-primary">{formatKES(item.amount)}</p>
@@ -285,6 +291,23 @@ export default function FastPayment({
           </div>
         )}
       </div>
+
+      <ConfirmDialog
+        open={Boolean(deleteCandidate)}
+        title="Delete bookkeeping entry?"
+        description={
+          deleteCandidate
+            ? `This will remove ${deleteCandidate.category || "this"} entry of ${formatKES(deleteCandidate.amount)} from Accounts totals and history. The record will remain retained as a deleted audit record.`
+            : ""
+        }
+        confirmLabel="Delete entry"
+        cancelLabel="Keep entry"
+        onCancel={() => {
+          if (!deleteBusy) setDeleteCandidate(null);
+        }}
+        onConfirm={handleDeletePayment}
+        busy={deleteBusy}
+      />
 
       <AddPaymentModal
         open={openModal}
