@@ -6,17 +6,19 @@ import {
   IconButton,
   Box,
   Button,
-  useTheme,
 } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
+import { useLocation, useNavigate } from "react-router-dom";
 import AdminCreateExistingVendorItems from "../../VENDORPAGE/Products/Forms/CreateItem/AdminCreateItemForExistingVendor";
-import { tokens } from "../../../theme";
 
 const CreateItemModal = ({ open, onClose, item, onSave }) => {
-  const theme = useTheme();
-  const colors = tokens(theme.palette.mode);
-
+  const location = useLocation();
+  const navigate = useNavigate();
+  const routeItem = location.state || null;
+  const routeMode = open === undefined;
+  const isOpen = routeMode ? true : !!open;
+  const currentItem = item ?? routeItem;
   
 
   // ✅ Enable arrow key scrolling
@@ -39,7 +41,7 @@ const CreateItemModal = ({ open, onClose, item, onSave }) => {
 
   return (
     <Dialog
-      open={open}
+      open={isOpen}
       onClose={onClose}
       fullWidth
       maxWidth="lg"
@@ -48,7 +50,7 @@ const CreateItemModal = ({ open, onClose, item, onSave }) => {
     >
       
       {/* HEADER */}
-      <DialogTitle>
+      <DialogTitle className="!border-b !border-border !bg-card !px-2 !py-3 !text-card-foreground">
         <Box
           sx={{
             display: "flex",
@@ -59,36 +61,33 @@ const CreateItemModal = ({ open, onClose, item, onSave }) => {
           {/* 🔙 Back Button */}
           <Button
             startIcon={<ArrowBackIcon />}
-            onClick={onClose}
+            onClick={() => (routeMode ? navigate(-1) : onClose?.())}
             variant="text"
-            sx={{
-              color: colors.gray[100],
-              backgroundColor: colors.primary[600],
-            }}
+            className="rounded-[20px] bg-blue-600 px-4 py-2 text-white hover:bg-blue-700"
           >
             Back
           </Button>
 
-          <Box>Create / Edit Item</Box>
+          <Box className="text-base font-semibold">Create / Edit Item</Box>
 
           {/* ❌ Close */}
-          <IconButton onClick={onClose}>
+          <IconButton onClick={() => (routeMode ? navigate(-1) : onClose?.())}>
             <CloseIcon />
           </IconButton>
         </Box>
       </DialogTitle>
 
       {/* BODY */}
-      <DialogContent dividers>
+      <DialogContent dividers className="!border-border !bg-card !p-2 sm:!p-3">
       <AdminCreateExistingVendorItems
-        initialItem={item ?? null}
-        itemId={item?.id ?? null}
-        vendorId={item?.vendor?.id ?? null}
-        vendor={item?.vendor ?? null}
+        initialItem={currentItem ?? null}
+        itemId={currentItem?.id ?? null}
+        vendorId={currentItem?.vendor?.id ?? null}
+        vendor={currentItem?.vendor ?? null}
         onSave={(data) => {
             console.log("Saved:", data);
-            onSave?.(item?.id);   // unlock correct request
-            onClose();
+            onSave?.(currentItem?.id);   // unlock correct request
+            if (routeMode) navigate(-1); else onClose?.();
         }}
         />
       </DialogContent>
