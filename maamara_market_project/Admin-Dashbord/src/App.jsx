@@ -84,6 +84,7 @@ import api from "./Services/Api";
 import ItemsOnsite from "./cmponents/VENDORPAGE/Products/VendorItems/ItemOnSite";
 import TransactionTable from "./cmponents/VENDORPAGE/Home/Transaction";
 import AdminAccounts from "./cmponents/Admin/AccountMain/Accountmain";
+import Settings from "./cmponents/Settings/Settings";
 // link admin css
 import "./admin.css"
 import InviteFriends from "./PublicUiForAll/PublicUi/Customer/DesktopView/Main/Referals/Referals";
@@ -270,6 +271,7 @@ function AppContent() {
               
               {/* admin accounts */}
               <Route path="Accounts" element={<AdminAccounts />} />
+              <Route path="settings" element={<Settings />} />
 
               {/* returns for approval */}
               <Route path="customer-requests" element={<CustomerToAdminRequests />} />
