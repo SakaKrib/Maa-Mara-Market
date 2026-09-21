@@ -24,14 +24,20 @@ const useTrendingProducts = () => {
     setLoading(true);
 
     try {
-      const [response, collectionsResponse] = await Promise.all([
-        api.get("/api/recommendations/", {
-        params: { limit: 6 },
-        }),
+      const [recommendationsResult, collectionsResult] = await Promise.allSettled([
+        api.get("/api/recommendations/", { params: { limit: 6 } }),
         api.get("/api/homepage-collections/", { params: { items: 6, sections: 8 } }),
       ]);
-      const data = response.data || {};
-      const collectionData = Array.isArray(collectionsResponse.data) ? collectionsResponse.data : [];
+
+      const data =
+        recommendationsResult.status === "fulfilled"
+          ? recommendationsResult.value.data || {}
+          : {};
+
+      const collectionData =
+        collectionsResult.status === "fulfilled" && Array.isArray(collectionsResult.value.data)
+          ? collectionsResult.value.data
+          : [];
 
       const nextSections = {
         personalized: Array.isArray(data.personalized) ? data.personalized : [],
