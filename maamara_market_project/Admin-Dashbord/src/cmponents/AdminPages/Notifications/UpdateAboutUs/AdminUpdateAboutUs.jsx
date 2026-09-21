@@ -89,24 +89,24 @@ const AboutAdminPanel = ({ open, onClose }) => {
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-[80] flex justify-end bg-slate-950/55" onMouseDown={onClose}>
+    <div className="fixed inset-x-0 bottom-0 top-14 z-[80] flex justify-end bg-background/80 backdrop-blur-sm sm:top-16" onMouseDown={onClose}>
       <section
-        className="flex h-full w-full max-w-4xl flex-col border-l border-slate-200 bg-white shadow-2xl dark:border-slate-800 dark:bg-slate-950"
+        className="flex h-full w-full max-w-4xl flex-col border-l border-border bg-background shadow-2xl"
         onMouseDown={(event) => event.stopPropagation()}
       >
-        <header className="flex h-[72px] shrink-0 items-center justify-between border-b border-slate-200 px-4 sm:px-6 dark:border-slate-800">
+        <header className="flex min-h-[72px] shrink-0 items-center justify-between border-b border-border bg-card px-4 sm:px-6">
           <div>
-            <p className="text-xs font-bold uppercase tracking-wider text-indigo-600 dark:text-indigo-300">Content management</p>
-            <h2 className="text-lg font-bold text-slate-900 dark:text-white">About Maa Mara</h2>
+            <p className="text-xs font-bold uppercase tracking-[0.14em] text-muted-foreground">Content management</p>
+            <h2 className="text-lg font-bold text-card-foreground">About Maa Mara</h2>
           </div>
-          <button type="button" onClick={onClose} className="rounded-xl p-2 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800">
+          <button type="button" onClick={onClose} className="rounded-xl p-2 text-muted-foreground hover:bg-muted">
             <IonIcon icon={closeOutline} className="text-xl" />
           </button>
         </header>
 
         <main className="min-h-0 flex-1 overflow-y-auto p-4 sm:p-6">
           {message && (
-            <div className="mb-4 rounded-xl border border-indigo-200 bg-indigo-50 px-4 py-3 text-sm text-indigo-700 dark:border-indigo-500/20 dark:bg-indigo-500/10 dark:text-indigo-200">
+            <div className="mb-4 rounded-xl border border-border bg-muted px-4 py-3 text-sm text-foreground">
               {message}
             </div>
           )}
@@ -129,38 +129,38 @@ const AboutAdminPanel = ({ open, onClose }) => {
                   ["impact_title", "Impact title"],
                   ["products_title", "Products title"],
                 ].map(([name, label]) => (
-                  <label key={name} className="grid gap-1.5 text-xs font-semibold text-slate-600 dark:text-slate-300">
+                  <label key={name} className="grid gap-1.5 text-xs font-semibold text-muted-foreground">
                     {label}
                     <input
                       name={name}
                       value={form[name]}
                       onChange={(event) => updateField(name, event.target.value)}
-                      className="h-11 rounded-xl border border-slate-200 bg-transparent px-3 text-sm text-slate-900 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/15 dark:border-slate-700 dark:text-white"
+                      className="h-11 rounded-[20px] border border-border bg-background px-4 text-sm text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/15"
                     />
                   </label>
                 ))}
               </div>
 
               <div className="space-y-2">
-                <p className="text-sm font-bold text-slate-900 dark:text-white">Impact content</p>
-                <RichTextEditor value={form.impact_content} onChange={(value) => updateField("impact_content", value)} />
+                <p className="text-sm font-bold text-card-foreground">Impact content</p>
+                <RichTextEditor placeholder="Describe Maa Mara’s impact, community value, and what makes the marketplace meaningful." value={form.impact_content} onChange={(value) => updateField("impact_content", value)} />
               </div>
 
               <div className="space-y-2">
                 <p className="text-sm font-bold text-slate-900 dark:text-white">Products content</p>
-                <RichTextEditor value={form.products_content} onChange={(value) => updateField("products_content", value)} />
+                <RichTextEditor placeholder="Explain the products, categories, or marketplace experience customers can expect." value={form.products_content} onChange={(value) => updateField("products_content", value)} />
               </div>
 
               <div className="space-y-2">
                 <p className="text-sm font-bold text-slate-900 dark:text-white">Materials content</p>
-                <RichTextEditor value={form.materials_content} onChange={(value) => updateField("materials_content", value)} />
+                <RichTextEditor placeholder="Describe materials, sourcing, quality standards, or other information customers should know." value={form.materials_content} onChange={(value) => updateField("materials_content", value)} />
               </div>
 
               <button
                 type="button"
                 onClick={save}
                 disabled={saving}
-                className="w-full rounded-xl bg-indigo-600 px-4 py-3 text-sm font-semibold text-white hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-50"
+                className="w-full rounded-xl bg-primary px-4 py-3 text-sm font-semibold text-primary-foreground transition hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {saving ? "Saving…" : "Save About page"}
               </button>
