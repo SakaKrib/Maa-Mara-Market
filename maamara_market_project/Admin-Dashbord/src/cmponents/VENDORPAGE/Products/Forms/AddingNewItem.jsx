@@ -788,53 +788,47 @@ useEffect(() => {
 
               {/* Organic product details */}
               {selectedSection === "organic" && (
-                <div className="my-4">
-                  <FormLabel className="text-sm leading-6 font-semibold text-foreground">Product Type</FormLabel>
+                <div className="my-4 space-y-2">
+                  <FormLabel className="text-sm leading-6 font-semibold text-foreground">
+                    Product Type
+                  </FormLabel>
                   <FormControl>
                     <div className="flex flex-wrap items-center gap-4">
-                      {/* Organic */}
                       <FormField
                         control={form.control}
                         name="is_organic"
                         render={({ field }) => {
                           const vendorType = vendor?.vendor_data?.product_type;
-                          const checked = vendorType === "organic" ? true : field.value ?? false;
+                          const checked = vendorType === "organic" ? true : !!field.value;
 
                           return (
-                            <label className="flex items-center gap-2 cursor-pointer">
-                              <input
-                                type="checkbox"
-                                {...field}
+                            <label className="flex cursor-pointer items-center gap-2 text-sm text-foreground">
+                              <Checkbox
                                 checked={checked}
                                 disabled={vendorType === "organic"}
-                                onChange={(e) => field.onChange(e.target.checked)}
-                                className="h-4 w-4 shrink-0 rounded-[4px] border border-primary shadow-none focus-visible:outline-none focus-visible:ring-0"
+                                onCheckedChange={field.onChange}
                               />
-                              <span className="leading-6">Organic</span>
+                              <span className="leading-5">Is Organic</span>
                             </label>
                           );
                         }}
                       />
 
-                      {/* Fresh Food */}
                       <FormField
                         control={form.control}
                         name="is_fresh_food"
                         render={({ field }) => {
                           const vendorType = vendor?.vendor_data?.product_type;
-                          const checked = vendorType === "organic" ? true : field.value ?? false;
+                          const checked = vendorType === "organic" ? true : !!field.value;
 
                           return (
-                            <label className="flex items-center gap-2 cursor-pointer">
-                              <input
-                                type="checkbox"
-                                {...field}
+                            <label className="flex cursor-pointer items-center gap-2 text-sm text-foreground">
+                              <Checkbox
                                 checked={checked}
                                 disabled={vendorType === "organic"}
-                                onChange={(e) => field.onChange(e.target.checked)}
-                                className="h-4 w-4 shrink-0 rounded-[4px] border border-primary shadow-none focus-visible:outline-none focus-visible:ring-0"
+                                onCheckedChange={field.onChange}
                               />
-                              <span className="leading-6">Fresh Food</span>
+                              <span className="leading-5">Is Fresh Food</span>
                             </label>
                           );
                         }}
@@ -842,7 +836,7 @@ useEffect(() => {
                     </div>
                   </FormControl>
                   <FormDescription>
-                    These options apply to organic products. They are hidden for handmade products.
+                    These options apply to organic products only.
                   </FormDescription>
                   <FormMessage />
                 </div>
