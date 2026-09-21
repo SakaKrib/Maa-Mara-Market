@@ -17,6 +17,15 @@ from core.Serializer import ReviewSerializer
 import bleach # type: ignore
 
 
+class ItemAdditionalImageSerializer(serializers.ModelSerializer):
+    image = serializers.ImageField(use_url=True)
+
+    class Meta:
+        model = ItemAdditionalImage
+        fields = ["id", "image", "created_at"]
+        read_only_fields = ["id", "created_at"]
+
+
 # --- Brand Serializer ---
 class BrandSerializer(serializers.ModelSerializer):
     class Meta:
@@ -277,15 +286,6 @@ class ShoeSerializer(serializers.ModelSerializer):
             data["shoe_size"] = [data["shoe_size"]]
         return super().to_internal_value(data)
                
-
-class ItemAdditionalImageSerializer(serializers.ModelSerializer):
-    image = serializers.ImageField(use_url=True)
-
-    class Meta:
-        model = ItemAdditionalImage
-        fields = ["id", "image", "created_at"]
-        read_only_fields = ["id", "created_at"]
-
 
 # =========================
 # ITEM
