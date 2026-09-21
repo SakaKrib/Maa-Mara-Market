@@ -775,7 +775,7 @@ useEffect(() => {
               <div className="my-4">
   <FormLabel className="text-sm leading-6 font-semibold text-foreground">Product Type</FormLabel>
   <FormControl>
-    <div className="flex gap-4">
+    <div className="flex flex-wrap items-center gap-4">
 
       {/* Organic */}
       <FormField
@@ -789,13 +789,10 @@ useEffect(() => {
 
           return (
             <label className={`flex items-center gap-2 cursor-pointer ${disabled ? "opacity-50 cursor-not-allowed" : ""}`}>
-              <input
-                type="checkbox"
-                {...field}
+              <Checkbox
                 checked={checked}
                 disabled={disabled}
-                onChange={(e) => field.onChange(e.target.checked)}
-                className="h-4 w-4 border-0 shadow-none focus-visible:outline-none focus-visible:ring-0"
+                onCheckedChange={field.onChange}
               />
               <span>Organic</span>
             </label>
@@ -1191,7 +1188,7 @@ useEffect(() => {
                 <FormLabel className="text-sm leading-6 font-semibold text-foreground">Kids Sizes & Stock</FormLabel>
                 <FormControl>
                   <div
-                    className="grid grid-cols-3 gap-5 my-2"
+                    className="grid grid-cols-2 gap-3 my-2 sm:grid-cols-3 lg:grid-cols-4"
                     
                   >
                     {kidsSizeOptions.map((size) => {
@@ -1696,10 +1693,10 @@ useEffect(() => {
                               
                             />
                             <span
-                              className="inline-block w-3 h-3 rounded-full border"
+                              className="inline-block h-4 w-4 min-h-4 min-w-4 shrink-0 rounded-full border"
                               style={{ backgroundColor: colorMap[color] || "#ccc" }}
                             />
-                            <label htmlFor={checkboxId} className="text-xs cursor-pointer mt-2">
+                            <label htmlFor={checkboxId} className="min-w-0 cursor-pointer break-words text-xs leading-5">
                               {color}
                             </label>
                           </div>
@@ -1712,10 +1709,10 @@ useEffect(() => {
                       <div key={variant.color} className="space-y-4">
                         <div className="flex items-center gap-2">
                           <span
-                            className="inline-block w-3 h-3 rounded-full border border-gray-300"
+                            className="inline-block h-4 w-4 min-h-4 min-w-4 shrink-0 rounded-full border border-gray-300"
                             style={{ backgroundColor: colorMap[variant.color] || "#ccc" }}
                           />
-                          <span className="text-sm font-medium">{variant.color}</span>
+                          <span className="min-w-0 break-words text-sm font-medium leading-5">{variant.color}</span>
                           <input
                             type="file"
                             accept="image/*"
