@@ -21,7 +21,7 @@ export default function MonthlyReport() {
   return (
     <section className="rounded-2xl border border-border bg-card p-4 shadow-custom sm:p-5">
       <div className="mb-4"><h2 className="text-base font-bold text-card-foreground sm:text-lg">Financial Summary</h2><p className="text-xs text-muted-foreground">Income, expenses, cashbook and vendor payments.</p></div>
-      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="grid grid-cols-1 gap-3">
         {cards.map((card) => (
           <article key={card.title} className="min-w-0 rounded-xl border border-border bg-background p-4">
             <div className="flex items-center justify-between gap-2">
