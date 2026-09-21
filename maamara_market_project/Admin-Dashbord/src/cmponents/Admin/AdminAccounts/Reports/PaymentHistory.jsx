@@ -104,6 +104,11 @@ export default function FastPayment({
     }
   };
 
+  const requestDelete = (entry) => {
+    if (!entry?.record_id || entry.source !== "manual") return;
+    setDeleteCandidate(entry);
+  };
+
   const handleDeletePayment = async () => {
     if (!deleteCandidate?.record_id || deleteCandidate.source !== "manual") return;
 
@@ -240,7 +245,7 @@ export default function FastPayment({
                             <button type="button" onClick={() => { setEditingEntry(item); setOpenModal(true); }} className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-border bg-background text-muted-foreground hover:bg-muted hover:text-foreground" aria-label="Edit bookkeeping entry" title="Edit">
                               <IonIcon icon={createOutline} />
                             </button>
-                            <button type="button" onClick={() => setDeleteCandidate(item)} className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-red-500/20 bg-red-500/5 text-red-600 hover:bg-red-500/10 dark:text-red-300" aria-label="Delete bookkeeping entry" title="Delete">
+                            <button type="button" onClick={() => requestDelete(item)} className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-red-500/20 bg-red-500/5 text-red-600 hover:bg-red-500/10 dark:text-red-300" aria-label="Delete bookkeeping entry" title="Delete">
                               <IonIcon icon={trashOutline} />
                             </button>
                           </div>
@@ -278,7 +283,7 @@ export default function FastPayment({
                           <IonIcon icon={createOutline} />
                           Edit
                         </button>
-                        <button type="button" onClick={() => handleDeletePayment(item)} className="inline-flex h-9 items-center gap-2 rounded-lg border border-red-500/20 bg-red-500/5 px-3 text-xs font-semibold text-red-600 hover:bg-red-500/10 dark:text-red-300" aria-label="Delete bookkeeping entry">
+                        <button type="button" onClick={() => requestDelete(item)} className="inline-flex h-9 items-center gap-2 rounded-lg border border-red-500/20 bg-red-500/5 px-3 text-xs font-semibold text-red-600 hover:bg-red-500/10 dark:text-red-300" aria-label="Delete bookkeeping entry">
                           <IonIcon icon={trashOutline} />
                           Delete
                         </button>
