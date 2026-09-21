@@ -392,11 +392,7 @@ const Dashboard = () => {
           <p className="mt-3 text-sm font-bold text-card-foreground dark:text-card-foreground">Careers</p>
           <p className="mt-1 text-xs text-muted-foreground dark:text-muted-foreground">{jobsCount} unseen applications</p>
         </button>
-        <button onClick={() => setOpenSupportPanel(true)} className="rounded-2xl border border-border bg-card p-4 text-left shadow-sm hover:border-primary dark:border-border dark:bg-card">
-          <IonIcon icon={helpCircleOutline} className="text-xl text-primary" />
-          <p className="mt-3 text-sm font-bold text-card-foreground dark:text-card-foreground">Support</p>
-          <p className="mt-1 text-xs text-muted-foreground dark:text-muted-foreground">{supportCount} pending messages</p>
-        </button>
+        <Link to="/admin-dashboard/support" className="rounded-2xl border border-border bg-card p-4 text-left shadow-sm hover:border-primary dark:border-border dark:bg-card">          <IonIcon icon={helpCircleOutline} className="text-xl text-primary" />          <p className="mt-3 text-sm font-bold text-card-foreground dark:text-card-foreground">Support</p>          <p className="mt-1 text-xs text-muted-foreground dark:text-muted-foreground">{supportCount} pending messages</p>        </Link>
         <button onClick={() => setOpenAboutPanel(true)} className="rounded-2xl border border-border bg-card p-4 text-left shadow-sm hover:border-primary dark:border-border dark:bg-card">
           <IonIcon icon={informationCircleOutline} className="text-xl text-primary" />
           <p className="mt-3 text-sm font-bold text-card-foreground dark:text-card-foreground">About Maa Mara</p>
