@@ -88,6 +88,7 @@ urlpatterns = [
 
     # item an category url
     path('api/categories-with-items/', CategoryListWithItems.as_view(), name='categories-with-items'),
+    path('api/items/<int:pk>/', ItemDetailView.as_view(), name='item-detail'),
     path('api/items/details/<int:pk>/', ItemDetailView.as_view(), name='item-detail'),
 
     # search engene
