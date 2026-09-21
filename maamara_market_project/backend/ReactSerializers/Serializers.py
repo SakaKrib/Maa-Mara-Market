@@ -190,7 +190,7 @@ from rest_framework import serializers
 import html
 from .models import (
     Item, ColorVariant, SizeStock, AgeVariant,
-    Department, Category, SubCategory, Section, ShippingDimension , Brand
+    Department, Category, SubCategory, Section, ShippingDimension , Brand, Occasion
 )
 
 class ShippingDimensionSerializer(serializers.ModelSerializer):
@@ -314,6 +314,12 @@ class ItemSerializers(serializers.ModelSerializer):
 
 
     additional_images = ItemAdditionalImageSerializer(many=True, read_only=True)
+    occasions = serializers.SlugRelatedField(
+        many=True,
+        required=False,
+        queryset=Occasion.objects.filter(is_active=True),
+        slug_field="key",
+    )
 
     # Shipping dimension
    
