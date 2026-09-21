@@ -24,6 +24,7 @@ import EmailPanel from "../../cmponents/AdminPages/Notifications/EmailListing";
 import CareerAdminPanel from "../../cmponents/AdminPages/Notifications/PostCareers/AdminPostCareer";
 import SupportAdminPanel from "../../cmponents/AdminPages/Notifications/Support/SupportMessages";
 import AboutAdminPanel from "../../cmponents/AdminPages/Notifications/UpdateAboutUs/AdminUpdateAboutUs";
+import { useAdminPreferences } from "../../cmponents/Settings/AdminPreferencesContext";
 
 const StatCard = ({ icon, label, value, detail, to, onClick }) => {
   const card = (
@@ -48,6 +49,7 @@ const StatCard = ({ icon, label, value, detail, to, onClick }) => {
 
 const Dashboard = () => {
   const { user } = useAuth();
+  const { preferences } = useAdminPreferences();
   const { toast } = useToast();
   const navigate = useNavigate();
   const { stats } = useDashboardStats();
@@ -143,7 +145,7 @@ const Dashboard = () => {
 
   useEffect(() => {
     const latest = notifications[0];
-    if (!latest || latest.id === lastNotificationIdRef.current) return;
+    if (!preferences.notifications || !latest || latest.id === lastNotificationIdRef.current) return;
 
     lastNotificationIdRef.current = latest.id;
     toast({
@@ -151,7 +153,7 @@ const Dashboard = () => {
       description: latest.message,
       duration: 5000,
     });
-  }, [notifications, toast]);
+  }, [notifications, toast, preferences.notifications]);
 
   const markAsSeen = async (id) => {
     try {
