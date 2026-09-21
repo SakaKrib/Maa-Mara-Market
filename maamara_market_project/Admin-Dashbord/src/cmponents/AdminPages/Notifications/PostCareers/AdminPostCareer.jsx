@@ -11,6 +11,7 @@ const emptyForm = {
 };
 
 const AdminPostCareer = ({ open = true, onClose }) => {
+  const navigate = useNavigate();
   const [jobs, setJobs] = useState([]);
   const [applications, setApplications] = useState([]);
   const [form, setForm] = useState(emptyForm);
