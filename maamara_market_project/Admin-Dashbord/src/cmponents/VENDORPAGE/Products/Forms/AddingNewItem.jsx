@@ -17,7 +17,7 @@ import {
 import { useTheme, FormControlLabel } from "@mui/material";
 import { tokens } from "../../../../theme";
 import Checkbox from "../../../../../components/ui/checkbox";
-import api from "../../../../Services/Api/";
+import api, { resolveApiAssetUrl } from "../../../../Services/Api/";
 import { useForm } from "react-hook-form";
 import { organicAttributes, inorganicAttributes } from "./itemattribute";
 import { Controller } from "react-hook-form";
@@ -508,7 +508,7 @@ useEffect(() => {
   
       // separate
       <Form {...form}>
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 px-2 py-6 custom-scroll-form">
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 px-2 py-6 text-foreground custom-scroll-form [&_input]:rounded-[20px] [&_input]:border-border [&_input]:bg-card [&_input]:px-4 [&_input]:py-3 [&_textarea]:rounded-[20px] [&_textarea]:border-border [&_textarea]:bg-card [&_textarea]:px-4 [&_textarea]:py-3 [&_select]:rounded-[20px] [&_select]:border [&_select]:border-border [&_select]:bg-card [&_select]:px-4 [&_select]:py-3">
       <div >
 
         
@@ -785,11 +785,11 @@ useEffect(() => {
   name="image"
   render={({ field }) => (
     <FormItem>
-      <FormLabel className="text-lg">Item Image</FormLabel>
+      <FormLabel className="text-sm font-semibold text-card-foreground">Item Image</FormLabel>
       <FormControl>
       <div className="flex flex-col gap-3">
           {field.value && (
-            <div className="relative w-32 h-32 border rounded-lg overflow-hidden">
+            <div className="relative h-40 w-full max-w-xs overflow-hidden rounded-2xl border border-border bg-muted/40">
               <img
                 src={
                   typeof field.value === "string"
@@ -799,11 +799,11 @@ useEffect(() => {
                     : URL.createObjectURL(field.value)
                 }
                 alt="Item preview"
-                className="object-cover w-full h-full"
+                className="h-full w-full object-cover"
               />
               {/* 📝 Show clean image path if it's a string */}
               {typeof field.value === "string" && (
-                <p className="absolute bottom-0 left-0 w-full bg-black/60 text-white text-xs truncate px-1">
+                <p className="absolute bottom-0 left-0 w-full truncate bg-black/60 px-2 py-1 text-xs text-white">
                   {field.value}
                 </p>
               )}
