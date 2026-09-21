@@ -86,7 +86,6 @@ const MarketplaceItemContext = ({ item, availableStock }) => {
 
   const searchLinks = data.related_searches || [];
   const popularRelatedSearches = data.popular_related_searches || [];
-  const itemReviews = data.item_reviews || [];
   const shopReviews = data.shop_reviews || [];
   const shop = data.item?.shop;
   const shopSummary = data.shop_summary || {};
@@ -243,29 +242,6 @@ const MarketplaceItemContext = ({ item, availableStock }) => {
             )}
           </div>
           <ProductRail title="More from this shop" items={data.more_from_shop} nested />
-        </section>
-      )}
-
-      {itemReviews.length > 0 && (
-        <section className="mt-6 rounded-2xl border border-border bg-card p-4 shadow-custom sm:p-5">
-          <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
-            <div>
-              <h2 className="text-base font-semibold text-card-foreground sm:text-lg">Reviews about this item</h2>
-              <p className="text-xs text-muted-foreground">Recent customer feedback for this product.</p>
-            </div>
-            <span className="text-xs text-muted-foreground">{itemReviews.length} shown</span>
-          </div>
-          <div className="flex gap-4 overflow-x-auto pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-            {itemReviews.map((review) => (
-              <article key={review.id} className="min-w-[260px] max-w-[330px] rounded-xl border border-border bg-background p-4">
-                <div className="flex items-center gap-2">
-                  <Stars value={review.rating} />
-                  <span className="text-xs text-muted-foreground">{review.user}</span>
-                </div>
-                <p className="mt-2 text-sm text-card-foreground">{review.review_text}</p>
-              </article>
-            ))}
-          </div>
         </section>
       )}
 
