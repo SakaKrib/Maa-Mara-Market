@@ -49,7 +49,7 @@ const navigation = [
   {
     label: "Communication",
     items: [
-      { label: "Messages", to: "/admin-dashboard/join-chat", icon: chatboxOutline },
+      { label: "Messages", to: "/admin-dashboard/messages", icon: chatboxOutline },
       { label: "Careers", to: "/admin-dashboard/create-career", icon: briefcaseOutline },
       { label: "Support", to: "/admin-dashboard/create-support", icon: helpCircleOutline },
     ],
