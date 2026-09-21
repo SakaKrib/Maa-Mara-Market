@@ -16,7 +16,7 @@ const ProductRail = ({ title, items }) => {
     <section className="mt-6 rounded-2xl border border-border bg-card p-4 shadow-custom sm:p-5">
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h2 className="text-base font-semibold text-card-foreground sm:text-lg">{title}</h2>
+          <h2 className="text-base font-bold text-card-foreground sm:text-lg">{title}</h2>
           <p className="text-xs text-muted-foreground">Discover more from this marketplace collection.</p>
         </div>
         <span className="text-xs text-muted-foreground">{items.length} items</span>
@@ -35,7 +35,7 @@ const ProductRail = ({ title, items }) => {
                 <div className="h-full w-full flex items-center justify-center text-xs text-gray-400">No image</div>
               )}
             </div>
-            <h3 className="mt-2 text-sm font-medium text-gray-800 truncate">{product.name}</h3>
+            <h3 className="mt-2 truncate text-sm font-bold text-card-foreground">{product.name}</h3>
             <div className="mt-1 flex items-center gap-2">
               <Stars value={product.average_rating} />
               <span className="text-[11px] text-gray-500">({product.review_count || 0})</span>
@@ -166,7 +166,12 @@ const MarketplaceItemContext = ({ item, availableStock }) => {
             </div>
           </div>
           {shopReviews.length > 0 && (
-            <div className="mt-5 flex gap-4 overflow-x-auto pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+            <div className="mt-5 border-t border-border pt-5">
+              <div className="mb-3">
+                <h3 className="text-sm font-bold text-card-foreground">Shop reviews</h3>
+                <p className="text-xs text-muted-foreground">What shoppers are saying about this shop.</p>
+              </div>
+              <div className="flex gap-4 overflow-x-auto pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
               {shopReviews.map((review) => (
                 <article key={review.id} className="min-w-[250px] max-w-[310px] rounded-xl border border-border bg-background p-4">
                   <div className="flex items-center gap-2">
@@ -176,8 +181,10 @@ const MarketplaceItemContext = ({ item, availableStock }) => {
                   <p className="mt-2 text-sm text-card-foreground">{review.comment}</p>
                 </article>
               ))}
+              </div>
             </div>
           )}
+          <ProductRail title="More from this shop" items={data.more_from_shop} nested />
         </section>
       )}
 
@@ -204,7 +211,6 @@ const MarketplaceItemContext = ({ item, availableStock }) => {
         </section>
       )}
 
-      <ProductRail title="More from the shop" items={data.more_from_shop} />
       <ProductRail title="Explore more related products" items={data.explore_more} />
     </div>
   );
