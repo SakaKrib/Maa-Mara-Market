@@ -82,6 +82,9 @@ const ItemAddNew = ({ initialItem, vendorId, itemId, onSave, vendor }) => {
   const { departmentMap, organicDepartmentMap } = useDepartments();
   const [selectedDepartment, setSelectedDepartment] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("");
+  const [isCustomCategory, setIsCustomCategory] = useState(false);
+  const [isCustomSubcategory, setIsCustomSubcategory] = useState(false);
+  const [isCustomAttribute, setIsCustomAttribute] = useState(false);
   const [colorVariants, setColorVariants] = useState([]);
 
   const [selectedSection, setSelectedSection] = useState(
@@ -108,6 +111,9 @@ const ItemAddNew = ({ initialItem, vendorId, itemId, onSave, vendor }) => {
       });
       setSelectedDepartment(initialItem.department || "");
       setSelectedCategory(initialItem.category || "");
+      setIsCustomCategory(false);
+      setIsCustomSubcategory(false);
+      setIsCustomAttribute(false);
       setSelectedSection(initialItem.section === "inorganic" ? "inorganic" : "organic");
     }, [initialItem, form]);
     
@@ -471,76 +477,84 @@ useEffect(() => {
             control={control}
             name="category"
             render={({ field }) => (
-              <FormItem className='flex flex-col justify-end h-65'>
+              <FormItem className="space-y-2">
                 <FormLabel className="text-sm leading-6 font-semibold text-foreground">Category</FormLabel>
                 <FormControl>
-                  <select
-                    
-                    className="w-full rounded-[20px] border border-border bg-card px-2 py-2 text-sm leading-6 text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20" {...field}
-                    onChange={(e) => {
-                      const cat = e.target.value;
-                      setSelectedCategory(cat);
-                      setValue("category", cat);
-                      setValue("subcategory", "");
-                    }}
-                  >
-                    <option  value="">
-                      Select Category
-                    </option>
-                    {(activeData?.[selectedDepartment]?.categories || []).map((cat) => (
-                      <option key={cat} value={cat}>{cat}</option>
-                    ))}
-                  </select>
+                  {isCustomCategory ? (
+                    <Input {...field} value={field.value ?? ""} placeholder="Enter custom category"
+                      onChange={(e) => { setSelectedCategory(e.target.value); field.onChange(e.target.value); }} />
+                  ) : (
+                    <select {...field} value={field.value ?? ""}
+                      className="w-full rounded-[20px] border border-border bg-card px-2 py-2 text-sm leading-6 text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
+                      onChange={(e) => {
+                        const cat = e.target.value;
+                        setSelectedCategory(cat);
+                        field.onChange(cat);
+                        setValue("subcategory", "");
+                        setIsCustomSubcategory(false);
+                      }}>
+                      <option value="">Select Category</option>
+                      {(activeData?.[selectedDepartment]?.categories || []).map((cat) => (
+                        <option key={cat} value={cat}>{cat}</option>
+                      ))}
+                    </select>
+                  )}
                 </FormControl>
-                <FormDescription>
-                  Enter the category of the product.
-                </FormDescription>
+                <button type="button" className="w-fit text-sm font-medium text-primary hover:underline"
+                  onClick={() => {
+                    const next = !isCustomCategory;
+                    setIsCustomCategory(next);
+                    setIsCustomSubcategory(false);
+                    setSelectedCategory("");
+                    setValue("category", "");
+                    setValue("subcategory", "");
+                  }}>
+                  {isCustomCategory ? "Use existing category" : "Can't find your category? Add a custom category"}
+                </button>
+                <FormDescription>Select a category or add a custom category when it is not in the list.</FormDescription>
                 <FormMessage />
               </FormItem>
             )}
           />
         )}
-    
+
         {/* 🔷 Subcategory Select */}
         {selectedCategory && (
           <FormField
             control={control}
             name="subcategory"
             render={({ field }) => (
-              <FormItem className='flex flex-col justify-end relative top-1'>
+              <FormItem className="space-y-2">
                 <FormLabel className="text-sm leading-6 font-semibold text-foreground">Subcategory</FormLabel>
                 <FormControl>
-                  <select
-                    
-                    className="w-full rounded-[20px] border border-border bg-card px-2 py-2 text-sm leading-6 text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20" {...field}>
-                    <option value="">Select Subcategory</option>
-                    {(activeData?.[selectedDepartment]?.subcategories?.[selectedCategory] || []).map((subcat) => (
-                      <option
-                        
-                        key={subcat}
-                        value={subcat}
-                      >
-                        {subcat}
-                      </option>
-                    ))}
-                  </select>
+                  {isCustomSubcategory ? (
+                    <Input {...field} value={field.value ?? ""} placeholder="Enter custom subcategory" />
+                  ) : (
+                    <select {...field} value={field.value ?? ""}
+                      className="w-full rounded-[20px] border border-border bg-card px-2 py-2 text-sm leading-6 text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20">
+                      <option value="">Select Subcategory</option>
+                      {(activeData?.[selectedDepartment]?.subcategories?.[selectedCategory] || []).map((subcat) => (
+                        <option key={subcat} value={subcat}>{subcat}</option>
+                      ))}
+                    </select>
+                  )}
                 </FormControl>
-                <FormDescription>
-                  Enter the sub-category of the product.
-                </FormDescription>
+                <button type="button" className="w-fit text-sm font-medium text-primary hover:underline"
+                  onClick={() => {
+                    const next = !isCustomSubcategory;
+                    setIsCustomSubcategory(next);
+                    setValue("subcategory", "");
+                  }}>
+                  {isCustomSubcategory ? "Use existing subcategory" : "Can't find your subcategory? Add a custom subcategory"}
+                </button>
+                <FormDescription>Select a subcategory or add a custom subcategory when it is not in the list.</FormDescription>
                 <FormMessage />
               </FormItem>
             )}
           />
         )}
-    
 
-        
-    
-    
-    
-    
-            {/* SEPARATE */}
+        {/* SEPARATE */}
     
           
             <FormField
@@ -720,51 +734,39 @@ useEffect(() => {
     
             {/* attribute */}
             <FormField
-              control={form.control}
+              control={control}
               name="item_attribute"
               render={({ field }) => {
-                // Attribute choices are determined by the selected product section.
-                // Organic section -> organic attributes.
-                // Handmade/inorganic section -> inorganic attributes.
                 const productType = vendor?.vendor_data?.product_type;
                 const attributes =
-                  selectedSection === "organic"
+                  selectedSection === "organic" && productType !== "inorganic"
                     ? organicAttributes
-                    : selectedSection === "inorganic"
+                    : selectedSection === "inorganic" && productType !== "organic"
                       ? inorganicAttributes
                       : [];
-
-                // For vendors restricted to one product type, keep the
-                // attribute list aligned with that product type.
-                if (productType === "organic" && selectedSection !== "organic") {
-                  attributes.length = 0;
-                }
-                if (productType === "inorganic" && selectedSection !== "inorganic") {
-                  attributes.length = 0;
-                }
-
                 return (
                   <FormItem>
-                    <FormLabel className="text-sm leading-6 font-semibold text-foreground">
-                      Product Attribute
-                    </FormLabel>
+                    <FormLabel className="text-sm leading-6 font-semibold text-foreground">Product Attribute</FormLabel>
                     <FormControl>
-                      <select
-                        {...field}
-                        value={field.value ?? ""}
-                        className="w-full rounded-[20px] border border-border bg-card px-2 py-2 text-sm leading-6 text-foreground outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
-                      >
-                        <option value="">Select attribute</option>
-                        {attributes.map((attr) => (
-                          <option key={attr.value} value={attr.value}>
-                            {attr.label}
-                          </option>
-                        ))}
-                      </select>
+                      {isCustomAttribute ? (
+                        <Input {...field} value={field.value ?? ""} placeholder="Enter custom attribute" />
+                      ) : (
+                        <select {...field} value={field.value ?? ""}
+                          className="w-full rounded-[20px] border border-border bg-card px-2 py-2 text-sm leading-6 text-foreground outline-none focus:border-primary focus:ring-2 focus:ring-primary/20">
+                          <option value="">Select attribute</option>
+                          {attributes.map((attr) => <option key={attr.value} value={attr.value}>{attr.label}</option>)}
+                        </select>
+                      )}
                     </FormControl>
-                    <FormDescription>
-                      Choose the most relevant attribute for this product.
-                    </FormDescription>
+                    <button type="button" className="w-fit text-sm font-medium text-primary hover:underline"
+                      onClick={() => {
+                        const next = !isCustomAttribute;
+                        setIsCustomAttribute(next);
+                        if (!next && !attributes.some((attr) => attr.value === field.value)) field.onChange("");
+                      }}>
+                      {isCustomAttribute ? "Use predefined attribute" : "Can't find the attribute? Enter a custom attribute"}
+                    </button>
+                    <FormDescription>Choose a predefined attribute or enter a custom one.</FormDescription>
                     <FormMessage />
                   </FormItem>
                 );
@@ -775,7 +777,7 @@ useEffect(() => {
               <div className="my-4">
   <FormLabel className="text-sm leading-6 font-semibold text-foreground">Product Type</FormLabel>
   <FormControl>
-    <div className="flex flex-wrap items-center gap-4">
+    <div className="flex gap-4">
 
       {/* Organic */}
       <FormField
@@ -789,10 +791,13 @@ useEffect(() => {
 
           return (
             <label className={`flex items-center gap-2 cursor-pointer ${disabled ? "opacity-50 cursor-not-allowed" : ""}`}>
-              <Checkbox
+              <input
+                type="checkbox"
+                {...field}
                 checked={checked}
                 disabled={disabled}
-                onCheckedChange={field.onChange}
+                onChange={(e) => field.onChange(e.target.checked)}
+                className="h-4 w-4 border-0 shadow-none focus-visible:outline-none focus-visible:ring-0"
               />
               <span>Organic</span>
             </label>
@@ -812,10 +817,13 @@ useEffect(() => {
 
           return (
             <label className={`flex items-center gap-2 cursor-pointer ${disabled ? "opacity-50 cursor-not-allowed" : ""}`}>
-              <Checkbox
+              <input
+                type="checkbox"
+                {...field}
                 checked={checked}
                 disabled={disabled}
-                onCheckedChange={field.onChange}
+                onChange={(e) => field.onChange(e.target.checked)}
+                className="h-4 w-4 border-0 shadow-none focus-visible:outline-none focus-visible:ring-0"
               />
               <span>Fresh Food</span>
             </label>
@@ -1185,7 +1193,7 @@ useEffect(() => {
                 <FormLabel className="text-sm leading-6 font-semibold text-foreground">Kids Sizes & Stock</FormLabel>
                 <FormControl>
                   <div
-                    className="grid grid-cols-2 gap-3 my-2 sm:grid-cols-3 lg:grid-cols-4"
+                    className="grid grid-cols-3 gap-5 my-2"
                     
                   >
                     {kidsSizeOptions.map((size) => {
@@ -1676,7 +1684,7 @@ useEffect(() => {
                   <div className="space-y-6">
                     {/* Color selection */}
                     <div
-                      className="grid grid-cols-2 gap-3 my-2 sm:grid-cols-3 lg:grid-cols-4"
+                      className="grid grid-cols-3 gap-5 my-2"
                       
                     >
                       {colorOptions.map((color) => {
@@ -1690,10 +1698,10 @@ useEffect(() => {
                               
                             />
                             <span
-                              className="inline-block h-4 w-4 min-h-4 min-w-4 shrink-0 rounded-full border"
+                              className="inline-block w-3 h-3 rounded-full border"
                               style={{ backgroundColor: colorMap[color] || "#ccc" }}
                             />
-                            <label htmlFor={checkboxId} className="min-w-0 cursor-pointer break-words text-xs leading-5">
+                            <label htmlFor={checkboxId} className="text-xs cursor-pointer mt-2">
                               {color}
                             </label>
                           </div>
@@ -1706,10 +1714,10 @@ useEffect(() => {
                       <div key={variant.color} className="space-y-4">
                         <div className="flex items-center gap-2">
                           <span
-                            className="inline-block h-4 w-4 min-h-4 min-w-4 shrink-0 rounded-full border border-gray-300"
+                            className="inline-block w-3 h-3 rounded-full border border-gray-300"
                             style={{ backgroundColor: colorMap[variant.color] || "#ccc" }}
                           />
-                          <span className="min-w-0 break-words text-sm font-medium leading-5">{variant.color}</span>
+                          <span className="text-sm font-medium">{variant.color}</span>
                           <input
                             type="file"
                             accept="image/*"
