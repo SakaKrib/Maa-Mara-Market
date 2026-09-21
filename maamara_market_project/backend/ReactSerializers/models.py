@@ -166,6 +166,11 @@ class Item(models.Model):
     # Predefined attributes are supplied by the frontend, but vendors may
     # enter a custom attribute when none of the predefined values fit.
     item_attribute = models.CharField(max_length=100, blank=True, null=True)
+    occasions = models.ManyToManyField(
+        "Occasion",
+        related_name="items",
+        blank=True,
+    )
     gender_based = models.CharField(max_length=15, default='none', blank=True, null=True)
     children_size_based_age = models.CharField(max_length=30, default='none', blank=True, null=True)
  
