@@ -1,5 +1,5 @@
 import { useState } from "react";
-import api from "../../../Services/Api"; // adjust path if needed
+import api from "../../../Services/Api";
 
 export const useGenerateMonthlyPayouts = () => {
   const [data, setData] = useState(null);
@@ -11,26 +11,44 @@ export const useGenerateMonthlyPayouts = () => {
     setError(null);
 
     try {
-      const response = await api.post("/api/payout/generate-monthly-payouts/", {
-        withCredentials: true 
-      });
-      setData(response.data);
-    } catch (err) {
-      console.error("Error generating payouts:", err);
-      setError(
-        err.response?.data?.detail || 
-        err.response?.data?.error || 
-        "Failed to generate payouts."
+      const response = await api.post(
+        "/api/payout/generate-monthly-payouts/",
+        {},
+        { withCredentials: true }
       );
+
+      const generated = response.data?.generated || {};
+      const generatedCount = Object.values(generated).reduce(
+        (total, payouts) => total + (Array.isArray(payouts) ? payouts.length : 0),
+        0
+      );
+
+      const nextData = {
+        ...response.data,
+        generated_count: generatedCount,
+      };
+
+      setData(nextData);
+      return { success: true, data: nextData };
+    } catch (err) {
+      console.error("Error generating vendor payments:", err);
+
+      const message =
+        err.response?.data?.detail ||
+        err.response?.data?.error ||
+        "Failed to generate vendor payments.";
+
+      setError(message);
+      return { success: false, error: message };
     } finally {
       setLoading(false);
     }
   };
 
   return {
-    data,        // payout summary
-    loading,     // boolean
-    error,       // string or null
-    generateMonthlyPayouts, // function to trigger the process
+    data,
+    loading,
+    error,
+    generateMonthlyPayouts,
   };
 };
