@@ -9,7 +9,7 @@ const emptyForm = {
   application_deadline: "", is_active: true,
 };
 
-const AdminPostCareer = ({ open, onClose }) => {
+const AdminPostCareer = ({ open = true, onClose }) => {
   const [jobs, setJobs] = useState([]);
   const [applications, setApplications] = useState([]);
   const [form, setForm] = useState(emptyForm);
@@ -86,9 +86,11 @@ const AdminPostCareer = ({ open, onClose }) => {
   return (
     <div className="fixed inset-x-0 bottom-0 top-14 z-[80] overflow-y-auto bg-background/80 p-2 backdrop-blur-sm sm:top-16 sm:p-4">
       <div className="relative mx-auto max-w-6xl overflow-hidden rounded-2xl border border-border bg-background shadow-2xl">
-        <button type="button" onClick={onClose} aria-label="Close careers" className="absolute right-3 top-3 z-10 rounded-xl p-2 text-muted-foreground hover:bg-muted">
-          <X size={18} />
-        </button>
+        {onClose && (
+          <button type="button" onClick={onClose} aria-label="Close careers" className="absolute right-3 top-3 z-10 rounded-xl p-2 text-muted-foreground hover:bg-muted">
+            <X size={18} />
+          </button>
+        )}
         <main className="mm-admin-careers">
       <div className="mm-admin-careers-header">
         <div>
