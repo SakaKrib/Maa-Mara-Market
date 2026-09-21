@@ -302,8 +302,6 @@ def support_reply(request, pk):
 
     payload = _support_payload(ticket)
     payload["email_sent"] = email_sent
-    if email_error:
-        payload["email_error"] = email_error
     return Response(payload)
 
 
