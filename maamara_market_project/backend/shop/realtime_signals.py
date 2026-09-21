@@ -4,7 +4,7 @@ from django.db import transaction
 from django.db.models.signals import post_delete, post_save
 from django.dispatch import receiver
 
-from .models import BlogPost, Banner
+from .models import BlogPost, Banner, FAQ
 
 
 def _broadcast(resource, action, object_id):
@@ -47,3 +47,13 @@ def banner_saved(sender, instance, created, **kwargs):
 @receiver(post_delete, sender=Banner)
 def banner_deleted(sender, instance, **kwargs):
     _broadcast("banner", "deleted", instance.pk)
+
+
+@receiver(post_save, sender=FAQ)
+def faq_saved(sender, instance, created, **kwargs):
+    _broadcast("faq", "created" if created else "updated", instance.pk)
+
+
+@receiver(post_delete, sender=FAQ)
+def faq_deleted(sender, instance, **kwargs):
+    _broadcast("faq", "deleted", instance.pk)
