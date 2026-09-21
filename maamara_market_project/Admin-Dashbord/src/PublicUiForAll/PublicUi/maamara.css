@@ -5516,7 +5516,7 @@ h1,h2,h3,h4{font-family:'regular','Poppins',Arial,sans-serif}
   font-family: Georgia, "Times New Roman", serif;
   font-size: clamp(1.45rem, 3vw, 2rem);
   line-height: 1.15;
-  font-weight: 700;
+  font-weight: 600;
   letter-spacing: -0.015em;
   color: var(--mm-text, #222);
 }
@@ -5535,8 +5535,17 @@ h1,h2,h3,h4{font-family:'regular','Poppins',Arial,sans-serif}
   opacity: 0.72;
 }
 
+.mm-product-card {
+  align-self: start;
+  height: fit-content;
+}
+
 .mm-product-card h3 {
+  margin: 0 0 0.25rem;
   font-family: Georgia, "Times New Roman", serif;
-  font-weight: 700;
+  font-weight: 500;
   line-height: 1.25;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
