@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { IonIcon } from "@ionic/react";
-import { cartOutline, heartOutline, notificationsOutline } from "ionicons/icons";
+import { cartOutline, heartOutline, notificationsOutline, chatbubbleEllipsesOutline } from "ionicons/icons";
 import { Link, useNavigate } from "react-router-dom";
 import profileImage from "../../../../../../src/assets/profile/default-sender.jpg";
 import CartModal from "../../CartModal/CartModal";
@@ -15,6 +15,7 @@ const NavIcons = () => {
   const [isWishlistOpen, setIsWishlistOpen] = useState(false);
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [unreadNotifications, setUnreadNotifications] = useState(0);
+  const [unreadMessages, setUnreadMessages] = useState(0);
 
   const { order } = useCartContext();
   const { wishlist } = useWishlistContext();
@@ -23,12 +24,30 @@ const NavIcons = () => {
   const navigate = useNavigate();
    useEffect(() => {
     let active = true;
-    api.get("/api/user-visitor-notifications/", { withCredentials: true })
-      .then(({ data }) => {
-        if (active) setUnreadNotifications(Number(data?.unread_count || 0));
+    Promise.all([
+      api.get("/api/user-visitor-notifications/", { withCredentials: true }),
+      api.get("/api/messaging/conversations/", { withCredentials: true }),
+    ])
+      .then(([notificationResponse, conversationResponse]) => {
+        if (!active) return;
+
+        const notifications = notificationResponse.data?.results || [];
+        const conversations = conversationResponse.data?.results || [];
+
+        setUnreadNotifications(
+          notifications.filter((notification) => !notification.is_read).length
+        );
+        setUnreadMessages(
+          conversations.reduce(
+            (total, conversation) => total + Number(conversation?.unread_count || 0),
+            0
+          )
+        );
       })
       .catch(() => {
-        if (active) setUnreadNotifications(0);
+        if (!active) return;
+        setUnreadNotifications(0);
+        setUnreadMessages(0);
       });
     return () => { active = false; };
   }, [isAuthenticated]);
@@ -163,6 +182,25 @@ const NavIcons = () => {
             {unreadNotifications > 0 && (
               <span className="absolute -top-2 -right-2 bg-black text-white text-[10px] min-w-[18px] h-[18px] px-1 rounded-full flex items-center justify-center">
                 {unreadNotifications > 99 ? "99+" : unreadNotifications}
+              </span>
+            )}
+          </div>
+        </button>
+      </li>
+
+      {/* --- Messages --- */}
+      <li className="relative hidden md:block">
+        <button
+          type="button"
+          className="flex items-center"
+          onClick={() => navigate("/messages")}
+          aria-label={unreadMessages ? (unreadMessages + " unread messages") : "Messages"}
+        >
+          <div className="relative text-xl">
+            <IonIcon icon={chatbubbleEllipsesOutline} />
+            {unreadMessages > 0 && (
+              <span className="absolute -top-2 -right-2 bg-black text-white text-[10px] min-w-[18px] h-[18px] px-1 rounded-full flex items-center justify-center">
+                {unreadMessages > 99 ? "99+" : unreadMessages}
               </span>
             )}
           </div>
