@@ -723,17 +723,24 @@ useEffect(() => {
               control={form.control}
               name="item_attribute"
               render={({ field }) => {
-                let attributes = [];
+                // Attribute choices are determined by the selected product section.
+                // Organic section -> organic attributes.
+                // Handmade/inorganic section -> inorganic attributes.
+                const productType = vendor?.vendor_data?.product_type;
+                const attributes =
+                  selectedSection === "organic"
+                    ? organicAttributes
+                    : selectedSection === "inorganic"
+                      ? inorganicAttributes
+                      : [];
 
-                if (vendor?.vendor_data?.product_type === "organic") {
-                  attributes = organicAttributes;
-                } else if (vendor?.vendor_data?.product_type === "inorganic") {
-                  attributes = inorganicAttributes;
-                } else if (vendor?.vendor_data?.product_type === "both") {
-                  attributes =
-                    selectedSection === "organic"
-                      ? organicAttributes
-                      : inorganicAttributes;
+                // For vendors restricted to one product type, keep the
+                // attribute list aligned with that product type.
+                if (productType === "organic" && selectedSection !== "organic") {
+                  attributes.length = 0;
+                }
+                if (productType === "inorganic" && selectedSection !== "inorganic") {
+                  attributes.length = 0;
                 }
 
                 return (
