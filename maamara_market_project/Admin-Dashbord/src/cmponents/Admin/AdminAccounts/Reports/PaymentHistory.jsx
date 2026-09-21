@@ -64,7 +64,7 @@ export default function FastPayment({
 
   useEffect(() => {
     fetchHistory();
-  }, [fetchHistory]);
+  }, [fetchHistory, data]);
 
   const handleAddPayment = async (form) => {
     setNotice("");
