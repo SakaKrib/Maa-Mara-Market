@@ -213,7 +213,7 @@ const RichTextEditor = ({ value, onChange }) => {
           p: 2,
           borderRadius: 2,
           border: `1px solid ${colors.gray[400]}`,
-          backgroundColor: colors.primary[500],
+          backgroundColor: "transparent",
           color: colors.gray[100],
 
           "& .ProseMirror": {
