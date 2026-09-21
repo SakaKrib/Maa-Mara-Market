@@ -932,8 +932,33 @@ class UserCalendarEventsView(generics.ListCreateAPIView):
         # Assign the logged-in user when creating an event
         serializer.save(user=self.request.user)
 
+# -------------------------------
+# Admin password change
+# -------------------------------
+class AdminChangePasswordView(APIView):
+    permission_classes = [IsAuthenticated, IsAdminUser]
+
+    def post(self, request):
+        current_password = str(request.data.get("current_password") or "")
+        new_password = str(request.data.get("new_password") or "")
+
+        if not current_password or not new_password:
+            return Response({"detail": "Current password and new password are required."}, status=status.HTTP_400_BAD_REQUEST)
+        if len(new_password) < 8:
+            return Response({"detail": "The new password must contain at least 8 characters."}, status=status.HTTP_400_BAD_REQUEST)
+        if not authenticate(request=request, username=request.user.get_username(), password=current_password):
+            return Response({"detail": "The current password is incorrect."}, status=status.HTTP_400_BAD_REQUEST)
+        if current_password == new_password:
+            return Response({"detail": "The new password must be different from the current password."}, status=status.HTTP_400_BAD_REQUEST)
+
+        request.user.set_password(new_password)
+        request.user.save(update_fields=["password"])
+        update_session_auth_hash(request, request.user)
+        return Response({"success": True, "message": "Password changed successfully."})
+
+
 #email tracking view
-from django.contrib.auth import get_user_model
+from django.contrib.auth import get_user_model, update_session_auth_hash, authenticate
 
 User = get_user_model()
 
