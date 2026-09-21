@@ -241,6 +241,15 @@ def item_marketplace_context_v2(request, pk):
             if valid_values
             else 0,
             "review_count": vendor_ratings.count(),
+            "quality": round(float(aggregates["quality"]), 1)
+            if aggregates["quality"] is not None
+            else 0,
+            "communication": round(float(aggregates["communication"]), 1)
+            if aggregates["communication"] is not None
+            else 0,
+            "shipping": round(float(aggregates["shipping"]), 1)
+            if aggregates["shipping"] is not None
+            else 0,
         }
 
         shop_reviews = [
