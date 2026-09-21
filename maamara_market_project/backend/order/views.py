@@ -939,6 +939,106 @@ def admin_transaction_history(request):
     })
 
 
+
+@api_view(["PATCH", "PUT"])
+@permission_classes([IsAdminUser])
+def update_admin_transaction(request, transaction_id):
+    """
+    Edit a manually recorded Accounts bookkeeping entry.
+    Provider-generated transactions are never editable from Accounts.
+    """
+    ledger_entry = get_object_or_404(Transaction, pk=transaction_id)
+
+    if (ledger_entry.raw_data or {}).get("source") != "admin_accounts":
+        return Response(
+            {"error": "Only manually recorded Accounts entries can be edited."},
+            status=403,
+        )
+
+    category = str(request.data.get("category", ledger_entry.category or "")).strip().lower()
+    payment_method = str(
+        request.data.get("payment_method", ledger_entry.payment_method or "")
+    ).strip().lower()
+    amount_raw = request.data.get("amount", ledger_entry.amount)
+
+    allowed_categories = {choice[0] for choice in Transaction.CATEGORY_CHOICES}
+    if category not in allowed_categories:
+        return Response({"error": "Invalid payment category."}, status=400)
+
+    if payment_method not in {"mpesa", "paypal"}:
+        return Response({"error": "Invalid payment method."}, status=400)
+
+    try:
+        amount = Decimal(str(amount_raw))
+    except (InvalidOperation, TypeError, ValueError):
+        return Response({"error": "Amount must be a valid number."}, status=400)
+
+    if amount <= 0:
+        return Response({"error": "Amount must be greater than zero."}, status=400)
+
+    raw_data = dict(ledger_entry.raw_data or {})
+    edit_history = list(raw_data.get("edit_history") or [])
+    edit_history.append({
+        "edited_at": timezone.now().isoformat(),
+        "edited_by": request.user.pk,
+        "previous_category": ledger_entry.category,
+        "previous_amount": str(ledger_entry.amount),
+        "previous_payment_method": ledger_entry.payment_method,
+    })
+    raw_data["edit_history"] = edit_history[-20:]
+
+    ledger_entry.category = category
+    ledger_entry.payment_method = payment_method
+    ledger_entry.amount = amount
+    ledger_entry.raw_data = raw_data
+    ledger_entry.save(update_fields=["category", "payment_method", "amount", "raw_data", "updated_at"])
+
+    return Response({
+        "success": True,
+        "message": "Bookkeeping entry updated successfully.",
+        "id": ledger_entry.pk,
+    })
+
+
+@api_view(["DELETE"])
+@permission_classes([IsAdminUser])
+def delete_admin_transaction(request, transaction_id):
+    """
+    Soft-delete a manually recorded Accounts bookkeeping entry.
+    The database record is retained for auditability, but it no longer
+    contributes to Accounts totals or normal history.
+    """
+    ledger_entry = get_object_or_404(Transaction, pk=transaction_id)
+
+    if (ledger_entry.raw_data or {}).get("source") != "admin_accounts":
+        return Response(
+            {"error": "Only manually recorded Accounts entries can be deleted."},
+            status=403,
+        )
+
+    if ledger_entry.status == "deleted":
+        return Response({
+            "success": True,
+            "message": "Bookkeeping entry is already deleted.",
+            "id": ledger_entry.pk,
+        })
+
+    raw_data = dict(ledger_entry.raw_data or {})
+    raw_data["deleted_at"] = timezone.now().isoformat()
+    raw_data["deleted_by"] = request.user.pk
+    raw_data["deleted_from_accounts"] = True
+
+    ledger_entry.status = "deleted"
+    ledger_entry.raw_data = raw_data
+    ledger_entry.save(update_fields=["status", "raw_data", "updated_at"])
+
+    return Response({
+        "success": True,
+        "message": "Bookkeeping entry deleted successfully.",
+        "id": ledger_entry.pk,
+    })
+
+
 @api_view(["GET"])
 @permission_classes([IsAdminUser])
 def transaction_totals(request):
