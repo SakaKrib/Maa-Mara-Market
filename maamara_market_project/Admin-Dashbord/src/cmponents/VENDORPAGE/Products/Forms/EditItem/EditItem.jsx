@@ -12,7 +12,6 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useTheme } from "@mui/material";
 import { tokens } from "../../../../../theme";
-import "../../../../../index.css";
 import { useEffect } from "react";
 import { ScrollArea } from "../../../../../../components/ui/scroll-area";
 import ItemEditForm from "../EditItemForm";
