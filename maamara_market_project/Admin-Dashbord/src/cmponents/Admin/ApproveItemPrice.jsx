@@ -259,7 +259,7 @@ const AdminPriceApproval = ({ onCountChange }) => {
         </div>
       </section>
     </div>
-  
+  );
 };
 
 export default AdminPriceApproval;
