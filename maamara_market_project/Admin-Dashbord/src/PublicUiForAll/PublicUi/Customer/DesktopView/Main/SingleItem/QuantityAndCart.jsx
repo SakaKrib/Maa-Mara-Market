@@ -40,7 +40,7 @@ const QuantityAndCart = ({ item, quantity, setQuantity, availableStock, remainin
 
         {needsSize && <p className="w-full text-sm text-red-500">Please select a size</p>}
 
-        <div className="w-full">
+        <div className="w-full [&>*]:w-full">
           <AddToCartButton
             itemId={item.id}
             quantity={quantity}
