@@ -164,7 +164,7 @@ const VendorItemRequestDetail = () => {
               <div className="mt-5 grid gap-2">
                 <button type="button" disabled={status === "approved" || actionLoading !== ""} onClick={() => handleAction("approve")} className="rounded-xl bg-green-600 px-4 py-2.5 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50">{actionLoading === "approve" ? "Approving..." : status === "approved" ? "Approved" : "Approve"}</button>
                 <button type="button" disabled={status === "denied" || actionLoading !== ""} onClick={() => handleAction("deny")} className="rounded-xl bg-red-600 px-4 py-2.5 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50">{actionLoading === "deny" ? "Denying..." : status === "denied" ? "Denied" : "Deny"}</button>
-                <button type="button" onClick={() => navigate("/vendor/create-item", { state: request })} className="rounded-xl border border-border bg-card px-4 py-2.5 text-sm font-semibold text-card-foreground hover:bg-muted">Create Item</button>
+                <button type="button" onClick={() => navigate(`/admin-dashboard/vendor/create-item/${id}`, { state: request })} className="rounded-xl border border-border bg-card px-4 py-2.5 text-sm font-semibold text-card-foreground hover:bg-muted">Create Item</button>
               </div>
             </aside>
           </div>
