@@ -2,17 +2,14 @@ import React, { useEffect, useState } from "react";
 import { Bell, Check, ChevronRight, Globe2, KeyRound, LogOut, Monitor, RefreshCw, Save, Settings as SettingsIcon, ShieldCheck, UserRound, X, Eye, EyeOff } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../Auth/AuthContext/Context";
+import { useAdminPreferences } from "./AdminPreferencesContext";
 import api from "../../Services/Api";
-
-const preferenceDefaults = {
-  notifications: true,
-  compactMode: false,
-  browserAlerts: true,
-};
 
 const Settings = () => {
   const navigate = useNavigate();
   const { user, refreshAuth, logout } = useAuth();
+  const { preferences, updatePreference, resetPreferences } = useAdminPreferences();
+  const [showSignOutConfirm, setShowSignOutConfirm] = useState(false);
   const [profile, setProfile] = useState({
     first_name: "",
     last_name: "",
@@ -22,13 +19,6 @@ const Settings = () => {
     city: "",
     country: "",
     address: "",
-  });
-  const [preferences, setPreferences] = useState(() => {
-    try {
-      return { ...preferenceDefaults, ...JSON.parse(localStorage.getItem("maamara-admin-preferences") || "{}") };
-    } catch {
-      return preferenceDefaults;
-    }
   });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -41,12 +31,6 @@ const Settings = () => {
   const [passwordForm, setPasswordForm] = useState({ current_password: "", new_password: "", confirm_password: "" });
   const [passwordBusy, setPasswordBusy] = useState(false);
   const [passwordError, setPasswordError] = useState("");
-
-  useEffect(() => {
-    if (typeof document !== "undefined") {
-      document.documentElement.classList.toggle("maamara-compact-workspace", preferences.compactMode);
-    }
-  }, [preferences.compactMode]);
 
   useEffect(() => {
     const load = async () => {
@@ -94,22 +78,6 @@ const Settings = () => {
     }
   };
 
-  const updatePreference = async (key, value) => {
-    if (key === "browserAlerts" && value && typeof window !== "undefined" && "Notification" in window && Notification.permission === "default") {
-      try {
-        const permission = await Notification.requestPermission();
-        if (permission === "denied") value = false;
-      } catch {
-        value = false;
-      }
-    }
-    const next = { ...preferences, [key]: value };
-    setPreferences(next);
-    localStorage.setItem("maamara-admin-preferences", JSON.stringify(next));
-    setMessage(value ? `${key === "notifications" ? "Admin notifications" : key === "compactMode" ? "Compact workspace" : "Browser alerts"} enabled.` : `${key === "notifications" ? "Admin notifications" : key === "compactMode" ? "Compact workspace" : "Browser alerts"} disabled.`);
-    setError("");
-  };
-
   const openPasswordModal = () => {
     setPasswordForm({ current_password: "", new_password: "", confirm_password: "" });
     setPasswordError("");
@@ -141,9 +109,8 @@ const Settings = () => {
     }
   };
 
-  const resetPreferences = () => {
-    setPreferences(preferenceDefaults);
-    localStorage.setItem("maamara-admin-preferences", JSON.stringify(preferenceDefaults));
+  const restoreDefaults = () => {
+    resetPreferences();
     setMessage("Preferences restored to their defaults.");
     setError("");
   };
@@ -208,7 +175,7 @@ const Settings = () => {
                 {field("Address", "address")}
               </div>
               <div className="mt-5 flex justify-end">
-                <button type="submit" disabled={saving} className="inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-3 text-sm font-semibold text-primary-foreground transition hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-60">
+                <button type="submit" disabled={saving} className="inline-flex items-center gap-2 w-full rounded-[20px] bg-primary px-5 py-3 text-sm font-semibold text-primary-foreground transition hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-60">
                   <Save size={16} /> {saving ? "Saving..." : "Save changes"}
                 </button>
               </div>
@@ -236,7 +203,7 @@ const Settings = () => {
                     </button>
                   ))}
                 </div>
-                <button type="button" onClick={resetPreferences} className="mt-4 inline-flex items-center gap-2 text-xs font-semibold text-muted-foreground hover:text-foreground"><RefreshCw size={14} /> Restore defaults</button>
+                <button type="button" onClick={restoreDefaults} className="mt-4 inline-flex items-center gap-2 text-xs font-semibold text-muted-foreground hover:text-foreground"><RefreshCw size={14} /> Restore defaults</button>
               </div>
 
               <div className="rounded-2xl border border-border bg-card p-5 shadow-sm sm:p-6">
@@ -245,12 +212,12 @@ const Settings = () => {
                   <div><h2 className="text-sm font-semibold text-card-foreground">Security</h2><p className="text-xs text-muted-foreground">Account access and session controls.</p></div>
                 </div>
                 <div className="space-y-2">
-                  <button type="button" onClick={openPasswordModal} className="flex w-full items-center gap-3 rounded-xl border border-border p-3 text-left hover:bg-muted">
+                  <button type="button" onClick={openPasswordModal} className="flex w-full items-center gap-3 rounded-[20px] border border-border p-3 text-left hover:bg-muted">
                     <KeyRound size={17} className="text-primary" />
                     <span className="flex-1"><strong className="block text-sm text-card-foreground">Reset password</strong><small className="text-xs text-muted-foreground">Verify your current password before choosing a new one.</small></span>
                     <ChevronRight size={16} className="text-muted-foreground" />
                   </button>
-                  <button type="button" onClick={logout} className="flex w-full items-center gap-3 rounded-xl border border-red-500/20 p-3 text-left text-red-600 hover:bg-red-500/10 dark:text-red-300">
+                  <button type="button" onClick={logout} className="flex w-full items-center gap-3 rounded-[20px] border border-red-500/20 p-3 text-left text-red-600 hover:bg-red-500/10 dark:text-red-300" onClick={() => setShowSignOutConfirm(true)}>
                     <LogOut size={17} />
                     <span className="flex-1"><strong className="block text-sm">Sign out</strong><small className="text-xs text-red-600/70 dark:text-red-300/70">End this administrator session.</small></span>
                     <ChevronRight size={16} />
@@ -266,6 +233,23 @@ const Settings = () => {
           </div>
         )}
       </div>
+      {showSignOutConfirm && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/50 p-4 backdrop-blur-sm" role="dialog" aria-modal="true" aria-labelledby="settings-signout-title">
+          <div className="w-full max-w-md rounded-2xl border border-border bg-card p-6 shadow-2xl">
+            <div className="flex items-start gap-3">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-red-500/10 text-red-600 dark:text-red-300"><LogOut size={19} /></div>
+              <div>
+                <h2 id="settings-signout-title" className="text-base font-bold text-card-foreground">Sign out?</h2>
+                <p className="mt-1 text-sm text-muted-foreground">You will need to sign in again to access the administrator workspace.</p>
+              </div>
+            </div>
+            <div className="mt-5 grid gap-2 sm:grid-cols-2">
+              <button type="button" onClick={() => setShowSignOutConfirm(false)} className="w-full rounded-[20px] border border-border bg-card px-4 py-3 text-sm font-semibold text-foreground transition hover:bg-muted">Cancel</button>
+              <button type="button" onClick={logout} className="w-full rounded-[20px] bg-red-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-red-700">Sign out</button>
+            </div>
+          </div>
+        </div>
+      )}
     </section>
   );
 };
