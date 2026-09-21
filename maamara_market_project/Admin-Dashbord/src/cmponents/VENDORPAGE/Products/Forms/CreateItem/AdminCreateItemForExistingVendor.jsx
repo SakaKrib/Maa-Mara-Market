@@ -12,14 +12,11 @@ import {
   import { Input } from "../../../../../../components/ui/input";
   import { Textarea } from "../../../../../../components/ui/textarea";
   import { Button } from "../../../../../../components/ui/button";
-import { useTheme, FormControlLabel } from "@mui/material";
-import { tokens } from "../../../../../theme";
 import Checkbox from "../../../../../../components/ui/checkbox";
 import api from "../../../../../Services/Api/";
 import { useForm } from "react-hook-form";
 import { organicAttributes, inorganicAttributes } from "../itemattribute";
 import { Controller } from "react-hook-form";
-import Switch from "@mui/material/Switch";
 import { Snackbar, Alert } from "@mui/material";
 
 
@@ -232,8 +229,6 @@ import { Snackbar, Alert } from "@mui/material";
   
 
 const AdminCreateExistingVendorItems = ({ initialItem, vendorId, itemId, onSave, vendor }) => {
-  const theme = useTheme();
-  const colors = tokens(theme.palette.mode);
   console.log('this is id', initialItem?.id)
 
   const [selectedDepartment, setSelectedDepartment] = useState("");
@@ -607,7 +602,7 @@ useEffect(() => {
                   value={field.value}
                   disabled
                   className="rounded p-2  text-center outline-none"
-                  style={{color:colors.gray[100], backgroundColor:colors.primary[600]}}
+                  
                 />
               </FormControl>
               <FormMessage />
@@ -625,7 +620,7 @@ useEffect(() => {
               <FormLabel className='text-lg'>Department</FormLabel>
               <FormControl className='flex flex-col justify-end h-65'>
                 <select
-                  style={{ backgroundColor: colors.primary[600], padding: '.5em .5em', borderRadius: '4px' }}
+                  
                   {...field}
                   onChange={(e) => {
                     const dept = e.target.value;
@@ -636,7 +631,7 @@ useEffect(() => {
                     setValue("subcategory", "");
                   }}
                 >
-                  <option style={{ backgroundColor: colors.primary[600] }} value="">
+                  <option  value="">
                     Select Department
                   </option>
                   {Object.keys(activeData || {}).map((dept) => (
@@ -662,7 +657,7 @@ useEffect(() => {
                 <FormLabel className='text-lg'>Category</FormLabel>
                 <FormControl>
                   <select
-                    style={{ backgroundColor: colors.primary[600], padding: '.5em .5em', borderRadius: '4px' }}
+                    
                     {...field}
                     onChange={(e) => {
                       const cat = e.target.value;
@@ -671,7 +666,7 @@ useEffect(() => {
                       setValue("subcategory", "");
                     }}
                   >
-                    <option style={{ backgroundColor: colors.primary[600] }} value="">
+                    <option  value="">
                       Select Category
                     </option>
                     {(activeData?.[selectedDepartment]?.categories || []).map((cat) => (
@@ -698,13 +693,13 @@ useEffect(() => {
                 <FormLabel className='text-lg'>Subcategory</FormLabel>
                 <FormControl>
                   <select
-                    style={{ backgroundColor: colors.primary[600], fontSize: '0.9rem', padding: '.5em .5em', borderRadius: '4px' }}
+                    
                     {...field}
                   >
                     <option value="">Select Subcategory</option>
                     {(activeData?.[selectedDepartment]?.subcategories?.[selectedCategory] || []).map((subcat) => (
                       <option
-                        style={{ backgroundColor: colors.primary[600] }}
+                        
                         key={subcat}
                         value={subcat}
                       >
@@ -736,7 +731,7 @@ useEffect(() => {
           name="name"
           render={({ field }) => (
             <FormItem>
-              <FormLabel className="text-lg">Item Name</FormLabel>
+              <FormLabel className="text-sm font-semibold text-card-foreground">Item Name</FormLabel>
               <FormControl>
                 <Input
                   {...field}
@@ -786,7 +781,7 @@ useEffect(() => {
           name="in_stock"
           render={({ field }) => (
             <FormItem>
-              <FormLabel className="text-lg">Qty in Stock</FormLabel>
+              <FormLabel className="text-sm font-semibold text-card-foreground">Qty in Stock</FormLabel>
               <FormControl>
                 <Input
                   type="number"
@@ -813,7 +808,7 @@ useEffect(() => {
   name="image"
   render={({ field }) => (
     <FormItem>
-      <FormLabel className="text-lg">Item Image</FormLabel>
+      <FormLabel className="text-sm font-semibold text-card-foreground">Item Image</FormLabel>
       <FormControl>
       <div className="flex flex-col gap-3">
           {field.value && (
@@ -863,7 +858,7 @@ useEffect(() => {
       name="price"
       render={({ field }) => (
         <FormItem>
-          <FormLabel className="text-lg">Price</FormLabel>
+          <FormLabel className="text-sm font-semibold text-card-foreground">Price</FormLabel>
           <FormControl>
             <Input
               type="number"
@@ -929,13 +924,13 @@ useEffect(() => {
     
                   return (
                     <FormItem>
-                      <FormLabel className="text-lg">Product Attribute</FormLabel>
+                      <FormLabel className="text-sm font-semibold text-card-foreground">Product Attribute</FormLabel>
                       <FormControl>
                         <select
                           {...field}
                           value={field.value ?? ""}
                           className="w-full rounded p-2"
-                          style={{color:colors.gray[100], backgroundColor:colors.primary[600]}}
+                          
                         >
                           <option value="">Select attribute</option>
                           {attributes.map((attr) => (
@@ -957,7 +952,7 @@ useEffect(() => {
 
               {/* Organic inorganic */}
               <div className="my-4">
-  <FormLabel className="text-lg">Product Type</FormLabel>
+  <FormLabel className="text-sm font-semibold text-card-foreground">Product Type</FormLabel>
   <FormControl>
     <div className="flex gap-4">
 
@@ -1057,13 +1052,11 @@ useEffect(() => {
     
             return (
               <FormItem>
-                <FormLabel className="text-lg">Sizes & Stock</FormLabel>
+                <FormLabel className="text-sm font-semibold text-card-foreground">Sizes & Stock</FormLabel>
                 <FormControl>
                   <div
                     className="grid grid-cols-3 gap-5 my-2 p-2 rounded-lg"
-                    style={{
-                      boxShadow: `0 7px 24px ${colors.primary[400]}`
-                    }}
+                    
                   >
                     {sizeOptions.map((size) => {
                       const selected = selectedSizes.includes(size);
@@ -1130,7 +1123,7 @@ useEffect(() => {
     
             return (
               <FormItem>
-                <FormLabel className="text-lg">Length (Optional)</FormLabel>
+                <FormLabel className="text-sm font-semibold text-card-foreground">Length (Optional)</FormLabel>
                 <FormControl>
                   <div className="flex gap-3 items-center my-2">
                     <Input
@@ -1143,8 +1136,8 @@ useEffect(() => {
                       className="w-32"
                     />
                     <select
-                      className="border rounded p-2"
-                      style={{color:colors.gray[100], backgroundColor:colors.primary[600]}}
+                      className="w-full rounded-[20px] border border-border bg-card px-3 py-2 text-sm text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
+                      
                       value={value?.unit ?? "cm"}
                       onChange={(e) => handleUnitChange(e.target.value)}
                     >
@@ -1188,7 +1181,7 @@ useEffect(() => {
     
           return (
             <FormItem>
-              <FormLabel className="text-lg">Weight</FormLabel>
+              <FormLabel className="text-sm font-semibold text-card-foreground">Weight</FormLabel>
               <FormControl>
                 <div className="flex gap-3 items-center my-2">
                   {/* Numeric input */}
@@ -1237,7 +1230,7 @@ useEffect(() => {
           name="shoe_type"
           render={({ field }) => (
             <FormItem>
-              <FormLabel className="text-lg">Shoe Type</FormLabel>
+              <FormLabel className="text-sm font-semibold text-card-foreground">Shoe Type</FormLabel>
               <FormControl>
                 <select
                   {...field}
@@ -1266,7 +1259,7 @@ useEffect(() => {
           name="shoe_gender"
           render={({ field }) => (
             <FormItem>
-              <FormLabel className="text-lg">Gender</FormLabel>
+              <FormLabel className="text-sm font-semibold text-card-foreground">Gender</FormLabel>
               <FormControl>
                 <select
                   {...field}
@@ -1310,7 +1303,7 @@ useEffect(() => {
     
             return (
               <FormItem>
-                <FormLabel className="text-lg">Select Sizes</FormLabel>
+                <FormLabel className="text-sm font-semibold text-card-foreground">Select Sizes</FormLabel>
                 <FormControl>
                   <div className="grid grid-cols-3 gap-4 my-2">
                     {sizeOptions.map((size) => (
@@ -1374,15 +1367,11 @@ useEffect(() => {
     
             return (
               <FormItem>
-                <FormLabel className="text-lg">Kids Sizes & Stock</FormLabel>
+                <FormLabel className="text-sm font-semibold text-card-foreground">Kids Sizes & Stock</FormLabel>
                 <FormControl>
                   <div
                     className="grid grid-cols-3 gap-5 my-2"
-                    style={{
-                      boxShadow: `0 7px 24px ${colors.primary[400]}`,
-                      borderRadius: "10px",
-                      padding: ".5em .5em",
-                    }}
+                    
                   >
                     {kidsSizeOptions.map((size) => {
                       const selected = selectedSizes.includes(size);
@@ -1393,7 +1382,7 @@ useEffect(() => {
                         <div key={size} className="flex flex-col gap-1">
                           <div className="flex items-center gap-2">
                             <Checkbox
-                              style={{ backgroundColor: colors.primary[600] }}
+                              
                               id={`size-${size}`}
                               checked={selected}
                               onCheckedChange={(checked) =>
@@ -1447,7 +1436,7 @@ useEffect(() => {
     
             return (
               <FormItem>
-                <FormLabel className="text-lg">Length (Optional)</FormLabel>
+                <FormLabel className="text-sm font-semibold text-card-foreground">Length (Optional)</FormLabel>
                 <FormControl>
                   <div className="flex gap-3 items-center my-2">
                     <Input
@@ -1460,8 +1449,8 @@ useEffect(() => {
                       className="w-32"
                     />
                     <select
-                      className="border rounded p-2"
-                      style={{color:colors.gray[100], backgroundColor:colors.primary[600]}}
+                      className="w-full rounded-[20px] border border-border bg-card px-3 py-2 text-sm text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
+                      
                       value={value?.unit ?? "cm"}
                       onChange={(e) => handleUnitChange(e.target.value)}
                     >
@@ -1508,7 +1497,7 @@ useEffect(() => {
               className="w-5 h-5"
             />
           </FormControl>
-          <FormLabel className="text-lg">Is Organic?</FormLabel>
+          <FormLabel className="text-sm font-semibold text-card-foreground">Is Organic?</FormLabel>
           <FormDescription>
             Check if is organic food.
           </FormDescription>
@@ -1529,7 +1518,7 @@ useEffect(() => {
               className="w-5 h-5"
             />
           </FormControl>
-          <FormLabel className="text-lg">Is Fresh Food?</FormLabel>
+          <FormLabel className="text-sm font-semibold text-card-foreground">Is Fresh Food?</FormLabel>
           <FormDescription>
             Check if is fresh food.
           </FormDescription>
@@ -1546,17 +1535,14 @@ useEffect(() => {
           name="roast_type"
           render={({ field }) => (
             <FormItem>
-              <FormLabel className="text-lg">Roast Type</FormLabel>
+              <FormLabel className="text-sm font-semibold text-card-foreground">Roast Type</FormLabel>
               <FormControl>
                 <select
                   {...field}
                   value={field.value ?? ""} // keeps it controlled
                   onChange={(e) => field.onChange(e.target.value)}
                   className="border rounded p-2 w-full"
-                  style={{
-                    color: colors.gray[100],
-                    backgroundColor: colors.primary[600],
-                  }}
+                  
                 >
                   <option value="">Select Roast Type</option>
                   <option value="light">Light Roast</option>
@@ -1580,17 +1566,14 @@ useEffect(() => {
           name="coffee_state"
           render={({ field }) => (
             <FormItem>
-              <FormLabel className="text-lg">Coffee State</FormLabel>
+              <FormLabel className="text-sm font-semibold text-card-foreground">Coffee State</FormLabel>
               <FormControl>
                 <select
                   {...field}
                   value={field.value ?? ""} // keeps it controlled
                   onChange={(e) => field.onChange(e.target.value)}
                   className="border rounded p-2 w-full"
-                  style={{
-                    color: colors.gray[100],
-                    backgroundColor: colors.primary[600],
-                  }}
+                  
                 >
                   <option value="">Select Coffee State</option>
                   <option value="whole_beans">Whole Beans</option>
@@ -1628,7 +1611,7 @@ useEffect(() => {
     
           return (
             <FormItem>
-              <FormLabel className="text-lg">Weight</FormLabel>
+              <FormLabel className="text-sm font-semibold text-card-foreground">Weight</FormLabel>
               <FormControl>
                 <div className="flex gap-3 items-center my-2">
                   {/* Numeric input */}
@@ -1648,8 +1631,8 @@ useEffect(() => {
     
                   {/* Dropdown for unit */}
                   <select
-                    className="border rounded p-2"
-                    style={{color:colors.gray[100], backgroundColor:colors.primary[600]}}
+                    className="w-full rounded-[20px] border border-border bg-card px-3 py-2 text-sm text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
+                    
                     value={value?.unit ?? "g"}
                     onChange={(e) => handleUnitChange(e.target.value)}
                   >
@@ -1679,14 +1662,14 @@ useEffect(() => {
           }}
           render={({ field }) => (
             <FormItem>
-              <FormLabel className="text-lg">Manufactured Date</FormLabel>
+              <FormLabel className="text-sm font-semibold text-card-foreground">Manufactured Date</FormLabel>
               <FormControl>
               <Input
               type="date"
               {...field}
               value={field.value ?? ""}  // 👈 fallback ensures it's always controlled
-              className="border rounded p-2"
-              style={{ color: colors.gray[100], backgroundColor: colors.primary[600] }}
+              className="w-full rounded-[20px] border border-border bg-card px-3 py-2 text-sm text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
+              
             />
     
               </FormControl>
@@ -1715,13 +1698,13 @@ useEffect(() => {
           }}
           render={({ field }) => (
             <FormItem>
-              <FormLabel className="text-lg" >Expiry Date</FormLabel>
+              <FormLabel className="text-sm font-semibold text-card-foreground" >Expiry Date</FormLabel>
               <FormControl>
                 <Input
                   type="date"
                   {...field}
-                  className="border rounded p-2 "
-                  style={{color:colors.gray[100], backgroundColor:colors.primary[600]}}
+                  className="w-full rounded-[20px] border border-border bg-card px-3 py-2 text-sm text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
+                  
                 />
               </FormControl>
               <FormDescription>
@@ -1746,7 +1729,7 @@ useEffect(() => {
                     <Checkbox
                       checked={field.value}
                       onCheckedChange={field.onChange}
-                      style={{backgroundColor:colors.primary[600]}}
+                      
                     />
                   </FormControl>
                   <FormLabel className="text-base">Mark item as on Offer</FormLabel>
@@ -1763,7 +1746,7 @@ useEffect(() => {
                   name="offer.discount_percentage"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Discount Percentage (%)</FormLabel>
+                      <FormLabel className="text-sm font-semibold text-card-foreground">Discount Percentage (%)</FormLabel>
                       <FormControl>
                         <Input
                           type="number"
@@ -1784,7 +1767,7 @@ useEffect(() => {
                   name="offer.start_date"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Start Date</FormLabel>
+                      <FormLabel className="text-sm font-semibold text-card-foreground">Start Date</FormLabel>
                       <FormControl>
                         <Input type="date" {...field} />
                       </FormControl>
@@ -1799,7 +1782,7 @@ useEffect(() => {
                   name="offer.end_date"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>End Date</FormLabel>
+                      <FormLabel className="text-sm font-semibold text-card-foreground">End Date</FormLabel>
                       <FormControl>
                         <Input type="date" {...field} />
                       </FormControl>
@@ -1873,17 +1856,13 @@ useEffect(() => {
     
             return (
               <FormItem>
-                <FormLabel className="text-lg">Color Variants</FormLabel>
+                <FormLabel className="text-sm font-semibold text-card-foreground">Color Variants</FormLabel>
                 <FormControl>
                   <div className="space-y-6">
                     {/* Color selection */}
                     <div
                       className="grid grid-cols-3 gap-5 my-2"
-                      style={{
-                        boxShadow: `0 7px 24px ${colors.primary[400]}`,
-                        borderRadius: "10px",
-                        padding: ".5em .5em",
-                      }}
+                      
                     >
                       {colorOptions.map((color) => {
                         const checkboxId = `color-${color}`;
@@ -1893,7 +1872,7 @@ useEffect(() => {
                               id={checkboxId}
                               checked={selectedColors.includes(color)}
                               onCheckedChange={() => handleColorToggle(color)}
-                              style={{ backgroundColor: colors.primary[600] }}
+                              
                             />
                             <span
                               className="inline-block w-3 h-3 rounded-full border"
@@ -1922,12 +1901,7 @@ useEffect(() => {
                             onChange={(e) =>
                               handleImageUpload(variant.color, e.target.files[0])
                             }
-                            style={{
-                              outline: `1px solid ${colors.gray[100]}`,
-                              width: "200px",
-                              padding: ".5em 1em",
-                              borderRadius: "10px",
-                            }}
+                            
                           />
                         </div>
     
@@ -1998,7 +1972,7 @@ useEffect(() => {
    control={form.control}
    render={({ field }) => (
      <FormItem>
-       <FormLabel>Length</FormLabel>
+       <FormLabel className="text-sm font-semibold text-card-foreground">Length</FormLabel>
        <FormControl>
        <Input
             type="number"
@@ -2019,7 +1993,7 @@ useEffect(() => {
    control={form.control}
    render={({ field }) => (
      <FormItem>
-       <FormLabel>Width</FormLabel>
+       <FormLabel className="text-sm font-semibold text-card-foreground">Width</FormLabel>
        <FormControl>
        <Input
             type="number"
@@ -2040,7 +2014,7 @@ useEffect(() => {
    control={form.control}
    render={({ field }) => (
      <FormItem>
-       <FormLabel>Height</FormLabel>
+       <FormLabel className="text-sm font-semibold text-card-foreground">Height</FormLabel>
        <FormControl>
          <Input
             type="number"
@@ -2061,12 +2035,12 @@ useEffect(() => {
    control={form.control}
    render={({ field }) => (
      <FormItem>
-       <FormLabel>Dimension Unit</FormLabel>
+       <FormLabel className="text-sm font-semibold text-card-foreground">Dimension Unit</FormLabel>
        <FormControl>
          <select
            {...field}
-           className="border rounded p-2"
-           style={{backgroundColor:colors.primary[500]}}
+           className="w-full rounded-[20px] border border-border bg-card px-3 py-2 text-sm text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
+           
          >
            <option value="cm">Centimeters</option>
            <option value="m">Meters</option>
@@ -2084,7 +2058,7 @@ useEffect(() => {
    control={form.control}
    render={({ field }) => (
      <FormItem>
-       <FormLabel>Weight</FormLabel>
+       <FormLabel className="text-sm font-semibold text-card-foreground">Weight</FormLabel>
        <FormControl>
        <Input
             type="number"
@@ -2105,12 +2079,12 @@ useEffect(() => {
    control={form.control}
    render={({ field }) => (
      <FormItem>
-       <FormLabel>Weight Unit</FormLabel>
+       <FormLabel className="text-sm font-semibold text-card-foreground">Weight Unit</FormLabel>
        <FormControl>
          <select
            {...field}
-           className="border rounded p-2"
-           style={{backgroundColor:colors.primary[500]}}
+           className="w-full rounded-[20px] border border-border bg-card px-3 py-2 text-sm text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
+           
          >
            <option value="g">Grams</option>
            <option value="kg">Kilograms</option>
@@ -2127,26 +2101,23 @@ useEffect(() => {
  <Controller
      name="returnable"
      control={form.control}
-     defaultValue={true} // fallback
+     defaultValue={true}
      render={({ field }) => (
-       <FormControlLabel
-         control={
-           <Switch
-             {...field}
-             checked={!!field.value}
-             onChange={(e) => field.onChange(e.target.checked)}
-             color="gray"
-         
-           />
-         }
-         label="Returnable"
-       />
+       <label className="flex items-center gap-3 rounded-[20px] border border-border bg-card px-3 py-2 text-sm text-foreground">
+         <input
+           type="checkbox"
+           checked={!!field.value}
+           onChange={(e) => field.onChange(e.target.checked)}
+           className="h-4 w-4 accent-primary"
+         />
+         <span>Returnable</span>
+       </label>
      )}
    />
         
     
     
-            <Button type="submit" className=" px-4 mb-10 mt-10 " style={{ backgroundColor:colors.gray[100], color:colors.gray[900]}}>
+            <Button type="submit" className=" px-4 mb-10 mt-10 " >
               Save Changes
             </Button>
             </div>
