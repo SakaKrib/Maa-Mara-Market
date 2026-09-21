@@ -30,7 +30,7 @@ from rest_framework.exceptions import ValidationError
 from rest_framework.response import Response
 from rest_framework import status
 from django.db import transaction
-from .models import Item, ColorVariant, SizeStock, AgeVariant
+from .models import Item, ItemAdditionalImage, ColorVariant, SizeStock, AgeVariant
 from .Serializers import ItemSerializers
 from rest_framework.permissions import IsAuthenticated
 import json
@@ -202,6 +202,30 @@ class VendorItemViewSet(viewsets.ModelViewSet):
                             **{k: sanitize(v) for k, v in nested_item.items()}
                         )
 
+    def _handle_item_media(self, item):
+        """Persist optional additional gallery images and remove requested images."""
+        files = self.request.FILES.getlist("additional_images")
+        if not files:
+            files = self.request.FILES.getlist("additional_images[]")
+
+        for image_file in files:
+            ItemAdditionalImage.objects.create(item=item, image=image_file)
+
+        remove_ids = self.request.data.get("remove_additional_image_ids")
+        if remove_ids:
+            try:
+                if isinstance(remove_ids, str):
+                    remove_ids = json.loads(remove_ids)
+                if isinstance(remove_ids, (list, tuple)):
+                    ItemAdditionalImage.objects.filter(
+                        item=item,
+                        id__in=[int(value) for value in remove_ids],
+                    ).delete()
+            except (TypeError, ValueError, json.JSONDecodeError):
+                raise ValidationError({
+                    "remove_additional_image_ids": "Expected a JSON array of image IDs."
+                })
+
     # -------------------------------
     # Create / Update
     # -------------------------------
@@ -221,6 +245,7 @@ class VendorItemViewSet(viewsets.ModelViewSet):
         item = serializer.save(created_by=self.request.user)
         self._current_item = item
 
+        self._handle_item_media(item)
         self._handle_shoe(item, shoe_data)
         self._handle_dimension(item, Weight, weight_data, "weight")
         self._handle_dimension(item, Length, length_data, "length")
@@ -265,6 +290,7 @@ class VendorItemViewSet(viewsets.ModelViewSet):
         item = serializer.save()
         self._current_item = item
 
+        self._handle_item_media(item)
         self._handle_shoe(item, shoe_data)
         self._handle_dimension(item, Weight, weight_data, "weight")
         self._handle_dimension(item, Length, length_data, "length")
