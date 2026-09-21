@@ -203,7 +203,7 @@ export default function Messaging() {
         <aside className={(mobileThread ? "hidden lg:flex" : "flex") + " w-full shrink-0 flex-col border-r border-border lg:w-[340px]"}>
           <div className="border-b border-border p-4 text-center">
             <div className="flex flex-col items-center gap-3">
-              <div className="grid h-11 w-11 place-items-center rounded-xl bg-primary/10 text-primary"><IonIcon icon={chatbubbleEllipsesOutline} className="text-xl" /></div>
+              <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-primary/10 text-primary"><IonIcon icon={chatbubbleEllipsesOutline} className="text-xl" /></div>
               <div><h1 className="text-lg font-bold text-card-foreground">Messages</h1><p className="text-xs text-muted-foreground">{isAdmin ? "Users and vendors" : "Chat with Maa Mara Admin"}</p></div>
             </div>
             {isAdmin ? (
@@ -228,7 +228,7 @@ export default function Messaging() {
               <p className="mb-2 px-1 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">{isAdmin ? "Start new chat" : "Available admin"}</p>
               {activeContacts.map((contact) => (
                 <button key={contact.id} type="button" onClick={() => startConversation(contact)} className="flex w-full items-center gap-3 rounded-xl p-2 text-left hover:bg-muted">
-                  <div className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-primary/10 text-primary"><IonIcon icon={contact.is_vendor ? storefrontOutline : personOutline} /></div>
+                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary"><IonIcon icon={contact.is_vendor ? storefrontOutline : personOutline} /></div>
                   <div className="min-w-0"><p className="truncate text-xs font-semibold text-card-foreground">{contact.name}</p><p className="truncate text-[10px] text-muted-foreground">{contact.email}</p></div>
                 </button>
               ))}
@@ -241,7 +241,7 @@ export default function Messaging() {
             <>
               <header className="flex items-center gap-3 border-b border-border p-3">
                 <button type="button" onClick={() => setMobileThread(false)} className="rounded-lg p-2 hover:bg-muted lg:hidden"><IonIcon icon={arrowBackOutline} /></button>
-                <div className="grid h-10 w-10 place-items-center rounded-full bg-primary/10 text-primary"><IonIcon icon={chatbubbleEllipsesOutline} /></div>
+                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-primary"><IonIcon icon={chatbubbleEllipsesOutline} /></div>
                 <div><h2 className="text-sm font-bold text-card-foreground">{nameOf(selected)}</h2><p className="text-[11px] text-muted-foreground">Live conversation</p></div>
               </header>
               <div className="flex-1 overflow-y-auto bg-background p-3 sm:p-5">
@@ -262,7 +262,7 @@ export default function Messaging() {
               </form>
             </>
           ) : (
-            <div className="flex flex-1 flex-col items-center justify-center p-8 text-center"><div className="grid h-16 w-16 place-items-center rounded-2xl bg-primary/10 text-primary"><IonIcon icon={chatbubbleEllipsesOutline} className="text-3xl" /></div><h2 className="mt-4 text-lg font-bold text-card-foreground">Start a conversation</h2><p className="mt-1 text-sm text-muted-foreground">{isAdmin ? "Choose a user or vendor." : "Start a conversation with the Maa Mara admin team."}</p></div>
+            <div className="flex flex-1 flex-col items-center justify-center p-8 text-center"><div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-primary/10 text-primary"><IonIcon icon={chatbubbleEllipsesOutline} className="text-3xl" /></div><h2 className="mt-4 text-lg font-bold text-card-foreground">Start a conversation</h2><p className="mt-1 text-sm text-muted-foreground">{isAdmin ? "Choose a user or vendor." : "Start a conversation with the Maa Mara admin team."}</p></div>
           )}
         </main>
       </div>
