@@ -21,6 +21,7 @@ export default function Messaging() {
   const [mobileThread, setMobileThread] = useState(false);
   const [sending, setSending] = useState(false);
   const socketRef = useRef(null);
+  const selectedRef = useRef(null);
   const endRef = useRef(null);
 
   const loadContacts = useCallback(async () => {
@@ -47,6 +48,10 @@ export default function Messaging() {
   }, [loadContacts, loadConversations]);
 
   useEffect(() => {
+    selectedRef.current = selected;
+  }, [selected]);
+
+  useEffect(() => {
     let socket;
     let timer;
     let attempts = 0;
@@ -59,10 +64,10 @@ export default function Messaging() {
 
       socket.onopen = () => {
         attempts = 0;
-        if (selected?.id) {
+        if (selectedRef.current?.id) {
           socket.send(JSON.stringify({
             type: "join_conversation",
-            conversation_id: selected.id,
+            conversation_id: selectedRef.current.id,
           }));
         }
       };
