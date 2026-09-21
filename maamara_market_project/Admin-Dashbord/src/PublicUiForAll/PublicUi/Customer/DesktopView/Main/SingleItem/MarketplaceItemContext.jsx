@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import api from "../../../../../../Services/Api";
 import FormattedCurrency from "../Currency/FormattedCurrency";
+import { useCartContext } from "../CartHook/cart";
 
 const Stars = ({ value = 0 }) => (
   <span aria-label={`${value} out of 5 stars`} className="text-xs tracking-wide">
@@ -50,6 +51,7 @@ const ProductRail = ({ title, items }) => {
 const MarketplaceItemContext = ({ item, availableStock }) => {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
+  const { order } = useCartContext();
 
   useEffect(() => {
     let active = true;
@@ -81,7 +83,13 @@ const MarketplaceItemContext = ({ item, availableStock }) => {
   const itemReviews = data.item_reviews || [];
   const shopReviews = data.shop_reviews || [];
   const shop = data.item?.shop;
-  const cartQuantity = Number(data.item?.cart_quantity || 0);
+  const backendCartQuantity = Number(data.item?.cart_quantity || 0);
+  const cartQuantityFromContext = Array.isArray(order?.items)
+    ? order.items
+        .filter((entry) => Number(entry?.id || entry?.item?.id) === Number(item.id))
+        .reduce((sum, entry) => sum + Number(entry?.quantity || 0), 0)
+    : null;
+  const cartQuantity = cartQuantityFromContext === null ? backendCartQuantity : cartQuantityFromContext;
   const wishlistCount = Number(data.item?.wishlist_count || 0);
   const stockLeft = Math.max(0, Number(availableStock || 0));
 
