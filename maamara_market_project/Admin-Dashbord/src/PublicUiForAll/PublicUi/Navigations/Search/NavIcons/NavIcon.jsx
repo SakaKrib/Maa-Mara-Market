@@ -3,7 +3,6 @@ import { IonIcon } from "@ionic/react";
 import { cartOutline, heartOutline, notificationsOutline } from "ionicons/icons";
 import { Link, useNavigate } from "react-router-dom";
 import profileImage from "../../../../../../src/assets/profile/default-sender.jpg";
-import "../../../../../index.css";
 import CartModal from "../../CartModal/CartModal";
 import { useCartContext } from "../../../Customer/DesktopView/Main/CartHook/cart";
 import { useWishlistContext } from "../../../../../cmponents/Hooks/WishListHook/Wishlist";
