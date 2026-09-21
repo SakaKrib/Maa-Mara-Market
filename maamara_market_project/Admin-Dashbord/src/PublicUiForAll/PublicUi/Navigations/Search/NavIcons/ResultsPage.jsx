@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
+import api from "../../../../../Services/Api";
 import { baseUrl } from "../../../../../cmponents/Constant/Constant";
 import TrendingProductCard from "../../../Customer/DesktopView/Main/Trending/TrendingProductCard";
 import "../../../maamara.css";
@@ -11,9 +12,12 @@ const SearchResultsPage = () => {
   const navigate = useNavigate();
   const query = useMemo(() => new URLSearchParams(location.search), [location.search]);
   const searchTerm = query.get("name") || "";
-  const page = Math.max(1, Number(query.get("page") || 1));
+  const requestedPage = Math.max(1, Number(query.get("page") || 1));
+
   const [results, setResults] = useState([]);
   const [totalResults, setTotalResults] = useState(0);
+  const [totalPages, setTotalPages] = useState(0);
+  const [page, setPage] = useState(requestedPage);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -21,39 +25,57 @@ const SearchResultsPage = () => {
     if (!searchTerm.trim()) {
       setResults([]);
       setTotalResults(0);
+      setTotalPages(0);
+      setPage(1);
       return undefined;
     }
+
     const controller = new AbortController();
     setLoading(true);
     setError("");
-    fetch(`/api/search-items/?q=${encodeURIComponent(searchTerm)}&page=${page}&page_size=${ITEMS_PER_PAGE}`, {
+
+    api.get("/api/search-items/", {
+      params: {
+        q: searchTerm.trim(),
+        page: requestedPage,
+        page_size: ITEMS_PER_PAGE,
+      },
       signal: controller.signal,
     })
       .then((res) => {
-        if (!res.ok) throw new Error("Failed to fetch search results");
-        return res.json();
-      })
-      .then((data) => {
-        const next = Array.isArray(data?.results) ? data.results : Array.isArray(data) ? data : [];
+        const data = res.data || {};
+        const next = Array.isArray(data.results)
+          ? data.results
+          : Array.isArray(data)
+            ? data
+            : [];
+
         setResults(next);
-        setTotalResults(Number.isInteger(data?.total) ? data.total : next.length);
+        setTotalResults(Number(data.total) || next.length);
+        setTotalPages(Number(data.total_pages) || (next.length ? 1 : 0));
+        setPage(Number(data.page) || requestedPage);
       })
       .catch((err) => {
-        if (err.name !== "AbortError") {
+        if (err.name !== "AbortError" && err.code !== "ERR_CANCELED") {
           setError(err.message || "Unable to load search results.");
           setResults([]);
           setTotalResults(0);
+          setTotalPages(0);
         }
       })
-      .finally(() => setLoading(false));
-    return () => controller.abort();
-  }, [searchTerm, page]);
+      .finally(() => {
+        if (!controller.signal.aborted) {
+          setLoading(false);
+        }
+      });
 
-  const totalPages = Math.max(1, Math.ceil(totalResults / ITEMS_PER_PAGE));
+    return () => controller.abort();
+  }, [searchTerm, requestedPage]);
 
   const goToPage = (nextPage) => {
     if (nextPage < 1 || nextPage > totalPages) return;
     navigate(`/list?name=${encodeURIComponent(searchTerm)}&page=${nextPage}`);
+    window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
   const normalizeImage = (item) => {
@@ -67,34 +89,54 @@ const SearchResultsPage = () => {
         <div className="mm-container">
           <div className="flex flex-wrap items-end justify-between gap-3 mb-6">
             <div>
-              <p className="text-xs uppercase tracking-wide text-gray-500 mb-1">Maa Mara Market</p>
+              <p className="text-xs uppercase tracking-wide text-gray-500 mb-1">
+                Maa Mara Market
+              </p>
               <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">
-                {searchTerm ? `Search results for “${searchTerm}”` : "Search the marketplace"}
+                {searchTerm
+                  ? `Search results for “${searchTerm}”`
+                  : "Search the marketplace"}
               </h1>
-              {searchTerm && !loading && <p className="text-sm text-gray-500 mt-1">{totalResults} result{totalResults === 1 ? "" : "s"}</p>}
+              {searchTerm && !loading && (
+                <p className="text-sm text-gray-500 mt-1">
+                  {totalResults} result{totalResults === 1 ? "" : "s"}
+                </p>
+              )}
             </div>
           </div>
 
           {loading && (
-            <div className="mm-card p-8 text-center text-sm text-gray-500">Finding products…</div>
+            <div className="mm-card p-8 text-center text-sm text-gray-500">
+              Finding products…
+            </div>
           )}
 
           {error && !loading && (
-            <div className="mm-card p-8 text-center text-sm text-red-600">{error}</div>
+            <div className="mm-card p-8 text-center text-sm text-red-600">
+              {error}
+            </div>
           )}
 
           {!loading && !error && !searchTerm.trim() && (
             <div className="mm-card p-10 text-center">
               <h2 className="text-lg font-semibold mb-2">What are you looking for?</h2>
-              <p className="text-sm text-gray-500">Use the search box above to discover products.</p>
+              <p className="text-sm text-gray-500">
+                Use the search box above to discover products.
+              </p>
             </div>
           )}
 
           {!loading && !error && searchTerm.trim() && results.length === 0 && (
             <div className="mm-card p-10 text-center">
               <h2 className="text-lg font-semibold mb-2">No products found</h2>
-              <p className="text-sm text-gray-500">Try a different keyword or browse all products.</p>
-              <button type="button" className="mt-4 px-4 py-2 rounded-md bg-gray-900 text-white text-sm font-semibold" onClick={() => navigate("/list")}>
+              <p className="text-sm text-gray-500">
+                Try a different keyword or browse all products.
+              </p>
+              <button
+                type="button"
+                className="mt-4 px-4 py-2 rounded-md bg-gray-900 text-white text-sm font-semibold"
+                onClick={() => navigate("/list")}
+              >
                 Browse products
               </button>
             </div>
@@ -112,12 +154,29 @@ const SearchResultsPage = () => {
               </div>
 
               {totalPages > 1 && (
-                <nav className="flex items-center justify-center gap-4 mt-8" aria-label="Search pagination">
-                  <button type="button" disabled={page <= 1} onClick={() => goToPage(page - 1)} className="px-4 py-2 rounded-md border border-gray-300 text-sm disabled:opacity-40">
+                <nav
+                  className="flex items-center justify-center gap-4 mt-8"
+                  aria-label="Search pagination"
+                >
+                  <button
+                    type="button"
+                    disabled={page <= 1}
+                    onClick={() => goToPage(page - 1)}
+                    className="px-4 py-2 rounded-md border border-gray-300 text-sm disabled:opacity-40"
+                  >
                     Previous
                   </button>
-                  <span className="text-sm text-gray-600">Page {page} of {totalPages}</span>
-                  <button type="button" disabled={page >= totalPages} onClick={() => goToPage(page + 1)} className="px-4 py-2 rounded-md border border-gray-300 text-sm disabled:opacity-40">
+
+                  <span className="text-sm text-gray-600">
+                    Page {page} of {totalPages}
+                  </span>
+
+                  <button
+                    type="button"
+                    disabled={page >= totalPages}
+                    onClick={() => goToPage(page + 1)}
+                    className="px-4 py-2 rounded-md border border-gray-300 text-sm disabled:opacity-40"
+                  >
                     Next
                   </button>
                 </nav>
