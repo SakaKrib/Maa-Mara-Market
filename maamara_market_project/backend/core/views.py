@@ -229,6 +229,16 @@ def support_messages(request):
 
 
 @api_view(["GET"])
+@permission_classes([IsAdminUser])
+def support_status_counts(request):
+    return Response({
+        "pending": SupportMessage.objects.filter(status="pending").count(),
+        "answered": SupportMessage.objects.filter(status="answered").count(),
+        "total": SupportMessage.objects.count(),
+    })
+
+
+@api_view(["GET"])
 @permission_classes([AllowAny])
 def my_support_messages(request):
     """Return the current customer's own support requests and replies."""
