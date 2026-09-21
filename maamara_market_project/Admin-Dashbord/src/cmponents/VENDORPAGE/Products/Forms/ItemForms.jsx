@@ -10,7 +10,6 @@ import api from '../../../../Services/Api';
 import NavigateNextIcon from '@mui/icons-material/NavigateNext';
 import { tokens } from '../../../../theme';
 import { Link } from 'react-router-dom';
-import "../../../../index.css";
 
 
 
