@@ -20,7 +20,7 @@ from django.http import HttpResponse
 from ReactSerializers.Serializers import VendorPayoutSerializer
 from ReactSerializers.models import Item
 from order.models import OrderItem, Order
-from .models import SoldItem, VendorAdjustment, VendorPayout, VendorDraft, VendorDraftImage
+from .models import SoldItem, VendorAdjustment, VendorPayout, VendorDraft, VendorDraftImage, VendorRequest
 
 
 def dashboard(request):
@@ -322,6 +322,25 @@ class VendorDraftView(APIView):
         if not draft:
             return Response({"exists": False, "draft": None})
 
+        # Older drafts may predate the submitted-vendor-draft lifecycle fix.
+        # If a vendor request was already submitted after this draft was last
+        # updated, hide the draft from the customer resume card while retaining
+        # it for the admin approval workflow.
+        submitted_request = (
+            VendorRequest.objects
+            .filter(
+                user=request.user,
+                status__in=["pending", "verified", "approved"],
+                date_submitted__gte=draft.updated_at,
+            )
+            .order_by("-date_submitted")
+            .first()
+        )
+        if submitted_request:
+            draft.status = "SUBMITTED"
+            draft.save(update_fields=["status", "updated_at"])
+            return Response({"exists": False, "draft": None})
+
         data = dict(draft.data or {})
         items = list(data.get("item_list") or [])
         images_by_index = {image.item_index: image for image in draft.images.all()}
@@ -352,13 +371,21 @@ class VendorDraftView(APIView):
         except (TypeError, ValueError):
             return Response({"detail": "Invalid draft data."}, status=status.HTTP_400_BAD_REQUEST)
 
-        draft, created = VendorDraft.objects.get_or_create(
-            **owner,
-            defaults={
-                "data": {},
-                "expires_at": timezone.now() + timezone.timedelta(days=30),
-            },
+        draft = (
+            VendorDraft.objects
+            .filter(**owner, status="DRAFT")
+            .order_by("-updated_at")
+            .first()
         )
+        created = False
+
+        if draft is None:
+            draft = VendorDraft.objects.create(
+                **owner,
+                data={},
+                expires_at=timezone.now() + timezone.timedelta(days=30),
+            )
+            created = True
 
         items = list(data.get("item_list") or [])
 
