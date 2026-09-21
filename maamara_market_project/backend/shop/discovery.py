@@ -321,3 +321,124 @@ def recommendations(request):
         "popular": _serialize_discovery(popular, request),
         "best_selling": _serialize_discovery(best_selling, request),
     })
+
+
+@api_view(["GET"])
+@permission_classes([AllowAny])
+def homepage_collections(request):
+    """
+    Build real marketplace sections from the existing product taxonomy.
+
+    Categories are used as the customer-facing collection titles so sections
+    such as "Journals", "DIY Gifts", or "Wedding Gifts" appear automatically
+    when the catalog actually contains available products for them.
+    """
+    try:
+        limit = min(max(int(request.query_params.get("items", 6)), 2), 10)
+        max_sections = min(max(int(request.query_params.get("sections", 8)), 1), 16)
+    except (TypeError, ValueError):
+        limit, max_sections = 6, 8
+
+    from ReactSerializers.models import Category
+
+    user, visitor_id = _request_actor(request)
+
+    if user:
+        signal_items = list(
+            ItemView.objects.filter(user=user)
+            .select_related("item")
+            .order_by("-viewed_at")[:20]
+        )
+        signal_items += list(
+            Wishlist.objects.filter(user=user)
+            .select_related("item")
+            .order_by("-created_at")[:20]
+        )
+    elif visitor_id:
+        signal_items = list(
+            ItemView.objects.filter(visitor_id=visitor_id, user__isnull=True)
+            .select_related("item")
+            .order_by("-viewed_at")[:20]
+        )
+        signal_items += list(
+            Wishlist.objects.filter(visitor_id=visitor_id, user__isnull=True)
+            .select_related("item")
+            .order_by("-created_at")[:20]
+        )
+    else:
+        signal_items = []
+
+    category_counts = {}
+    for row in signal_items:
+        category_id = row.item.category_id
+        if category_id:
+            category_counts[category_id] = category_counts.get(category_id, 0) + 1
+
+    categories = (
+        Category.objects.filter(items__available=True, items__in_stock__gt=0)
+        .annotate(
+            available_count=Count(
+                "items",
+                filter=Q(items__available=True, items__in_stock__gt=0),
+                distinct=True,
+            )
+        )
+        .filter(available_count__gt=0)
+        .order_by("name")
+    )
+
+    ranked = sorted(
+        categories,
+        key=lambda category: (
+            0 if category.id in category_counts else 1,
+            -category_counts.get(category.id, 0),
+            category.name.lower(),
+        ),
+    )
+
+    collections = []
+    used_item_ids = set()
+
+    for category in ranked:
+        items = list(
+            category.items.filter(
+                available=True,
+                in_stock__gt=0,
+            )
+            .select_related("section", "department", "category", "subcategory", "brand")
+            .annotate(
+                sales_count=Sum("sold_items__quantity"),
+                average_rating=Avg("reviews__rating"),
+                review_count=Count("reviews", distinct=True),
+            )
+            .order_by("-views", "-likes", "-updated")[:limit]
+        )
+
+        if not items:
+            continue
+
+        # Avoid turning the homepage into repeated copies of the same products.
+        fresh_items = [item for item in items if item.id not in used_item_ids]
+        if not fresh_items:
+            continue
+
+        for item in fresh_items:
+            used_item_ids.add(item.id)
+
+        collections.append({
+            "id": category.id,
+            "name": category.name,
+            "department": category.department.name if category.department else None,
+            "section": (
+                category.department.section.name
+                if category.department and category.department.section
+                else None
+            ),
+            "personalized": category.id in category_counts,
+            "items": _serialize_discovery(fresh_items, request),
+        })
+
+        if len(collections) >= max_sections:
+            break
+
+    return Response(collections)
