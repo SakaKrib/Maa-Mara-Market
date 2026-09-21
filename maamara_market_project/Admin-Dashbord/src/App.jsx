@@ -129,7 +129,7 @@ import ForgotPassword from "./cmponents/Auth/AdminLogin/RecoverPassword";
 import SalesPage from "./cmponents/Admin/AdminAccounts/Reports/SalesStatsPage";
 import RevenueGrowthCard from "./cmponents/AdminPages/Notifications/Transactions/AdminTransactionGrowthTrack";
 import VendorSuccessPage from "./cmponents/VENDORPAGE/VendorRegistration/VendorSuccessPage";
-import CreateItemModal from "./cmponents/AdminPages/Notifications/ApproveCreatedItem";
+import CreateItemPage from "./cmponents/AdminPages/Notifications/CreateItemPage";
 import AdminBannerApprovalPage from "./cmponents/Admin/ApproveBanner/ApproveBanner";
 import AdminPostCareer from "./cmponents/AdminPages/Notifications/PostCareers/AdminPostCareer";
 import SupportAdminPanel from "./cmponents/AdminPages/Notifications/Support/SupportMessages";
@@ -282,7 +282,7 @@ function AppContent() {
               <Route path="create-support" element={<SupportAdminPanel />} />
 
               {/* vendor create new item */}
-              <Route path="vendor/create-item/:requestId" element={<CreateItemModal />} />
+              <Route path="vendor/create-item/:requestId" element={<CreateItemPage />} />
 
                {/* vendor create new item */}
                <Route path="approve-banner" element={<AdminBannerApprovalPage />} />
