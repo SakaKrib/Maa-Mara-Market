@@ -141,6 +141,24 @@ def pay_single_vendor_payout(request, reference):
     amount = payout.amount
     method = vendor.payment_method
 
+    # Never send a zero/negative payout to a provider. The payout amount is
+    # authoritative on the server; the client cannot override it.
+    try:
+        amount = amount if amount is not None else 0
+        if amount <= 0:
+            return Response(
+                {"error": "Payout amount must be greater than zero."},
+                status=400,
+            )
+    except (TypeError, ValueError):
+        return Response({"error": "Payout amount is invalid."}, status=400)
+
+    if not vendor.is_active:
+        return Response(
+            {"error": "This vendor is inactive and cannot receive a payout."},
+            status=400,
+        )
+
     # Load gateway configs
     mpesa_config = settings.PAYMENT_GATEWAYS.get("mpesa", {})
     paypal_config = settings.PAYMENT_GATEWAYS.get("paypal", {})
@@ -150,15 +168,19 @@ def pay_single_vendor_payout(request, reference):
         # has a provider correlation that is still awaiting settlement.
         if method == "MOBILE_MONEY" and (
             payout.mpesa_conversation_id or payout.mpesa_originator_conversation_id
-        ) and not payout.mpesa_transaction_id:
-            return Response(
-                {
-                    "error": "M-Pesa payout is already submitted and awaiting provider confirmation.",
-                    "reference": payout.reference,
-                    "retryable": False,
-                },
-                status=409,
-            )
+        ):
+            # A provider-confirmed success is handled by paid=True above.
+            # A pending submission must not be duplicated. A provider-reported
+            # failure, however, is retryable and receives a fresh correlation ID.
+            if payout.mpesa_result_code is None:
+                return Response(
+                    {
+                        "error": "M-Pesa payout is already submitted and awaiting provider confirmation.",
+                        "reference": payout.reference,
+                        "retryable": False,
+                    },
+                    status=409,
+                )
 
         if method == "BANK_TRANSFER" and payout.kcb_transaction_reference:
             kcb_status = (payout.kcb_provider_status or "").upper()
@@ -175,14 +197,16 @@ def pay_single_vendor_payout(request, reference):
         if method == "PAYPAL" and (
             payout.paypal_batch_id or payout.paypal_payout_item_id
         ) and not payout.paid:
-            return Response(
-                {
-                    "error": "PayPal payout is already submitted and awaiting provider confirmation.",
-                    "reference": payout.reference,
-                    "retryable": False,
-                },
-                status=409,
-            )
+            paypal_status = (payout.paypal_transaction_status or "").upper()
+            if paypal_status in {"", "PENDING", "UNCLAIMED", "ONHOLD", "BLOCKED"}:
+                return Response(
+                    {
+                        "error": "PayPal payout is already submitted and awaiting provider confirmation.",
+                        "reference": payout.reference,
+                        "retryable": False,
+                    },
+                    status=409,
+                )
 
         if method == "MOBILE_MONEY":
             response = call_mpesa_b2c(vendor, amount, mpesa_config, payout=payout)
