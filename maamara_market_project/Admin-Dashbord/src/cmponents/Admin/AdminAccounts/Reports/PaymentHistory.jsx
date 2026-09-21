@@ -266,6 +266,18 @@ export default function FastPayment({
                       <p className="text-muted-foreground">Status</p>
                       <p className="mt-1 font-semibold capitalize text-card-foreground">{item.status || "—"}</p>
                     </div>
+                    {item.source === "manual" ? (
+                      <div className="col-span-2 flex justify-end gap-2 border-t border-border pt-3">
+                        <button type="button" onClick={() => { setEditingEntry(item); setOpenModal(true); }} className="inline-flex h-9 items-center gap-2 rounded-lg border border-border bg-background px-3 text-xs font-semibold text-muted-foreground hover:bg-muted hover:text-foreground" aria-label="Edit bookkeeping entry">
+                          <IonIcon icon={createOutline} />
+                          Edit
+                        </button>
+                        <button type="button" onClick={() => handleDeletePayment(item)} className="inline-flex h-9 items-center gap-2 rounded-lg border border-red-500/20 bg-red-500/5 px-3 text-xs font-semibold text-red-600 hover:bg-red-500/10 dark:text-red-300" aria-label="Delete bookkeeping entry">
+                          <IonIcon icon={trashOutline} />
+                          Delete
+                        </button>
+                      </div>
+                    ) : null}
                   </div>
                 </article>
               ))}
