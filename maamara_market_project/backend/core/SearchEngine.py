@@ -224,6 +224,7 @@ def search_items(request):
     """
     query = " ".join((request.GET.get("q") or "").split())
     category_id = request.GET.get("category_id")
+    vendor_id = request.GET.get("vendor_id")
 
     # Category collection pages reuse this endpoint so the homepage's
     # "View all" action opens the complete collection rather than turning
@@ -234,7 +235,13 @@ def search_items(request):
         except (TypeError, ValueError):
             category_id = None
 
-    if not query and not category_id:
+    if vendor_id:
+        try:
+            vendor_id = int(vendor_id)
+        except (TypeError, ValueError):
+            vendor_id = None
+
+    if not query and not category_id and not vendor_id:
         return Response(
             {
                 "query": "",
@@ -266,6 +273,8 @@ def search_items(request):
 
     if category_id:
         queryset = queryset.filter(category_id=category_id)
+    if vendor_id:
+        queryset = queryset.filter(vendor_id=vendor_id)
 
     suggestion_mode = str(request.GET.get("suggestions", "")).lower() in {
         "1",
