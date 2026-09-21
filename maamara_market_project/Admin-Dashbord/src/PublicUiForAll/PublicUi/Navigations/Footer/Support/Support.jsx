@@ -2,8 +2,8 @@ import { useEffect, useState } from "react";
 import { IonIcon } from "@ionic/react";
 import { helpCircleOutline, sendOutline, checkmarkCircleOutline } from "ionicons/icons";
 import { Link } from "react-router-dom";
-import api from "../../../../Services/Api";
-import { useAuth } from "../../../../cmponents/Auth/AuthContext/Context";
+import api from "../../../../../Services/Api";
+import { useAuth } from "../../../../../cmponents/Auth/AuthContext/Context";
 
 const SUPPORT_ISSUES = [
   ["accounts", "Accounts"],
