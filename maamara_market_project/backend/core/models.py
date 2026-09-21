@@ -381,3 +381,19 @@ class DirectMessage(models.Model):
 
     def __str__(self):
         return f"Message {self.pk} in conversation {self.conversation_id}"
+
+
+class AboutPage(models.Model):
+    hero_image = models.ImageField(upload_to="about/", blank=True, null=True)
+    hero_title = models.CharField(max_length=255, blank=True, default="")
+    hero_subtitle = models.TextField(blank=True, default="")
+    about_title = models.CharField(max_length=255, blank=True, default="")
+    impact_title = models.CharField(max_length=255, blank=True, default="")
+    impact_content = models.TextField(blank=True, default="")
+    products_title = models.CharField(max_length=255, blank=True, default="")
+    products_content = models.TextField(blank=True, default="")
+    materials_content = models.TextField(blank=True, default="")
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return self.hero_title or "Maa Mara About Page"
