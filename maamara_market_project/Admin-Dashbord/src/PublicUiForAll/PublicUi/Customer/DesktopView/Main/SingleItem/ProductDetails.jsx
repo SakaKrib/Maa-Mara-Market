@@ -4,14 +4,14 @@ const ProductDetails = ({ item }) => (
   <div className="flex flex-col gap-4">
     <section className="rounded-2xl border border-border bg-card p-4 shadow-custom sm:p-5">
       <h2 className="text-base font-bold text-card-foreground sm:text-lg">More Info</h2>
-      <div className="mt-4 rounded-2xl border border-border bg-background p-4 text-sm leading-6 text-card-foreground">
+      <div className="mt-3 text-xs leading-6 text-muted-foreground sm:text-sm">
         {item.description || "Product details are provided by the seller."}
       </div>
     </section>
 
     <section className="rounded-2xl border border-border bg-card p-4 shadow-custom sm:p-5">
       <h2 className="text-base font-bold text-card-foreground sm:text-lg">Returns</h2>
-      <div className="mt-4 rounded-2xl border border-border bg-background p-4 text-sm leading-6 text-card-foreground">
+      <div className="mt-3 text-xs leading-6 text-muted-foreground sm:text-sm">
         {(item?.returnable ?? item?.is_returnable) ? (
           <p>This item is eligible for return. If you receive a damaged, defective, or incorrect product, you may request a return within the allowed return period after delivery. The product must remain unused, in its original packaging, and in the same condition you received it. Refunds or replacements will be processed after inspection.</p>
         ) : (
