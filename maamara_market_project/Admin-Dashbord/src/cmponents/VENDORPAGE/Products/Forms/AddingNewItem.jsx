@@ -76,6 +76,20 @@ import { useDepartments } from "./useDepartments";
     ];
     
     const shoeTypes = ["Sneakers", "Sandals", "Boots", "Heels"];
+
+const OCCASION_OPTIONS = [
+  { key: "wedding", label: "Wedding" },
+  { key: "engagement", label: "Engagement" },
+  { key: "birthday", label: "Birthday" },
+  { key: "graduation", label: "Graduation" },
+  { key: "anniversary", label: "Anniversary" },
+  { key: "baby-shower", label: "Baby Shower" },
+  { key: "traditional-ceremony", label: "Traditional Ceremony" },
+  { key: "gifts", label: "Gifts" },
+  { key: "souvenirs", label: "Souvenirs" },
+  { key: "home", label: "Home" },
+  { key: "office", label: "Office" },
+];
   
   
 const ItemAddNew = ({ initialItem, vendorId, itemId, onSave, vendor }) => {
@@ -195,6 +209,7 @@ useEffect(() => {
  
    // ✅ Dropdown & attributes
    item_attribute: undefined, // or "" if you prefer string fallback
+   occasions: [],
    is_food: false,
    is_organic: false,
    roast_type: "",
@@ -301,6 +316,7 @@ useEffect(() => {
         const item_attribute = form.getValues("item_attribute") || null; // ✅ added
         const is_organic = form.getValues("is_organic") ?? false; // ✅ add boolean
         const is_fresh_food = form.getValues("is_fresh_food") ?? false; // ✅ add boolean
+        const occasions = form.getValues("occasions") || [];
 
     
         // Build cleaned item object
@@ -800,6 +816,55 @@ useEffect(() => {
                 );
               }}
             />
+
+              {/* Occasion / Suitable For */}
+              <FormField
+                control={control}
+                name="occasions"
+                render={({ field }) => {
+                  const selectedOccasions = Array.isArray(field.value) ? field.value : [];
+
+                  const toggleOccasion = (key, checked) => {
+                    if (checked) {
+                      field.onChange(
+                        selectedOccasions.includes(key)
+                          ? selectedOccasions
+                          : [...selectedOccasions, key]
+                      );
+                    } else {
+                      field.onChange(selectedOccasions.filter((value) => value !== key));
+                    }
+                  };
+
+                  return (
+                    <FormItem>
+                      <FormLabel className="text-sm leading-6 font-semibold text-foreground">
+                        Suitable For
+                      </FormLabel>
+                      <FormControl>
+                        <div className="grid grid-cols-2 gap-3 rounded-[20px] border border-border bg-card p-3 sm:grid-cols-3">
+                          {OCCASION_OPTIONS.map((occasion) => (
+                            <label
+                              key={occasion.key}
+                              className="flex cursor-pointer items-center gap-2 text-sm text-foreground"
+                            >
+                              <Checkbox
+                                checked={selectedOccasions.includes(occasion.key)}
+                                onCheckedChange={(checked) => toggleOccasion(occasion.key, checked)}
+                              />
+                              <span>{occasion.label}</span>
+                            </label>
+                          ))}
+                        </div>
+                      </FormControl>
+                      <FormDescription>
+                        Select one or more occasions or settings that fit this product.
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  );
+                }}
+              />
 
               {/* Organic product details */}
               {selectedSection === "organic" && (
