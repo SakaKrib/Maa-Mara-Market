@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Briefcase, Check, Edit3, Eye, Plus, Trash2, Users, X } from "lucide-react";
-import api from "../../../Services/Api";
-import RichTextEditor from "../../../cmponents/RichTextEditor/RichTextEdit";
+import api from "../../../../Services/Api";
+import RichTextEditor from "../../../../cmponents/RichTextEditor/RichTextEdit";
 
 const emptyForm = {
   title: "", department: "", location: "", employment_type: "full_time",

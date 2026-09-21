@@ -5008,7 +5008,6 @@ h1,h2,h3,h4{font-family:'regular','Poppins',Arial,sans-serif}
 /* CAREERS — shared Maa Mara storefront design system */
 .mm-careers-page{
   min-height:100vh;
-  background:var(--mm-surface-muted,#f7f6f3);
   color:var(--mm-text,#222);
   font-family:'regular',sans-serif;
 }
