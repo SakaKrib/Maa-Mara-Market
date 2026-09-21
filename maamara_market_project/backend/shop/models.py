@@ -367,6 +367,20 @@ class Wishlist(models.Model):
 
 
 
+class FAQ(models.Model):
+    question = models.CharField(max_length=500)
+    answer = models.TextField(blank=True)
+    category = models.CharField(max_length=120, blank=True)
+    created_at = models.DateTimeField(default=timezone.now)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["category", "-updated_at", "question"]
+
+    def __str__(self):
+        return self.question
+
+
 class CareerVacancy(models.Model):
     EMPLOYMENT_TYPES = [
         ("full_time", "Full Time"),
