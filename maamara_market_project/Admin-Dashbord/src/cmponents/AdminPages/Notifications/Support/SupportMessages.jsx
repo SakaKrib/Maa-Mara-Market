@@ -1,35 +1,39 @@
 import { useEffect, useState } from "react";
 import { IonIcon } from "@ionic/react";
-import { closeOutline, sendOutline, helpCircleOutline } from "ionicons/icons";
+import { helpCircleOutline, sendOutline, refreshOutline } from "ionicons/icons";
 import api from "../../../../Services/Api";
 
 const statusClasses = {
-  answered: "bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300",
-  pending: "bg-amber-50 text-amber-700 dark:bg-amber-500/10 dark:text-amber-300",
+  answered: "bg-emerald-500/10 text-emerald-700 dark:text-emerald-300",
+  pending: "bg-amber-500/10 text-amber-700 dark:text-amber-300",
 };
 
-const SupportAdminPanel = ({ open, onClose }) => {
+const SupportAdminPanel = () => {
   const [tickets, setTickets] = useState([]);
   const [selectedTicket, setSelectedTicket] = useState(null);
   const [reply, setReply] = useState("");
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
+  const [error, setError] = useState("");
 
   const fetchTickets = async () => {
     try {
+      setError("");
       setLoading(true);
-      const response = await api.get("/api/support/inbox/");
-      setTickets(Array.isArray(response.data) ? response.data : []);
-    } catch (error) {
-      console.error("Support inbox load failed:", error);
+      const response = await api.get("/api/support/inbox/", { withCredentials: true });
+      const data = Array.isArray(response.data) ? response.data : [];
+      setTickets(data);
+      setSelectedTicket((current) => current ? data.find((ticket) => ticket.id === current.id) || current : null);
+    } catch (requestError) {
+      setError(requestError?.response?.data?.detail || "Could not load support requests.");
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    if (open) fetchTickets();
-  }, [open]);
+    fetchTickets();
+  }, []);
 
   const selectTicket = (ticket) => {
     setSelectedTicket(ticket);
@@ -41,125 +45,156 @@ const SupportAdminPanel = ({ open, onClose }) => {
 
     try {
       setSending(true);
-      await api.post(`/api/support/reply/${selectedTicket.id}/`, {
-        support_reply: reply.trim(),
-      });
-      await fetchTickets();
-      setSelectedTicket((current) => current ? {
-        ...current,
-        support_reply: reply.trim(),
-        status: "answered",
-      } : current);
-    } catch (error) {
-      console.error("Support reply failed:", error);
+      setError("");
+      const response = await api.post(
+        `/api/support/reply/${selectedTicket.id}/`,
+        { support_reply: reply.trim() },
+        { withCredentials: true }
+      );
+      const updated = response.data;
+      setTickets((current) => current.map((ticket) => ticket.id === updated.id ? updated : ticket));
+      setSelectedTicket(updated);
+      setReply(updated.support_reply || "");
+    } catch (requestError) {
+      setError(requestError?.response?.data?.detail || "Could not send the reply.");
     } finally {
       setSending(false);
     }
   };
 
-  if (!open) return null;
-
   return (
-    <div className="fixed inset-0 z-[80] flex justify-end bg-slate-950/55" onMouseDown={onClose}>
-      <section
-        className="flex h-full w-full max-w-5xl flex-col border-l border-slate-200 bg-white shadow-2xl dark:border-slate-800 dark:bg-slate-950"
-        onMouseDown={(event) => event.stopPropagation()}
-      >
-        <header className="flex h-[72px] shrink-0 items-center justify-between border-b border-slate-200 px-4 sm:px-6 dark:border-slate-800">
-          <div>
-            <p className="text-xs font-bold uppercase tracking-wider text-indigo-600 dark:text-indigo-300">Admin inbox</p>
-            <h2 className="text-lg font-bold text-slate-900 dark:text-white">Support administration</h2>
+    <div className="min-h-[calc(100vh-72px)] w-full bg-background p-2 text-foreground sm:p-4 lg:p-6">
+      <div className="mx-auto max-w-7xl">
+        <header className="mb-5 rounded-2xl border border-border bg-card p-5 shadow-custom sm:p-6">
+          <div className="flex flex-wrap items-start justify-between gap-4">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">Customer care</p>
+              <h1 className="mt-1 text-xl font-semibold tracking-tight text-card-foreground sm:text-2xl">Support inbox</h1>
+              <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
+                Review customer questions, see the issue category, and reply directly to the email they provided.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={fetchTickets}
+              disabled={loading}
+              className="inline-flex min-h-10 items-center gap-2 rounded-xl border border-border bg-card px-4 py-2 text-sm font-semibold text-card-foreground hover:bg-muted disabled:opacity-50"
+            >
+              <IonIcon icon={refreshOutline} />
+              Refresh
+            </button>
           </div>
-          <button type="button" onClick={onClose} className="rounded-xl p-2 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800">
-            <IonIcon icon={closeOutline} className="text-xl" />
-          </button>
         </header>
 
-        <div className="grid min-h-0 flex-1 md:grid-cols-[300px_minmax(0,1fr)]">
-          <aside className="min-h-0 overflow-y-auto border-b border-slate-200 bg-slate-50 dark:border-slate-800 dark:bg-slate-900 md:border-b-0 md:border-r">
-            <div className="border-b border-slate-200 p-4 dark:border-slate-800">
-              <div className="flex items-center gap-2">
-                <IonIcon icon={helpCircleOutline} className="text-lg text-indigo-600" />
-                <p className="font-semibold text-slate-900 dark:text-white">Support inbox</p>
+        {error && (
+          <div role="alert" className="mb-5 rounded-xl border border-destructive/30 bg-destructive/5 px-4 py-3 text-sm text-destructive">
+            {error}
+          </div>
+        )}
+
+        <section className="grid min-h-[520px] overflow-hidden rounded-2xl border border-border bg-card shadow-custom md:grid-cols-[320px_minmax(0,1fr)]">
+          <aside className="min-h-0 border-b border-border md:border-b-0 md:border-r">
+            <div className="border-b border-border p-4">
+              <div className="flex items-center gap-3">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-muted">
+                  <IonIcon icon={helpCircleOutline} className="text-lg text-card-foreground" />
+                </div>
+                <div>
+                  <p className="text-sm font-semibold text-card-foreground">Requests</p>
+                  <p className="text-xs text-muted-foreground">{tickets.length} total</p>
+                </div>
               </div>
-              <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">{tickets.length} tickets</p>
             </div>
 
-            {loading ? (
-              <div className="p-5 text-sm text-slate-400">Loading tickets…</div>
-            ) : tickets.length ? (
-              tickets.map((ticket) => (
-                <button
-                  key={ticket.id}
-                  type="button"
-                  onClick={() => selectTicket(ticket)}
-                  className={`block w-full border-b border-slate-200 p-4 text-left dark:border-slate-800 ${selectedTicket?.id === ticket.id ? "bg-indigo-50 dark:bg-indigo-500/10" : "hover:bg-white dark:hover:bg-slate-800"}`}
-                >
-                  <div className="flex items-start justify-between gap-2">
-                    <p className="truncate text-sm font-semibold text-slate-900 dark:text-white">{ticket.name}</p>
-                    <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold uppercase ${statusClasses[ticket.status] || "bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300"}`}>
-                      {ticket.status || "pending"}
-                    </span>
-                  </div>
-                  <p className="mt-1 text-xs text-slate-400">{ticket.message_id || `#${ticket.id}`}</p>
-                  <p className="mt-2 line-clamp-2 text-xs text-slate-500 dark:text-slate-400">{ticket.message}</p>
-                </button>
-              ))
-            ) : (
-              <div className="p-5 text-sm text-slate-400">No support tickets found.</div>
-            )}
+            <div className="max-h-[560px] overflow-y-auto">
+              {loading ? (
+                <div className="p-5 text-sm text-muted-foreground">Loading support requests...</div>
+              ) : tickets.length ? (
+                tickets.map((ticket) => (
+                  <button
+                    key={ticket.id}
+                    type="button"
+                    onClick={() => selectTicket(ticket)}
+                    className={`block w-full border-b border-border p-4 text-left transition hover:bg-muted/60 ${selectedTicket?.id === ticket.id ? "bg-muted" : ""}`}
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <p className="min-w-0 flex-1 truncate text-sm font-semibold text-card-foreground">
+                        {ticket.subject}
+                      </p>
+                      <span className={`shrink-0 rounded-full px-2 py-1 text-[10px] font-semibold uppercase ${statusClasses[ticket.status] || "bg-muted text-muted-foreground"}`}>
+                        {ticket.status || "pending"}
+                      </span>
+                    </div>
+                    <p className="mt-1 truncate text-xs text-muted-foreground">{ticket.email}</p>
+                    <p className="mt-2 line-clamp-2 text-xs leading-5 text-muted-foreground">{ticket.message}</p>
+                  </button>
+                ))
+              ) : (
+                <div className="p-6 text-sm text-muted-foreground">No support requests yet.</div>
+              )}
+            </div>
           </aside>
 
-          <main className="min-h-0 overflow-y-auto p-4 sm:p-6 lg:p-8">
+          <main className="min-w-0 p-5 sm:p-6 lg:p-8">
             {!selectedTicket ? (
-              <div className="grid min-h-full place-items-center text-center">
-                <div>
-                  <IonIcon icon={helpCircleOutline} className="text-4xl text-slate-300" />
-                  <p className="mt-3 font-semibold text-slate-700 dark:text-slate-200">Select a support ticket</p>
-                  <p className="mt-1 text-sm text-slate-400">Choose a message from the inbox to view and reply.</p>
+              <div className="grid min-h-[420px] place-items-center text-center">
+                <div className="max-w-sm">
+                  <IonIcon icon={helpCircleOutline} className="text-4xl text-muted-foreground" />
+                  <p className="mt-3 text-base font-semibold text-card-foreground">Select a support request</p>
+                  <p className="mt-1 text-sm leading-6 text-muted-foreground">
+                    Customer questions will appear here after they submit the support form.
+                  </p>
                 </div>
               </div>
             ) : (
               <div className="mx-auto max-w-3xl">
                 <div className="flex flex-wrap items-start justify-between gap-3">
-                  <div>
-                    <h3 className="text-xl font-bold text-slate-900 dark:text-white">{selectedTicket.name}</h3>
-                    <p className="mt-1 text-sm text-slate-500">{selectedTicket.email}</p>
+                  <div className="min-w-0">
+                    <p className="text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+                      {selectedTicket.category || "Other"}
+                    </p>
+                    <h2 className="mt-1 break-words text-xl font-semibold tracking-tight text-card-foreground sm:text-2xl">
+                      {selectedTicket.subject}
+                    </h2>
+                    <p className="mt-1 break-all text-sm text-muted-foreground">{selectedTicket.email}</p>
                   </div>
-                  <span className={`rounded-full px-3 py-1 text-xs font-bold uppercase ${statusClasses[selectedTicket.status] || "bg-slate-100 text-slate-600"}`}>
+                  <span className={`rounded-full px-3 py-1 text-xs font-semibold uppercase ${statusClasses[selectedTicket.status] || "bg-muted text-muted-foreground"}`}>
                     {selectedTicket.status || "pending"}
                   </span>
                 </div>
 
-                <div className="mt-6 rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-900">
-                  <p className="mb-2 text-xs font-bold uppercase tracking-wider text-slate-400">Customer message</p>
-                  <p className="whitespace-pre-wrap text-sm leading-6 text-slate-700 dark:text-slate-200">{selectedTicket.message}</p>
+                <div className="mt-6 rounded-2xl border border-border bg-muted/40 p-4 sm:p-5">
+                  <p className="mb-2 text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">Customer message</p>
+                  <p className="whitespace-pre-wrap break-words text-sm leading-6 text-card-foreground">
+                    {selectedTicket.message}
+                  </p>
                 </div>
 
                 <div className="mt-6">
-                  <label className="text-xs font-bold uppercase tracking-wider text-slate-400">Reply</label>
+                  <label htmlFor="support-reply" className="text-sm font-semibold text-card-foreground">Reply</label>
                   <textarea
+                    id="support-reply"
                     value={reply}
                     onChange={(event) => setReply(event.target.value)}
                     rows={7}
-                    className="mt-2 w-full resize-y rounded-2xl border border-slate-200 bg-transparent p-4 text-sm text-slate-900 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/15 dark:border-slate-700 dark:text-white"
-                    placeholder="Write a response to the customer…"
+                    className="mt-2 w-full resize-y rounded-2xl border border-border bg-transparent p-4 text-sm leading-6 text-card-foreground outline-none focus:ring-2 focus:ring-primary/20"
+                    placeholder="Write a response to the customer..."
                   />
                   <button
                     type="button"
                     onClick={sendReply}
                     disabled={sending || !reply.trim()}
-                    className="mt-3 inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-50"
+                    className="mt-3 inline-flex min-h-10 items-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     <IonIcon icon={sendOutline} />
-                    {sending ? "Sending…" : "Send reply"}
+                    {sending ? "Sending..." : "Send reply"}
                   </button>
                 </div>
               </div>
             )}
           </main>
-        </div>
-      </section>
+        </section>
+      </div>
     </div>
   );
 };
