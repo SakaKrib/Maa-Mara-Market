@@ -87,6 +87,10 @@ const Settings = () => {
   const changePassword = async (event) => {
     event.preventDefault();
     if (passwordBusy) return;
+    if (!passwordForm.current_password) {
+      setPasswordError("Enter your current password before you continue.");
+      return;
+    }
     if (passwordForm.new_password !== passwordForm.confirm_password) {
       setPasswordError("New passwords do not match.");
       return;
@@ -103,7 +107,10 @@ const Settings = () => {
       setMessage("Password changed successfully.");
       setError("");
     } catch (err) {
-      setPasswordError("You are not allowed to proceed at this time. Please verify your current password and try again.");
+      const detail = err.response?.data?.detail;
+      setPasswordError(detail === "The current password is incorrect."
+        ? "You are not allowed to proceed at this time. Please verify your current password and try again."
+        : detail || "Could not change the password.");
     } finally {
       setPasswordBusy(false);
     }
