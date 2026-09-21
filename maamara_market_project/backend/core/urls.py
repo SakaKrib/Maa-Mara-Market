@@ -102,6 +102,9 @@ urlpatterns = [
     # calendar url
     path("api/calendar-events/", UserCalendarEventsView.as_view(), name="user-calendar-events"),
 
+    # admin password change (requires current password)
+    path("api/admin/change-password/", AdminChangePasswordView.as_view(), name="admin-change-password"),
+
     # reset forgotten password
     path("api/password-reset/", RequestPasswordReset.as_view()),
     path("api/password-reset-confirm/<uidb64>/<token>/", ResetPasswordConfirm.as_view()),
