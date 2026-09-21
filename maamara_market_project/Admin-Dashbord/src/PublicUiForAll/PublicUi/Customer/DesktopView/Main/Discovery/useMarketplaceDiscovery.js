@@ -3,7 +3,7 @@ import api from "../../../../../../Services/Api";
 import { baseUrl } from "../../../../../../cmponents/Constant/Constant";
 
 const useMarketplaceDiscovery = () => {
-  const [feed, setFeed] = useState({ popular: [], most_wanted: [], best_selling: [], featured: [] });
+  const [feed, setFeed] = useState({ popular: [], trending: [], most_wanted: [], best_selling: [], featured: [], occasion_collections: [] });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const refreshTimer = useRef(null);
@@ -14,9 +14,11 @@ const useMarketplaceDiscovery = () => {
       const response = await api.get("/api/discovery/?limit=8");
       setFeed({
         popular: response.data?.popular || [],
+        trending: response.data?.trending || [],
         most_wanted: response.data?.most_wanted || [],
         best_selling: response.data?.best_selling || [],
         featured: response.data?.featured || [],
+        occasion_collections: response.data?.occasion_collections || [],
       });
     } catch (err) {
       setError(err);
