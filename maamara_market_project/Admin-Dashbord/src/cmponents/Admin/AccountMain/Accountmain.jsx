@@ -14,7 +14,7 @@ const AdminAccounts = () => {
     <div className="min-h-full bg-background p-2 text-foreground sm:p-4 lg:p-6">
       <div className="mx-auto max-w-7xl">
         <div className="mb-5 flex flex-col items-center gap-3 rounded-2xl border border-border bg-card p-5 text-center shadow-custom sm:p-6">
-          <div className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary">
+          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
             <IonIcon icon={walletOutline} className="text-xl" />
           </div>
           <div className="min-w-0">
