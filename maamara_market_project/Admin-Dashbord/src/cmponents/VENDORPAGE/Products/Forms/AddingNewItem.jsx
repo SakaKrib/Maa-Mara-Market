@@ -590,7 +590,7 @@ useEffect(() => {
           name="department"
           render={({ field }) => (
             <FormItem className='px-0 m-0'>
-              <FormLabel className='text-lg'>Department</FormLabel>
+              <FormLabel className='text-sm font-semibold text-card-foreground'>Department</FormLabel>
               <FormControl className='flex flex-col justify-end h-65'>
                 <select
                   style={{ backgroundColor: colors.primary[600], padding: '.5em .5em', borderRadius: '4px' }}
@@ -704,7 +704,7 @@ useEffect(() => {
           name="name"
           render={({ field }) => (
             <FormItem>
-              <FormLabel className="text-lg">Item Name</FormLabel>
+              <FormLabel className="text-sm font-semibold text-card-foreground">Item Name</FormLabel>
               <FormControl>
                 <Input
                   {...field}
@@ -791,11 +791,11 @@ useEffect(() => {
                   typeof field.value === "string"
                     ? field.value.startsWith("http")
                       ? field.value
-                      : `${baseUrl.replace(/\/$/, "")}/media/${field.value.replace(/^\/+/, "")}`
+                      : resolveApiAssetUrl(field.value)
                     : URL.createObjectURL(field.value)
                 }
                 alt="Item preview"
-                className="h-full w-full object-cover"
+                className="h-full w-full object-contain bg-card p-2"
               />
               {/* 📝 Show clean image path if it's a string */}
               {typeof field.value === "string" && (
