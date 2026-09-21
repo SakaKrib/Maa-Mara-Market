@@ -37,6 +37,8 @@ from .views import (
     admin_transactions,
     create_admin_transaction,
     admin_transaction_history,
+    update_admin_transaction,
+    delete_admin_transaction,
 )
 from .invoice_views import invoice_list
 
@@ -51,6 +53,8 @@ urlpatterns = [
     path("api/dashboard/summary/", DashboardSummaryView.as_view()),
     path("api/transactions/", create_admin_transaction, name="create-admin-transaction"),
     path("api/transactions/history/", admin_transaction_history, name="admin-transaction-history"),
+    path("api/transactions/<int:transaction_id>/", update_admin_transaction, name="update-admin-transaction"),
+    path("api/transactions/<int:transaction_id>/delete/", delete_admin_transaction, name="delete-admin-transaction"),
 
     #shipping rates
     path('api/shipping-rates', get_shipping_rates, name='shipping-rates'),
