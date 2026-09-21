@@ -359,6 +359,7 @@ class ItemSerializers(serializers.ModelSerializer):
             "name", "description", "image", "video", "additional_images", "price", "discount_price", "in_stock",
             "available", "returnable", "department", "category", "subcategory",
             "item_attribute",
+            "occasions",
             # 🔹 Nested relations
             "variants", "size_only_icon", "kids_sizes", "shoe_input", "shipping_dimension_data", "shipping_dimension",
             # 🔹 Brand
@@ -430,6 +431,7 @@ class ItemSerializers(serializers.ModelSerializer):
         in_offer = validated_data.pop("in_offer", False)
         shipping_data = validated_data.pop("shipping_dimension_data", None)
         discount_price = validated_data.pop("discount_price", None)
+        occasions_data = validated_data.pop("occasions", None)
         
         # ✅ Extract brand if passed
 
@@ -444,6 +446,9 @@ class ItemSerializers(serializers.ModelSerializer):
 
 
         item = Item.objects.create( **validated_data)
+
+        if occasions_data is not None:
+            item.occasions.set(occasions_data)
 
         if discount_price is not None:
             item.discount_price = discount_price
@@ -513,6 +518,7 @@ class ItemSerializers(serializers.ModelSerializer):
         in_offer = validated_data.pop("in_offer", instance.in_offer)
         shipping_data = validated_data.pop("shipping_dimension_data", None)
         discount_price = validated_data.pop("discount_price", instance.discount_price)
+        occasions_data = validated_data.pop("occasions", None)
 
 
         # Assign section based on is_organic flag
@@ -531,7 +537,8 @@ class ItemSerializers(serializers.ModelSerializer):
         instance.in_offer = discount_price is not None and discount_price < instance.price
         instance.save()
 
-
+        if occasions_data is not None:
+            instance.occasions.set(occasions_data)
 
 
         # ✅ Shipping dimension
