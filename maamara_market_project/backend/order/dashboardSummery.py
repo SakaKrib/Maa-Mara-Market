@@ -11,7 +11,7 @@ from rest_framework.views import APIView
 
 from vendorDashboard.models import VendorPayout
 
-from .models import Payment, Transaction
+from .models import Payment, Refund, Transaction
 
 
 class DashboardSummaryView(APIView):
@@ -101,6 +101,10 @@ class DashboardSummaryView(APIView):
             )
             category_totals[label] = float(total)
 
+        # Completed customer refunds are real cash outflows.
+        completed_refunds = Refund.objects.filter(status="completed", completed_at__gte=period_start, completed_at__lte=period_end)
+        refund_total = completed_refunds.aggregate(total=Sum("amount"))["total"] or Decimal("0.00")
+
         # Actual vendor settlements are authoritative from VendorPayout. They
         # are separate from manual ledger entries and are included in total
         # expenses/cashbook only when the payout is actually marked paid.
@@ -121,7 +125,7 @@ class DashboardSummaryView(APIView):
             or Decimal("0.00")
         )
 
-        expense_total = manual_expenses + vendor_payments_total
+        expense_total = manual_expenses + vendor_payments_total + refund_total
         cashbook_total = income_total - expense_total
 
         # Twelve real calendar months ending in the selected/current month.
@@ -158,6 +162,14 @@ class DashboardSummaryView(APIView):
             .order_by("month")
         )
 
+        monthly_refunds = (
+            Refund.objects.filter(status="completed", completed_at__gte=timezone.make_aware(datetime.combine(chart_start, datetime.min.time())), completed_at__lte=period_end)
+            .annotate(month=TruncMonth("completed_at"))
+            .values("month")
+            .annotate(amount=Sum("amount"))
+            .order_by("month")
+        )
+
         monthly_vendor_payouts = (
             VendorPayout.objects.filter(
                 paid=True,
@@ -185,18 +197,21 @@ class DashboardSummaryView(APIView):
             for item in monthly_vendor_payouts
         }
 
+        refund_dict = {item["month"].strftime("%Y-%m"): float(item["amount"] or 0) for item in monthly_refunds}
+
         monthly_summary = []
         for offset in range(12):
             month = chart_start + relativedelta(months=offset)
             key = month.strftime("%Y-%m")
             income = income_dict.get(key, 0)
-            expenses = expense_dict.get(key, 0) + payout_dict.get(key, 0)
+            expenses = expense_dict.get(key, 0) + payout_dict.get(key, 0) + refund_dict.get(key, 0)
             monthly_summary.append({
                 "month": key,
                 "income": income,
                 "expenses": expenses,
                 "cashbook": income - expenses,
                 "vendor_payments": payout_dict.get(key, 0),
+                "refunds": refund_dict.get(key, 0),
             })
 
         # Payment Accounts represent confirmed payment activity for the
