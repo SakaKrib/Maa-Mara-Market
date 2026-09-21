@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useEffect, useMemo, useState } from "react";
+import { useLocation } from "react-router-dom";
 
 const STORAGE_KEY = "maamara-admin-preferences";
 
@@ -22,13 +23,15 @@ const readStoredPreferences = () => {
 
 export const AdminPreferencesProvider = ({ children }) => {
   const [preferences, setPreferences] = useState(readStoredPreferences);
+  const location = useLocation();
 
   useEffect(() => {
     if (typeof window !== "undefined") {
       window.localStorage.setItem(STORAGE_KEY, JSON.stringify(preferences));
-      document.documentElement.classList.toggle("maamara-compact-workspace", preferences.compactMode);
+      const isAdminWorkspace = location.pathname.startsWith("/admin-dashboard");
+      document.documentElement.classList.toggle("maamara-compact-workspace", isAdminWorkspace && preferences.compactMode);
     }
-  }, [preferences]);
+  }, [preferences, location.pathname]);
 
   const updatePreference = async (key, value) => {
     if (key === "browserAlerts" && value && typeof window !== "undefined" && "Notification" in window && Notification.permission === "default") {
@@ -44,8 +47,13 @@ export const AdminPreferencesProvider = ({ children }) => {
 
   const resetPreferences = () => setPreferences(preferenceDefaults);
 
+  const notifyBrowser = (title, options = {}) => {
+    if (!preferences.browserAlerts || typeof window === "undefined" || !("Notification" in window) || Notification.permission !== "granted") return;
+    try { new Notification(title, options); } catch { /* Browser notifications may be unavailable. */ }
+  };
+
   const value = useMemo(
-    () => ({ preferences, updatePreference, resetPreferences }),
+    () => ({ preferences, updatePreference, resetPreferences, notifyBrowser }),
     [preferences]
   );
 
