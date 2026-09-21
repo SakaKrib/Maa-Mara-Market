@@ -103,7 +103,7 @@ const Settings = () => {
       setMessage("Password changed successfully.");
       setError("");
     } catch (err) {
-      setPasswordError(err.response?.data?.detail || "Could not change the password.");
+      setPasswordError("You are not allowed to proceed at this time. Please verify your current password and try again.");
     } finally {
       setPasswordBusy(false);
     }
@@ -217,7 +217,7 @@ const Settings = () => {
                     <span className="flex-1"><strong className="block text-sm text-card-foreground">Reset password</strong><small className="text-xs text-muted-foreground">Verify your current password before choosing a new one.</small></span>
                     <ChevronRight size={16} className="text-muted-foreground" />
                   </button>
-                  <button type="button" onClick={logout} className="flex w-full items-center gap-3 rounded-[20px] border border-red-500/20 p-3 text-left text-red-600 hover:bg-red-500/10 dark:text-red-300" onClick={() => setShowSignOutConfirm(true)}>
+                  <button type="button" onClick={() => setShowSignOutConfirm(true)} className="flex w-full items-center gap-3 rounded-[20px] border border-red-500/20 p-3 text-left text-red-600 hover:bg-red-500/10 dark:text-red-300">
                     <LogOut size={17} />
                     <span className="flex-1"><strong className="block text-sm">Sign out</strong><small className="text-xs text-red-600/70 dark:text-red-300/70">End this administrator session.</small></span>
                     <ChevronRight size={16} />
@@ -233,6 +233,46 @@ const Settings = () => {
           </div>
         )}
       </div>
+      {showPasswordModal && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/50 p-4 backdrop-blur-sm" role="dialog" aria-modal="true" aria-labelledby="reset-password-title">
+          <form onSubmit={changePassword} className="w-full max-w-md rounded-2xl border border-border bg-card p-5 shadow-2xl sm:p-6">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <p className="text-xs font-bold uppercase tracking-[0.16em] text-primary">Account security</p>
+                <h2 id="reset-password-title" className="mt-1 text-lg font-bold text-card-foreground">Reset password</h2>
+                <p className="mt-1 text-sm text-muted-foreground">Enter your current password first, then choose a new password.</p>
+              </div>
+              <button type="button" onClick={() => setShowPasswordModal(false)} className="rounded-xl p-2 text-muted-foreground hover:bg-muted" aria-label="Close reset password"><X size={18} /></button>
+            </div>
+            <div className="mt-5 space-y-3">
+              <label className="block">
+                <span className="mb-1.5 block text-xs font-semibold text-muted-foreground">Current password</span>
+                <div className="relative">
+                  <input required minLength={i===0?1:8} type={showCurrentPassword ? "text" : "password"} value={passwordForm.current_password} onChange={(event) => setPasswordForm((current) => ({ ...current, current_password: event.target.value }))} className="w-full rounded-[20px] border border-border bg-background px-4 py-3 pr-12 text-sm text-foreground outline-none transition focus:border-primary focus:ring-4 focus:ring-primary/10" />
+                  <button type="button" onClick={() => setShowCurrentPassword((value) => !value)} className="absolute right-2 top-1/2 -translate-y-1/2 rounded-xl p-2 text-muted-foreground hover:bg-muted" aria-label="Toggle password visibility">{showCurrentPassword} ? <EyeOff size={17} /> : <Eye size={17} /></button>
+                </div>
+              </label><label className="block">
+                <span className="mb-1.5 block text-xs font-semibold text-muted-foreground">New password</span>
+                <div className="relative">
+                  <input required minLength={i===0?1:8} type={showNewPassword ? "text" : "password"} value={passwordForm.new_password} onChange={(event) => setPasswordForm((current) => ({ ...current, new_password: event.target.value }))} className="w-full rounded-[20px] border border-border bg-background px-4 py-3 pr-12 text-sm text-foreground outline-none transition focus:border-primary focus:ring-4 focus:ring-primary/10" />
+                  <button type="button" onClick={() => setShowNewPassword((value) => !value)} className="absolute right-2 top-1/2 -translate-y-1/2 rounded-xl p-2 text-muted-foreground hover:bg-muted" aria-label="Toggle password visibility">{showNewPassword} ? <EyeOff size={17} /> : <Eye size={17} /></button>
+                </div>
+              </label><label className="block">
+                <span className="mb-1.5 block text-xs font-semibold text-muted-foreground">Confirm new password</span>
+                <div className="relative">
+                  <input required minLength={i===0?1:8} type={showNewPassword ? "text" : "password"} value={passwordForm.confirm_password} onChange={(event) => setPasswordForm((current) => ({ ...current, confirm_password: event.target.value }))} className="w-full rounded-[20px] border border-border bg-background px-4 py-3 pr-12 text-sm text-foreground outline-none transition focus:border-primary focus:ring-4 focus:ring-primary/10" />
+                  <button type="button" onClick={() => setShowConfirmPassword((value) => !value)} className="absolute right-2 top-1/2 -translate-y-1/2 rounded-xl p-2 text-muted-foreground hover:bg-muted" aria-label="Toggle password visibility">{showNewPassword} ? <EyeOff size={17} /> : <Eye size={17} /></button>
+                </div>
+              </label>
+            </div>
+            {passwordError && <p className="mt-3 rounded-xl border border-red-500/20 bg-red-500/10 px-3 py-2 text-sm text-red-700 dark:text-red-300">{passwordError}</p>}
+            <div className="mt-5 grid gap-2 sm:grid-cols-2">
+              <button type="button" onClick={() => setShowPasswordModal(false)} className="w-full rounded-[20px] border border-border bg-card px-4 py-3 text-sm font-semibold text-foreground transition hover:bg-muted">Cancel</button>
+              <button type="submit" disabled={passwordBusy} className="w-full rounded-[20px] bg-primary px-4 py-3 text-sm font-semibold text-primary-foreground transition hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-60">{passwordBusy ? "Verifying..." : "Reset password"}</button>
+            </div>
+          </form>
+        </div>
+      )}
       {showSignOutConfirm && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/50 p-4 backdrop-blur-sm" role="dialog" aria-modal="true" aria-labelledby="settings-signout-title">
           <div className="w-full max-w-md rounded-2xl border border-border bg-card p-6 shadow-2xl">
