@@ -111,16 +111,13 @@ const Calendar = () => {
   };
 
   return (
-    <Box
-      m="20px 0"
-      padding="1em 1.5em"
-      sx={{ width: { xs: "calc(100% - 80px)", sm: "calc(100% - 80px)", md: "calc(100% - 80px)" } }}
-    >
+    <Box className="mm-calendar-page" m="20px 0" padding="1em 1.5em">
       <Header title="Calendar" subtitle="Full Calendar For Interactive Events & Functions" />
 
       <Box display="flex" flexDirection={isMobile ? "column" : "row"} gap={2}>
         {/* Sidebar */}
         <Box
+          className="mm-calendar-sidebar"
           flex={isMobile ? "1 1 auto" : "1 1 20%"}
           backgroundColor={colors.primary[600]}
           padding="15px"
@@ -141,7 +138,14 @@ const Calendar = () => {
             Events
           </Typography>
           <List sx={{ maxHeight: "40vh", overflowY: "auto" }}>
-            {currentEvents.map((event) => (
+            {currentEvents.length === 0 ? (
+              <ListItem className="mm-calendar-empty-event">
+                <ListItemText
+                  primary="No events yet"
+                  secondary="Select a date on the calendar to add one."
+                />
+              </ListItem>
+            ) : currentEvents.map((event) => (
               <ListItem
                 key={event.id}
                 sx={{
