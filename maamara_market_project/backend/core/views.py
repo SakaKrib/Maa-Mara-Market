@@ -29,6 +29,10 @@ from datetime import datetime
 from django.core.paginator import Paginator
 import random
 import string
+import logging
+import uuid
+
+logger = logging.getLogger(__name__)
 
 
 
@@ -175,6 +179,10 @@ def support_messages(request):
 
     user = request.user if request.user.is_authenticated else None
     visitor_id = request.COOKIES.get("visitorId") if not user else None
+    new_visitor_id = None
+    if not user and not visitor_id:
+        new_visitor_id = uuid.uuid4().hex
+        visitor_id = new_visitor_id
 
     ticket = SupportMessage.objects.create(
         user=user,
@@ -201,13 +209,23 @@ def support_messages(request):
     except Exception:
         pass
 
-    return Response(
+    response = Response(
         {
             "detail": "Your support request has been received.",
             "ticket": _support_payload(ticket),
         },
         status=status.HTTP_201_CREATED,
     )
+    if new_visitor_id:
+        response.set_cookie(
+            "visitorId",
+            new_visitor_id,
+            max_age=60 * 60 * 24 * 365,
+            httponly=True,
+            samesite="Lax",
+            secure=request.is_secure(),
+        )
+    return response
 
 
 @api_view(["GET"])
@@ -263,20 +281,30 @@ def support_reply(request, pk):
     ticket.answered_at = timezone.now()
     ticket.save(update_fields=["support_reply", "status", "answered_at"])
 
+    email_sent = False
+    email_error = None
     try:
         from django.conf import settings
         from_email = getattr(settings, "DEFAULT_FROM_EMAIL", None)
+        if not from_email:
+            raise RuntimeError("DEFAULT_FROM_EMAIL is not configured.")
         send_mail(
             f"Re: {ticket.subject}",
             reply,
             from_email,
             [ticket.email],
-            fail_silently=True,
+            fail_silently=False,
         )
-    except Exception:
-        pass
+        email_sent = True
+    except Exception as exc:
+        email_error = str(exc)
+        logger.exception("Support reply email failed for ticket %s", ticket.id)
 
-    return Response(_support_payload(ticket))
+    payload = _support_payload(ticket)
+    payload["email_sent"] = email_sent
+    if email_error:
+        payload["email_error"] = email_error
+    return Response(payload)
 
 
 # -------------------------------
