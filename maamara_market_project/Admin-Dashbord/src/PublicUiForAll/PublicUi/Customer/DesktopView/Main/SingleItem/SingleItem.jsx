@@ -9,6 +9,7 @@ import FormattedCurrency from "../Currency/FormattedCurrency";
 import { useWishlistContext } from "../../../../../../cmponents/Hooks/WishListHook/Wishlist";
 import MarketplaceItemContext from "./MarketplaceItemContext";
 import TrendingProduct from "../Trending/TrendingProduct";
+import VendorPerformanceBadges from "./VendorPerformanceBadges";
 
 const truncateWords = (text, limit = 15) => {
   const words = String(text || "").trim().split(/\s+/).filter(Boolean);
@@ -43,8 +44,9 @@ const SingleItem = () => {
 
       <section className="w-full lg:w-1/2 flex flex-col gap-6">
         <div className="rounded-2xl border border-border bg-card p-4 shadow-custom sm:p-5">
-          <h1 className="text-2xl font-bold text-card-foreground sm:text-3xl">{item.name}</h1>
-          <p className="mt-2 text-sm leading-6 text-muted-foreground">
+          <VendorPerformanceBadges itemId={item.id} />
+          <h1 className="mt-3 text-2xl font-medium text-card-foreground sm:text-3xl">{item.name}</h1>
+          <p className="mt-2 text-sm font-normal leading-6 text-muted-foreground">
             {truncateWords(item.description, 15) || "Product details are provided by the seller."}
           </p>
 
