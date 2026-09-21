@@ -3292,10 +3292,8 @@ RESPONSIVE MENU -OFF CANVAS
   --mm-shadow-hover:0 6px 18px rgba(0,0,0,.10);
 }
 body{font-family:'regular','Poppins',Arial,sans-serif;background:var(--mm-page-bg);color:var(--mm-text)}
-html{background:var(--mm-page-bg)}
 h1,h2,h3,h4{font-family:'regular','Poppins',Arial,sans-serif}
-#page.page-home{min-height:100vh;background:var(--mm-page-bg)}
-.mm-page{width:100%;min-height:100%;background:var(--mm-page-bg);color:var(--mm-text)}
+.mm-page{background:var(--mm-page-bg)}
 .mm-container{width:min(100% - 32px,var(--mm-content-max));margin-inline:auto}
 .mm-section{margin-block:30px}
 .mm-section-heading{display:flex;align-items:flex-end;justify-content:space-between;gap:18px;margin-bottom:16px}
