@@ -9,54 +9,70 @@ const Banners = () => {
   }
 
   return (
-    <section className="banners mm-section">
+    <section className="mm-section">
       <div className="mm-container">
-        <div className="mm-section-heading">
-          <div>
-            <h2 className="title">Banners</h2>
+        <div className="rounded-2xl border border-border bg-card p-4 shadow-custom sm:p-5">
+          <div className="mb-4">
+            <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-muted-foreground">
+              MARKETPLACE HIGHLIGHTS
+            </p>
+            <h2 className="mt-1 text-lg font-bold text-card-foreground sm:text-xl">
+              Featured banners
+            </h2>
+            <p className="mt-1 text-xs leading-5 text-muted-foreground">
+              Discover current offers and marketplace highlights.
+            </p>
           </div>
-        </div>
-        <div className="banner flexwrap">
-          {banners.slice(0, 4).map((banner) => {
-            const bannerImage = banner.image?.startsWith("http")
-              ? banner.image
-              : banner.image
-                ? `${baseUrl || ""}${banner.image}`
-                : null;
-            const productName = banner.item?.name || banner.product_name;
 
-            return (
-              <div className="row" key={banner.id}>
-                <div
-                  className="item get-gray"
-                  style={{ backgroundColor: !bannerImage ? banner.background_color || "#f0f0f0" : "transparent" }}
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            {banners.slice(0, 3).map((banner) => {
+              const bannerImage = banner.image?.startsWith("http")
+                ? banner.image
+                : banner.image
+                  ? `${baseUrl || ""}${banner.image}`
+                  : null;
+
+              return (
+                <article
+                  key={banner.id}
+                  className="overflow-hidden rounded-2xl border border-border bg-background"
                 >
-                  {bannerImage && (
-                    <div className="image object-cover">
-                      <img src={bannerImage} alt={productName || banner.title || "Banner"} loading="lazy" />
+                  {bannerImage ? (
+                    <div className="overflow-hidden rounded-xl m-2">
+                      <img
+                        src={bannerImage}
+                        alt={banner.title || "Marketplace banner"}
+                        loading="lazy"
+                        className="aspect-[16/9] w-full rounded-xl object-cover"
+                      />
                     </div>
+                  ) : (
+                    <div
+                      className="m-2 aspect-[16/9] rounded-xl"
+                      style={{ backgroundColor: banner.background_color || "#f5f4f1" }}
+                    />
                   )}
-                  <div className="text-content fexcol">
-                    {banner.title && (
-                      <h3 className="text-gray-600 p-1 rounded-[5px]" style={{ backgroundColor: "rgba(255, 255, 255, 0.6)" }}>
-                        {banner.title}
-                      </h3>
-                    )}
-                    {(banner.subtitle || productName) && (
-                      <h4>
-                        {banner.subtitle && <span className="p-1" style={{ backgroundColor: "rgba(255, 255, 255, 0.6)" }}>{banner.subtitle}</span>}
-                        {productName && <><br />{productName}</>}
-                      </h4>
-                    )}
+
+                  <div className="px-4 pb-4 pt-2">
+                    <h3 className="truncate text-sm font-semibold text-card-foreground">
+                      {banner.title || "Marketplace highlight"}
+                    </h3>
+                    <p className="mt-1 line-clamp-2 text-[11px] leading-5 text-muted-foreground">
+                      {banner.subtitle || banner.item?.name || banner.product_name || "Discover this marketplace highlight."}
+                    </p>
                     {banner.call_to_action_url && (
-                      <a href={banner.call_to_action_url} className="secondary-button mt-2">Shop Now</a>
+                      <a
+                        href={banner.call_to_action_url}
+                        className="mt-3 inline-flex rounded-full border border-border bg-background px-3 py-1.5 text-[11px] font-semibold text-card-foreground transition-colors hover:bg-muted"
+                      >
+                        Shop now
+                      </a>
                     )}
                   </div>
-                  {banner.call_to_action_url && <a href={banner.call_to_action_url} className="over-link" aria-label="Shop now" />}
-                </div>
-              </div>
-            );
-          })}
+                </article>
+              );
+            })}
+          </div>
         </div>
       </div>
     </section>
