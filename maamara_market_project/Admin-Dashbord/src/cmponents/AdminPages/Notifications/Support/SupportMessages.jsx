@@ -14,7 +14,9 @@ const SupportAdminPanel = ({ open, onClose }) => {
   const [reply, setReply] = useState("");
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
-  const [error, setError] = useState("");\n\n  if (!open) return null;
+  const [error, setError] = useState("");
+
+  if (!open) return null;
 
   const fetchTickets = async () => {
     try {
@@ -64,7 +66,10 @@ const SupportAdminPanel = ({ open, onClose }) => {
 
   return (
     <div className="min-h-[calc(100vh-72px)] w-full bg-background p-2 text-foreground sm:p-4 lg:p-6">
-      <div className="relative mx-auto max-w-7xl rounded-2xl border border-border bg-background p-2 shadow-2xl sm:p-4">\n        <button type="button" onClick={onClose} aria-label="Close support" className="absolute right-3 top-3 z-10 rounded-xl p-2 text-muted-foreground hover:bg-muted">\n          <IonIcon icon={closeOutline} />\n        </button>
+      <div className="relative mx-auto max-w-7xl rounded-2xl border border-border bg-background p-2 shadow-2xl sm:p-4">
+        <button type="button" onClick={onClose} aria-label="Close support" className="absolute right-3 top-3 z-10 rounded-xl p-2 text-muted-foreground hover:bg-muted">
+          <IonIcon icon={closeOutline} />
+        </button>
         <header className="mb-5 rounded-2xl border border-border bg-card p-5 pr-14 shadow-sm sm:p-6 sm:pr-14">
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div>
