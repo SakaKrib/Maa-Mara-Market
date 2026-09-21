@@ -83,6 +83,7 @@ const MarketplaceItemContext = ({ item, availableStock }) => {
   if (!data) return null;
 
   const searchLinks = data.related_searches || [];
+  const popularRelatedSearches = data.popular_related_searches || [];
   const itemReviews = data.item_reviews || [];
   const shopReviews = data.shop_reviews || [];
   const shop = data.item?.shop;
@@ -94,6 +95,7 @@ const MarketplaceItemContext = ({ item, availableStock }) => {
     : null;
   const cartQuantity = cartQuantityFromContext === null ? backendCartQuantity : cartQuantityFromContext;
   const wishlistCount = Number(data.item?.wishlist_count || 0);
+  const inCartsCount = Number(data.item?.in_carts_count || 0);
   const stockLeft = Math.max(0, Number(availableStock || 0));
 
   return (
@@ -105,7 +107,7 @@ const MarketplaceItemContext = ({ item, availableStock }) => {
         </div>
         <div className="grid grid-cols-2 gap-0 divide-x divide-y divide-border sm:grid-cols-4 sm:divide-y-0">
           {[
-            ["In your cart", cartQuantity],
+            ["In other carts", inCartsCount > 0 ? `In ${inCartsCount} carts` : "In no other carts"],
             ["Quantity left", stockLeft],
             ["Wishlist saves", wishlistCount],
             ["Item rating", Number(item.average_rating || 0).toFixed(1)],
@@ -125,19 +127,30 @@ const MarketplaceItemContext = ({ item, availableStock }) => {
               <h2 className="text-base font-semibold text-card-foreground sm:text-lg">Related searches</h2>
               <p className="text-xs text-muted-foreground">Continue exploring products related to this item.</p>
             </div>
-            <Link to="/list" className="text-xs font-medium text-muted-foreground underline underline-offset-2">Explore more</Link>
+            <span className="text-xs text-muted-foreground">Popular with shoppers</span>
           </div>
           <div className="flex gap-2 overflow-x-auto pb-2 snap-x snap-mandatory [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-            {searchLinks.map((term) => (
-              <Link
-                key={term}
-                to={`/list?name=${encodeURIComponent(term)}&page=1`}
-                className="flex-none rounded-xl border border-border bg-background px-4 py-2 text-xs text-foreground whitespace-nowrap transition-colors hover:bg-muted snap-start"
-              >
-                {term}
-              </Link>
-            ))}
+            {(popularRelatedSearches.length ? popularRelatedSearches : searchLinks).map((entry) => {
+              const term = typeof entry === "string" ? entry : entry.query;
+              const count = typeof entry === "string" ? null : Number(entry.count || 0);
+              return (
+                <Link
+                  key={term}
+                  to={`/list?name=${encodeURIComponent(term)}&page=1`}
+                  className="flex-none rounded-xl border border-border bg-background px-4 py-2 text-xs text-foreground whitespace-nowrap transition-colors hover:bg-muted snap-start"
+                >
+                  <span className="font-medium">{term}</span>
+                  {count > 0 && <span className="ml-2 text-[10px] text-muted-foreground">{count} searches</span>}
+                </Link>
+              );
+            })}
           </div>
+          <Link
+            to="/list"
+            className="mt-3 flex w-full items-center justify-center rounded-full border border-border bg-background px-4 py-2.5 text-xs font-semibold text-card-foreground transition-colors hover:bg-muted"
+          >
+            Explore related searches
+          </Link>
         </section>
       )}
 
@@ -152,7 +165,14 @@ const MarketplaceItemContext = ({ item, availableStock }) => {
                 <span>{shop.rating || 0} · {shop.review_count || 0} reviews</span>
               </div>
             </div>
-            <Link to={`/list?vendor_id=${shop.id}&page=1`} className="rounded-xl border border-border bg-background px-3 py-2 text-xs font-medium text-foreground transition-colors hover:bg-muted">More from this shop</Link>
+            <div className="w-full sm:w-auto">
+              <Link
+                to={`/list?vendor_id=${shop.id}&page=1`}
+                className="flex w-full items-center justify-center rounded-full border border-border bg-background px-5 py-2.5 text-xs font-semibold text-card-foreground transition-colors hover:bg-muted sm:w-auto"
+              >
+                More from this shop
+              </Link>
+            </div>
           </div>
           {shopReviews.length > 0 && (
             <div className="mt-5 flex gap-4 overflow-x-auto pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
@@ -194,7 +214,7 @@ const MarketplaceItemContext = ({ item, availableStock }) => {
       )}
 
       <ProductRail title="More from the shop" items={data.more_from_shop} />
-      <ProductRail title="Explore more" items={data.explore_more} />
+      <ProductRail title="Explore more related products" items={data.explore_more} />
     </div>
   );
 };
