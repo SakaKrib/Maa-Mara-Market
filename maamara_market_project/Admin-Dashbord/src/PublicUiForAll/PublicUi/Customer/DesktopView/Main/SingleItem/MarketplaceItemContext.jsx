@@ -2,11 +2,12 @@ import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import api from "../../../../../../Services/Api";
 import FormattedCurrency from "../Currency/FormattedCurrency";
+import VendorRatingForm from "../VendorRatingsAndShop";
 
 const Stars = ({ value = 0 }) => {
   const rounded = Math.min(5, Math.max(0, Math.round(Number(value) || 0)));
   return (
-    <span aria-label={`${value} out of 5 stars`} className="text-xs tracking-wide text-amber-700">
+    <span aria-label={String(value) + " out of 5 stars"} className="text-xs tracking-wide text-amber-700">
       {"★".repeat(rounded)}
       <span className="text-gray-300">{"★".repeat(5 - rounded)}</span>
     </span>
@@ -26,11 +27,7 @@ const ProductRail = ({ title, items }) => {
       </div>
       <div className="flex gap-4 overflow-x-auto pb-3 snap-x snap-mandatory [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         {items.map((product) => (
-          <Link
-            key={product.id}
-            to={`/item-client/${product.id}`}
-            className="group flex-none w-[170px] sm:w-[205px] snap-start"
-          >
+          <Link key={product.id} to={"/item-client/" + product.id} className="group flex-none w-[170px] sm:w-[205px] snap-start">
             <div className="aspect-square overflow-hidden rounded-xl bg-gray-100">
               {product.image ? (
                 <img src={product.image} alt={product.name} className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.02]" loading="lazy" />
@@ -58,11 +55,23 @@ const MarketplaceItemContext = ({ item, availableStock }) => {
   const [loading, setLoading] = useState(true);
   const [descriptionOpen, setDescriptionOpen] = useState(false);
 
+  const loadMarketplaceContext = async () => {
+    try {
+      setLoading(true);
+      const response = await api.get("/api/items/" + item.id + "/marketplace-context/", { withCredentials: true });
+      setData(response.data);
+    } catch (error) {
+      console.error("Marketplace item context load failed:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
     let active = true;
     const load = async () => {
       try {
-        const response = await api.get(`/api/items/${item.id}/marketplace-context/`, { withCredentials: true });
+        const response = await api.get("/api/items/" + item.id + "/marketplace-context/", { withCredentials: true });
         if (active) setData(response.data);
       } catch (error) {
         console.error("Marketplace item context load failed:", error);
@@ -102,7 +111,7 @@ const MarketplaceItemContext = ({ item, availableStock }) => {
         </div>
         <div className="grid grid-cols-2 gap-0 divide-x divide-y divide-border sm:grid-cols-4 sm:divide-y-0">
           {[
-            ["In other carts", inCartsCount > 0 ? `In ${inCartsCount} carts` : "In no other carts"],
+            ["In other carts", inCartsCount > 0 ? "In " + inCartsCount + " carts" : "In no other carts"],
             ["Quantity left", stockLeft],
             ["Wishlist saves", wishlistCount],
             ["Item rating", Number(item.average_rating || 0).toFixed(1)],
@@ -117,31 +126,18 @@ const MarketplaceItemContext = ({ item, availableStock }) => {
 
       {!!item.description && (
         <section className="mt-6 rounded-2xl border border-border bg-card p-4 shadow-custom sm:p-5">
-          <button
-            type="button"
-            onClick={() => setDescriptionOpen((open) => !open)}
-            className="flex w-full items-center justify-between gap-4 text-left"
-            aria-expanded={descriptionOpen}
-          >
+          <button type="button" onClick={() => setDescriptionOpen((open) => !open)} className="flex w-full items-center justify-between gap-4 text-left" aria-expanded={descriptionOpen}>
             <span>
               <span className="block text-base font-bold text-card-foreground sm:text-lg">Item description</span>
-              <span className="mt-1 block text-xs text-muted-foreground">
-                {descriptionOpen ? "Hide product details" : "View product details"}
-              </span>
+              <span className="mt-1 block text-xs text-muted-foreground">{descriptionOpen ? "Hide product details" : "View product details"}</span>
             </span>
-            <span
-              aria-hidden="true"
-              className="flex h-9 w-9 flex-none items-center justify-center rounded-full border border-border bg-background text-sm font-semibold text-card-foreground"
-            >
+            <span aria-hidden="true" className="flex h-9 w-9 flex-none items-center justify-center rounded-full border border-border bg-background text-sm font-semibold text-card-foreground">
               {descriptionOpen ? "−" : "+"}
             </span>
           </button>
-
           {descriptionOpen && (
             <div className="mt-4 border-t border-border pt-4">
-              <div className="rounded-2xl border border-border bg-background p-4 text-sm leading-6 text-card-foreground">
-                {item.description}
-              </div>
+              <div className="rounded-2xl border border-border bg-background p-4 text-sm leading-6 text-card-foreground">{item.description}</div>
             </div>
           )}
         </section>
@@ -161,21 +157,14 @@ const MarketplaceItemContext = ({ item, availableStock }) => {
               const term = typeof entry === "string" ? entry : entry.query;
               const count = typeof entry === "string" ? null : Number(entry.count || 0);
               return (
-                <Link
-                  key={term}
-                  to={`/list?name=${encodeURIComponent(term)}&page=1`}
-                  className="flex-none rounded-xl border border-border bg-background px-4 py-2 text-xs text-foreground whitespace-nowrap transition-colors hover:bg-muted snap-start"
-                >
+                <Link key={term} to={"/list?name=" + encodeURIComponent(term) + "&page=1"} className="flex-none rounded-xl border border-border bg-background px-4 py-2 text-xs text-foreground whitespace-nowrap transition-colors hover:bg-muted snap-start">
                   <span className="font-medium">{term}</span>
                   {count > 0 && <span className="ml-2 text-[10px] text-muted-foreground">{count} searches</span>}
                 </Link>
               );
             })}
           </div>
-          <Link
-            to="/list"
-            className="mt-3 flex w-full items-center justify-center rounded-full border border-border bg-background px-4 py-2.5 text-xs font-semibold text-card-foreground transition-colors hover:bg-muted"
-          >
+          <Link to="/list" className="mt-3 flex w-full items-center justify-center rounded-full border border-border bg-background px-4 py-2.5 text-xs font-semibold text-card-foreground transition-colors hover:bg-muted">
             Explore related searches
           </Link>
         </section>
@@ -187,19 +176,15 @@ const MarketplaceItemContext = ({ item, availableStock }) => {
             <div>
               <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Shop</p>
               <h2 className="mt-1 text-base font-bold text-card-foreground sm:text-lg">{shop.name || "Mara Mara Market"}</h2>
-              <div className="mt-1 text-sm text-muted-foreground">
-                {shop.rating || 0} · {shop.review_count || 0} reviews
-              </div>
+              <div className="mt-1 text-sm text-muted-foreground">{shop.rating || 0} · {shop.review_count || 0} reviews</div>
             </div>
             <div className="w-full sm:w-auto">
-              <Link
-                to={`/list?vendor_id=${shop.id}&page=1`}
-                className="flex w-full items-center justify-center rounded-full border border-border bg-background px-5 py-2.5 text-xs font-semibold text-card-foreground transition-colors hover:bg-muted sm:w-auto"
-              >
+              <Link to={"/list?vendor_id=" + shop.id + "&page=1"} className="flex w-full items-center justify-center rounded-full border border-border bg-background px-5 py-2.5 text-xs font-semibold text-card-foreground transition-colors hover:bg-muted sm:w-auto">
                 More from this shop
               </Link>
             </div>
           </div>
+
           <div className="mt-5 border-t border-border pt-5">
             <div className="mb-4">
               <h3 className="text-sm font-bold text-card-foreground">Shop reviews</h3>
@@ -237,10 +222,15 @@ const MarketplaceItemContext = ({ item, availableStock }) => {
               </div>
             )}
 
-            {!shopReviews.length && (
-              <p className="mt-4 text-xs text-muted-foreground">No written shop reviews yet.</p>
-            )}
+            {!shopReviews.length && <p className="mt-4 text-xs text-muted-foreground">No written shop reviews yet.</p>}
+
+            <VendorRatingForm
+              vendorId={shop.id}
+              hasReviews={shopReviews.length > 0}
+              onRated={loadMarketplaceContext}
+            />
           </div>
+
           <ProductRail title="More from this shop" items={data.more_from_shop} nested />
         </section>
       )}
