@@ -802,7 +802,7 @@ useEffect(() => {
                           const checked = vendorType === "organic" ? true : !!field.value;
 
                           return (
-                            <label className="flex cursor-pointer items-center gap-2 text-sm text-foreground">
+                            <label className="flex cursor-pointer items-center gap-2 text-sm leading-5 text-foreground">
                               <Checkbox
                                 checked={checked}
                                 disabled={vendorType === "organic"}
