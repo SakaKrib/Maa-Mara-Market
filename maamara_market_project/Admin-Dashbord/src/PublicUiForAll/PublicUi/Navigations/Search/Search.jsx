@@ -70,17 +70,31 @@ const SearchBar = () => {
     return () => document.removeEventListener("mousedown", handlePointerDown);
   }, []);
 
-  const handleSearch = (e) => {
+  const recordSearch = async (value) => {
+    const trimmed = String(value || "").trim();
+    if (!trimmed) return;
+
+    try {
+      await api.post("/api/search-events/", { query: trimmed });
+    } catch {
+      // Search navigation should never be blocked by analytics/recommendation
+      // tracking if the tracking endpoint is temporarily unavailable.
+    }
+  };
+
+  const handleSearch = async (e) => {
     e.preventDefault();
     const trimmed = query.trim();
 
     if (trimmed) {
+      await recordSearch(trimmed);
       navigate(`/list?name=${encodeURIComponent(trimmed)}&page=1`);
       setSuggestions([]);
     }
   };
 
-  const handleSuggestionClick = (name) => {
+  const handleSuggestionClick = async (name) => {
+    await recordSearch(name);
     navigate(`/list?name=${encodeURIComponent(name)}&page=1`);
     setSuggestions([]);
     setQuery(name);
