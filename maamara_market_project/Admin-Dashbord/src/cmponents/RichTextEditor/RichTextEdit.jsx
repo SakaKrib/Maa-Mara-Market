@@ -29,6 +29,8 @@ const MenuBar = ({ editor, colors }) => {
     },
   });
 
+  const showPlaceholder = !value || value === "<p></p>";
+
   return (
     <Stack
       direction="row"
@@ -236,7 +238,25 @@ const RichTextEditor = ({ value, onChange, placeholder = "Start writing here..."
           },
         }}
       >
-        <Box sx={{ position: "relative" }}>\n          <EditorContent editor={editor} />\n          {showPlaceholder && (\n            <Box\n              onClick={() => editor?.chain().focus().run()}\n              sx={{\n                position: "absolute",\n                top: 0,\n                left: 0,\n                pointerEvents: "none",\n                color: colors.gray[400],\n                fontSize: "14px",\n                lineHeight: 1.6,\n              }}\n            >\n              {placeholder}\n            </Box>\n          )}\n        </Box>
+        <Box sx={{ position: "relative" }}>
+          <EditorContent editor={editor} />
+          {showPlaceholder && (
+            <Box
+              onClick={() => editor?.chain().focus().run()}
+              sx={{
+                position: "absolute",
+                top: 0,
+                left: 0,
+                pointerEvents: "none",
+                color: colors.gray[400],
+                fontSize: "14px",
+                lineHeight: 1.6,
+              }}
+            >
+              {placeholder}
+            </Box>
+          )}
+        </Box>
       </Box>
     </Box>
   );
