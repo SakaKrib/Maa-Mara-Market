@@ -1,7 +1,6 @@
 import { Sheet, SheetTrigger, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "../../../../../components/ui/sheet";
 import VendorItemForm from "../Forms/ItemForms"; // adjust path as needed
 import { Button } from "../../../../../components/ui/button";
-import "../../../../index.css";
 import "../../../../main.css";
 import { useTheme } from "@mui/material";
 import { tokens } from "../../../../theme";
