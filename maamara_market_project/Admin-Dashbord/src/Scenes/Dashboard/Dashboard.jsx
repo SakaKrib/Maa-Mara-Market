@@ -31,7 +31,7 @@ const StatCard = ({ icon, label, value, detail, to, onClick }) => {
       onClick={onClick}
       className="group flex min-h-[148px] w-full cursor-pointer flex-col items-center justify-center rounded-2xl border border-border bg-card p-4 text-center shadow-sm transition hover:-translate-y-0.5 hover:shadow-md sm:min-h-36 sm:p-5"
     >
-      <div className="flex min-w-0 w-full flex-col items-center">
+      <div className="flex min-w-0 w-full flex-col items-center justify-center">
         <div className="mb-3 flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
           <IonIcon icon={icon} className="text-xl" />
         </div>
