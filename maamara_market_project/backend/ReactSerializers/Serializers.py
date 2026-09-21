@@ -353,11 +353,47 @@ class ItemSerializers(serializers.ModelSerializer):
     
 
     def to_internal_value(self, data):
-        # decode HTML entities before lookup
-        if "department" in data and data["department"]:
-            data["department"] = html.unescape(data["department"])
-        if "category" in data and data["category"]:
-            data["category"] = html.unescape(data["category"])
+        # Decode HTML entities before resolving category relationships.
+        data = data.copy()
+        for field_name in ("department", "category", "subcategory", "item_attribute"):
+            if field_name in data and data[field_name]:
+                data[field_name] = html.unescape(str(data[field_name])).strip()
+
+        # Category and subcategory names are normally selected from the
+        # canonical frontend lists. If a vendor supplies a new value, create
+        # the corresponding relationship record so the Item still uses the
+        # normal ForeignKey structure.
+        department_name = data.get("department")
+        category_name = data.get("category")
+        subcategory_name = data.get("subcategory")
+
+        if department_name and category_name:
+            department = Department.objects.filter(name__iexact=department_name).first()
+            if department:
+                category = Category.objects.filter(name__iexact=category_name).first()
+                if not category:
+                    category = Category.objects.create(
+                        name=category_name[:50],
+                        department=department,
+                    )
+                elif category.department_id != department.id:
+                    raise serializers.ValidationError({
+                        "category": "This category belongs to a different department."
+                    })
+                data["category"] = category.name
+
+                if subcategory_name:
+                    subcategory = SubCategory.objects.filter(
+                        name__iexact=subcategory_name,
+                        category=category,
+                    ).first()
+                    if not subcategory:
+                        subcategory = SubCategory.objects.create(
+                            name=subcategory_name[:50],
+                            category=category,
+                        )
+                    data["subcategory"] = subcategory.name
+
         return super().to_internal_value(data)
     
 
