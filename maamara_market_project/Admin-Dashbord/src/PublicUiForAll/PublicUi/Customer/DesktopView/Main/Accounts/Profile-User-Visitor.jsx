@@ -32,15 +32,11 @@ export default function PublicProfile() {
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
   const [selectedItem, setSelectedItem] = useState(null);
-  const {activities, notifications ,loadingExtras} = useUserExtras()
+  const { activities, notifications, loadingExtras, markNotificationRead } = useUserExtras()
  
   const handleNotificationClick = async (notification) => {
     try {
-      await api.post(
-        "/api/notifications/" + notification.id + "/mark_seen/",
-        {},
-        { withCredentials: true }
-      );
+      await markNotificationRead(notification.id);
     } catch (error) {
       console.error("Unable to mark notification as read:", error);
     }
