@@ -1,4 +1,4 @@
-from django.db.models import Case, F, IntegerField, Q, Sum, Avg, Count, Value, When
+from django.db.models import Case, F, IntegerField, Q, Sum, Avg, Count, Value, When, OuterRef, Subquery
 from rest_framework import serializers
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import AllowAny
@@ -49,12 +49,61 @@ class DiscoveryProductSerializer(serializers.ModelSerializer):
         return round(obj.get_save_upto, 2)
 
 
+BEST_SELLER_WINDOW_DAYS = 30
+BEST_SELLER_MIN_UNITS = 5
+TRENDING_WINDOW_DAYS = 7
+TRENDING_MIN_INTERACTIONS = 5
+
+
+def _completed_sales_subquery(since):
+    sales = (
+        OrderItem.objects
+        .filter(
+            item_id=OuterRef("pk"),
+            order__status="completed",
+            refunded=False,
+            is_returned=False,
+            ordered_date__gte=since,
+        )
+        .order_by()
+        .values("item")
+        .annotate(total=Sum("quantity"))
+        .values("total")[:1]
+    )
+    return Subquery(sales, output_field=IntegerField())
+
+
+def _recent_view_subquery(since):
+    views = (
+        ItemView.objects
+        .filter(
+            item_id=OuterRef("pk"),
+            viewed_at__gte=since,
+        )
+        .order_by()
+        .values("item")
+        .annotate(total=Count("id"))
+        .values("total")[:1]
+    )
+    return Subquery(views, output_field=IntegerField())
+
+
 def _catalog_queryset():
+    """
+    Shared available catalog queryset.
+
+    Sales are deliberately calculated from completed, non-refunded and
+    non-returned order items. A correlated subquery keeps sales totals
+    independent from review/view joins, so one review cannot multiply a
+    product's sales count.
+    """
+    sales_since = timezone.now() - timedelta(days=BEST_SELLER_WINDOW_DAYS)
+
     return (
         Item.objects.filter(available=True, in_stock__gt=0)
-        .select_related("section","department","category","subcategory","brand")
+        .select_related("section", "department", "category", "subcategory", "brand")
         .annotate(
-            sales_count=Sum("sold_items__quantity"),
+            sales_count=_completed_sales_subquery(sales_since),
             average_rating=Avg("reviews__rating"),
             review_count=Count("reviews", distinct=True),
         )
@@ -73,18 +122,75 @@ def discovery_feed(request):
     except (TypeError, ValueError):
         limit = 8
 
-    base = _catalog_queryset()
+    now = timezone.now()
+    trend_since = now - timedelta(days=TRENDING_WINDOW_DAYS)
+    sales_since = now - timedelta(days=BEST_SELLER_WINDOW_DAYS)
 
-    popular = base.order_by(F("views").desc(nulls_last=True), F("likes").desc(nulls_last=True), "-updated")[:limit]
-    wanted = base.order_by(F("likes").desc(nulls_last=True), F("views").desc(nulls_last=True), "-updated")[:limit]
-    best_selling = base.order_by(F("sales_count").desc(nulls_last=True), F("likes").desc(nulls_last=True), "-updated")[:limit]
-    featured = base.filter(featured_items__isnull=False).order_by("featured_items__priority", "-views", "-likes").distinct()[:limit]
+    base = _catalog_queryset().annotate(
+        recent_views=_recent_view_subquery(trend_since),
+        recent_sales=_completed_sales_subquery(sales_since),
+    )
+
+    # "Trending" is recent, measurable shopper activity rather than lifetime
+    # views. An item needs at least five recent interactions (views + units
+    # sold) before it can enter this section.
+    trending = (
+        base
+        .annotate(
+            trend_interactions=F("recent_views") + F("recent_sales"),
+        )
+        .filter(trend_interactions__gte=TRENDING_MIN_INTERACTIONS)
+        .order_by(
+            F("trend_interactions").desc(nulls_last=True),
+            F("recent_sales").desc(nulls_last=True),
+            F("recent_views").desc(nulls_last=True),
+            "-updated",
+        )[:limit]
+    )
+
+    # A product is a Best Seller only after at least five completed units
+    # have actually been sold in the trailing 30 days.
+    best_selling = (
+        base
+        .filter(sales_count__gte=BEST_SELLER_MIN_UNITS)
+        .order_by(
+            F("sales_count").desc(nulls_last=True),
+            F("recent_sales").desc(nulls_last=True),
+            "-updated",
+        )[:limit]
+    )
+
+    wanted = (
+        base
+        .annotate(recent_wishlist_count=Count("wishlist_items", distinct=True))
+        .order_by(
+            F("recent_wishlist_count").desc(nulls_last=True),
+            F("recent_views").desc(nulls_last=True),
+            "-updated",
+        )[:limit]
+    )
+
+    # Featured is an explicit FeaturedItem relationship. It is not inferred
+    # from views, likes, sales, or product age.
+    featured = (
+        base
+        .filter(featured_items__isnull=False)
+        .order_by("featured_items__priority", "-updated")
+        .distinct()[:limit]
+    )
 
     return Response({
-        "popular": _serialize_discovery(popular, request),
+        "trending": _serialize_discovery(trending, request),
+        "popular": _serialize_discovery(trending, request),
         "most_wanted": _serialize_discovery(wanted, request),
         "best_selling": _serialize_discovery(best_selling, request),
         "featured": _serialize_discovery(featured, request),
+        "rules": {
+            "best_seller_window_days": BEST_SELLER_WINDOW_DAYS,
+            "best_seller_min_units": BEST_SELLER_MIN_UNITS,
+            "trending_window_days": TRENDING_WINDOW_DAYS,
+            "trending_min_interactions": TRENDING_MIN_INTERACTIONS,
+        },
     })
 
 
@@ -111,7 +217,9 @@ def multi_collections(request):
             department.items.filter(available=True, in_stock__gt=0)
             .select_related("category","subcategory","brand")
             .annotate(
-                sales_count=Sum("sold_items__quantity"),
+                sales_count=_completed_sales_subquery(
+                    timezone.now() - timedelta(days=BEST_SELLER_WINDOW_DAYS)
+                ),
                 average_rating=Avg("reviews__rating"),
                 review_count=Count("reviews", distinct=True),
             )
