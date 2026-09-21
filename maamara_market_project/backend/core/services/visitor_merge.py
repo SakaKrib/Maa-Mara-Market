@@ -12,7 +12,7 @@ from typing import Any
 
 from django.db import transaction
 
-from core.models import ActivityLog, Notification, Profile, Referral, Voucher, Wallet
+from core.models import ActivityLog, Notification, Profile, Referral, SearchEvent, Voucher, Wallet
 from order.models import BillingAddress, Customer, Order, OrderItem, Payment, Transaction, Card
 from order.invoice_models import Invoice
 from ReactSerializers.models import ItemView
@@ -191,6 +191,10 @@ def merge_visitor_data_to_user(user, visitor_id: str | None) -> dict[str, int]:
     ).update(user=user, visitor_id=None)
 
     moved += ActivityLog.objects.filter(
+        visitor_id=visitor_id, user__isnull=True
+    ).update(user=user, visitor_id=None)
+
+    moved += SearchEvent.objects.filter(
         visitor_id=visitor_id, user__isnull=True
     ).update(user=user, visitor_id=None)
 
