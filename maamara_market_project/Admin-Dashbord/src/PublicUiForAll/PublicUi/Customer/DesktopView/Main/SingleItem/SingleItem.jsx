@@ -10,6 +10,12 @@ import FormattedCurrency from "../Currency/FormattedCurrency";
 import { useWishlistContext } from "../../../../../../cmponents/Hooks/WishListHook/Wishlist";
 import MarketplaceItemContext from "./MarketplaceItemContext";
 
+const truncateWords = (text, limit = 15) => {
+  const words = String(text || "").trim().split(/\s+/).filter(Boolean);
+  if (words.length <= limit) return String(text || "").trim();
+  return `${words.slice(0, limit).join(" ")}…`;
+};
+
 const SingleItem = () => {
   const {
     item, loading, error, selectedVariant, selectedSize, selectedImage,
@@ -36,58 +42,62 @@ const SingleItem = () => {
       />
 
       <section className="w-full lg:w-1/2 flex flex-col gap-6">
-        <div>
-          <h1 className="text-4xl font-medium">{item.name}</h1>
-          <p className="text-gray-500 mt-3">{item.description}</p>
+        <div className="rounded-2xl border border-border bg-card p-4 shadow-custom sm:p-5">
+          <h1 className="text-2xl font-bold text-card-foreground sm:text-3xl">{item.name}</h1>
+          <p className="mt-2 text-sm leading-6 text-muted-foreground">
+            {truncateWords(item.description, 15) || "Product details are provided by the seller."}
+          </p>
+
+          <div className="mt-5 border-t border-border pt-4">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <span className="text-sm text-muted-foreground">Reviews: ({item.review_count ?? 0})</span>
+              <span className={`text-sm font-semibold ${availableStock < 5 ? "text-red-500" : "text-green-500"}`}>
+                {availableStock} In stock
+              </span>
+            </div>
+
+            <div className="mt-4 flex flex-wrap items-center gap-3">
+              {hasDiscount && (
+                <span className="text-lg text-muted-foreground line-through">
+                  <FormattedCurrency value={Number(item.final_price)} />
+                </span>
+              )}
+              <span className={`text-2xl font-bold ${hasDiscount ? "text-red-600" : "text-card-foreground"}`}>
+                <FormattedCurrency value={Number(hasDiscount ? item.final_discounted_price : item.final_price)} />
+              </span>
+            </div>
+          </div>
         </div>
 
-        <div className="h-[2px] bg-gray-100" />
+        <ProductOptions
+          item={item}
+          selectedVariant={selectedVariant}
+          selectedSize={selectedSize}
+          onColorChange={selectColor}
+          onSizeChange={selectSize}
+        />
 
-        <div>
-          <h5 className="text-sm">Reviews: ({item.review_count ?? 0})</h5>
-          <h3 className={`text-lg mt-2 ${availableStock < 5 ? "text-red-500" : "text-green-500"}`}>
-            {availableStock} In stock
-          </h3>
-        </div>
+        <QuantityAndCart
+          item={item}
+          quantity={quantity}
+          setQuantity={setQuantity}
+          availableStock={availableStock}
+          remainingStock={remainingStock}
+          selectedVariant={selectedVariant}
+          selectedSize={selectedSize}
+          onAdded={refreshItem}
+        />
 
-        <div className="flex items-center gap-4">
-          {hasDiscount && <h3 className="text-lg text-gray-400 line-through"><FormattedCurrency value={Number(item.final_price)} /></h3>}
-          <h2 className={`font-medium text-2xl ${hasDiscount ? "text-red-600" : ""}`}>
-            <FormattedCurrency value={Number(hasDiscount ? item.final_discounted_price : item.final_price)} />
-          </h2>
-        </div>
-
-        <div className="flex flex-col gap-6 mt-2">
-          <ProductOptions
-            item={item}
-            selectedVariant={selectedVariant}
-            selectedSize={selectedSize}
-            onColorChange={selectColor}
-            onSizeChange={selectSize}
-          />
-
-          <QuantityAndCart
-            item={item}
-            quantity={quantity}
-            setQuantity={setQuantity}
-            availableStock={availableStock}
-            remainingStock={remainingStock}
-            selectedVariant={selectedVariant}
-            selectedSize={selectedSize}
-            onAdded={refreshItem}
-          />
-
-          <ul className="flex gap-6 mt-2 text-sm">
-            <li><button type="button" className="hover:underline" onClick={() => (isWishlisted ? removeFromWishlist(item.id) : addToWishlist(item.id))} aria-pressed={isWishlisted}>{isWishlisted ? "♥ Saved" : "♡ Wishlist"}</button></li>
-            <li><button type="button" className="hover:underline" onClick={() => navigator.share?.({ title: item.name, url: window.location.href })}>↗ Share</button></li>
-          </ul>
+        <div className="flex gap-6 text-sm">
+          <button type="button" className="hover:underline" onClick={() => (isWishlisted ? removeFromWishlist(item.id) : addToWishlist(item.id))} aria-pressed={isWishlisted}>
+            {isWishlisted ? "♥ Saved" : "♡ Wishlist"}
+          </button>
+          <button type="button" className="hover:underline" onClick={() => navigator.share?.({ title: item.name, url: window.location.href })}>
+            ↗ Share
+          </button>
         </div>
 
         <ProductDetails item={item} />
-
-        <div className="text-sm">
-          <Link to="/return-policy" className="underline text-blue-500">Read our return policy</Link>
-        </div>
 
         <ProductReviews item={item} />
 
