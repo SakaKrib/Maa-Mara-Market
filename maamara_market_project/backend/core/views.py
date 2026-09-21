@@ -21,6 +21,7 @@ from order.views import IsAuthenticatedOrVisitor
 from django.core.mail import send_mail
 from rest_framework import generics
 from django.utils import timezone
+from django.utils.timezone import now
 from datetime import timedelta
 from django.core.mail import EmailMultiAlternatives
 from django.template.loader import render_to_string           
