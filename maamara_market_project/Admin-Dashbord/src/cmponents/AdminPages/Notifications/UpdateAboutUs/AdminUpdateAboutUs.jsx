@@ -134,6 +134,7 @@ const AboutAdminPanel = ({ open, onClose }) => {
                     <input
                       name={name}
                       value={form[name]}
+                      placeholder={placeholder}
                       onChange={(event) => updateField(name, event.target.value)}
                       className="h-11 rounded-[20px] border border-border bg-background px-4 text-sm text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/15"
                     />
