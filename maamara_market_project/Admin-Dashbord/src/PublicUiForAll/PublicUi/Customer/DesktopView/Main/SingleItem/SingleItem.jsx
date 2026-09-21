@@ -88,11 +88,20 @@ const SingleItem = () => {
           onAdded={refreshItem}
         />
 
-        <div className="flex gap-6 text-sm">
-          <button type="button" className="hover:underline" onClick={() => (isWishlisted ? removeFromWishlist(item.id) : addToWishlist(item.id))} aria-pressed={isWishlisted}>
+        <div className="flex w-full flex-col gap-3">
+          <button
+            type="button"
+            className="flex w-full items-center justify-center rounded-full border border-gray-300 bg-background px-4 py-2.5 text-center text-sm font-semibold text-card-foreground transition-colors hover:bg-muted"
+            onClick={() => (isWishlisted ? removeFromWishlist(item.id) : addToWishlist(item.id))}
+            aria-pressed={isWishlisted}
+          >
             {isWishlisted ? "♥ Saved" : "♡ Wishlist"}
           </button>
-          <button type="button" className="hover:underline" onClick={() => navigator.share?.({ title: item.name, url: window.location.href })}>
+          <button
+            type="button"
+            className="flex w-full items-center justify-center rounded-full border border-gray-300 bg-background px-4 py-2.5 text-center text-sm font-semibold text-card-foreground transition-colors hover:bg-muted"
+            onClick={() => navigator.share?.({ title: item.name, url: window.location.href })}
+          >
             ↗ Share
           </button>
         </div>
