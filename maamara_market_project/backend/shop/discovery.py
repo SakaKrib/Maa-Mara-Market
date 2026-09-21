@@ -7,7 +7,7 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 
-from ReactSerializers.models import Item, ItemView
+from ReactSerializers.models import Item, ItemView, Occasion
 from core.models import SearchEvent
 from order.models import OrderItem
 from shop.models import Wishlist
@@ -21,6 +21,7 @@ class DiscoveryProductSerializer(serializers.ModelSerializer):
     review_count = serializers.IntegerField(read_only=True)
     sales_count = serializers.IntegerField(read_only=True)
     best_seller = serializers.SerializerMethodField()
+    occasion_keys = serializers.SerializerMethodField()
     offer = serializers.SerializerMethodField()
 
     class Meta:
@@ -29,8 +30,11 @@ class DiscoveryProductSerializer(serializers.ModelSerializer):
             "id","name","image","price","discount_price","in_stock","available",
             "returnable","slug","likes","views","created_at","updated",
             "percentage_discount","in_offer","offer","final_price","final_discounted_price",
-            "save_upto","average_rating","review_count","sales_count","best_seller",
+            "save_upto","average_rating","review_count","sales_count","best_seller","occasion_keys",
         ]
+
+    def get_occasion_keys(self, obj):
+        return list(obj.occasions.filter(is_active=True).values_list("key", flat=True))
 
     def get_best_seller(self, obj):
         return int(getattr(obj, "sales_count", 0) or 0) >= BEST_SELLER_MIN_UNITS
@@ -192,12 +196,36 @@ def discovery_feed(request):
         .distinct()[:limit]
     )
 
+    # Occasion collections are data-backed: an occasion is shown only when
+    # at least four currently available products have explicitly been tagged
+    # with that occasion. No title/description keyword matching is used.
+    occasion_collections = []
+    for occasion in Occasion.objects.filter(is_active=True).order_by("display_order", "name"):
+        products = (
+            base
+            .filter(occasions=occasion)
+            .order_by(
+                F("recent_sales").desc(nulls_last=True),
+                F("recent_views").desc(nulls_last=True),
+                "-updated",
+            )[:limit]
+        )
+        if products.count() < 4:
+            continue
+        occasion_collections.append({
+            "key": occasion.key,
+            "title": occasion.name,
+            "description": occasion.description,
+            "items": _serialize_discovery(products, request),
+        })
+
     return Response({
         "trending": _serialize_discovery(trending, request),
         "popular": _serialize_discovery(trending, request),
         "most_wanted": _serialize_discovery(wanted, request),
         "best_selling": _serialize_discovery(best_selling, request),
         "featured": _serialize_discovery(featured, request),
+        "occasion_collections": occasion_collections,
         "rules": {
             "best_seller_window_days": BEST_SELLER_WINDOW_DAYS,
             "best_seller_min_units": BEST_SELLER_MIN_UNITS,
