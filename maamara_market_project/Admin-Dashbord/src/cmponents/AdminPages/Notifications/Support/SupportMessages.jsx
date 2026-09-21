@@ -8,7 +8,7 @@ const statusClasses = {
   pending: "bg-amber-500/10 text-amber-700 dark:text-amber-300",
 };
 
-const SupportAdminPanel = ({ open, onClose }) => {
+const SupportAdminPanel = ({ open = true, onClose }) => {
   const [tickets, setTickets] = useState([]);
   const [selectedTicket, setSelectedTicket] = useState(null);
   const [reply, setReply] = useState("");
