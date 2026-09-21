@@ -888,6 +888,7 @@ def admin_transaction_history(request):
     queryset = (
         Transaction.objects
         .select_related("vendor", "order")
+        .exclude(status="deleted")
         .order_by("-created_at")
     )
 
