@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { ArrowLeft, Briefcase, CalendarDays, MapPin, Clock3, Upload, X } from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
-import DOMPurify from "dompurify";
+import { sanitizeRichText } from "../../../../../utils/sanitizeRichText";
 import api from "../../../../../Services/Api";
 
 const CareerDetails = () => {
@@ -75,20 +75,20 @@ const CareerDetails = () => {
           <article className="mm-careers-content-card">
             <span>Role overview</span>
             <h2>Job description</h2>
-            <div className="mm-careers-richtext" dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(job.description || "") }} />
+            <div className="mm-careers-richtext" dangerouslySetInnerHTML={{ __html: sanitizeRichText(job.description || "") }} />
           </article>
           {job.responsibilities && (
             <article className="mm-careers-content-card">
               <span>What you’ll do</span>
               <h2>Responsibilities</h2>
-              <div className="mm-careers-richtext" dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(job.responsibilities) }} />
+              <div className="mm-careers-richtext" dangerouslySetInnerHTML={{ __html: sanitizeRichText(job.responsibilities) }} />
             </article>
           )}
           {job.requirements && (
             <article className="mm-careers-content-card">
               <span>What you bring</span>
               <h2>Requirements</h2>
-              <div className="mm-careers-richtext" dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(job.requirements) }} />
+              <div className="mm-careers-richtext" dangerouslySetInnerHTML={{ __html: sanitizeRichText(job.requirements) }} />
             </article>
           )}
         </div>
