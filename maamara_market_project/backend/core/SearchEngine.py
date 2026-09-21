@@ -2,7 +2,7 @@ from functools import reduce
 from operator import add
 
 from django.core.paginator import EmptyPage, Paginator
-from django.db.models import Case, IntegerField, Q, Value, When
+from django.db.models import Avg, Case, Count, IntegerField, Q, Sum, Value, When
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
@@ -15,6 +15,47 @@ from order.views import IsAuthenticatedOrVisitor
 SEARCH_PAGE_SIZE = 12
 MAX_PAGE_SIZE = 48
 SUGGESTION_LIMIT = 6
+
+class SearchResultSerializer(serializers.ModelSerializer):
+    """Lightweight serializer for the marketplace search grid."""
+    final_price = serializers.SerializerMethodField()
+    final_discounted_price = serializers.SerializerMethodField()
+    save_upto = serializers.SerializerMethodField()
+    average_rating = serializers.FloatField(read_only=True)
+    review_count = serializers.IntegerField(read_only=True)
+    sales_count = serializers.IntegerField(read_only=True)
+    offer = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Item
+        fields = [
+            "id", "name", "image", "price", "discount_price", "in_stock",
+            "available", "returnable", "slug", "likes", "views", "created_at",
+            "updated", "percentage_discount", "in_offer", "offer",
+            "final_price", "final_discounted_price", "save_upto",
+            "average_rating", "review_count", "sales_count",
+        ]
+
+    def get_final_price(self, obj):
+        return round(obj.get_item_final_price(), 2)
+
+    def get_final_discounted_price(self, obj):
+        return round(obj.get_item_final_discounted_price(), 2)
+
+    def get_save_upto(self, obj):
+        return round(obj.get_save_upto, 2)
+
+    def get_offer(self, obj):
+        offer = getattr(obj, "offer", None)
+        if not offer:
+            return None
+        return {
+            "discount_percentage": offer.discount_percentage,
+            "start_date": offer.start_date,
+            "end_date": offer.end_date,
+            "final_price": offer.final_price,
+        }
+
 
 
 def _search_fields_for_token(token):
@@ -226,6 +267,12 @@ def search_items(request):
     if category_id:
         queryset = queryset.filter(category_id=category_id)
 
+    suggestion_mode = str(request.GET.get("suggestions", "")).lower() in {
+        "1",
+        "true",
+        "yes",
+    }
+
     if tokens:
         search_filter = reduce(
             lambda current, token: current | _search_fields_for_token(token),
@@ -240,21 +287,50 @@ def search_items(request):
                 "category",
                 "subcategory",
                 "brand",
-            )
-            .prefetch_related(
-                "variants",
-                "reviews",
-                "kids_sizes",
-                "shoe_input",
+                "offer",
             )
             .annotate(
-                search_relevance=_relevance_expression(query, tokens)
-                if tokens
-                else Value(0, output_field=IntegerField())
+                search_relevance=_relevance_expression(query, tokens),
+                average_rating=Avg("reviews__rating"),
+                review_count=Count("reviews", distinct=True),
+                sales_count=Sum("sold_items__quantity"),
             )
             .distinct()
             .order_by("-search_relevance", "-views", "-likes", "-created_at", "name")
         )
+    else:
+        queryset = (
+            queryset
+            .select_related(
+                "section",
+                "department",
+                "category",
+                "subcategory",
+                "brand",
+                "offer",
+            )
+            .annotate(
+                average_rating=Avg("reviews__rating"),
+                review_count=Count("reviews", distinct=True),
+                sales_count=Sum("sold_items__quantity"),
+            )
+            .order_by("-views", "-likes", "-created_at", "name")
+        )
+
+    # Autocomplete is a fast path: six compact products, no paginator count,
+    # and no heavyweight nested review/variant serialization.
+    if suggestion_mode:
+        suggestions = [
+            _compact_suggestion(item)
+            for item in queryset[:SUGGESTION_LIMIT]
+        ]
+        return Response({
+            "query": query,
+            "results": suggestions,
+            "suggestions": suggestions,
+            "page": 1,
+            "page_size": len(suggestions),
+        })
 
     paginator = Paginator(queryset, page_size)
     total = paginator.count
@@ -269,27 +345,8 @@ def search_items(request):
     else:
         page_obj = []
 
-    suggestion_mode = str(request.GET.get("suggestions", "")).lower() in {
-        "1",
-        "true",
-        "yes",
-    }
+    serializer = SearchResultSerializer(page_obj, many=True)
 
-    if suggestion_mode:
-        suggestions = [_compact_suggestion(item) for item in list(page_obj)[:SUGGESTION_LIMIT]]
-        return Response(
-            {
-                "query": query,
-                "results": suggestions,
-                "suggestions": suggestions,
-                "total": total,
-                "page": page_number,
-                "page_size": len(suggestions),
-                "total_pages": total_pages,
-            }
-        )
-
-    serializer = ItemSerializer(page_obj, many=True)
     return Response(
         {
             "query": query,
