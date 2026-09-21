@@ -229,6 +229,7 @@ import { Controller } from "react-hook-form";
   
 
 const ItemAddNew = ({ initialItem, vendorId, itemId, onSave, vendor }) => {
+  const [selectedDepartment, setSelectedDepartment] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("");
   const [colorVariants, setColorVariants] = useState([]);
 
