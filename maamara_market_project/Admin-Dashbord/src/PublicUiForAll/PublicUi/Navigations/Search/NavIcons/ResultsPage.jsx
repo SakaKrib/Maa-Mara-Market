@@ -13,6 +13,7 @@ const SearchResultsPage = () => {
   const query = useMemo(() => new URLSearchParams(location.search), [location.search]);
   const searchTerm = query.get("name") || "";
   const categoryId = query.get("category_id") || "";
+const vendorId = query.get("vendor_id") || "";
   const categoryName = query.get("category_name") || "";
   const requestedPage = Math.max(1, Number(query.get("page") || 1));
 
@@ -73,7 +74,7 @@ const SearchResultsPage = () => {
       });
 
     return () => controller.abort();
-  }, [searchTerm, categoryId, requestedPage]);
+  }, [searchTerm, categoryId, vendorId, requestedPage]);
 
   const goToPage = (nextPage) => {
     if (nextPage < 1 || nextPage > totalPages) return;
@@ -81,6 +82,7 @@ const SearchResultsPage = () => {
     if (searchTerm) params.set("name", searchTerm);
     if (categoryId) params.set("category_id", categoryId);
     if (categoryName) params.set("category_name", categoryName);
+if (vendorId) params.set("vendor_id", vendorId);
     params.set("page", nextPage);
     navigate(`/list?${params.toString()}`);
     window.scrollTo({ top: 0, behavior: "smooth" });
