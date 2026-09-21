@@ -29,7 +29,7 @@ const TrendingProducts = () => {
 
   const featuredOfferItem = items.find((item) => item.in_offer && item.offer?.end_date);
 
-  const renderSection = (title, sectionItems) => {
+  const renderSection = (title, sectionItems, viewAllPath = "/list") => {
     const visibleItems = sectionItems.filter((item) => item.in_offer === false).slice(0, 6);
 
     if (!visibleItems.length) return null;
@@ -38,7 +38,7 @@ const TrendingProducts = () => {
       <div className="mm-market-product-section">
         <div className="mm-market-section-header">
           <h2 className="mm-market-section-title">{title}</h2>
-          <Link to="/list" className="mm-market-view-all">
+          <Link to={viewAllPath} className="mm-market-view-all">
             View all
           </Link>
         </div>
@@ -90,7 +90,11 @@ const TrendingProducts = () => {
           renderSection("Best Selling", sections.best_selling)}
 
         {collections.map((collection) =>
-          renderSection(collection.name, collection.items)
+          renderSection(
+            collection.name,
+            collection.items,
+            `/list?category_id=${collection.id}&category_name=${encodeURIComponent(collection.name)}&page=1`
+          )
         )}
       </div>
     </section>
