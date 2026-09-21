@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from "react";
 import api from "../../../Services/Api";
-import { baseUrl } from "../../../cmponents/Constant/Constant";
 
 import {
   Box,
@@ -73,7 +72,7 @@ const VendorBlogManager = () => {
   useEffect(() => {
     const fetchBlogs = async () => {
       try {
-        const res = await api.get(`${baseUrl}/api/vendor/blogs/`, {
+        const res = await api.get(`/api/vendor/blogs/`, {
           withCredentials: true,
         });
 
@@ -125,7 +124,7 @@ const VendorBlogManager = () => {
       if (video) formData.append("video", video);
 
       await api.patch(
-        `${baseUrl}/api/vendor/blogs/${selected.id}/`,
+        `/api/vendor/blogs/${selected.id}/`,
         formData,
         { withCredentials: true }
       );
@@ -161,7 +160,7 @@ const VendorBlogManager = () => {
   const handleDelete = async (id) => {
     try {
       await api.delete(
-        `${baseUrl}/api/vendor/blogs/${id}/`,
+        `/api/vendor/blogs/${id}/`,
         { withCredentials: true }
       );
 
