@@ -19,107 +19,13 @@ import api, { resolveApiAssetUrl } from "../../../../Services/Api/";
 import { useForm } from "react-hook-form";
 import { organicAttributes, inorganicAttributes } from "./itemattribute";
 import { Controller } from "react-hook-form";
+import { useDepartments } from "./useDepartments";
 
  // adjust path as needed
 
 
 
 
-  // 🧠 Department → Category → Subcategory map
-  export const departmentMap = {
-    "Fashion & Apparel": {
-    categories: ["Men's Clothing", "Women's Clothing", "Kids & Baby Wear", "Shoes", "Accessories"],
-    subcategories: {
-      "Men's Clothing": [
-        "T-Shirts", "Polos", "Dress Shirts", "Sweaters & Sweatshirts", "Hoodies & Pullovers",
-        "Jackets & Coats", "Jeans", "Pants & Chinos", "Shorts", "Suits & Sport Coats",
-        "Activewear", "Underwear & Socks", "Swimwear", "Big & Tall", "Accessories"
-      ],
-      "Women's Clothing": [
-        "Dresses", "Tops & T-Shirts", "Blouses & Shirts", "Sweaters & Cardigans", "Jackets & Coats",
-        "Jeans", "Pants & Leggings", "Skirts", "Shorts", "Activewear",
-        "Lingerie, Sleep & Lounge", "Suits & Blazers", "Swimwear", "Maternity", "Plus Size",
-        "Accessories"
-      ],
-      "Kids & Baby Wear": [
-        "Baby Onesies", "Kids T-Shirts", "Baby Gear", "Kids’ Footwear", "Kids Accessories"
-      ],
-      "Shoes": [
-        "Sneakers", "Sandals", "Boots", "Heels", "Flats", "Loafers", "Running Shoes"
-      ],
-      "Accessories": [
-        "Watches", "Bags", "Jewelry", "Belts", "Sunglasses", "Scarves", "Hats", "Gloves"
-      ],
-    }
-  },
-  
-    "Home & Living": {
-      categories: ["Furniture", "Home Decor", "Kitchen & Dining", "Bedding & Bath", "Lighting"],
-      subcategories: {
-        Furniture: ["Sofas", "Tables", "Chairs", "Cabinets"],
-        "Home Decor": ["Wall Art", "Vases", "Curtains", "Rugs", "Carpets"],
-        "Kitchen & Dining": ["Cookware", "Cutlery", "Dinnerware", "Storage", "Placemats", "Saviet Holders"],
-        "Bedding & Bath": ["Bedsheets", "Blankets", "Towels", "Bath Mats", "Soap Dish", "Bath Soap"],
-        Lighting: ["Ceiling Lights", "Lamps", "LED Strips", "Outdoor Lights", "Lampshades"],
-      },
-    },
-  
-    "Beauty & Personal Care": {
-      categories: ["Skincare", "Haircare", "Makeup", "Fragrances"],
-      subcategories: {
-        Skincare: ["Moisturizers", "Cleansers", "Serums", "Sunscreen", "Face Toner", "Body Lotions", "Face Oil"],
-        Haircare: ["Shampoo", "Conditioner", "Hair Oils", "Hair Dryers"],
-        Makeup: ["Foundation", "Lipstick", "Mascara", "Eyeshadow", "Lipbalm"],
-        Fragrances: ["Perfume", "Body Spray", "Cologne"],
-      },
-    },
-  
-    "Baby, Kids & Toys": {
-      categories: ["Toys & Games", "Baby Gear", "Kids' Furniture", "Educational"],
-      subcategories: {
-        "Toys & Games": ["Action Figures", "Board Games", "Puzzles", "Stuffed Animals"],
-        "Kids' Furniture": ["Cribs", "Study Desks", "Toy Storage"],
-        Educational: ["Books", "STEM Kits", "Flashcards"],
-      },
-    },
-  
-    Automotive: {
-      categories: ["Car Accessories"],
-      subcategories: {
-        "Car Accessories": ["Seat Covers", "Floor Mats", "Phone Mounts"],
-      },
-    },
-  
-    "Sports & Outdoors": {
-      categories: ["Fitness Equipment", "Outdoor Gear", "Camping & Hiking", "Sportswear"],
-      subcategories: {
-        "Fitness Equipment": ["Dumbbells", "Yoga Mats", "Resistance Bands"],
-        "Outdoor Gear": ["Tents", "Backpacks", "Water Bottles"],
-        "Camping & Hiking": ["Sleeping Bags", "Lanterns", "Hiking Boots", "Picnic Blankets"],
-        Sportswear: ["Running Shoes", "Tracksuits", "Jerseys"],
-      },
-    },
-  
-    Pets: {
-      categories: ["Pet Toys", "Grooming & Care", "Aquariums & Accessories"],
-      subcategories: {
-        "Pet Toys": ["Chew Toys", "Balls", "Interactive Toys"],
-        "Grooming & Care": ["Shampoo", "Brushes", "Nail Clippers"],
-        "Aquariums & Accessories": ["Fish Tanks", "Filters", "Decor"],
-      },
-    },
-  
-    "Seasonal Specials": {
-      categories: ["Holiday Decor", "Back to School", "Gift Bundles"],
-      subcategories: {
-        "Holiday Decor": ["Christmas Lights", "Ornaments", "Wreaths"],
-        "Back to School": ["Stationery", "Backpacks", "Lunch Boxes"],
-        "Gift Bundles": ["Beauty Sets", "Snack Hampers"],
-      },
-    },
-  };
-  
-  
     //sizes
     const sizeOptions = [
       "XS", "S", "M", "L", "XL", "2XL", "3XL", "2XS", "3XS", "Oversize"
@@ -172,63 +78,8 @@ import { Controller } from "react-hook-form";
     const shoeTypes = ["Sneakers", "Sandals", "Boots", "Heels"];
   
   
-    // 🟢 Organic Departments
-    // src/constants/organicDepartmentMap.js
-  
-  export const organicDepartmentMap = {
-    "Organic Foods": {
-      categories: ["Vegetables", "Fruits", "Grains & Legumes", "Proteins", "Pantry Staples"],
-      subcategories: {
-        Vegetables: [
-          "Sukuma Wiki (Collard Greens)",
-          "Spinach",
-          "Tomatoes",
-          "Onions",
-          "Carrots",
-          "Cabbage",
-          "Broccoli",
-          "Zucchini",
-        ],
-        Fruits: [
-          "Bananas",
-          "Apples",
-          "Mangoes",
-          "Berries",
-          "Citrus Fruits",
-          "Avocado",
-          "Pineapples",
-          "Papaya",
-        ],
-        "Grains & Legumes": ["Rice", "Maize", "Millet", "Quinoa", "Beans", "Lentils", "Green Grams (Ndengu)"],
-        Proteins: ["Chicken", "Eggs", "Beef", "Fish", "Goat Meat"],
-        "Pantry Staples": ["Peanut Butter", "Honey", "Cooking Oil", "Flour (Maize, Cassava, Wheat)"],
-      },
-    },
-  
-    "Organic Drinks": {
-      categories: ["Juices", "Herbal Teas", "Coffee & Cocoa"],
-      subcategories: {
-        Juices: ["Fruit Juice", "Vegetable Juice"],
-        "Herbal Teas": ["Green Tea", "Chamomile", "Hibiscus", "Lemongrass"],
-        "Coffee & Cocoa": ["Coffee", "Chocolate", "Cocoa Powder"],
-      },
-    },
-  
-    "Organic Condiments & Spices": {
-      categories: ["Spices", "Sauces", "Herbs"],
-      subcategories: {
-        Spices: ["Cinnamon", "Turmeric", "Black Pepper", "Cloves", "Coriander", "Ginger Powder"],
-        Sauces: ["Tomato Sauce", "Chili Sauce", "Soy Sauce (Organic)", "Barbecue Sauce"],
-        Herbs: ["Basil", "Oregano", "Rosemary", "Thyme", "Mint"],
-      },
-    },
-  };
-  
-  
-  
-  
-
 const ItemAddNew = ({ initialItem, vendorId, itemId, onSave, vendor }) => {
+  const { departmentMap, organicDepartmentMap } = useDepartments();
   const [selectedDepartment, setSelectedDepartment] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("");
   const [colorVariants, setColorVariants] = useState([]);
@@ -558,7 +409,7 @@ useEffect(() => {
           name="section"
           render={({ field }) => (
             <FormItem className='flex  flex-col'>
-              <FormLabel className="text-sm font-semibold text-card-foreground">Section</FormLabel>
+              <FormLabel className="text-sm font-semibold text-foreground">Section</FormLabel>
               <FormControl>
                 <input
                   type="text"
@@ -618,7 +469,7 @@ useEffect(() => {
             name="category"
             render={({ field }) => (
               <FormItem className='flex flex-col justify-end h-65'>
-                <FormLabel className="text-sm font-semibold text-card-foreground">Category</FormLabel>
+                <FormLabel className="text-sm font-semibold text-foreground">Category</FormLabel>
                 <FormControl>
                   <select
                     
@@ -654,7 +505,7 @@ useEffect(() => {
             name="subcategory"
             render={({ field }) => (
               <FormItem className='flex flex-col justify-end relative top-1'>
-                <FormLabel className="text-sm font-semibold text-card-foreground">Subcategory</FormLabel>
+                <FormLabel className="text-sm font-semibold text-foreground">Subcategory</FormLabel>
                 <FormControl>
                   <select
                     
@@ -695,7 +546,7 @@ useEffect(() => {
           name="name"
           render={({ field }) => (
             <FormItem>
-              <FormLabel className="text-sm font-semibold text-card-foreground">Item Name</FormLabel>
+              <FormLabel className="text-sm font-semibold text-foreground">Item Name</FormLabel>
               <FormControl>
                 <Input
                   {...field}
@@ -717,7 +568,7 @@ useEffect(() => {
           name="discount_price"
           render={({ field }) => (
             <FormItem>
-              <FormLabel className="text-sm font-semibold text-card-foreground">Discount</FormLabel>
+              <FormLabel className="text-sm font-semibold text-foreground">Discount</FormLabel>
               <FormControl>
                 <Input
                   type="number"
@@ -745,7 +596,7 @@ useEffect(() => {
           name="in_stock"
           render={({ field }) => (
             <FormItem>
-              <FormLabel className="text-sm font-semibold text-card-foreground">Qty in Stock</FormLabel>
+              <FormLabel className="text-sm font-semibold text-foreground">Qty in Stock</FormLabel>
               <FormControl>
                 <Input
                   type="number"
@@ -772,7 +623,7 @@ useEffect(() => {
   name="image"
   render={({ field }) => (
     <FormItem>
-      <FormLabel className="text-sm font-semibold text-card-foreground">Item Image</FormLabel>
+      <FormLabel className="text-sm font-semibold text-foreground">Item Image</FormLabel>
       <FormControl>
       <div className="flex flex-col gap-3">
           {field.value && (
@@ -822,7 +673,7 @@ useEffect(() => {
       name="price"
       render={({ field }) => (
         <FormItem>
-          <FormLabel className="text-sm font-semibold text-card-foreground">Price</FormLabel>
+          <FormLabel className="text-sm font-semibold text-foreground">Price</FormLabel>
           <FormControl>
             <Input
               type="number"
@@ -853,7 +704,7 @@ useEffect(() => {
               name="description"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel className="text-sm font-semibold text-card-foreground">Description</FormLabel>
+                  <FormLabel className="text-sm font-semibold text-foreground">Description</FormLabel>
                   <FormControl>
                     <Textarea {...field} placeholder="Item description..." />
                   </FormControl>
@@ -885,7 +736,7 @@ useEffect(() => {
 
                 return (
                   <FormItem>
-                    <FormLabel className="text-sm font-semibold text-card-foreground">
+                    <FormLabel className="text-sm font-semibold text-foreground">
                       Product Attribute
                     </FormLabel>
                     <FormControl>
@@ -913,7 +764,7 @@ useEffect(() => {
 
               {/* Organic inorganic */}
               <div className="my-4">
-  <FormLabel className="text-sm font-semibold text-card-foreground">Product Type</FormLabel>
+  <FormLabel className="text-sm font-semibold text-foreground">Product Type</FormLabel>
   <FormControl>
     <div className="flex gap-4">
 
@@ -1013,7 +864,7 @@ useEffect(() => {
     
             return (
               <FormItem>
-                <FormLabel className="text-sm font-semibold text-card-foreground">Sizes & Stock</FormLabel>
+                <FormLabel className="text-sm font-semibold text-foreground">Sizes & Stock</FormLabel>
                 <FormControl>
                   <div
                     className="grid grid-cols-3 gap-5 my-2 p-2 rounded-lg"
@@ -1084,7 +935,7 @@ useEffect(() => {
     
             return (
               <FormItem>
-                <FormLabel className="text-sm font-semibold text-card-foreground">Length (Optional)</FormLabel>
+                <FormLabel className="text-sm font-semibold text-foreground">Length (Optional)</FormLabel>
                 <FormControl>
                   <div className="flex gap-3 items-center my-2">
                     <Input
@@ -1097,7 +948,7 @@ useEffect(() => {
                       className="w-32"
                     />
                     <select
-                      className="border rounded p-2"
+                      className="w-full rounded-[12px] border border-border bg-card px-2 py-2 text-sm text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
                       
                       value={value?.unit ?? "cm"}
                       onChange={(e) => handleUnitChange(e.target.value)}
@@ -1142,7 +993,7 @@ useEffect(() => {
     
           return (
             <FormItem>
-              <FormLabel className="text-sm font-semibold text-card-foreground">Weight</FormLabel>
+              <FormLabel className="text-sm font-semibold text-foreground">Weight</FormLabel>
               <FormControl>
                 <div className="flex gap-3 items-center my-2">
                   {/* Numeric input */}
@@ -1191,7 +1042,7 @@ useEffect(() => {
           name="shoe_type"
           render={({ field }) => (
             <FormItem>
-              <FormLabel className="text-sm font-semibold text-card-foreground">Shoe Type</FormLabel>
+              <FormLabel className="text-sm font-semibold text-foreground">Shoe Type</FormLabel>
               <FormControl>
                 <select
                   {...field}
@@ -1220,7 +1071,7 @@ useEffect(() => {
           name="shoe_gender"
           render={({ field }) => (
             <FormItem>
-              <FormLabel className="text-sm font-semibold text-card-foreground">Gender</FormLabel>
+              <FormLabel className="text-sm font-semibold text-foreground">Gender</FormLabel>
               <FormControl>
                 <select
                   {...field}
@@ -1264,7 +1115,7 @@ useEffect(() => {
     
             return (
               <FormItem>
-                <FormLabel className="text-sm font-semibold text-card-foreground">Select Sizes</FormLabel>
+                <FormLabel className="text-sm font-semibold text-foreground">Select Sizes</FormLabel>
                 <FormControl>
                   <div className="grid grid-cols-3 gap-4 my-2">
                     {sizeOptions.map((size) => (
@@ -1328,7 +1179,7 @@ useEffect(() => {
     
             return (
               <FormItem>
-                <FormLabel className="text-sm font-semibold text-card-foreground">Kids Sizes & Stock</FormLabel>
+                <FormLabel className="text-sm font-semibold text-foreground">Kids Sizes & Stock</FormLabel>
                 <FormControl>
                   <div
                     className="grid grid-cols-3 gap-5 my-2"
@@ -1397,7 +1248,7 @@ useEffect(() => {
     
             return (
               <FormItem>
-                <FormLabel className="text-sm font-semibold text-card-foreground">Length (Optional)</FormLabel>
+                <FormLabel className="text-sm font-semibold text-foreground">Length (Optional)</FormLabel>
                 <FormControl>
                   <div className="flex gap-3 items-center my-2">
                     <Input
@@ -1410,7 +1261,7 @@ useEffect(() => {
                       className="w-32"
                     />
                     <select
-                      className="border rounded p-2"
+                      className="w-full rounded-[12px] border border-border bg-card px-2 py-2 text-sm text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
                       
                       value={value?.unit ?? "cm"}
                       onChange={(e) => handleUnitChange(e.target.value)}
@@ -1458,7 +1309,7 @@ useEffect(() => {
               className="w-5 h-5"
             />
           </FormControl>
-          <FormLabel className="text-sm font-semibold text-card-foreground">Is Organic?</FormLabel>
+          <FormLabel className="text-sm font-semibold text-foreground">Is Organic?</FormLabel>
           <FormDescription>
             Check if is organic food.
           </FormDescription>
@@ -1479,7 +1330,7 @@ useEffect(() => {
               className="w-5 h-5"
             />
           </FormControl>
-          <FormLabel className="text-sm font-semibold text-card-foreground">Is Fresh Food?</FormLabel>
+          <FormLabel className="text-sm font-semibold text-foreground">Is Fresh Food?</FormLabel>
           <FormDescription>
             Check if is fresh food.
           </FormDescription>
@@ -1496,7 +1347,7 @@ useEffect(() => {
           name="roast_type"
           render={({ field }) => (
             <FormItem>
-              <FormLabel className="text-sm font-semibold text-card-foreground">Roast Type</FormLabel>
+              <FormLabel className="text-sm font-semibold text-foreground">Roast Type</FormLabel>
               <FormControl>
                 <select
                   {...field}
@@ -1527,7 +1378,7 @@ useEffect(() => {
           name="coffee_state"
           render={({ field }) => (
             <FormItem>
-              <FormLabel className="text-sm font-semibold text-card-foreground">Coffee State</FormLabel>
+              <FormLabel className="text-sm font-semibold text-foreground">Coffee State</FormLabel>
               <FormControl>
                 <select
                   {...field}
@@ -1572,7 +1423,7 @@ useEffect(() => {
     
           return (
             <FormItem>
-              <FormLabel className="text-sm font-semibold text-card-foreground">Weight</FormLabel>
+              <FormLabel className="text-sm font-semibold text-foreground">Weight</FormLabel>
               <FormControl>
                 <div className="flex gap-3 items-center my-2">
                   {/* Numeric input */}
@@ -1592,7 +1443,7 @@ useEffect(() => {
     
                   {/* Dropdown for unit */}
                   <select
-                    className="border rounded p-2"
+                    className="w-full rounded-[12px] border border-border bg-card px-2 py-2 text-sm text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
                     
                     value={value?.unit ?? "g"}
                     onChange={(e) => handleUnitChange(e.target.value)}
@@ -1623,13 +1474,13 @@ useEffect(() => {
           }}
           render={({ field }) => (
             <FormItem>
-              <FormLabel className="text-sm font-semibold text-card-foreground">Manufactured Date</FormLabel>
+              <FormLabel className="text-sm font-semibold text-foreground">Manufactured Date</FormLabel>
               <FormControl>
               <Input
               type="date"
               {...field}
               value={field.value ?? ""}  // 👈 fallback ensures it's always controlled
-              className="border rounded p-2"
+              className="w-full rounded-[12px] border border-border bg-card px-2 py-2 text-sm text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
               
             />
     
@@ -1659,12 +1510,12 @@ useEffect(() => {
           }}
           render={({ field }) => (
             <FormItem>
-              <FormLabel className="text-sm font-semibold text-card-foreground" >Expiry Date</FormLabel>
+              <FormLabel className="text-sm font-semibold text-foreground" >Expiry Date</FormLabel>
               <FormControl>
                 <Input
                   type="date"
                   {...field}
-                  className="border rounded p-2 "
+                  className="w-full rounded-[12px] border border-border bg-card px-2 py-2 text-sm text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
                   
                 />
               </FormControl>
@@ -1817,7 +1668,7 @@ useEffect(() => {
     
             return (
               <FormItem>
-                <FormLabel className="text-sm font-semibold text-card-foreground">Color Variants</FormLabel>
+                <FormLabel className="text-sm font-semibold text-foreground">Color Variants</FormLabel>
                 <FormControl>
                   <div className="space-y-6">
                     {/* Color selection */}
@@ -1979,7 +1830,7 @@ useEffect(() => {
        <FormControl>
          <select
            {...field}
-           className="border rounded p-2"
+           className="w-full rounded-[12px] border border-border bg-card px-2 py-2 text-sm text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
            
          >
            <option value="cm">Centimeters</option>
@@ -2016,7 +1867,7 @@ useEffect(() => {
        <FormControl>
          <select
            {...field}
-           className="border rounded p-2"
+           className="w-full rounded-[12px] border border-border bg-card px-2 py-2 text-sm text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
            
          >
            <option value="g">Grams</option>
