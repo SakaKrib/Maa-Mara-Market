@@ -55,8 +55,7 @@ import { Toaster } from "../components/ui/toaster";
 import { ToastProvider } from "../components/ui/toast";
 
 // chat
-import Chat from "../ChatJsxUi/client-app/srcChat/componentChat/chat/Chat";
-import Join from "../ChatJsxUi/client-app/srcChat/componentChat/join/Join";
+import Messaging from "./cmponents/Messaging/Messaging";
 import UiForVendorRequest from "./cmponents/Admin/VendorRequestUi";
 import VendorItemRequestDetail from "./cmponents/AdminPages/Notifications/VendorItemRequestDetail";
 import AdminPriceRequestDetail from "./cmponents/AdminPages/Notifications/AdminApprovePriceChangeRequest";
@@ -184,8 +183,7 @@ function AppContent() {
                 
                 <Route path="filter-category" element={<SingleCategory />} />
                 <Route path="item/:itemId" element={<SingleItem />} />
-                <Route path="join-chat" element={<Join />} />
-                <Route path="chat" element={<Chat />} />
+                <Route path="messages" element={<Messaging />} />
 
                 {/* blogs */}
                 <Route path="blogs" element={<BlogFeed />} />
@@ -228,8 +226,7 @@ function AppContent() {
                 <Route path="request-returns" element={<RequestReturnForm />} />
                 <Route path="careers/jobs" element={<CareerPage />} />
                 <Route path="careers/:id" element={<CareerDetails />} />
-                <Route path="customer-join-chat" element={<Join />} />
-                <Route path="chat" element={<Chat />} />
+                <Route path="messages" element={<Messaging />} />
               </Route>
 
               {/* Login */}
@@ -313,8 +310,7 @@ function AppContent() {
               <Route path="search/global-results" element={<SearchGlobalResultsPage />} />
 
               {/* chat */}
-              <Route path="join-chat" element={<Join />} />
-              <Route path="chat" element={<Chat />} />
+              <Route path="messages" element={<Messaging />} />
             </Route>
 
 
