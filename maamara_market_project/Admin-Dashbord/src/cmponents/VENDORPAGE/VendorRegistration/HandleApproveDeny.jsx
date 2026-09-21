@@ -357,26 +357,31 @@ export default function VendorApprovalPanel() {
                   </CardContent>
                 </Card>
               ))}
-              <Dialog open={editingItemIndex !== null} onClose={() => setEditingItemIndex(null)} fullWidth maxWidth="lg">
-                <DialogTitle className="!border-b !border-border !bg-card !text-card-foreground"><div><p className="text-xs font-semibold uppercase tracking-wider text-primary">Marketplace</p><h2 className="mt-1 text-lg font-bold">Edit item</h2><p className="mt-1 text-sm font-normal text-muted-foreground">Update the item details, pricing, inventory, and image before approval.</p></div></DialogTitle>
-                <DialogContent dividers className="!border-border !bg-card !p-2 sm:!p-2">
-                  <ScrollArea className="max-h-[70vh] pr-1">
-                    {editingItemIndex !== null && (
-                      <ItemAddNew
-                        vendorId={selectedVendor?.id}
-                        vendor={selectedVendor}
-                        initialItem={editItemList[editingItemIndex]}
-                        onSave={(updatedItem) => {
-                          const updatedList = [...editItemList];
-                          updatedList[editingItemIndex] = updatedItem;
-                          setEditItemList(updatedList);
-                          setEditingItemIndex(null);
-                        }}
-                      />
-                    )}
-                  </ScrollArea>
-                </DialogContent>
-              </Dialog>
+              {editingItemIndex !== null && (
+                <div className="rounded-[12px] border border-border bg-card p-2">
+                  <div className="mb-2 flex items-start justify-between gap-2 border-b border-border pb-2">
+                    <div>
+                      <p className="text-xs font-semibold uppercase tracking-wider text-primary">Marketplace</p>
+                      <h2 className="text-base font-bold text-card-foreground">Edit item</h2>
+                      <p className="text-xs text-muted-foreground">Update the item details, pricing, inventory, and image before approval.</p>
+                    </div>
+                    <Button onClick={() => setEditingItemIndex(null)} className="rounded-[12px] border border-border bg-transparent px-2 py-1 text-xs text-foreground hover:bg-muted">Close</Button>
+                  </div>
+                  <div className="max-h-[70vh] overflow-y-auto pr-1">
+                    <ItemAddNew
+                      vendorId={selectedVendor?.id}
+                      vendor={selectedVendor}
+                      initialItem={editItemList[editingItemIndex]}
+                      onSave={(updatedItem) => {
+                        const updatedList = [...editItemList];
+                        updatedList[editingItemIndex] = updatedItem;
+                        setEditItemList(updatedList);
+                        setEditingItemIndex(null);
+                      }}
+                    />
+                  </div>
+                </div>
+              )}
             </div>
           ) : (
             <p className="py-2 text-sm text-muted-foreground">No items to edit.</p>
