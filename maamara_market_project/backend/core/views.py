@@ -16,7 +16,7 @@ from .UserVisitorSerializers import *
 import bleach # type: ignore
 from order.views import IsAuthenticatedOrVisitor
 from .CategorySerializers import SectionSerializerCat, CategorySerializerCat
-from django.db.models import Prefetch, Count
+from django.db.models import Prefetch, Count, Min
 from order.views import IsAuthenticatedOrVisitor
 from django.core.mail import send_mail
 from rest_framework import generics
@@ -173,13 +173,13 @@ def support_faq_candidates(request):
         .exclude(subject="")
         .annotate(normalized_subject=Lower(Trim("subject")))
         .values("normalized_subject", "category")
-        .annotate(question_count=Count("id"))
+        .annotate(question_count=Count("id"), sample_question=Min("subject"))
         .filter(question_count__gte=3)
         .order_by("-question_count", "normalized_subject")[:50]
     )
     return Response([
         {
-            "question": row["normalized_subject"],
+            "question": row["sample_question"],
             "category": row["category"] or "other",
             "question_count": row["question_count"],
         }
