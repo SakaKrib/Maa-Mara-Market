@@ -142,7 +142,7 @@ def support_messages(request):
     # Keep support staff informed when the deployment has an email backend configured.
     try:
         from django.conf import settings
-        support_recipient = getattr(settings, "SUPPORT_EMAIL", None) or getattr(settings, "DEFAULT_FROM_EMAIL", None)
+        support_recipient = (getattr(settings, "SUPPORT_EMAIL", None) or getattr(settings, "EMAIL_HOST_USER", None) or getattr(settings, "DEFAULT_FROM_EMAIL", None))
         if support_recipient:
             send_mail(
                 f"New Maa Mara Market support request: {ticket.subject}",
