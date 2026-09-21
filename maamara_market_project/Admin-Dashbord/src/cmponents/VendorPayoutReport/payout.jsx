@@ -25,14 +25,12 @@ const VendorReport = () => {
   const [processing, setProcessing] = useState(false);
   const navigate = useNavigate();
 
-  // Snackbar state
   const [snackbar, setSnackbar] = useState({
     open: false,
     message: "",
-    severity: "info", // "success" | "error" | "warning" | "info"
+    severity: "info",
   });
 
-  // Confirmation dialog state
   const [confirmDialog, setConfirmDialog] = useState({
     open: false,
     title: "",
@@ -46,25 +44,44 @@ const VendorReport = () => {
   const fetchReport = async () => {
     setLoading(true);
     try {
-      const res = await api.get("/api/vendor-net-payout/", {
+      const res = await api.get("/api/admin-payouts/", {
         withCredentials: true,
       });
-      const formattedData = res.data.map((vendor) => ({
-        id: vendor.vendor_id,
-        Reference: vendor.details?.reference || `REF-${vendor.vendor_id}`,
+
+      const payouts = Array.isArray(res.data)
+        ? res.data
+        : res.data?.results || [];
+
+      const formattedData = payouts.map((payout) => ({
+        id: payout.id || payout.reference,
+        Reference: payout.reference || `REF-${payout.id}`,
         Amount: new Intl.NumberFormat("en-KE", {
           style: "currency",
           currency: "KES",
-        }).format(vendor.net_payout),
-        CreatedAt: vendor.month || "N/A",
-        Paid: vendor.details?.paid ? "Yes" : "No",
-        PaidAt: vendor.details?.paid_at
-          ? new Date(vendor.details.paid_at).toLocaleDateString()
-          : "Pending",
-        VendorID: vendor.vendor_id,
-        VendorName: vendor.vendor_name,
-        VendorEmail: vendor.vendor_email,
-        Adjustment: vendor.details?.adjustment_amount || 0,
+        }).format(Number(payout.amount || payout.net_payout || 0)),
+        CreatedAt: payout.payout_period_start || payout.created_at || "N/A",
+        Paid: payout.paid ? "Yes" : "No",
+        PaidAt: payout.paid_at
+          ? new Date(payout.paid_at).toLocaleDateString()
+          : payout.paid
+            ? "Completed"
+            : "Pending",
+        VendorID: payout.vendor_id || payout.vendor?.id,
+        VendorName:
+          payout.vendor_name ||
+          payout.vendor?.company_name ||
+          [
+            payout.vendor?.surname_name,
+            payout.vendor?.middle_name,
+            payout.vendor?.first_name,
+          ]
+            .filter(Boolean)
+            .join(" ") ||
+          "N/A",
+        VendorEmail: payout.vendor_email || payout.vendor?.email || "N/A",
+        Adjustment: Number(payout.adjustment_amount || 0),
+        PaymentMethod: payout.vendor?.payment_method || "N/A",
+        PayoutReference: payout.reference,
       }));
 
       setReport(formattedData);
@@ -80,7 +97,6 @@ const VendorReport = () => {
     fetchReport();
   }, []);
 
-  // Snackbar helper
   const showSnackbar = (message, severity = "info") => {
     setSnackbar({ open: true, message, severity });
   };
@@ -89,30 +105,52 @@ const VendorReport = () => {
     setSnackbar((prev) => ({ ...prev, open: false }));
   };
 
-  // Confirmation dialog helper
   const openConfirmDialog = (title, message, onConfirm) => {
     setConfirmDialog({ open: true, title, message, onConfirm });
   };
 
   const closeConfirmDialog = () => {
-    setConfirmDialog({ open: false, title: "", message: "", onConfirm: null });
+    setConfirmDialog({
+      open: false,
+      title: "",
+      message: "",
+      onConfirm: null,
+    });
   };
 
-  // Pay Single Vendor
-  const handlePayVendor = (vendorId, vendorName) => {
+  const handlePayVendor = (reference, vendorName) => {
+    if (!reference) {
+      showSnackbar("This payout has no valid reference.", "error");
+      return;
+    }
+
     openConfirmDialog(
-      "Confirm Payment",
-      `Are you sure you want to pay ${vendorName}?`,
+      "Confirm Payout Submission",
+      `Submit payout ${reference} for ${vendorName}? A successful provider submission is not the same as final settlement.`,
       async () => {
         closeConfirmDialog();
         setProcessing(true);
+
         try {
-          await api.post(`/api/pay-vendor/${vendorId}/`, {}, { withCredentials: true });
-          showSnackbar(`✅ Vendor "${vendorName}" paid successfully!`, "success");
+          const response = await api.post(
+            `/api/vendor/payout/${encodeURIComponent(reference)}/pay/`,
+            {},
+            { withCredentials: true }
+          );
+
+          showSnackbar(
+            response.data?.message ||
+              `Payout submitted for "${vendorName}". Awaiting provider confirmation.`,
+            "success"
+          );
           await fetchReport();
         } catch (err) {
-          console.error(err);
-          showSnackbar(`❌ Payment failed for "${vendorName}".`, "error");
+          const message =
+            err.response?.data?.error ||
+            err.response?.data?.detail ||
+            `Payout submission failed for "${vendorName}".`;
+          console.error("Payout submission failed:", err);
+          showSnackbar(message, "error");
         } finally {
           setProcessing(false);
         }
@@ -120,21 +158,35 @@ const VendorReport = () => {
     );
   };
 
-  // Pay All Vendors
   const handlePayAll = () => {
     openConfirmDialog(
-      "Confirm Payment",
-      "Are you sure you want to pay all vendors for this month?",
+      "Confirm All Payout Submissions",
+      "Submit all currently unpaid vendor payouts for the current payout period? Provider submission will remain pending until the provider confirms settlement.",
       async () => {
         closeConfirmDialog();
         setProcessing(true);
+
         try {
-          await api.post(`/api/pay-all-vendors/`, {}, { withCredentials: true });
-          showSnackbar("✅ All vendors paid successfully!", "success");
+          const response = await api.post(
+            "/api/payout/process-payouts-by-group/",
+            {},
+            { withCredentials: true }
+          );
+
+          showSnackbar(
+            response.data?.status === "completed"
+              ? "Payout submissions completed. Provider confirmation is still required."
+              : "Payout submissions were sent for processing.",
+            "success"
+          );
           await fetchReport();
         } catch (err) {
-          console.error(err);
-          showSnackbar("❌ Failed to pay all vendors.", "error");
+          const message =
+            err.response?.data?.error ||
+            err.response?.data?.detail ||
+            "Failed to process vendor payouts.";
+          console.error("Bulk payout processing failed:", err);
+          showSnackbar(message, "error");
         } finally {
           setProcessing(false);
         }
@@ -143,30 +195,38 @@ const VendorReport = () => {
   };
 
   const handlepay = () => {
-    navigate('payment-trigger')
-  }
+    navigate("payment-trigger");
+  };
+
   const columns = [
-    { field: "Reference", headerName: "Reference", flex: 1 },
-    { field: "Amount", headerName: "Amount", flex: 1 },
-    { field: "CreatedAt", headerName: "Created At", flex: 1 },
-    { field: "Paid", headerName: "Paid", flex: 0.5 },
-    { field: "PaidAt", headerName: "Paid At", flex: 1 },
-    { field: "VendorName", headerName: "Vendor Name", flex: 1 },
-    { field: "VendorEmail", headerName: "Vendor Email", flex: 1.5 },
-    { field: "Adjustment", headerName: "Adjustment", flex: 1 },
+    { field: "Reference", headerName: "Reference", flex: 1.1, minWidth: 130 },
+    { field: "Amount", headerName: "Amount", flex: 1, minWidth: 120 },
+    { field: "CreatedAt", headerName: "Period", flex: 1, minWidth: 110 },
+    { field: "Paid", headerName: "Paid", flex: 0.6, minWidth: 80 },
+    { field: "PaidAt", headerName: "Paid At", flex: 1, minWidth: 100 },
+    { field: "VendorName", headerName: "Vendor Name", flex: 1.2, minWidth: 150 },
+    { field: "VendorEmail", headerName: "Vendor Email", flex: 1.5, minWidth: 180 },
+    { field: "PaymentMethod", headerName: "Method", flex: 1, minWidth: 120 },
+    { field: "Adjustment", headerName: "Adjustment", flex: 1, minWidth: 110 },
     {
       field: "actions",
       headerName: "Actions",
       flex: 1,
+      minWidth: 130,
       renderCell: (params) => (
         <Button
           variant="contained"
           color="success"
           size="small"
           disabled={params.row.Paid === "Yes" || processing}
-          onClick={() => handlePayVendor(params.row.VendorID, params.row.VendorName)}
+          onClick={() =>
+            handlePayVendor(
+              params.row.PayoutReference,
+              params.row.VendorName
+            )
+          }
         >
-          {params.row.Paid === "Yes" ? "Paid" : "Pay Vendor"}
+          {params.row.Paid === "Yes" ? "Paid" : "Submit Payout"}
         </Button>
       ),
     },
@@ -179,6 +239,8 @@ const VendorReport = () => {
         justifyContent="space-between"
         alignItems="center"
         mb={2}
+        gap={2}
+        flexWrap="wrap"
       >
         <Typography variant="h5" sx={{ color: colors.gray[100] }}>
           Vendor Payout Report —{" "}
@@ -187,14 +249,15 @@ const VendorReport = () => {
             year: "numeric",
           })}
         </Typography>
+
         <Button
           variant="contained"
           color="primary"
           disabled={processing}
-          onClick={handlepay}
+          onClick={handlePayAll}
           className="hover:bg-blue-200 hover:text-blue-900 rounded-full"
         >
-          {processing ? <CircularProgress size={24} /> : "💰 Pay All Vendors"}
+          {processing ? <CircularProgress size={24} /> : "💰 Submit All Payouts"}
         </Button>
       </Box>
 
@@ -207,10 +270,9 @@ const VendorReport = () => {
         loading={loading || processing}
       />
 
-      {/* Snackbar for feedback messages */}
       <Snackbar
         open={snackbar.open}
-        autoHideDuration={4000}
+        autoHideDuration={5000}
         onClose={closeSnackbar}
         anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
       >
@@ -224,7 +286,6 @@ const VendorReport = () => {
         </Alert>
       </Snackbar>
 
-      {/* Confirmation Dialog */}
       <Dialog open={confirmDialog.open} onClose={closeConfirmDialog}>
         <DialogTitle>{confirmDialog.title}</DialogTitle>
         <DialogContent>
@@ -235,7 +296,9 @@ const VendorReport = () => {
             Cancel
           </Button>
           <Button
-            onClick={() => confirmDialog.onConfirm && confirmDialog.onConfirm()}
+            onClick={() =>
+              confirmDialog.onConfirm && confirmDialog.onConfirm()
+            }
             color="primary"
             disabled={processing}
             variant="contained"
