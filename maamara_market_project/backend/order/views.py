@@ -994,6 +994,21 @@ def update_admin_transaction(request, transaction_id):
     ledger_entry.raw_data = raw_data
     ledger_entry.save(update_fields=["category", "payment_method", "amount", "raw_data", "updated_at"])
 
+    channel_layer = get_channel_layer()
+    if channel_layer is not None:
+        try:
+            async_to_sync(channel_layer.group_send)(
+                "admin_accounts",
+                {
+                    "type": "account_changed",
+                    "resource": "transaction",
+                    "action": "updated",
+                    "object_id": ledger_entry.id,
+                },
+            )
+        except Exception:
+            logger.exception("Failed to broadcast Accounts transaction update.")
+
     return Response({
         "success": True,
         "message": "Bookkeeping entry updated successfully.",
@@ -1032,6 +1047,21 @@ def delete_admin_transaction(request, transaction_id):
     ledger_entry.status = "deleted"
     ledger_entry.raw_data = raw_data
     ledger_entry.save(update_fields=["status", "raw_data", "updated_at"])
+
+    channel_layer = get_channel_layer()
+    if channel_layer is not None:
+        try:
+            async_to_sync(channel_layer.group_send)(
+                "admin_accounts",
+                {
+                    "type": "account_changed",
+                    "resource": "transaction",
+                    "action": "deleted",
+                    "object_id": ledger_entry.id,
+                },
+            )
+        except Exception:
+            logger.exception("Failed to broadcast Accounts transaction deletion.")
 
     return Response({
         "success": True,
