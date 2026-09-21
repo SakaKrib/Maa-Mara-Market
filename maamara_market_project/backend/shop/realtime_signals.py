@@ -14,15 +14,26 @@ def _broadcast(resource, action, object_id):
 
     def send():
         try:
+            event = {
+                "action": action,
+                "object_id": object_id,
+            }
             async_to_sync(channel_layer.group_send)(
                 "admin_vendor_requests",
                 {
+                    **event,
                     "type": "request_changed",
                     "resource": resource,
-                    "action": action,
-                    "object_id": object_id,
                 },
             )
+            if resource == "faq":
+                async_to_sync(channel_layer.group_send)(
+                    "public_faq",
+                    {
+                        **event,
+                        "type": "faq_changed",
+                    },
+                )
         except Exception:
             return
 
