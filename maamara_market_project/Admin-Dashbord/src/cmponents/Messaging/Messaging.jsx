@@ -56,37 +56,62 @@ export default function Messaging() {
       if (closed) return;
       socket = new WebSocket(getWebSocketUrl("/ws/messaging/"));
       socketRef.current = socket;
+
       socket.onopen = () => {
         attempts = 0;
-        if (selected?.id) socket.send(JSON.stringify({ type: "join_conversation", conversation_id: selected.id }));
+        if (selected?.id) {
+          socket.send(JSON.stringify({
+            type: "join_conversation",
+            conversation_id: selected.id,
+          }));
+        }
       };
+
       socket.onmessage = async (event) => {
         try {
-          const message = JSON.parse(event.data);
-          if (message.type === "message.created") {
+          const incoming = JSON.parse(event.data);
+
+          if (incoming.type === "message.created" && selected?.id === incoming.conversation_id) {
+            setMessages((current) => {
+              if (current.some((message) => message.id === incoming.message_id)) {
+                return current;
+              }
+              return [...current, incoming];
+            });
             await loadConversations();
-            if (selected?.id === message.conversation_id) await loadMessages(selected.id);
-          } else if (message.type === "conversation.created") {
+          } else if (incoming.type === "conversation.updated") {
+            await loadConversations();
+            if (selected?.id === incoming.conversation_id) {
+              await loadMessages(selected.id);
+            }
+          } else if (incoming.type === "conversation.created") {
             await loadConversations();
           }
-        } catch (_) {}
+        } catch (_) {
+          // Ignore malformed realtime frames and keep the connection alive.
+        }
       };
+
       socket.onclose = (event) => {
         if (closed || event.code === 4401) return;
-        timer = window.setTimeout(connect, Math.min(1000 * Math.pow(2, attempts++), 15000));
+        timer = window.setTimeout(
+          connect,
+          Math.min(1000 * Math.pow(2, attempts++), 15000)
+        );
       };
+
       socket.onerror = () => socket.close();
     };
 
     connect();
+
     return () => {
       closed = true;
       if (timer) window.clearTimeout(timer);
       if (socket) socket.close();
       socketRef.current = null;
     };
-  }, [loadConversations, loadMessages, selected?.id]);
-
+  }, [loadConversations, loadMessages]);
   useEffect(() => {
     if (selected?.id) {
       loadMessages(selected.id).catch(() => setError("Unable to load conversation."));
