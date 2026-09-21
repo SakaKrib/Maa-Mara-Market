@@ -22,6 +22,10 @@ const TrendingProductCard = ({ item, isWishlisted: controlledWishlist, onToggleW
   const stock = Number(item.in_stock ?? 0);
   const derivedWishlist = wishlist.some((entry) => entry.item?.id === item.id || entry.id === item.id);
   const isWishlisted = controlledWishlist ?? derivedWishlist;
+  const displayName = String(item.name || "Marketplace product");
+  const truncatedName = displayName.length > 42
+    ? `${displayName.slice(0, 42).trimEnd()}…`
+    : displayName;
 
   const openProduct = () => {
     if (onOpen) onOpen(item.id);
@@ -50,7 +54,7 @@ const TrendingProductCard = ({ item, isWishlisted: controlledWishlist, onToggleW
   };
 
   return (
-    <article className="mm-product-card mm-card mm-card-interactive h-full overflow-hidden bg-white">
+    <article className="mm-product-card mm-card mm-card-interactive overflow-hidden bg-white">
       <div className="mm-product-media relative cursor-pointer" onClick={openProduct}>
         <img
           src={image || "/placeholder.png"}
@@ -78,9 +82,9 @@ const TrendingProductCard = ({ item, isWishlisted: controlledWishlist, onToggleW
         )}
       </div>
 
-      <div className="mm-product-content p-3 sm:p-4 flex flex-col h-full">
+      <div className="mm-product-content p-3 sm:p-4 flex flex-col">
         <Link to={`/item/${item.id}`} onClick={(event) => event.stopPropagation()} className="block">
-          <h3 className="text-sm sm:text-base font-semibold text-gray-800 mb-1 line-clamp-2">{item.name}</h3>
+          <h3 className="text-sm sm:text-base font-medium text-gray-800 mb-1 truncate" title={displayName}>{truncatedName}</h3>
         </Link>
 
         <p className="mm-product-rating text-xs sm:text-sm text-gray-500 mb-1" aria-label={`${rating} rating from ${reviewCount} reviews`}>
