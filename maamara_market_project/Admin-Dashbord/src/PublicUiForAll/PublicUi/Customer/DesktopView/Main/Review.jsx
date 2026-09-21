@@ -4,15 +4,6 @@ import Snackbar from "@mui/material/Snackbar";
 import MuiAlert from "@mui/material/Alert";
 import Avatar from "@mui/material/Avatar";
 import VendorRatingForm from "./VendorRatingsAndShop";
-import { useAuth } from "../../../../../cmponents/Auth/AuthContext/Context";
-
-// Reaction types matching backend
-const reactionTypes = [
-  { type: "like", emoji: "👍" },
-  { type: "dislike", emoji: "👎" },
-  { type: "laugh", emoji: "😂" },
-  { type: "angry", emoji: "😡" },
-];
 
 // MUI Alert wrapper
 const Alert = React.forwardRef(function Alert(props, ref) {
@@ -20,7 +11,6 @@ const Alert = React.forwardRef(function Alert(props, ref) {
 });
 
 const ReviewSection = ({ item }) => {
-  const { user } = useAuth();
   const [reviewText, setReviewText] = useState("");
   const [rating, setRating] = useState(5);
   const [posting, setPosting] = useState(false);
@@ -76,18 +66,6 @@ const ReviewSection = ({ item }) => {
     } finally { setPosting(false); }
   };
 
-  // Handle reactions
-  const handleReaction = async (reviewId, type) => {
-    try {
-      await api.post(`/api/reactions/`, { review: reviewId, reaction_type: type }, { withCredentials: true });
-      setSnackbar({ open: true, message: `Reacted with ${type}`, severity: "success" });
-      fetchReviews();
-    } catch (err) {
-      console.error(err);
-      setSnackbar({ open: true, message: "Reaction failed.", severity: "error" });
-    }
-  };
-
   const renderStars = (num) => Array.from({ length: 5 }, (_, i) => (
     <span key={i} className={i < num ? "text-amber-600" : "text-gray-300"}>★</span>
   ));
@@ -97,9 +75,7 @@ const ReviewSection = ({ item }) => {
     return words.length > limit ? `${words.slice(0, limit).join(" ")}…` : String(text || "").trim();
   };
 
-  const renderVendorBars = (score) => {
-    const percentage = Math.min(Math.max(score * 20, 0), 100);
-    return (
+  return (
       <div className="w-full bg-gray-200 rounded-full h-2">
         <div className="bg-green-500 h-2 rounded-full" style={{ width: `${percentage}%` }} />
       </div>
