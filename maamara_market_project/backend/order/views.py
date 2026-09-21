@@ -25,7 +25,7 @@ from core.models import ActivityLog, Voucher, Wallet
 from vendorDashboard.models import ReturnRequest, VendorPayout
 
 from .Serializers import TransactionSerializer
-from .models import OrderItem, Order, Transaction
+from .models import OrderItem, Order, Refund, Transaction
 
 User = get_user_model()
 logger = logging.getLogger(__name__)
@@ -911,6 +911,12 @@ def admin_transaction_history(request):
         .filter(paid=True)
         .order_by("-paid_at", "-created_at")
     )
+    refund_qs = (
+        Refund.objects
+        .select_related("payment", "return_request")
+        .filter(status__iexact="completed")
+        .order_by("-completed_at", "-created_at")
+    )
 
     if period_start:
         transaction_qs = transaction_qs.filter(
@@ -918,6 +924,9 @@ def admin_transaction_history(request):
         )
         payout_qs = payout_qs.filter(
             paid_at__gte=period_start, paid_at__lte=period_end
+        )
+        refund_qs = refund_qs.filter(
+            completed_at__gte=period_start, completed_at__lte=period_end
         )
 
     results = []
@@ -952,6 +961,32 @@ def admin_transaction_history(request):
             "source_label": "Manual bookkeeping" if is_manual else "Customer payment",
             "editable": is_manual,
             "deletable": is_manual,
+        })
+
+    for refund in refund_qs[:50]:
+        provider_reference = (
+            refund.provider_reference
+            or refund.payment.transaction_id
+            or f"REFUND-{refund.id}"
+        )
+        results.append({
+            "id": f"refund-{refund.id}",
+            "record_id": refund.id,
+            "txid": provider_reference,
+            "category": "Refund",
+            "category_key": "refund",
+            "payment_method": refund.provider,
+            "transaction_type": "B2C",
+            "amount": float(refund.amount or 0),
+            "status": refund.status,
+            "vendor_name": None,
+            "created_at": refund.completed_at or refund.updated_at,
+            "source": "refund",
+            "source_label": "Customer refund",
+            "editable": False,
+            "deletable": False,
+            "refund_reference": refund.provider_reference,
+            "refund_provider": refund.provider,
         })
 
     for payout in payout_qs[:50]:
