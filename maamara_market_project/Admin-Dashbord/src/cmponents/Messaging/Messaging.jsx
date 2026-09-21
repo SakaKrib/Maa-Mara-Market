@@ -91,7 +91,7 @@ export default function Messaging() {
           } else if (incoming.type === "conversation.updated") {
             await loadConversations();
             if (selectedRef.current?.id === incoming.conversation_id) {
-              await loadMessages(selected.id);
+              await loadMessages(selectedRef.current.id);
             }
           } else if (incoming.type === "conversation.created") {
             await loadConversations();
@@ -184,6 +184,7 @@ export default function Messaging() {
       setError("Select an image of 5 MB or less.");
       return;
     }
+    if (preview) URL.revokeObjectURL(preview);
     setImage(file);
     setPreview(URL.createObjectURL(file));
   };
@@ -251,7 +252,7 @@ export default function Messaging() {
                 <div ref={endRef} />
               </div>
               {error && <div className="bg-red-500/10 px-4 py-2 text-xs text-red-600">{error}</div>}
-              {preview && <div className="border-t border-border p-2"><div className="relative inline-block"><img src={preview} alt="Preview" className="h-20 rounded-xl" /><button type="button" onClick={() => { setImage(null); setPreview(""); }} className="absolute -right-2 -top-2 rounded-full bg-card p-1 shadow"><IonIcon icon={closeOutline} /></button></div></div>}
+              {preview && <div className="border-t border-border p-2"><div className="relative inline-block"><img src={preview} alt="Preview" className="h-20 rounded-xl" /><button type="button" onClick={() => { if (preview) URL.revokeObjectURL(preview); setImage(null); setPreview(""); }} className="absolute -right-2 -top-2 rounded-full bg-card p-1 shadow"><IonIcon icon={closeOutline} /></button></div></div>}
               <form onSubmit={sendMessage} className="border-t border-border p-3">
                 <div className="flex items-end gap-2 rounded-2xl border border-border bg-background p-2">
                   <label className="grid h-10 w-10 shrink-0 cursor-pointer place-items-center rounded-xl text-muted-foreground hover:bg-muted"><IonIcon icon={attachOutline} className="text-xl" /><input type="file" accept="image/jpeg,image/png,image/webp" className="hidden" onChange={selectImage} /></label>
