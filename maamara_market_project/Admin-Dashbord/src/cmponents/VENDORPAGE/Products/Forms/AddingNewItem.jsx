@@ -812,13 +812,10 @@ useEffect(() => {
 
           return (
             <label className={`flex items-center gap-2 cursor-pointer ${disabled ? "opacity-50 cursor-not-allowed" : ""}`}>
-              <input
-                type="checkbox"
-                {...field}
+              <Checkbox
                 checked={checked}
                 disabled={disabled}
-                onChange={(e) => field.onChange(e.target.checked)}
-                className="h-4 w-4 border-0 shadow-none focus-visible:outline-none focus-visible:ring-0"
+                onCheckedChange={field.onChange}
               />
               <span>Fresh Food</span>
             </label>
@@ -1679,7 +1676,7 @@ useEffect(() => {
                   <div className="space-y-6">
                     {/* Color selection */}
                     <div
-                      className="grid grid-cols-3 gap-5 my-2"
+                      className="grid grid-cols-2 gap-3 my-2 sm:grid-cols-3 lg:grid-cols-4"
                       
                     >
                       {colorOptions.map((color) => {
