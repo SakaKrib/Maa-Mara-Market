@@ -303,7 +303,7 @@ export default function VendorApprovalPanel() {
             </Button>
           </div>
 
-          <div className="max-h-[70vh] overflow-y-auto">
+          <div className="min-w-0">
             <ItemAddNew
               vendorId={selectedVendor.id}
               vendor={selectedVendor}
