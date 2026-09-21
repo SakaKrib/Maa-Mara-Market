@@ -7,3 +7,4 @@ class CoreConfig(AppConfig):
     def ready(self):
         import core.signals
         import core.realtime_signals
+        import core.messaging_realtime
