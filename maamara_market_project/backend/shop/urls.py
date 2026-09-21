@@ -37,6 +37,7 @@ urlpatterns = [
     path("api/discovery/", discovery_feed, name="discovery-feed"),
     path("api/recommendations/", recommendations, name="recommendations"),
     path("api/homepage-collections/", homepage_collections, name="homepage-collections"),
+    path("api/items/<int:pk>/marketplace-context/", item_marketplace_context, name="item-marketplace-context"),
     path("api/multi-collections/", multi_collections, name="multi-collections"),
     path("api/blogs/", blog_list, name="list_blogs"),
     path("api/blogs/<int:pk>/", blog_detail, name="blog_detail"),
