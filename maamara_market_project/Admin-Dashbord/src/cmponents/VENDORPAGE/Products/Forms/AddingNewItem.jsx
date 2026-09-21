@@ -80,6 +80,15 @@ import { useDepartments } from "./useDepartments";
   
 const ItemAddNew = ({ initialItem, vendorId, itemId, onSave, vendor }) => {
   const { departmentMap, organicDepartmentMap } = useDepartments();
+
+  // Organic-only fields must never remain enabled/checked when the
+  // vendor switches the item to the handmade (inorganic) section.
+  useEffect(() => {
+    if (selectedSection === "inorganic") {
+      form.setValue("is_organic", false);
+      form.setValue("is_fresh_food", false);
+    }
+  }, [selectedSection, form]);
   const [selectedDepartment, setSelectedDepartment] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("");
   const [isCustomCategory, setIsCustomCategory] = useState(false);
