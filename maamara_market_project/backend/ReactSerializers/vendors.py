@@ -394,6 +394,33 @@ def submit_vendor_request(request):
     # ✅ Handle PDF
     decoded['item_pdf'] = request.FILES.get('item_pdf')
 
+    # Persist optional item video and additional gallery images.
+    # VendorRequest.item_list is JSON, so uploaded files are stored in MEDIA_ROOT
+    # and their paths are recorded in the item JSON.
+    for index, item in enumerate(decoded.get("item_list", [])):
+        video_upload = request.FILES.get(f"item_video_{index}")
+        if video_upload:
+            filename = get_valid_filename(video_upload.name)
+            path = default_storage.save(
+                f"vendor_items/videos/{filename}",
+                ContentFile(video_upload.read()),
+            )
+            item["video"] = default_storage.url(path)
+
+        additional_uploads = request.FILES.getlist(f"item_additional_images_{index}")
+        if additional_uploads:
+            existing_images = item.get("additional_images") or []
+            if not isinstance(existing_images, list):
+                existing_images = []
+            for upload in additional_uploads:
+                filename = get_valid_filename(upload.name)
+                path = default_storage.save(
+                    f"vendor_items/additional/{filename}",
+                    ContentFile(upload.read()),
+                )
+                existing_images.append(default_storage.url(path))
+            item["additional_images"] = existing_images
+
     # Keep item images authoritative in VendorDraft when a draft exists.
     # Existing files are referenced by asset ID; replacements update the
     # draft asset in place instead of creating a second, disconnected copy.
@@ -536,6 +563,12 @@ def update_vendor_request_items(request, vendor_request_id):
 
     # Get the updated item(s) from request data
     new_items = request.data.get('item_list')
+    if isinstance(new_items, str):
+        try:
+            new_items = json.loads(new_items)
+        except json.JSONDecodeError:
+            return Response({'error': 'item_list must be valid JSON.'}, status=400)
+
     if not new_items or not isinstance(new_items, list) or len(new_items) == 0:
         return Response({'error': 'No item data provided or invalid format.'}, status=400)
 
@@ -551,8 +584,35 @@ def update_vendor_request_items(request, vendor_request_id):
     # Replace the matching item by name
     updated = False
     new_item_list = []
-    for item in current_items:
+    for item_index, item in enumerate(current_items):
         if item.get('name') == item_name:
+            updated_item = dict(updated_item)
+
+            video_upload = request.FILES.get(f"item_video_{item_index}")
+            if video_upload:
+                filename = get_valid_filename(video_upload.name)
+                path = default_storage.save(
+                    f"vendor_items/videos/{filename}",
+                    ContentFile(video_upload.read()),
+                )
+                updated_item["video"] = default_storage.url(path)
+
+            additional_uploads = request.FILES.getlist(
+                f"item_additional_images_{item_index}"
+            )
+            if additional_uploads:
+                existing_images = updated_item.get("additional_images")
+                if not isinstance(existing_images, list):
+                    existing_images = item.get("additional_images") or []
+                for upload in additional_uploads:
+                    filename = get_valid_filename(upload.name)
+                    path = default_storage.save(
+                        f"vendor_items/additional/{filename}",
+                        ContentFile(upload.read()),
+                    )
+                    existing_images.append(default_storage.url(path))
+                updated_item["additional_images"] = existing_images
+
             new_item_list.append(updated_item)
             updated = True
         else:
@@ -800,6 +860,11 @@ def approve_vendor(request, vendor_request_id):
                 brand = brand_instance
 
             relative_path = raw_path.lstrip('/').removeprefix('media/') if raw_path else None
+            video_path = item.get('video')
+            video_relative_path = (
+                str(video_path).lstrip('/').removeprefix('media/')
+                if video_path else None
+            )
 
             name = sanitize(item.get('name') or "")
             if not name:
@@ -833,8 +898,18 @@ def approve_vendor(request, vendor_request_id):
                 slug=slug,
                 image_hash=image_hash,
                 image=relative_path,
+                video=video_relative_path,
                 percentage_discount=item.get('percentage_discount', 0)
             )
+
+            for additional_image in item.get("additional_images", []) or []:
+                if not additional_image:
+                    continue
+                additional_relative_path = str(additional_image).lstrip('/').removeprefix('media/')
+                ItemAdditionalImage.objects.create(
+                    item=created_item,
+                    image=additional_relative_path,
+                )
 
             shipping_data = item.get("shipping_dimension", {})
             if shipping_data:
