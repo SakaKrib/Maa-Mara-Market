@@ -332,6 +332,11 @@ def homepage_collections(request):
     Categories are used as the customer-facing collection titles so sections
     such as "Journals", "DIY Gifts", or "Wedding Gifts" appear automatically
     when the catalog actually contains available products for them.
+
+    Within each section, products are ranked using the customer's existing
+    behavior: recent searches, viewed items, wishlist items, and purchases.
+    Global views/likes remain the fallback so anonymous/new customers still
+    get useful discovery results.
     """
     try:
         limit = min(max(int(request.query_params.get("items", 6)), 2), 10)
@@ -344,35 +349,121 @@ def homepage_collections(request):
     user, visitor_id = _request_actor(request)
 
     if user:
-        signal_items = list(
+        view_rows = list(
             ItemView.objects.filter(user=user)
             .select_related("item")
-            .order_by("-viewed_at")[:20]
+            .order_by("-viewed_at")[:30]
         )
-        signal_items += list(
+        wishlist_rows = list(
             Wishlist.objects.filter(user=user)
             .select_related("item")
-            .order_by("-created_at")[:20]
+            .order_by("-created_at")[:30]
+        )
+        purchase_rows = list(
+            OrderItem.objects.filter(
+                user=user,
+                order__status="completed",
+                refunded=False,
+                is_returned=False,
+            )
+            .select_related("item")
+            .order_by("-ordered_date")[:30]
+        )
+        search_rows = list(
+            SearchEvent.objects.filter(user=user).order_by("-created_at")[:10]
         )
     elif visitor_id:
-        signal_items = list(
-            ItemView.objects.filter(visitor_id=visitor_id, user__isnull=True)
+        view_rows = list(
+            ItemView.objects.filter(
+                visitor_id=visitor_id, user__isnull=True
+            )
             .select_related("item")
-            .order_by("-viewed_at")[:20]
+            .order_by("-viewed_at")[:30]
         )
-        signal_items += list(
-            Wishlist.objects.filter(visitor_id=visitor_id, user__isnull=True)
+        wishlist_rows = list(
+            Wishlist.objects.filter(
+                visitor_id=visitor_id, user__isnull=True
+            )
             .select_related("item")
-            .order_by("-created_at")[:20]
+            .order_by("-created_at")[:30]
+        )
+        purchase_rows = list(
+            OrderItem.objects.filter(
+                visitor_id=visitor_id,
+                order__status="completed",
+                refunded=False,
+                is_returned=False,
+            )
+            .select_related("item")
+            .order_by("-ordered_date")[:30]
+        )
+        search_rows = list(
+            SearchEvent.objects.filter(
+                visitor_id=visitor_id, user__isnull=True
+            )
+            .order_by("-created_at")[:10]
         )
     else:
-        signal_items = []
+        view_rows = wishlist_rows = purchase_rows = search_rows = []
 
-    category_counts = {}
-    for row in signal_items:
-        category_id = row.item.category_id
-        if category_id:
-            category_counts[category_id] = category_counts.get(category_id, 0) + 1
+    viewed_items = [row.item for row in view_rows]
+    wishlist_items = [row.item for row in wishlist_rows]
+    purchased_items = [row.item for row in purchase_rows]
+
+    # Keep the strongest signals separate so a product can receive the
+    # appropriate weight instead of being treated as a generic "activity".
+    viewed_ids = {item.id for item in viewed_items if item.id}
+    wishlist_ids = {item.id for item in wishlist_items if item.id}
+    purchased_ids = {item.id for item in purchased_items if item.id}
+
+    signal_items = viewed_items + wishlist_items + purchased_items
+    category_signal_counts = {}
+    category_signal_weights = {}
+
+    for item in signal_items:
+        category_id = item.category_id
+        if not category_id:
+            continue
+        category_signal_counts[category_id] = category_signal_counts.get(category_id, 0) + 1
+        weight = 1
+        if item.id in wishlist_ids:
+            weight += 3
+        if item.id in purchased_ids:
+            weight += 4
+        if item.id in viewed_ids:
+            weight += 1
+        category_signal_weights[category_id] = (
+            category_signal_weights.get(category_id, 0) + weight
+        )
+
+    # Recent searches are converted into the same product taxonomy signals
+    # used by the recommendation endpoint. This lets a search such as
+    # "beaded bag" influence both the section choice and the products inside it.
+    search_terms = []
+    for row in search_rows:
+        for token in row.query.lower().split():
+            token = token.strip(".,!?;:()[]{}")
+            if len(token) >= 2 and token not in search_terms:
+                search_terms.append(token)
+
+    search_filter = Q()
+    for term in search_terms[:5]:
+        search_filter |= _search_term_query(term)
+
+    search_interest_items = list(
+        _catalog_queryset().filter(search_filter).only(
+            "id", "category_id", "subcategory_id", "brand_id", "section_id"
+        )[:100]
+    ) if search_filter else []
+
+    search_category_counts = {}
+    for item in search_interest_items:
+        if item.category_id:
+            search_category_counts[item.category_id] = (
+                search_category_counts.get(item.category_id, 0) + 1
+            )
+
+    category_interest_ids = set(category_signal_counts) | set(search_category_counts)
 
     categories = (
         Category.objects.filter(items__available=True, items__in_stock__gt=0)
@@ -387,19 +478,97 @@ def homepage_collections(request):
         .order_by("name")
     )
 
-    ranked = sorted(
-        categories,
-        key=lambda category: (
-            0 if category.id in category_counts else 1,
-            -category_counts.get(category.id, 0),
+    def category_rank(category):
+        behavior_score = category_signal_weights.get(category.id, 0)
+        search_score = search_category_counts.get(category.id, 0) * 2
+        return (
+            -(behavior_score + search_score),
+            -category_signal_counts.get(category.id, 0),
             category.name.lower(),
-        ),
-    )
+        )
+
+    ranked = sorted(categories, key=category_rank)
 
     collections = []
     used_item_ids = set()
 
     for category in ranked:
+        category_search_items = [
+            item.id for item in search_interest_items
+            if item.category_id == category.id
+        ]
+
+        # Use the same behavior signals for item ranking. The score is
+        # deliberately additive so several weak signals can reinforce one
+        # another while wishlist/purchase/search intent remain stronger.
+        item_score = Value(0, output_field=IntegerField())
+
+        if viewed_ids:
+            item_score = item_score + Case(
+                When(id__in=viewed_ids, then=Value(12)),
+                default=Value(0),
+                output_field=IntegerField(),
+            )
+        if wishlist_ids:
+            item_score = item_score + Case(
+                When(id__in=wishlist_ids, then=Value(70)),
+                default=Value(0),
+                output_field=IntegerField(),
+            )
+        if purchased_ids:
+            item_score = item_score + Case(
+                When(id__in=purchased_ids, then=Value(80)),
+                default=Value(0),
+                output_field=IntegerField(),
+            )
+        if category_search_items:
+            item_score = item_score + Case(
+                When(id__in=category_search_items, then=Value(45)),
+                default=Value(0),
+                output_field=IntegerField(),
+            )
+
+        signal_category_ids = {
+            item.subcategory_id for item in signal_items
+            if item.category_id == category.id and item.subcategory_id
+        }
+        signal_brand_ids = {
+            item.brand_id for item in signal_items
+            if item.category_id == category.id and item.brand_id
+        }
+        signal_section_ids = {
+            item.section_id for item in signal_items
+            if item.category_id == category.id and item.section_id
+        }
+
+        if signal_category_ids:
+            item_score = item_score + Case(
+                When(subcategory_id__in=signal_category_ids, then=Value(30)),
+                default=Value(0),
+                output_field=IntegerField(),
+            )
+        if signal_brand_ids:
+            item_score = item_score + Case(
+                When(brand_id__in=signal_brand_ids, then=Value(24)),
+                default=Value(0),
+                output_field=IntegerField(),
+            )
+        if signal_section_ids:
+            item_score = item_score + Case(
+                When(section_id__in=signal_section_ids, then=Value(12)),
+                default=Value(0),
+                output_field=IntegerField(),
+            )
+
+        # Give direct name/category/search-term matches an additional boost.
+        for term in search_terms[:5]:
+            item_score = item_score + Case(
+                When(Q(name__iexact=term), then=Value(60)),
+                When(_search_term_query(term), then=Value(25)),
+                default=Value(0),
+                output_field=IntegerField(),
+            )
+
         items = list(
             category.items.filter(
                 available=True,
@@ -410,15 +579,22 @@ def homepage_collections(request):
                 sales_count=Sum("sold_items__quantity"),
                 average_rating=Avg("reviews__rating"),
                 review_count=Count("reviews", distinct=True),
+                behavior_score=item_score,
             )
-            .order_by("-views", "-likes", "-updated")[:limit]
+            .order_by(
+                "-behavior_score",
+                "-views",
+                "-likes",
+                "-updated",
+            )[:limit + len(used_item_ids)]
         )
 
         if not items:
             continue
 
-        # Avoid turning the homepage into repeated copies of the same products.
-        fresh_items = [item for item in items if item.id not in used_item_ids]
+        # Avoid turning the homepage into repeated copies of the same products,
+        # while allowing the behavior score to decide which products survive.
+        fresh_items = [item for item in items if item.id not in used_item_ids][:limit]
         if not fresh_items:
             continue
 
@@ -434,7 +610,10 @@ def homepage_collections(request):
                 if category.department and category.department.section
                 else None
             ),
-            "personalized": category.id in category_counts,
+            "personalized": (
+                category.id in category_interest_ids
+                or category.id in search_category_counts
+            ),
             "items": _serialize_discovery(fresh_items, request),
         })
 
