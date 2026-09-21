@@ -92,6 +92,7 @@ urlpatterns = [
 
     # search engene
     path('api/search-items/', search_items, name='search_items'),
+    path('api/search-events/', record_search_event, name='record-search-event'),
 
     # open api url
     path('api/ai-chat/', AIChatAPIView.as_view(), name='ai-chat'),
