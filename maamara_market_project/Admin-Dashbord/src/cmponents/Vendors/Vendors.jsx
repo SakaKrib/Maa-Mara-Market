@@ -238,9 +238,9 @@ const Vendor_list = () => {
 
   return (
     <section className="min-w-0 space-y-5 p-2 sm:p-4">
-      <header className="flex flex-col gap-4 rounded-2xl border border-border bg-card p-4 shadow-sm sm:flex-row sm:items-center sm:justify-between sm:p-5">
+      <header className="flex flex-col items-center gap-4 rounded-2xl border border-border bg-card p-4 text-center shadow-sm sm:p-5">
         <div className="min-w-0">
-          <div className="flex items-center gap-3">
+          <div className="flex flex-col items-center gap-3">
             <div className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary">
               <IonIcon icon={storefrontOutline} className="text-xl" />
             </div>
