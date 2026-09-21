@@ -383,6 +383,37 @@ class DirectMessage(models.Model):
         return f"Message {self.pk} in conversation {self.conversation_id}"
 
 
+
+class SearchEvent(models.Model):
+    """
+    Customer marketplace search history used by the recommendation layer.
+
+    Anonymous searches remain attached to the existing visitor_id so they can
+    be merged into the customer's account after authentication.
+    """
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="marketplace_search_events",
+    )
+    visitor_id = models.CharField(max_length=64, blank=True, null=True, db_index=True)
+    query = models.CharField(max_length=255)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        indexes = [
+            models.Index(fields=["user", "-created_at"]),
+            models.Index(fields=["visitor_id", "-created_at"]),
+        ]
+
+    def __str__(self):
+        owner = self.user.username if self.user else self.visitor_id or "anonymous"
+        return f"{owner}: {self.query}"
+
+
 class AboutPage(models.Model):
     hero_image = models.ImageField(upload_to="about/", blank=True, null=True)
     hero_title = models.CharField(max_length=255, blank=True, default="")
