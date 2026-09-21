@@ -6,9 +6,9 @@ import FormattedCurrency from "../Currency/FormattedCurrency";
 const Stars = ({ value = 0 }) => {
   const rounded = Math.min(5, Math.max(0, Math.round(Number(value) || 0)));
   return (
-    <span aria-label={`${value} out of 5 stars`} className="text-xs tracking-wide text-amber-500">
+    <span aria-label={`${value} out of 5 stars`} className="text-xs tracking-wide text-amber-700">
       {"★".repeat(rounded)}
-      <span className="text-amber-100">{"★".repeat(5 - rounded)}</span>
+      <span className="text-gray-300">{"★".repeat(5 - rounded)}</span>
     </span>
   );
 };
