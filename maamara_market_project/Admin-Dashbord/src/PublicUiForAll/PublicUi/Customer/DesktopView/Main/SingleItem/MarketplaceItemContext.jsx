@@ -89,6 +89,7 @@ const MarketplaceItemContext = ({ item, availableStock }) => {
   const itemReviews = data.item_reviews || [];
   const shopReviews = data.shop_reviews || [];
   const shop = data.item?.shop;
+  const shopSummary = data.shop_summary || {};
   const wishlistCount = Number(data.item?.wishlist_count || 0);
   const inCartsCount = Number(data.item?.in_carts_count || 0);
   const stockLeft = Math.max(0, Number(availableStock || 0));
@@ -187,9 +188,8 @@ const MarketplaceItemContext = ({ item, availableStock }) => {
             <div>
               <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Shop</p>
               <h2 className="mt-1 text-base font-bold text-card-foreground sm:text-lg">{shop.name || "Mara Mara Market"}</h2>
-              <div className="mt-1 flex items-center gap-2 text-sm text-muted-foreground">
-                <Stars value={shop.rating} />
-                <span>{shop.rating || 0} · {shop.review_count || 0} reviews</span>
+              <div className="mt-1 text-sm text-muted-foreground">
+                {shop.rating || 0} · {shop.review_count || 0} reviews
               </div>
             </div>
             <div className="w-full sm:w-auto">
@@ -201,25 +201,47 @@ const MarketplaceItemContext = ({ item, availableStock }) => {
               </Link>
             </div>
           </div>
-          {shopReviews.length > 0 && (
-            <div className="mt-5 border-t border-border pt-5">
-              <div className="mb-3">
-                <h3 className="text-sm font-bold text-card-foreground">Shop reviews</h3>
-                <p className="text-xs text-muted-foreground">What shoppers are saying about this shop.</p>
-              </div>
-              <div className="flex gap-4 overflow-x-auto pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-              {shopReviews.map((review) => (
-                <article key={review.id} className="min-w-[250px] max-w-[310px] rounded-xl border border-border bg-background p-4">
-                  <div className="flex items-center gap-2">
-                    <Stars value={review.rating} />
-                    <span className="text-xs text-muted-foreground">{review.user}</span>
-                  </div>
-                  <p className="mt-2 text-sm text-card-foreground">{review.comment}</p>
-                </article>
-              ))}
-              </div>
+          <div className="mt-5 border-t border-border pt-5">
+            <div className="mb-4">
+              <h3 className="text-sm font-bold text-card-foreground">Shop reviews</h3>
+              <p className="text-xs text-muted-foreground">Ratings and feedback from shoppers about this shop.</p>
             </div>
-          )}
+
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+              {[
+                ["Overall", shopSummary.rating ?? shop.rating ?? 0],
+                ["Quality", shopSummary.quality ?? 0],
+                ["Communication", shopSummary.communication ?? 0],
+                ["Shipping", shopSummary.shipping ?? 0],
+              ].map(([label, value]) => (
+                <div key={label} className="rounded-2xl border border-border bg-background p-3">
+                  <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">{label}</p>
+                  <div className="mt-1 flex items-center gap-2">
+                    <Stars value={value} />
+                    <span className="text-sm font-semibold text-card-foreground">{Number(value || 0).toFixed(1)}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {shopReviews.length > 0 && (
+              <div className="mt-5 flex gap-4 overflow-x-auto pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+                {shopReviews.map((review) => (
+                  <article key={review.id} className="min-w-[250px] max-w-[310px] rounded-xl border border-border bg-background p-4">
+                    <div className="flex items-center gap-2">
+                      <Stars value={review.rating} />
+                      <span className="text-xs text-muted-foreground">{review.user}</span>
+                    </div>
+                    <p className="mt-2 text-sm text-card-foreground">{review.comment}</p>
+                  </article>
+                ))}
+              </div>
+            )}
+
+            {!shopReviews.length && (
+              <p className="mt-4 text-xs text-muted-foreground">No written shop reviews yet.</p>
+            )}
+          </div>
           <ProductRail title="More from this shop" items={data.more_from_shop} nested />
         </section>
       )}
