@@ -30,7 +30,7 @@ from rest_framework.exceptions import ValidationError
 from rest_framework.response import Response
 from rest_framework import status
 from django.db import transaction
-from .models import Item, ItemAdditionalImage, ColorVariant, SizeStock, AgeVariant
+from .models import Item, ItemAdditionalImage, ColorVariant, SizeStock, AgeVariant, Occasion
 from .Serializers import ItemSerializers
 from rest_framework.permissions import IsAuthenticated
 import json
@@ -909,6 +909,12 @@ def approve_vendor(request, vendor_request_id):
                 video=video_relative_path,
                 percentage_discount=item.get('percentage_discount', 0)
             )
+
+            occasion_keys = item.get('occasions') or []
+            if occasion_keys:
+                created_item.occasions.set(
+                    Occasion.objects.filter(key__in=occasion_keys, is_active=True)
+                )
 
             for additional_image in item.get("additional_images", []) or []:
                 if not additional_image:
