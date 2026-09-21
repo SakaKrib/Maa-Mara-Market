@@ -84,7 +84,9 @@ const ItemAddNew = ({ initialItem, vendorId, itemId, onSave, vendor }) => {
   const [selectedCategory, setSelectedCategory] = useState("");
   const [colorVariants, setColorVariants] = useState([]);
 
-  const [selectedSection, setSelectedSection] = useState("organic");
+  const [selectedSection, setSelectedSection] = useState(
+    initialItem?.section === "inorganic" ? "inorganic" : "organic"
+  );
   const [showExtraFields, setShowExtraFields] = useState(false);
 
 
@@ -102,9 +104,11 @@ const ItemAddNew = ({ initialItem, vendorId, itemId, onSave, vendor }) => {
       form.reset({
         ...initialItem,
         image: initialItem.image || "",
+        section: initialItem.section || "",
       });
       setSelectedDepartment(initialItem.department || "");
       setSelectedCategory(initialItem.category || "");
+      setSelectedSection(initialItem.section === "inorganic" ? "inorganic" : "organic");
     }, [initialItem, form]);
     
     
@@ -142,11 +146,11 @@ useEffect(() => {
 
   if (productType === "organic") {
     setActiveData(organicDepartmentMap);
-    setValue("section", "Organic");
+    setValue("section", "organic");
   } 
   else if (productType === "inorganic") {
     setActiveData(departmentMap);
-    setValue("section", "Departmental");
+    setValue("section", "inorganic");
   } 
   else if (productType === "both") {
     const selectedMap =
@@ -157,7 +161,7 @@ useEffect(() => {
     setActiveData(selectedMap);
     setValue(
       "section",
-      selectedSection === "organic" ? "Organic" : "Departmental"
+      selectedSection === "organic" ? "organic" : "inorganic"
     );
   }
 }, [vendor, selectedSection, setValue]);
@@ -346,17 +350,16 @@ useEffect(() => {
   
       // separate
       <Form {...form}>
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 px-2 py-2 text-foreground custom-scroll-form">
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 px-2 py-2 text-foreground">
       <div >
 
         
   
          {/* 🔀 Toggle switch (only for organicDepartmentMap or departmentMap) */}
        {vendor.vendor_data?.product_type === "both" && (
-        <div className="flex items-center gap-4 my-4">
-          <label className="text-sm font-medium">Select Form</label>
-  
-          <div className="flex gap-3">
+        <div className="my-4 space-y-2">
+          <label className="block text-sm font-semibold text-foreground">Select Form</label>
+          <div className="flex flex-wrap gap-2">
             {/* Organic */}
             <label className="flex items-center gap-2 cursor-pointer">
               <input
@@ -368,10 +371,10 @@ useEffect(() => {
                 className="hidden"
               />
               <span
-                className={`px-2 py-2 rounded-lg text-sm font-medium border
+                className={`px-2 py-2 rounded-[20px] px-3 py-2 text-sm font-medium border transition
                   ${selectedSection === "organic"
                     ? "bg-blue-600 text-white border-blue-600"
-                    : "bg-gray-100 text-gray-600 border-gray-300"}
+                    : "bg-card text-muted-foreground border-border hover:border-primary/50"}
                 `}
               >
                 Organic
@@ -389,10 +392,10 @@ useEffect(() => {
                 className="hidden"
               />
               <span
-                className={`px-2 py-2 rounded-lg text-sm font-medium border
+                className={`px-2 py-2 rounded-[20px] px-3 py-2 text-sm font-medium border transition
                   ${selectedSection === "normal"
                     ? "bg-blue-600 text-white border-blue-600"
-                    : "bg-gray-100 text-gray-600 border-gray-300"}
+                    : "bg-card text-muted-foreground border-border hover:border-primary/50"}
                 `}
               >
                 Handmade
@@ -416,7 +419,7 @@ useEffect(() => {
                   {...field}
                   value={field.value}
                   disabled
-                  className="w-full rounded-[12px] border border-border bg-card px-2 py-2 text-sm text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20 text-center"
+                  className="w-full rounded-[20px] border border-border bg-card px-2 py-2 text-sm text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20 text-center"
                   
                 />
               </FormControl>
@@ -432,10 +435,10 @@ useEffect(() => {
           name="department"
           render={({ field }) => (
             <FormItem className='px-0 m-0'>
-              <FormLabel className='text-sm font-semibold text-card-foreground'>Department</FormLabel>
+              <FormLabel className='text-sm font-semibold text-foreground'>Department</FormLabel>
               <FormControl className='flex flex-col justify-end h-65'>
                 <select
-                  
+                  className="w-full rounded-[20px] border border-border bg-card px-2 py-2 text-sm text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
                   {...field}
                   onChange={(e) => {
                     const dept = e.target.value;
@@ -627,7 +630,7 @@ useEffect(() => {
       <FormControl>
       <div className="flex flex-col gap-3">
           {field.value && (
-            <div className="relative h-40 w-full max-w-xs overflow-hidden rounded-[12px] border border-border bg-muted/40">
+            <div className="relative h-40 w-full max-w-xs overflow-hidden rounded-[20px] border border-border bg-muted/40">
               <img
                 src={
                   typeof field.value === "string"
@@ -743,7 +746,7 @@ useEffect(() => {
                       <select
                         {...field}
                         value={field.value ?? ""}
-                        className="w-full rounded-[12px] border border-border bg-card px-2 py-2 text-sm text-foreground outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
+                        className="w-full rounded-[20px] border border-border bg-card px-2 py-2 text-sm text-foreground outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
                       >
                         <option value="">Select attribute</option>
                         {attributes.map((attr) => (
@@ -786,7 +789,7 @@ useEffect(() => {
                 checked={checked}
                 disabled={disabled}
                 onChange={(e) => field.onChange(e.target.checked)}
-                className="h-4 w-4"
+                className="h-4 w-4 border-0 shadow-none focus-visible:outline-none focus-visible:ring-0"
               />
               <span>Organic</span>
             </label>
@@ -812,7 +815,7 @@ useEffect(() => {
                 checked={checked}
                 disabled={disabled}
                 onChange={(e) => field.onChange(e.target.checked)}
-                className="h-4 w-4"
+                className="h-4 w-4 border-0 shadow-none focus-visible:outline-none focus-visible:ring-0"
               />
               <span>Fresh Food</span>
             </label>
@@ -901,7 +904,7 @@ useEffect(() => {
                                 handleStockChange(size, e.target.value)
                               }
                               placeholder="Stock"
-                              className="w-24 rounded-[12px] border border-border bg-card px-2 py-2 text-sm text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
+                              className="w-24 rounded-[20px] border border-border bg-card px-2 py-2 text-sm text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
                             />
                           )}
                         </div>
@@ -945,10 +948,10 @@ useEffect(() => {
                       value={value?.value ?? ""}
                       onChange={(e) => handleValueChange(e.target.value)}
                       placeholder="Enter length"
-                      className="w-full rounded-[12px] border border-border bg-card px-2 py-2 text-sm text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20 md:w-32"
+                      className="w-full rounded-[20px] border border-border bg-card px-2 py-2 text-sm text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20 md:w-32"
                     />
                     <select
-                      className="w-full rounded-[12px] border border-border bg-card px-2 py-2 text-sm text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
+                      className="w-full rounded-[20px] border border-border bg-card px-2 py-2 text-sm text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
                       
                       value={value?.unit ?? "cm"}
                       onChange={(e) => handleUnitChange(e.target.value)}
@@ -1004,12 +1007,12 @@ useEffect(() => {
                     value={value?.value ?? ""}
                     onChange={(e) => handleValueChange(e.target.value)}
                     placeholder="Enter weight"
-                    className="w-full rounded-[12px] border border-border bg-card px-2 py-2 text-sm text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20 md:w-32"
+                    className="w-full rounded-[20px] border border-border bg-card px-2 py-2 text-sm text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20 md:w-32"
                   />
     
                   {/* Dropdown for unit */}
                   <select
-                    className="w-full rounded-[12px] border border-border bg-card px-2 py-2 text-sm text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
+                    className="w-full rounded-[20px] border border-border bg-card px-2 py-2 text-sm text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
                     value={value?.unit ?? "g"}
                     onChange={(e) => handleUnitChange(e.target.value)}
                   >
@@ -1046,7 +1049,7 @@ useEffect(() => {
               <FormControl>
                 <select
                   {...field}
-                  className="w-full rounded-[12px] border border-border bg-card px-2 py-2 text-sm text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
+                  className="w-full rounded-[20px] border border-border bg-card px-2 py-2 text-sm text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
                 >
                   <option value="">Select Shoe Type</option>
                   {shoeTypes.map((type) => (
@@ -1075,7 +1078,7 @@ useEffect(() => {
               <FormControl>
                 <select
                   {...field}
-                  className="w-full rounded-[12px] border border-border bg-card px-2 py-2 text-sm text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
+                  className="w-full rounded-[20px] border border-border bg-card px-2 py-2 text-sm text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
                 >
                   <option value="">Select Gender</option>
                   {shoeGenders.map((gender) => (
@@ -1214,7 +1217,7 @@ useEffect(() => {
                                 handleStockChange(size, e.target.value)
                               }
                               placeholder="Stock"
-                              className="w-24 rounded-[12px] border border-border bg-card px-2 py-2 text-sm text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
+                              className="w-24 rounded-[20px] border border-border bg-card px-2 py-2 text-sm text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
                             />
                           )}
                         </div>
@@ -1258,10 +1261,10 @@ useEffect(() => {
                       value={value?.value ?? ""}
                       onChange={(e) => handleValueChange(e.target.value)}
                       placeholder="Enter length"
-                      className="w-full rounded-[12px] border border-border bg-card px-2 py-2 text-sm text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20 md:w-32"
+                      className="w-full rounded-[20px] border border-border bg-card px-2 py-2 text-sm text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20 md:w-32"
                     />
                     <select
-                      className="w-full rounded-[12px] border border-border bg-card px-2 py-2 text-sm text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
+                      className="w-full rounded-[20px] border border-border bg-card px-2 py-2 text-sm text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
                       
                       value={value?.unit ?? "cm"}
                       onChange={(e) => handleUnitChange(e.target.value)}
@@ -1306,7 +1309,7 @@ useEffect(() => {
               type="checkbox"
               checked={field.value ?? false}
               onChange={(e) => field.onChange(e.target.checked)}
-              className="w-5 h-5"
+              className="h-4 w-4 border-0 shadow-none focus-visible:outline-none focus-visible:ring-0"
             />
           </FormControl>
           <FormLabel className="text-sm font-semibold text-foreground">Is Organic?</FormLabel>
@@ -1327,7 +1330,7 @@ useEffect(() => {
               type="checkbox"
               checked={field.value ?? false}
               onChange={(e) => field.onChange(e.target.checked)}
-              className="w-5 h-5"
+              className="h-4 w-4 border-0 shadow-none focus-visible:outline-none focus-visible:ring-0"
             />
           </FormControl>
           <FormLabel className="text-sm font-semibold text-foreground">Is Fresh Food?</FormLabel>
@@ -1353,7 +1356,7 @@ useEffect(() => {
                   {...field}
                   value={field.value ?? ""} // keeps it controlled
                   onChange={(e) => field.onChange(e.target.value)}
-                  className="w-full rounded-[12px] border border-border bg-card px-2 py-2 text-sm text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
+                  className="w-full rounded-[20px] border border-border bg-card px-2 py-2 text-sm text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
                   
                 >
                   <option value="">Select Roast Type</option>
@@ -1384,7 +1387,7 @@ useEffect(() => {
                   {...field}
                   value={field.value ?? ""} // keeps it controlled
                   onChange={(e) => field.onChange(e.target.value)}
-                  className="w-full rounded-[12px] border border-border bg-card px-2 py-2 text-sm text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
+                  className="w-full rounded-[20px] border border-border bg-card px-2 py-2 text-sm text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
                   
                 >
                   <option value="">Select Coffee State</option>
@@ -1437,13 +1440,13 @@ useEffect(() => {
                     handleValueChange(val === "" ? null : parseInt(val, 10));
                   }}
                   placeholder="Enter weight"
-                  className="w-full rounded-[12px] border border-border bg-card px-2 py-2 text-sm text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20 md:w-32"
+                  className="w-full rounded-[20px] border border-border bg-card px-2 py-2 text-sm text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20 md:w-32"
                 />
     
     
                   {/* Dropdown for unit */}
                   <select
-                    className="w-full rounded-[12px] border border-border bg-card px-2 py-2 text-sm text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
+                    className="w-full rounded-[20px] border border-border bg-card px-2 py-2 text-sm text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
                     
                     value={value?.unit ?? "g"}
                     onChange={(e) => handleUnitChange(e.target.value)}
@@ -1480,7 +1483,7 @@ useEffect(() => {
               type="date"
               {...field}
               value={field.value ?? ""}  // 👈 fallback ensures it's always controlled
-              className="w-full rounded-[12px] border border-border bg-card px-2 py-2 text-sm text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
+              className="w-full rounded-[20px] border border-border bg-card px-2 py-2 text-sm text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
               
             />
     
@@ -1515,7 +1518,7 @@ useEffect(() => {
                 <Input
                   type="date"
                   {...field}
-                  className="w-full rounded-[12px] border border-border bg-card px-2 py-2 text-sm text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
+                  className="w-full rounded-[20px] border border-border bg-card px-2 py-2 text-sm text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
                   
                 />
               </FormControl>
@@ -1739,7 +1742,7 @@ useEffect(() => {
                                     type="number"
                                     min="1"
                                     placeholder="Stock"
-                                    className="w-24 rounded-[12px] border border-border bg-card px-2 py-2 text-sm text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
+                                    className="w-24 rounded-[20px] border border-border bg-card px-2 py-2 text-sm text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
                                     value={selected?.quantity_in_stock ?? ""}
                                     onChange={(e) =>
                                       handleStockChange(
@@ -1830,7 +1833,7 @@ useEffect(() => {
        <FormControl>
          <select
            {...field}
-           className="w-full rounded-[12px] border border-border bg-card px-2 py-2 text-sm text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
+           className="w-full rounded-[20px] border border-border bg-card px-2 py-2 text-sm text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
            
          >
            <option value="cm">Centimeters</option>
@@ -1867,7 +1870,7 @@ useEffect(() => {
        <FormControl>
          <select
            {...field}
-           className="w-full rounded-[12px] border border-border bg-card px-2 py-2 text-sm text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
+           className="w-full rounded-[20px] border border-border bg-card px-2 py-2 text-sm text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
            
          >
            <option value="g">Grams</option>
@@ -1887,19 +1890,20 @@ useEffect(() => {
      control={form.control}
      defaultValue={true}
      render={({ field }) => (
-       <label className="flex items-center gap-2 rounded-[12px] border border-border bg-card px-2 py-2 text-sm text-foreground">
+       <label className="flex items-center gap-2 py-1 text-sm text-foreground cursor-pointer">
          <Checkbox
            checked={!!field.value}
            onCheckedChange={field.onChange}
+           className="border-0 shadow-none focus-visible:ring-0"
          />
-         <span>Returnable</span>
+         <span className="leading-5">Returnable</span>
        </label>
      )}
    />
         
     
     
-            <Button type="submit" className="mt-6 mb-4 w-full rounded-[12px] bg-blue-600 px-2 py-2 text-sm font-semibold text-white hover:bg-blue-700">
+            <Button type="submit" className="mt-6 mb-4 w-full rounded-full bg-primary px-2 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary/90">
               Save Changes
             </Button>
             </div>
