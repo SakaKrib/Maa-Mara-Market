@@ -87,14 +87,14 @@ const SearchBar = () => {
     const trimmed = query.trim();
 
     if (trimmed) {
-      await recordSearch(trimmed);
+      recordSearch(trimmed);
       navigate(`/list?name=${encodeURIComponent(trimmed)}&page=1`);
       setSuggestions([]);
     }
   };
 
   const handleSuggestionClick = async (name) => {
-    await recordSearch(name);
+    recordSearch(name);
     navigate(`/list?name=${encodeURIComponent(name)}&page=1`);
     setSuggestions([]);
     setQuery(name);
