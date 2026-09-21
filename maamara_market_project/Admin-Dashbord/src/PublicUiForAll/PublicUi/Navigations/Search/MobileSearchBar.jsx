@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "../../../../Services/Api";
-import "../../../maamara.css";
 
 const MobileSearchModal = ({ open, onClose }) => {
   const navigate = useNavigate();
