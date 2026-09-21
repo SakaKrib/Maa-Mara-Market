@@ -6,33 +6,52 @@ const QuantityAndCart = ({ item, quantity, setQuantity, availableStock, remainin
   const disabled = quantity > availableStock || availableStock === 0 || needsSize;
 
   return (
-    <div>
-      <p className="font-medium mb-2">Choose Quantity</p>
-      <div className="flex flex-wrap items-center gap-6">
-        <div className="bg-gray-100 py-2 px-4 rounded-3xl flex items-center w-32 justify-between">
-          <button type="button" onClick={() => setQuantity((q) => Math.max(1, q - 1))} disabled={quantity <= 1}>-</button>
-          <span>{quantity}</span>
-          <button type="button" onClick={() => setQuantity((q) => Math.min(q + 1, availableStock))} disabled={quantity >= availableStock}>+</button>
+    <div className="rounded-2xl border border-border bg-card p-4 shadow-custom sm:p-5">
+      <p className="mb-3 text-sm font-bold text-card-foreground">Choose Quantity</p>
+
+      <div className="flex flex-wrap items-center gap-4">
+        <div className="flex items-center justify-between rounded-full border border-border bg-background px-4 py-2 w-32">
+          <button
+            type="button"
+            onClick={() => setQuantity((q) => Math.max(1, q - 1))}
+            disabled={quantity <= 1}
+            aria-label="Decrease quantity"
+            className="px-1 text-sm font-semibold text-card-foreground disabled:opacity-40"
+          >
+            -
+          </button>
+          <span className="text-sm font-semibold text-card-foreground">{quantity}</span>
+          <button
+            type="button"
+            onClick={() => setQuantity((q) => Math.min(q + 1, availableStock))}
+            disabled={quantity >= availableStock}
+            aria-label="Increase quantity"
+            className="px-1 text-sm font-semibold text-card-foreground disabled:opacity-40"
+          >
+            +
+          </button>
         </div>
 
-        <p className="text-sm whitespace-nowrap">
+        <p className="text-sm whitespace-nowrap text-muted-foreground">
           {remainingStock > 0
-            ? <>Only <span className={`font-medium ${remainingStock < 5 ? "text-red-500" : "text-green-500"}`}>{remainingStock}</span> left in stock</>
-            : <span className="font-medium text-red-600">This is the last item in stock!</span>}
+            ? <>Only <span className={`font-semibold ${remainingStock < 5 ? "text-red-500" : "text-green-500"}`}>{remainingStock}</span> left in stock</>
+            : <span className="font-semibold text-red-600">This is the last item in stock!</span>}
         </p>
 
-        {needsSize && <p className="text-sm text-red-500">Please select a size</p>}
+        {needsSize && <p className="w-full text-sm text-red-500">Please select a size</p>}
 
-        <AddToCartButton
-          itemId={item.id}
-          quantity={quantity}
-          variantId={selectedVariant?.id}
-          sizeId={selectedSize?.id}
-          availableStock={availableStock}
-          remainingStock={remainingStock}
-          disabled={disabled}
-          onAddSuccess={onAdded}
-        />
+        <div className="w-full">
+          <AddToCartButton
+            itemId={item.id}
+            quantity={quantity}
+            variantId={selectedVariant?.id}
+            sizeId={selectedSize?.id}
+            availableStock={availableStock}
+            remainingStock={remainingStock}
+            disabled={disabled}
+            onAddSuccess={onAdded}
+          />
+        </div>
       </div>
     </div>
   );
