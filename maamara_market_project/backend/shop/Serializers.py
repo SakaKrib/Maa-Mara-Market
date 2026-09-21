@@ -2,6 +2,7 @@ from rest_framework import serializers
 from django.utils import timezone
 from ReactSerializers.models import Section, Department, Category, SubCategory, Brand, Item
 from core.Serializer import *
+from .sanitizers import sanitize_rich_text
 from .models import *
 from ReactSerializers.Serializers import VendorSerializer
 from core.models import Profile
@@ -293,6 +294,9 @@ class CommentSerializer(serializers.ModelSerializer):
 
 # 📝 Blog Post Serializer
 class BlogPostSerializer(serializers.ModelSerializer):
+    def validate_content(self, value):
+        return sanitize_rich_text(value)
+
     user_name = serializers.CharField(source='user.username', read_only=True)
     user = UserSerializer(read_only=True)  
     vendor = VendorSerializer(read_only=True)  # ✅ return full vendor object
@@ -332,6 +336,15 @@ class WishlistSerializer(serializers.ModelSerializer):
         fields = ['id', 'item', 'item_id', 'created_at', 'user', 'visitor_id']
 
 class CareerVacancySerializer(serializers.ModelSerializer):
+    def validate_description(self, value):
+        return sanitize_rich_text(value)
+
+    def validate_requirements(self, value):
+        return sanitize_rich_text(value)
+
+    def validate_responsibilities(self, value):
+        return sanitize_rich_text(value)
+
     class Meta:
         model = CareerVacancy
         fields = "__all__"
