@@ -78,6 +78,7 @@ class DashboardSummaryView(APIView):
             Transaction.objects.filter(
                 transaction_type="B2C",
                 status__iexact="completed",
+                payout__isnull=True,
                 created_at__gte=period_start,
                 created_at__lte=period_end,
             )
@@ -91,6 +92,7 @@ class DashboardSummaryView(APIView):
                 Transaction.objects.filter(
                     transaction_type="B2C",
                     status__iexact="completed",
+                    payout__isnull=True,
                     category=category,
                     created_at__gte=period_start,
                     created_at__lte=period_end,
@@ -144,6 +146,7 @@ class DashboardSummaryView(APIView):
             Transaction.objects.filter(
                 transaction_type="B2C",
                 status__iexact="completed",
+                payout__isnull=True,
                 created_at__gte=timezone.make_aware(
                     datetime.combine(chart_start, datetime.min.time())
                 ),
