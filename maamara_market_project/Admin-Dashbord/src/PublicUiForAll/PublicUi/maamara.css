@@ -4416,6 +4416,65 @@ h1,h2,h3,h4{font-family:'regular','Poppins',Arial,sans-serif}
 }
 
 
+/* Search experience refinement */
+.mm-search-results-title{
+  font-weight:500;
+  letter-spacing:-0.015em;
+}
+.mm-search-loading{
+  min-height:180px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:10px;
+  color:var(--mm-text-muted,#6f6a63);
+  font-size:13px;
+}
+.mm-search-spinner{
+  width:18px;
+  height:18px;
+  flex:0 0 18px;
+  display:inline-block;
+  border:2px solid #e7e3dc;
+  border-top-color:#6f6a63;
+  border-radius:50%;
+  animation:mm-search-spin .7s linear infinite;
+}
+@keyframes mm-search-spin{
+  to{transform:rotate(360deg)}
+}
+.mm-mobile-search-loading{
+  display:flex;
+  align-items:center;
+  gap:9px;
+  padding:12px;
+  color:var(--mm-text-muted,#6f6a63);
+  font-size:11px;
+}
+.mm-mobile-search-results button{
+  min-height:48px;
+}
+.mm-mobile-search-results button strong{
+  display:block;
+  font-weight:500;
+}
+.mm-mobile-search-results button small{
+  display:block;
+  margin-top:2px;
+  color:var(--mm-text-muted,#6f6a63);
+  font-size:10px;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+@media(max-width:639px){
+  .mm-search-results-title{
+    font-size:1.45rem;
+    font-weight:500;
+  }
+}
+ 
+
 /* Mobile storefront overflow fix */
 @media(max-width:639px){
   .mm-main-header-inner{
