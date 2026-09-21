@@ -159,7 +159,7 @@ export default function VendorApprovalPanel() {
                       setEditItemList(vendor.item_list || []);
                       handleApprove(vendor.id, vendor.vendor_data || {}, vendor.item_list || []);
                     }}
-                    className="w-full rounded-[20px] bg-primary text-primary-foreground hover:bg-primary/90"
+                    className="w-full rounded-[20px] bg-blue-600 text-white hover:bg-blue-700"
                   >
                     Approve
                   </Button>
@@ -335,7 +335,7 @@ export default function VendorApprovalPanel() {
               } finally {
                 setLoading(false);
               }
-            }} className="w-full rounded-[20px] bg-primary text-primary-foreground hover:bg-primary/90 sm:w-auto">
+            }} className="w-full rounded-[20px] bg-blue-600 text-white hover:bg-blue-700 sm:w-auto">
               Save
             </Button>
           </div>
@@ -386,7 +386,7 @@ export default function VendorApprovalPanel() {
           )}
         </DialogContent>
         <DialogActions className="!border-t !border-border !bg-card !p-4">
-          <Button variant="outline" onClick={() => setShowItemForm(false)} className="w-full rounded-[20px] border-border bg-transparent text-foreground hover:bg-muted sm:w-auto">Close</Button>
+          <Button variant="outline" onClick={() => setShowItemForm(false)} className="w-full rounded-[20px] border border-border bg-transparent text-foreground hover:bg-muted sm:w-auto">Close</Button>
         </DialogActions>
       </Dialog>
     </div>
