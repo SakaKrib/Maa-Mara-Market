@@ -5,7 +5,7 @@ import ReactionButton from "./Reaction";
 import CommentBox from "./Comment";
 import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
-import DOMPurify from "dompurify";
+import { sanitizeRichText } from "../../../utils/sanitizeRichText";
 import defaultUser from "../../../../src/assets/profile/default-sender.jpg";
 
 dayjs.extend(relativeTime);
@@ -82,7 +82,7 @@ export default function SingleBlogPage() {
         <div
           className="text-gray-800 mb-6 leading-relaxed prose max-w-none"
           dangerouslySetInnerHTML={{
-            __html: DOMPurify.sanitize(post.content || ""),
+            __html: sanitizeRichText(post.content || ""),
           }}
         />
 
