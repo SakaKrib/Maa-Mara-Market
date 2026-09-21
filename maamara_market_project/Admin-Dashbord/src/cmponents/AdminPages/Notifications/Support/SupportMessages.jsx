@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { IonIcon } from "@ionic/react";
-import { helpCircleOutline, sendOutline, refreshOutline } from "ionicons/icons";
+import { helpCircleOutline, sendOutline, refreshOutline, closeOutline } from "ionicons/icons";
 import api from "../../../../Services/Api";
 
 const statusClasses = {
@@ -8,13 +8,13 @@ const statusClasses = {
   pending: "bg-amber-500/10 text-amber-700 dark:text-amber-300",
 };
 
-const SupportAdminPanel = () => {
+const SupportAdminPanel = ({ open, onClose }) => {
   const [tickets, setTickets] = useState([]);
   const [selectedTicket, setSelectedTicket] = useState(null);
   const [reply, setReply] = useState("");
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
-  const [error, setError] = useState("");
+  const [error, setError] = useState("");\n\n  if (!open) return null;
 
   const fetchTickets = async () => {
     try {
@@ -64,8 +64,8 @@ const SupportAdminPanel = () => {
 
   return (
     <div className="min-h-[calc(100vh-72px)] w-full bg-background p-2 text-foreground sm:p-4 lg:p-6">
-      <div className="mx-auto max-w-7xl">
-        <header className="mb-5 rounded-2xl border border-border bg-card p-5 shadow-custom sm:p-6">
+      <div className="relative mx-auto max-w-7xl rounded-2xl border border-border bg-background p-2 shadow-2xl sm:p-4">\n        <button type="button" onClick={onClose} aria-label="Close support" className="absolute right-3 top-3 z-10 rounded-xl p-2 text-muted-foreground hover:bg-muted">\n          <IonIcon icon={closeOutline} />\n        </button>
+        <header className="mb-5 rounded-2xl border border-border bg-card p-5 pr-14 shadow-sm sm:p-6 sm:pr-14">
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div>
               <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">Customer care</p>
