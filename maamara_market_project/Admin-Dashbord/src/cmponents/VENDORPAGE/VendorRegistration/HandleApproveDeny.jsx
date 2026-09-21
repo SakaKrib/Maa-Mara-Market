@@ -3,14 +3,11 @@ import api, { resolveApiAssetUrl } from '../../../Services/Api';
 import { Button } from '../../../../components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../../../../components/ui/card';
 import { useToast } from '../../../../components/ui/toast';
-import { useTheme, Dialog, DialogTitle, DialogContent, DialogActions } from '@mui/material';
-import { tokens } from '../../../theme';
+import { Dialog, DialogTitle, DialogContent, DialogActions } from '@mui/material';
 import ItemAddNew from '../Products/Forms/AddingNewItem';
 import { ScrollArea } from '@radix-ui/react-scroll-area';
 
 export default function VendorApprovalPanel() {
-  const theme = useTheme();
-  const colors = tokens(theme.palette.mode);
   const [vendorRequests, setVendorRequests] = useState([]);
   const [loading, setLoading] = useState(false);
   const [selectedVendor, setSelectedVendor] = useState(null);
@@ -252,7 +249,7 @@ export default function VendorApprovalPanel() {
             <Button variant="outline" onClick={() => { setEditItemList(selectedVendor.item_list || []); setShowItemForm(true); }} className="w-full rounded-[20px] border-border">
               Edit item list
             </Button>
-            <Button disabled={loading} onClick={() => handleApprove(selectedVendor.id)} className="w-full rounded-[20px] bg-primary text-primary-foreground hover:bg-primary/90">
+            <Button disabled={loading} onClick={() => handleApprove(selectedVendor.id)} className="w-full rounded-[20px] bg-blue-600 text-white hover:bg-blue-700">
               Approve
             </Button>
             <Button disabled={loading} variant="destructive" onClick={() => handleDeny(selectedVendor.user)} className="w-full rounded-[20px]">
@@ -322,7 +319,7 @@ export default function VendorApprovalPanel() {
               setLoading(true);
               try {
                 const response = await api.put(
-                  `${baseUrl}/api/vendor-requests/${selectedVendor.id}/update-vendor-info/`,
+                  `/api/vendor-requests/${selectedVendor.id}/update-vendor-info/`,
                   { vendor_data: editVendorInfo },
                   { withCredentials: true }
                 );
@@ -354,9 +351,9 @@ export default function VendorApprovalPanel() {
                       <p className="font-semibold">{item.name}</p>
                       <p className="text-muted-foreground">{item.description}</p>
                       <p><strong>Price:</strong> KES {item.price != null ? item.price.toLocaleString() : "N/A"}</p>
-                      {item.image && <img src={item.image} alt={item.name} className="mt-2 h-24 w-36 rounded-xl border border-border object-contain" />}
+                      {item.image && <img src={resolveApiAssetUrl(item.image)} alt={item.name} className="mt-2 h-24 w-36 rounded-xl border border-border bg-muted/40 object-contain p-1" />}
                     </div>
-                    <Button onClick={() => setEditingItemIndex(index)} className="w-full rounded-[20px] bg-primary text-primary-foreground hover:bg-primary/90 sm:w-auto">Edit</Button>
+                    <Button onClick={() => setEditingItemIndex(index)} className="w-full rounded-[20px] bg-blue-600 text-white hover:bg-blue-700 sm:w-auto">Edit</Button>
                   </CardContent>
                 </Card>
               ))}
