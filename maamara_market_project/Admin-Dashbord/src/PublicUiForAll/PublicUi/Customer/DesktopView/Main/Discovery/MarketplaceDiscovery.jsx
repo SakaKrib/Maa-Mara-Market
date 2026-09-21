@@ -21,14 +21,24 @@ const MarketplaceDiscovery = () => {
   return (
     <div className="discovery-section">
       <DiscoverySection
-        title="Popular right now"
-        description="Products getting the most attention from shoppers."
-        items={feed.popular}
+        title="Trending now"
+        description="Products receiving measurable shopper activity in the last 7 days."
+        items={feed.trending}
       />
       <DiscoverySection
-        title="Frequently bought"
-        description="Products with completed sales on Maa Mara Market."
+        title="Best sellers"
+        description="Products with at least 5 completed, non-refunded units sold in the last 30 days."
         items={feed.best_selling}
+      />
+      <DiscoverySection
+        title="Most wanted"
+        description="Products receiving recent wishlist activity from shoppers."
+        items={feed.most_wanted}
+      />
+      <DiscoverySection
+        title="Featured on Maa Mara"
+        description="Products explicitly selected for marketplace featuring."
+        items={feed.featured}
       />
     </div>
   );
