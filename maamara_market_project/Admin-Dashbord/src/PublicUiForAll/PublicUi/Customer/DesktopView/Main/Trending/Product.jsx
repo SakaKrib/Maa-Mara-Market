@@ -7,7 +7,7 @@ import TrendingProductCard from "./TrendingProductCard";
 import ProductSkeleton from "./ProductSkelwton";
 
 const TrendingProducts = () => {
-  const { items, sections, metadata, loading } = useTrendingProducts();
+  const { items, sections, collections, metadata, loading } = useTrendingProducts();
   const { wishlist, addToWishlist, removeFromWishlist } = useWishlistContext();
 
   if (loading) {
@@ -88,6 +88,10 @@ const TrendingProducts = () => {
 
         {sections.best_selling.length > 0 &&
           renderSection("Best Selling", sections.best_selling)}
+
+        {collections.map((collection) =>
+          renderSection(collection.name, collection.items)
+        )}
       </div>
     </section>
   );
