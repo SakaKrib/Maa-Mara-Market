@@ -131,7 +131,7 @@ const FAQ = () => {
               value={newFaq.question}
               onChange={(e) => setNewFaq({ ...newFaq, question: e.target.value })}
               placeholder="Question"
-              className="min-h-11 rounded-xl border border-border bg-transparent px-4 text-sm text-card-foreground outline-none focus:ring-2 focus:ring-primary/20"
+              className="min-h-11 w-full min-w-0 rounded-xl border border-border bg-transparent px-4 text-sm text-card-foreground outline-none focus:ring-2 focus:ring-primary/20"
             />
             <input
               value={newFaq.category}
