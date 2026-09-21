@@ -123,12 +123,12 @@ const AboutAdminPanel = ({ open, onClose }) => {
 
               <div className="grid gap-4 sm:grid-cols-2">
                 {[
-                  ["hero_title", "Hero title"],
-                  ["hero_subtitle", "Hero subtitle"],
-                  ["about_title", "About title"],
-                  ["impact_title", "Impact title"],
-                  ["products_title", "Products title"],
-                ].map(([name, label]) => (
+                  ["hero_title", "Hero title", "e.g. Discover Maa Mara Market"],
+                  ["hero_subtitle", "Hero subtitle", "A short introduction to Maa Mara and what we offer."],
+                  ["about_title", "About title", "e.g. About Maa Mara"],
+                  ["impact_title", "Impact title", "e.g. Our impact"],
+                  ["products_title", "Products title", "e.g. What you can find on Maa Mara"],
+                ].map(([name, label, placeholder]) => (
                   <label key={name} className="grid gap-1.5 text-xs font-semibold text-muted-foreground">
                     {label}
                     <input
