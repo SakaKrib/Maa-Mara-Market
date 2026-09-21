@@ -901,7 +901,7 @@ useEffect(() => {
                                 handleStockChange(size, e.target.value)
                               }
                               placeholder="Stock"
-                              className="w-20"
+                              className="w-24 rounded-[12px] border border-border bg-card px-2 py-2 text-sm text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
                             />
                           )}
                         </div>
@@ -945,7 +945,7 @@ useEffect(() => {
                       value={value?.value ?? ""}
                       onChange={(e) => handleValueChange(e.target.value)}
                       placeholder="Enter length"
-                      className="w-32"
+                      className="w-full rounded-[12px] border border-border bg-card px-2 py-2 text-sm text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20 md:w-32"
                     />
                     <select
                       className="w-full rounded-[12px] border border-border bg-card px-2 py-2 text-sm text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
@@ -1004,7 +1004,7 @@ useEffect(() => {
                     value={value?.value ?? ""}
                     onChange={(e) => handleValueChange(e.target.value)}
                     placeholder="Enter weight"
-                    className="w-32"
+                    className="w-full rounded-[12px] border border-border bg-card px-2 py-2 text-sm text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20 md:w-32"
                   />
     
                   {/* Dropdown for unit */}
@@ -1214,7 +1214,7 @@ useEffect(() => {
                                 handleStockChange(size, e.target.value)
                               }
                               placeholder="Stock"
-                              className="w-20"
+                              className="w-24 rounded-[12px] border border-border bg-card px-2 py-2 text-sm text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
                             />
                           )}
                         </div>
@@ -1258,7 +1258,7 @@ useEffect(() => {
                       value={value?.value ?? ""}
                       onChange={(e) => handleValueChange(e.target.value)}
                       placeholder="Enter length"
-                      className="w-32"
+                      className="w-full rounded-[12px] border border-border bg-card px-2 py-2 text-sm text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20 md:w-32"
                     />
                     <select
                       className="w-full rounded-[12px] border border-border bg-card px-2 py-2 text-sm text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
@@ -1437,7 +1437,7 @@ useEffect(() => {
                     handleValueChange(val === "" ? null : parseInt(val, 10));
                   }}
                   placeholder="Enter weight"
-                  className="w-32"
+                  className="w-full rounded-[12px] border border-border bg-card px-2 py-2 text-sm text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20 md:w-32"
                 />
     
     
@@ -1544,7 +1544,7 @@ useEffect(() => {
                       
                     />
                   </FormControl>
-                  <FormLabel className="text-base">Mark item as on Offer</FormLabel>
+                  <FormLabel className="text-sm font-medium text-foreground">Mark item as on Offer</FormLabel>
                 </FormItem>
               )}
             />
@@ -1739,7 +1739,7 @@ useEffect(() => {
                                     type="number"
                                     min="1"
                                     placeholder="Stock"
-                                    className="w-20"
+                                    className="w-24 rounded-[12px] border border-border bg-card px-2 py-2 text-sm text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
                                     value={selected?.quantity_in_stock ?? ""}
                                     onChange={(e) =>
                                       handleStockChange(
