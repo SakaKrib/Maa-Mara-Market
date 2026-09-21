@@ -102,6 +102,7 @@ const Footer = () => {
               <Link to="/request-returns">Return Policy &amp; Returns</Link>
               <a href="mailto:maamaramarket@gmail.com?subject=Shipping%20Question">Shipping</a>
               <Link to="/careers/jobs">Career</Link>
+              <Link to="/faq">Frequently Asked Questions</Link>
             </div>
 
             <div>
