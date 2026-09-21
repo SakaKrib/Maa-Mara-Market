@@ -35,7 +35,7 @@ export default function PaymentsOverview({ date = "", cards = null }) {
       ) : error ? (
         <div className="rounded-xl border border-red-500/30 bg-red-500/10 p-4 text-sm text-red-600 dark:text-red-300">Error loading payment accounts.</div>
       ) : (
-        <div className="grid min-w-0 gap-4 md:grid-cols-2">
+        <div className="grid min-w-0 grid-cols-1 gap-4">
           {items.map((item) => (
             <article key={item.id} className="min-w-0 overflow-hidden rounded-2xl border border-border bg-background">
               <div className="flex items-center justify-between gap-3 border-b border-border p-4">
