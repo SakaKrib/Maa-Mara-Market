@@ -29,8 +29,6 @@ const MenuBar = ({ editor, colors }) => {
     },
   });
 
-  const showPlaceholder = !value || value === "<p></p>";
-
   return (
     <Stack
       direction="row"
@@ -204,6 +202,8 @@ const RichTextEditor = ({ value, onChange, placeholder = "Start writing here..."
       onChange(editor.getHTML());
     },
   });
+
+  const showPlaceholder = !editor || editor.isEmpty;
 
   return (
     <Box>
