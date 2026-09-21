@@ -22,7 +22,7 @@ from rest_framework_simplejwt.exceptions import InvalidToken, TokenError
 from ReactSerializers.models import AgeVariant, ColorVariant, Item, Length, Shoe, SizeStock, Weight
 from core.Serializer import ItemSerializer
 from core.models import ActivityLog, Voucher, Wallet
-from vendorDashboard.models import ReturnRequest
+from vendorDashboard.models import ReturnRequest, VendorPayout
 
 from .Serializers import TransactionSerializer
 from .models import OrderItem, Order, Transaction
@@ -881,16 +881,13 @@ def create_admin_transaction(request):
 @permission_classes([IsAdminUser])
 def admin_transaction_history(request):
     """
-    Read-only bookkeeping/provider transaction history for the Accounts page.
-    ?date=YYYY-MM-DD restricts results to that calendar day.
+    Read-only Accounts history combining manual bookkeeping, customer/provider
+    transactions, and confirmed vendor settlements.
+    ?date=YYYY-MM-DD filters by the actual accounting event date.
     """
     selected_date = request.query_params.get("date")
-    queryset = (
-        Transaction.objects
-        .select_related("vendor", "order")
-        .exclude(status="deleted")
-        .order_by("-created_at")
-    )
+    selected = None
+    period_start = period_end = None
 
     if selected_date:
         try:
@@ -898,12 +895,35 @@ def admin_transaction_history(request):
         except ValueError:
             return Response({"error": "Invalid date. Use YYYY-MM-DD."}, status=400)
 
-        start = timezone.make_aware(datetime.combine(selected, datetime.min.time()))
-        end = timezone.make_aware(datetime.combine(selected, datetime.max.time()))
-        queryset = queryset.filter(created_at__gte=start, created_at__lte=end)
+        period_start = timezone.make_aware(datetime.combine(selected, datetime.min.time()))
+        period_end = timezone.make_aware(datetime.combine(selected, datetime.max.time()))
+
+    transaction_qs = (
+        Transaction.objects
+        .select_related("vendor", "order")
+        .exclude(status="deleted")
+        .order_by("-created_at")
+    )
+    payout_qs = (
+        VendorPayout.objects
+        .select_related("vendor")
+        .filter(paid=True)
+        .order_by("-paid_at", "-created_at")
+    )
+
+    if period_start:
+        transaction_qs = transaction_qs.filter(
+            created_at__gte=period_start, created_at__lte=period_end
+        )
+        payout_qs = payout_qs.filter(
+            paid_at__gte=period_start, paid_at__lte=period_end
+        )
 
     results = []
-    for tx in queryset[:50]:
+
+    for tx in transaction_qs[:50]:
+        raw_data = tx.raw_data or {}
+        is_manual = raw_data.get("source") == "admin_accounts"
         vendor_name = None
         if tx.vendor:
             vendor_name = getattr(tx.vendor, "company_name", None) or getattr(
@@ -911,7 +931,8 @@ def admin_transaction_history(request):
             )
 
         results.append({
-            "id": tx.id,
+            "id": f"transaction-{tx.id}",
+            "record_id": tx.id,
             "txid": (
                 tx.mpesa_receipt_number
                 or tx.paypal_transaction_id
@@ -926,20 +947,60 @@ def admin_transaction_history(request):
             "status": tx.status,
             "vendor_name": vendor_name,
             "created_at": tx.created_at,
-            "source": (
-                "manual"
-                if (tx.raw_data or {}).get("source") == "admin_accounts"
-                else "payment"
-            ),
+            "source": "manual" if is_manual else "payment",
+            "source_label": "Manual bookkeeping" if is_manual else "Customer payment",
+            "editable": is_manual,
+            "deletable": is_manual,
         })
+
+    for payout in payout_qs[:50]:
+        vendor_name = (
+            getattr(payout.vendor, "company_name", None)
+            or getattr(payout.vendor, "username", None)
+            or str(payout.vendor)
+        )
+        method = getattr(payout.vendor, "payment_method", None) or "unknown"
+        provider_reference = (
+            payout.mpesa_transaction_id
+            or payout.kcb_provider_reference
+            or payout.kcb_transaction_reference
+            or payout.paypal_transaction_id
+            or payout.paypal_payout_item_id
+            or payout.reference
+        )
+
+        results.append({
+            "id": f"payout-{payout.id}",
+            "record_id": payout.id,
+            "txid": provider_reference,
+            "category": "Vendor Settlement",
+            "category_key": "vendor_settlement",
+            "payment_method": method,
+            "transaction_type": "B2C",
+            "amount": float(payout.amount or 0),
+            "status": "completed",
+            "vendor_name": vendor_name,
+            "created_at": payout.paid_at or payout.created_at,
+            "source": "vendor_settlement",
+            "source_label": "Vendor settlement",
+            "editable": False,
+            "deletable": False,
+            "payout_reference": payout.reference,
+            "payout_period_start": payout.payout_period_start,
+            "payout_period_end": payout.payout_period_end,
+        })
+
+    results.sort(
+        key=lambda item: item.get("created_at") or timezone.make_aware(datetime.min),
+        reverse=True,
+    )
+    results = results[:100]
 
     return Response({
         "date": selected_date,
         "count": len(results),
         "results": results,
     })
-
-
 
 @api_view(["PATCH", "PUT"])
 @permission_classes([IsAdminUser])
