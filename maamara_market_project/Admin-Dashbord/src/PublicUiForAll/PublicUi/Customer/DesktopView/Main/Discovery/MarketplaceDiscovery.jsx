@@ -40,6 +40,14 @@ const MarketplaceDiscovery = () => {
         description="Products explicitly selected for marketplace featuring."
         items={feed.featured}
       />
+      {feed.occasion_collections.map((collection) => (
+        <DiscoverySection
+          key={collection.key}
+          title={collection.title}
+          description={collection.description}
+          items={collection.items}
+        />
+      ))}
     </div>
   );
 };
