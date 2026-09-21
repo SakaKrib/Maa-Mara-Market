@@ -20,6 +20,52 @@ const SUPPORT_ISSUES = [
   ["other", "Other / something else"],
 ];
 
+
+const SupportHistory = ({ tickets, loading }) => (
+  <section className="rounded-2xl border border-border bg-card p-6 shadow-sm sm:p-8">
+    <div className="flex items-center justify-between gap-3">
+      <div>
+        <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">Your support</p>
+        <h2 className="mt-1 text-xl font-semibold tracking-tight text-card-foreground">Support requests</h2>
+      </div>
+      <span className="rounded-full bg-muted px-3 py-1 text-xs font-semibold text-muted-foreground">{tickets.length}</span>
+    </div>
+
+    {loading ? (
+      <p className="mt-5 text-sm text-muted-foreground">Loading your support requests...</p>
+    ) : tickets.length ? (
+      <div className="mt-5 space-y-3">
+        {tickets.map((ticket) => (
+          <article key={ticket.id} className="rounded-xl border border-border bg-muted/30 p-4">
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div className="min-w-0">
+                <h3 className="break-words text-sm font-semibold text-card-foreground">{ticket.subject}</h3>
+                <p className="mt-1 text-xs text-muted-foreground">{ticket.category || "Other"} · {new Date(ticket.created_at).toLocaleString()}</p>
+              </div>
+              <span className={ticket.status === "answered" ? "rounded-full bg-emerald-500/10 px-2.5 py-1 text-[10px] font-semibold uppercase text-emerald-700 dark:text-emerald-300" : "rounded-full bg-amber-500/10 px-2.5 py-1 text-[10px] font-semibold uppercase text-amber-700 dark:text-amber-300"}>
+                {ticket.status || "pending"}
+              </span>
+            </div>
+            <div className="mt-3 rounded-lg border border-border bg-background p-3">
+              <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Your message</p>
+              <p className="mt-1 whitespace-pre-wrap text-sm leading-6 text-card-foreground">{ticket.message}</p>
+            </div>
+            {ticket.support_reply && (
+              <div className="mt-3 rounded-lg border border-primary/20 bg-primary/5 p-3">
+                <p className="text-[10px] font-semibold uppercase tracking-wider text-primary">Maa Mara support reply</p>
+                <p className="mt-1 whitespace-pre-wrap text-sm leading-6 text-card-foreground">{ticket.support_reply}</p>
+                {ticket.answered_at && <p className="mt-2 text-[10px] text-muted-foreground">Replied {new Date(ticket.answered_at).toLocaleString()}</p>}
+              </div>
+            )}
+          </article>
+        ))}
+      </div>
+    ) : (
+      <p className="mt-5 text-sm leading-6 text-muted-foreground">Your submitted support questions and replies will appear here.</p>
+    )}
+  </section>
+);
+
 const Support = () => {
   const { user } = useAuth();
   const [form, setForm] = useState({
@@ -32,6 +78,24 @@ const Support = () => {
   const [sending, setSending] = useState(false);
   const [sent, setSent] = useState(false);
   const [error, setError] = useState("");
+  const [tickets, setTickets] = useState([]);
+  const [ticketsLoading, setTicketsLoading] = useState(true);
+
+  const fetchTickets = async () => {
+    try {
+      setTicketsLoading(true);
+      const response = await api.get("/api/support/my/");
+      setTickets(Array.isArray(response.data) ? response.data : []);
+    } catch (requestError) {
+      console.error("Support history load failed:", requestError);
+    } finally {
+      setTicketsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchTickets();
+  }, [user?.email]);
 
   useEffect(() => {
     if (user?.email) {
@@ -61,6 +125,7 @@ const Support = () => {
         message: form.message.trim(),
       });
       setSent(true);
+      await fetchTickets();
       setForm({
         email: form.email,
         category: "",
@@ -98,6 +163,9 @@ const Support = () => {
               Browse FAQs
             </Link>
           </div>
+        </div>
+        <div className="mx-auto mt-6 max-w-2xl">
+          <SupportHistory tickets={tickets} loading={ticketsLoading} />
         </div>
       </main>
     );
@@ -178,6 +246,9 @@ const Support = () => {
             </button>
           </form>
         </section>
+      </div>
+      <div className="mx-auto mt-6 max-w-6xl">
+        <SupportHistory tickets={tickets} loading={ticketsLoading} />
       </div>
     </main>
   );
