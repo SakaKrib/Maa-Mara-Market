@@ -227,6 +227,9 @@ def item_marketplace_context_v2(request, pk):
             quality=Avg("quality"),
             communication=Avg("communication"),
             shipping=Avg("shipping"),
+            quality_4_plus=Count("id", filter=Q(quality__gte=4)),
+            communication_4_plus=Count("id", filter=Q(communication__gte=4)),
+            shipping_4_plus=Count("id", filter=Q(shipping__gte=4)),
         )
 
         rating_values = [
@@ -250,6 +253,20 @@ def item_marketplace_context_v2(request, pk):
             "shipping": round(float(aggregates["shipping"]), 1)
             if aggregates["shipping"] is not None
             else 0,
+            "badges": {
+                "quality": {
+                    "eligible": int(aggregates["quality_4_plus"] or 0) >= 10,
+                    "count": int(aggregates["quality_4_plus"] or 0),
+                },
+                "communication": {
+                    "eligible": int(aggregates["communication_4_plus"] or 0) >= 10,
+                    "count": int(aggregates["communication_4_plus"] or 0),
+                },
+                "shipping": {
+                    "eligible": int(aggregates["shipping_4_plus"] or 0) >= 10,
+                    "count": int(aggregates["shipping_4_plus"] or 0),
+                },
+            },
         }
 
         shop_reviews = [
