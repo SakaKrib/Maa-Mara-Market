@@ -172,15 +172,15 @@ def support_faq_candidates(request):
         SupportMessage.objects
         .exclude(subject="")
         .annotate(normalized_subject=Lower(Trim("subject")))
-        .values("normalized_subject", "category")
-        .annotate(question_count=Count("id"), sample_question=Min("subject"))
+        .values("normalized_subject")
+        .annotate(question_count=Count("id"), sample_question=Min("subject"), sample_category=Min("category"))
         .filter(question_count__gte=3)
         .order_by("-question_count", "normalized_subject")[:50]
     )
     return Response([
         {
             "question": row["sample_question"],
-            "category": row["category"] or "other",
+            "category": row["sample_category"] or "other",
             "question_count": row["question_count"],
         }
         for row in rows
