@@ -229,9 +229,6 @@ import { Controller } from "react-hook-form";
   
 
 const ItemAddNew = ({ initialItem, vendorId, itemId, onSave, vendor }) => {
-  console.log('this is vendor', vendor)
-
-  const [selectedDepartment, setSelectedDepartment] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("");
   const [colorVariants, setColorVariants] = useState([]);
 
@@ -400,7 +397,6 @@ useEffect(() => {
 
     const onSubmit = async (data) => {
       try {
-        console.log("🧠 Preparing item data for vendor approval...", data);
     
         // Determine the correct vendor request ID
         const vendorRequestId = data.id || vendorId || itemId;
@@ -469,8 +465,6 @@ useEffect(() => {
           ),
         };
     
-        console.log("✅ Final formatted item:", formattedItem);
-    
         // API call
         const response = await api.put(
           `${baseUrl}/api/vendor-requests/${vendorRequestId}/update-item-list/`,
@@ -479,13 +473,12 @@ useEffect(() => {
         );
     
         if (response.status === 200) {
-          console.log("✅ Item updated successfully:", response.data);
           onSave(response.data);
         } else {
           alert("Failed to update item.");
         }
       } catch (error) {
-        console.error("❌ Error updating item:", error);
+        
         alert("Item update failed. Check console for details.");
       }
     };
@@ -888,34 +881,6 @@ useEffect(() => {
                   } else if (vendor.vendor_data?.product_type === "both") {
                     attributes =
                       selectedSection === "organic" ? organicAttributes : inorganicAttributes;
-
-                      console.log("this are attributes", attributes)
-                  }
-    
-                  return (
-                    <FormItem>
-                      <FormLabel className="text-sm font-semibold text-card-foreground">Product Attribute</FormLabel>
-                      <FormControl>
-                        <select
-                          {...field}
-                          value={field.value ?? ""}
-                          className="w-full rounded-[12px] border border-border bg-card px-2 py-2 text-sm text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
-                          
-                        >
-                          <option value="">Select attribute</option>
-                          {attributes.map((attr) => (
-                            <option key={attr.value} value={attr.value}>
-                              {attr.label}
-                            </option>
-                          ))}
-                        </select>
-                      </FormControl>
-                      <FormDescription>
-                        Choose the most relevant attribute for this product.
-                      </FormDescription>
-                      <FormMessage />
-                    </FormItem>
-                  );
                 }}
               />
 
@@ -2045,8 +2010,11 @@ useEffect(() => {
      control={form.control}
      defaultValue={true}
      render={({ field }) => (
-       <label className="flex items-center gap-3 rounded-[12px] border border-border bg-card px-2 py-2 text-sm text-foreground">
-         <input type="checkbox" checked={!!field.value} onChange={(e) => field.onChange(e.target.checked)} className="h-4 w-4 accent-primary" />
+       <label className="flex items-center gap-2 rounded-[12px] border border-border bg-card px-2 py-2 text-sm text-foreground">
+         <Checkbox
+           checked={!!field.value}
+           onCheckedChange={field.onChange}
+         />/>
          <span>Returnable</span>
        </label>
      )}
