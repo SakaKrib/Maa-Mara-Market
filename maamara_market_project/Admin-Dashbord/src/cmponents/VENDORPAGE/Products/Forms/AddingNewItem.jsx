@@ -803,7 +803,7 @@ useEffect(() => {
 
               {/* Organic product details */}
               {selectedSection === "organic" && (
-                <div className="my-4 space-y-2">
+                <div className="my-4 space-y-2 rounded-[20px] border border-border bg-card p-2">
                   <FormLabel className="text-sm leading-6 font-semibold text-foreground">
                     Product Type
                   </FormLabel>
