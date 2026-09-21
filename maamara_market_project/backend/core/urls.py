@@ -28,6 +28,7 @@ urlpatterns = [
 
     # Customer support
     path("api/support/inbox/", support_messages, name="support-inbox"),
+    path("api/support/my/", my_support_messages, name="my-support-messages"),
     path("api/support/faq-candidates/", support_faq_candidates, name="support-faq-candidates"),
     path("api/support/reply/<int:pk>/", support_reply, name="support-reply"),
 
