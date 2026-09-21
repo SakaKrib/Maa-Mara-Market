@@ -42,6 +42,7 @@ export default function Messaging() {
       setConversations((current) => current.map((conversation) => (
         conversation.id === id ? { ...conversation, unread_count: 0 } : conversation
       )));
+      window.dispatchEvent(new Event("maa-mara-messages-updated"));
     }).catch(() => {});
   }, []);
 
