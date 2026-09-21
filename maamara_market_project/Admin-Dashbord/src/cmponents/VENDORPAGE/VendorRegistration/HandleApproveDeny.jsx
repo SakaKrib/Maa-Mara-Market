@@ -356,12 +356,12 @@ export default function VendorApprovalPanel() {
                       <p><strong>Price:</strong> KES {item.price != null ? item.price.toLocaleString() : "N/A"}</p>
                       {item.image && <img src={item.image} alt={item.name} className="mt-2 h-24 w-36 rounded-xl border border-border object-contain" />}
                     </div>
-                    <Button onClick={() => setEditingItemIndex(index)} className="w-full rounded-[20px] sm:w-auto">Edit</Button>
+                    <Button onClick={() => setEditingItemIndex(index)} className="w-full rounded-[20px] bg-primary text-primary-foreground hover:bg-primary/90 sm:w-auto">Edit</Button>
                   </CardContent>
                 </Card>
               ))}
               <Dialog open={editingItemIndex !== null} onClose={() => setEditingItemIndex(null)} fullWidth maxWidth="md">
-                <DialogTitle className="!border-b !border-border !bg-card !text-card-foreground">Edit item</DialogTitle>
+                <DialogTitle className="!border-b !border-border !bg-card !text-card-foreground"><div><p className="text-xs font-semibold uppercase tracking-wider text-primary">Marketplace</p><h2 className="mt-1 text-lg font-bold">Edit item</h2><p className="mt-1 text-sm font-normal text-muted-foreground">Update the item details, pricing, inventory, and image before approval.</p></div></DialogTitle>
                 <DialogContent dividers className="!border-border !bg-card">
                   <ScrollArea className="h-screen">
                     {editingItemIndex !== null && (
@@ -386,7 +386,7 @@ export default function VendorApprovalPanel() {
           )}
         </DialogContent>
         <DialogActions className="!border-t !border-border !bg-card !p-4">
-          <Button onClick={() => setShowItemForm(false)} className="w-full rounded-[20px] sm:w-auto">Close</Button>
+          <Button variant="outline" onClick={() => setShowItemForm(false)} className="w-full rounded-[20px] border-border bg-transparent text-foreground hover:bg-muted sm:w-auto">Close</Button>
         </DialogActions>
       </Dialog>
     </div>
