@@ -25,7 +25,7 @@ const vendorId = query.get("vendor_id") || "";
   const [error, setError] = useState("");
 
   useEffect(() => {
-    if (!searchTerm.trim() && !categoryId) {
+    if (!searchTerm.trim() && !categoryId && !vendorId) {
       setResults([]);
       setTotalResults(0);
       setTotalPages(0);
@@ -109,7 +109,7 @@ if (vendorId) params.set("vendor_id", vendorId);
                     ? categoryName
                     : "Search the marketplace"}
               </h1>
-              {(searchTerm || categoryId) && !loading && (
+              {(searchTerm || categoryId || vendorId) && !loading && (
                 <p className="text-sm text-gray-500 mt-1">
                   {totalResults} result{totalResults === 1 ? "" : "s"}
                 </p>
@@ -135,7 +135,7 @@ if (vendorId) params.set("vendor_id", vendorId);
             </div>
           )}
 
-          {!loading && !error && !searchTerm.trim() && !categoryId && (
+          {!loading && !error && !searchTerm.trim() && !categoryId && !vendorId && (
             <div className="mm-card p-10 text-center">
               <h2 className="text-lg font-semibold mb-2">What are you looking for?</h2>
               <p className="text-sm text-gray-500">
@@ -144,7 +144,7 @@ if (vendorId) params.set("vendor_id", vendorId);
             </div>
           )}
 
-          {!loading && !error && (searchTerm.trim() || categoryId) && results.length === 0 && (
+          {!loading && !error && (searchTerm.trim() || categoryId || vendorId) && results.length === 0 && (
             <div className="mm-card p-10 text-center">
               <h2 className="text-lg font-semibold mb-2">No products found</h2>
               <p className="text-sm text-gray-500">
