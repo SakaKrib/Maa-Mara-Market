@@ -1,4 +1,5 @@
-from datetime import datetime, timedelta
+from datetime import datetime
+from dateutil.relativedelta import relativedelta
 from decimal import Decimal
 
 from django.db.models import Sum
@@ -8,7 +9,9 @@ from rest_framework.permissions import IsAdminUser
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from .models import Transaction
+from vendorDashboard.models import VendorPayout
+
+from .models import Payment, Transaction
 
 
 class DashboardSummaryView(APIView):
@@ -16,25 +19,134 @@ class DashboardSummaryView(APIView):
 
     def get(self, request):
         selected_date = request.query_params.get("date")
-        period_end = timezone.now()
 
         if selected_date:
             try:
                 selected = datetime.strptime(selected_date, "%Y-%m-%d").date()
-                period_end = timezone.make_aware(
-                    datetime.combine(selected, datetime.max.time())
-                )
             except ValueError:
-                return Response({"error": "Invalid date. Use YYYY-MM-DD."}, status=400)
+                return Response(
+                    {"error": "Invalid date. Use YYYY-MM-DD."},
+                    status=400,
+                )
 
-        today = period_end.strftime("%d/%m/%Y")
-        start_date = period_end - timedelta(days=365)
+            period_start = timezone.make_aware(
+                datetime.combine(selected, datetime.min.time())
+            )
+            period_end = timezone.make_aware(
+                datetime.combine(selected, datetime.max.time())
+            )
+            period_label = selected.strftime("%d/%m/%Y")
+            period_description = "Selected date"
+        else:
+            selected = timezone.localdate()
+            period_start = timezone.make_aware(
+                datetime.combine(selected.replace(day=1), datetime.min.time())
+            )
+            period_end = timezone.now()
+            period_label = selected.strftime("%d/%m/%Y")
+            period_description = "Current month"
 
-        income_monthly = (
-            Transaction.objects
-            .filter(
-                transaction_type="C2B",
-                created_at__gte=start_date,
+        # Customer income is sourced from completed Payment records. This
+        # avoids double-counting PayPal Transaction rows, which may exist once
+        # per vendor on a multi-vendor order.
+        completed_payments = Payment.objects.filter(
+            status__iexact="completed",
+            timestamp__gte=period_start,
+            timestamp__lte=period_end,
+        )
+
+        income_total = (
+            completed_payments.aggregate(total=Sum("amount"))["total"]
+            or Decimal("0.00")
+        )
+
+        paypal_income = (
+            completed_payments.filter(payment_method__iexact="paypal")
+            .aggregate(total=Sum("amount"))["total"]
+            or Decimal("0.00")
+        )
+
+        mpesa_income = (
+            completed_payments.filter(payment_method__iexact="mpesa")
+            .aggregate(total=Sum("amount"))["total"]
+            or Decimal("0.00")
+        )
+
+        # Manual accounting entries are B2C transactions. Only completed
+        # entries affect the financial summary.
+        manual_expenses = (
+            Transaction.objects.filter(
+                transaction_type="B2C",
+                status__iexact="completed",
+                created_at__gte=period_start,
+                created_at__lte=period_end,
+            )
+            .aggregate(total=Sum("amount"))["total"]
+            or Decimal("0.00")
+        )
+
+        category_totals = {}
+        for category, label in Transaction.CATEGORY_CHOICES:
+            total = (
+                Transaction.objects.filter(
+                    transaction_type="B2C",
+                    status__iexact="completed",
+                    category=category,
+                    created_at__gte=period_start,
+                    created_at__lte=period_end,
+                ).aggregate(total=Sum("amount"))["total"]
+                or Decimal("0.00")
+            )
+            category_totals[label] = float(total)
+
+        # Actual vendor settlements are authoritative from VendorPayout. They
+        # are separate from manual ledger entries and are included in total
+        # expenses/cashbook only when the payout is actually marked paid.
+        vendor_payouts = VendorPayout.objects.filter(paid=True)
+        if selected_date:
+            vendor_payouts = vendor_payouts.filter(
+                paid_at__gte=period_start,
+                paid_at__lte=period_end,
+            )
+        else:
+            vendor_payouts = vendor_payouts.filter(
+                paid_at__gte=period_start,
+                paid_at__lte=period_end,
+            )
+
+        vendor_payments_total = (
+            vendor_payouts.aggregate(total=Sum("amount"))["total"]
+            or Decimal("0.00")
+        )
+
+        expense_total = manual_expenses + vendor_payments_total
+        cashbook_total = income_total - expense_total
+
+        # Twelve real calendar months ending in the selected/current month.
+        chart_month = period_end.date().replace(day=1)
+        chart_start = chart_month - relativedelta(months=11)
+
+        monthly_income = (
+            Payment.objects.filter(
+                status__iexact="completed",
+                timestamp__gte=timezone.make_aware(
+                    datetime.combine(chart_start, datetime.min.time())
+                ),
+                timestamp__lte=period_end,
+            )
+            .annotate(month=TruncMonth("timestamp"))
+            .values("month")
+            .annotate(amount=Sum("amount"))
+            .order_by("month")
+        )
+
+        monthly_manual_expenses = (
+            Transaction.objects.filter(
+                transaction_type="B2C",
+                status__iexact="completed",
+                created_at__gte=timezone.make_aware(
+                    datetime.combine(chart_start, datetime.min.time())
+                ),
                 created_at__lte=period_end,
             )
             .annotate(month=TruncMonth("created_at"))
@@ -43,14 +155,15 @@ class DashboardSummaryView(APIView):
             .order_by("month")
         )
 
-        expenses_monthly = (
-            Transaction.objects
-            .filter(
-                transaction_type="B2C",
-                created_at__gte=start_date,
-                created_at__lte=period_end,
+        monthly_vendor_payouts = (
+            VendorPayout.objects.filter(
+                paid=True,
+                paid_at__gte=timezone.make_aware(
+                    datetime.combine(chart_start, datetime.min.time())
+                ),
+                paid_at__lte=period_end,
             )
-            .annotate(month=TruncMonth("created_at"))
+            .annotate(month=TruncMonth("paid_at"))
             .values("month")
             .annotate(amount=Sum("amount"))
             .order_by("month")
@@ -58,107 +171,77 @@ class DashboardSummaryView(APIView):
 
         income_dict = {
             item["month"].strftime("%Y-%m"): float(item["amount"] or 0)
-            for item in income_monthly
+            for item in monthly_income
         }
-        expenses_dict = {
+        expense_dict = {
             item["month"].strftime("%Y-%m"): float(item["amount"] or 0)
-            for item in expenses_monthly
+            for item in monthly_manual_expenses
         }
-
-        months = [
-            (period_end - timedelta(days=30 * i)).strftime("%Y-%m")
-            for i in reversed(range(12))
-        ]
+        payout_dict = {
+            item["month"].strftime("%Y-%m"): float(item["amount"] or 0)
+            for item in monthly_vendor_payouts
+        }
 
         monthly_summary = []
-        for month in months:
-            income_val = income_dict.get(month, 0)
-            expenses_val = expenses_dict.get(month, 0)
+        for offset in range(12):
+            month = chart_start + relativedelta(months=offset)
+            key = month.strftime("%Y-%m")
+            income = income_dict.get(key, 0)
+            expenses = expense_dict.get(key, 0) + payout_dict.get(key, 0)
             monthly_summary.append({
-                "month": month,
-                "income": income_val,
-                "expenses": expenses_val,
-                "cashbook": income_val - expenses_val,
+                "month": key,
+                "income": income,
+                "expenses": expenses,
+                "cashbook": income - expenses,
+                "vendor_payments": payout_dict.get(key, 0),
             })
 
-        period_transactions = Transaction.objects.filter(
-            created_at__gte=start_date,
-            created_at__lte=period_end,
-        )
-
-        paypal_balance = period_transactions.filter(
-            payment_method__iexact="paypal",
-            transaction_type="C2B",
-        ).aggregate(total=Sum("amount"))["total"] or Decimal("0")
-
-        mpesa_balance = period_transactions.filter(
-            payment_method__iexact="mpesa",
-            transaction_type="C2B",
-        ).aggregate(total=Sum("amount"))["total"] or Decimal("0")
-
-        income_total = period_transactions.filter(
-            transaction_type="C2B"
-        ).aggregate(total=Sum("amount"))["total"] or Decimal("0")
-
-        expense_total = period_transactions.filter(
-            transaction_type="B2C"
-        ).aggregate(total=Sum("amount"))["total"] or Decimal("0")
-
-        cashbook_total = income_total - expense_total
-
-        categories = [
-            "vendors",
-            "staffs",
-            "kra",
-            "refund",
-            "training",
-            "subscriptions",
-            "rent",
-        ]
-
-        payments = {}
-        for category in categories:
-            total = period_transactions.filter(
-                category=category
-            ).aggregate(total=Sum("amount"))["total"] or Decimal("0")
-            payments[
-                category.capitalize() if category != "kra" else "KRA Licenses"
-            ] = float(total)
-
-        response = {
-            "date": today,
-            "accounts": {
-                "paypal": {
-                    "type": "PayPal",
-                    "account": "merchant@paypal.example",
-                    "holder": "Maa Mara Market",
-                    "amount": float(paypal_balance),
-                    "status": "Verified",
-                },
-                "mpesa": {
-                    "type": "M-Pesa",
-                    "till": "123456",
-                    "holder": "Maa Mara Market",
-                    "amount": float(mpesa_balance),
-                    "agent_status": "Active",
-                },
+        # Payment Accounts represent confirmed payment activity for the
+        # selected period; they are not fabricated wallet balances.
+        accounts = {
+            "paypal": {
+                "type": "PayPal",
+                "account": None,
+                "holder": "Maa Mara Market",
+                "amount": float(paypal_income),
+                "status": "Configured" if paypal_income is not None else "Unknown",
             },
+            "mpesa": {
+                "type": "M-Pesa",
+                "till": None,
+                "holder": "Maa Mara Market",
+                "amount": float(mpesa_income),
+                "agent_status": "Configured" if mpesa_income is not None else "Unknown",
+            },
+        }
+
+        return Response({
+            "date": period_label,
+            "period": {
+                "type": "day" if selected_date else "month",
+                "description": period_description,
+                "start": period_start.isoformat(),
+                "end": period_end.isoformat(),
+            },
+            "accounts": accounts,
             "summary_cards": {
                 "income": {
                     "amount": float(income_total),
-                    "comparison": "Income for the selected period",
+                    "comparison": f"Income for {period_description.lower()}",
                 },
                 "expenses": {
                     "amount": float(expense_total),
-                    "comparison": "Expenses for the selected period",
+                    "comparison": f"Expenses for {period_description.lower()}",
                 },
                 "cashbook": {
                     "amount": float(cashbook_total),
-                    "comparison": "Income minus expenses for the selected period",
+                    "comparison": "Income minus completed expenses",
+                },
+                "vendor_payments": {
+                    "amount": float(vendor_payments_total),
+                    "comparison": f"Paid vendor settlements for {period_description.lower()}",
                 },
             },
-            "payments_for_month": payments,
+            "payments_for_month": category_totals,
             "monthly_summary": monthly_summary,
-        }
-
-        return Response(response)
+        })
