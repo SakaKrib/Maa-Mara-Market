@@ -358,7 +358,7 @@ useEffect(() => {
          {/* 🔀 Toggle switch (only for organicDepartmentMap or departmentMap) */}
        {vendor.vendor_data?.product_type === "both" && (
         <div className="my-4 space-y-2">
-          <label className="block text-sm font-semibold text-foreground">Select Form</label>
+          <label className="block text-sm leading-6 font-semibold text-foreground">Select Form</label>
           <div className="flex flex-wrap gap-2">
             {/* Organic */}
             <label className="flex items-center gap-2 cursor-pointer">
@@ -412,14 +412,14 @@ useEffect(() => {
           name="section"
           render={({ field }) => (
             <FormItem className='flex  flex-col'>
-              <FormLabel className="text-sm font-semibold text-foreground">Section</FormLabel>
+              <FormLabel className="text-sm leading-6 font-semibold text-foreground">Section</FormLabel>
               <FormControl>
                 <input
                   type="text"
                   {...field}
                   value={field.value}
                   disabled
-                  className="w-full rounded-[20px] border border-border bg-card px-2 py-2 text-sm text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20 text-center"
+                  className="w-full rounded-[20px] border border-border bg-card px-2 py-2 text-sm leading-6 text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20 text-center"
                   
                 />
               </FormControl>
@@ -438,7 +438,7 @@ useEffect(() => {
               <FormLabel className='text-sm font-semibold text-foreground'>Department</FormLabel>
               <FormControl className='flex flex-col justify-end h-65'>
                 <select
-                  className="w-full rounded-[20px] border border-border bg-card px-2 py-2 text-sm text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
+                  className="w-full rounded-[20px] border border-border bg-card px-2 py-2 text-sm leading-6 text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
                   {...field}
                   onChange={(e) => {
                     const dept = e.target.value;
@@ -472,7 +472,7 @@ useEffect(() => {
             name="category"
             render={({ field }) => (
               <FormItem className='flex flex-col justify-end h-65'>
-                <FormLabel className="text-sm font-semibold text-foreground">Category</FormLabel>
+                <FormLabel className="text-sm leading-6 font-semibold text-foreground">Category</FormLabel>
                 <FormControl>
                   <select
                     
@@ -508,7 +508,7 @@ useEffect(() => {
             name="subcategory"
             render={({ field }) => (
               <FormItem className='flex flex-col justify-end relative top-1'>
-                <FormLabel className="text-sm font-semibold text-foreground">Subcategory</FormLabel>
+                <FormLabel className="text-sm leading-6 font-semibold text-foreground">Subcategory</FormLabel>
                 <FormControl>
                   <select
                     
@@ -549,7 +549,7 @@ useEffect(() => {
           name="name"
           render={({ field }) => (
             <FormItem>
-              <FormLabel className="text-sm font-semibold text-foreground">Item Name</FormLabel>
+              <FormLabel className="text-sm leading-6 font-semibold text-foreground">Item Name</FormLabel>
               <FormControl>
                 <Input
                   {...field}
@@ -571,7 +571,7 @@ useEffect(() => {
           name="discount_price"
           render={({ field }) => (
             <FormItem>
-              <FormLabel className="text-sm font-semibold text-foreground">Discount</FormLabel>
+              <FormLabel className="text-sm leading-6 font-semibold text-foreground">Discount</FormLabel>
               <FormControl>
                 <Input
                   type="number"
@@ -599,7 +599,7 @@ useEffect(() => {
           name="in_stock"
           render={({ field }) => (
             <FormItem>
-              <FormLabel className="text-sm font-semibold text-foreground">Qty in Stock</FormLabel>
+              <FormLabel className="text-sm leading-6 font-semibold text-foreground">Qty in Stock</FormLabel>
               <FormControl>
                 <Input
                   type="number"
@@ -626,7 +626,7 @@ useEffect(() => {
   name="image"
   render={({ field }) => (
     <FormItem>
-      <FormLabel className="text-sm font-semibold text-foreground">Item Image</FormLabel>
+      <FormLabel className="text-sm leading-6 font-semibold text-foreground">Item Image</FormLabel>
       <FormControl>
       <div className="flex flex-col gap-3">
           {field.value && (
@@ -676,7 +676,7 @@ useEffect(() => {
       name="price"
       render={({ field }) => (
         <FormItem>
-          <FormLabel className="text-sm font-semibold text-foreground">Price</FormLabel>
+          <FormLabel className="text-sm leading-6 font-semibold text-foreground">Price</FormLabel>
           <FormControl>
             <Input
               type="number"
@@ -707,7 +707,7 @@ useEffect(() => {
               name="description"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel className="text-sm font-semibold text-foreground">Description</FormLabel>
+                  <FormLabel className="text-sm leading-6 font-semibold text-foreground">Description</FormLabel>
                   <FormControl>
                     <Textarea {...field} placeholder="Item description..." />
                   </FormControl>
@@ -739,7 +739,7 @@ useEffect(() => {
 
                 return (
                   <FormItem>
-                    <FormLabel className="text-sm font-semibold text-foreground">
+                    <FormLabel className="text-sm leading-6 font-semibold text-foreground">
                       Product Attribute
                     </FormLabel>
                     <FormControl>
@@ -767,7 +767,7 @@ useEffect(() => {
 
               {/* Organic inorganic */}
               <div className="my-4">
-  <FormLabel className="text-sm font-semibold text-foreground">Product Type</FormLabel>
+  <FormLabel className="text-sm leading-6 font-semibold text-foreground">Product Type</FormLabel>
   <FormControl>
     <div className="flex gap-4">
 
@@ -867,7 +867,7 @@ useEffect(() => {
     
             return (
               <FormItem>
-                <FormLabel className="text-sm font-semibold text-foreground">Sizes & Stock</FormLabel>
+                <FormLabel className="text-sm leading-6 font-semibold text-foreground">Sizes & Stock</FormLabel>
                 <FormControl>
                   <div
                     className="grid grid-cols-3 gap-5 my-2 p-2 rounded-lg"
@@ -904,7 +904,7 @@ useEffect(() => {
                                 handleStockChange(size, e.target.value)
                               }
                               placeholder="Stock"
-                              className="w-24 rounded-[20px] border border-border bg-card px-2 py-2 text-sm text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
+                              className="w-24 rounded-[20px] border border-border bg-card px-2 py-2 text-sm leading-6 text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
                             />
                           )}
                         </div>
@@ -938,7 +938,7 @@ useEffect(() => {
     
             return (
               <FormItem>
-                <FormLabel className="text-sm font-semibold text-foreground">Length (Optional)</FormLabel>
+                <FormLabel className="text-sm leading-6 font-semibold text-foreground">Length (Optional)</FormLabel>
                 <FormControl>
                   <div className="flex gap-3 items-center my-2">
                     <Input
@@ -948,10 +948,10 @@ useEffect(() => {
                       value={value?.value ?? ""}
                       onChange={(e) => handleValueChange(e.target.value)}
                       placeholder="Enter length"
-                      className="w-full rounded-[20px] border border-border bg-card px-2 py-2 text-sm text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20 md:w-32"
+                      className="w-full rounded-[20px] border border-border bg-card px-2 py-2 text-sm leading-6 text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20 md:w-32"
                     />
                     <select
-                      className="w-full rounded-[20px] border border-border bg-card px-2 py-2 text-sm text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
+                      className="w-full rounded-[20px] border border-border bg-card px-2 py-2 text-sm leading-6 text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
                       
                       value={value?.unit ?? "cm"}
                       onChange={(e) => handleUnitChange(e.target.value)}
@@ -996,7 +996,7 @@ useEffect(() => {
     
           return (
             <FormItem>
-              <FormLabel className="text-sm font-semibold text-foreground">Weight</FormLabel>
+              <FormLabel className="text-sm leading-6 font-semibold text-foreground">Weight</FormLabel>
               <FormControl>
                 <div className="flex gap-3 items-center my-2">
                   {/* Numeric input */}
@@ -1007,12 +1007,12 @@ useEffect(() => {
                     value={value?.value ?? ""}
                     onChange={(e) => handleValueChange(e.target.value)}
                     placeholder="Enter weight"
-                    className="w-full rounded-[20px] border border-border bg-card px-2 py-2 text-sm text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20 md:w-32"
+                    className="w-full rounded-[20px] border border-border bg-card px-2 py-2 text-sm leading-6 text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20 md:w-32"
                   />
     
                   {/* Dropdown for unit */}
                   <select
-                    className="w-full rounded-[20px] border border-border bg-card px-2 py-2 text-sm text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
+                    className="w-full rounded-[20px] border border-border bg-card px-2 py-2 text-sm leading-6 text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
                     value={value?.unit ?? "g"}
                     onChange={(e) => handleUnitChange(e.target.value)}
                   >
@@ -1045,11 +1045,11 @@ useEffect(() => {
           name="shoe_type"
           render={({ field }) => (
             <FormItem>
-              <FormLabel className="text-sm font-semibold text-foreground">Shoe Type</FormLabel>
+              <FormLabel className="text-sm leading-6 font-semibold text-foreground">Shoe Type</FormLabel>
               <FormControl>
                 <select
                   {...field}
-                  className="w-full rounded-[20px] border border-border bg-card px-2 py-2 text-sm text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
+                  className="w-full rounded-[20px] border border-border bg-card px-2 py-2 text-sm leading-6 text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
                 >
                   <option value="">Select Shoe Type</option>
                   {shoeTypes.map((type) => (
@@ -1074,11 +1074,11 @@ useEffect(() => {
           name="shoe_gender"
           render={({ field }) => (
             <FormItem>
-              <FormLabel className="text-sm font-semibold text-foreground">Gender</FormLabel>
+              <FormLabel className="text-sm leading-6 font-semibold text-foreground">Gender</FormLabel>
               <FormControl>
                 <select
                   {...field}
-                  className="w-full rounded-[20px] border border-border bg-card px-2 py-2 text-sm text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
+                  className="w-full rounded-[20px] border border-border bg-card px-2 py-2 text-sm leading-6 text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
                 >
                   <option value="">Select Gender</option>
                   {shoeGenders.map((gender) => (
@@ -1118,7 +1118,7 @@ useEffect(() => {
     
             return (
               <FormItem>
-                <FormLabel className="text-sm font-semibold text-foreground">Select Sizes</FormLabel>
+                <FormLabel className="text-sm leading-6 font-semibold text-foreground">Select Sizes</FormLabel>
                 <FormControl>
                   <div className="grid grid-cols-3 gap-4 my-2">
                     {sizeOptions.map((size) => (
@@ -1182,7 +1182,7 @@ useEffect(() => {
     
             return (
               <FormItem>
-                <FormLabel className="text-sm font-semibold text-foreground">Kids Sizes & Stock</FormLabel>
+                <FormLabel className="text-sm leading-6 font-semibold text-foreground">Kids Sizes & Stock</FormLabel>
                 <FormControl>
                   <div
                     className="grid grid-cols-3 gap-5 my-2"
@@ -1217,7 +1217,7 @@ useEffect(() => {
                                 handleStockChange(size, e.target.value)
                               }
                               placeholder="Stock"
-                              className="w-24 rounded-[20px] border border-border bg-card px-2 py-2 text-sm text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
+                              className="w-24 rounded-[20px] border border-border bg-card px-2 py-2 text-sm leading-6 text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
                             />
                           )}
                         </div>
@@ -1251,7 +1251,7 @@ useEffect(() => {
     
             return (
               <FormItem>
-                <FormLabel className="text-sm font-semibold text-foreground">Length (Optional)</FormLabel>
+                <FormLabel className="text-sm leading-6 font-semibold text-foreground">Length (Optional)</FormLabel>
                 <FormControl>
                   <div className="flex gap-3 items-center my-2">
                     <Input
@@ -1261,10 +1261,10 @@ useEffect(() => {
                       value={value?.value ?? ""}
                       onChange={(e) => handleValueChange(e.target.value)}
                       placeholder="Enter length"
-                      className="w-full rounded-[20px] border border-border bg-card px-2 py-2 text-sm text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20 md:w-32"
+                      className="w-full rounded-[20px] border border-border bg-card px-2 py-2 text-sm leading-6 text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20 md:w-32"
                     />
                     <select
-                      className="w-full rounded-[20px] border border-border bg-card px-2 py-2 text-sm text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
+                      className="w-full rounded-[20px] border border-border bg-card px-2 py-2 text-sm leading-6 text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
                       
                       value={value?.unit ?? "cm"}
                       onChange={(e) => handleUnitChange(e.target.value)}
@@ -1312,7 +1312,7 @@ useEffect(() => {
               className="h-4 w-4 border-0 shadow-none focus-visible:outline-none focus-visible:ring-0"
             />
           </FormControl>
-          <FormLabel className="text-sm font-semibold text-foreground">Is Organic?</FormLabel>
+          <FormLabel className="text-sm leading-6 font-semibold text-foreground">Is Organic?</FormLabel>
           <FormDescription>
             Check if is organic food.
           </FormDescription>
@@ -1333,7 +1333,7 @@ useEffect(() => {
               className="h-4 w-4 border-0 shadow-none focus-visible:outline-none focus-visible:ring-0"
             />
           </FormControl>
-          <FormLabel className="text-sm font-semibold text-foreground">Is Fresh Food?</FormLabel>
+          <FormLabel className="text-sm leading-6 font-semibold text-foreground">Is Fresh Food?</FormLabel>
           <FormDescription>
             Check if is fresh food.
           </FormDescription>
@@ -1350,13 +1350,13 @@ useEffect(() => {
           name="roast_type"
           render={({ field }) => (
             <FormItem>
-              <FormLabel className="text-sm font-semibold text-foreground">Roast Type</FormLabel>
+              <FormLabel className="text-sm leading-6 font-semibold text-foreground">Roast Type</FormLabel>
               <FormControl>
                 <select
                   {...field}
                   value={field.value ?? ""} // keeps it controlled
                   onChange={(e) => field.onChange(e.target.value)}
-                  className="w-full rounded-[20px] border border-border bg-card px-2 py-2 text-sm text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
+                  className="w-full rounded-[20px] border border-border bg-card px-2 py-2 text-sm leading-6 text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
                   
                 >
                   <option value="">Select Roast Type</option>
@@ -1381,13 +1381,13 @@ useEffect(() => {
           name="coffee_state"
           render={({ field }) => (
             <FormItem>
-              <FormLabel className="text-sm font-semibold text-foreground">Coffee State</FormLabel>
+              <FormLabel className="text-sm leading-6 font-semibold text-foreground">Coffee State</FormLabel>
               <FormControl>
                 <select
                   {...field}
                   value={field.value ?? ""} // keeps it controlled
                   onChange={(e) => field.onChange(e.target.value)}
-                  className="w-full rounded-[20px] border border-border bg-card px-2 py-2 text-sm text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
+                  className="w-full rounded-[20px] border border-border bg-card px-2 py-2 text-sm leading-6 text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
                   
                 >
                   <option value="">Select Coffee State</option>
@@ -1426,7 +1426,7 @@ useEffect(() => {
     
           return (
             <FormItem>
-              <FormLabel className="text-sm font-semibold text-foreground">Weight</FormLabel>
+              <FormLabel className="text-sm leading-6 font-semibold text-foreground">Weight</FormLabel>
               <FormControl>
                 <div className="flex gap-3 items-center my-2">
                   {/* Numeric input */}
@@ -1440,13 +1440,13 @@ useEffect(() => {
                     handleValueChange(val === "" ? null : parseInt(val, 10));
                   }}
                   placeholder="Enter weight"
-                  className="w-full rounded-[20px] border border-border bg-card px-2 py-2 text-sm text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20 md:w-32"
+                  className="w-full rounded-[20px] border border-border bg-card px-2 py-2 text-sm leading-6 text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20 md:w-32"
                 />
     
     
                   {/* Dropdown for unit */}
                   <select
-                    className="w-full rounded-[20px] border border-border bg-card px-2 py-2 text-sm text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
+                    className="w-full rounded-[20px] border border-border bg-card px-2 py-2 text-sm leading-6 text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
                     
                     value={value?.unit ?? "g"}
                     onChange={(e) => handleUnitChange(e.target.value)}
@@ -1477,13 +1477,13 @@ useEffect(() => {
           }}
           render={({ field }) => (
             <FormItem>
-              <FormLabel className="text-sm font-semibold text-foreground">Manufactured Date</FormLabel>
+              <FormLabel className="text-sm leading-6 font-semibold text-foreground">Manufactured Date</FormLabel>
               <FormControl>
               <Input
               type="date"
               {...field}
               value={field.value ?? ""}  // 👈 fallback ensures it's always controlled
-              className="w-full rounded-[20px] border border-border bg-card px-2 py-2 text-sm text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
+              className="w-full rounded-[20px] border border-border bg-card px-2 py-2 text-sm leading-6 text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
               
             />
     
@@ -1518,7 +1518,7 @@ useEffect(() => {
                 <Input
                   type="date"
                   {...field}
-                  className="w-full rounded-[20px] border border-border bg-card px-2 py-2 text-sm text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
+                  className="w-full rounded-[20px] border border-border bg-card px-2 py-2 text-sm leading-6 text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
                   
                 />
               </FormControl>
@@ -1671,7 +1671,7 @@ useEffect(() => {
     
             return (
               <FormItem>
-                <FormLabel className="text-sm font-semibold text-foreground">Color Variants</FormLabel>
+                <FormLabel className="text-sm leading-6 font-semibold text-foreground">Color Variants</FormLabel>
                 <FormControl>
                   <div className="space-y-6">
                     {/* Color selection */}
@@ -1742,7 +1742,7 @@ useEffect(() => {
                                     type="number"
                                     min="1"
                                     placeholder="Stock"
-                                    className="w-24 rounded-[20px] border border-border bg-card px-2 py-2 text-sm text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
+                                    className="w-24 rounded-[20px] border border-border bg-card px-2 py-2 text-sm leading-6 text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
                                     value={selected?.quantity_in_stock ?? ""}
                                     onChange={(e) =>
                                       handleStockChange(
@@ -1833,7 +1833,7 @@ useEffect(() => {
        <FormControl>
          <select
            {...field}
-           className="w-full rounded-[20px] border border-border bg-card px-2 py-2 text-sm text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
+           className="w-full rounded-[20px] border border-border bg-card px-2 py-2 text-sm leading-6 text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
            
          >
            <option value="cm">Centimeters</option>
@@ -1870,7 +1870,7 @@ useEffect(() => {
        <FormControl>
          <select
            {...field}
-           className="w-full rounded-[20px] border border-border bg-card px-2 py-2 text-sm text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
+           className="w-full rounded-[20px] border border-border bg-card px-2 py-2 text-sm leading-6 text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
            
          >
            <option value="g">Grams</option>
