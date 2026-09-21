@@ -85,6 +85,7 @@ import ItemsOnsite from "./cmponents/VENDORPAGE/Products/VendorItems/ItemOnSite"
 import TransactionTable from "./cmponents/VENDORPAGE/Home/Transaction";
 import AdminAccounts from "./cmponents/Admin/AccountMain/Accountmain";
 import Settings from "./cmponents/Settings/Settings";
+import { AdminPreferencesProvider } from "./cmponents/Settings/AdminPreferencesContext";
 // link admin css
 import "./admin.css"
 import InviteFriends from "./PublicUiForAll/PublicUi/Customer/DesktopView/Main/Referals/Referals";
@@ -447,7 +448,9 @@ function App() {
     <ToastProvider>
       <CartProvider>
         <WishlistProvider>
-          <AppContent />
+          <AdminPreferencesProvider>
+            <AppContent />
+          </AdminPreferencesProvider>
         </WishlistProvider>
       </CartProvider>
       <Toaster />
