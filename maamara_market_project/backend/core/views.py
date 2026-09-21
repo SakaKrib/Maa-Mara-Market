@@ -211,6 +211,21 @@ def support_messages(request):
 
 
 @api_view(["GET"])
+@permission_classes([AllowAny])
+def my_support_messages(request):
+    """Return the current customer's own support requests and replies."""
+    if request.user.is_authenticated:
+        tickets = SupportMessage.objects.filter(user=request.user).order_by("-created_at")
+    else:
+        visitor_id = request.COOKIES.get("visitorId")
+        if not visitor_id:
+            return Response([])
+        tickets = SupportMessage.objects.filter(visitor_id=visitor_id).order_by("-created_at")
+
+    return Response([_support_payload(ticket) for ticket in tickets])
+
+
+@api_view(["GET"])
 @permission_classes([IsAdminUser])
 def support_faq_candidates(request):
     from django.db.models.functions import Lower, Trim
