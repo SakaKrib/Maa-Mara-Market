@@ -9,6 +9,7 @@ const CategoryWithItems = ({ onSelectItem }) => {
 
   useEffect(() => {
     let active = true;
+
     api
       .get("/api/categories-with-items/")
       .then((res) => {
@@ -22,54 +23,103 @@ const CategoryWithItems = ({ onSelectItem }) => {
         setError("No Categories found.");
         setLoading(false);
       });
-    return () => { active = false; };
+
+    return () => {
+      active = false;
+    };
   }, []);
 
-  if (loading) return <div className="mm-card p-5 text-center text-gray-500">Loading categories...</div>;
-  if (error) return <div className="mm-card p-5 text-center text-gray-500">{error}</div>;
+  if (loading) {
+    return (
+      <section className="rounded-2xl border border-border bg-card p-4 shadow-custom sm:p-5">
+        <p className="text-center text-sm text-muted-foreground">Loading categories…</p>
+      </section>
+    );
+  }
 
-  return (
-    <div className="category mobile-hide">
-      {categories.map((category) => {
-        const allItems = category.subcategories
+  if (error || !categories.length) {
+    return (
+      <section className="rounded-2xl border border-border bg-card p-4 shadow-custom sm:p-5">
+        <p className="text-center text-sm text-muted-foreground">{error || "No categories found."}</p>
+      </section>
+    );
+  }
+
+  const visibleCategories = categories
+    .map((category) => {
+      const allItems =
+        category.subcategories
           ?.flatMap((subcat) => subcat.items || [])
           .filter(Boolean) || [];
 
-        if (!allItems.length) return null;
+      return { ...category, firstItem: allItems[0] };
+    })
+    .filter((category) => category.firstItem)
+    .slice(0, 6);
 
-        const firstItem = allItems[0];
-        const imageUrl = firstItem.image
-          ? (firstItem.image.startsWith?.("http") ? firstItem.image : `${baseUrl}${firstItem.image}`)
-          : "/placeholder.jpg";
+  return (
+    <section className="rounded-2xl border border-border bg-card p-4 shadow-custom sm:p-5">
+      <div className="mb-4 flex items-end justify-between gap-4">
+        <div>
+          <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-muted-foreground">
+            SHOP BY CATEGORY
+          </p>
+          <h2 className="mt-1 text-lg font-bold text-card-foreground sm:text-xl">
+            Explore our categories
+          </h2>
+          <p className="mt-1 text-xs leading-5 text-muted-foreground">
+            Browse a selection of products from across Maa Mara Market.
+          </p>
+        </div>
+      </div>
 
-        return (
-          <div key={category.id} className="item">
-            <div
-              className={category.featured ? "get-gray" : ""}
-              onClick={() => onSelectItem?.(firstItem.id)}
-              style={{ cursor: onSelectItem ? "pointer" : "default" }}
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+        {visibleCategories.map((category) => {
+          const firstItem = category.firstItem;
+          const imageUrl = firstItem.image
+            ? firstItem.image.startsWith?.("http")
+              ? firstItem.image
+              : `${baseUrl}${firstItem.image}`
+            : "/placeholder.jpg";
+
+          const description =
+            category.description ||
+            `Explore products in ${category.name}.`;
+
+          return (
+            <article
+              key={category.id}
+              className="min-w-0 rounded-2xl border border-border bg-background p-2.5 transition-shadow hover:shadow-custom"
             >
-              <h5>{category.name}</h5>
-              <div className="image object-cover">
-                <img src={imageUrl} alt={firstItem.name} loading="lazy" />
+              <div className="overflow-hidden rounded-xl bg-muted">
+                <img
+                  src={imageUrl}
+                  alt={category.name}
+                  loading="lazy"
+                  className="aspect-square w-full object-cover"
+                />
               </div>
-              <div className="text-content fexcol">
-                <h3>{firstItem.title || "Featured Product"}</h3>
-                <h4>
-                  <span>{firstItem.subtitle || "Special Offer!"}</span>
-                  <br />
-                  {firstItem.name}
-                </h4>
-                <a href={`/subcategory/${category.id}/products`} className="primary-button" onClick={(e) => e.stopPropagation()}>
-                  Shop Now
+
+              <div className="px-1 pb-1 pt-3">
+                <h3 className="truncate text-sm font-semibold text-card-foreground">
+                  {category.name}
+                </h3>
+                <p className="mt-1 line-clamp-2 text-[11px] leading-5 text-muted-foreground">
+                  {description}
+                </p>
+                <a
+                  href={`/subcategory/${category.id}/products`}
+                  className="mt-3 inline-flex rounded-full border border-border bg-background px-3 py-1.5 text-[11px] font-semibold text-card-foreground transition-colors hover:bg-muted"
+                  onClick={() => onSelectItem?.(firstItem.id)}
+                >
+                  Explore
                 </a>
               </div>
-              <a href={`/subcategory/${category.id}/products`} className="over-link" onClick={(e) => e.stopPropagation()} aria-label={`Shop ${category.name}`} />
-            </div>
-          </div>
-        );
-      })}
-    </div>
+            </article>
+          );
+        })}
+      </div>
+    </section>
   );
 };
 
