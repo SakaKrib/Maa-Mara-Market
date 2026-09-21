@@ -900,7 +900,8 @@ def admin_transaction_history(request):
 
     transaction_qs = (
         Transaction.objects
-        .select_related("vendor", "order")
+        .select_related("vendor", "order", "payout")
+        .filter(payout__isnull=True)
         .exclude(status="deleted")
         .order_by("-created_at")
     )
