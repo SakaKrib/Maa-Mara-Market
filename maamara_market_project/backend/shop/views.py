@@ -15,7 +15,7 @@ from vendorDashboard.serializers import VendorItemRequestSerializer
 from rest_framework import status
 from rest_framework.decorators import action
 from .Serializers import BlogPostSerializer
-from .models import BlogPost, CareerVacancy, JobApplication
+from .models import BlogPost, CareerVacancy, JobApplication, FAQ
 from order.views import IsAuthenticatedOrVisitor
 from order.models import Customer
 from django.shortcuts import get_object_or_404
@@ -28,6 +28,74 @@ from rest_framework.exceptions import PermissionDenied
 import uuid
 import bleach # type: ignore
 
+
+
+class FAQListCreateView(APIView):
+    permission_classes = [AllowAny]
+
+    def get(self, request):
+        faqs = FAQ.objects.all().values(
+            "id", "question", "answer", "category", "created_at", "updated_at"
+        )
+        return Response(list(faqs))
+
+    def post(self, request):
+        if not request.user.is_authenticated or not request.user.is_staff:
+            return Response({"detail": "Admin access required."}, status=status.HTTP_403_FORBIDDEN)
+
+        question = str(request.data.get("question") or "").strip()
+        category = str(request.data.get("category") or "").strip()
+        answer = sanitize_rich_text(request.data.get("answer") or "")
+
+        if not question:
+            return Response({"question": ["This field is required."]}, status=status.HTTP_400_BAD_REQUEST)
+
+        faq = FAQ.objects.create(question=question[:500], answer=answer, category=category[:120])
+        return Response({
+            "id": faq.id,
+            "question": faq.question,
+            "answer": faq.answer,
+            "category": faq.category,
+            "created_at": faq.created_at,
+            "updated_at": faq.updated_at,
+        }, status=status.HTTP_201_CREATED)
+
+
+class FAQDetailView(APIView):
+    permission_classes = [AllowAny]
+
+    def patch(self, request, pk):
+        if not request.user.is_authenticated or not request.user.is_staff:
+            return Response({"detail": "Admin access required."}, status=status.HTTP_403_FORBIDDEN)
+
+        faq = get_object_or_404(FAQ, pk=pk)
+
+        if "question" in request.data:
+            faq.question = str(request.data.get("question") or "").strip()[:500]
+        if "category" in request.data:
+            faq.category = str(request.data.get("category") or "").strip()[:120]
+        if "answer" in request.data:
+            faq.answer = sanitize_rich_text(request.data.get("answer") or "")
+
+        if not faq.question:
+            return Response({"question": ["This field is required."]}, status=status.HTTP_400_BAD_REQUEST)
+
+        faq.save()
+        return Response({
+            "id": faq.id,
+            "question": faq.question,
+            "answer": faq.answer,
+            "category": faq.category,
+            "created_at": faq.created_at,
+            "updated_at": faq.updated_at,
+        })
+
+    def delete(self, request, pk):
+        if not request.user.is_authenticated or not request.user.is_staff:
+            return Response({"detail": "Admin access required."}, status=status.HTTP_403_FORBIDDEN)
+        faq = get_object_or_404(FAQ, pk=pk)
+        faq.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
 # -------------------------------
 # Sanitizer
