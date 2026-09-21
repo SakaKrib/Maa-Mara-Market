@@ -75,11 +75,18 @@ const TrendingProductCard = ({ item, isWishlisted: controlledWishlist, onToggleW
           </button>
         </div>
 
-        {Number(item.discount || item.percentage_discount || 0) > 0 && (
-          <span className="mm-product-discount">
-            {Number(item.discount || item.percentage_discount)}% OFF
-          </span>
-        )}
+        <div className="absolute left-2 top-2 z-10 flex flex-wrap gap-1.5">
+          {item.best_seller && (
+            <span className="rounded-full border border-border bg-white/95 px-2.5 py-1 text-[10px] font-semibold text-card-foreground shadow-sm">
+              Best seller
+            </span>
+          )}
+          {Number(item.discount || item.percentage_discount || 0) > 0 && (
+            <span className="mm-product-discount">
+              {Number(item.discount || item.percentage_discount)}% OFF
+            </span>
+          )}
+        </div>
       </div>
 
       <div className="mm-product-content p-3 sm:p-4 flex flex-col">
