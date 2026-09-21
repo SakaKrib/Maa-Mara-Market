@@ -695,8 +695,37 @@ class VendorPayout(models.Model):
         }
 
     class Meta:
-        # ✅ Prevent duplicate payouts for same vendor and period
+        # Prevent duplicate payouts for the same vendor and payout period.
         unique_together = ('vendor', 'payout_period_start', 'payout_period_end')
+
+        # Provider correlation identifiers must belong to at most one payout.
+        # NULL/blank values remain allowed until M-Pesa supplies them.
+        constraints = [
+            models.UniqueConstraint(
+                fields=["mpesa_conversation_id"],
+                condition=(
+                    models.Q(mpesa_conversation_id__isnull=False)
+                    & ~models.Q(mpesa_conversation_id="")
+                ),
+                name="uniq_vp_mpesa_conversation",
+            ),
+            models.UniqueConstraint(
+                fields=["mpesa_originator_conversation_id"],
+                condition=(
+                    models.Q(mpesa_originator_conversation_id__isnull=False)
+                    & ~models.Q(mpesa_originator_conversation_id="")
+                ),
+                name="uniq_vp_mpesa_originator",
+            ),
+            models.UniqueConstraint(
+                fields=["mpesa_transaction_id"],
+                condition=(
+                    models.Q(mpesa_transaction_id__isnull=False)
+                    & ~models.Q(mpesa_transaction_id="")
+                ),
+                name="uniq_vp_mpesa_transaction",
+            ),
+        ]
 
     def __str__(self):
         return f"{self.vendor.company_name} - KES {self.amount} ({'Paid' if self.paid else 'Pending'})" 
