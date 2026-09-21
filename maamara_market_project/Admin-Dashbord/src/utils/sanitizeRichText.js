@@ -8,6 +8,7 @@ const RICH_TEXT_CONFIG = {
     "blockquote", "pre", "code", "a",
   ],
   ALLOWED_ATTR: ["href", "title", "target", "rel"],
+  ALLOWED_URI_REGEXP: /^(?:(?:https?|mailto):|(?:\\/|#|\\.{1,2}\\/))/i,
   FORBID_TAGS: ["script", "style", "iframe", "object", "embed", "form", "svg", "math"],
   FORBID_ATTR: [
     "onerror", "onload", "onclick", "onmouseover", "onfocus",
