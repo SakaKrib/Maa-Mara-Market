@@ -1,6 +1,6 @@
 from django.urls import path, include
 from .views import *
-from .discovery import discovery_feed, multi_collections, recommendations
+from .discovery import discovery_feed, multi_collections, recommendations, homepage_collections
 from rest_framework.routers import DefaultRouter
 
 router = DefaultRouter()
@@ -36,6 +36,7 @@ urlpatterns = [
     path("api/brands/", list_brands, name="list_brands"),
     path("api/discovery/", discovery_feed, name="discovery-feed"),
     path("api/recommendations/", recommendations, name="recommendations"),
+    path("api/homepage-collections/", homepage_collections, name="homepage-collections"),
     path("api/multi-collections/", multi_collections, name="multi-collections"),
     path("api/blogs/", blog_list, name="list_blogs"),
     path("api/blogs/<int:pk>/", blog_detail, name="blog_detail"),
