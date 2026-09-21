@@ -38,7 +38,11 @@ export default function Messaging() {
     if (!id) return;
     const response = await api.get("/api/messaging/conversations/" + id + "/messages/");
     setMessages(response.data?.results || []);
-    api.post("/api/messaging/conversations/" + id + "/read/").catch(() => {});
+    api.post("/api/messaging/conversations/" + id + "/read/").then(() => {
+      setConversations((current) => current.map((conversation) => (
+        conversation.id === id ? { ...conversation, unread_count: 0 } : conversation
+      )));
+    }).catch(() => {});
   }, []);
 
   useEffect(() => {
