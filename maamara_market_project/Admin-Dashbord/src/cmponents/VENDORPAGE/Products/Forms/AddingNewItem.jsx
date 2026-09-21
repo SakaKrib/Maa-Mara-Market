@@ -865,25 +865,50 @@ useEffect(() => {
             />
     
             {/* attribute */}
-            
             <FormField
-                control={form.control}
-                name="item_attribute"
-                render={({ field }) => {
-              
-                  // Always start with an array
-                  let attributes = [];
-    
-                  if (vendor.vendor_data?.product_type === "organic") {
-                    attributes = organicAttributes;
-                  } else if (vendor.vendor_data?.product_type === "inorganic") {
-                    attributes = inorganicAttributes;
-                  } else if (vendor.vendor_data?.product_type === "both") {
-                    attributes =
-                      selectedSection === "organic" ? organicAttributes : inorganicAttributes;
-                }}
-              />
+              control={form.control}
+              name="item_attribute"
+              render={({ field }) => {
+                let attributes = [];
 
+                if (vendor?.vendor_data?.product_type === "organic") {
+                  attributes = organicAttributes;
+                } else if (vendor?.vendor_data?.product_type === "inorganic") {
+                  attributes = inorganicAttributes;
+                } else if (vendor?.vendor_data?.product_type === "both") {
+                  attributes =
+                    selectedSection === "organic"
+                      ? organicAttributes
+                      : inorganicAttributes;
+                }
+
+                return (
+                  <FormItem>
+                    <FormLabel className="text-sm font-semibold text-card-foreground">
+                      Product Attribute
+                    </FormLabel>
+                    <FormControl>
+                      <select
+                        {...field}
+                        value={field.value ?? ""}
+                        className="w-full rounded-[12px] border border-border bg-card px-2 py-2 text-sm text-foreground outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
+                      >
+                        <option value="">Select attribute</option>
+                        {attributes.map((attr) => (
+                          <option key={attr.value} value={attr.value}>
+                            {attr.label}
+                          </option>
+                        ))}
+                      </select>
+                    </FormControl>
+                    <FormDescription>
+                      Choose the most relevant attribute for this product.
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                );
+              }}
+            />
 
               {/* Organic inorganic */}
               <div className="my-4">
