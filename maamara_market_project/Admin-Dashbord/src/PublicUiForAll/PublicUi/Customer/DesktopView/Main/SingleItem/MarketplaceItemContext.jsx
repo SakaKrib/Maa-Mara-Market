@@ -15,8 +15,19 @@ const Stars = ({ value = 0 }) => {
   );
 };
 
-const ProductRail = ({ title, items }) => {
+const ProductRail = ({
+  title,
+  items,
+  scrollable = true,
+  initialVisible = 4,
+}) => {
+  const [showAll, setShowAll] = useState(false);
+
   if (!items?.length) return null;
+
+  const products = showAll ? items : items.slice(0, initialVisible);
+  const canViewAll = items.length > initialVisible;
+
   return (
     <section className="mt-6 rounded-2xl border border-border bg-card p-4 shadow-custom sm:p-5">
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
@@ -24,16 +35,45 @@ const ProductRail = ({ title, items }) => {
           <h2 className="text-base font-bold text-card-foreground sm:text-lg">{title}</h2>
           <p className="text-xs text-muted-foreground">Discover more from this marketplace collection.</p>
         </div>
-        <span className="text-xs text-muted-foreground">{items.length} items</span>
+        {canViewAll && (
+          <button
+            type="button"
+            onClick={() => setShowAll((open) => !open)}
+            className="flex items-center justify-center rounded-full border border-border bg-background px-4 py-2 text-xs font-semibold text-card-foreground transition-colors hover:bg-muted"
+            aria-expanded={showAll}
+          >
+            {showAll ? "Show Less" : "View All"}
+          </button>
+        )}
       </div>
-      <div className="flex gap-4 overflow-x-auto pb-3 snap-x snap-mandatory [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-        {items.map((product) => (
-          <Link key={product.id} to={"/item-client/" + product.id} className="group flex-none w-[170px] sm:w-[205px] snap-start">
-            <div className="aspect-square overflow-hidden rounded-xl bg-gray-100">
+
+      <div
+        className={
+          scrollable
+            ? "flex gap-4 overflow-x-auto pb-3 snap-x snap-mandatory [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+            : "grid grid-cols-2 gap-4 sm:grid-cols-4"
+        }
+      >
+        {products.map((product) => (
+          <Link
+            key={product.id}
+            to={"/item-client/" + product.id}
+            className={
+              scrollable
+                ? "group flex-none w-[170px] sm:w-[205px] snap-start"
+                : "group min-w-0"
+            }
+          >
+            <div className="aspect-square overflow-hidden rounded-xl border border-border bg-background">
               {product.image ? (
-                <img src={product.image} alt={product.name} className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.02]" loading="lazy" />
+                <img
+                  src={product.image}
+                  alt={product.name}
+                  className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.02]"
+                  loading="lazy"
+                />
               ) : (
-                <div className="h-full w-full flex items-center justify-center text-xs text-gray-400">No image</div>
+                <div className="h-full w-full flex items-center justify-center text-xs text-muted-foreground">No image</div>
               )}
             </div>
             <h3 className="mt-2 truncate text-sm font-bold text-card-foreground">{product.name}</h3>
@@ -239,11 +279,21 @@ const MarketplaceItemContext = ({ item, availableStock }) => {
             />
           </div>
 
-          <ProductRail title="More from this shop" items={data.more_from_shop} nested />
+          <ProductRail
+            title="More from this shop"
+            items={data.more_from_shop}
+            scrollable={true}
+            initialVisible={4}
+          />
         </section>
       )}
 
-      <ProductRail title="Explore more related products" items={data.explore_more} />
+      <ProductRail
+        title="Related products"
+        items={data.explore_more}
+        scrollable={false}
+        initialVisible={4}
+      />
     </div>
   );
 };
