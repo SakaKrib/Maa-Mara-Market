@@ -23,22 +23,12 @@ const CareerPage = () => {
       api.get("/api/careers/stats/"),
     ])
       .then(([jobsResponse, statsResponse]) => {
-        const jobsData = Array.isArray(jobsResponse.data)
-          ? jobsResponse.data
-          : Array.isArray(jobsResponse.data?.results)
-            ? jobsResponse.data.results
-            : [];
-        const statsData = statsResponse.data && typeof statsResponse.data === "object"
-          ? statsResponse.data
-          : {};
-        setJobs(jobsData);
-        setStats(statsData);
+        setJobs(jobsResponse.data || []);
+        setStats(statsResponse.data || null);
       })
       .catch((error) => {
         console.error("Failed to load careers:", error);
-        setJobs([]);
-        setStats({});
-        setMessage("We could not load current opportunities. Please try again.");
+        setMessage("Unable to load career opportunities.");
       })
       .finally(() => setLoading(false));
   }, []);
