@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { Bell, ChevronRight, Compass, FilePenLine, Loader2 } from "lucide-react";
+import { Bell, ChevronRight, Compass, FilePenLine, Loader2, MessageCircle } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import api from "../../../../../Services/Api";
 import "./AccountHighlights.css";
@@ -7,7 +7,7 @@ import "./AccountHighlights.css";
 const AccountHighlights = () => {
   const navigate = useNavigate();
   const [draft, setDraft] = useState(null);
-  const [notifications, setNotifications] = useState([]);
+  const [messageUnreadCount, setMessageUnreadCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [activeIndex, setActiveIndex] = useState(0);
 
@@ -17,23 +17,28 @@ const AccountHighlights = () => {
     const load = async () => {
       const results = await Promise.allSettled([
         api.get("/api/vendor-draft/", { withCredentials: true }),
-        api.get("/api/user-visitor-notifications/", { withCredentials: true }),
+        api.get("/api/messaging/conversations/", { withCredentials: true }),
       ]);
 
       if (!active) return;
 
       const draftResult = results[0];
-      const notificationResult = results[1];
+      const conversationResult = results[1];
 
       setDraft(
         draftResult.status === "fulfilled" && draftResult.value.data?.exists
           ? draftResult.value.data
           : null
       );
-      setNotifications(
-        notificationResult.status === "fulfilled"
-          ? notificationResult.value.data?.results || []
-          : []
+      const conversations =
+        conversationResult.status === "fulfilled"
+          ? conversationResult.value.data?.results || []
+          : [];
+      setMessageUnreadCount(
+        conversations.reduce(
+          (total, conversation) => total + Number(conversation?.unread_count || 0),
+          0
+        )
       );
       setLoading(false);
     };
@@ -45,7 +50,7 @@ const AccountHighlights = () => {
     };
   }, []);
 
-  const unread = notifications.filter((item) => !item.is_read).length;
+  const unreadMessages = messageUnreadCount;
 
   const updates = useMemo(() => {
     const next = [];
@@ -77,24 +82,18 @@ const AccountHighlights = () => {
       });
     }
 
-    if (notifications.length > 0) {
-      const firstNotification = notifications[0];
-
-      next.push({
-        key: "notifications",
-        kicker: "ACCOUNT UPDATE",
-        title: "Check your notifications",
-        description:
-          unread > 0
-            ? unread + " new notification" + (unread === 1 ? "" : "s")
-            : firstNotification?.title ||
-              firstNotification?.message ||
-              "View your latest account updates",
-        icon: Bell,
-        action: () => navigate("/profile"),
-        label: "Open your notifications",
-      });
-    }
+    next.push({
+      key: "messages",
+      kicker: "MESSAGES",
+      title: "Check your messages",
+      description:
+        unreadMessages > 0
+          ? unreadMessages + " unread message" + (unreadMessages === 1 ? "" : "s")
+          : "Open your conversations with the Maa Mara team.",
+      icon: MessageCircle,
+      action: () => navigate("/messages"),
+      label: "Open your messages",
+    });
 
     next.push({
       key: "discover",
@@ -110,7 +109,7 @@ const AccountHighlights = () => {
     });
 
     return next;
-  }, [draft, notifications, unread, navigate]);
+  }, [draft, unreadMessages, navigate]);
 
   useEffect(() => {
     setActiveIndex((current) => Math.min(current, Math.max(updates.length - 1, 0)));
