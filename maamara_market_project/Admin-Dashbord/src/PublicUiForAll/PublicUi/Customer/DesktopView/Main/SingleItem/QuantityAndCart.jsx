@@ -6,17 +6,17 @@ const QuantityAndCart = ({ item, quantity, setQuantity, availableStock, remainin
   const disabled = quantity > availableStock || availableStock === 0 || needsSize;
 
   return (
-    <div className="rounded-2xl border border-border bg-card p-4 shadow-custom sm:p-5">
+    <div>
       <p className="mb-3 text-sm font-bold text-card-foreground">Choose Quantity</p>
 
       <div className="flex flex-wrap items-center gap-4">
-        <div className="flex items-center justify-between rounded-full border border-border bg-background px-4 py-2 w-32">
+        <div className="flex items-center justify-between gap-3 rounded-full border border-border bg-background px-3 py-2 w-32">
           <button
             type="button"
             onClick={() => setQuantity((q) => Math.max(1, q - 1))}
             disabled={quantity <= 1}
             aria-label="Decrease quantity"
-            className="px-1 text-sm font-semibold text-card-foreground disabled:opacity-40"
+            className="flex h-7 w-7 items-center justify-center rounded-full border border-gray-300 bg-background text-sm font-semibold text-card-foreground transition-colors hover:bg-muted disabled:opacity-40"
           >
             -
           </button>
