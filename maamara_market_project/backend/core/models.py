@@ -153,17 +153,32 @@ class Voucher(models.Model):
 ## suport cord backend development
 
 class SupportMessage(models.Model):
-    user = models.ForeignKey(User, on_delete=models.CASCADE)  # Link message to specific user
-    visitor_id = models.CharField(max_length=64, blank=True, null=True, db_index=True) 
-    name = models.CharField(max_length=255)
+    STATUS_CHOICES = [
+        ("pending", "Pending"),
+        ("answered", "Answered"),
+    ]
+
+    user = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="support_messages",
+    )
+    visitor_id = models.CharField(max_length=64, blank=True, null=True, db_index=True)
+    name = models.CharField(max_length=255, blank=True, default="")
     email = models.EmailField()
+    subject = models.CharField(max_length=255)
+    category = models.CharField(max_length=120, blank=True, default="")
     message = models.TextField()
-    support_reply = models.TextField(null=True, blank=True)  # ✅ Support team can respond here
+    support_reply = models.TextField(null=True, blank=True)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="pending")
     created_at = models.DateTimeField(auto_now_add=True)
-    message_id = models.CharField(max_length=255, blank=True, null=True)  # Track outgoing emails
+    answered_at = models.DateTimeField(null=True, blank=True)
+    message_id = models.CharField(max_length=255, blank=True, null=True)
 
     def __str__(self):
-        return f"Support Request from {self.user.username} - {self.created_at.strftime('%Y-%m-%d')}"
+        return f"Support Request: {self.subject} - {self.created_at.strftime('%Y-%m-%d')}"
     
 
 #model for confirming OTP codes
