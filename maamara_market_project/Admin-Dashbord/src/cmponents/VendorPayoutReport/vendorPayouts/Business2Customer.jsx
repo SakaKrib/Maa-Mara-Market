@@ -1,64 +1,61 @@
-import React, { useState } from "react";
+import { IonIcon } from "@ionic/react";
 import {
-  Button,
-  CircularProgress,
-  Box,
-  Typography,
-  useTheme,
-  List,
-  ListItem,
-  ListItemText,
-  Divider,
-  Alert,
-} from "@mui/material";
-import { tokens } from "../../../theme";
+  cashOutline,
+  refreshOutline,
+  walletOutline,
+  checkmarkCircleOutline,
+  timeOutline,
+  arrowForwardOutline,
+} from "ionicons/icons";
 import { useGenerateMonthlyPayouts } from "../../Hooks/Payouts/GeneratePayoutHook";
 import { useNavigate } from "react-router-dom";
 
+const METHOD_LABELS = {
+  MOBILE_MONEY: "M-Pesa",
+  PAYPAL: "PayPal",
+  BANK_TRANSFER: "Bank transfer",
+};
+
+const METHOD_ICONS = {
+  MOBILE_MONEY: cashOutline,
+  PAYPAL: walletOutline,
+  BANK_TRANSFER: walletOutline,
+};
+
 export default function AdminPayoutTriggerPayment() {
   const { data, loading, error, generateMonthlyPayouts } = useGenerateMonthlyPayouts();
-  const [payingReference, setPayingReference] = useState(null);
-  const [payError, setPayError] = useState(null);
-  const [paySuccess, setPaySuccess] = useState(null);
-
-  const theme = useTheme();
-  const colors = tokens(theme.palette.mode);
   const navigate = useNavigate();
 
-  // -------------------------------
-  // Pay Single Vendor
-  // -------------------------------
+  const groupedPayouts = data?.generated || {};
+  const groups = Object.entries(groupedPayouts);
+  const totalPayouts = groups.reduce((sum, [, payouts]) => sum + payouts.length, 0);
+  const totalAmount = groups.reduce(
+    (sum, [, payouts]) => sum + payouts.reduce((groupSum, payout) => groupSum + Number(payout.amount || 0), 0),
+    0
+  );
+
   const handlePayVendor = (payout) => {
     const vendor = payout.vendor_details || payout.vendor || {};
     const { payment_method, reference, amount } = payout;
-
     const phone = vendor.MpesaNo || vendor.mpesa_no || "";
-    console.log("phone", phone)
 
-    switch (payment_method) {
-      case "MOBILE_MONEY":
-        navigate("mpesa-payment/single-vendor", { state: { reference, amount, vendor, phone } });
-        break;
-      case "PAYPAL":
-        navigate("paypal-payment/single-vendor", { state: { reference, amount, vendor } });
-        break;
-      case "BANK_TRANSFER":
-        navigate("/bank-transfer-payment/single-vendor", { state: { reference, amount, vendor } });
-        break;
-      default:
-        navigate("/generic-payment", { state: { reference, amount, vendor, payment_method } });
+    if (payment_method === "MOBILE_MONEY") {
+      navigate("mpesa-payment/single-vendor", { state: { reference, amount, vendor, phone } });
+    } else if (payment_method === "PAYPAL") {
+      navigate("paypal-payment/single-vendor", { state: { reference, amount, vendor } });
+    } else if (payment_method === "BANK_TRANSFER") {
+      navigate("bank-transfer-payment-group", {
+        state: {
+          paymentMethod: payment_method,
+          payments: [{ vendor, amount, reference }],
+        },
+      });
     }
   };
 
-  // -------------------------------
-  // Pay Group (All Vendors in Method)
-  // -------------------------------
-  const handlePayGroup = (paymentMethod) => {
-    const grouped = data?.generated?.[paymentMethod] || [];
-
-    const payments = grouped.map((payout) => {
+  const handlePayGroup = (paymentMethod, payouts) => {
+    const payments = payouts.map((payout) => {
       const vendor = payout.vendor_details || payout.vendor || {};
-
       return {
         vendor,
         phone: vendor.MpesaNo || vendor.mpesa_no || "",
@@ -67,115 +64,168 @@ export default function AdminPayoutTriggerPayment() {
       };
     });
 
-    switch (paymentMethod) {
-      case "MOBILE_MONEY":
-        navigate("mpesa-payment-group", { state: { paymentMethod, payments } });
-        break;
-      case "PAYPAL":
-        navigate("paypal-payment-group", { state: { paymentMethod, payments } });
-        break;
-      case "BANK_TRANSFER":
-        navigate("bank-transfer-payment-group", { state: { paymentMethod, payments } });
-        break;
-      default:
-        navigate("/generic-payment-group", { state: { paymentMethod, payments } });
+    if (paymentMethod === "MOBILE_MONEY") {
+      navigate("mpesa-payment-group", { state: { paymentMethod, payments } });
+    } else if (paymentMethod === "PAYPAL") {
+      navigate("paypal-payment-group", { state: { paymentMethod, payments } });
+    } else if (paymentMethod === "BANK_TRANSFER") {
+      navigate("bank-transfer-payment-group", { state: { paymentMethod, payments } });
     }
   };
 
-  const groupedPayouts = data?.generated || {};
-
   return (
-    <Box sx={{ color: colors.gray[100], p: 3 }}>
-      <Typography variant="h5" gutterBottom fontWeight="bold">
-        Generate & Review Monthly Payouts
-      </Typography>
+    <section className="min-w-0 space-y-5 p-2 sm:p-4 lg:p-6">
+      <header className="rounded-2xl border border-border bg-card p-5 shadow-sm sm:p-6">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+          <div className="flex min-w-0 items-start gap-3">
+            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+              <IonIcon icon={cashOutline} className="text-xl" />
+            </div>
+            <div className="min-w-0">
+              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">
+                Vendor payments
+              </p>
+              <h1 className="mt-1 text-xl font-bold tracking-tight text-card-foreground sm:text-2xl">
+                Generate &amp; Review Monthly Payouts
+              </h1>
+              <p className="mt-1 max-w-2xl text-sm leading-6 text-muted-foreground">
+                Generate the current payout period, review vendors and payment methods, then submit payments securely.
+              </p>
+            </div>
+          </div>
 
-      {/* GENERATE BUTTON */}
-      <Button
-        variant="contained"
-        onClick={generateMonthlyPayouts}
-        disabled={loading}
-        sx={{
-          backgroundColor: colors.primary[400],
-          "&:hover": { backgroundColor: colors.greenAccent[500] },
-          mb: 3,
-        }}
-      >
-        {loading ? <CircularProgress size={24} /> : "Generate Payouts"}
-      </Button>
+          <button
+            type="button"
+            onClick={generateMonthlyPayouts}
+            disabled={loading}
+            className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground transition hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50 lg:w-auto"
+          >
+            {loading ? (
+              <>
+                <span className="h-4 w-4 animate-spin rounded-full border-2 border-primary-foreground/30 border-t-primary-foreground" />
+                Generating…
+              </>
+            ) : (
+              <>
+                <IonIcon icon={cashOutline} />
+                Generate Payouts
+              </>
+            )}
+          </button>
+        </div>
+      </header>
 
-      {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
-      {payError && <Alert severity="error" sx={{ mb: 2 }}>{payError}</Alert>}
-      {paySuccess && <Alert severity="success" sx={{ mb: 2 }}>{paySuccess}</Alert>}
+      {(error) && (
+        <div className="rounded-xl border border-destructive/30 bg-destructive/5 px-4 py-3 text-sm text-destructive">
+          {error}
+        </div>
+      )}
 
       {data && (
         <>
-          <Typography variant="subtitle1" gutterBottom>
-            Payouts for period: <strong>{data.period}</strong>
-          </Typography>
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+            <article className="rounded-2xl border border-border bg-card p-4 shadow-sm">
+              <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Period</p>
+              <p className="mt-1 truncate text-sm font-bold text-card-foreground">{data.period || "Current period"}</p>
+            </article>
+            <article className="rounded-2xl border border-border bg-card p-4 shadow-sm">
+              <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Vendors</p>
+              <p className="mt-1 text-2xl font-bold text-card-foreground">{totalPayouts.toLocaleString()}</p>
+            </article>
+            <article className="col-span-2 rounded-2xl border border-border bg-card p-4 shadow-sm sm:col-span-1">
+              <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Total value</p>
+              <p className="mt-1 text-xl font-bold text-card-foreground">
+                KES {totalAmount.toLocaleString("en-KE", { minimumFractionDigits: 2 })}
+              </p>
+            </article>
+          </div>
 
-          {Object.keys(groupedPayouts).length === 0 && (
-            <Typography>No payouts generated yet.</Typography>
-          )}
-
-          {/* PAYMENT GROUP LISTS */}
-          {Object.entries(groupedPayouts).map(([method, payouts]) => (
-            <Box key={method} sx={{ mb: 4 }}>
-              <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 1 }}>
-                <Typography variant="h6" sx={{ textTransform: "uppercase" }}>
-                  {method.replace("_", " ")}
-                </Typography>
-
-                {/* PAY GROUP BUTTON */}
-                <Button
-                  variant="contained"
-                  size="small"
-                  onClick={() => handlePayGroup(method)}
-                  disabled={payingReference === `group-${method}`}
-                  sx={{ backgroundColor: colors.primary[400], color: colors.gray[100] }}
-                >
-                  {payingReference === `group-${method}` ? <CircularProgress size={18} /> : "Pay All"}
-                </Button>
-              </Box>
-
-              <Divider sx={{ mb: 2 }} />
-
-              <List>
-                {payouts.map((payout) => {
-                  const vendor = payout.vendor_details || payout.vendor || {};
-
-                  return (
-                    <ListItem
-                      key={payout.reference}
-                      secondaryAction={
-                        payout.payout_status ? (
-                          <Button variant="outlined" disabled sx={{ backgroundColor: colors.gray[700], color: colors.gray[400] }}>
-                            Paid
-                          </Button>
-                        ) : (
-                          <Button
-                            variant="outlined"
-                            size="small"
-                            onClick={() => handlePayVendor(payout)}
-                            disabled={payingReference === payout.reference}
-                            sx={{ backgroundColor: colors.gray[100] }}
-                          >
-                            {payingReference === payout.reference ? <CircularProgress size={18} /> : "Pay"}
-                          </Button>
-                        )
-                      }
+          {!groups.length ? (
+            <section className="rounded-2xl border border-border bg-card p-8 text-center shadow-sm sm:p-12">
+              <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-xl bg-muted text-muted-foreground">
+                <IonIcon icon={cashOutline} className="text-xl" />
+              </div>
+              <h2 className="mt-3 text-base font-semibold text-card-foreground">No payouts generated yet</h2>
+              <p className="mx-auto mt-1 max-w-md text-sm leading-6 text-muted-foreground">
+                Generate the current monthly payout period to review vendor payment records here.
+              </p>
+            </section>
+          ) : (
+            <section className="space-y-4">
+              {groups.map(([method, payouts]) => (
+                <article key={method} className="overflow-hidden rounded-2xl border border-border bg-card shadow-sm">
+                  <div className="flex flex-col gap-3 border-b border-border p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5">
+                    <div className="flex items-center gap-3">
+                      <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-muted text-card-foreground">
+                        <IonIcon icon={METHOD_ICONS[method] || walletOutline} />
+                      </div>
+                      <div>
+                        <h2 className="text-base font-bold text-card-foreground">{METHOD_LABELS[method] || method.replaceAll("_", " ")}</h2>
+                        <p className="text-xs text-muted-foreground">{payouts.length} vendor payment{payouts.length === 1 ? "" : "s"}</p>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => handlePayGroup(method, payouts)}
+                      className="inline-flex min-h-10 w-full items-center justify-center gap-2 rounded-xl border border-border bg-background px-4 py-2 text-xs font-semibold text-foreground transition hover:bg-muted sm:w-auto"
                     >
-                      <ListItemText
-                        primary={`${vendor.company_name || vendor.name || "Unknown Vendor"} – KES ${payout.amount.toLocaleString()}`}
-                      />
-                    </ListItem>
-                  );
-                })}
-              </List>
-            </Box>
-          ))}
+                      Pay all
+                      <IonIcon icon={arrowForwardOutline} />
+                    </button>
+                  </div>
+
+                  <div className="divide-y divide-border">
+                    {payouts.map((payout) => {
+                      const vendor = payout.vendor_details || payout.vendor || {};
+                      const paid = Boolean(payout.payout_status);
+                      return (
+                        <div key={payout.reference} className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5">
+                          <div className="min-w-0">
+                            <div className="flex items-center gap-2">
+                              <p className="truncate text-sm font-semibold text-card-foreground">
+                                {vendor.company_name || vendor.name || "Unknown vendor"}
+                              </p>
+                              {paid ? (
+                                <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-emerald-500/10 px-2 py-1 text-[10px] font-semibold text-emerald-700 dark:text-emerald-300">
+                                  <IonIcon icon={checkmarkCircleOutline} />
+                                  Paid
+                                </span>
+                              ) : (
+                                <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-amber-500/10 px-2 py-1 text-[10px] font-semibold text-amber-700 dark:text-amber-300">
+                                  <IonIcon icon={timeOutline} />
+                                  Review
+                                </span>
+                              )}
+                            </div>
+                            <p className="mt-1 truncate text-xs text-muted-foreground">
+                              {vendor.email || vendor.company_email || "No vendor email"}
+                            </p>
+                            <p className="mt-1 text-[10px] text-muted-foreground">{payout.reference || "No reference"}</p>
+                          </div>
+
+                          <div className="flex items-center justify-between gap-3 sm:justify-end">
+                            <p className="text-sm font-bold text-card-foreground">
+                              KES {Number(payout.amount || 0).toLocaleString("en-KE", { minimumFractionDigits: 2 })}
+                            </p>
+                            <button
+                              type="button"
+                              disabled={paid}
+                              onClick={() => handlePayVendor(payout)}
+                              className="inline-flex min-h-10 items-center gap-2 rounded-xl bg-primary px-4 py-2 text-xs font-semibold text-primary-foreground transition hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50"
+                            >
+                              {paid ? "Paid" : "Review & pay"}
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </article>
+              ))}
+            </section>
+          )}
         </>
       )}
-    </Box>
+    </section>
   );
 }
