@@ -241,7 +241,7 @@ const Vendor_list = () => {
       <header className="flex flex-col items-center gap-4 rounded-2xl border border-border bg-card p-4 text-center shadow-sm sm:p-5">
         <div className="min-w-0">
           <div className="flex flex-col items-center gap-3">
-            <div className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary">
+            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
               <IonIcon icon={storefrontOutline} className="text-xl" />
             </div>
             <div className="min-w-0">
