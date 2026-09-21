@@ -81,14 +81,6 @@ import { useDepartments } from "./useDepartments";
 const ItemAddNew = ({ initialItem, vendorId, itemId, onSave, vendor }) => {
   const { departmentMap, organicDepartmentMap } = useDepartments();
 
-  // Organic-only fields must never remain enabled/checked when the
-  // vendor switches the item to the handmade (inorganic) section.
-  useEffect(() => {
-    if (selectedSection === "inorganic") {
-      form.setValue("is_organic", false);
-      form.setValue("is_fresh_food", false);
-    }
-  }, [selectedSection, form]);
   const [selectedDepartment, setSelectedDepartment] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("");
   const [isCustomCategory, setIsCustomCategory] = useState(false);
@@ -142,6 +134,18 @@ const ItemAddNew = ({ initialItem, vendorId, itemId, onSave, vendor }) => {
   const selectedColors = watch("color") || [];
   const selectedSizes = watch("size") || [];
   const selectedSubcategory = form.watch("subcategory") || "";
+
+  // Organic-only fields are visible and active only for the Organic form.
+  useEffect(() => {
+    if (selectedSection !== "organic") {
+      form.setValue("is_organic", false);
+      form.setValue("is_fresh_food", false);
+      form.setValue("manufactured_date", "");
+      form.setValue("expiry_date", "");
+      form.setValue("roast_type", "");
+      form.setValue("coffee_state", "");
+    }
+  }, [selectedSection, form]);
 
  // define department and category based on vendor product type
  const [activeData, setActiveData] = useState(null);
@@ -902,7 +906,7 @@ useEffect(() => {
     
                       return (
                         <div key={size} className="flex flex-col gap-1">
-                          <div className="flex items-center gap-2">
+                          <div className="flex min-w-0 items-center gap-2">
                             <Checkbox
                               id={`size-${size}`}
                               checked={selected}
@@ -1207,7 +1211,7 @@ useEffect(() => {
                 <FormLabel className="text-sm leading-6 font-semibold text-foreground">Kids Sizes & Stock</FormLabel>
                 <FormControl>
                   <div
-                    className="grid grid-cols-3 gap-5 my-2"
+                    className="grid grid-cols-[repeat(auto-fit,minmax(140px,1fr))] gap-3 my-2"
                     
                   >
                     {kidsSizeOptions.map((size) => {
@@ -1561,7 +1565,7 @@ useEffect(() => {
               control={form.control}
               name="in_offer"
               render={({ field }) => (
-                <FormItem className="flex items-center space-x-2">
+                <FormItem className="flex items-center gap-2">
                   <FormControl>
                     <Checkbox
                       checked={field.value}
@@ -1569,7 +1573,7 @@ useEffect(() => {
                       
                     />
                   </FormControl>
-                  <FormLabel className="text-sm font-medium text-foreground">Mark item as on Offer</FormLabel>
+                  <FormLabel className="m-0 cursor-pointer text-sm font-medium leading-5 text-foreground">Mark item as on Offer</FormLabel>
                 </FormItem>
               )}
             />
@@ -1712,10 +1716,10 @@ useEffect(() => {
                               
                             />
                             <span
-                              className="inline-block w-3 h-3 rounded-full border"
+                              className="inline-block h-5 w-5 shrink-0 rounded-full border"
                               style={{ backgroundColor: colorMap[color] || "#ccc" }}
                             />
-                            <label htmlFor={checkboxId} className="text-xs cursor-pointer mt-2">
+                            <label htmlFor={checkboxId} className="min-w-0 cursor-pointer truncate text-xs leading-5">
                               {color}
                             </label>
                           </div>
@@ -1728,7 +1732,7 @@ useEffect(() => {
                       <div key={variant.color} className="space-y-4">
                         <div className="flex items-center gap-2">
                           <span
-                            className="inline-block w-3 h-3 rounded-full border border-gray-300"
+                            className="inline-block h-5 w-5 shrink-0 rounded-full border border-gray-300"
                             style={{ backgroundColor: colorMap[variant.color] || "#ccc" }}
                           />
                           <span className="text-sm font-medium">{variant.color}</span>
