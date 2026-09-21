@@ -13,7 +13,6 @@ import { Input } from "../../../../components/ui/input";
 import { Label } from "../../../../components/ui/label";
 import RichTextEditor from "../../RichTextEditor/RichTextEdit";
 import api from "../../../Services/Api";
-import { baseUrl } from "../../../cmponents/Constant/Constant";
 import { useTheme } from "@mui/material";
 import { tokens } from "../../../theme";
 
@@ -57,7 +56,7 @@ const EditBlogModal = ({ open, onClose, blog, onUpdated }) => {
       if (video) formData.append("video", video);
 
       await api.patch(
-        `${baseUrl}/api/vendor/blogs/${blog.id}/`,
+        `/api/vendor/blogs/${blog.id}/`,
         formData,
         { withCredentials: true }
       );
