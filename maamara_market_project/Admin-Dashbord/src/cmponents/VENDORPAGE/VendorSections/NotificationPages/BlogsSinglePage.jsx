@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from "react";
 import api from "../../../../Services/Api";
-import { baseUrl } from "../../../Constant/Constant";
 import { useTheme } from "@mui/material";
 import { tokens } from "../../../../theme";
 
@@ -46,7 +45,7 @@ const VendorBlogManagerNotification = () => {
 
   const fetchBlogs = async () => {
     try {
-      const res = await api.get(`${baseUrl}/api/vendor/blogs/`, {
+      const res = await api.get(`/api/vendor/blogs/`, {
         withCredentials: true,
       });
 
@@ -105,7 +104,7 @@ const VendorBlogManagerNotification = () => {
       }
 
       await api.patch(
-        `${baseUrl}/api/vendor/blogs/${selectedBlog.id}/`,
+        `/api/vendor/blogs/${selectedBlog.id}/`,
         formData,
         { withCredentials: true }
       );
@@ -131,7 +130,7 @@ const VendorBlogManagerNotification = () => {
   // =========================
   const handleDelete = async (id) => {
     try {
-      await api.delete(`${baseUrl}/api/vendor/blogs/${id}/`, {
+      await api.delete(`/api/vendor/blogs/${id}/`, {
         withCredentials: true,
       });
 
