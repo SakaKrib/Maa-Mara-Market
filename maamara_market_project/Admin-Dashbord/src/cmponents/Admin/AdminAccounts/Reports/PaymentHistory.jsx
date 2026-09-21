@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useState } from "react";
 import { IonIcon } from "@ionic/react";
-import { addCircleOutline, calendarOutline } from "ionicons/icons";
+import { addCircleOutline, calendarOutline, createOutline, trashOutline } from "ionicons/icons";
 import AddPaymentModal from "./AddPaymentModal";
 import api from "../../../../Services/Api";
 
@@ -37,6 +37,7 @@ export default function FastPayment({
   refetch,
 }) {
   const [openModal, setOpenModal] = useState(false);
+  const [editingEntry, setEditingEntry] = useState(null);
   const [notice, setNotice] = useState("");
   const [history, setHistory] = useState([]);
   const [historyLoading, setHistoryLoading] = useState(true);
@@ -64,7 +65,7 @@ export default function FastPayment({
 
   useEffect(() => {
     fetchHistory();
-  }, [fetchHistory, data]);
+  }, [fetchHistory]);
 
   const handleAddPayment = async (form) => {
     setNotice("");
@@ -81,6 +82,46 @@ export default function FastPayment({
       throw err;
     }
   };
+  const handleEditPayment = async (form) => {
+    if (!editingEntry?.id) return;
+    setNotice("");
+    try {
+      await api.patch(`/api/transactions/${editingEntry.id}/`, form, { withCredentials: true });
+      setEditingEntry(null);
+      setOpenModal(false);
+      await Promise.all([refetch?.(true), fetchHistory()]);
+      setNotice("Bookkeeping entry updated successfully.");
+    } catch (err) {
+      setNotice(
+        err?.response?.data?.error ||
+          err?.response?.data?.detail ||
+          "Failed to update bookkeeping entry."
+      );
+      throw err;
+    }
+  };
+
+  const handleDeletePayment = async (item) => {
+    if (!item?.id || item.source !== "manual") return;
+    const confirmed = window.confirm(
+      `Delete the ${item.category || "bookkeeping"} entry of ${formatKES(item.amount)}? This will remove it from Accounts totals and history.`
+    );
+    if (!confirmed) return;
+
+    setNotice("");
+    try {
+      await api.delete(`/api/transactions/${item.id}/delete/`, { withCredentials: true });
+      await Promise.all([refetch?.(true), fetchHistory()]);
+      setNotice("Bookkeeping entry deleted successfully.");
+    } catch (err) {
+      setNotice(
+        err?.response?.data?.error ||
+          err?.response?.data?.detail ||
+          "Failed to delete bookkeeping entry."
+      );
+    }
+  };
+
 
   const payments = data?.payments || {};
 
@@ -176,6 +217,7 @@ export default function FastPayment({
                     <th className="px-4 py-3 font-semibold">Amount</th>
                     <th className="px-4 py-3 font-semibold">Status</th>
                     <th className="px-4 py-3 font-semibold">Reference</th>
+                    <th className="px-4 py-3 text-right font-semibold">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border">
@@ -187,6 +229,18 @@ export default function FastPayment({
                       <td className="px-4 py-3 font-bold text-card-foreground">{formatKES(item.amount)}</td>
                       <td className="px-4 py-3 capitalize text-muted-foreground">{item.status || "—"}</td>
                       <td className="px-4 py-3 font-mono text-[11px] text-muted-foreground">{item.txid || "—"}</td>
+                      <td className="px-4 py-3">
+                        {item.source === "manual" ? (
+                          <div className="flex justify-end gap-2">
+                            <button type="button" onClick={() => { setEditingEntry(item); setOpenModal(true); }} className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-border bg-background text-muted-foreground hover:bg-muted hover:text-foreground" aria-label="Edit bookkeeping entry" title="Edit">
+                              <IonIcon icon={createOutline} />
+                            </button>
+                            <button type="button" onClick={() => handleDeletePayment(item)} className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-red-500/20 bg-red-500/5 text-red-600 hover:bg-red-500/10 dark:text-red-300" aria-label="Delete bookkeeping entry" title="Delete">
+                              <IonIcon icon={trashOutline} />
+                            </button>
+                          </div>
+                        ) : null}
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -222,8 +276,12 @@ export default function FastPayment({
 
       <AddPaymentModal
         open={openModal}
-        onClose={() => setOpenModal(false)}
-        onSubmit={handleAddPayment}
+        onClose={() => {
+          setOpenModal(false);
+          setEditingEntry(null);
+        }}
+        onSubmit={editingEntry ? handleEditPayment : handleAddPayment}
+        editingEntry={editingEntry}
       />
     </section>
   );
