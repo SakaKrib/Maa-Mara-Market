@@ -305,7 +305,7 @@ const VendorItemCreateRequests = ({ onCountChange }) => {
                             type="button"
                             disabled={actionLoading !== ""}
                             onClick={() => handleItemAction(request.id, "approve")}
-                            className="inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-50"
+                            className="inline-flex items-center gap-2 rounded-[20px] bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-50"
                           >
                             <IonIcon icon={checkmarkCircleOutline} />
                             {actionLoading === `item-${request.id}-approve` ? "Approving..." : "Approve"}
