@@ -23,6 +23,11 @@ urlpatterns = [
 
     path('api/notifications/<int:notification_id>/mark_seen/', mark_notification_seen, name='mark-notification-seen'),
 
+    # Customer support
+    path("api/support/inbox/", support_messages, name="support-inbox"),
+    path("api/support/faq-candidates/", support_faq_candidates, name="support-faq-candidates"),
+    path("api/support/reply/<int:pk>/", support_reply, name="support-reply"),
+
     
 
     #filter item
