@@ -11,8 +11,7 @@ import {
   import { Button } from "../../../../../../components/ui/button";
   import EditItem from "../EditItem/EditItem";
   import CreateItem from "../CreateItem/CreateItem";
-  import "../../../../../index.css";
-  import { useTheme } from "@mui/material";
+    import { useTheme } from "@mui/material";
   import { tokens } from "../../../../../theme";
 import { Margin, WidthFull } from "@mui/icons-material";
   
