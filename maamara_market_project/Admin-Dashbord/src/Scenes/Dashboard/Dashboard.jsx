@@ -49,7 +49,7 @@ const StatCard = ({ icon, label, value, detail, to, onClick }) => {
 
 const Dashboard = () => {
   const { user } = useAuth();
-  const { preferences } = useAdminPreferences();
+  const { preferences, notifyBrowser } = useAdminPreferences();
   const { toast } = useToast();
   const navigate = useNavigate();
   const { stats } = useDashboardStats();
@@ -148,12 +148,15 @@ const Dashboard = () => {
     if (!preferences.notifications || !latest || latest.id === lastNotificationIdRef.current) return;
 
     lastNotificationIdRef.current = latest.id;
-    toast({
-      title: "New notification",
-      description: latest.message,
-      duration: 5000,
-    });
-  }, [notifications, toast, preferences.notifications]);
+    if (preferences.notifications) {
+      toast({
+        title: "New notification",
+        description: latest.message,
+        duration: 5000,
+      });
+    }
+    notifyBrowser("Maa Mara Market", { body: latest.message });
+  }, [notifications, toast, preferences.notifications, notifyBrowser]);
 
   const markAsSeen = async (id) => {
     try {
