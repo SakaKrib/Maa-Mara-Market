@@ -386,9 +386,9 @@ useEffect(() => {
               <input
                 type="radio"
                 name="form-type"
-                value="normal"
-                checked={selectedSection === "normal"}
-                onChange={() => setSelectedSection("normal")}
+                value="inorganic"
+                checked={selectedSection === "inorganic"}
+                onChange={() => setSelectedSection("inorganic")}
                 className="hidden"
               />
               <span
