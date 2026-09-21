@@ -5399,3 +5399,38 @@ h1,h2,h3,h4{font-family:'regular','Poppins',Arial,sans-serif}
   font-size:12px!important;
   letter-spacing:.04em;
 }
+
+
+.mm-calendar-page{
+  width:100%;
+  max-width:1500px;
+  margin-left:auto;
+  margin-right:auto;
+}
+.mm-calendar-page > .MuiBox-root{
+  min-width:0;
+}
+.mm-calendar-sidebar{
+  color:var(--mm-text,#222);
+}
+.mm-calendar-sidebar .MuiListItem-root{
+  margin:8px 0;
+  padding:11px 12px;
+  background:var(--mm-surface-muted,#f5f4f1)!important;
+  border:1px solid var(--mm-border,#e6e3de);
+  border-radius:12px;
+}
+.mm-calendar-sidebar .MuiListItemText-primary{
+  color:var(--mm-text,#222);
+  font-size:12px;
+  font-weight:700;
+}
+.mm-calendar-sidebar .MuiListItemText-secondary{
+  color:var(--mm-text-muted,#6f6a63)!important;
+  font-size:11px;
+  line-height:1.5;
+}
+.mm-calendar-empty-event{
+  background:transparent!important;
+  border:1px dashed var(--mm-border-strong,#d6d1c9)!important;
+}
