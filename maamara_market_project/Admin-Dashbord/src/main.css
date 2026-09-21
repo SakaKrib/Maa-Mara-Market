@@ -66,3 +66,30 @@
     @apply bg-background text-foreground;
   }
 }
+
+
+@layer utilities {
+  html.maamara-compact-workspace .space-y-5 > :not([hidden]) ~ :not([hidden]) {
+    margin-top: 0.75rem;
+  }
+
+  html.maamara-compact-workspace .gap-5 {
+    gap: 0.75rem;
+  }
+
+  html.maamara-compact-workspace .p-6 {
+    padding: 1rem;
+  }
+
+  html.maamara-compact-workspace .p-5 {
+    padding: 1rem;
+  }
+
+  html.maamara-compact-workspace .sm\:p-6 {
+    padding: 1rem;
+  }
+
+  html.maamara-compact-workspace .sm\:p-5 {
+    padding: 1rem;
+  }
+}
