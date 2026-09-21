@@ -6,7 +6,7 @@ from rest_framework import status, permissions, viewsets
 from rest_framework import viewsets, permissions
 from rest_framework.views import APIView
 from ReactSerializers.models import Item
-from core.models import Notification, EmailLog
+from core.models import Notification, EmailLog, SupportMessage
 from .Serializer import NotificationSerializer, ItemSerializer, ReviewSerializer, ReactionSerializer
 from vendorDashboard.models import Vendor
 from shop.models import  Review, Reaction
@@ -16,7 +16,7 @@ from .UserVisitorSerializers import *
 import bleach # type: ignore
 from order.views import IsAuthenticatedOrVisitor
 from .CategorySerializers import SectionSerializerCat, CategorySerializerCat
-from django.db.models import Prefetch
+from django.db.models import Prefetch, Count
 from order.views import IsAuthenticatedOrVisitor
 from django.core.mail import send_mail
 from rest_framework import generics
@@ -60,6 +60,161 @@ class AllNotificationsView(APIView):
             for k, v in n.items():
                 n[k] = sanitize(v)
         return Response(data)
+
+# -------------------------------
+# Customer support
+# -------------------------------
+SUPPORT_CATEGORIES = [
+    ("accounts", "Accounts"),
+    ("login", "Logging in"),
+    ("registration", "Registration / OTP"),
+    ("orders", "Orders"),
+    ("payments", "Payments"),
+    ("shipping", "Shipping & delivery"),
+    ("returns", "Returns & refunds"),
+    ("products", "Products"),
+    ("vendors", "Vendor / seller questions"),
+    ("promotions", "Promotions & discounts"),
+    ("technical", "Website / technical issue"),
+    ("other", "Other"),
+]
+
+
+def _support_payload(ticket):
+    return {
+        "id": ticket.id,
+        "name": ticket.name,
+        "email": ticket.email,
+        "subject": ticket.subject,
+        "category": ticket.category,
+        "message": ticket.message,
+        "support_reply": ticket.support_reply,
+        "status": ticket.status,
+        "message_id": ticket.message_id,
+        "created_at": ticket.created_at,
+        "answered_at": ticket.answered_at,
+    }
+
+
+@api_view(["GET", "POST"])
+@permission_classes([AllowAny])
+def support_messages(request):
+    if request.method == "GET":
+        if not request.user.is_authenticated or not request.user.is_staff:
+            return Response({"detail": "Admin access required."}, status=status.HTTP_403_FORBIDDEN)
+        tickets = SupportMessage.objects.all().order_by("-created_at")
+        return Response([_support_payload(ticket) for ticket in tickets])
+
+    email = str(request.data.get("email") or "").strip()
+    subject = str(request.data.get("subject") or "").strip()
+    message = str(request.data.get("message") or "").strip()
+    category = str(request.data.get("category") or "").strip()
+    name = str(request.data.get("name") or "").strip()
+
+    if not email or not subject or not message:
+        return Response(
+            {"detail": "Email, subject, and message are required."},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+    from django.core.validators import validate_email
+    from django.core.exceptions import ValidationError
+
+    try:
+        validate_email(email)
+    except ValidationError:
+        return Response({"email": ["Enter a valid email address."]}, status=status.HTTP_400_BAD_REQUEST)
+
+    user = request.user if request.user.is_authenticated else None
+    visitor_id = request.COOKIES.get("visitorId") if not user else None
+
+    ticket = SupportMessage.objects.create(
+        user=user,
+        visitor_id=visitor_id,
+        name=name[:255],
+        email=email,
+        subject=subject[:255],
+        category=category[:120],
+        message=message,
+    )
+
+    # Keep support staff informed when the deployment has an email backend configured.
+    try:
+        from django.conf import settings
+        support_recipient = getattr(settings, "SUPPORT_EMAIL", None) or getattr(settings, "DEFAULT_FROM_EMAIL", None)
+        if support_recipient:
+            send_mail(
+                f"New Maa Mara Market support request: {ticket.subject}",
+                f"From: {ticket.email}\nCategory: {ticket.category or 'Other'}\n\n{ticket.message}",
+                getattr(settings, "DEFAULT_FROM_EMAIL", support_recipient),
+                [support_recipient],
+                fail_silently=True,
+            )
+    except Exception:
+        pass
+
+    return Response(
+        {
+            "detail": "Your support request has been received.",
+            "ticket": _support_payload(ticket),
+        },
+        status=status.HTTP_201_CREATED,
+    )
+
+
+@api_view(["GET"])
+@permission_classes([IsAdminUser])
+def support_faq_candidates(request):
+    from django.db.models.functions import Lower, Trim
+
+    rows = (
+        SupportMessage.objects
+        .exclude(subject="")
+        .annotate(normalized_subject=Lower(Trim("subject")))
+        .values("normalized_subject", "category")
+        .annotate(question_count=Count("id"))
+        .filter(question_count__gte=2)
+        .order_by("-question_count", "normalized_subject")[:50]
+    )
+    return Response([
+        {
+            "question": row["normalized_subject"],
+            "category": row["category"] or "other",
+            "question_count": row["question_count"],
+        }
+        for row in rows
+    ])
+
+
+@api_view(["POST"])
+@permission_classes([IsAdminUser])
+def support_reply(request, pk):
+    ticket = get_object_or_404(SupportMessage, pk=pk)
+    reply = str(request.data.get("support_reply") or "").strip()
+
+    if not reply:
+        return Response({"detail": "A reply is required."}, status=status.HTTP_400_BAD_REQUEST)
+
+    ticket.support_reply = reply
+    ticket.status = "answered"
+    ticket.answered_at = timezone.now()
+    ticket.save(update_fields=["support_reply", "status", "answered_at"])
+
+    try:
+        from django.conf import settings
+        from_email = getattr(settings, "DEFAULT_FROM_EMAIL", None)
+        send_mail(
+            f"Re: {ticket.subject}",
+            reply,
+            from_email,
+            [ticket.email],
+            fail_silently=True,
+        )
+    except Exception:
+        pass
+
+    return Response(_support_payload(ticket))
+
 
 # -------------------------------
 # Filter items
