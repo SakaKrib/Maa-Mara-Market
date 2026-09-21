@@ -76,7 +76,7 @@ export default function Messaging() {
         try {
           const incoming = JSON.parse(event.data);
 
-          if (incoming.type === "message.created" && selected?.id === incoming.conversation_id) {
+          if (incoming.type === "message.created" && selectedRef.current?.id === incoming.conversation_id) {
             setMessages((current) => {
               if (current.some((message) => message.id === incoming.message_id)) {
                 return current;
@@ -86,7 +86,7 @@ export default function Messaging() {
             await loadConversations();
           } else if (incoming.type === "conversation.updated") {
             await loadConversations();
-            if (selected?.id === incoming.conversation_id) {
+            if (selectedRef.current?.id === incoming.conversation_id) {
               await loadMessages(selected.id);
             }
           } else if (incoming.type === "conversation.created") {
