@@ -183,7 +183,7 @@ const MenuBar = ({ editor, colors }) => {
   );
 };
 
-const RichTextEditor = ({ value, onChange }) => {
+const RichTextEditor = ({ value, onChange, placeholder = "Start writing here..." }) => {
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
 
@@ -236,7 +236,7 @@ const RichTextEditor = ({ value, onChange }) => {
           },
         }}
       >
-        <EditorContent editor={editor} />
+        <Box sx={{ position: "relative" }}>\n          <EditorContent editor={editor} />\n          {showPlaceholder && (\n            <Box\n              onClick={() => editor?.chain().focus().run()}\n              sx={{\n                position: "absolute",\n                top: 0,\n                left: 0,\n                pointerEvents: "none",\n                color: colors.gray[400],\n                fontSize: "14px",\n                lineHeight: 1.6,\n              }}\n            >\n              {placeholder}\n            </Box>\n          )}\n        </Box>
       </Box>
     </Box>
   );
