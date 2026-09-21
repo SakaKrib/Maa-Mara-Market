@@ -887,7 +887,7 @@ useEffect(() => {
                                 checked={checked}
                                 disabled={vendorType === "organic"}
                                 onCheckedChange={field.onChange}
-                                className="h-4 w-4 shrink-0 rounded-[4px] border-primary shadow-none focus-visible:ring-0"
+                                className="h-4 w-4 shrink-0 rounded-sm border-primary shadow-none focus-visible:ring-0"
                               />
                               <span className="leading-5">Is Organic</span>
                             </label>
@@ -1769,7 +1769,7 @@ useEffect(() => {
                   <div className="space-y-6">
                     {/* Color selection */}
                     <div
-                      className="grid grid-cols-[repeat(auto-fit,minmax(150px,1fr))] gap-3 my-2"
+                      className="grid grid-cols-[repeat(auto-fit,minmax(180px,1fr))] gap-3 my-2"
                       
                     >
                       {colorOptions.map((color) => {
@@ -1783,10 +1783,10 @@ useEffect(() => {
                               
                             />
                             <span
-                              className="inline-block h-5 w-5 min-h-5 min-w-5 shrink-0 rounded-full border"
+                              className="inline-block h-6 w-6 min-h-6 min-w-6 shrink-0 rounded-full border"
                               style={{ backgroundColor: colorMap[color] || "#ccc" }}
                             />
-                            <label htmlFor={checkboxId} className="min-w-0 flex-1 cursor-pointer break-words text-xs leading-5">
+                            <label htmlFor={checkboxId} className="min-w-0 flex-1 cursor-pointer break-words text-sm leading-5">
                               {color}
                             </label>
                           </div>
