@@ -9,7 +9,7 @@ export default function CreateItemPage() {
   const item = location.state || null;
 
   return (
-    <section className="min-h-full min-w-0 space-y-3 rounded-[12px] border border-border bg-card p-2 text-card-foreground">
+    <section className="min-w-0 space-y-3 rounded-[12px] border border-border bg-card p-2 text-card-foreground">
       <div className="flex flex-col gap-2 border-b border-border pb-2 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <p className="text-[10px] font-semibold uppercase tracking-wider text-primary">Marketplace</p>
