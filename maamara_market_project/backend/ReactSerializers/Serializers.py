@@ -274,6 +274,15 @@ class ShoeSerializer(serializers.ModelSerializer):
         return super().to_internal_value(data)
                
 
+class ItemAdditionalImageSerializer(serializers.ModelSerializer):
+    image = serializers.ImageField(use_url=True)
+
+    class Meta:
+        model = ItemAdditionalImage
+        fields = ["id", "image", "created_at"]
+        read_only_fields = ["id", "created_at"]
+
+
 # =========================
 # ITEM
 # =========================
@@ -284,7 +293,7 @@ class ItemSerializers(serializers.ModelSerializer):
     kids_sizes = AgeVariantSerializer(many=True, required=False)
     shoe_input = ShoeSerializer(many=True, required=False)
 
-    item_attribute = serializers.JSONField(required=False)
+    item_attribute = serializers.CharField(required=False, allow_blank=True, allow_null=True, max_length=100)
 
     section = serializers.SlugRelatedField(
         slug_field="name", queryset=Section.objects.all()
@@ -300,6 +309,8 @@ class ItemSerializers(serializers.ModelSerializer):
     )
 
 
+    additional_images = ItemAdditionalImageSerializer(many=True, read_only=True)
+
     # Shipping dimension
    
     shipping_dimension = ShippingDimensionSerializer(read_only=True)
@@ -312,8 +323,9 @@ class ItemSerializers(serializers.ModelSerializer):
     weight = WeightSerializer(required=False)
     length = LengthSerializer(required=False)
 
-    # 🔹 Main image optional
+    # Main image and optional product video.
     image = serializers.ImageField(required=False, allow_null=True, allow_empty_file=True)
+    video = serializers.FileField(required=False, allow_null=True, allow_empty_file=True)
 
     # ✅ NEW: nested offer support
     offer = OfferSerializer(required=False, allow_null=True)
@@ -334,7 +346,7 @@ class ItemSerializers(serializers.ModelSerializer):
         model = Item
         fields = [
             "id", "section",
-            "name", "description", "image", "price", "discount_price", "in_stock",
+            "name", "description", "image", "video", "additional_images", "price", "discount_price", "in_stock",
             "available", "returnable", "department", "category", "subcategory",
             "item_attribute",
             # 🔹 Nested relations
@@ -665,7 +677,9 @@ class ItemSerializer(serializers.ModelSerializer):
     department = serializers.StringRelatedField()
     category = serializers.StringRelatedField()
     subcategory = serializers.StringRelatedField()
-    image = serializers.ImageField(use_url=True)
+    image = serializers.ImageField(use_url=True, allow_null=True)
+    video = serializers.FileField(use_url=True, allow_null=True)
+    additional_images = ItemAdditionalImageSerializer(many=True, read_only=True)
     final_price = serializers.SerializerMethodField()
     final_discounted_price = serializers.SerializerMethodField()
     save_upto = serializers.SerializerMethodField()
@@ -683,6 +697,8 @@ class ItemSerializer(serializers.ModelSerializer):
             'name',
             'description',
             'image',
+            'video',
+            'additional_images',
             'price',
             'discount_price',
             'in_stock',
