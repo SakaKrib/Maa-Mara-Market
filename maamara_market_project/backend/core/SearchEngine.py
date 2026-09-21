@@ -182,7 +182,18 @@ def search_items(request):
     taxonomy, ranks results by relevance, and returns real pagination metadata.
     """
     query = " ".join((request.GET.get("q") or "").split())
-    if not query:
+    category_id = request.GET.get("category_id")
+
+    # Category collection pages reuse this endpoint so the homepage's
+    # "View all" action opens the complete collection rather than turning
+    # the category name into a text search.
+    if category_id:
+        try:
+            category_id = int(category_id)
+        except (TypeError, ValueError):
+            category_id = None
+
+    if not query and not category_id:
         return Response(
             {
                 "query": "",
@@ -209,16 +220,19 @@ def search_items(request):
     # Keep all words, but allow a product to match through any public-facing
     # searchable field. Ranking rewards products that match more strongly.
     tokens = list(dict.fromkeys(token.lower() for token in query.split() if token))
-    search_filter = reduce(
-        lambda current, token: current | _search_fields_for_token(token),
-        tokens[1:],
-        _search_fields_for_token(tokens[0]),
-    )
 
-    queryset = (
-        Item.objects
-        .filter(available=True)
-        .filter(search_filter)
+    queryset = Item.objects.filter(available=True)
+
+    if category_id:
+        queryset = queryset.filter(category_id=category_id)
+
+    if tokens:
+        search_filter = reduce(
+            lambda current, token: current | _search_fields_for_token(token),
+            tokens[1:],
+            _search_fields_for_token(tokens[0]),
+        )
+        queryset = queryset.filter(search_filter)
         .select_related(
             "section",
             "department",
@@ -232,7 +246,11 @@ def search_items(request):
             "kids_sizes",
             "shoe_input",
         )
-        .annotate(search_relevance=_relevance_expression(query, tokens))
+        .annotate(
+            search_relevance=_relevance_expression(query, tokens)
+            if tokens
+            else Value(0, output_field=IntegerField())
+        )
         .distinct()
         .order_by("-search_relevance", "-views", "-likes", "-created_at", "name")
     )
