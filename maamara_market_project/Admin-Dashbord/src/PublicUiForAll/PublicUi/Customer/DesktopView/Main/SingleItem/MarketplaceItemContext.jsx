@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import api from "../../../../../../Services/Api";
 import FormattedCurrency from "../Currency/FormattedCurrency";
 import VendorRatingForm from "../VendorRatingsAndShop";
+import TrendingProduct from "../Trending/TrendingProduct";
 
 const Stars = ({ value = 0 }) => {
   const rounded = Math.min(5, Math.max(0, Math.round(Number(value) || 0)));
@@ -142,6 +143,13 @@ const MarketplaceItemContext = ({ item, availableStock }) => {
           )}
         </section>
       )}
+
+      <TrendingProduct
+        itemId={item.id}
+        title="Trending products related to this search"
+        items={data.explore_more}
+        limit={5}
+      />
 
       {!!searchLinks.length && (
         <section className="mt-6 rounded-2xl border border-border bg-card p-4 shadow-custom sm:p-5">
