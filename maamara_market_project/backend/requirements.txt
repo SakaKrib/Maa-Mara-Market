@@ -18,6 +18,7 @@ requests
 python-dotenv
 openai
 bleach
+bleach[css]
 cryptography
 python-dateutil
 whitenoise
