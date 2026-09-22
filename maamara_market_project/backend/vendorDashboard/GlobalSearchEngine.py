@@ -90,7 +90,8 @@ def _vendor_scope(model, vendor):
         "transaction__vendor",
 
         # Vendor/customer/support relations.
-        "customer__vendor",
+        "customer__vendor__vendor",
+        "order_set__order_items__item__vendor",
         "conversation__participant__vendor",
         "conversation__admin__vendor",
         "vendor_request__user__vendor",
