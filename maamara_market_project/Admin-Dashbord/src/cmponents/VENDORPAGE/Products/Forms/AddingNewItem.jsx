@@ -1889,7 +1889,7 @@ const ItemAddNew = ({ initialItem, vendorId, itemId, onSave = () => {}, vendor, 
                     <Checkbox
                       checked={field.value}
                       onCheckedChange={field.onChange}
-                      style={{backgroundColor:colors.primary[600]}}
+                      className="border-gray-300 bg-transparent data-[state=checked]:!border-gray-500 data-[state=checked]:!bg-gray-500"
                     />
                   </FormControl>
                   <FormLabel className="text-base">Mark item as on Offer</FormLabel>
@@ -2187,8 +2187,7 @@ const ItemAddNew = ({ initialItem, vendorId, itemId, onSave = () => {}, vendor, 
        <FormControl>
          <select
            {...field}
-           className="border rounded p-2"
-           style={{backgroundColor:colors.primary[500]}}
+           className="w-full appearance-none rounded-full border border-border bg-transparent px-4 py-2 text-sm text-card-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
          >
            <option value="cm">Centimeters</option>
            <option value="m">Meters</option>
@@ -2224,8 +2223,7 @@ const ItemAddNew = ({ initialItem, vendorId, itemId, onSave = () => {}, vendor, 
        <FormControl>
          <select
            {...field}
-           className="border rounded p-2"
-           style={{backgroundColor:colors.primary[500]}}
+           className="w-full appearance-none rounded-full border border-border bg-transparent px-4 py-2 text-sm text-card-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
          >
            <option value="g">Grams</option>
            <option value="kg">Kilograms</option>
@@ -2242,16 +2240,29 @@ const ItemAddNew = ({ initialItem, vendorId, itemId, onSave = () => {}, vendor, 
  <Controller
      name="returnable"
      control={form.control}
-     defaultValue={true} // fallback
+     defaultValue={true}
      render={({ field }) => (
        <FormControlLabel
          control={
            <Switch
-             {...field}
              checked={!!field.value}
              onChange={(e) => field.onChange(e.target.checked)}
-             color="gray"
-         
+             sx={{
+               "& .MuiSwitch-switchBase": {
+                 color: "#9ca3af",
+               },
+               "& .MuiSwitch-switchBase.Mui-checked": {
+                 color: "#2563eb",
+               },
+               "& .MuiSwitch-track": {
+                 backgroundColor: "#d1d5db",
+                 opacity: 1,
+               },
+               "& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track": {
+                 backgroundColor: "#2563eb",
+                 opacity: 1,
+               },
+             }}
            />
          }
          label="Returnable"
@@ -2261,9 +2272,14 @@ const ItemAddNew = ({ initialItem, vendorId, itemId, onSave = () => {}, vendor, 
         
     
     
-            <Button type="submit" className="mb-10 mt-10 bg-[#2563eb] px-4 text-white hover:bg-[#1d4ed8]">
-              Save Changes
-            </Button>
+            <div className="mt-10 mb-10 w-full">
+              <Button
+                type="submit"
+                className="w-full rounded-full bg-[#2563eb] px-4 py-3 text-center text-white hover:bg-[#1d4ed8]"
+              >
+                Save Changes
+              </Button>
+            </div>
             </div>
           </form>
         </Form>
