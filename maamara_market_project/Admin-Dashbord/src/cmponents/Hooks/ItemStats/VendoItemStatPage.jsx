@@ -1,108 +1,41 @@
 import React from "react";
-import useVendorStatsBox from "../../Hooks/ItemStats/ItemStatsHook"; 
-import {
-  ResponsiveContainer,
-  LineChart,
-  Line,
-  YAxis,
-  XAxis,
-  Tooltip,
-  CartesianGrid,
-} from "recharts";
-import ChartBox from "../../VENDORPAGE/ChartBox/CharBox";
-import { tokens } from "../../../theme";
-import { useTheme } from "@mui/material";
+import { ResponsiveContainer, LineChart, Line, YAxis, XAxis, Tooltip, CartesianGrid } from "recharts";
+import useVendorStatsBox from "./ItemStatsHook";
 
 const VendorStatsPage = ({ vendorId = null }) => {
-  // Use your hook to get data & states
-  const {
-    title,
-    value,
-    percentage,
-    percentageColor,
-    duration,
-    chartData,
-    loading,
-    error,
-  } = useVendorStatsBox({ vendorId });
+  const { title, value, percentage, duration, chartData, loading, error } = useVendorStatsBox({ vendorId });
 
-  const theme = useTheme();
-  const colors = tokens(theme.palette.mode);
-
-  if (loading) {
-    return (
-      <div
-        className="flex justify-center items-center h-[60vh] text-lg"
-        style={{ color: colors.gray[100] }}
-      >
-        Loading stats...
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="flex justify-center items-center h-[60vh] text-red-400 text-lg">
-        {error}
-      </div>
-    );
-  }
+  if (loading) return <div className="rounded-2xl border border-[#e6e6e4] bg-white p-8 text-sm text-[#595959]">Loading views data...</div>;
+  if (error) return <div className="rounded-2xl border border-red-200 bg-white p-8 text-sm text-red-600">{error}</div>;
 
   return (
-    <div className="p-6 space-y-10 max-w-5xl mx-auto border-b border-gray-700">
-      {/* Chart Section */}
-      <section
-        className="p-6 rounded-xl shadow border-b border-gray-700"
-        style={{ color: colors.gray[100], backgroundColor: colors.primary[500] }}
-        aria-label="Monthly Views Chart"
-      >
-        <h1 className="text-2xl font-bold mb-2" style={{color: colors.gray[100]}}>{title}</h1>
-        {duration && <p className="mb-6 " style={{color: colors.gray[100]}}>{duration}</p>}
-
-        {chartData.length === 0 ? (
-          <p style={{ color: colors.gray[400] }}>No data available.</p>
-        ) : (
-          <div className="w-full h-[350px]">
+    <section className="w-full space-y-5">
+      <header className="rounded-2xl border border-[#e6e6e4] bg-white p-5 shadow-sm sm:p-6">
+        <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[#2563eb]">Store analytics</p>
+        <h1 className="mt-1 text-2xl font-bold tracking-tight text-[#222]">Monthly Views</h1>
+        <p className="mt-1 text-sm text-[#595959]">Customer views across the last six months.</p>
+      </header>
+      <section className="rounded-2xl border border-[#e6e6e4] bg-white p-4 shadow-sm sm:p-6">
+        <div className="flex flex-wrap items-end justify-between gap-3 border-b border-[#e6e6e4] pb-4">
+          <div><h2 className="text-lg font-bold text-[#222]">{title}</h2><p className="mt-1 text-xs text-[#595959]">{duration}</p></div>
+          <div className="rounded-full bg-[#eff6ff] px-3 py-1.5 text-xs font-bold text-[#2563eb]">{percentage}</div>
+        </div>
+        {chartData.length ? (
+          <div className="mt-5 h-[320px] w-full min-w-0 sm:h-[380px]">
             <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={chartData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#444" />
-                <XAxis dataKey="name" stroke="#bbb" />
-                <YAxis stroke="#bbb" />
-                <Tooltip
-                  contentStyle={{
-                    backgroundColor: colors.primary[500],
-                    border: "1px solid #374151",
-                    color: colors.gray[100],
-                  }}
-                />
-                <Line
-                  type="monotone"
-                  dataKey="pv"
-                  stroke="#22c55e"
-                  strokeWidth={3}
-                  activeDot={{ r: 7 }}
-                />
+              <LineChart data={chartData} margin={{ top: 8, right: 8, left: 0, bottom: 8 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#e6e6e4" vertical={false} />
+                <XAxis dataKey="name" tick={{ fontSize: 10, fill: "#595959" }} tickLine={false} axisLine={{ stroke: "#d9d9d6" }} />
+                <YAxis tick={{ fontSize: 10, fill: "#595959" }} tickLine={false} axisLine={false} width={42} />
+                <Tooltip contentStyle={{ borderRadius: 12, border: "1px solid #e6e6e4", background: "#fff" }} />
+                <Line type="monotone" dataKey="pv" stroke="#2563eb" strokeWidth={3} dot={{ r: 3 }} activeDot={{ r: 5 }} />
               </LineChart>
             </ResponsiveContainer>
           </div>
-        )}
+        ) : <div className="mt-5 rounded-xl bg-[#f8f8f6] p-8 text-center text-sm text-[#595959]">No view data available.</div>}
       </section>
-
-      {/* Summary Data */}
-      <section
-        className="p-6 rounded-xl border shadow max-w-lg mx-auto"
-        style={{ color: colors.gray[100] }}
-      >
-        <ChartBox
-          title={title}
-          value={value}
-          percentage={percentage}
-          percentageColor={percentageColor}
-          duration={duration}
-          chartData={chartData}
-        />
-      </section>
-    </div>
+      <div className="rounded-2xl border border-[#e6e6e4] bg-white p-5"><p className="text-xs text-[#595959]">Current total views</p><p className="mt-1 text-2xl font-bold text-[#222]">{value}</p></div>
+    </section>
   );
 };
 
