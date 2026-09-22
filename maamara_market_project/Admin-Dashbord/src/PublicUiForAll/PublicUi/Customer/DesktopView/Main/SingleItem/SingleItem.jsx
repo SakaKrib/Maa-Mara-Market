@@ -19,12 +19,38 @@ const truncateWords = (text, limit = 15) => {
 
 const SingleItem = () => {
   const {
-    item, loading, error, selectedVariant, selectedSize, selectedAgeVariant, selectedShoe, selectedShoeSize, selectedWeight, selectedLength, customPreferences, setCustomPreferences, selectedImage,
-    quantity, setQuantity, availableStock, remainingStock,
-    selectColor, selectSize, selectAgeVariant, selectShoe, selectShoeSize, selectWeight, selectLength, selectImage, refreshItem,
+    item,
+    loading,
+    error,
+    selectedVariant,
+    selectedSize,
+    selectedAgeVariant,
+    selectedShoe,
+    selectedShoeSize,
+    selectedWeight,
+    selectedLength,
+    customPreferences,
+    setCustomPreferences,
+    selectedImage,
+    quantity,
+    setQuantity,
+    availableStock,
+    remainingStock,
+    selectColor,
+    selectSize,
+    selectAgeVariant,
+    selectShoe,
+    selectShoeSize,
+    selectWeight,
+    selectLength,
+    selectImage,
+    refreshItem,
   } = useSingleItem();
+
   const { wishlist, addToWishlist, removeFromWishlist } = useWishlistContext();
-  const isWishlisted = Array.isArray(wishlist) && wishlist.some((entry) => (entry.item?.id || entry.id) === item?.id);
+  const isWishlisted =
+    Array.isArray(wishlist) &&
+    wishlist.some((entry) => (entry.item?.id || entry.id) === item?.id);
 
   if (loading) return <div className="p-10 text-center">Loading product...</div>;
   if (error || !item) return <div className="p-10 text-center">Item not found.</div>;
@@ -32,101 +58,152 @@ const SingleItem = () => {
   const hasDiscount = Number(item.discount_price || item.discount || 0) > 0;
 
   return (
-    <div className="px-4 md:px-8 lg:px-16 xl:px-32 2xl:px-64 mt-10">
-      <div className="grid grid-cols-1 gap-10 lg:grid-cols-2 lg:gap-16">
-        <div className="min-w-0">
-          <ProductGallery
-            item={item}
-            selectedImage={selectedImage}
-            selectedVariant={selectedVariant}
-            selectedSize={selectedSize}
-            onSelectImage={selectImage}
-            onSelectColor={selectColor}
-          />
+    <main className="w-full px-4 pb-12 pt-6 md:px-8 lg:px-12 xl:px-16 2xl:px-24">
+      <div className="mx-auto grid w-full max-w-[1600px] grid-cols-1 gap-6 lg:grid-cols-2 lg:items-start lg:gap-8 xl:gap-10">
+        {/* At desktop these are two independent columns. At mobile they become
+            direct grid children so the customer gets the natural purchase flow. */}
+        <div className="contents lg:block">
+          <div className="min-w-0 lg:sticky lg:top-4">
+            <ProductGallery
+              item={item}
+              selectedImage={selectedImage}
+              selectedVariant={selectedVariant}
+              selectedSize={selectedSize}
+              onSelectImage={selectImage}
+              onSelectColor={selectColor}
+            />
+          </div>
+
+          <section className="order-5 mt-6 min-w-0 rounded-2xl border border-border bg-card p-4 shadow-custom sm:p-5 lg:order-none">
+            <ProductDetails item={item} />
+          </section>
         </div>
 
-        <section className="min-w-0 flex flex-col gap-6">
-          <div className="rounded-2xl border border-border bg-card p-4 shadow-custom sm:p-5">
+        <div className="contents lg:block">
+          <section className="order-2 min-w-0 rounded-2xl border border-border bg-card p-4 shadow-custom sm:p-5 lg:order-none">
             <VendorPerformanceBadges itemId={item.id} />
-            <h1 className="mt-3 text-2xl font-medium text-card-foreground sm:text-3xl">{item.name}</h1>
+            <h1 className="mt-3 text-2xl font-semibold tracking-tight text-card-foreground sm:text-3xl">
+              {item.name}
+            </h1>
             <p className="mt-2 text-sm font-normal leading-6 text-muted-foreground">
               {truncateWords(item.description, 15) || "Product details are provided by the seller."}
             </p>
+
             <div className="mt-5 border-t border-border pt-4">
               <div className="flex flex-wrap items-center justify-between gap-3">
-                <span className="text-sm text-muted-foreground">Reviews: ({item.review_count ?? 0})</span>
-                <span className={`text-sm font-semibold ${availableStock < 5 ? "text-red-500" : "text-green-500"}`}>{availableStock} In stock</span>
+                <span className="text-sm text-muted-foreground">
+                  Reviews: ({item.review_count ?? 0})
+                </span>
+                <span
+                  className={`text-sm font-semibold ${availableStock < 5 ? "text-red-500" : "text-green-500"}`}
+                >
+                  {availableStock} In stock
+                </span>
               </div>
+
               <div className="mt-4 flex flex-wrap items-center gap-3">
-                {hasDiscount && <span className="text-lg text-muted-foreground line-through"><FormattedCurrency value={Number(item.final_price)} /></span>}
-                <span className={`text-2xl font-bold ${hasDiscount ? "text-red-600" : "text-card-foreground"}`}><FormattedCurrency value={Number(hasDiscount ? item.final_discounted_price : item.final_price)} /></span>
+                {hasDiscount && (
+                  <span className="text-lg text-muted-foreground line-through">
+                    <FormattedCurrency value={Number(item.final_price)} />
+                  </span>
+                )}
+                <span
+                  className={`text-2xl font-bold ${hasDiscount ? "text-red-600" : "text-card-foreground"}`}
+                >
+                  <FormattedCurrency
+                    value={Number(hasDiscount ? item.final_discounted_price : item.final_price)}
+                  />
+                </span>
               </div>
+            </div>
+          </section>
+
+          <div className="order-3 min-w-0 lg:order-none">
+            <ProductOptions
+              item={item}
+              selectedVariant={selectedVariant}
+              selectedSize={selectedSize}
+              selectedAgeVariant={selectedAgeVariant}
+              selectedShoe={selectedShoe}
+              selectedShoeSize={selectedShoeSize}
+              selectedWeight={selectedWeight}
+              selectedLength={selectedLength}
+              customPreferences={customPreferences}
+              onColorChange={selectColor}
+              onSizeChange={selectSize}
+              onAgeChange={selectAgeVariant}
+              onShoeChange={selectShoe}
+              onShoeSizeChange={selectShoeSize}
+              onWeightChange={selectWeight}
+              onLengthChange={selectLength}
+              onCustomPreferencesChange={setCustomPreferences}
+            />
+          </div>
+
+          <div className="order-4 min-w-0 lg:order-none">
+            <QuantityAndCart
+              item={item}
+              quantity={quantity}
+              setQuantity={setQuantity}
+              availableStock={availableStock}
+              remainingStock={remainingStock}
+              selectedVariant={selectedVariant}
+              selectedSize={selectedSize}
+              selectedAgeVariant={selectedAgeVariant}
+              selectedShoe={selectedShoe}
+              selectedShoeSize={selectedShoeSize}
+              customPreferences={customPreferences}
+              onAdded={refreshItem}
+            />
+
+            <div className="mt-4 flex w-full flex-col gap-3">
+              <button
+                type="button"
+                className="flex w-full items-center justify-center rounded-full border border-border bg-background px-4 py-2.5 text-center text-sm font-semibold text-card-foreground transition-colors hover:bg-muted"
+                onClick={() =>
+                  isWishlisted ? removeFromWishlist(item.id) : addToWishlist(item.id)
+                }
+                aria-pressed={isWishlisted}
+              >
+                {isWishlisted ? "♥ Saved" : "♡ Wishlist"}
+              </button>
+
+              <button
+                type="button"
+                className="flex w-full items-center justify-center rounded-full border border-border bg-background px-4 py-2.5 text-center text-sm font-semibold text-card-foreground transition-colors hover:bg-muted"
+                onClick={() => {
+                  if (navigator.share) {
+                    navigator.share({ title: item.name, url: window.location.href }).catch(() => {});
+                  } else if (navigator.clipboard) {
+                    navigator.clipboard.writeText(window.location.href);
+                  }
+                }}
+              >
+                ↗ Share
+              </button>
             </div>
           </div>
 
-          <ProductOptions
-            item={item}
-            selectedVariant={selectedVariant}
-            selectedSize={selectedSize}
-            selectedAgeVariant={selectedAgeVariant}
-            selectedShoe={selectedShoe}
-            selectedShoeSize={selectedShoeSize}
-            selectedWeight={selectedWeight}
-            selectedLength={selectedLength}
-            customPreferences={customPreferences}
-            onColorChange={selectColor}
-            onSizeChange={selectSize}
-            onAgeChange={selectAgeVariant}
-            onShoeChange={selectShoe}
-            onShoeSizeChange={selectShoeSize}
-            onWeightChange={selectWeight}
-            onLengthChange={selectLength}
-            onCustomPreferencesChange={setCustomPreferences}
-          />
-
-          <QuantityAndCart
-            item={item}
-            quantity={quantity}
-            setQuantity={setQuantity}
-            availableStock={availableStock}
-            remainingStock={remainingStock}
-            selectedVariant={selectedVariant}
-            selectedSize={selectedSize}
-            selectedAgeVariant={selectedAgeVariant}
-            selectedShoe={selectedShoe}
-            selectedShoeSize={selectedShoeSize}
-            customPreferences={customPreferences}
-            onAdded={refreshItem}
-          />
-
-          <div className="flex w-full flex-col gap-3">
-            <button type="button" className="flex w-full items-center justify-center rounded-full border border-gray-300 bg-background px-4 py-2.5 text-center text-sm font-semibold text-card-foreground transition-colors hover:bg-muted" onClick={() => (isWishlisted ? removeFromWishlist(item.id) : addToWishlist(item.id))} aria-pressed={isWishlisted}>
-              {isWishlisted ? "♥ Saved" : "♡ Wishlist"}
-            </button>
-            <button type="button" className="flex w-full items-center justify-center rounded-full border border-gray-300 bg-background px-4 py-2.5 text-center text-sm font-semibold text-card-foreground transition-colors hover:bg-muted" onClick={() => navigator.share?.({ title: item.name, url: window.location.href })}>
-              ↗ Share
-            </button>
-          </div>
-        </section>
-      </div>
-
-      <div className="mt-8 grid grid-cols-1 gap-6 lg:grid-cols-2">
-        <div className="min-w-0 rounded-2xl border border-border bg-card p-4 shadow-custom sm:p-5">
-          <ProductDetails item={item} />
-        </div>
-        <div className="min-w-0 rounded-2xl border border-border bg-card p-4 shadow-custom sm:p-5">
-          <ProductReviews item={item} />
+          <section className="order-6 min-w-0 rounded-2xl border border-border bg-card p-4 shadow-custom sm:p-5 lg:order-none">
+            <ProductReviews item={item} />
+          </section>
         </div>
       </div>
 
-      <div className="mt-8 min-w-0">
-        <TrendingProduct itemId={item.id} title="You may also like" limit={8} initialVisible={4} scrollable={true} />
+      <div className="mx-auto mt-8 w-full max-w-[1600px] min-w-0">
+        <TrendingProduct
+          itemId={item.id}
+          title="You may also like"
+          limit={8}
+          initialVisible={4}
+          scrollable={true}
+        />
       </div>
 
-      <div className="mt-8 min-w-0">
+      <div className="mx-auto mt-8 w-full max-w-[1600px] min-w-0">
         <MarketplaceItemContext item={item} availableStock={availableStock} />
       </div>
-    </div>
+    </main>
   );
 };
 
