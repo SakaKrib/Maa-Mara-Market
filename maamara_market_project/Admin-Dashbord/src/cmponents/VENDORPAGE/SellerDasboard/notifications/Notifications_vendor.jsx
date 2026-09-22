@@ -1,12 +1,12 @@
 import React, { useState } from "react";
 import { Bell, X } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { useVendorNotifications } from "../../../Hooks/VendorNotificationHook/VendorNotificationsHook";
+import { useVendorNotifications } from "../../../Hooks/VendorNotificationHook/VendorNotificationsHook";\nimport { useAdminPreferences } from "../../../Settings/AdminPreferencesContext";
 
 export default function VendorNotifications() {
   const [open, setOpen] = useState(false);
   const navigate = useNavigate();
-  const { notifications = [], unseenCount = 0 } = useVendorNotifications();
+  const { notifications = [], unseenCount = 0 } = useVendorNotifications();\n  const { preferences } = useAdminPreferences();\n  const notificationsEnabled = preferences.notifications;
 
   const handleNotificationClick = (notification) => {
     if (notification.url) {
@@ -19,9 +19,9 @@ export default function VendorNotifications() {
     <>
       <button
         type="button"
-        onClick={() => setOpen(true)}
-        className="relative inline-flex h-10 w-10 items-center justify-center rounded-full border border-[#d9d9d6] bg-white text-[#222] shadow-sm transition hover:border-[#2563eb] hover:bg-[#eff6ff] hover:text-[#2563eb] focus:outline-none focus:ring-2 focus:ring-[#2563eb]/20"
-        aria-label="Open notifications"
+        onClick={() => notificationsEnabled && setOpen(true)}
+        className={`relative inline-flex h-10 w-10 items-center justify-center rounded-full border border-[#d9d9d6] bg-white text-[#222] shadow-sm transition focus:outline-none focus:ring-2 focus:ring-[#2563eb]/20 ${notificationsEnabled ? "hover:border-[#2563eb] hover:bg-[#eff6ff] hover:text-[#2563eb]" : "cursor-not-allowed opacity-50"}`}
+        aria-label={notificationsEnabled ? "Open notifications" : "Notifications disabled"}\n        title={notificationsEnabled ? "Open notifications" : "Notifications are disabled in settings"}
       >
         <Bell className="h-5 w-5" strokeWidth={2.2} />
         {unseenCount > 0 && (
@@ -31,7 +31,7 @@ export default function VendorNotifications() {
         )}
       </button>
 
-      {open && (
+      {open && notificationsEnabled && (
         <aside
           className="fixed inset-y-4 right-4 z-[1500] flex w-[min(420px,calc(100vw-2rem))] flex-col overflow-hidden rounded-2xl border border-[#e6e6e4] bg-white shadow-2xl"
           role="dialog"
