@@ -4,7 +4,6 @@ import { Edit3, PackageOpen } from "lucide-react";
 import { baseUrl } from "../../../Constant/Constant";
 import api from "../../../../Services/Api";
 import EditItem from "../Forms/EditItem/EditItem";
-import { useVendor } from "../vendorhooks";
 
 const truncateWords = (text, numWords) => {
   if (!text) return "";
@@ -19,7 +18,6 @@ const ItemsOnsite = () => {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const { vendor } = useVendor();
 
   const fetchItems = async () => {
     setLoading(true);
@@ -170,7 +168,6 @@ const ItemsOnsite = () => {
                     <div className="flex items-center gap-1.5 rounded-lg border border-border bg-muted px-2 py-1">
                       <Edit3 className="h-3.5 w-3.5 text-muted-foreground" />
                       <EditItem
-                        vendor={vendor}
                         item={item}
                         onSuccess={fetchItems}
                       />
