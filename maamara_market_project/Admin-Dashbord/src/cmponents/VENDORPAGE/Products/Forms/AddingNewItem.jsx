@@ -276,72 +276,8 @@ useEffect(() => {
     setValue("department", matchingDepartment);
   }
 }, [initialItem?.department, activeData, setValue]);
-
-// Keep saved custom values editable. If an existing category, subcategory,
-// or attribute is not in the current predefined lists, switch that field
-// to its custom-input mode instead of hiding the saved value.
-useEffect(() => {
-  if (!initialItem || !activeData || !selectedDepartment) return;
-
-  const savedCategory = String(initialItem.category || "").trim();
-  const savedSubcategory = String(initialItem.subcategory || "").trim();
-  const categories = activeData?.[selectedDepartment]?.categories || [];
-  const subcategories =
-    activeData?.[selectedDepartment]?.subcategories?.[savedCategory] || [];
-
-  if (
-    savedCategory &&
-    !categories.some(
-      (category) =>
-        String(category).toLowerCase() === savedCategory.toLowerCase()
-    )
-  ) {
-    setIsCustomCategory(true);
-    setSelectedCategory(savedCategory);
-    setValue("category", savedCategory);
-  }
-
-  if (
-    savedSubcategory &&
-    !subcategories.some(
-      (subcategory) =>
-        String(subcategory).toLowerCase() === savedSubcategory.toLowerCase()
-    )
-  ) {
-    setIsCustomSubcategory(true);
-    setValue("subcategory", savedSubcategory);
-  }
-
-  const productTypeForAttributes = String(
-    vendor?.product_type ?? vendor?.vendor_data?.product_type ?? ""
-  ).trim().toLowerCase();
-  const attributes =
-    selectedSection === "organic" && productTypeForAttributes !== "inorganic"
-      ? organicAttributes
-      : selectedSection === "inorganic" && productTypeForAttributes !== "organic"
-        ? inorganicAttributes
-        : [];
-
-  const savedAttribute = String(initialItem.item_attribute || "").trim();
-  if (
-    savedAttribute &&
-    !attributes.some(
-      (attribute) =>
-        String(attribute.value).toLowerCase() === savedAttribute.toLowerCase()
-    )
-  ) {
-    setIsCustomAttribute(true);
-    setValue("item_attribute", savedAttribute);
-  }
-}, [
-  initialItem,
-  activeData,
-  selectedDepartment,
-  selectedSection,
-  vendor,
-  setValue,
-]);
-
+ 
+ 
    //reset form inputs when togle for both
    // 🔹 Reset the entire form when activeData changes
  // 📝 Define your empty state once (outside the component or at top of component)
@@ -724,8 +660,8 @@ useEffect(() => {
   
       // separate
       <Form {...form}>
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 px-2 py-2 text-foreground">
-      <div >
+        <form onSubmit={handleSubmit(onSubmit)} className="px-2 py-2 text-foreground">
+      <div className="space-y-4" >
 
         
   
@@ -1770,11 +1706,8 @@ useEffect(() => {
                   {...field}
                   value={field.value ?? ""} // keeps it controlled
                   onChange={(e) => field.onChange(e.target.value)}
-                  className="border rounded p-2 w-full"
-                  style={{
-                    color: colors.gray[100],
-                    backgroundColor: colors.primary[600],
-                  }}
+                  className="border rounded-full p-2 w-full"
+                 
                 >
                   <option value="">Select Roast Type</option>
                   <option value="light">Light Roast</option>
@@ -1804,11 +1737,8 @@ useEffect(() => {
                   {...field}
                   value={field.value ?? ""} // keeps it controlled
                   onChange={(e) => field.onChange(e.target.value)}
-                  className="border rounded p-2 w-full"
-                  style={{
-                    color: colors.gray[100],
-                    backgroundColor: colors.primary[600],
-                  }}
+                  className="border rounded-full p-2 w-full"
+                 
                 >
                   <option value="">Select Coffee State</option>
                   <option value="whole_beans">Whole Beans</option>
@@ -1866,8 +1796,7 @@ useEffect(() => {
     
                   {/* Dropdown for unit */}
                   <select
-                    className="border rounded p-2"
-                    style={{color:colors.gray[100], backgroundColor:colors.primary[600]}}
+                    className="border rounded-full p-2"
                     value={value?.unit ?? "g"}
                     onChange={(e) => handleUnitChange(e.target.value)}
                   >
@@ -1904,7 +1833,6 @@ useEffect(() => {
               {...field}
               value={field.value ?? ""}  // 👈 fallback ensures it's always controlled
               className="border rounded p-2"
-              style={{ color: colors.gray[100], backgroundColor: colors.primary[600] }}
             />
     
               </FormControl>
@@ -1959,15 +1887,20 @@ useEffect(() => {
               control={form.control}
               name="in_offer"
               render={({ field }) => (
-                <FormItem className="flex items-center space-x-2">
-                  <FormControl>
+                <FormItem className="rounded-[20px] border border-border p-4 w-full" >
+                  <div className="flex items-center gap-2">
+                    <FormControl className="space-x-2">
                     <Checkbox
                       checked={field.value}
                       onCheckedChange={field.onChange}
                       className="border-gray-300 bg-transparent data-[state=checked]:!border-gray-500 data-[state=checked]:!bg-gray-500"
                     />
                   </FormControl>
-                  <FormLabel className="text-base">Mark item as on Offer</FormLabel>
+                  <FormLabel className="text-base mt-2">Mark item as on Offer</FormLabel>
+                  </div>
+                  <FormDescription>
+                Put this item on offer.
+              </FormDescription>
                 </FormItem>
               )}
             />
@@ -2090,15 +2023,14 @@ useEffect(() => {
             const selectedColors = value.map((v) => v.color);
     
             return (
-              <FormItem>
+              <FormItem className='rounded-[20px] p-4 border border-gray-300 bg-transparent'>
                 <FormLabel className="text-lg">Color Variants</FormLabel>
                 <FormControl>
                   <div className="space-y-6">
                     {/* Color selection */}
                     <div
-                      className="grid grid-cols-3 gap-5 my-2"
+                      className="grid grid-cols-3 xxs:grid-cols-2 gap-5 my-2"
                       style={{
-                        boxShadow: `0 7px 24px ${colors.primary[400]}`,
                         borderRadius: "10px",
                         padding: ".5em .5em",
                       }}
@@ -2107,19 +2039,26 @@ useEffect(() => {
                         const checkboxId = `color-${color}`;
                         return (
                           <div key={color} className="flex items-center gap-2">
-                            <Checkbox
-                              id={checkboxId}
-                              checked={selectedColors.includes(color)}
-                              onCheckedChange={() => handleColorToggle(color)}
-                              style={{ backgroundColor: colors.primary[600] }}
-                            />
-                            <span
-                              className="inline-block w-3 h-3 rounded-full border"
-                              style={{ backgroundColor: colorMap[color] || "#ccc" }}
-                            />
-                            <label htmlFor={checkboxId} className="text-xs cursor-pointer mt-2">
+                            <div>
+                              <Checkbox
+                                id={checkboxId}
+                                checked={selectedColors.includes(color)}
+                                onCheckedChange={() => handleColorToggle(color)}
+                              />
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <div>
+                                <span
+                                  className="inline-block w-3 h-3 rounded-full border"
+                                  style={{ backgroundColor: colorMap[color] || "#ccc" }}
+                                />
+                              </div>
+                            <div className='-mt-1'>
+                              <label htmlFor={checkboxId} className="text-xs cursor-pointer">
                               {color}
                             </label>
+                            </div>
+                            </div>
                           </div>
                         );
                       })}
@@ -2144,7 +2083,7 @@ useEffect(() => {
                               outline: `1px solid ${colors.gray[100]}`,
                               width: "200px",
                               padding: ".5em 1em",
-                              borderRadius: "10px",
+                              borderRadius: "20px",
                             }}
                           />
                         </div>
