@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { Bell, Check, Globe2, Monitor, RefreshCw, Save, Settings as SettingsIcon, UserRound } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { useAuth } from "../../Auth/AuthContext/Context.jsx";
+import { useAuth } from "../Auth/AuthContext/Context.jsx";
 import { useAdminPreferences } from "../Settings/AdminPreferencesContext";
 import api from "../../Services/Api";
 import LogoutConfirmationModal from "../Auth/LogoutConfirmationModal";
