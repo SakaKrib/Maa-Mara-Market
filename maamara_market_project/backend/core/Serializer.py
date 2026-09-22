@@ -476,10 +476,10 @@ class ActivityLogSerializer(serializers.ModelSerializer):
         item_name = self._item_name(obj)
 
         templates = {
-            "item_added_to_wishlist": f"{actor} added {item_name} to their wishlist.",
-            "item_removed_from_wishlist": f"{actor} removed {item_name} from their wishlist.",
-            "item_added_to_cart": f"{actor} added {item_name} to their cart.",
-            "item_removed_from_cart": f"{actor} removed {item_name} from their cart.",
+            "item_added_to_wishlist": f"{actor} added {item_name} to your wishlist." if actor == "You" else f"{actor} added {item_name} to their wishlist.",
+            "item_removed_from_wishlist": f"{actor} removed {item_name} from your wishlist." if actor == "You" else f"{actor} removed {item_name} from their wishlist.",
+            "item_added_to_cart": f"{actor} added {item_name} to your cart." if actor == "You" else f"{actor} added {item_name} to their cart.",
+            "item_removed_from_cart": f"{actor} removed {item_name} from your cart." if actor == "You" else f"{actor} removed {item_name} from their cart.",
             "item_viewed": f"{actor} viewed {item_name}.",
             "item_shared": f"{actor} shared {item_name}.",
             "item_reviewed": f"{actor} left a review for {item_name}.",
