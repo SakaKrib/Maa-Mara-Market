@@ -29,7 +29,7 @@ const infoValue = (value) =>
 
 const mediaUrl = (value) => {
   if (!value) return "";
-  if (/^(https?:)?\\/\\//i.test(value) || value.startsWith("data:")) return value;
+  if (/^(https?:)?\/\//i.test(value) || value.startsWith("data:")) return value;
   const normalized = value.startsWith("/") ? value : `/${value}`;
   return `${baseUrl}${normalized}`;
 };
