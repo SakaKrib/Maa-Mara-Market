@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useMemo } from "react";
 import { baseUrl } from "../../../../../../cmponents/Constant/Constant";
 
 const resolveImage = (value) => {
@@ -7,51 +7,106 @@ const resolveImage = (value) => {
 };
 
 const ProductGallery = ({ item, selectedImage, selectedVariant, selectedSize, onSelectImage, onSelectColor }) => {
-  const previewImages = item.images?.length ? item.images : [item.image];
+  const media = useMemo(() => {
+    const entries = [];
+
+    if (item?.image) entries.push({ type: "image", value: item.image, key: "main" });
+
+    (Array.isArray(item?.additional_images) ? item.additional_images : []).forEach((entry, index) => {
+      const value = typeof entry === "string" ? entry : entry?.image;
+      if (value) entries.push({ type: "image", value, key: `additional-${entry?.id || index}` });
+    });
+
+    (Array.isArray(item?.variants) ? item.variants : []).forEach((variant) => {
+      if (variant?.image) {
+        entries.push({
+          type: "image",
+          value: variant.image,
+          key: `variant-${variant.id}`,
+          variantId: variant.id,
+          label: variant.color,
+        });
+      }
+    });
+
+    return entries.filter((entry, index, all) => all.findIndex((candidate) => candidate.value === entry.value) === index);
+  }, [item]);
+
+  const activeImage = selectedImage || selectedSize?.image || selectedVariant?.image || item?.image;
+  const activeUrl = resolveImage(activeImage);
 
   return (
-    <section className="w-full lg:w-1/2 lg:sticky lg:top-0">
-      <div className="h-[55vh] lg:h-[75vh] relative">
-        <img
-          src={resolveImage(selectedImage || selectedSize?.image || selectedVariant?.image || item.image)}
-          className="object-cover rounded-md w-full h-full"
-          alt={item.name}
-        />
+    <section className="w-full min-w-0">
+      <div className="relative w-full overflow-hidden rounded-2xl border border-border bg-muted/20 aspect-[4/5] max-h-[760px]">
+        {activeUrl ? (
+          <img
+            src={activeUrl}
+            className="block h-full w-full object-cover"
+            alt={item.name}
+          />
+        ) : (
+          <div className="flex h-full w-full items-center justify-center text-sm text-muted-foreground">
+            No product image
+          </div>
+        )}
       </div>
 
-      <div className="flex flex-wrap gap-4 mt-6">
-        {previewImages.filter(Boolean).map((image, index) => {
-          const url = resolveImage(image);
-          return (
-            <button
-              type="button"
-              key={`preview-${index}`}
-              onClick={() => onSelectImage(image)}
-              className={`w-20 h-20 rounded-md overflow-hidden cursor-pointer border ${selectedImage === image ? "ring-2 ring-black" : ""}`}
-            >
-              <img src={url} className="object-cover w-full h-full" alt={`Preview ${index + 1}`} />
-            </button>
-          );
-        })}
-      </div>
+      {media.length > 0 && (
+        <div className="mt-4 flex gap-3 overflow-x-auto pb-1">
+          {media.map((entry, index) => {
+            const url = resolveImage(entry.value);
+            const selected = activeImage === entry.value;
+            return (
+              <button
+                type="button"
+                key={entry.key}
+                onClick={() => onSelectImage(entry.value)}
+                className={`h-20 w-20 shrink-0 overflow-hidden rounded-xl border bg-background ${selected ? "border-gray-900 ring-2 ring-gray-900/10" : "border-border"}`}
+                aria-label={`Product image ${index + 1}`}
+              >
+                <img src={url} className="h-full w-full object-cover" alt={entry.label || `Preview ${index + 1}`} />
+              </button>
+            );
+          })}
+        </div>
+      )}
 
-      {item.variants?.length > 0 && (
-        <div className="flex flex-wrap gap-4 mt-6">
-          {item.variants.map((variant) => (
-            <button
-              type="button"
-              key={variant.id}
-              onClick={() => onSelectColor(variant.color)}
-              className={`w-20 h-20 rounded-md overflow-hidden cursor-pointer border ${selectedVariant?.id === variant.id ? "ring-2 ring-black" : ""}`}
-              title={variant.color}
-            >
-              {variant.color_image ? (
-                <img src={resolveImage(variant.color_image)} className="object-cover w-full h-full" alt={variant.color} />
-              ) : (
-                <span className="block w-full h-full" style={{ backgroundColor: variant.color?.toLowerCase() }} />
-              )}
-            </button>
-          ))}
+      {Array.isArray(item?.variants) && item.variants.length > 0 && (
+        <div className="mt-5">
+          <p className="mb-3 text-sm font-semibold text-card-foreground">Color variants</p>
+          <div className="flex gap-3 overflow-x-auto pb-1">
+            {item.variants.map((variant) => {
+              const selected = selectedVariant?.id === variant.id;
+              const variantImage = resolveImage(variant.image);
+              return (
+                <button
+                  type="button"
+                  key={variant.id}
+                  onClick={() => onSelectColor(variant.color)}
+                  className={`h-16 w-16 shrink-0 overflow-hidden rounded-xl border bg-background ${selected ? "border-gray-900 ring-2 ring-gray-900/10" : "border-border"}`}
+                  title={variant.color}
+                  aria-label={variant.color}
+                >
+                  {variantImage ? (
+                    <img src={variantImage} className="h-full w-full object-cover" alt={variant.color} />
+                  ) : (
+                    <span className="flex h-full w-full items-center justify-center bg-muted px-1 text-center text-[10px] font-medium text-muted-foreground">
+                      {variant.color || "Color"}
+                    </span>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {item?.video && (
+        <div className="mt-5 overflow-hidden rounded-2xl border border-border bg-black">
+          <video controls preload="metadata" className="max-h-[420px] w-full">
+            <source src={resolveImage(item.video)} />
+            Your browser does not support product video.
+          </video>
         </div>
       )}
     </section>
