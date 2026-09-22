@@ -318,11 +318,30 @@ def approve_request(request, pk):
         # Reuse ItemSerializers so approval preserves the complete nested
         # item structure instead of creating only the primitive fields.
         approval_data = dict(draft_data)
-        if raw_image:
-            approval_data["image"] = raw_image
+
+        # Drafts are JSON, so existing media paths must be restored after
+        # serializer validation rather than passed through ImageField again.
+        if isinstance(approval_data.get("image"), str):
+            approval_data.pop("image", None)
+
+        variant_image_paths = {}
+        normalized_variants = []
+        for variant in approval_data.get("variants") or []:
+            variant_copy = dict(variant)
+            variant_image = variant_copy.get("image")
+            if isinstance(variant_image, str):
+                variant_image_paths[variant_copy.get("color")] = variant_image
+                variant_copy.pop("image", None)
+            normalized_variants.append(variant_copy)
+        if "variants" in approval_data:
+            approval_data["variants"] = normalized_variants
 
         if "shipping_dimension" in approval_data and "shipping_dimension_data" not in approval_data:
             approval_data["shipping_dimension_data"] = approval_data.pop("shipping_dimension")
+
+        for optional_key in ("weight", "length", "offer", "shipping_dimension_data"):
+            if approval_data.get(optional_key) is None:
+                approval_data.pop(optional_key, None)
 
         serializer = ItemSerializers(
             data=approval_data,
@@ -334,6 +353,17 @@ def approve_request(request, pk):
             vendor=vendor_user,
             created_by=item_request.created_by,
         )
+
+        if raw_image:
+            item.image = raw_image
+            item.save(update_fields=["image"])
+
+        if variant_image_paths:
+            for variant in item.variants.all():
+                image_path = variant_image_paths.get(variant.color)
+                if image_path:
+                    variant.image = image_path
+                    variant.save(update_fields=["image"])
 
         if image_hash:
             item.image_hash = image_hash
