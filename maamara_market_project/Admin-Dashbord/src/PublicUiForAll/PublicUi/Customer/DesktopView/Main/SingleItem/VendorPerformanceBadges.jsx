@@ -80,7 +80,11 @@ const VendorPerformanceBadges = ({ itemId }) => {
   if (!earnedBadges.length) return null;
 
   return (
-    <div ref={rootRef} className="flex flex-wrap items-center gap-2" aria-label="Vendor performance recognitions">
+    <div ref={rootRef} aria-label="Vendor performance recognitions">
+      <p className="mb-2 text-[10px] leading-4 text-muted-foreground">
+        Press and hold a badge to see its details.
+      </p>
+      <div className="flex flex-wrap items-center gap-2">
       {earnedBadges.map(([key, meta]) => {
         const count = Number(badges[key]?.count || 0);
         const isOpen = openBadge === key;
@@ -117,6 +121,7 @@ const VendorPerformanceBadges = ({ itemId }) => {
           </div>
         );
       })}
+      </div>
     </div>
   );
 };
