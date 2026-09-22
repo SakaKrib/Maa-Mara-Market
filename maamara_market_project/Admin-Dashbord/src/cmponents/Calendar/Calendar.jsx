@@ -103,7 +103,7 @@ const Calendar = () => {
     <section className="w-full space-y-6">
       <header className="flex items-start justify-between gap-4 rounded-2xl border border-[#e6e6e4] bg-white p-5 shadow-sm sm:p-6">
         <div>
-          <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.16em] text-[#f1641e]">
+          <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.16em] text-[#2563eb]">
             <CalendarDays size={15} />
             Schedule
           </div>
@@ -116,7 +116,7 @@ const Calendar = () => {
         <button
           type="button"
           onClick={() => navigate(closePath)}
-          className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-[#e6e6e4] bg-white text-[#595959] transition hover:border-[#f1641e] hover:bg-[#fff7f2] hover:text-[#f1641e]"
+          className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-[#e6e6e4] bg-white text-[#595959] transition hover:border-[#2563eb] hover:bg-[#eff6ff] hover:text-[#2563eb]"
           aria-label="Close calendar"
         >
           <X size={18} />
@@ -206,7 +206,7 @@ const Calendar = () => {
           <div className="w-full max-w-lg rounded-2xl border border-[#e6e6e4] bg-white p-5 shadow-2xl sm:p-6">
             <div className="flex items-center justify-between gap-4">
               <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#f1641e]">
+                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#2563eb]">
                   Schedule
                 </p>
                 <h2 id="calendar-dialog-title" className="mt-1 text-xl font-bold text-[#222]">
@@ -231,7 +231,7 @@ const Calendar = () => {
                   type="text"
                   value={newEventTitle}
                   onChange={(e) => setNewEventTitle(e.target.value)}
-                  className="w-full rounded-xl border border-[#d9d9d6] bg-white px-3 py-2.5 text-sm text-[#222] outline-none transition focus:border-[#f1641e] focus:ring-2 focus:ring-[#f1641e]/15"
+                  className="w-full rounded-xl border border-[#d9d9d6] bg-white px-3 py-2.5 text-sm text-[#222] outline-none transition focus:border-[#2563eb] focus:ring-2 focus:ring-[#2563eb]/15"
                   placeholder="e.g. Vendor market day"
                 />
               </label>
@@ -242,7 +242,7 @@ const Calendar = () => {
                   type="datetime-local"
                   value={formatInputDate(eventStart)}
                   onChange={(e) => setEventStart(new Date(e.target.value))}
-                  className="w-full rounded-xl border border-[#d9d9d6] bg-white px-3 py-2.5 text-sm text-[#222] outline-none transition focus:border-[#f1641e] focus:ring-2 focus:ring-[#f1641e]/15"
+                  className="w-full rounded-xl border border-[#d9d9d6] bg-white px-3 py-2.5 text-sm text-[#222] outline-none transition focus:border-[#2563eb] focus:ring-2 focus:ring-[#2563eb]/15"
                 />
               </label>
 
@@ -252,7 +252,7 @@ const Calendar = () => {
                   type="datetime-local"
                   value={formatInputDate(eventEnd)}
                   onChange={(e) => setEventEnd(new Date(e.target.value))}
-                  className="w-full rounded-xl border border-[#d9d9e6] bg-white px-3 py-2.5 text-sm text-[#222] outline-none transition focus:border-[#f1641e] focus:ring-2 focus:ring-[#f1641e]/15"
+                  className="w-full rounded-xl border border-[#d9d9e6] bg-white px-3 py-2.5 text-sm text-[#222] outline-none transition focus:border-[#2563eb] focus:ring-2 focus:ring-[#2563eb]/15"
                 />
               </label>
 
@@ -261,7 +261,7 @@ const Calendar = () => {
                   type="checkbox"
                   checked={allDay}
                   onChange={(e) => setAllDay(e.target.checked)}
-                  className="h-4 w-4 accent-[#f1641e]"
+                  className="h-4 w-4 accent-[#2563eb]"
                 />
                 <span className="text-sm font-semibold text-[#222]">All Day Event</span>
               </label>
@@ -278,7 +278,7 @@ const Calendar = () => {
               <button
                 type="button"
                 onClick={handleAddEvent}
-                className="rounded-xl bg-[#f1641e] px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-[#d95716]"
+                className="rounded-xl bg-[#2563eb] px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-[#1d4ed8]"
               >
                 Add Event
               </button>
