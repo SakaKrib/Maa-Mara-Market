@@ -21,6 +21,7 @@ import {
 import { Link, useLocation } from "react-router-dom";
 import { useAuth } from "../../Auth/AuthContext/Context";
 import Maamara from "../../../assets/Logo/Maamara.jpg";
+import LogoutConfirmationModal from "../../Auth/LogoutConfirmationModal";
 
 const navigation = [
   {
@@ -157,26 +158,12 @@ const NavBar = ({ open = false, onClose }) => {
         </div>
       </aside>
 
-      {showSignOutConfirm && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/50 p-4 backdrop-blur-sm" role="dialog" aria-modal="true" aria-labelledby="signout-title">
-          <div className="w-full max-w-md rounded-2xl border border-border bg-card p-6 shadow-2xl">
-            <div className="flex items-start justify-between gap-4">
-              <div>
-                <p className="text-xs font-bold uppercase tracking-[0.16em] text-primary">Account</p>
-                <h2 id="signout-title" className="mt-1 text-xl font-bold text-card-foreground">Sign out?</h2>
-                <p className="mt-2 text-sm text-muted-foreground">Do you want to sign out of your Maa Mara admin account?</p>
-              </div>
-              <button type="button" aria-label="Close sign out confirmation" onClick={() => setShowSignOutConfirm(false)} className="rounded-xl p-2 text-muted-foreground hover:bg-muted">
-                <IonIcon icon={closeOutline} className="text-xl" />
-              </button>
-            </div>
-            <div className="mt-6 flex justify-end gap-3">
-              <button type="button" onClick={() => setShowSignOutConfirm(false)} className="rounded-xl border border-border bg-card px-4 py-2.5 text-sm font-semibold text-foreground hover:bg-muted">Cancel</button>
-              <button type="button" onClick={logout} className="rounded-xl bg-red-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-red-700">Sign out</button>
-            </div>
-          </div>
-        </div>
-      )}
+      <LogoutConfirmationModal
+        open={showSignOutConfirm}
+        onCancel={() => setShowSignOutConfirm(false)}
+        onConfirm={logout}
+        description="Do you want to sign out of your Maa Mara admin account?"
+      />
     </>
 
   );
