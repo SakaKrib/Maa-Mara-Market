@@ -20,6 +20,7 @@ from ReactSerializers.models import Offer
 from decimal import Decimal, InvalidOperation
 from django.db import transaction
 from ReactSerializers.models import ItemPriceHistory
+from ReactSerializers.Serializers import ItemSerializers
 from django.core.exceptions import ValidationError
 from rest_framework.permissions import IsAdminUser, IsAuthenticated
 from order.Base import IsVendor
@@ -272,12 +273,11 @@ def approve_request(request, pk):
                 status=status.HTTP_400_BAD_REQUEST
             )
 
-        raw_image = draft_data.get("image") or item_request.image.name
+        raw_image = draft_data.get("image") or (item_request.image.name if item_request.image else None)
 
         if isinstance(raw_image, str):
             if raw_image.startswith(settings.MEDIA_URL):
                 raw_image = raw_image.replace(settings.MEDIA_URL, "", 1)
-
             elif raw_image.startswith(
                 f"http://127.0.0.1:8000{settings.MEDIA_URL}"
             ):
@@ -291,18 +291,13 @@ def approve_request(request, pk):
             try:
                 if not file_path:
                     return None
-
                 file_path = str(file_path)
-
                 if file_path.startswith(settings.MEDIA_URL):
                     file_path = file_path.replace(settings.MEDIA_URL, "", 1)
-
                 if file_path.startswith("http"):
                     return None
-
                 with default_storage.open(file_path, "rb") as f:
                     return hashlib.sha256(f.read()).hexdigest()
-
             except Exception:
                 return None
 
@@ -319,46 +314,30 @@ def approve_request(request, pk):
                     status=400
                 )
 
-        returnable_value = draft_data.get(
-            "returnable",
-            item_request.returnable
-            if hasattr(item_request, "returnable")
-            else True
+        # Treat the saved draft as the canonical edited item definition.
+        # Reuse ItemSerializers so approval preserves the complete nested
+        # item structure instead of creating only the primitive fields.
+        approval_data = dict(draft_data)
+        if raw_image:
+            approval_data["image"] = raw_image
+
+        if "shipping_dimension" in approval_data and "shipping_dimension_data" not in approval_data:
+            approval_data["shipping_dimension_data"] = approval_data.pop("shipping_dimension")
+
+        serializer = ItemSerializers(
+            data=approval_data,
+            context={"request": request},
         )
+        serializer.is_valid(raise_exception=True)
 
-        offer_data = draft_data.get("offer")
-
-        def to_decimal(value, default=None):
-            try:
-                return Decimal(str(value))
-            except (InvalidOperation, TypeError, ValueError):
-                return default
-
-        item = Item.objects.create(
+        item = serializer.save(
             vendor=vendor_user,
             created_by=item_request.created_by,
-            name=draft_data.get("name", item_request.name),
-            description=draft_data.get("description", item_request.description),
-            price=to_decimal(
-                draft_data.get("price", item_request.price),
-                Decimal("0.00")
-            ),
-            discount_price=(
-                to_decimal(draft_data.get("discount_price"))
-                if draft_data.get("discount_price")
-                else None
-            ),
-            in_stock=int(draft_data.get("in_stock", 0)),
-            item_attribute=draft_data.get("item_attribute", ""),
-            image=raw_image,
-            department=department_instance,
-            category=category_instance,
-            subcategory=subcategory_instance,
-            section=section_instance,
-            image_hash=image_hash,
-            available=True,
-            returnable=bool(returnable_value),
         )
+
+        if image_hash:
+            item.image_hash = image_hash
+            item.save(update_fields=["image_hash"])
 
         if hasattr(item_request, "approved_item"):
             item_request.approved_item = item
