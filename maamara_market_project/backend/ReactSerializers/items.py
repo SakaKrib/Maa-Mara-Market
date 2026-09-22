@@ -2,7 +2,10 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import AllowAny, IsAuthenticated, IsAdminUser
 from rest_framework.response import Response
 from django.db.models import Count, Sum
-from django.db.models.functions import TruncMonth
+from django.db.models.functions import TruncDay, TruncWeek, TruncMonth
+from datetime import timedelta
+from django.utils import timezone
+from order.models import Order, OrderItem
 import calendar
 from .models import Item, ItemView
 
@@ -149,4 +152,90 @@ def vendor_item_growth_stats(request):
         "vendor_name": vendor.username,
         "total_items": total_items,
         "monthly_stats": formatted_monthly_stats
+    })
+
+
+def _analytics_period(period):
+    today = timezone.localdate()
+    if period == "day":
+        return today - timedelta(days=29), today, TruncDay
+    if period == "week":
+        return today - timedelta(weeks=11), today, TruncWeek
+    return today.replace(day=1) - timedelta(days=180), today, TruncMonth
+
+
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def vendor_analytics_stats(request):
+    """
+    Vendor analytics with a consistent period selector:
+      period=day   -> last 30 calendar days
+      period=week  -> last 12 weeks
+      period=month -> last 6 months
+    The same vendor-scoped source data is used for items, views and pending orders.
+    """
+    vendor = getattr(request.user, "vendor", None)
+    if vendor is None:
+        return Response({"detail": "Access denied. User is not a vendor."}, status=403)
+
+    period = request.query_params.get("period", "month").lower()
+    if period not in {"day", "week", "month"}:
+        return Response({"detail": "period must be day, week, or month."}, status=400)
+
+    start, end, truncator = _analytics_period(period)
+    start_dt = timezone.make_aware(timezone.datetime.combine(start, timezone.datetime.min.time()))
+    end_dt = timezone.make_aware(timezone.datetime.combine(end + timedelta(days=1), timezone.datetime.min.time()))
+
+    items = Item.objects.filter(vendor=vendor)
+    views_qs = ItemView.objects.filter(item__in=items, viewed_at__gte=start_dt, viewed_at__lt=end_dt)
+    pending_qs = OrderItem.objects.filter(
+        item__in=items,
+        order__status="pending",
+        order__ordered_date__gte=start_dt,
+        order__ordered_date__lt=end_dt,
+    )
+
+    item_rows = (
+        items.filter(created_at__gte=start_dt, created_at__lt=end_dt)
+        .annotate(period=truncator("created_at"))
+        .values("period")
+        .annotate(total=Count("id"))
+        .order_by("period")
+    )
+    view_rows = (
+        views_qs.annotate(period=truncator("viewed_at"))
+        .values("period")
+        .annotate(total=Count("id"))
+        .order_by("period")
+    )
+    pending_rows = (
+        pending_qs.annotate(period=truncator("order__ordered_date"))
+        .values("period")
+        .annotate(total=Count("order_id", distinct=True))
+        .order_by("period")
+    )
+
+    def serialize(rows):
+        return [
+            {
+                "period": row["period"].isoformat() if hasattr(row["period"], "isoformat") else str(row["period"]),
+                "value": row["total"],
+            }
+            for row in rows
+        ]
+
+    return Response({
+        "vendor_id": vendor.id,
+        "period": period,
+        "range": {"start": start.isoformat(), "end": end.isoformat()},
+        "totals": {
+            "items": items.count(),
+            "views": views_qs.count(),
+            "pending_orders": pending_qs.values("order_id").distinct().count(),
+        },
+        "series": {
+            "items": serialize(item_rows),
+            "views": serialize(view_rows),
+            "pending_orders": serialize(pending_rows),
+        },
     })
