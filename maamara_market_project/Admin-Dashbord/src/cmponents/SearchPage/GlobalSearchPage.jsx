@@ -1,293 +1,90 @@
-import { useState, useEffect, useRef } from "react";
-import { Box } from "@mui/material";
-import { IonIcon } from "@ionic/react";
-import { searchOutline } from "ionicons/icons";
+import { useEffect, useRef, useState } from "react";
+import { Search, X } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-
 import useDynamicSearch from "../Hooks/SearchHook/GlobalSearchHook";
-import { useTheme } from "@mui/material";
-import { tokens } from "../../theme";
 
 export default function SearchBarForVendorAdmin() {
-  const theme = useTheme();
-  const colors = tokens(theme.palette.mode);
   const navigate = useNavigate();
-
-  const [isMobileSearch, setIsMobileSearch] = useState(false);
-  const [windowWidth, setWindowWidth] = useState(window.innerWidth);
-
-  const { search, data } = useDynamicSearch({
-    url: "/api/search-all/",
-  });
-
+  const { search, data, loading } = useDynamicSearch({ url: "/api/search-all/" });
   const [value, setValue] = useState("");
   const [open, setOpen] = useState(false);
-
   const wrapperRef = useRef(null);
 
-  // =========================
-  // OUTSIDE CLICK CLOSE
-  // =========================
   useEffect(() => {
-    const handleClickOutside = (e) => {
-      if (wrapperRef.current && !wrapperRef.current.contains(e.target)) {
-        setOpen(false);
-      }
+    const handleClickOutside = (event) => {
+      if (wrapperRef.current && !wrapperRef.current.contains(event.target)) setOpen(false);
     };
-
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // =========================
-  // LIVE SEARCH (DEBOUNCED)
-  // =========================
   useEffect(() => {
-    const delay = setTimeout(() => {
-      if (value.trim().length > 1) {
-        search(value);
-        setOpen(true);
-      } else {
-        setOpen(false);
-      }
-    }, 300);
-
-    return () => clearTimeout(delay);
+    const timer = window.setTimeout(() => {
+      if (value.trim().length > 1) { search(value); setOpen(true); }
+      else setOpen(false);
+    }, 250);
+    return () => window.clearTimeout(timer);
   }, [value, search]);
 
-  // =========================
-  // SUBMIT
-  // =========================
-  const handleSubmit = (e) => {
-    e.preventDefault();
-  
+  const sections = Object.entries(data || {}).filter(([, items]) => Array.isArray(items) && items.length);
+  const hasResults = sections.length > 0;
+
+  const handleSubmit = (event) => {
+    event.preventDefault();
     if (!value.trim()) return;
-  
     setOpen(false);
-  
-    if (windowWidth <= 473) {
-      setIsMobileSearch(false);
-    }
-  
-    navigate(`/search/global-results?q=${value}`);
+    navigate("/search/global-results?q=" + encodeURIComponent(value.trim()));
   };
 
-  // =========================
-  // CLICK ITEM
-  // =========================
   const handleClick = (item) => {
     setOpen(false);
-
-    if (item?.id && item?.name) {
-      navigate(`/product/${item.id}`);
+    if (item?.type === "Item" && item?.id) {
+      navigate("/product/" + item.id);
+      return;
     }
+    navigate("/search/global-results?q=" + encodeURIComponent(value.trim()));
   };
 
-  useEffect(() => {
-    const handleResize = () => {
-      setWindowWidth(window.innerWidth);
-  
-      if (window.innerWidth > 473) {
-        setIsMobileSearch(false);
-      }
-    };
-  
-    window.addEventListener("resize", handleResize);
-  
-    return () => window.removeEventListener("resize", handleResize);
-  }, []);
-
-  const hasResults =
-    data &&
-    Object.values(data).some((arr) => Array.isArray(arr) && arr.length > 0);
-
   return (
-    <Box
-        ref={wrapperRef}
-        sx={{
-            position: "relative",
-            width: "100%",
-            minWidth: 0,
-        }}
-        style={{
-            "--placeholder-color": colors.gray[100],
-        }}
-        >
-      {/* ================= FORM ================= */}
-      <form
-            onSubmit={handleSubmit}
-            style={{
-                display: "flex",
-                alignItems: "center",
-                gap: "8px",
-                width: "100%",
-            }}
-            >
-            {/* MOBILE SEARCH ICON ONLY */}
-            {windowWidth <= 473 && !isMobileSearch ? (
-                <Box
-                onClick={() => setIsMobileSearch(true)}
-                sx={{
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    cursor: "pointer",
-                    width: 40,
-                    height: 40,
-                }}
-                >
-                <IonIcon
-                    icon={searchOutline}
-                    style={{
-                    color: colors.gray[100],
-                    fontSize: "22px",
-                    }}
-                />
-                </Box>
-            ) : (
-                <>
-                <Box
-                    sx={{
-                    position: "relative",
-                    flex: 1,
-                    minWidth: 0,
-                    }}
-                >
-                    <IonIcon
-                    icon={searchOutline}
-                    style={{
-                        position: "absolute",
-                        left: "12px",
-                        top: "50%",
-                        transform: "translateY(-50%)",
-                        color: colors.gray[100],
-                        fontSize: "18px",
-                        zIndex: 2,
-                    }}
-                    />
+    <div ref={wrapperRef} className="relative w-full min-w-0">
+      <form onSubmit={handleSubmit} className="flex w-full items-center gap-2">
+        <div className="relative min-w-0 flex-1">
+          <Search className="pointer-events-none absolute left-3 top-1/2 z-10 h-4 w-4 -translate-y-1/2 text-gray-400" />
+          <input
+            type="search"
+            autoComplete="off"
+            value={value}
+            onChange={(event) => setValue(event.target.value)}
+            onFocus={() => value.trim().length > 1 && setOpen(true)}
+            placeholder="Search your workspace..."
+            className="h-11 w-full rounded-full border border-[#d9d9d6] bg-white pl-10 pr-4 text-sm text-gray-900 outline-none transition placeholder:text-gray-400 focus:border-[#2563eb] focus:ring-4 focus:ring-[#2563eb]/10"
+            aria-label="Search workspace"
+            aria-expanded={open}
+          />
+          {value && <button type="button" onClick={() => { setValue(""); setOpen(false); }} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-900" aria-label="Clear search"><X size={15} /></button>}
+        </div>
+        <button type="submit" className="hidden min-h-11 shrink-0 rounded-full bg-black px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-[#262626] sm:inline-flex">Search</button>
+      </form>
 
-                    <input
-                    type="search"
-                    autoComplete="off"
-                    enterKeyHint="search"
-                    value={value}
-                    onChange={(e) => setValue(e.target.value)}
-                    placeholder="Search here..."
-                    style={{
-                        width: "100%",
-                        height: "40px",
-                        borderRadius: "8px",
-                        backgroundColor: colors.primary[500],
-                        color: colors.gray[100],
-                        border: `1px solid ${colors.primary[400]}`,
-                        paddingLeft: "40px",
-                        paddingRight: "12px",
-                        outline: "none",
-                        fontSize: "14px",
-                        boxSizing: "border-box",
-                    }}
-                    />
-                </Box>
-
-                {/* HIDE BUTTON BELOW 680PX */}
-                {windowWidth > 680 && (
-                    <Box
-                    component="button"
-                    type="submit"
-                    sx={{
-                        backgroundColor: colors.blueAccent[700],
-                        color: "#fff",
-                        border: "none",
-                        borderRadius: "8px",
-                        cursor: "pointer",
-                        height: "40px",
-                        px: 2,
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        whiteSpace: "nowrap",
-
-                        "&:hover": {
-                        opacity: 0.9,
-                        },
-                    }}
-                    >
-                    Search
-                    </Box>
-                )}
-                </>
-            )}
-            </form>
-
-      {/* ================= DROPDOWN ================= */}
       {open && value.trim().length > 1 && (
-        <Box
-        sx={{
-          position: "absolute",
-          top: "calc(100% + 8px)",
-          left: 0,
-          right: 0,
-          backgroundColor: colors.primary[600],
-          zIndex: 9999,
-          borderRadius: "10px",
-      
-          maxHeight: {
-            xs: 250,
-            sm: 300,
-          },
-      
-          overflowY: "auto",
-      
-          boxShadow: "0 10px 30px rgba(0,0,0,0.3)",
-      
-          border: `1px solid ${colors.primary[400]}`,
-        }}
-      >
-          {!hasResults ? (
-            <Box style={{ padding: 10, color: colors.gray[200] }}>
-              No results found
-            </Box>
-          ) : (
-            Object.entries(data || {}).map(([section, items]) => {
-              if (!Array.isArray(items) || items.length === 0) return null;
-
-              return (
-                <div key={section}>
-                  {/* SECTION TITLE */}
-                  <div
-                    style={{
-                      padding: "6px 10px",
-                      fontSize: 12,
-                      color: colors.gray[300],
-                      textTransform: "uppercase",
-                    }}
-                  >
-                    {section}
-                  </div>
-
-                  {/* ITEMS */}
-                  {items.slice(0, 5).map((item) => (
-                    <div
-                      key={item.id}
-                      onClick={() => handleClick(item)}
-                      style={{
-                        padding: "12px",
-                        cursor: "pointer",
-                        borderBottom: `1px solid ${colors.primary[700]}`,
-                        color: colors.gray[100],
-                        fontSize: "14px",
-                        wordBreak: "break-word",
-                      }}
-                    >
-                      {item.name || item.title || item.company_name || "Unknown"}
-                    </div>
-                  ))}
-                </div>
-              );
-            })
-          )}
-        </Box>
+        <div className="absolute left-0 right-0 top-[calc(100%+8px)] z-[1600] max-h-[min(70vh,520px)] overflow-y-auto rounded-2xl border border-[#e6e6e4] bg-white p-2 shadow-2xl">
+          {loading && <div className="px-4 py-3 text-sm text-gray-500">Searching your workspace...</div>}
+          {!loading && !hasResults && <div className="px-4 py-5 text-center text-sm text-gray-500">No matching records found.</div>}
+          {!loading && hasResults && sections.map(([section, items]) => (
+            <div key={section} className="mb-2 last:mb-0">
+              <div className="px-3 pb-1 pt-2 text-[11px] font-bold uppercase tracking-[0.12em] text-gray-500">{section.replace(/_/g, " ")}</div>
+              {items.slice(0, 6).map((item) => (
+                <button type="button" key={String(item.type) + "-" + String(item.id)} onClick={() => handleClick(item)} className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left transition hover:bg-[#f8f8f6]">
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate text-sm font-semibold text-gray-900">{item.display_name || item.name || item.title || item.company_name || "Untitled record"}</span>
+                    <span className="mt-0.5 block text-xs text-gray-500">{item.type || section.replace(/_/g, " ")}</span>
+                  </span>
+                </button>
+              ))}
+            </div>
+          ))}
+        </div>
       )}
-    </Box>
+    </div>
   );
 }
