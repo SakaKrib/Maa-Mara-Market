@@ -73,7 +73,7 @@ const VendorSettings = () => {
         type={type}
         value={profile[key]}
         onChange={(event) => setProfile((current) => ({ ...current, [key]: event.target.value }))}
-        className="w-full rounded-xl border border-[#e6e6e4] bg-white px-3 py-2.5 text-sm text-gray-900 outline-none transition focus:border-primary focus:ring-4 focus:ring-[#2563eb]/10"
+        className="w-full rounded-xl border border-[#e6e6e4] bg-white px-3 py-2.5 text-sm text-gray-900 outline-none transition focus:border-[#2563eb] focus:ring-4 focus:ring-[#2563eb]/10"
       />
     </label>
   );
@@ -144,7 +144,7 @@ const VendorSettings = () => {
                   <button key={key} type="button" onClick={() => updatePreference(key, !preferences[key])} className="flex w-full items-center gap-3 rounded-xl border border-[#e6e6e4] p-3 text-left transition hover:bg-gray-100">
                     <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${preferences[key] ? "bg-blue-50 text-[#2563eb]" : "bg-gray-100 text-gray-600"}`}><Icon size={16} /></div>
                     <span className="min-w-0 flex-1"><strong className="block text-sm text-gray-900">{title}</strong><small className="mt-0.5 block text-xs text-gray-600">{description}</small></span>
-                    <span className={`h-5 w-9 rounded-full p-0.5 ${preferences[key] ? "bg-primary" : "bg-gray-100"}`}><span className={`block h-4 w-4 rounded-full bg-white shadow ${preferences[key] ? "translate-x-4" : ""}`} /></span>
+                    <span className={`h-5 w-9 rounded-full p-0.5 ${preferences[key] ? "bg-[#2563eb]" : "bg-gray-100"}`}><span className={`block h-4 w-4 rounded-full bg-white shadow ${preferences[key] ? "translate-x-4" : ""}`} /></span>
                   </button>
                 ))}
               </div>
