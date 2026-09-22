@@ -100,6 +100,22 @@ class ActivityNotificationPresentationTests(TestCase):
 
         self.assertEqual(data["display_message"], "You added Bidets Tool to your cart.")
 
+    def test_own_wishlist_action_renders_as_you_from_neutral_event(self):
+        activity = ActivityLog.objects.create(
+            user=self.customer,
+            actor_type="user",
+            action="item_added_to_wishlist",
+            description="A customer added Bidets Tool to their wishlist.",
+            item=self.item,
+        )
+
+        data = self.serialize_activity(activity, self.customer)
+
+        self.assertEqual(
+            data["display_message"],
+            "You added Bidets Tool to your wishlist.",
+        )
+
     def test_administrator_approval_does_not_expose_username(self):
         activity = ActivityLog.objects.create(
             user=self.admin,
