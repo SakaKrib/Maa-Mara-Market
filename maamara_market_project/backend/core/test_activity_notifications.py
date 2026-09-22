@@ -180,6 +180,44 @@ class ActivityNotificationPresentationTests(TestCase):
         )
         self.assertNotIn(unrelated.id, returned_ids)
 
+    def test_vendor_scope_deduplicates_audience_copies_of_one_event(self):
+        customer_log = ActivityLog.objects.create(
+            user=self.customer,
+            actor_type="user",
+            action="return_requested",
+            description="A customer requested a return for Bidets Tool.",
+            item=self.item,
+        )
+        ActivityLog.objects.create(
+            user=self.vendor_user,
+            actor_type="vendor",
+            action="return_requested",
+            description="A customer requested a return for Bidets Tool.",
+            item=self.item,
+        )
+        admin_log = ActivityLog.objects.create(
+            user=self.admin,
+            actor_type="admin",
+            action="return_requested",
+            description="A customer requested a return for Bidets Tool.",
+            item=self.item,
+        )
+
+        request = APIRequestFactory().get(
+            "/api/activity-logs/?scope=vendor&all=true"
+        )
+        force_authenticate(request, user=self.vendor_user)
+        response = get_activity_logs(request)
+
+        returned_ids = {entry["id"] for entry in response.data}
+
+        self.assertIn(customer_log.id, returned_ids)
+        self.assertNotIn(admin_log.id, returned_ids)
+        self.assertEqual(
+            len([entry for entry in response.data if entry["action"] == "return_requested"]),
+            1,
+        )
+
     def test_vendor_scope_does_not_return_empty_or_unrelated_activity(self):
         ActivityLog.objects.create(
             user=self.customer,
