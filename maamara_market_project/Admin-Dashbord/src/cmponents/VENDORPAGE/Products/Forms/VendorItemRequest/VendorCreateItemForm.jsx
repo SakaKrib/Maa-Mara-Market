@@ -24,63 +24,29 @@ const AdminCreateItemForVendor = () => {
   const request = location.state || {};
   const vendor = request.vendor || {};
 
-  // The request model keeps name/description/price for compatibility, while
-  // draft_item contains the complete submitted product definition. Uploaded
-  // files live in draft_media and must never be reconstructed from JSON.
-  const draftData = request.draft_item && typeof request.draft_item === "object"
-    ? request.draft_item
-    : {};
-  const draftMedia = Array.isArray(request.draft_media) ? request.draft_media : [];
-  const mainMedia = draftMedia.find((asset) => asset.kind === "main");
-  const videoMedia = draftMedia.find((asset) => asset.kind === "video");
-  const mediaByVariant = new Map(
-    draftMedia
-      .filter((asset) => asset.kind === "variant" && asset.variant_key)
-      .map((asset) => [String(asset.variant_key).toLowerCase(), asset.url])
-  );
-
-  const normalizedRequest = {
-    ...request,
-    ...draftData,
-    name: draftData.name ?? request.name ?? "",
-    description: draftData.description ?? request.description ?? "",
-    price: draftData.price ?? request.price ?? 0,
-    image: mainMedia?.url ?? request.image ?? draftData.image ?? "",
-    video: videoMedia?.url ?? draftData.video ?? "",
-    color_variants: (draftData.color_variants || draftData.variants || []).map((variant) => ({
-      ...variant,
-      color_image:
-        mediaByVariant.get(String(variant.color).toLowerCase()) ||
-        variant.color_image ||
-        variant.image ||
-        null,
-    })),
-  };
-
   const [open, setOpen] = useState(true);
 
   // Initialize the form
   const form = useForm({
     resolver: zodResolver(CreateItemformSchema),
     defaultValues: {
-      section: normalizedRequest.section || "Organic",
+      section: "Organic",
       department: "",
       category: "",
       subcategory: "",
-      name: normalizedRequest.name || "",
-      description: normalizedRequest.description || "",
-      price: normalizedRequest.price || 0,
-      discount_price: normalizedRequest.discount_price || 0,
+      name: request.name || "",
+      description: request.description || "",
+      price: request.price || 0,
+      discount_price: 0,
       in_stock: 0,
       item_attribute: "",
-      image: normalizedRequest.image || "",
-      video: normalizedRequest.video || "",
-      size_variant: normalizedRequest.size_variant || [],
+      image: request.image || "",
+      size_variant: [],
       kids_sizes: [],
       shoe_type: "",
       shoe_gender: "",
       shoe_input: [],
-      color_variants: normalizedRequest.color_variants || [],
+      color_variants: [],
       length: { value: "", unit: "cm" }, // avoid null
       weight: { value: "", unit: "kg" }, // avoid null
       manufactured_date: "",
@@ -95,13 +61,10 @@ const AdminCreateItemForVendor = () => {
     if (request) {
       form.reset({
         ...form.getValues(),
-        ...normalizedRequest,
-        name: normalizedRequest.name || "",
-        description: normalizedRequest.description || "",
-        price: normalizedRequest.price || 0,
-        image: normalizedRequest.image || "",
-        video: normalizedRequest.video || "",
-        color_variants: normalizedRequest.color_variants || [],
+        name: request.name || "",
+        description: request.description || "",
+        price: request.price || 0,
+        image: request.image || "",
       });
     }
   }, [request, form]);
@@ -120,7 +83,7 @@ const AdminCreateItemForVendor = () => {
           form={form}
           vendorId={vendor?.id ?? ""}
           vendor={vendor}
-          item={normalizedRequest}
+          item={request}
           onSave={(savedData) => {
             console.log("Draft saved:", savedData);
             // optional: update your local state or show a toast here
