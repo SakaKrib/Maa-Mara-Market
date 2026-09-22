@@ -8,7 +8,6 @@ export function useVendorOrdersCombined() {
   const [pending, setPending] = useState([]);
   const [completed, setCompleted] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
 
   const connect = () => {
     const WS_URL = `ws://${window.location.host}/ws/vendor-orders/`;
@@ -18,7 +17,6 @@ export function useVendorOrdersCombined() {
 
     ws.onopen = () => {
       reconnectAttempt.current = 0;
-      setError(null);
     };
 
     ws.onmessage = (event) => {
@@ -26,25 +24,24 @@ export function useVendorOrdersCombined() {
         const data = JSON.parse(event.data);
 
         if (data?.type === "orders_update") {
-          setPending(data.pending || []);
-          setCompleted(data.completed || []);
+          setPending(Array.isArray(data.pending) ? data.pending : []);
+          setCompleted(Array.isArray(data.completed) ? data.completed : []);
           setLoading(false);
-          setError(null);
         }
-      } catch (err) {
-        setError(err);
+      } catch {
+        // Keep the current UI state and wait for the next valid payload.
+        // WebSocket transport/parse errors should not be rendered as UI errors.
       }
     };
 
-    ws.onerror = (err) => {
-      setError(err);
-      setLoading(false);
+    ws.onerror = () => {
+      // Keep loading/reconnect behavior silent. The browser WebSocket error
+      // event is an Event object and should never be rendered to the user.
     };
 
     ws.onclose = () => {
       wsRef.current = null;
 
-      // basic exponential backoff reconnect (safe production pattern)
       const timeout = Math.min(1000 * 2 ** reconnectAttempt.current, 30000);
       reconnectAttempt.current += 1;
 
@@ -73,6 +70,5 @@ export function useVendorOrdersCombined() {
     pending,
     completed,
     loading,
-    error,
   };
 }
