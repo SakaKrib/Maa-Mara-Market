@@ -115,6 +115,7 @@ import VendorSalesPage from "./cmponents/VENDORPAGE/ChartBox/ChartData/HomeChart
 import GrowthPage from "./cmponents/Hooks/ItemStats/ItemstatsPage";
 import VendorStatsPage from "./cmponents/Hooks/ItemStats/VendoItemStatPage";
 import PendingOrdersPage from "./cmponents/Hooks/ItemStats/PendingOrderPage";
+import VendorActivitiesPage from "./cmponents/VENDORPAGE/SellerDasboard/VendorActivitiesPage";
 
 import { Link } from "react-router-dom";
 import ReviewsPage from "./cmponents/VENDORPAGE/Home/TopBox/VendorReviewPage";
@@ -365,6 +366,7 @@ function AppContent() {
                 <Route path="item-stats" element={<GrowthPage />} />
                 <Route path="item-views" element={<VendorStatsPage />} />
                 <Route path="order-stats" element={<PendingOrdersPage />} />
+                <Route path="activities" element={<VendorActivitiesPage />} />
 
 
                 {/* pending orders table */}
