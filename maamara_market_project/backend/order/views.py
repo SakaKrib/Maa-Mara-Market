@@ -419,7 +419,7 @@ def add_to_cart_api(request, pk):
     ActivityLog.objects.create(
         user=user,
         visitor_id=visitor_id,
-        actor_type='vendor',
+        actor_type='user',
         action="item_added_to_cart",
         item=item,
         description=f"A customer added {item.name} to cart.",
@@ -589,7 +589,7 @@ def remove_from_cart_api(request, pk):
     ActivityLog.objects.create(
         user=user,
         visitor_id=visitor_id,
-        actor_type='vendor',
+        actor_type='user',
         action="item_removed_from_cart",
         item=item,
         description=f"A customer removed {item.name} from cart.",
@@ -771,7 +771,7 @@ def update_cart_quantity(request, pk):
     ActivityLog.objects.create(
         user=user,
         visitor_id=visitor_id,
-        actor_type='vendor',
+        actor_type='user',
         action="item_updated_qty",
         item=item,
         description=f"A customer updated the quantity of {item.name} in their cart.",
