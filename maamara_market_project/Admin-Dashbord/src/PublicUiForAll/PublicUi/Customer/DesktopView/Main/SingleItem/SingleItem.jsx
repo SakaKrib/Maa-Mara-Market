@@ -61,130 +61,131 @@ const SingleItem = () => {
     <main className="mm-single-item mm-page pb-12 pt-6">
       <div className="mm-container">
         <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-2 lg:gap-8 xl:gap-10">
-        <div className="min-w-0 lg:row-span-2">
-          <ProductGallery
-            item={item}
-            selectedImage={selectedImage}
-            selectedVariant={selectedVariant}
-            selectedSize={selectedSize}
-            onSelectImage={selectImage}
-            onSelectColor={selectColor}
-          />
-
-          <div className="mt-6">
-            <ProductDetails item={item} />
-          </div>
-        </div>
-
-        <div className="min-w-0">
-          <section className="rounded-2xl border border-border bg-card p-4 shadow-custom sm:p-5">
-            <VendorPerformanceBadges itemId={item.id} />
-            <h1 className="mt-3 text-2xl font-semibold tracking-tight text-card-foreground sm:text-3xl">
-              {item.name}
-            </h1>
-            <p className="mt-2 text-sm font-normal leading-6 text-muted-foreground">
-              {truncateWords(item.description, 15) || "Product details are provided by the seller."}
-            </p>
-
-            <div className="mt-5 border-t border-border pt-4">
-              <div className="flex flex-wrap items-center justify-between gap-3">
-                <span className="text-sm text-muted-foreground">
-                  Reviews: ({item.review_count ?? 0})
-                </span>
-                <span
-                  className={`text-sm font-semibold ${availableStock < 5 ? "text-red-500" : "text-green-500"}`}
-                >
-                  {availableStock} In stock
-                </span>
-              </div>
-
-              <div className="mt-4 flex flex-wrap items-center gap-3">
-                {hasDiscount && (
-                  <span className="text-lg text-muted-foreground line-through">
-                    <FormattedCurrency value={Number(item.final_price)} />
-                  </span>
-                )}
-                <span
-                  className={`text-2xl font-bold ${hasDiscount ? "text-red-600" : "text-card-foreground"}`}
-                >
-                  <FormattedCurrency
-                    value={Number(hasDiscount ? item.final_discounted_price : item.final_price)}
-                  />
-                </span>
-              </div>
-            </div>
-          </section>
-
-          <div className="mt-6">
-            <ProductOptions
+          <div className="min-w-0 lg:row-span-2">
+            <ProductGallery
               item={item}
+              selectedImage={selectedImage}
               selectedVariant={selectedVariant}
               selectedSize={selectedSize}
-              selectedAgeVariant={selectedAgeVariant}
-              selectedShoe={selectedShoe}
-              selectedShoeSize={selectedShoeSize}
-              selectedWeight={selectedWeight}
-              selectedLength={selectedLength}
-              customPreferences={customPreferences}
-              onColorChange={selectColor}
-              onSizeChange={selectSize}
-              onAgeChange={selectAgeVariant}
-              onShoeChange={selectShoe}
-              onShoeSizeChange={selectShoeSize}
-              onWeightChange={selectWeight}
-              onLengthChange={selectLength}
-              onCustomPreferencesChange={setCustomPreferences}
+              onSelectImage={selectImage}
+              onSelectColor={selectColor}
             />
 
             <div className="mt-6">
-              <QuantityAndCart
+              <ProductDetails item={item} />
+            </div>
+          </div>
+
+          <div className="min-w-0">
+            <section className="rounded-2xl border border-border bg-card p-4 shadow-custom sm:p-5">
+              <VendorPerformanceBadges itemId={item.id} />
+              <h1 className="mt-3 text-2xl font-semibold tracking-tight text-card-foreground sm:text-3xl">
+                {item.name}
+              </h1>
+              <p className="mt-2 text-sm font-normal leading-6 text-muted-foreground">
+                {truncateWords(item.description, 15) || "Product details are provided by the seller."}
+              </p>
+
+              <div className="mt-5 border-t border-border pt-4">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <span className="text-sm text-muted-foreground">
+                    Reviews: ({item.review_count ?? 0})
+                  </span>
+                  <span
+                    className={`text-sm font-semibold ${availableStock < 5 ? "text-red-500" : "text-green-500"}`}
+                  >
+                    {availableStock} In stock
+                  </span>
+                </div>
+
+                <div className="mt-4 flex flex-wrap items-center gap-3">
+                  {hasDiscount && (
+                    <span className="text-lg text-muted-foreground line-through">
+                      <FormattedCurrency value={Number(item.final_price)} />
+                    </span>
+                  )}
+                  <span
+                    className={`text-2xl font-bold ${hasDiscount ? "text-red-600" : "text-card-foreground"}`}
+                  >
+                    <FormattedCurrency
+                      value={Number(hasDiscount ? item.final_discounted_price : item.final_price)}
+                    />
+                  </span>
+                </div>
+              </div>
+            </section>
+
+            <div className="mt-6">
+              <ProductOptions
                 item={item}
-                quantity={quantity}
-                setQuantity={setQuantity}
-                availableStock={availableStock}
-                remainingStock={remainingStock}
                 selectedVariant={selectedVariant}
                 selectedSize={selectedSize}
                 selectedAgeVariant={selectedAgeVariant}
                 selectedShoe={selectedShoe}
                 selectedShoeSize={selectedShoeSize}
+                selectedWeight={selectedWeight}
+                selectedLength={selectedLength}
                 customPreferences={customPreferences}
-                onAdded={refreshItem}
+                onColorChange={selectColor}
+                onSizeChange={selectSize}
+                onAgeChange={selectAgeVariant}
+                onShoeChange={selectShoe}
+                onShoeSizeChange={selectShoeSize}
+                onWeightChange={selectWeight}
+                onLengthChange={selectLength}
+                onCustomPreferencesChange={setCustomPreferences}
               />
 
-              <div className="mt-4 flex w-full flex-col gap-3">
-                <button
-                  type="button"
-                  className="flex w-full items-center justify-center rounded-full border border-border bg-background px-4 py-2.5 text-center text-sm font-semibold text-card-foreground transition-colors hover:bg-muted"
-                  onClick={() =>
-                    isWishlisted ? removeFromWishlist(item.id) : addToWishlist(item.id)
-                  }
-                  aria-pressed={isWishlisted}
-                >
-                  {isWishlisted ? "♥ Saved" : "♡ Wishlist"}
-                </button>
+              <div className="mt-6">
+                <QuantityAndCart
+                  item={item}
+                  quantity={quantity}
+                  setQuantity={setQuantity}
+                  availableStock={availableStock}
+                  remainingStock={remainingStock}
+                  selectedVariant={selectedVariant}
+                  selectedSize={selectedSize}
+                  selectedAgeVariant={selectedAgeVariant}
+                  selectedShoe={selectedShoe}
+                  selectedShoeSize={selectedShoeSize}
+                  customPreferences={customPreferences}
+                  onAdded={refreshItem}
+                />
 
-                <button
-                  type="button"
-                  className="flex w-full items-center justify-center rounded-full border border-border bg-background px-4 py-2.5 text-center text-sm font-semibold text-card-foreground transition-colors hover:bg-muted"
-                  onClick={() => {
-                    if (navigator.share) {
-                      navigator.share({ title: item.name, url: window.location.href }).catch(() => {});
-                    } else if (navigator.clipboard) {
-                      navigator.clipboard.writeText(window.location.href);
+                <div className="mt-4 flex w-full flex-col gap-3">
+                  <button
+                    type="button"
+                    className="flex w-full items-center justify-center rounded-full border border-border bg-background px-4 py-2.5 text-center text-sm font-semibold text-card-foreground transition-colors hover:bg-muted"
+                    onClick={() =>
+                      isWishlisted ? removeFromWishlist(item.id) : addToWishlist(item.id)
                     }
-                  }}
-                >
-                  ↗ Share
-                </button>
+                    aria-pressed={isWishlisted}
+                  >
+                    {isWishlisted ? "♥ Saved" : "♡ Wishlist"}
+                  </button>
+
+                  <button
+                    type="button"
+                    className="flex w-full items-center justify-center rounded-full border border-border bg-background px-4 py-2.5 text-center text-sm font-semibold text-card-foreground transition-colors hover:bg-muted"
+                    onClick={() => {
+                      if (navigator.share) {
+                        navigator.share({ title: item.name, url: window.location.href }).catch(() => {});
+                      } else if (navigator.clipboard) {
+                        navigator.clipboard.writeText(window.location.href);
+                      }
+                    }}
+                  >
+                    ↗ Share
+                  </button>
+                </div>
               </div>
             </div>
           </div>
-        </div>
 
-        <section className="min-w-0 rounded-2xl border border-border bg-card p-4 shadow-custom sm:p-5">
-          <ProductReviews item={item} />
-        </section>
+          <section className="min-w-0 rounded-2xl border border-border bg-card p-4 shadow-custom sm:p-5">
+            <ProductReviews item={item} />
+          </section>
+        </div>
       </div>
 
       <div className="mm-container mt-8 min-w-0">
