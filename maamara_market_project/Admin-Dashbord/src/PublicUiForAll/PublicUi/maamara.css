@@ -5641,11 +5641,13 @@ h1,h2,h3,h4{font-family:'regular','Poppins',Arial,sans-serif}
  * global marketplace containers. */
 .mm-single-item {
     box-sizing: border-box;
-    margin-inline: auto;
+    width: 100%;
 }
 
-.mm-single-item > .mx-auto {
-    width: 100%;
+/* SingleItem now uses the same .mm-container as Header.jsx, so the product
+ * page cannot exceed the shared marketplace content width. */
+.mm-single-item .mm-container {
+    min-width: 0;
 }
 
 /* Prevent legacy global image rules from creating unexpected overflow or
