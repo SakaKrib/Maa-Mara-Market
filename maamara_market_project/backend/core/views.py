@@ -576,7 +576,6 @@ class ItemDetailView(generics.RetrieveAPIView):
         # ItemView is the existing customer-view history model. Keep one
         # logical view per item/account (or visitor) and only increment the
         # public Item.views counter when a new history row is recorded.
-        view_date = timezone.localdate()
 
         if user:
             _, created = ItemView.objects.get_or_create(
@@ -589,7 +588,6 @@ class ItemDetailView(generics.RetrieveAPIView):
                 item=item,
                 user=None,
                 visitor_id=visitor_id,
-                view_date=view_date,
             )
 
         if created:
