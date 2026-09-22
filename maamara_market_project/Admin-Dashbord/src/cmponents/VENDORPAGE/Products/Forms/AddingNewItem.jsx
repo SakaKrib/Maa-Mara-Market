@@ -225,6 +225,7 @@ const ItemAddNew = ({ initialItem, vendorId, itemId, onSave = () => {}, vendor, 
         color_variants: restoredVariants,
       });
 
+      setSelectedSection(restoredData.section || "");
       setSelectedDepartment(restoredData.department || "");
       setSelectedCategory(restoredData.category || "");
 
