@@ -15,13 +15,24 @@ const QuantityAndCart = ({
   customPreferences,
   onAdded,
 }) => {
-  const needsSize = selectedVariant?.sizes?.length > 0 && !selectedSize;
+  const hasVariantSizes = Array.isArray(selectedVariant?.sizes) && selectedVariant.sizes.length > 0;
+  const hasStandaloneSizes =
+    !hasVariantSizes &&
+    Array.isArray(item?.size_only_icon) &&
+    item.size_only_icon.length > 0;
+  const hasPredefinedSizes = hasVariantSizes || hasStandaloneSizes;
+  const hasCustomSize = String(customPreferences || "").trim().length > 0;
+
+  // A vendor-provided size is preferred, but custom measurements may be used
+  // when none of the predefined sizes fit the customer.
+  const needsSize = hasPredefinedSizes && !selectedSize && !hasCustomSize;
   const needsAge =
     Array.isArray(item?.kids_sizes) && item.kids_sizes.length > 0 && !selectedAgeVariant;
   const needsShoeSize =
     Array.isArray(item?.shoe_input) &&
     item.shoe_input.length > 0 &&
     (!selectedShoe || !selectedShoeSize);
+
   const disabled =
     quantity > availableStock ||
     availableStock === 0 ||
@@ -72,7 +83,11 @@ const QuantityAndCart = ({
           )}
         </p>
 
-        {needsSize && <p className="w-full text-sm text-red-500">Please select a size</p>}
+        {needsSize && (
+          <p className="w-full text-sm text-red-500">
+            Please select a size or enter custom measurements.
+          </p>
+        )}
         {needsAge && <p className="w-full text-sm text-red-500">Please select an age/size</p>}
         {needsShoeSize && (
           <p className="w-full text-sm text-red-500">
