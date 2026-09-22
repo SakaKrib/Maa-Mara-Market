@@ -163,6 +163,10 @@ const HeaderTop = ({ onMenuToggle }) => {
     }
   };
 
+  const settingsPath = window.location.pathname.startsWith("/vendors-dashboard")
+    ? "/vendors-dashboard/settings"
+    : "/admin-dashboard/settings";
+
   const closeProfile = () => {
     setOpenProfile(false);
     setActiveView("main");
@@ -376,7 +380,7 @@ const HeaderTop = ({ onMenuToggle }) => {
                   <h3 className="mt-1 text-sm font-semibold text-[#222] sm:text-base">Account settings</h3>
                   <p className="mt-1 text-xs leading-5 text-[#595959]">Manage security, password changes, notifications, and other administrator preferences.</p>
                 </div>
-                <a href="/admin-dashboard/settings" onClick={closeProfile} className="mt-4 inline-flex w-full items-center justify-center rounded-full border border-border bg-transparent px-4 py-3 text-sm font-semibold text-foreground transition hover:bg-muted">Open account settings</a>
+                <a href={settingsPath} onClick={closeProfile} className="mt-4 inline-flex w-full items-center justify-center rounded-full border border-border bg-transparent px-4 py-3 text-sm font-semibold text-foreground transition hover:bg-muted">Open account settings</a>
                 <button type="button" onClick={() => setActiveView("main")} className="mt-4 w-full rounded-full bg-black px-5 py-3 text-sm font-semibold text-white transition hover:bg-[#262626]">Back</button>
               </div>
             )}
