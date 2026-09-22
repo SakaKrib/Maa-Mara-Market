@@ -18,6 +18,7 @@ import "../src/PublicUiForAll/PublicUi/maamara.css";
 import Dashboard from "./Scenes/Dashboard/Dashboard";
 import InboundTraffic from "./Scenes/InboundTraffic/InboundTraffic";
 import Vendors from "./Scenes/Vendors/Vendors";
+import VendorPerformance from "./Scenes/Vendors/VendorPerformance";
 import PaymentReport from "./Scenes/PayoutReports/VendorReport";
 import Bar from "./Scenes/Bar/BarChartsBar";
 import Line from "./Scenes/Line/LineChart";
@@ -272,6 +273,7 @@ function AppContent() {
               <Route path="line-chart" element={<Line />} />
               <Route path="pie-chart" element={<Pie />} />
               <Route path="vendors/:vendorId" element={<Single />} />
+              <Route path="vendors/:vendorId/performance" element={<VendorPerformance />} />
               <Route path="vendor/create-items/requests" element={<VendorItemCreateRequests />} />
               <Route path="vendor-requests" element={<UiForVendorRequest />} />
               <Route path="vendorDashboard/vendoritemrequest/:id" element={<VendorItemRequestDetail />} />
