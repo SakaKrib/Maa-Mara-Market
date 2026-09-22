@@ -393,16 +393,18 @@ class ItemSerializers(serializers.ModelSerializer):
         if department_name and category_name:
             department = Department.objects.filter(name__iexact=department_name).first()
             if department:
-                category = Category.objects.filter(name__iexact=category_name).first()
+                # Resolve categories within the selected department so a
+                # same-named category can never be attached to the wrong
+                # department.
+                category = Category.objects.filter(
+                    name__iexact=category_name,
+                    department=department,
+                ).first()
                 if not category:
                     category = Category.objects.create(
                         name=category_name[:50],
                         department=department,
                     )
-                elif category.department_id != department.id:
-                    raise serializers.ValidationError({
-                        "category": "This category belongs to a different department."
-                    })
                 data["category"] = category.name
 
                 if subcategory_name:
@@ -439,7 +441,7 @@ class ItemSerializers(serializers.ModelSerializer):
         is_organic = validated_data.get('is_organic', False)
 
         section_name = 'organic' if is_organic else 'inorganic'
-        section_obj, _ = Section.objects.get_or_create(name__iexact=section_name)
+        section_obj, _ = Section.objects.get_or_create(name=section_name)
 
         validated_data['section'] = section_obj
 
