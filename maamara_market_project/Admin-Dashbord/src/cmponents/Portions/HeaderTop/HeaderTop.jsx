@@ -306,7 +306,7 @@ const HeaderTop = ({ onMenuToggle }) => {
                         value={form[name] || ""}
                         onChange={handleChange}
                         disabled={!editMode}
-                        className="h-10 rounded-xl border border-slate-200 bg-transparent px-3 text-sm text-slate-900 outline-none ring-indigo-500 focus:ring-2 disabled:cursor-not-allowed disabled:opacity-60 dark:border-slate-700 dark:text-white"
+                        className="h-11 rounded-[20px] border border-border bg-background px-4 text-sm text-foreground outline-none transition focus:border-primary focus:ring-4 focus:ring-primary/10 disabled:cursor-not-allowed disabled:opacity-60"
                       />
                     </label>
                   ))}
@@ -337,8 +337,9 @@ const HeaderTop = ({ onMenuToggle }) => {
             {activeView === "manage" && (
               <div className="mt-5 rounded-xl border border-slate-200 p-4 text-sm dark:border-slate-700">
                 <h3 className="font-semibold text-slate-900 dark:text-white">Account settings</h3>
-                <p className="mt-1 text-slate-500 dark:text-slate-400">Security and account management controls can be added here.</p>
-                <button onClick={() => setActiveView("main")} className="mt-4 rounded-xl bg-slate-100 px-4 py-2.5 font-semibold dark:bg-slate-800">Back</button>
+                <p className="mt-1 text-slate-500 dark:text-slate-400">Manage security, password changes, notifications, and other administrator preferences.</p>
+                <a href="/admin-dashboard/settings" onClick={closeProfile} className="mt-4 inline-flex w-full items-center justify-center rounded-full border border-border bg-transparent px-4 py-3 text-sm font-semibold text-foreground transition hover:bg-muted">Open account settings</a>
+                <button type="button" onClick={() => setActiveView("main")} className="mt-2 w-full rounded-full border border-border bg-transparent px-4 py-3 text-sm font-semibold text-foreground transition hover:bg-muted">Back</button>
               </div>
             )}
 
