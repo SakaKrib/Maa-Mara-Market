@@ -1,119 +1,47 @@
-import { useTheme } from '@mui/material';
-import React from 'react';
-import {
-  ComposedChart,
-  Line,
-  Area,
-  Bar,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  Legend,
-  ResponsiveContainer,
-} from 'recharts';
-import { tokens } from '../../../../theme';
-import { useVendorPayoutHistory } from '../../../Hooks/Payouts/Payouts'; // adjust path
-import { color } from 'framer-motion';
+import React, { useMemo } from "react";
+import { Bar, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis, ComposedChart } from "recharts";
 
-const VendorBar = () => {
-  const theme = useTheme();
-  const colors = tokens(theme.palette.mode);
-
-  const { payouts, loading, error } = useVendorPayoutHistory();
-
-  const groupedData = React.useMemo(() => {
-    if (!payouts || payouts.length === 0) return [];
-  
-    // Group payouts by month (monthKey will be a Date object set to the 1st of the month)
+const VendorBar = ({ payouts = [] }) => {
+  const groupedData = useMemo(() => {
     const grouped = payouts.reduce((acc, item) => {
-      if (!item.payout_period_start) return acc;
-  
-      const payoutDate = new Date(item.payout_period_start);
-      // normalize date to 1st day of the month for grouping
-      const monthDate = new Date(payoutDate.getFullYear(), payoutDate.getMonth(), 1);
-  
-      const monthKey = monthDate.toISOString(); // unique string for month
-  
-      if (!acc[monthKey]) acc[monthKey] = 0;
-      acc[monthKey] += parseFloat(item.amount) || 0;
-  
+      if (!item?.payout_period_start) return acc;
+      const date = new Date(item.payout_period_start);
+      if (Number.isNaN(date.getTime())) return acc;
+      const key = date.toISOString().slice(0, 10);
+      acc[key] = (acc[key] || 0) + (Number(item.amount) || 0);
       return acc;
     }, {});
-  
-    // Convert grouped object into array and format month name
-    const result = Object.entries(grouped)
-      .map(([monthISO, payoutAmount]) => {
-        const date = new Date(monthISO);
-        return {
-          name: date.toLocaleDateString('en-US', { year: 'numeric', month: 'long' }),
-          payoutAmount,
-          date, // keep date for sorting
-        };
-      })
-      // sort by date ascending (oldest first)
+
+    return Object.entries(grouped)
+      .map(([key, amount]) => ({
+        name: new Date(key).toLocaleDateString("en-KE", { day: "2-digit", month: "short" }),
+        amount,
+        date: new Date(key),
+      }))
       .sort((a, b) => a.date - b.date);
-  
-    return result;
   }, [payouts]);
-  
 
-  if (loading) {
-    return <div className='text-sm' style={{ color: colors.greenAccent[500] }}>Loading payouts...</div>;
-  }
-
-  if (error) {
+  if (!groupedData.length) {
     return (
-      <div style={{ color: colors.redAccent[500] }}>
-        Error: {typeof error === 'string' ? error : JSON.stringify(error)}
+      <div className="flex h-full items-center justify-center rounded-xl bg-[#f8f8f6] text-center text-sm text-[#595959]">
+        No sales recorded for this month.
       </div>
     );
   }
 
   return (
-    <div
-      style={{
-        width: '100%',
-        height: '500px',
-        backgroundColor: colors.primary[500],
-        padding: 0,
-      }}
-    >
-      <ResponsiveContainer>
-        <ComposedChart data={groupedData} margin={{ top: 50, right: 0, bottom: 20, left: 0 }}>
-          <CartesianGrid strokeDasharray="0.4 5" />
-          <XAxis
-            dataKey="name"
-            label={{ value: 'Payout Period', position: 'insideBottomCenter', offset: 5, dy: 15, style:{fill:colors.gray[100], fontSize: 15} }}
-            scale="band"
-            tick={{ fontSize: 12 }}
-          />
-          <YAxis 
-           tick={{ fontSize: 12 }}
-          />
-          <Tooltip
-          contentStyle={{
-          backgroundColor: colors.primary[400], 
-          color: colors.gray[100],              
-          borderRadius: '8px',
-          border: 'none',
-          fontSize: 15
-        }}
-        itemStyle={{
-          color: colors.greenAccent[400],
-        }}
-        labelStyle={{
-          color: colors.gray[200],              
-        }}
-      />
-
-        
-          <Area type="monotone" dataKey="payoutAmount" fill={colors.redAccent[900]} stroke="transparent" />
-          <Bar dataKey="payoutAmount" barSize={20} fill={colors.greenAccent[600]} />
-          <Line type="monotone" dataKey="payoutAmount" stroke="#ff7300" />
-        </ComposedChart>
-      </ResponsiveContainer>
-    </div>
+    <ResponsiveContainer width="100%" height="100%">
+      <ComposedChart data={groupedData} margin={{ top: 8, right: 8, bottom: 12, left: 0 }}>
+        <CartesianGrid strokeDasharray="3 3" stroke="#e6e6e4" vertical={false} />
+        <XAxis dataKey="name" tick={{ fontSize: 10, fill: "#595959" }} axisLine={{ stroke: "#d9d9d6" }} tickLine={false} />
+        <YAxis tick={{ fontSize: 10, fill: "#595959" }} axisLine={false} tickLine={false} width={42} />
+        <Tooltip
+          formatter={(value) => [`KSh ${Number(value).toLocaleString("en-KE", { minimumFractionDigits: 2 })}`, "Sales"]}
+          contentStyle={{ borderRadius: 12, border: "1px solid #e6e6e4", background: "#ffffff", boxShadow: "0 8px 24px rgba(0,0,0,0.08)" }}
+        />
+        <Bar dataKey="amount" fill="#2563eb" radius={[6, 6, 0, 0]} maxBarSize={34} />
+      </ComposedChart>
+    </ResponsiveContainer>
   );
 };
 
