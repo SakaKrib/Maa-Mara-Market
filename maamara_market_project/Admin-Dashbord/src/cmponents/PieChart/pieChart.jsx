@@ -1,21 +1,14 @@
 import { ResponsivePie } from "@nivo/pie";
-import { Vendor_info } from "../../data/Vendors_info/Vendors_info";
 
-const pieData = Vendor_info.map((vendor) => ({
-  id: vendor.Name,
-  label: vendor.Name,
-  value: vendor.registrationId,
-}));
-
-const PieGraph = () => {
-  if (!Array.isArray(pieData) || pieData.length === 0) {
-    return <div className="flex h-full items-center justify-center text-sm text-muted-foreground">No chart data available.</div>;
+const PieGraph = ({ data = [] }) => {
+  if (!Array.isArray(data) || data.length === 0) {
+    return <div className="flex h-full items-center justify-center text-sm text-muted-foreground">No category data available yet.</div>;
   }
 
   return (
     <div className="h-full min-h-0 w-full">
       <ResponsivePie
-        data={pieData}
+        data={data}
         margin={{ top: 18, right: 18, bottom: 70, left: 18 }}
         innerRadius={0.5}
         padAngle={0.6}
