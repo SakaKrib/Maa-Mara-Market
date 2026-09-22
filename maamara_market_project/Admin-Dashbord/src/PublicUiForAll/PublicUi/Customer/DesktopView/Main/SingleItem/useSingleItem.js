@@ -51,10 +51,14 @@ const useSingleItem = () => {
     fetchItem();
   }, [fetchItem]);
 
-  const selectColor = useCallback((color) => {
-    const variant = item?.variants?.find(
-      (candidate) => candidate.color?.toLowerCase() === color?.toLowerCase()
-    );
+  const selectColor = useCallback((variantOrColor) => {
+    const variant =
+      typeof variantOrColor === "object"
+        ? variantOrColor
+        : item?.variants?.find(
+            (candidate) => candidate.color?.toLowerCase() === variantOrColor?.toLowerCase()
+          );
+
     if (variant) {
       setSelectedVariant(variant);
       setSelectedSize(null);
@@ -68,7 +72,10 @@ const useSingleItem = () => {
   }, []);
 
   const selectAgeVariant = useCallback((age) => setSelectedAgeVariant(age), []);
-  const selectShoe = useCallback((shoe) => { setSelectedShoe(shoe); setSelectedShoeSize(null); }, []);
+  const selectShoe = useCallback((shoe) => {
+    setSelectedShoe(shoe);
+    setSelectedShoeSize(null);
+  }, []);
   const selectShoeSize = useCallback((size) => setSelectedShoeSize(size), []);
   const selectWeight = useCallback((weight) => setSelectedWeight(weight), []);
   const selectLength = useCallback((length) => setSelectedLength(length), []);
@@ -77,24 +84,57 @@ const useSingleItem = () => {
     setSelectedImage(image);
   }, []);
 
+  const variantStock = Array.isArray(selectedVariant?.sizes)
+    ? selectedVariant.sizes.reduce(
+        (sum, size) => sum + Number(size.quantity_in_stock || 0),
+        0
+      )
+    : null;
+
+  const sizeOnlyStock = Array.isArray(item?.size_only_icon)
+    ? item.size_only_icon.reduce(
+        (sum, size) => sum + Number(size.quantity_in_stock || 0),
+        0
+      )
+    : null;
+
   const availableStock =
     selectedSize?.quantity_in_stock ??
     selectedAgeVariant?.quantity_in_stock ??
     (selectedShoe && selectedShoeSize ? 1 : null) ??
-    (Array.isArray(selectedVariant?.sizes)
-      ? selectedVariant.sizes.reduce((sum, size) => sum + Number(size.quantity_in_stock || 0), 0)
-      : null) ??
-    (Array.isArray(item?.size_only_icon)
-      ? item.size_only_icon.reduce((sum, size) => sum + Number(size.quantity_in_stock || 0), 0)
-      : null) ??
+    (variantStock !== null && variantStock > 0 ? variantStock : null) ??
+    (sizeOnlyStock !== null && sizeOnlyStock > 0 ? sizeOnlyStock : null) ??
     Number(item?.in_stock || 0);
 
-  const remainingStock = Math.max(availableStock - quantity, 0);
+  const remainingStock = Math.max(Number(availableStock || 0) - quantity, 0);
 
   return {
-    item, loading, error, selectedVariant, selectedSize, selectedAgeVariant, selectedShoe, selectedShoeSize, selectedWeight, selectedLength, customPreferences, setCustomPreferences, selectedImage,
-    quantity, setQuantity, availableStock, remainingStock,
-    selectColor, selectSize, selectAgeVariant, selectShoe, selectShoeSize, selectWeight, selectLength, selectImage, refreshItem: fetchItem,
+    item,
+    loading,
+    error,
+    selectedVariant,
+    selectedSize,
+    selectedAgeVariant,
+    selectedShoe,
+    selectedShoeSize,
+    selectedWeight,
+    selectedLength,
+    customPreferences,
+    setCustomPreferences,
+    selectedImage,
+    quantity,
+    setQuantity,
+    availableStock,
+    remainingStock,
+    selectColor,
+    selectSize,
+    selectAgeVariant,
+    selectShoe,
+    selectShoeSize,
+    selectWeight,
+    selectLength,
+    selectImage,
+    refreshItem: fetchItem,
   };
 };
 
