@@ -272,6 +272,7 @@ class OfferSerializer(serializers.ModelSerializer):
         fields = ["discount_percentage", "start_date", "end_date"]
 
 class ShoeSerializer(serializers.ModelSerializer):
+    id = serializers.IntegerField(read_only=True)
     shoe_type = serializers.CharField(required=False, allow_blank=True)
     shoe_gender = serializers.CharField(required=False, allow_blank=True)
     shoe_size = serializers.ListField(
@@ -280,7 +281,7 @@ class ShoeSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Shoe
-        fields = ["shoe_type", "shoe_gender", "shoe_size"]
+        fields = ["id", "shoe_type", "shoe_gender", "shoe_size"]
 
     def to_internal_value(self, data):
         # Convert single string -> list
