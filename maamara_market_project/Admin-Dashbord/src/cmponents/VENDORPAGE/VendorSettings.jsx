@@ -68,51 +68,51 @@ const VendorSettings = () => {
 
   const field = (label, key, type = "text") => (
     <label className="block">
-      <span className="mb-1.5 block text-xs font-semibold text-muted-foreground">{label}</span>
+      <span className="mb-1.5 block text-xs font-semibold text-gray-600">{label}</span>
       <input
         type={type}
         value={profile[key]}
         onChange={(event) => setProfile((current) => ({ ...current, [key]: event.target.value }))}
-        className="w-full rounded-xl border border-border bg-background px-3 py-2.5 text-sm text-foreground outline-none transition focus:border-primary focus:ring-4 focus:ring-primary/10"
+        className="w-full rounded-xl border border-[#e6e6e4] bg-white px-3 py-2.5 text-sm text-gray-900 outline-none transition focus:border-primary focus:ring-4 focus:ring-[#2563eb]/10"
       />
     </label>
   );
 
   return (
     <section className="space-y-5">
-      <header className="flex items-start justify-between gap-4 rounded-2xl border border-border bg-card p-4 shadow-sm sm:p-5">
+      <header className="flex items-start justify-between gap-4 rounded-2xl border border-[#e6e6e4] bg-white p-4 shadow-sm sm:p-5">
         <div className="flex min-w-0 items-start gap-3">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-[#2563eb]">
             <SettingsIcon size={19} />
           </div>
           <div>
-            <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-primary">Vendor workspace</p>
-            <h1 className="mt-1 text-xl font-bold tracking-tight text-card-foreground sm:text-2xl">Settings</h1>
-            <p className="mt-1 text-xs text-muted-foreground">Manage your vendor profile and workspace preferences.</p>
+            <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-[#2563eb]">Vendor workspace</p>
+            <h1 className="mt-1 text-xl font-bold tracking-tight text-gray-900 sm:text-2xl">Settings</h1>
+            <p className="mt-1 text-xs text-gray-600">Manage your vendor profile and workspace preferences.</p>
           </div>
         </div>
-        <button type="button" onClick={() => navigate("/vendors-dashboard")} className="rounded-xl border border-border bg-muted px-3 py-2 text-xs font-semibold text-muted-foreground hover:bg-[#1d4ed8] hover:text-white">
+        <button type="button" onClick={() => navigate("/vendors-dashboard")} className="rounded-xl border border-[#e6e6e4] bg-gray-100 px-3 py-2 text-xs font-semibold text-gray-600 hover:bg-[#262626] hover:text-white">
           Back
         </button>
       </header>
 
-      {message && <div className="flex items-center gap-2 rounded-xl border border-emerald-500/20 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-700"><Check size={16} />{message}</div>}
-      {error && <div className="rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-700">{error}</div>}
+      {message && <div className="flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700"><Check size={16} />{message}</div>}
+      {error && <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{error}</div>}
 
       {loading ? (
         <div className="grid gap-5 lg:grid-cols-[1.5fr_1fr]">
-          <div className="h-96 animate-pulse rounded-2xl bg-muted" />
-          <div className="h-96 animate-pulse rounded-2xl bg-muted" />
+          <div className="h-96 animate-pulse rounded-2xl bg-gray-100" />
+          <div className="h-96 animate-pulse rounded-2xl bg-gray-100" />
         </div>
       ) : (
         <div className="grid gap-5 lg:grid-cols-[1.5fr_1fr]">
-          <form onSubmit={updateProfile} className="rounded-2xl border border-border bg-card p-4 shadow-sm sm:p-5">
-            <div className="mb-4 flex items-center justify-between border-b border-border pb-3">
+          <form onSubmit={updateProfile} className="rounded-2xl border border-[#e6e6e4] bg-white p-4 shadow-sm sm:p-5">
+            <div className="mb-4 flex items-center justify-between border-b border-[#e6e6e4] pb-3">
               <div>
-                <h2 className="text-sm font-semibold text-card-foreground">Profile details</h2>
-                <p className="mt-1 text-xs text-muted-foreground">Keep your vendor account information up to date.</p>
+                <h2 className="text-sm font-semibold text-gray-900">Profile details</h2>
+                <p className="mt-1 text-xs text-gray-600">Keep your vendor account information up to date.</p>
               </div>
-              <UserRound size={18} className="text-primary" />
+              <UserRound size={18} className="text-[#2563eb]" />
             </div>
             <div className="grid gap-3 sm:grid-cols-2">
               {field("First name", "first_name")}
@@ -124,16 +124,16 @@ const VendorSettings = () => {
               {field("Country", "country")}
               {field("Address", "address")}
             </div>
-            <button type="submit" disabled={saving} className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-full bg-[#2563eb] px-4 py-2.5 text-sm font-semibold text-white hover:bg-[#1d4ed8] disabled:opacity-60">
+            <button type="submit" disabled={saving} className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-full bg-black px-4 py-2.5 text-sm font-semibold text-white hover:bg-[#262626] disabled:opacity-60">
               <Save size={15} /> {saving ? "Saving..." : "Save changes"}
             </button>
           </form>
 
           <div className="space-y-5">
-            <div className="rounded-2xl border border-border bg-card p-4 shadow-sm sm:p-5">
+            <div className="rounded-2xl border border-[#e6e6e4] bg-white p-4 shadow-sm sm:p-5">
               <div className="mb-3">
-                <h2 className="text-sm font-semibold text-card-foreground">Workspace preferences</h2>
-                <p className="mt-1 text-xs text-muted-foreground">Saved for this browser and applied immediately.</p>
+                <h2 className="text-sm font-semibold text-gray-900">Workspace preferences</h2>
+                <p className="mt-1 text-xs text-gray-600">Saved for this browser and applied immediately.</p>
               </div>
               <div className="space-y-2">
                 {[
@@ -141,21 +141,21 @@ const VendorSettings = () => {
                   ["compactMode", "Compact workspace", "Use a tighter layout where supported.", Monitor],
                   ["browserAlerts", "Browser alerts", "Allow browser notification preferences when supported.", Globe2],
                 ].map(([key, title, description, Icon]) => (
-                  <button key={key} type="button" onClick={() => updatePreference(key, !preferences[key])} className="flex w-full items-center gap-3 rounded-xl border border-border p-3 text-left transition hover:bg-muted">
-                    <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${preferences[key] ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground"}`}><Icon size={16} /></div>
-                    <span className="min-w-0 flex-1"><strong className="block text-sm text-card-foreground">{title}</strong><small className="mt-0.5 block text-xs text-muted-foreground">{description}</small></span>
-                    <span className={`h-5 w-9 rounded-full p-0.5 ${preferences[key] ? "bg-primary" : "bg-muted"}`}><span className={`block h-4 w-4 rounded-full bg-white shadow ${preferences[key] ? "translate-x-4" : ""}`} /></span>
+                  <button key={key} type="button" onClick={() => updatePreference(key, !preferences[key])} className="flex w-full items-center gap-3 rounded-xl border border-[#e6e6e4] p-3 text-left transition hover:bg-gray-100">
+                    <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${preferences[key] ? "bg-blue-50 text-[#2563eb]" : "bg-gray-100 text-gray-600"}`}><Icon size={16} /></div>
+                    <span className="min-w-0 flex-1"><strong className="block text-sm text-gray-900">{title}</strong><small className="mt-0.5 block text-xs text-gray-600">{description}</small></span>
+                    <span className={`h-5 w-9 rounded-full p-0.5 ${preferences[key] ? "bg-primary" : "bg-gray-100"}`}><span className={`block h-4 w-4 rounded-full bg-white shadow ${preferences[key] ? "translate-x-4" : ""}`} /></span>
                   </button>
                 ))}
               </div>
-              <button type="button" onClick={() => { resetPreferences(); setMessage("Preferences restored to their defaults."); }} className="mt-4 inline-flex items-center gap-2 text-xs font-semibold text-muted-foreground hover:text-foreground">
+              <button type="button" onClick={() => { resetPreferences(); setMessage("Preferences restored to their defaults."); }} className="mt-4 inline-flex items-center gap-2 text-xs font-semibold text-gray-600 hover:text-gray-900">
                 <RefreshCw size={14} /> Restore defaults
               </button>
             </div>
 
-            <div className="rounded-2xl border border-border bg-card p-4 shadow-sm sm:p-5">
-              <h2 className="text-sm font-semibold text-card-foreground">Account</h2>
-              <p className="mt-1 text-xs text-muted-foreground">Signed in as {user?.email || user?.username || "Vendor"}.</p>
+            <div className="rounded-2xl border border-[#e6e6e4] bg-white p-4 shadow-sm sm:p-5">
+              <h2 className="text-sm font-semibold text-gray-900">Account</h2>
+              <p className="mt-1 text-xs text-gray-600">Signed in as {user?.email || user?.username || "Vendor"}.</p>
               <button type="button" onClick={() => setShowSignOutConfirm(true)} className="mt-4 w-full rounded-full border border-red-500/20 px-4 py-2.5 text-sm font-semibold text-red-600 hover:bg-red-500/10">
                 Sign out
               </button>
