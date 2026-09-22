@@ -37,6 +37,10 @@ export default function useItemDraftAutosave({
   const savingRef = useRef(false);
   const queuedRef = useRef(null);
   const knownSlotsRef = useRef(new Set());
+  const valuesRef = useRef(values);
+  const mediaRef = useRef(media);
+  valuesRef.current = values;
+  mediaRef.current = media;
 
   useEffect(() => {
     setCurrentDraftId(draftId || null);
@@ -82,7 +86,7 @@ export default function useItemDraftAutosave({
   }, [enabled, onRestore]);
 
   const save = useCallback(
-    async (nextValues = values, nextMedia = media) => {
+    async (nextValues = valuesRef.current, nextMedia = mediaRef.current) => {
       if (!enabled || !restoredRef.current || savingRef.current) {
         if (savingRef.current) queuedRef.current = { nextValues, nextMedia };
         return;
@@ -159,7 +163,7 @@ export default function useItemDraftAutosave({
         }
       }
     },
-    [currentDraftId, enabled, media, onSaved, values]
+    [currentDraftId, enabled, onSaved]
   );
 
   useEffect(() => {
