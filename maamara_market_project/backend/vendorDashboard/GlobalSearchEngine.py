@@ -9,7 +9,7 @@ from rest_framework.permissions import IsAuthenticated
 
 
 SYSTEM_APPS = {"admin", "contenttypes", "sessions", "staticfiles"}
-EXCLUDED_APPS = {"auth", "authtoken"}
+EXCLUDED_APPS = set()
 TEXT_FIELD_TYPES = {
     "CharField",
     "TextField",
