@@ -98,7 +98,7 @@ const ReviewsPage = () => {
                 onClick={() => handleTabChange(tab.key)}
                 className={`flex items-center justify-between rounded-xl px-4 py-3 text-left text-sm font-semibold transition ${
                   isActive
-                    ? "bg-[#f1641e] text-white shadow-sm"
+                    ? "bg-[#2563eb] text-white shadow-sm"
                     : "text-[#595959] hover:bg-[#f8f8f6] hover:text-[#222]"
                 }`}
               >
