@@ -102,6 +102,12 @@ const VendorItemCard = ({ vendor, item, onRefresh }) => {
         <div className="flex items-center justify-between gap-3 border-t border-border pt-3 text-xs text-muted-foreground">
           <span>Size: {item.size || "—"}</span>
           <span>Stock: {item.in_stock ?? 0}</span>
+          <Link
+            to={"/admin-dashboard/item-onsite/items/" + item.id}
+            className="inline-flex items-center rounded-lg border border-border bg-white px-2 py-1 text-xs font-semibold text-black transition hover:bg-gray-100"
+          >
+            View item
+          </Link>
           <EditItem vendor={{ ...vendor, isAdmin: true }} item={item} isAdmin onSuccess={onRefresh} />
         </div>
       </div>
@@ -347,7 +353,7 @@ const Vendor_list = () => {
                         />
                       ) : null;
                     })()}
-                    <div className="hidden h-12 w-12 shrink-0 items-center justify-center rounded-full border border-border bg-black text-sm font-bold tracking-wide text-white">
+                    <div className="h-12 w-12 shrink-0 items-center justify-center rounded-full border border-border bg-black text-sm font-bold tracking-wide text-white">
                       {(
                         (vendor.first_name || "") + (vendor.surname_name || "")
                       ).trim().slice(0, 2).toUpperCase() ||
