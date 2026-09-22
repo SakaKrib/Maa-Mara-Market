@@ -336,13 +336,9 @@ const ItemAddNew = ({ initialItem, vendorId, itemId, onSave = () => {}, vendor, 
 
     const onSubmit = async (data) => {
       try {
-        // Save the complete edited item into the vendor request draft.
-        // Approval later converts this draft into the permanent Item.
-        const vendorRequestId = data.id || vendorId || itemId;
-        if (!vendorRequestId) {
-          throw new Error("Vendor request ID is missing. Cannot save draft.");
-        }
-
+        // Vendor creation goes through the same request endpoint used by the
+        // legacy VendorItemRequest form. The complete form is preserved in
+        // draft_item so the admin approval flow can use all submitted fields.
         const department = form.getValues("department") || null;
         const section = form.getValues("section") || null;
         const category = form.getValues("category") || null;
@@ -600,16 +596,29 @@ const ItemAddNew = ({ initialItem, vendorId, itemId, onSave = () => {}, vendor, 
           return;
         }
 
-        const response = await api.put(
-          `/api/vendor-requests/${vendorRequestId}/save-draft/`,
-          { draft_item: formattedItem },
-          { withCredentials: true }
+        const vendorFormData = new FormData();
+        vendorFormData.append("name", String(formattedItem.name || ""));
+        vendorFormData.append("description", String(formattedItem.description || ""));
+        vendorFormData.append("price", String(formattedItem.price || 0));
+        vendorFormData.append("draft_item", JSON.stringify(formattedItem));
+
+        if (data.image instanceof File) {
+          vendorFormData.append("image", data.image);
+        }
+
+        const response = await api.post(
+          "/api/vendor/item-requests/create/",
+          vendorFormData,
+          {
+            withCredentials: true,
+            headers: { "Content-Type": "multipart/form-data" },
+          }
         );
 
-        if (response.status === 200) {
+        if (response.status === 201 || response.status === 200) {
           onSave(response.data);
         } else {
-          alert("Failed to save item.");
+          alert("Failed to submit item request.");
         }
       } catch (error) {
         console.error("Item draft save failed:", error);
