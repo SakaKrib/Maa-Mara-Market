@@ -315,47 +315,45 @@ useEffect(() => {
 
     const onSubmit = async (data) => {
       try {
-    
-        // Determine the correct vendor request ID
+        // Save the complete edited item into the vendor request draft.
+        // Approval later converts this draft into the permanent Item.
         const vendorRequestId = data.id || vendorId || itemId;
         if (!vendorRequestId) {
-          throw new Error("❌ Vendor request ID is missing. Cannot update.");
+          throw new Error("Vendor request ID is missing. Cannot save draft.");
         }
-    
-        // Always read the latest values from the form
+
         const department = form.getValues("department") || null;
         const section = form.getValues("section") || null;
         const category = form.getValues("category") || null;
         const subcategory = form.getValues("subcategory") || null;
-        const item_attribute = form.getValues("item_attribute") || null; // ✅ added
-        const is_organic = form.getValues("is_organic") ?? false; // ✅ add boolean
-        const is_fresh_food = form.getValues("is_fresh_food") ?? false; // ✅ add boolean
+        const item_attribute = form.getValues("item_attribute") || null;
+        const is_organic = form.getValues("is_organic") ?? false;
+        const is_fresh_food = form.getValues("is_fresh_food") ?? false;
         const occasions = form.getValues("occasions") || [];
+        const image = typeof data.image === "string" ? data.image : null;
 
-    
-        // Build cleaned item object
         const formattedItem = {
           name: data.name,
-          description: data.description, // lowercase, matches model
+          description: data.description,
           price: parseFloat(data.price || 0),
-          discount_price: parseFloat(data.discount_price || 0),
+          discount_price:
+            data.discount_price === "" || data.discount_price == null
+              ? null
+              : parseFloat(data.discount_price),
           section,
           department,
           category,
           subcategory,
           item_attribute,
-          in_stock: parseInt(data.in_stock || 0),
+          in_stock: parseInt(data.in_stock || 0, 10),
           available: data.available ?? true,
           returnable: data.returnable ?? true,
-          image: data.image ?? null,
+          image,
           brand: data.brand || null,
-
-          // ✅ Add boolean fields here
           is_organic,
           is_fresh_food,
           occasions,
-    
-          shipping_dimension: data.shipping_dimension_data
+          shipping_dimension_data: data.shipping_dimension_data
             ? {
                 length: parseFloat(data.shipping_dimension_data.length || 0),
                 width: parseFloat(data.shipping_dimension_data.width || 0),
@@ -365,50 +363,89 @@ useEffect(() => {
                 weight_unit: data.shipping_dimension_data.weight_unit || "kg",
               }
             : null,
-    
-          // Backend ItemSerializers expects the canonical relation names.
-          size_only_icon: (data.size_variant || []).map(({ size, stock, quantity_in_stock }) => ({
-            size,
-            quantity_in_stock: quantity_in_stock ?? stock ?? 0,
-          })),
-
-          variants: (data.color_variants || []).map(
-            ({ color, sizes, color_image, image }) => ({
-              color,
-              sizes: (sizes || []).map(({ size, quantity_in_stock, stock }) => ({
-                size,
-                quantity_in_stock: quantity_in_stock ?? stock ?? 0,
-              })),
-              image: image ?? color_image ?? null,
+          weight:
+            data.weight?.value != null
+              ? { value: parseFloat(data.weight.value || 0), unit: data.weight.unit || "kg" }
+              : null,
+          length:
+            data.length?.value != null
+              ? { value: parseFloat(data.length.value || 0), unit: data.length.unit || "cm" }
+              : null,
+          roast_type: data.roast_type || null,
+          coffee_state: data.coffee_state || null,
+          manufactured_date: data.manufactured_date || null,
+          expiry_date: data.expiry_date || null,
+          in_offer: !!data.in_offer,
+          offer:
+            data.in_offer && data.offer
+              ? {
+                  discount_percentage: parseFloat(data.offer.discount_percentage || 0),
+                  start_date: data.offer.start_date || null,
+                  end_date: data.offer.end_date || null,
+                }
+              : null,
+          kids_sizes: (data.kids_sizes || []).map(
+            ({ id, age_group, quantity_in_stock }) => ({
+              ...(id ? { id } : {}),
+              age_group,
+              quantity_in_stock: quantity_in_stock ?? 0,
             })
           ),
-
+          shoe_input: (data.shoe_input || []).map(
+            ({ id, shoe_type, shoe_gender, shoe_size }) => ({
+              ...(id ? { id } : {}),
+              shoe_type: shoe_type || "",
+              shoe_gender: shoe_gender || "",
+              shoe_size: Array.isArray(shoe_size)
+                ? shoe_size
+                : shoe_size
+                  ? [shoe_size]
+                  : [],
+            })
+          ),
+          size_only_icon: (data.size_variant || []).map(
+            ({ id, size, stock, quantity_in_stock }) => ({
+              ...(id ? { id } : {}),
+              size,
+              quantity_in_stock: quantity_in_stock ?? stock ?? 0,
+            })
+          ),
+          variants: (data.color_variants || []).map(
+            ({ id, color, sizes, color_image, image }) => ({
+              ...(id ? { id } : {}),
+              color,
+              sizes: (sizes || []).map(
+                ({ id: sizeId, size, quantity_in_stock, stock }) => ({
+                  ...(sizeId ? { id: sizeId } : {}),
+                  size,
+                  quantity_in_stock: quantity_in_stock ?? stock ?? 0,
+                })
+              ),
+              // JSON drafts cannot carry browser File objects.
+              image:
+                typeof (image ?? color_image) === "string"
+                  ? image ?? color_image
+                  : null,
+            })
+          ),
         };
-    
-        // API call
+
         const response = await api.put(
-          `/api/vendor-requests/${vendorRequestId}/update-item-list/`,
-          { item_list: [formattedItem] },
+          `/api/vendor-requests/${vendorRequestId}/save-draft/`,
+          { draft_item: formattedItem },
           { withCredentials: true }
         );
-    
+
         if (response.status === 200) {
           onSave(response.data);
         } else {
-          alert("Failed to update item.");
+          alert("Failed to save item.");
         }
       } catch (error) {
-        
+        console.error("Item draft save failed:", error);
         alert("Item update failed. Check console for details.");
       }
     };
-    
-    
-  
-  
-  
-  
-  
 
   return (
   
@@ -1498,527 +1535,3 @@ useEffect(() => {
                   
                   
                 >
-                  <option value="">Select Coffee State</option>
-                  <option value="whole_beans">Whole Beans</option>
-                  <option value="ground_coarse">Ground – Coarse</option>
-                  <option value="ground_medium">Ground – Medium</option>
-                  <option value="ground_fine">Ground – Fine</option>
-                  <option value="instant">Instant Coffee</option>
-                  <option value="capsules">Capsules/Pods</option>
-                </select>
-              </FormControl>
-              <FormDescription>
-                Choose whether it’s whole beans or ground, and what grind size.
-              </FormDescription>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-      </>
-    )}
-    
-      {/* weight */}
-      <FormField
-        control={form.control}
-        name="weight"
-        render={({ field }) => {
-          const { value = {}, onChange } = field;
-    
-          const handleValueChange = (val) => {
-            onChange({ ...value, value: parseFloat(val) || 0 });
-          };
-    
-          const handleUnitChange = (unit) => {
-            onChange({ ...value, unit });
-          };
-    
-          return (
-            <FormItem>
-              <FormLabel className="text-sm leading-6 font-semibold text-foreground">Weight</FormLabel>
-              <FormControl>
-                <div className="flex gap-3 items-center my-2">
-                  {/* Numeric input */}
-                  <Input
-                  type="number"
-                  min={1}
-                  step={1}               // ✅ whole numbers only
-                  value={value?.value ?? ""}
-                  onChange={(e) => {
-                    const val = e.target.value;
-                    handleValueChange(val === "" ? null : parseInt(val, 10));
-                  }}
-                  placeholder="Enter weight"
-                  className="w-full rounded-[20px] border border-border bg-card px-2 py-2 text-sm leading-6 text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20 md:w-32"
-                />
-    
-    
-                  {/* Dropdown for unit */}
-                  <select
-                    className="w-full rounded-[20px] border border-border bg-card px-2 py-2 text-sm leading-6 text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
-                    
-                    value={value?.unit ?? "g"}
-                    onChange={(e) => handleUnitChange(e.target.value)}
-                  >
-                    <option value="g">Grams</option>
-                    <option value="kg">Kilograms</option>
-                    <option value="ml">Milliliters</option>
-                    <option value="l">Liters</option>
-                    <option value="oz">Ounces</option>
-                  </select>
-                </div>
-              </FormControl>
-              <FormDescription>
-                Enter the weight of the product.
-              </FormDescription>
-              <FormMessage />
-            </FormItem>
-          );
-        }}
-      />
-    
-        {/* Manufactured Date */}
-        <FormField
-          control={form.control}
-          name="manufactured_date"
-          rules={{
-            required: "Manufactured date is required",
-          }}
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel className="text-sm leading-6 font-semibold text-foreground">Manufactured Date</FormLabel>
-              <FormControl>
-              <Input
-              type="date"
-              {...field}
-              value={field.value ?? ""}  // 👈 fallback ensures it's always controlled
-              className="w-full rounded-[20px] border border-border bg-card px-2 py-2 text-sm leading-6 text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
-              
-            />
-    
-              </FormControl>
-              <FormDescription>
-                Enter Manufactured date.
-              </FormDescription>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-    
-        {/* Expiry Date */}
-        <FormField
-          control={form.control}
-          name="expiry_date"
-          rules={{
-            required: "Expiry date is required",
-            validate: (value) => {
-              const manufactured = form.getValues("manufactured_date");
-              if (!manufactured) return true; // manufactured not set yet → skip
-              return (
-                new Date(value) > new Date(manufactured) ||
-                "Expiry date must be later than manufactured date"
-              );
-            },
-          }}
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel className="text-sm font-semibold text-foreground" >Expiry Date</FormLabel>
-              <FormControl>
-                <Input
-                  type="date"
-                  {...field}
-                  className="w-full rounded-[20px] border border-border bg-card px-2 py-2 text-sm leading-6 text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
-                  
-                />
-              </FormControl>
-              <FormDescription>
-                Enter Expiry date.
-              </FormDescription>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-      </>
-    )}
-    
-    
-            {/* PUT ITEM ON OFFRE */}
-            {/* ✅ In-offer checkbox */}
-            <FormField
-              control={form.control}
-              name="in_offer"
-              render={({ field }) => (
-                <FormItem className="flex items-center gap-2 py-1 leading-6">
-                  <FormControl>
-                    <Checkbox
-                      checked={!!field.value}
-                      onCheckedChange={field.onChange}
-                      className="h-4 w-4 shrink-0 rounded-[4px] border-primary shadow-none focus-visible:ring-0"
-                    />
-                  </FormControl>
-                  <FormLabel className="m-0 cursor-pointer text-sm font-medium leading-6 text-foreground">Mark item as on Offer</FormLabel>
-                </FormItem>
-              )}
-            />
-    
-            {/* ✅ Offer fields (conditionally shown if in_offer is true) */}
-            {form.watch("in_offer") && (
-              <div className="grid grid-cols-1 gap-4 md:grid-cols-3 mt-4">
-                {/* Discount percentage */}
-                <FormField
-                  control={form.control}
-                  name="offer.discount_percentage"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Discount Percentage (%)</FormLabel>
-                      <FormControl>
-                        <Input
-                          type="number"
-                          min="1"
-                          max="100"
-                          placeholder="e.g. 20"
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-    
-                {/* Start date */}
-                <FormField
-                  control={form.control}
-                  name="offer.start_date"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Start Date</FormLabel>
-                      <FormControl>
-                        <Input type="date" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-    
-                {/* End date */}
-                <FormField
-                  control={form.control}
-                  name="offer.end_date"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>End Date</FormLabel>
-                      <FormControl>
-                        <Input type="date" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-            )}
-    
-    
-            {/* GENERAL COLOUR */}
-            {/* conditional rendering */}
-        {activeData === departmentMap && (
-            <FormField
-          control={form.control}
-          name="color_variants"
-          render={({ field }) => {
-            const { value = [], onChange } = field;
-    
-            const handleColorToggle = (color) => {
-              const exists = value.find((v) => v.color === color);
-              if (exists) {
-                onChange(value.filter((v) => v.color !== color));
-              } else {
-                onChange([...value, { color, color_image: null, sizes: [] }]);
-              }
-            };
-    
-            const handleImageUpload = (color, file) => {
-              onChange(
-                value.map((v) =>
-                  v.color === color ? { ...v, color_image: file } : v
-                )
-              );
-            };
-    
-            const handleSizeToggle = (color, size) => {
-              onChange(
-                value.map((v) =>
-                  v.color === color
-                    ? {
-                        ...v,
-                        sizes: v.sizes.some((s) => s.size === size)
-                          ? v.sizes.filter((s) => s.size !== size)
-                          : [...v.sizes, { size, quantity_in_stock: 0 }],
-                      }
-                    : v
-                )
-              );
-            };
-    
-            const handleStockChange = (color, size, stock) => {
-              onChange(
-                value.map((v) =>
-                  v.color === color
-                    ? {
-                        ...v,
-                        sizes: v.sizes.map((s) =>
-                          s.size === size
-                            ? { ...s, quantity_in_stock: parseInt(stock) || 0 }
-                            : s
-                        ),
-                      }
-                    : v
-                )
-              );
-            };
-    
-            const selectedColors = value.map((v) => v.color);
-    
-            return (
-              <FormItem>
-                <FormLabel className="text-sm leading-6 font-semibold text-foreground">Color Variants</FormLabel>
-                <FormControl>
-                  <div className="space-y-6">
-                    {/* Color selection */}
-                    <div
-                      className="grid grid-cols-[repeat(auto-fit,minmax(180px,1fr))] gap-3 my-2"
-                      
-                    >
-                      {colorOptions.map((color) => {
-                        const checkboxId = `color-${color}`;
-                        return (
-                          <div key={color} className="flex min-w-0 items-center gap-2">
-                            <Checkbox
-                              id={checkboxId}
-                              checked={selectedColors.includes(color)}
-                              onCheckedChange={() => handleColorToggle(color)}
-                              
-                            />
-                            <span
-                              className="inline-block h-6 w-6 min-h-6 min-w-6 shrink-0 rounded-full border"
-                              style={{ backgroundColor: colorMap[color] || "#ccc" }}
-                            />
-                            <label htmlFor={checkboxId} className="min-w-0 flex-1 cursor-pointer break-words text-sm leading-5">
-                              {color}
-                            </label>
-                          </div>
-                        );
-                      })}
-                    </div>
-    
-                    {/* Color details */}
-                    {value.map((variant) => (
-                      <div key={variant.color} className="space-y-4">
-                        <div className="flex items-center gap-2">
-                          <span
-                            className="inline-block h-5 w-5 min-h-5 min-w-5 shrink-0 rounded-full border border-gray-300"
-                            style={{ backgroundColor: colorMap[variant.color] || "#ccc" }}
-                          />
-                          <span className="text-sm font-medium">{variant.color}</span>
-                          <input
-                            type="file"
-                            accept="image/*"
-                            onChange={(e) =>
-                              handleImageUpload(variant.color, e.target.files[0])
-                            }
-                            
-                          />
-                        </div>
-    
-                        {/* Sizes + Stock */}
-                        <div className="grid grid-cols-2 gap-4">
-                          {sizeOptions.map((size) => {
-                            const selected = variant.sizes.find((s) => s.size === size);
-                            const sizeId = `size-${variant.color}-${size}`;
-                            return (
-                              <div key={size} className="flex items-center gap-2">
-                                <Checkbox
-                                  id={sizeId}
-                                  checked={!!selected}
-                                  onCheckedChange={() =>
-                                    handleSizeToggle(variant.color, size)
-                                  }
-                                />
-                                <label htmlFor={sizeId} className="text-xs ">
-                                  {size}
-                                </label>
-                                {selected && (
-                                  <Input
-                                    type="number"
-                                    min="1"
-                                    placeholder="Stock"
-                                    className="w-24 rounded-[20px] border border-border bg-card px-2 py-2 text-sm leading-6 text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
-                                    value={selected?.quantity_in_stock ?? ""}
-                                    onChange={(e) =>
-                                      handleStockChange(
-                                        variant.color,
-                                        size,
-                                        e.target.value
-                                      )
-                                    }
-                                  />
-                                )}
-                              </div>
-                            );
-                          })}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </FormControl>
-                <FormDescription>
-                Enter colors related to the product.
-              </FormDescription>
-    
-                {/* Optional error display */}
-                {form.formState.errors.color_variants?.message && (
-                  <p className="text-red-500 text-sm">
-                    {form.formState.errors.color_variants.message}
-                  </p>
-                )}
-    
-                <FormMessage />
-              </FormItem>
-            );
-          }}
-        />
-        )}
-    
-    
- {/* shipping dimensions */}
-     {/* ✅ Shipping Dimensions */}
- <Controller
-   name="shipping_dimension_data.length"
-   control={form.control}
-   render={({ field }) => (
-     <FormItem>
-       <FormLabel>Length</FormLabel>
-       <FormControl>
-         <Input type="number" min="0" step="0.01" placeholder="Length" {...field} />
-       </FormControl>
-       <FormMessage />
-     </FormItem>
-   )}
- />
- 
- <Controller
-   name="shipping_dimension_data.width"
-   control={form.control}
-   render={({ field }) => (
-     <FormItem>
-       <FormLabel>Width</FormLabel>
-       <FormControl>
-         <Input type="number" min="0" step="0.01" placeholder="Width" {...field} />
-       </FormControl>
-       <FormMessage />
-     </FormItem>
-   )}
- />
- 
- <Controller
-   name="shipping_dimension_data.height"
-   control={form.control}
-   render={({ field }) => (
-     <FormItem>
-       <FormLabel>Height</FormLabel>
-       <FormControl>
-         <Input type="number" min="0" step="0.01" placeholder="Height" {...field} />
-       </FormControl>
-       <FormMessage />
-     </FormItem>
-   )}
- />
- 
- <Controller
-   name="shipping_dimension_data.unit"
-   control={form.control}
-   render={({ field }) => (
-     <FormItem>
-       <FormLabel>Dimension Unit</FormLabel>
-       <FormControl>
-         <select
-           {...field}
-           className="w-full rounded-[20px] border border-border bg-card px-2 py-2 text-sm leading-6 text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
-           
-         >
-           <option value="cm">Centimeters</option>
-           <option value="m">Meters</option>
-           <option value="in">Inches</option>
-           <option value="ft">Feet</option>
-         </select>
-       </FormControl>
-       <FormMessage />
-     </FormItem>
-   )}
- />
- 
- <Controller
-   name="shipping_dimension_data.weight"
-   control={form.control}
-   render={({ field }) => (
-     <FormItem>
-       <FormLabel>Weight</FormLabel>
-       <FormControl>
-         <Input type="number" min="0" step="0.01" placeholder="Weight" {...field} />
-       </FormControl>
-       <FormMessage />
-     </FormItem>
-   )}
- />
- 
- <Controller
-   name="shipping_dimension_data.weight_unit"
-   control={form.control}
-   render={({ field }) => (
-     <FormItem>
-       <FormLabel>Weight Unit</FormLabel>
-       <FormControl>
-         <select
-           {...field}
-           className="w-full rounded-[20px] border border-border bg-card px-2 py-2 text-sm leading-6 text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
-           
-         >
-           <option value="g">Grams</option>
-           <option value="kg">Kilograms</option>
-           <option value="oz">Ounces</option>
-           <option value="lb">Pounds</option>
-         </select>
-       </FormControl>
-       <FormMessage />
-     </FormItem>
-   )}
- />
- 
- 
- <Controller
-     name="returnable"
-     control={form.control}
-     defaultValue={true}
-     render={({ field }) => (
-       <label className="flex items-center gap-2 py-1 text-sm text-foreground cursor-pointer">
-         <Checkbox
-           checked={!!field.value}
-           onCheckedChange={field.onChange}
-           className="border-0 shadow-none focus-visible:ring-0"
-         />
-         <span className="leading-5">Returnable</span>
-       </label>
-     )}
-   />
-        
-    
-    
-            <Button type="submit" className="mt-6 mb-4 w-full rounded-full bg-primary px-2 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary/90">
-              Save Changes
-            </Button>
-            </div>
-          </form>
-        </Form>
-      );
-    };
-    
-    export default ItemAddNew;
-    
