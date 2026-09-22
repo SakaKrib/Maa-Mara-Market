@@ -530,6 +530,107 @@ const ItemAddNew = ({ initialItem, vendorId, itemId, onSave = () => {}, vendor, 
       }
     }, [initialItem, form]);
 
+    const currentImageCount = useMemo(() => {
+      const variantCount = (draftValues.color_variants || []).filter(
+        (variant) => Boolean(variant?.color_image)
+      ).length;
+      return (draftValues.image ? 1 : 0) + galleryImages.length + variantCount;
+    }, [draftValues.image, draftValues.color_variants, galleryImages.length]);
+
+    const validateImageFile = (file) => {
+      if (!file) return false;
+      if (!file.type.startsWith("image/")) {
+        setDraftError("Please select an image file.");
+        return false;
+      }
+      if (file.size > MAX_IMAGE_BYTES) {
+        setDraftError("Each image must be 10 MB or smaller.");
+        return false;
+      }
+      setDraftError("");
+      return true;
+    };
+
+    const handleMainImageChange = (file) => {
+      if (!validateImageFile(file)) return;
+      const hasMain = Boolean(form.getValues("image"));
+      if (!hasMain && currentImageCount >= MAX_ITEM_IMAGES) {
+        setDraftError("You can add up to 10 product images in total.");
+        return;
+      }
+      form.setValue("image", file, { shouldDirty: true, shouldValidate: true });
+    };
+
+    const handleGalleryImagesChange = (files) => {
+      const selected = Array.from(files || []);
+      if (!selected.length) return;
+
+      const invalid = selected.find((file) => !validateImageFile(file));
+      if (invalid) return;
+
+      const availableSlots =
+        MAX_ITEM_IMAGES - currentImageCount;
+      if (selected.length > availableSlots) {
+        setDraftError(
+          "You can add up to 10 product images in total, including the main and variant images."
+        );
+        return;
+      }
+
+      setGalleryImages((current) => [
+        ...current,
+        ...selected.map((file, index) => ({
+          slotKey:
+            "gallery:" +
+            Date.now() +
+            ":" +
+            current.length +
+            ":" +
+            index,
+          value: file,
+          url: "",
+          name: file.name,
+        })),
+      ]);
+      setDraftError("");
+    };
+
+    const handleVideoChange = (file) => {
+      if (!file) return;
+      const extension = "." + (file.name.split(".").pop() || "").toLowerCase();
+      if (!VIDEO_TYPES.includes(file.type) && !VIDEO_EXTENSIONS.includes(extension)) {
+        setDraftError("Video must be MP4, MOV, or WEBM.");
+        return;
+      }
+      if (file.size > MAX_VIDEO_BYTES) {
+        setDraftError("The product video must be 100 MB or smaller.");
+        return;
+      }
+
+      const videoElement = document.createElement("video");
+      videoElement.preload = "metadata";
+      videoElement.onloadedmetadata = () => {
+        window.URL.revokeObjectURL(videoElement.src);
+        if (videoElement.duration < 3 || videoElement.duration > 15) {
+          setDraftError("Product videos must be between 3 and 15 seconds.");
+          return;
+        }
+        setProductVideo({
+          slotKey: "video",
+          value: file,
+          url: URL.createObjectURL(file),
+          name: file.name,
+        });
+        form.setValue("video", file, { shouldDirty: true });
+        setDraftError("");
+      };
+      videoElement.onerror = () => {
+        window.URL.revokeObjectURL(videoElement.src);
+        setDraftError("The selected video could not be read.");
+      };
+      videoElement.src = URL.createObjectURL(file);
+    };
+
     const onSubmit = async (data) => {
       try {
         // Vendor creation goes through the same request endpoint used by the
@@ -2117,11 +2218,21 @@ const ItemAddNew = ({ initialItem, vendorId, itemId, onSave = () => {}, vendor, 
             };
 
             const handleImageUpload = (color, file) => {
+              if (!validateImageFile(file)) return;
+
+              const currentVariant = value.find((variant) => variant.color === color);
+              const replacingExisting = Boolean(currentVariant?.color_image);
+              if (!replacingExisting && currentImageCount >= MAX_ITEM_IMAGES) {
+                setDraftError("You can add up to 10 product images in total.");
+                return;
+              }
+
               onChange(
                 value.map((v) =>
                   v.color === color ? { ...v, color_image: file } : v
                 )
               );
+              setDraftError("");
             };
 
             const handleSizeToggle = (color, size) => {
