@@ -276,8 +276,72 @@ useEffect(() => {
     setValue("department", matchingDepartment);
   }
 }, [initialItem?.department, activeData, setValue]);
- 
- 
+
+// Keep saved custom values editable. If an existing category, subcategory,
+// or attribute is not in the current predefined lists, switch that field
+// to its custom-input mode instead of hiding the saved value.
+useEffect(() => {
+  if (!initialItem || !activeData || !selectedDepartment) return;
+
+  const savedCategory = String(initialItem.category || "").trim();
+  const savedSubcategory = String(initialItem.subcategory || "").trim();
+  const categories = activeData?.[selectedDepartment]?.categories || [];
+  const subcategories =
+    activeData?.[selectedDepartment]?.subcategories?.[savedCategory] || [];
+
+  if (
+    savedCategory &&
+    !categories.some(
+      (category) =>
+        String(category).toLowerCase() === savedCategory.toLowerCase()
+    )
+  ) {
+    setIsCustomCategory(true);
+    setSelectedCategory(savedCategory);
+    setValue("category", savedCategory);
+  }
+
+  if (
+    savedSubcategory &&
+    !subcategories.some(
+      (subcategory) =>
+        String(subcategory).toLowerCase() === savedSubcategory.toLowerCase()
+    )
+  ) {
+    setIsCustomSubcategory(true);
+    setValue("subcategory", savedSubcategory);
+  }
+
+  const productTypeForAttributes = String(
+    vendor?.product_type ?? vendor?.vendor_data?.product_type ?? ""
+  ).trim().toLowerCase();
+  const attributes =
+    selectedSection === "organic" && productTypeForAttributes !== "inorganic"
+      ? organicAttributes
+      : selectedSection === "inorganic" && productTypeForAttributes !== "organic"
+        ? inorganicAttributes
+        : [];
+
+  const savedAttribute = String(initialItem.item_attribute || "").trim();
+  if (
+    savedAttribute &&
+    !attributes.some(
+      (attribute) =>
+        String(attribute.value).toLowerCase() === savedAttribute.toLowerCase()
+    )
+  ) {
+    setIsCustomAttribute(true);
+    setValue("item_attribute", savedAttribute);
+  }
+}, [
+  initialItem,
+  activeData,
+  selectedDepartment,
+  selectedSection,
+  vendor,
+  setValue,
+]);
+
    //reset form inputs when togle for both
    // 🔹 Reset the entire form when activeData changes
  // 📝 Define your empty state once (outside the component or at top of component)
