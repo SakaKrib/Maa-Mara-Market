@@ -1,4 +1,3 @@
-import "../../CharBox.css";
 import { tokens } from "../../../../../theme";
 import { useTheme } from "@mui/material";
 import dayjs from "dayjs";
