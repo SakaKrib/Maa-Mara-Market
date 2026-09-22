@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from "react";
 import { Plus, RefreshCw, Tag, Megaphone, FileText } from "lucide-react";
 import api from "../../../../Services/Api";
-import VendorItemRequestForm from "../Forms/VendorItemRequest/VendorItemRequest";
+import ItemAddNew from "../Forms/AddingNewItem";
+import { useVendor } from "../vendorhooks";
 import BannerAdd from "../../Banners/Banners";
 import CreateBlog from "../../Blogs/BlogCreate";
 
@@ -14,6 +15,7 @@ const truncateWords = (text, numWords) => {
 };
 
 const VendorItems = () => {
+  const { vendor } = useVendor();
   const [items, setItems] = useState([]);
   const [selectedItem, setSelectedItem] = useState("");
   const [newPrice, setNewPrice] = useState("");
@@ -128,7 +130,14 @@ const VendorItems = () => {
               <p className="text-xs text-muted-foreground">Submit a new product for your store.</p>
             </div>
           </div>
-          <VendorItemRequestForm />
+          <ItemAddNew
+            vendor={vendor}
+            vendorId={vendor?.id}
+            onSave={() => {
+              fetchItems();
+              fetchHistory();
+            }}
+          />
         </article>
 
         <article className="min-w-0 rounded-2xl border border-border bg-card p-4 shadow-sm sm:p-5">
