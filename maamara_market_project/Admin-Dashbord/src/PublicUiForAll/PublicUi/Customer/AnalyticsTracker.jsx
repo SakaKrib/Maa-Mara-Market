@@ -1,6 +1,6 @@
 import { useEffect, useRef } from "react";
 import { useLocation } from "react-router-dom";
-import api from "../../../../Services/Api";
+import api from "../../../Services/Api";
 
 const SOCIAL_HOSTS = ["facebook.com", "instagram.com", "t.co", "x.com", "twitter.com", "linkedin.com", "youtube.com", "tiktok.com"];
 const SEARCH_HOSTS = ["google.", "bing.", "duckduckgo.", "yahoo."];
