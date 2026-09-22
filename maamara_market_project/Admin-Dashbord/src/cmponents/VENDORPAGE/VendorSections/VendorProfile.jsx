@@ -371,11 +371,46 @@ const SingleVendorProfile = () => {
           <div className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
             <div className="grid gap-6 p-5 sm:p-6 lg:grid-cols-[240px_minmax(0,1fr)]">
               <div>
-                <img
-                  src={vendor.profile_picture_url || mediaUrl(vendor.profile_picture) || mediaUrl("/default-avatar.png")}
-                  alt={vendor.company_name || fullName || "Vendor profile"}
-                  className="h-56 w-full rounded-xl border border-gray-200 object-cover"
-                />
+                {(() => {
+                  const imageCandidates = [
+                    vendor.profile_picture_url,
+                    mediaUrl(vendor.profile_picture),
+                    mediaUrl(vendor.vendor_company_logo),
+                    mediaUrl(vendor.company_logo),
+                    mediaUrl(vendor.brand?.logo),
+                  ].filter(Boolean);
+                  const fallbackText = (
+                    vendor.first_name?.[0] ||
+                    vendor.company_name?.[0] ||
+                    vendor.username?.[0] ||
+                    "V"
+                  ).toUpperCase();
+
+                  return imageCandidates.length > 0 ? (
+                    <img
+                      src={imageCandidates[0]}
+                      data-fallback-index="0"
+                      alt={vendor.company_name || fullName || "Vendor profile"}
+                      className="h-56 w-full rounded-xl border border-gray-200 bg-[#f8f8f6] object-cover"
+                      onError={(event) => {
+                        const currentIndex = Number(event.currentTarget.dataset.fallbackIndex || 0);
+                        const nextIndex = currentIndex + 1;
+                        if (nextIndex < imageCandidates.length) {
+                          event.currentTarget.dataset.fallbackIndex = String(nextIndex);
+                          event.currentTarget.src = imageCandidates[nextIndex];
+                          return;
+                        }
+                        event.currentTarget.style.display = "none";
+                        event.currentTarget.nextElementSibling?.classList.remove("hidden");
+                      }}
+                    />
+                  ) : null;
+                })()}
+                <div className="hidden">
+                  <div className="grid h-56 w-full place-items-center rounded-xl border border-gray-200 bg-black text-5xl font-bold tracking-wide text-white">
+                    {(vendor.first_name?.[0] || vendor.company_name?.[0] || vendor.username?.[0] || "V").toUpperCase()}
+                  </div>
+                </div>
               </div>
 
               <div className="min-w-0">
