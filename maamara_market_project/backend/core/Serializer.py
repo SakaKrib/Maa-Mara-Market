@@ -61,8 +61,15 @@ class NotificationSerializer(serializers.ModelSerializer):
         def unquote(value):
             return re.sub(r"'([^']+)'", r"\1", value)
 
-        # Normalize the most common marketplace notifications so names are
-        # natural, readable text rather than quoted fragments or usernames.
+        # Preserve already-normalized audience-aware messages. This prevents
+        # the legacy regexes below from accidentally duplicating phrases such
+        # as "to their wishlist".
+        normalized_message = unquote(message)
+        if re.match(r"^(A customer|A vendor|The administrator|An administrator|Your|You)\\b", normalized_message):
+            return normalized_message
+
+        # Normalize legacy marketplace notifications so old records remain
+        # readable without exposing usernames or quoted item names.
         if title == "item added to wishlist":
             match = re.search(r"added ['\"]?(.+?)['\"]? (?:from )?wishlist", message, re.I)
             item_name = match.group(1).strip(" .\"'") if match else None
