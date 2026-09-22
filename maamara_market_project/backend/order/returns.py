@@ -135,7 +135,7 @@ def return_request_handler_api(request, item_id):
                     actor_type=actor_type,
                     action="return_requested",
                     item=item.item,
-                    description=f"{actor_name} submitted a return request for '{product_name}'.",
+                    description="A customer submitted a return request for " + product_name + ".",
                     related_url=f"/orders/{order.id}/returns/"
                 )
 
@@ -143,7 +143,7 @@ def return_request_handler_api(request, item_id):
                     Notification.objects.create(
                         user=user,
                         title="Return Request Created",
-                        message=f"We’ve received your return request for '{product_name}'.",
+                        message=f"We’ve received your return request for {product_name}.",
                         url=f"/orders/{order.id}/returns/"
                     )
                 else:
@@ -151,7 +151,7 @@ def return_request_handler_api(request, item_id):
                     Notification.objects.create(
                         visitor_id=visitor_id,
                         title="Return Request Created",
-                        message=f"We’ve received your return request for '{product_name}'.",
+                        message=f"We’ve received your return request for {product_name}.",
                         url=f"/visitor/returns/{item.id}/"
                     )
 
@@ -161,14 +161,14 @@ def return_request_handler_api(request, item_id):
                     actor_type="vendor",
                     action="return_requested",
                     item=item.item,
-                    description=f"A return request was made for your item '{product_name}'.",
+                    description=f"A customer requested a return for your item {product_name}.",
                     related_url=f"/vendor/orders/{order.id}/returns/"
                 )
 
                 Notification.objects.create(
                     user=vendor.user,
                     title="New Return Request",
-                    message=f"A customer requested a return for '{product_name}'.",
+                    message=f"A customer requested a return for {product_name}.",
                     url=f"/vendor/orders/{order.id}/returns/"
                 )
 
@@ -179,13 +179,13 @@ def return_request_handler_api(request, item_id):
                         actor_type="admin",
                         action="return_requested",
                         item=item.item,
-                        description=f"{actor_name} requested a return for '{product_name}'.",
+                        description=f"A customer requested a return for {product_name}.",
                         related_url=f"/admin/returns/{item.id}/"
                     )
                     Notification.objects.create(
                         user=admin,
                         title="New Return Request",
-                        message=f"{actor_name} submitted a return request for '{product_name}'.",
+                        message="A customer submitted a return request for " + product_name + ".",
                         url=f"/admin/returns/{item.id}/"
                     )
 
@@ -260,21 +260,21 @@ def return_request_handler_api(request, item_id):
                 Notification.objects.create(
                     user=user,
                     title="Refund Request Submitted",
-                    message=f"Your refund request for '{product_name}' worth {total_refund} has been received.",
+                    message=f"Your refund request for {product_name} worth {total_refund} has been received.",
                     url=f"/orders/{order.id}/returns/"
                 )
             else:
                 Notification.objects.create(
                     visitor_id=visitor_id,
                     title="Refund Request Submitted",
-                    message=f"Your refund request for '{product_name}' worth {total_refund} has been received.",
+                    message=f"Your refund request for {product_name} worth {total_refund} has been received.",
                     url=f"/visitor/returns/{item.id}/"
                 )
 
             Notification.objects.create(
                 user=vendor.user,
                 title="Refund Requested",
-                message=f"A refund has been requested for your product '{product_name}'.",
+                message=f"A customer requested a refund for your product {product_name}.",
                 url=f"/vendor/orders/{order.id}/returns/"
             )
 
@@ -282,7 +282,7 @@ def return_request_handler_api(request, item_id):
                 Notification.objects.create(
                     user=admin,
                     title="Refund Pending Approval",
-                    message=f"{actor_name} requested a refund for '{product_name}' worth {total_refund}.",
+                    message=f"A customer requested a refund for {product_name} worth {total_refund}.",
                     url=f"/admin-returns/{return_request.id}/"
                 )
 
@@ -323,21 +323,21 @@ def return_request_handler_api(request, item_id):
                 Notification.objects.create(
                     user=user,
                     title="Exchange Request Created",
-                    message=f"Your exchange request for '{product_name}' has been received. You can now select a replacement item.",
+                    message=f"Your exchange request for {product_name} has been received. You can now select a replacement item.",
                     url=f"/orders/{order.id}/returns/"
                 )
             else:
                 Notification.objects.create(
                     visitor_id=visitor_id,
                     title="Exchange Request Created",
-                    message=f"Your exchange request for '{product_name}' has been received. You can now select a replacement item.",
+                    message=f"Your exchange request for {product_name} has been received. You can now select a replacement item.",
                     url=f"/visitor/returns/{item.id}/"
                 )
 
             Notification.objects.create(
                 user=vendor.user,
                 title="Exchange Requested",
-                message=f"A customer requested an exchange for '{product_name}'.",
+                message=f"A customer requested an exchange for {product_name}.",
                 url=f"/vendor/orders/{order.id}/returns/"
             )
 
@@ -345,7 +345,7 @@ def return_request_handler_api(request, item_id):
                 Notification.objects.create(
                     user=admin,
                     title="Exchange Pending Approval",
-                    message=f"{actor_name} requested an exchange for '{product_name}'.",
+                    message=f"A customer requested an exchange for {product_name}.",
                     url=f"/admin-returns/{return_request.id}/"
                 )
 
@@ -559,7 +559,7 @@ def approve_return_request_api(request, return_id):
                     Notification.objects.create(
                         user=customer,
                         title="Refund Requested",
-                        message=f"You have requested for a refund on  product '{product.name}'.",
+                        message=f"Your refund request for {product.name} has been received.",
                         url=f"/orders/returns/{return_request.id}/"
                     )
                 elif visitor_id:
@@ -576,7 +576,7 @@ def approve_return_request_api(request, return_id):
                     Notification.objects.create(
                         visitor_id=visitor_id,
                         title="Refund Requested",
-                        message=f"You have requested for a refund on  product '{product.name}'.",
+                        message=f"Your refund request for {product.name} has been received.",
                         url=f"/orders/returns/{return_request.id}/"
                     )
 
@@ -586,7 +586,7 @@ def approve_return_request_api(request, return_id):
                     actor_type="vendor",
                     action="refund_approved_vendor",
                     item=product,
-                    description=f"Admin approved refund for '{product.name}'.",
+                    description=f"The administrator approved the refund for {product.name}.",
                     related_url=f"/vendor/returns/{return_request.id}/"
                 )
 
@@ -594,7 +594,7 @@ def approve_return_request_api(request, return_id):
                 Notification.objects.create(
                     user=vendor.user,
                     title="Refund Request Approved",
-                    message=f"A refund has been Approved by Admin for your product '{product.name} your account will be affected for the adjustments will be made in the following moth payouts'.",
+                    message=f"The administrator approved the refund for your product {product.name}. Any account adjustment will be reflected in a future payout.",
                     url=f"/vendor/orders/{order.id}/returns/"
                 )
 
@@ -605,7 +605,7 @@ def approve_return_request_api(request, return_id):
                         actor_type="admin",
                         action="refund_approved_admin",
                         item=product,
-                        description=f"Refund approved for '{product.name}' by {admin.username}.",
+                        description=f"The administrator approved the refund for {product.name}.",
                         related_url=f"/admin/vendorDashboard/returns/{return_request.id}/"
                     )
 
@@ -646,7 +646,7 @@ def approve_return_request_api(request, return_id):
                     Notification.objects.create(
                         user=customer,
                         title="Exchange Request",
-                        message=f"You have requested for an exchange on  product '{product.name}'.",
+                        message=f"Your exchange request for {product.name} has been received.",
                         url=f"/vendor/orders/{product.user.order.id}/returns/"
                     )
 
@@ -664,7 +664,7 @@ def approve_return_request_api(request, return_id):
                     Notification.objects.create(
                         visitor_id=visitor_id,
                         title="Exchange Request",
-                        message=f"You have requested for an exchange on  product '{product.name}'.",
+                        message=f"Your exchange request for {product.name} has been received.",
                         url=f"/vendor/orders/{product.user.order.id}/returns/"
                     )
 
@@ -674,7 +674,7 @@ def approve_return_request_api(request, return_id):
                     actor_type="vendor",
                     action="exchange_approved_vendor",
                     item=product,
-                    description=f"Admin approved exchange for '{product.name}'.",
+                    description=f"The administrator approved the exchange for {product.name}.",
                     related_url=f"/vendor/returns/{return_request.id}/"
                 )
 
@@ -682,7 +682,7 @@ def approve_return_request_api(request, return_id):
                 Notification.objects.create(
                     user=vendor.user,
                     title="Exchange Request Approved",
-                    message=f"An Exchange has been Approved by Admin for your product '{product.name} your account will be affected for the adjustments will be made in the following moth payouts'.",
+                    message=f"The administrator approved the exchange for your product {product.name}. Any account adjustment will be reflected in a future payout.",
                     url=f"/vendor/orders/{product.user.order.id}/returns/"
                 )
 
@@ -693,7 +693,7 @@ def approve_return_request_api(request, return_id):
                         actor_type="admin",
                         action="exchange_approved_admin",
                         item=product,
-                        description=f"Exchange approved for '{product.name}' by {admin.username}.",
+                        description=f"The administrator approved the exchange for {product.name}.",
                         related_url=f"/admin/vendorDashboard/returns/{return_request.id}/"
                     )
 
@@ -740,7 +740,7 @@ def approve_return_request_api(request, return_id):
                 actor_type="vendor",
                 action="return_rejected_vendor",
                 item=product,
-                description=f"Return request for '{product.name}' was rejected by admin.",
+                description=f"The administrator rejected the return request for {product.name}.",
                 related_url=f"/vendor/returns/{return_request.id}/"
             )
 
@@ -751,7 +751,7 @@ def approve_return_request_api(request, return_id):
                     actor_type="admin",
                     action="return_rejected_admin",
                     item=product,
-                    description=f"Return for '{product.name}' rejected by {admin.username}.",
+                    description=f"The administrator rejected the return request for {product.name}.",
                     related_url=f"/admin/vendorDashboard/returns/{return_request.id}/"
                 )
 
