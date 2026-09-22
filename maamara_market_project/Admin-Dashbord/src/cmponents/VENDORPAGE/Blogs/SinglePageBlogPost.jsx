@@ -80,7 +80,7 @@ export default function SingleBlogPage() {
 
         {/* 🧠 CONTENT (SAFE HTML RENDER) */}
         <div
-          className="text-gray-800 mb-6 leading-relaxed prose max-w-none"
+          className="blog-rich-text mb-6 max-w-none text-gray-800 leading-7 [&_p]:mb-4 [&_h1]:mb-5 [&_h1]:text-3xl [&_h1]:font-bold [&_h2]:mb-4 [&_h2]:text-2xl [&_h2]:font-bold [&_h3]:mb-3 [&_h3]:text-xl [&_h3]:font-semibold [&_ul]:mb-4 [&_ul]:list-disc [&_ul]:pl-6 [&_ol]:mb-4 [&_ol]:list-decimal [&_ol]:pl-6 [&_blockquote]:my-5 [&_blockquote]:border-l-4 [&_blockquote]:border-[#2563eb] [&_blockquote]:pl-4 [&_blockquote]:italic [&_a]:text-[#2563eb] [&_a]:underline [&_pre]:my-4 [&_pre]:overflow-x-auto [&_pre]:rounded-xl [&_pre]:bg-gray-900 [&_pre]:p-4 [&_pre]:text-gray-100
           dangerouslySetInnerHTML={{
             __html: sanitizeRichText(post.content || ""),
           }}
