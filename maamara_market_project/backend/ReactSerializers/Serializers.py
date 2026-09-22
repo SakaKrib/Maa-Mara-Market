@@ -534,13 +534,10 @@ class ItemSerializers(serializers.ModelSerializer):
         occasions_data = validated_data.pop("occasions", None)
 
 
-        # Assign section based on is_organic flag
-        is_organic = validated_data.get('is_organic', instance.is_organic)
-
-        section_name = 'organic' if is_organic else 'inorganic'
-        section_obj = Section.objects.get(name__iexact=section_name)
-
-        validated_data['section'] = section_obj
+        # Section is an independent classification from the organic/fresh-food
+        # flags. Preserve the section explicitly selected by the form.
+        if "section" not in validated_data:
+            validated_data["section"] = instance.section
 
 
         # ✅ Update primitive fields
@@ -616,7 +613,10 @@ class ItemSerializers(serializers.ModelSerializer):
             if offer_instance:
                 instance.discount_price = offer_instance.final_price
         else:
-            # If no offer, keep payload discount_price
+            # Turning an offer off must also remove its persisted Offer record;
+            # otherwise stale offer dates/metadata remain attached to the item.
+            if offer_instance:
+                offer_instance.delete()
             instance.discount_price = discount_price if discount_price is not None else None
 
 
