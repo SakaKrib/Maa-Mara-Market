@@ -95,8 +95,10 @@ const NavBar = ({ open = false, onClose }) => {
               className="h-10 w-10 shrink-0 rounded-xl border border-border object-cover shadow-sm"
             />
             <span className="leading-tight">
-              <strong className="block text-sm font800 font-semibold tracking-tight text-slate-900 dark:text-white">Maa Mara</strong>
-              <span className="block text-xs text-slate-500 dark:text-slate-400">Shop Manager</span>
+              <div className="logo xxs:-mt-20 xxs:relative xxs:-top-10 lg:mt-0 lg:top-0">
+                <a href="/admin-dashboard">Maa <span className="it-name">Mara</span> <span className="mkrt">Market</span></a>
+              </div>
+              <span className="block text-xs text-slate-500 dark:text-slate-400">Admin Shop Manager</span>
             </span>
           </Link>
           <button type="button" onClick={onClose} className="rounded-lg p-2 text-slate-500 hover:bg-slate-100 lg:hidden dark:hover:bg-slate-800">

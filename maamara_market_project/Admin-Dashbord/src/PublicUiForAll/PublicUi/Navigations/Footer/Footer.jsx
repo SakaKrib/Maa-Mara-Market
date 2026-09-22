@@ -76,7 +76,11 @@ const Footer = () => {
       <div className="mm-footer-inner mm-container">
         <div className="mm-footer-grid">
           <div className="mm-footer-brand">
-            <Link to="/" className="mm-footer-logo">Maa Mara Market</Link>
+            <div>
+              <div className="logo xxs:-mt-20 xxs:relative xxs:-top-10 lg:mt-0 lg:top-0">
+                <a href="/">Maa <span className="it-name">Mara</span> <span className="mkrt">Market</span></a>
+              </div>
+            </div>
             <p className="mm-footer-muted">
               Discover handmade goods, African design, everyday essentials and independent sellers from across the marketplace.
             </p>
