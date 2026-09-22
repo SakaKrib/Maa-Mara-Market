@@ -1,4 +1,4 @@
-import React, { useMemo } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { baseUrl } from "../../../../../../cmponents/Constant/Constant";
 
 const resolveImage = (value) => {
@@ -6,7 +6,7 @@ const resolveImage = (value) => {
   return value.startsWith("http") ? value : `${baseUrl || ""}${value}`;
 };
 
-const ProductGallery = ({ item, selectedImage, selectedVariant, selectedSize, onSelectImage, onSelectColor }) => {
+const ProductGallery = ({ item, selectedImage, selectedVariant, selectedSize, onSelectImage, onSelectColor }) => {\n  const [isImageFullscreen, setIsImageFullscreen] = useState(false);
   const media = useMemo(() => {
     const entries = [];
 
@@ -35,21 +35,71 @@ const ProductGallery = ({ item, selectedImage, selectedVariant, selectedSize, on
   const activeImage = selectedImage || selectedSize?.image || selectedVariant?.image || item?.image;
   const activeUrl = resolveImage(activeImage);
 
+  useEffect(() => {
+    if (!isImageFullscreen) return undefined;
+
+    const handleKeyDown = (event) => {
+      if (event.key === "Escape") setIsImageFullscreen(false);
+    };
+
+    document.addEventListener("keydown", handleKeyDown);
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
+    return () => {
+      document.removeEventListener("keydown", handleKeyDown);
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [isImageFullscreen]);
+
   return (
     <section className="w-full min-w-0">
       <div className="relative w-full overflow-hidden rounded-2xl border border-border bg-muted/20 aspect-[4/5] max-h-[760px]">
         {activeUrl ? (
-          <img
-            src={activeUrl}
-            className="block h-full w-full object-cover"
-            alt={item.name}
-          />
+          <button
+            type="button"
+            className="block h-full w-full cursor-zoom-in"
+            onClick={() => setIsImageFullscreen(true)}
+            aria-label="View product image full screen"
+          >
+            <img
+              src={activeUrl}
+              className="block h-full w-full object-cover"
+              alt={item.name}
+            />
+          </button>
         ) : (
           <div className="flex h-full w-full items-center justify-center text-sm text-muted-foreground">
             No product image
           </div>
         )}
       </div>
+
+      {isImageFullscreen && activeUrl && (
+        <div
+          className="fixed inset-0 z-[100] flex h-screen w-screen items-center justify-center bg-black/90 p-4 sm:p-8"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Full screen product image"
+          onClick={() => setIsImageFullscreen(false)}
+        >
+          <button
+            type="button"
+            className="absolute right-4 top-4 z-10 flex h-11 w-11 items-center justify-center rounded-full bg-white/10 text-2xl text-white backdrop-blur transition-colors hover:bg-white/20"
+            onClick={() => setIsImageFullscreen(false)}
+            aria-label="Close full screen image"
+          >
+            ×
+          </button>
+
+          <img
+            src={activeUrl}
+            className="max-h-full max-w-full object-contain"
+            alt={item.name}
+            onClick={(event) => event.stopPropagation()}
+          />
+        </div>
+      )}
 
       {media.length > 0 && (
         <div className="mt-4 flex gap-3 overflow-x-auto pb-1">
