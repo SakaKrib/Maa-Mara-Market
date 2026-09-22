@@ -14,6 +14,12 @@ const AddToCartButton = ({
   quantity,
   variantId = null,
   sizeId = null,
+  ageVariantId = null,
+  shoeId = null,
+  selectedShoeSize = null,
+  weightId = null,
+  lengthId = null,
+  customPreferences = "",
   availableStock,
   remainingStock,
   disabled = false,
@@ -46,7 +52,7 @@ const AddToCartButton = ({
       setAdding(true);
       const res = await api.post(
         `/api/cart/add/${itemId}/`,
-        { quantity, variant_id: variantId, size_id: sizeId },
+        { quantity, variant_id: variantId, size_id: sizeId, age_variant_id: ageVariantId, shoe_id: shoeId, selected_shoe_size: selectedShoeSize, weight_id: weightId, length_id: lengthId, custom_preferences: customPreferences ? { instructions: customPreferences } : {} },
         { withCredentials: true }
       );
       // Refresh the cart context after success
