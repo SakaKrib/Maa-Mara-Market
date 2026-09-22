@@ -1,51 +1,99 @@
+from datetime import date, datetime
 from django.apps import apps
 from django.core.exceptions import FieldError
 from django.db.models import Q
+from django.utils.dateparse import parse_date, parse_datetime
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 
 
 SYSTEM_APPS = {"admin", "contenttypes", "sessions", "staticfiles"}
-SEARCHABLE_FIELD_TYPES = {
+EXCLUDED_APPS = {"auth", "authtoken"}
+TEXT_FIELD_TYPES = {
     "CharField",
     "TextField",
     "EmailField",
     "SlugField",
     "GenericIPAddressField",
     "URLField",
+    "UUIDField",
+}
+NUMERIC_FIELD_TYPES = {
+    "IntegerField",
+    "BigIntegerField",
+    "PositiveIntegerField",
+    "PositiveBigIntegerField",
+    "SmallIntegerField",
+    "PositiveSmallIntegerField",
+    "DecimalField",
+    "FloatField",
+}
+SENSITIVE_FIELD_NAMES = {
+    "password",
+    "password_hash",
+    "token",
+    "access_token",
+    "refresh_token",
+    "secret",
+    "otp",
+    "otp_secret",
+    "api_key",
 }
 
 
 def _model_search_fields(model):
     return [
-        field.name
+        field
         for field in model._meta.get_fields()
         if getattr(field, "concrete", False)
         and not getattr(field, "many_to_many", False)
-        and field.__class__.__name__ in SEARCHABLE_FIELD_TYPES
+        and field.name not in SENSITIVE_FIELD_NAMES
+        and (
+            field.__class__.__name__ in TEXT_FIELD_TYPES
+            or field.__class__.__name__ in NUMERIC_FIELD_TYPES
+            or field.__class__.__name__ in {"DateField", "DateTimeField", "BooleanField"}
+        )
     ]
 
 
 def _vendor_scope(model, vendor):
     """
-    Return only objects belonging to the authenticated vendor.
+    Scope a vendor search to records that belong to this vendor.
 
-    The scope deliberately follows only known ownership relationships. If a
-    model has no safe vendor relationship, it is excluded from vendor search
-    rather than exposing another store's or an administrator's data.
+    Unknown ownership paths are deliberately excluded. This is safer than
+    returning shared/admin records merely because their text matches.
     """
     candidate_paths = (
+        # Direct ownership.
         "vendor",
-        "item__vendor",
-        "order_item__item__vendor",
-        "order__order_items__item__vendor",
-        "order_items__item__vendor",
-        "customer__vendor",
         "user__vendor",
         "created_by__vendor",
         "requested_by__vendor",
         "approved_by__vendor",
+        "changed_by__vendor",
+        "sender__vendor",
+        "participant__vendor",
+        "admin__vendor",
+
+        # Product ownership.
+        "item__vendor",
+        "item__item__vendor",
+        "order_item__item__vendor",
+        "order__order_items__item__vendor",
+        "order_items__item__vendor",
+
+        # Returns/refunds and related financial records.
+        "return_request__item__item__vendor",
+        "vendor_adjustment__vendor",
+        "payout__vendor",
+        "transaction__vendor",
+
+        # Vendor/customer/support relations.
+        "customer__vendor",
+        "conversation__participant__vendor",
+        "conversation__admin__vendor",
+        "vendor_request__user__vendor",
     )
 
     scope = Q(pk__in=[])
@@ -59,27 +107,61 @@ def _vendor_scope(model, vendor):
         scope |= Q(**{path: vendor})
         found_scope = True
 
-    return model.objects.filter(scope).distinct() if found_scope else model.objects.none()
+    if not found_scope:
+        return model.objects.none()
+
+    return model.objects.filter(scope).distinct()
 
 
-def _search_queryset(model, query):
-    queryset = model.objects.all()
+def _search_queryset_from_queryset(queryset, model, query):
     fields = _model_search_fields(model)
-
     search_q = Q()
+
     for field in fields:
-        search_q |= Q(**{f"{field}__icontains": query})
+        field_type = field.__class__.__name__
+
+        if field_type in TEXT_FIELD_TYPES:
+            search_q |= Q(**{f"{field.name}__icontains": query})
+            continue
+
+        if field_type in NUMERIC_FIELD_TYPES:
+            try:
+                search_q |= Q(**{field.name: query})
+            except (ValueError, TypeError):
+                pass
+            continue
+
+        if field_type == "BooleanField":
+            normalized = query.lower()
+            if normalized in {"true", "yes", "1"}:
+                search_q |= Q(**{field.name: True})
+            elif normalized in {"false", "no", "0"}:
+                search_q |= Q(**{field.name: False})
+            continue
+
+        if field_type == "DateField":
+            parsed = parse_date(query)
+            if parsed:
+                search_q |= Q(**{field.name: parsed})
+            continue
+
+        if field_type == "DateTimeField":
+            parsed = parse_datetime(query)
+            if parsed:
+                search_q |= Q(**{field.name: parsed})
+            elif len(query) == 10:
+                parsed_date = parse_date(query)
+                if parsed_date:
+                    search_q |= Q(**{f"{field.name}__date": parsed_date})
 
     # Numeric primary keys are useful for orders, payouts, transactions, etc.
     if query.isdigit():
         try:
-            queryset = queryset.filter(search_q | Q(pk=int(query)))
+            search_q |= Q(pk=int(query))
         except (ValueError, TypeError):
-            queryset = queryset.filter(search_q)
-    else:
-        queryset = queryset.filter(search_q)
+            pass
 
-    return queryset.distinct()
+    return queryset.filter(search_q).distinct() if search_q else queryset.none()
 
 
 def _display_value(obj):
@@ -87,9 +169,12 @@ def _display_value(obj):
         "name",
         "title",
         "company_name",
+        "full_name",
+        "question",
+        "subject",
         "invoice_number",
         "reference",
-        "username",
+        "vendor_code",
         "email",
         "key",
         "action",
@@ -104,7 +189,7 @@ def _display_value(obj):
 def _serialize_object(obj, model):
     display = _display_value(obj)
     return {
-        "id": obj.pk,
+        "id": str(obj.pk),
         "name": getattr(obj, "name", None) or display,
         "title": getattr(obj, "title", None),
         "company_name": getattr(obj, "company_name", None),
@@ -117,7 +202,7 @@ def _serialize_object(obj, model):
 
 def _searchable_models():
     for model in apps.get_models():
-        if model._meta.app_label in SYSTEM_APPS:
+        if model._meta.app_label in SYSTEM_APPS | EXCLUDED_APPS:
             continue
         if model._meta.proxy or not _model_search_fields(model):
             continue
@@ -137,40 +222,29 @@ class GlobalSearchView(APIView):
         vendor = getattr(user, "vendor", None)
         is_vendor = vendor is not None and not is_admin
 
+        if not is_admin and not is_vendor:
+            return Response(
+                {"detail": "Global workspace search is available to administrators and vendors only."},
+                status=403,
+            )
+
         results = {}
 
         for model in _searchable_models():
-            if is_admin:
-                queryset = model.objects.all()
-            elif is_vendor:
-                queryset = _vendor_scope(model, vendor)
-            else:
-                # Non-admin/non-vendor authenticated users should not use the
-                # internal global search endpoint.
-                continue
+            queryset = (
+                model.objects.all()
+                if is_admin
+                else _vendor_scope(model, vendor)
+            )
 
             queryset = _search_queryset_from_queryset(queryset, model, query)
             objects = queryset.order_by("-pk")[:10]
+
             if not objects:
                 continue
 
-            key = model.__name__
-            results[key] = [_serialize_object(obj, model) for obj in objects]
+            results[model.__name__] = [
+                _serialize_object(obj, model) for obj in objects
+            ]
 
         return Response({"query": query, "results": results})
-
-
-def _search_queryset_from_queryset(queryset, model, query):
-    fields = _model_search_fields(model)
-    search_q = Q()
-
-    for field in fields:
-        search_q |= Q(**{f"{field}__icontains": query})
-
-    if query.isdigit():
-        try:
-            search_q |= Q(pk=int(query))
-        except (ValueError, TypeError):
-            pass
-
-    return queryset.filter(search_q).distinct()
