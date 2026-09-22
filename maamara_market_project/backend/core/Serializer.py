@@ -1,4 +1,5 @@
 from django.contrib.auth import get_user_model
+from django.db.models import Q
 
 from rest_framework import generics, serializers
 from rest_framework.decorators import api_view, permission_classes
@@ -375,6 +376,20 @@ class ActivityLogSerializer(serializers.ModelSerializer):
         "react_removed": "Blog reaction removed",
         "banner_approved": "Banner approved",
         "banner_rejected": "Banner rejected",
+        "blog_approved": "Blog approved",
+        "return_requested": "Return requested",
+        "return_rejected": "Return declined",
+        "refund_approved": "Refund approved",
+        "refund_approved_vendor": "Refund approved",
+        "refund_approved_admin": "Refund approved",
+        "exchange_approved_vendor": "Exchange approved",
+        "exchange_approved_admin": "Exchange approved",
+        "return_rejected_vendor": "Return declined",
+        "return_rejected_admin": "Return declined",
+        "paypal_payment": "Payment completed",
+        "vendor_item_request_received": "Vendor item request received",
+        "viewed_vendor_requests": "Vendor requests viewed",
+        "approved_vendor": "Vendor approved",
     }
 
     class Meta:
@@ -403,6 +418,8 @@ class ActivityLogSerializer(serializers.ModelSerializer):
             "user": "A customer",
             "vendor": "A vendor",
             "admin": "An administrator",
+            "visitor": "A customer",
+            "guest": "A customer",
         }.get(obj.actor_type, "A user")
 
     def _item_name(self, obj):
@@ -410,7 +427,10 @@ class ActivityLogSerializer(serializers.ModelSerializer):
         return (getattr(item, "name", None) or "").strip() or "the item"
 
     def get_display_title(self, obj):
-        return self.FRIENDLY_TITLES.get(obj.action, obj.get_action_display())
+        return self.FRIENDLY_TITLES.get(
+            obj.action,
+            str(obj.action or obj.get_action_display()).replace("_", " ").strip().title(),
+        )
 
     def get_display_message(self, obj):
         actor = self._actor_phrase(obj)
@@ -429,20 +449,29 @@ class ActivityLogSerializer(serializers.ModelSerializer):
             "item_updated": f"{actor} updated {item_name}.",
             "item_updated_qty": f"{actor} updated the stock for {item_name}.",
             "item_request_created": f"{actor} submitted an item request for {item_name}.",
-            "item_request_approved": f"The item request for {item_name} was approved.",
-            "item_request_denied": f"The item request for {item_name} was declined.",
+            "item_request_approved": f"{actor} approved the item request for {item_name}.",
+            "item_request_denied": f"{actor} declined the item request for {item_name}.",
             "Price Change Requested": f"{actor} requested a price change for {item_name}.",
-            "Price Change Approved": f"The price change request for {item_name} was approved.",
-            "order_created": "A new order was received.",
-            "order_completed": "An order was completed.",
-            "refund_requested": "A refund was requested.",
-            "refund_approved": "A refund was approved.",
-            "exchange_requested": "An exchange was requested.",
-            "exchange_approved": "An exchange was approved.",
-            "vendor_approved": "The vendor account was approved.",
-            "vendor_denied": "The vendor request was declined.",
-            "user_registered": "A new customer account was registered.",
-            "vendor_registered": "A new vendor account was registered.",
+            "Price Change Approved": f"{actor} approved the price change request for {item_name}.",
+            "order_created": f"{actor} received a new order.",
+            "order_completed": f"{actor} completed an order.",
+            "refund_requested": f"{actor} requested a refund.",
+            "refund_approved": f"{actor} approved a refund for {item_name}.",
+            "refund_approved_vendor": f"{actor} approved a refund for {item_name}.",
+            "refund_approved_admin": f"{actor} approved a refund for {item_name}.",
+            "exchange_requested": f"{actor} requested an exchange.",
+            "exchange_approved": f"{actor} approved an exchange for {item_name}.",
+            "exchange_approved_vendor": f"{actor} approved an exchange for {item_name}.",
+            "exchange_approved_admin": f"{actor} approved an exchange for {item_name}.",
+            "return_requested": f"{actor} requested a return for {item_name}.",
+            "return_rejected": f"{actor} declined the return request for {item_name}.",
+            "return_rejected_vendor": f"{actor} declined the return request for {item_name}.",
+            "return_rejected_admin": f"{actor} declined the return request for {item_name}.",
+            "paypal_payment": f"{actor} completed a PayPal payment.",
+            "vendor_approved": f"{actor} approved the vendor account.",
+            "vendor_denied": f"{actor} declined the vendor request.",
+            "user_registered": f"{actor} registered a customer account.",
+            "vendor_registered": f"{actor} registered a vendor account.",
             "login": f"{actor} signed in.",
             "logout": f"{actor} signed out.",
         }
@@ -462,7 +491,13 @@ def get_activity_logs(request):
     logs = ActivityLog.objects.all().select_related('user', 'item').order_by('-timestamp')
 
     if request.query_params.get('scope') == 'vendor':
-        logs = logs.filter(actor_type='vendor', user__vendor__isnull=False)
+        vendor = getattr(request.user, "vendor", None)
+        if vendor is None:
+            logs = logs.none()
+        else:
+            logs = logs.filter(
+                Q(user=request.user) | Q(item__vendor=vendor)
+            ).distinct()
 
     # The dashboard only needs a compact recent window. The dedicated vendor
     # activity page can request all matching records with ?all=true.
