@@ -14,11 +14,13 @@ import {
   listCircleOutline,
   closeOutline,
   menuOutline,
+  settingsOutline,
 } from "ionicons/icons";
 import { Link, useLocation } from "react-router-dom";
 import { useAuth } from "../../Auth/AuthContext/Context";
 import Maamara from "../../../assets/Logo/Maamara.jpg";
 import { useVendorOrdersCombined } from "../../Hooks/Order/CombinedOrderHook";
+import LogoutConfirmationModal from "../../Auth/LogoutConfirmationModal";
 
 const VendorDashboardNav = () => {
   const location = useLocation();
@@ -47,6 +49,8 @@ const VendorDashboardNav = () => {
     { label: "Calendar", to: "/vendors-dashboard/vendor-calender", icon: calendar },
     { label: "Reviews", to: "/vendors-dashboard/review-page", icon: pencilOutline },
   ];
+
+  const [showSignOutConfirm, setShowSignOutConfirm] = useState(false);
 
   const handleLogout = async () => {
     try {
@@ -136,9 +140,13 @@ const VendorDashboardNav = () => {
         </nav>
 
         <div className="etsy-sidebar-bottom">
+          <Link to="/vendors-dashboard/settings" onClick={() => setMobileOpen(false)}>
+            <IonIcon icon={settingsOutline} aria-hidden="true" />
+            <span>Settings</span>
+          </Link>
           <button
             type="button"
-            onClick={handleLogout}
+            onClick={() => setShowSignOutConfirm(true)}
             className="!text-[#595959] hover:!text-[#222]"
           >
             <IonIcon icon={logOutOutline} aria-hidden="true" />
@@ -146,6 +154,13 @@ const VendorDashboardNav = () => {
           </button>
         </div>
       </aside>
+
+      <LogoutConfirmationModal
+        open={showSignOutConfirm}
+        onCancel={() => setShowSignOutConfirm(false)}
+        onConfirm={handleLogout}
+        description="Do you want to sign out of your Maa Mara vendor account?"
+      />
     </>
   );
 };
