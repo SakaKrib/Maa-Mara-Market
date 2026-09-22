@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { IonIcon } from "@ionic/react";
 import {
   statsChartOutline,
@@ -7,13 +7,13 @@ import {
   peopleOutline,
   chatbubbleEllipsesOutline,
   readerOutline,
-  settingsOutline,
   logOutOutline,
   calendar,
   arrowForwardCircleOutline,
   pencilOutline,
   listCircleOutline,
   closeOutline,
+  menuOutline,
 } from "ionicons/icons";
 import { Link, useLocation } from "react-router-dom";
 import { useAuth } from "../../Auth/AuthContext/Context";
@@ -22,9 +22,11 @@ import { useVendorOrdersCombined } from "../../Hooks/Order/CombinedOrderHook";
 const VendorDashboardNav = () => {
   const location = useLocation();
   const { pending } = useVendorOrdersCombined();
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
+  const [mobileOpen, setMobileOpen] = useState(false);
 
   const userName = user?.username || "Vendor";
+
   const isActive = (path, exact = false) =>
     exact
       ? location.pathname === path
@@ -45,53 +47,99 @@ const VendorDashboardNav = () => {
     { label: "Reviews", to: "/vendors-dashboard/review-page", icon: pencilOutline },
   ];
 
+  const handleLogout = async () => {
+    try {
+      await logout();
+    } catch (error) {
+      console.error("Vendor logout failed:", error);
+    }
+  };
+
   return (
-    <aside className="etsy-shop-sidebar" aria-label="Vendor dashboard navigation">
-      <div className="etsy-sidebar-brand">
-        <div className="etsy-brand-mark" aria-hidden="true">M</div>
-        <div>
-          <strong>Maa Mara</strong>
-          <small>Vendor Manager</small>
-        </div>
-      </div>
+    <>
+      {!mobileOpen && (
+        <button
+          type="button"
+          onClick={() => setMobileOpen(true)}
+          className="fixed left-3 top-[72px] z-[1300] inline-flex h-10 w-10 items-center justify-center rounded-xl border border-[#e6e6e4] bg-white text-[#222] shadow-sm sm:hidden"
+          aria-label="Open vendor navigation"
+        >
+          <IonIcon icon={menuOutline} className="text-xl" />
+        </button>
+      )}
 
-      <div className="px-2 pb-3 text-xs text-[#595959]">
-        Welcome, <span className="font-semibold text-[#222]">{userName}</span>
-      </div>
+      {mobileOpen && (
+        <button
+          type="button"
+          className="fixed inset-0 z-[1190] bg-black/30 sm:hidden"
+          onClick={() => setMobileOpen(false)}
+          aria-label="Close vendor navigation overlay"
+        />
+      )}
 
-      <nav className="etsy-sidebar-nav" aria-label="Vendor sections">
-        {navItems.map((item) => (
-          <Link
-            key={item.to}
-            to={item.to}
-            className={isActive(item.to, item.exact) ? "active" : ""}
+      <aside
+        className={
+          "etsy-shop-sidebar " +
+          (mobileOpen ? "!w-[244px] shadow-2xl" : "")
+        }
+        style={{
+          ...(mobileOpen
+            ? { width: "244px" }
+            : {}),
+        }}
+        aria-label="Vendor dashboard navigation"
+      >
+        <div className="etsy-sidebar-brand">
+          <div className="etsy-brand-mark" aria-hidden="true">M</div>
+          <div>
+            <strong>Maa Mara</strong>
+            <small>Vendor Manager</small>
+          </div>
+          <button
+            type="button"
+            onClick={() => setMobileOpen(false)}
+            className="ml-auto inline-flex h-8 w-8 items-center justify-center rounded-lg text-[#595959] hover:bg-[#f8f8f6] hover:text-[#222] sm:hidden"
+            aria-label="Close vendor navigation"
           >
-            <IonIcon icon={item.icon} aria-hidden="true" />
-            <span>{item.label}</span>
-            {item.badge > 0 && (
-              <span className="ml-auto rounded-full bg-[#f1641e] px-2 py-0.5 text-[11px] font-bold text-white">
-                {item.badge}
-              </span>
-            )}
-          </Link>
-        ))}
-      </nav>
+            <IonIcon icon={closeOutline} />
+          </button>
+        </div>
 
-      <div className="etsy-sidebar-bottom">
-        <Link to="/vendors-dashboard">
-          <IonIcon icon={settingsOutline} aria-hidden="true" />
-          <span>Settings</span>
-        </Link>
-        <button type="button" title="Close navigation">
-          <IonIcon icon={closeOutline} aria-hidden="true" />
-          <span>Close Menu</span>
-        </button>
-        <button type="button">
-          <IonIcon icon={logOutOutline} aria-hidden="true" />
-          <span>Log Out</span>
-        </button>
-      </div>
-    </aside>
+        <div className="px-2 pb-3 text-xs text-[#595959]">
+          Welcome, <span className="font-semibold text-[#222]">{userName}</span>
+        </div>
+
+        <nav className="etsy-sidebar-nav" aria-label="Vendor sections">
+          {navItems.map((item) => (
+            <Link
+              key={item.to}
+              to={item.to}
+              onClick={() => setMobileOpen(false)}
+              className={isActive(item.to, item.exact) ? "active" : ""}
+            >
+              <IonIcon icon={item.icon} aria-hidden="true" />
+              <span>{item.label}</span>
+              {item.badge > 0 && (
+                <span className="ml-auto rounded-full bg-[#f1641e] px-2 py-0.5 text-[11px] font-bold text-white">
+                  {item.badge}
+                </span>
+              )}
+            </Link>
+          ))}
+        </nav>
+
+        <div className="etsy-sidebar-bottom">
+          <button
+            type="button"
+            onClick={handleLogout}
+            className="!text-[#595959] hover:!text-[#222]"
+          >
+            <IonIcon icon={logOutOutline} aria-hidden="true" />
+            <span>Log Out</span>
+          </button>
+        </div>
+      </aside>
+    </>
   );
 };
 
