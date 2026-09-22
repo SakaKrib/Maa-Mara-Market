@@ -78,12 +78,6 @@ const CustomerPage = () => {
           <p className="mx-auto mt-1 max-w-md text-sm text-[#595959]">
             Customers will appear here as they interact with your shop.
           </p>
-          <Link
-            to="/vendors-dashboard"
-            className="mt-5 inline-flex items-center rounded-xl bg-[#2563eb] px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-[#1d4ed8]"
-          >
-            Back to dashboard
-          </Link>
         </div>
       )}
 
