@@ -258,7 +258,7 @@ export default function Messaging() {
                 <div className="flex items-end gap-2 rounded-2xl border border-[#e6e6e4] bg-[#f8f8f6] p-2">
                   <label className="grid h-10 w-10 shrink-0 cursor-pointer place-items-center rounded-xl text-[#595959] hover:bg-[#f8f8f6]"><IonIcon icon={attachOutline} className="text-xl" /><input type="file" accept="image/jpeg,image/png,image/webp" className="hidden" onChange={selectImage} /></label>
                   <textarea value={body} onChange={(e) => setBody(e.target.value)} rows={1} placeholder="Write a message..." className="min-h-10 flex-1 resize-none bg-transparent px-2 py-2 text-sm outline-none" />
-                  <button type="submit" disabled={sending || (!body.trim() && !image)} className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-[#2563eb] text-[#2563eb]-foreground disabled:opacity-50"><IonIcon icon={sendOutline} /></button>
+                  <button type="submit" disabled={sending || (!body.trim() && !image)} className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-[#2563eb] px-2.5 text-[#2563eb]-foreground transition hover:bg-[#1d4ed8] disabled:opacity-50"><IonIcon icon={sendOutline} /></button>
                 </div>
               </form>
             </>
