@@ -6,7 +6,7 @@ from django.template.loader import render_to_string
 from django.conf import settings
 from django.contrib.auth import get_user_model
 
-from .models import Vendor, VendorItemRequest, Item, ItemDraft
+from .models import Vendor, VendorItemRequest, Item, ItemDraft, ItemDraftMedia
 from .serializers import VendorItemRequestSerializer
 from core.models import ActivityLog, Notification  # adjust import to your app
 from rest_framework.views import APIView
@@ -26,6 +26,9 @@ from rest_framework.permissions import IsAdminUser, IsAuthenticated
 from order.Base import IsVendor
 from .draft_service import submit_item_draft, finalize_item_draft
 import hashlib
+import json
+import os
+from PIL import Image
 from django.core.files.storage import default_storage
 
 User = get_user_model()
@@ -227,9 +230,16 @@ def approve_request(request, pk):
     # =========================
     if action == "approve":
 
-        if item_request.status == "approved":
+        if item_request.status != "pending":
             return Response(
-                {"error": "This request has already been approved."},
+                {"error": f"This request is already {item_request.status}."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        source_draft = item_request.draft
+        if source_draft and source_draft.status != "SUBMITTED":
+            return Response(
+                {"error": "The linked item draft is not in a submitted state."},
                 status=status.HTTP_400_BAD_REQUEST
             )
 
@@ -389,7 +399,6 @@ def approve_request(request, pk):
         # If this request came from the new server-side item draft, its
         # persisted media is the canonical source for gallery/video/variant
         # files. Finalize it only after the Item itself has been created.
-        source_draft = item_request.draft
         if source_draft and source_draft.status == "SUBMITTED":
             finalize_item_draft(source_draft, item)
 
@@ -399,16 +408,8 @@ def approve_request(request, pk):
         item_request.status = "approved"
         item_request.save()
 
-        if offer_data:
-            Offer.objects.create(
-                item=item,
-                discount_percentage=to_decimal(
-                    offer_data.get("discount_percentage", 0),
-                    Decimal("0.00")
-                ),
-                start_date=offer_data.get("start_date"),
-                end_date=offer_data.get("end_date")
-            )
+        # ItemSerializers.create() already persists the nested offer from
+        # approval_data, so no second Offer record is created here.
 
         ActivityLog.objects.create(
             user=request.user,
@@ -610,22 +611,217 @@ from rest_framework import status, permissions
 class VendorItemRequestDraftUpdateView(APIView):
     permission_classes = [permissions.IsAdminUser, IsAuthenticated]
 
+    MAX_IMAGE_BYTES = 10 * 1024 * 1024
+    MAX_VIDEO_BYTES = 100 * 1024 * 1024
+    ALLOWED_VIDEO_EXTENSIONS = {".mp4", ".mov", ".webm"}
+    ALLOWED_VIDEO_TYPES = {"video/mp4", "video/quicktime", "video/webm"}
+
+    def _validate_media_upload(self, uploaded, kind):
+        if kind in {"main", "gallery", "variant"}:
+            if uploaded.size > self.MAX_IMAGE_BYTES:
+                raise ValueError("Each image must be 10 MB or smaller.")
+            try:
+                uploaded.seek(0)
+                with Image.open(uploaded) as image:
+                    image.verify()
+                uploaded.seek(0)
+                with Image.open(uploaded) as image:
+                    if image.width * image.height > 25_000_000:
+                        raise ValueError("Images must not exceed 25 megapixels.")
+            except ValueError:
+                uploaded.seek(0)
+                raise
+            except Exception:
+                uploaded.seek(0)
+                raise ValueError("The uploaded file is not a valid image.")
+            uploaded.seek(0)
+            return
+
+        if kind == "video":
+            if uploaded.size > self.MAX_VIDEO_BYTES:
+                raise ValueError("The product video must be 100 MB or smaller.")
+            extension = os.path.splitext(uploaded.name or "")[1].lower()
+            if extension not in self.ALLOWED_VIDEO_EXTENSIONS:
+                raise ValueError("Video must be MP4, MOV, or WEBM.")
+            if uploaded.content_type and uploaded.content_type not in self.ALLOWED_VIDEO_TYPES:
+                raise ValueError("The uploaded video type is not supported.")
+            return
+
+        raise ValueError("Unsupported draft media type.")
+
+    @transaction.atomic
     def put(self, request, pk):
         try:
-            vendor_request = VendorItemRequest.objects.get(pk=pk)
+            vendor_request = VendorItemRequest.objects.select_for_update().get(pk=pk)
         except VendorItemRequest.DoesNotExist:
-            return Response({"error": "Request not found."}, status=status.HTTP_404_NOT_FOUND)
+            return Response(
+                {"error": "Request not found."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        if vendor_request.status != "pending":
+            return Response(
+                {"error": f"This request is already {vendor_request.status}."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        draft = vendor_request.draft
+        if draft is None:
+            return Response(
+                {"error": "This vendor item request has no linked item draft."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        if draft.status != "SUBMITTED":
+            return Response(
+                {"error": "The linked item draft is not in a submitted state."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
 
         draft_data = request.data.get("draft_item")
-        if not draft_data:
-            return Response({"error": "draft_item is required."}, status=status.HTTP_400_BAD_REQUEST)
+        if isinstance(draft_data, str):
+            try:
+                draft_data = json.loads(draft_data)
+            except (TypeError, ValueError, json.JSONDecodeError):
+                return Response(
+                    {"error": "draft_item must contain valid JSON."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
+        if not isinstance(draft_data, dict):
+            return Response(
+                {"error": "draft_item is required."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        media_manifest_raw = request.data.get("media_manifest", "[]")
+        removed_slots_raw = request.data.get("removed_media_slots", "[]")
+        try:
+            media_manifest = json.loads(media_manifest_raw)
+            removed_slots = json.loads(removed_slots_raw)
+        except (TypeError, ValueError, json.JSONDecodeError):
+            return Response(
+                {"error": "Invalid media metadata."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        if not isinstance(media_manifest, list) or not isinstance(removed_slots, list):
+            return Response(
+                {"error": "Invalid media metadata."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        upload_entries = []
+        for entry in media_manifest:
+            if not isinstance(entry, dict):
+                continue
+            slot_key = str(entry.get("slot_key") or "").strip()
+            kind = str(entry.get("kind") or "").strip()
+            upload_key = str(entry.get("upload_key") or "").strip()
+            if not slot_key or kind not in {"main", "gallery", "variant", "video"}:
+                continue
+
+            uploaded = request.FILES.get(upload_key) if upload_key else None
+            if uploaded:
+                try:
+                    self._validate_media_upload(uploaded, kind)
+                except ValueError as exc:
+                    return Response(
+                        {"error": str(exc)},
+                        status=status.HTTP_400_BAD_REQUEST,
+                    )
+                upload_entries.append((entry, uploaded))
+
+        existing = {
+            asset.slot_key: asset
+            for asset in draft.media.all()
+        }
+
+        removed_slot_keys = {
+            str(slot).strip()
+            for slot in removed_slots
+            if str(slot).strip()
+        }
+
+        current_slots = {
+            str(entry.get("slot_key") or "").strip()
+            for entry in media_manifest
+            if isinstance(entry, dict) and entry.get("slot_key")
+        }
+
+        # Any persisted media that the edited form no longer contains is removed.
+        removed_slot_keys.update(
+            set(existing.keys()) - current_slots
+        )
+
+        for slot_key in removed_slot_keys:
+            asset = existing.get(slot_key)
+            if asset:
+                asset.file.delete(save=False)
+                asset.delete()
+                existing.pop(slot_key, None)
+
+        for entry, uploaded in upload_entries:
+            slot_key = str(entry.get("slot_key")).strip()
+            old = existing.get(slot_key)
+            if old:
+                old.file.delete(save=False)
+                old.delete()
+
+            media_type = "video" if entry.get("kind") == "video" else "image"
+            asset = ItemDraftMedia(
+                draft=draft,
+                media_type=media_type,
+                kind=str(entry.get("kind")).strip(),
+                slot_key=slot_key,
+                variant_key=str(entry.get("variant_key") or ""),
+                sort_order=int(entry.get("sort_order") or 0),
+            )
+            asset.file.save(
+                os.path.basename(uploaded.name),
+                uploaded,
+                save=False,
+            )
+            asset.save()
+            existing[slot_key] = asset
+
+        image_count = sum(
+            1
+            for asset in existing.values()
+            if asset.media_type == "image"
+        )
+        if image_count > 10:
+            return Response(
+                {"error": "An item can contain at most 10 images, including the main and variant images."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        if sum(1 for asset in existing.values() if asset.kind == "video") > 1:
+            return Response(
+                {"error": "An item can contain only one product video."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        draft_data["draft_id"] = str(draft.id)
+        draft.data = draft_data
+        draft.save(update_fields=["data", "updated_at"])
 
         vendor_request.draft_item = draft_data
-        vendor_request.save(update_fields=["draft_item"])
+        vendor_request.name = str(draft_data.get("name") or vendor_request.name)
+        vendor_request.description = str(
+            draft_data.get("description") or vendor_request.description
+        )
+        if draft_data.get("price") is not None:
+            vendor_request.price = draft_data.get("price")
+        vendor_request.save(
+            update_fields=["draft_item", "name", "description", "price"]
+        )
 
-        serializer = VendorItemRequestSerializer(vendor_request)
+        serializer = VendorItemRequestSerializer(
+            vendor_request,
+            context={"request": request},
+        )
         return Response(serializer.data, status=status.HTTP_200_OK)
-    
 
 
     # price change requests
