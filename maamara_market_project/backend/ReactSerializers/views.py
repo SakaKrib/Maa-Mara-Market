@@ -171,6 +171,14 @@ def admin_item_performance(request, item_id):
 
     return Response({
         "item": ItemSerializers(item, context={"request": request}).data,
+        "vendor": {
+            "id": vendor.id if vendor else None,
+            "company_name": vendor.company_name if vendor else "",
+            "first_name": vendor.first_name if vendor else "",
+            "surname_name": vendor.surname_name if vendor else "",
+            "product_type": vendor.product_type if vendor else "",
+            "is_active": vendor.is_active if vendor else False,
+        },
         "stats": {
             "stock": int(item.in_stock or 0),
             "price": float(item.price or 0),
