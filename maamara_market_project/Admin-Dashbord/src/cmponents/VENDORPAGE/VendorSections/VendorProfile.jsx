@@ -448,8 +448,11 @@ const SingleVendorProfile = () => {
                 </div>
 
                 <div className="mt-6 border-t border-gray-100 pt-5">
-                  <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-gray-500">
+                  <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-gray-500">
                     Vendor badges
+                  </p>
+                  <p className="mb-3 text-[10px] leading-4 text-gray-500">
+                    Press and hold a badge to see its details.
                   </p>
                   <div className="flex flex-wrap gap-3">
                     {badges.map((badge) => {
