@@ -505,13 +505,30 @@ class ActivityLogSerializer(serializers.ModelSerializer):
             "vendor_registered": f"{actor} registered a vendor account.",
             "login": f"{actor} signed in.",
             "logout": f"{actor} signed out.",
+            "blog_created": f"{actor} created a blog post.",
+            "blog_approved": f"{actor} approved a blog post.",
+            "comment_created": f"{actor} received a new blog comment.",
+            "react_created": f"{actor} received a new blog reaction.",
+            "react_removed": f"{actor} removed a blog reaction.",
+            "banner_approved": f"{actor} approved the banner.",
+            "banner_rejected": f"{actor} rejected the banner.",
+            "vendor_item_request_received": f"{actor} received a vendor item request.",
+            "viewed_vendor_requests": f"{actor} viewed vendor requests.",
+            "approved_vendor": f"{actor} approved a vendor account.",
+            "cart_item_removed_notification": f"{actor} removed {item_name} from their cart.",
+            "paypal_payment": f"{actor} completed a PayPal payment.",
         }
 
         if obj.action in templates:
             return templates[obj.action]
 
         description = (obj.description or "").strip()
-        return description or self.FRIENDLY_TITLES.get(obj.action, obj.get_action_display())
+        if description:
+            return re.sub(r"'([^']+)'", r"\1", description)
+        return self.FRIENDLY_TITLES.get(
+            obj.action,
+            str(obj.action or obj.get_action_display()).replace("_", " ").strip().title(),
+        )
 
 
 
