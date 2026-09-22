@@ -161,7 +161,7 @@ const AboutAdminPanel = ({ open, onClose }) => {
                 type="button"
                 onClick={save}
                 disabled={saving}
-                className="w-full rounded-xl bg-primary px-4 py-3 text-sm font-semibold text-primary-foreground transition hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50"
+                className="w-full rounded-full bg-[#2563eb] px-4 py-3 text-sm font-semibold text-white transition hover:bg-[#1d4ed8] disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {saving ? "Saving…" : "Save About page"}
               </button>
