@@ -195,6 +195,189 @@ const ItemAddNew = ({ initialItem, vendorId, itemId, onSave = () => {}, vendor, 
   const selectedColors = watch("color") || [];
   const selectedSizes = watch("size") || [];
   const selectedSubcategory = form.watch("subcategory") || "";
+  const draftValues = watch();
+
+  const handleDraftRestore = useCallback(
+    (draft) => {
+      const restoredData = { ...(draft?.data || {}) };
+      delete restoredData.draft_id;
+
+      const media = Array.isArray(draft?.media) ? draft.media : [];
+      const mainMedia = media.find((asset) => asset.kind === "main");
+      const videoMedia = media.find((asset) => asset.kind === "video");
+
+      const restoredVariants = (restoredData.color_variants || []).map((variant) => {
+        const variantMedia = media.find(
+          (asset) =>
+            asset.kind === "variant" &&
+            String(asset.variant_key).toLowerCase() === String(variant.color).toLowerCase()
+        );
+        return {
+          ...variant,
+          color_image: variantMedia?.url || variant.color_image || null,
+        };
+      });
+
+      form.reset({
+        ...restoredData,
+        image: mainMedia?.url || restoredData.image || "",
+        video: videoMedia?.url || restoredData.video || "",
+        color_variants: restoredVariants,
+      });
+
+      setSelectedDepartment(restoredData.department || "");
+      setSelectedCategory(restoredData.category || "");
+
+      setGalleryImages(
+        media
+          .filter((asset) => asset.kind === "gallery")
+          .sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0))
+          .map((asset) => ({
+            slotKey: asset.slot_key,
+            value: asset.url,
+            url: asset.url,
+            name: asset.name,
+          }))
+      );
+
+      if (videoMedia) {
+        setProductVideo({
+          slotKey: "video",
+          value: videoMedia.url,
+          url: videoMedia.url,
+          name: videoMedia.name,
+        });
+      } else {
+        setProductVideo(null);
+      }
+
+      setDraftMessage("Saved draft restored.");
+      setDraftError("");
+    },
+    [form]
+  );
+
+  const handleDraftSaved = useCallback(
+    (draft) => {
+      const media = Array.isArray(draft?.media) ? draft.media : [];
+      const mainMedia = media.find((asset) => asset.kind === "main");
+      const videoMedia = media.find((asset) => asset.kind === "video");
+
+      if (mainMedia?.url) {
+        form.setValue("image", mainMedia.url, { shouldDirty: false });
+      }
+
+      if (videoMedia?.url) {
+        form.setValue("video", videoMedia.url, { shouldDirty: false });
+        setProductVideo((current) => ({
+          ...(current || {}),
+          slotKey: "video",
+          value: videoMedia.url,
+          url: videoMedia.url,
+          name: videoMedia.name,
+        }));
+      }
+
+      setGalleryImages(
+        media
+          .filter((asset) => asset.kind === "gallery")
+          .sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0))
+          .map((asset) => ({
+            slotKey: asset.slot_key,
+            value: asset.url,
+            url: asset.url,
+            name: asset.name,
+          }))
+      );
+
+      const savedVariantMedia = new Map(
+        media
+          .filter((asset) => asset.kind === "variant")
+          .map((asset) => [String(asset.variant_key).toLowerCase(), asset.url])
+      );
+
+      const currentVariants = form.getValues("color_variants") || [];
+      form.setValue(
+        "color_variants",
+        currentVariants.map((variant) => ({
+          ...variant,
+          color_image:
+            savedVariantMedia.get(String(variant.color).toLowerCase()) ||
+            variant.color_image ||
+            null,
+        })),
+        { shouldDirty: false }
+      );
+
+      setDraftMessage("Draft saved.");
+      setDraftError("");
+    },
+    [form]
+  );
+
+  const draftMedia = useMemo(() => {
+    const assets = [];
+    const mainImage = draftValues.image;
+    if (mainImage) {
+      assets.push({
+        slotKey: "main",
+        kind: "main",
+        value: mainImage,
+        sortOrder: 0,
+      });
+    }
+
+    galleryImages.forEach((asset, index) => {
+      assets.push({
+        slotKey: asset.slotKey || "gallery:" + index,
+        kind: "gallery",
+        value: asset.value,
+        sortOrder: index + 1,
+      });
+    });
+
+    (draftValues.color_variants || []).forEach((variant, index) => {
+      if (!variant?.color_image) return;
+      assets.push({
+        slotKey: "variant:" + variant.color,
+        kind: "variant",
+        variantKey: variant.color,
+        value: variant.color_image,
+        sortOrder: 20 + index,
+      });
+    });
+
+    if (productVideo?.value) {
+      assets.push({
+        slotKey: "video",
+        kind: "video",
+        value: productVideo.value,
+        sortOrder: 100,
+      });
+    }
+
+    return assets;
+  }, [draftValues, galleryImages, productVideo]);
+
+  const draftEnabled = !isEditing && !initialItem;
+  const {
+    draftId,
+    restoring: draftRestoring,
+    saving: draftSaving,
+    lastSavedAt,
+    error: draftAutosaveError,
+  } = useItemDraftAutosave({
+    enabled: draftEnabled,
+    values: draftValues,
+    media: draftMedia,
+    onRestore: handleDraftRestore,
+    onSaved: handleDraftSaved,
+  });
+
+  useEffect(() => {
+    if (draftAutosaveError) setDraftError(String(draftAutosaveError));
+  }, [draftAutosaveError]);
+
 
   // Organic section automatically starts with both organic flags enabled.
   // The vendor can explicitly uncheck them; changing to Handmade/Inorganic
@@ -277,6 +460,7 @@ const ItemAddNew = ({ initialItem, vendorId, itemId, onSave = () => {}, vendor, 
     coffee_state: "",
 
     image: undefined,
+    video: "",
 
     color_variants: [],
     size_variant: [],
