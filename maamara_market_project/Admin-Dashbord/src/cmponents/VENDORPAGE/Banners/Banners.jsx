@@ -1,37 +1,26 @@
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import api from "../../../Services/Api";
+import { CircularProgress } from "@mui/material";
 
-import { Button } from "../../../../components/ui/button";
-import { Input } from "../../../../components/ui/input";
-import { Label } from "../../../../components/ui/label";
-import {
-  Card,
-  CardHeader,
-  CardTitle,
-  CardContent,
-} from "../../../../components/ui/card";
+const BANNER_COLORS = [
+  { name: "Warm Ivory", value: "#f5f4f1", swatch: "bg-[#f5f4f1]" },
+  { name: "Soft Blue", value: "#eef3f8", swatch: "bg-[#eef3f8]" },
+  { name: "Sage", value: "#edf4ea", swatch: "bg-[#edf4ea]" },
+  { name: "Sand", value: "#f6efe7", swatch: "bg-[#f6efe7]" },
+  { name: "Blush", value: "#f8eaea", swatch: "bg-[#f8eaea]" },
+  { name: "Lavender", value: "#f3eef7", swatch: "bg-[#f3eef7]" },
+  { name: "Soft Aqua", value: "#eaf4f4", swatch: "bg-[#eaf4f4]" },
+  { name: "Stone", value: "#efefec", swatch: "bg-[#efefec]" },
+];
 
-import {
-  useTheme,
-  Snackbar,
-  Alert,
-  CircularProgress,
-} from "@mui/material";
-
-import { tokens } from "../../../theme";
-
-import useItems from "../../../PublicUiForAll/PublicUi/ItemHook/ItemHook";
-
-const BannerAdd = () => {
+const BannerAdd = ({ items = [], onSave = () => {} }) => {
   const [title, setTitle] = useState("");
   const [subtitle, setSubtitle] = useState("");
-  const [backgroundColor, setBackgroundColor] = useState("#ffffff");
+  const [backgroundColor, setBackgroundColor] = useState(BANNER_COLORS[0].value);
   const [image, setImage] = useState(null);
 
-  // CTA SYSTEM
   const [ctaType, setCtaType] = useState("item");
   const [ctaItem, setCtaItem] = useState("");
-
   const [submitting, setSubmitting] = useState(false);
 
   const [snackbar, setSnackbar] = useState({
@@ -40,17 +29,11 @@ const BannerAdd = () => {
     severity: "success",
   });
 
-  const itemscreated = useItems();
-  const items = itemscreated.items;
-
-  const theme = useTheme();
-  const colors = tokens(theme.palette.mode);
-
   useEffect(() => {
-    if (items.length > 0) {
-      setCtaItem(items[0].id);
+    if (items.length > 0 && !ctaItem) {
+      setCtaItem(String(items[0].id));
     }
-  }, [items]);
+  }, [items, ctaItem]);
 
   const handleCloseSnackbar = () => {
     setSnackbar((prev) => ({ ...prev, open: false }));
@@ -58,13 +41,21 @@ const BannerAdd = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
     if (submitting) return;
+
+    if (!title.trim()) {
+      setSnackbar({
+        open: true,
+        message: "Please enter a banner title.",
+        severity: "error",
+      });
+      return;
+    }
 
     if (ctaType === "item" && !ctaItem) {
       setSnackbar({
         open: true,
-        message: "❌ Please select a product",
+        message: "Please select a product.",
         severity: "error",
       });
       return;
@@ -73,12 +64,9 @@ const BannerAdd = () => {
     setSubmitting(true);
 
     const formData = new FormData();
-
-    formData.append("title", title);
-    formData.append("subtitle", subtitle);
+    formData.append("title", title.trim());
+    formData.append("subtitle", subtitle.trim());
     formData.append("background_color", backgroundColor);
-
-    // CTA FIX (clean backend match)
     formData.append("cta_type", ctaType);
     formData.append("cta_item", ctaType === "item" ? ctaItem : "");
     formData.append("cta_url", "");
@@ -89,35 +77,32 @@ const BannerAdd = () => {
 
     try {
       const response = await api.post("/api/vendor/banners/", formData, {
-        headers: {
-          "Content-Type": "multipart/form-data",
-        },
+        headers: { "Content-Type": "multipart/form-data" },
         withCredentials: true,
       });
 
       if (response.status === 201) {
         setSnackbar({
           open: true,
-          message: "✅ Banner Created Successfully",
+          message: "Banner created successfully.",
           severity: "success",
         });
 
-        // reset
         setTitle("");
         setSubtitle("");
-        setBackgroundColor("#ffffff");
+        setBackgroundColor(BANNER_COLORS[0].value);
         setImage(null);
         setCtaType("item");
-        setCtaItem(items.length > 0 ? items[0].id : "");
+        setCtaItem(items.length > 0 ? String(items[0].id) : "");
+        onSave(response.data);
       }
     } catch (error) {
       console.error(error);
-
       setSnackbar({
         open: true,
         message:
           error.response?.data?.detail ||
-          "❌ Failed to create banner.",
+          "Failed to create banner.",
         severity: "error",
       });
     } finally {
@@ -126,118 +111,162 @@ const BannerAdd = () => {
   };
 
   return (
-    <div
-      className="flex justify-center items-center"
-      style={{ color: colors.gray[100] }}
-    >
-      <Card
-        className="w-max max-w-lg shadow-lg"
-        style={{
-          backgroundColor: colors.primary[600],
-          color: colors.gray[100],
-        }}
+    <div className="w-full">
+      <form
+        onSubmit={handleSubmit}
+        className="mx-auto w-full max-w-2xl space-y-5"
       >
-        <CardHeader>
-          <CardTitle className="text-center text-xl font-bold">
-            🪧 Create Product Banner
-          </CardTitle>
-        </CardHeader>
+        <div>
+          <label className="mb-1.5 block text-xs font-semibold text-card-foreground">
+            Banner title
+          </label>
+          <input
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            placeholder="e.g. Fresh products from local sellers"
+            required
+            className="w-full rounded-[20px] border border-gray-300 bg-background px-4 py-3 text-sm text-foreground outline-none transition focus:border-primary"
+          />
+        </div>
 
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
+        <div>
+          <label className="mb-1.5 block text-xs font-semibold text-card-foreground">
+            Subtitle
+          </label>
+          <input
+            value={subtitle}
+            onChange={(e) => setSubtitle(e.target.value)}
+            placeholder="Short supporting message"
+            className="w-full rounded-[20px] border border-gray-300 bg-background px-4 py-3 text-sm text-foreground outline-none transition focus:border-primary"
+          />
+        </div>
 
-            <div>
-              <Label>Title</Label>
-              <Input
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                required
-              />
-            </div>
+        <div>
+          <label className="mb-2 block text-xs font-semibold text-card-foreground">
+            Banner color
+          </label>
+          <p className="mb-3 text-xs text-muted-foreground">
+            Choose from the curated homepage palette. Custom colors are intentionally disabled.
+          </p>
 
-            <div>
-              <Label>Subtitle</Label>
-              <Input
-                value={subtitle}
-                onChange={(e) => setSubtitle(e.target.value)}
-              />
-            </div>
-
-            <div>
-              <Label>CTA Type</Label>
-              <select
-                value={ctaType}
-                onChange={(e) => setCtaType(e.target.value)}
-                className="w-full p-2 rounded"
-                style={{
-                  backgroundColor: colors.primary[500],
-                  color: colors.gray[100],
-                }}
-              >
-                <option value="item">Product</option>
-                <option value="external">External Link</option>
-              </select>
-            </div>
-
-            {ctaType === "item" && (
-              <div>
-                <Label>Select Product</Label>
-                <select
-                  value={ctaItem}
-                  onChange={(e) => setCtaItem(e.target.value)}
-                  className="w-full p-2 rounded"
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+            {BANNER_COLORS.map((color) => {
+              const selected = backgroundColor === color.value;
+              return (
+                <button
+                  key={color.value}
+                  type="button"
+                  onClick={() => setBackgroundColor(color.value)}
+                  aria-pressed={selected}
+                  className={`flex items-center gap-2 rounded-[20px] border px-3 py-2.5 text-left text-xs font-semibold transition ${
+                    selected
+                      ? "border-gray-900 ring-2 ring-gray-200"
+                      : "border-gray-300 hover:border-gray-400"
+                  }`}
                 >
-                  <option value="">-- Select --</option>
-                  {items.map((item) => (
-                    <option key={item.id} value={item.id}>
-                      {item.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            )}
+                  <span
+                    className={`h-7 w-7 shrink-0 rounded-full border border-gray-300 ${color.swatch}`}
+                  />
+                  <span className="truncate text-card-foreground">{color.name}</span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
 
-            <div>
-              <Label>Image</Label>
-              <Input
-                type="file"
-                onChange={(e) => setImage(e.target.files[0])}
-                required
-              />
-            </div>
+        <div>
+          <label className="mb-1.5 block text-xs font-semibold text-card-foreground">
+            Call to action
+          </label>
+          <select
+            value={ctaType}
+            onChange={(e) => setCtaType(e.target.value)}
+            className="w-full rounded-[20px] border border-gray-300 bg-background px-4 py-3 text-sm text-foreground outline-none transition focus:border-primary"
+          >
+            <option value="item">Product</option>
+            <option value="external">External Link</option>
+          </select>
+        </div>
 
-            <div>
-              <Label>Background Color</Label>
-              <Input
-                type="color"
-                value={backgroundColor}
-                onChange={(e) => setBackgroundColor(e.target.value)}
-              />
-            </div>
+        {ctaType === "item" && (
+          <div>
+            <label className="mb-1.5 block text-xs font-semibold text-card-foreground">
+              Select product
+            </label>
+            <select
+              value={ctaItem}
+              onChange={(e) => setCtaItem(e.target.value)}
+              className="w-full rounded-[20px] border border-gray-300 bg-background px-4 py-3 text-sm text-foreground outline-none transition focus:border-primary"
+            >
+              <option value="">Select product</option>
+              {items.map((item) => (
+                <option key={item.id} value={item.id}>
+                  {item.name}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
 
-            <Button type="submit" disabled={submitting} className="w-full bg-[#2563eb] text-white hover:bg-[#1d4ed8]">
-              {submitting ? (
-                <>
-                  <CircularProgress size={18} /> Creating...
-                </>
-              ) : (
-                "Create Banner"
-              )}
-            </Button>
-          </form>
-        </CardContent>
-      </Card>
+        {ctaType === "external" && (
+          <div>
+            <label className="mb-1.5 block text-xs font-semibold text-card-foreground">
+              External link
+            </label>
+            <input
+              type="url"
+              placeholder="https://example.com"
+              onChange={(e) => {
+                const value = e.target.value;
+                e.currentTarget.form.dataset.ctaUrl = value;
+              }}
+              className="w-full rounded-[20px] border border-gray-300 bg-background px-4 py-3 text-sm text-foreground outline-none transition focus:border-primary"
+            />
+          </div>
+        )}
 
-      <Snackbar
-        open={snackbar.open}
-        autoHideDuration={4000}
-        onClose={handleCloseSnackbar}
-        anchorOrigin={{ vertical: "top", horizontal: "right" }}
-      >
-        <Alert severity={snackbar.severity} variant="filled">
+        <div>
+          <label className="mb-1.5 block text-xs font-semibold text-card-foreground">
+            Banner image
+          </label>
+          <input
+            type="file"
+            accept="image/*"
+            onChange={(e) => setImage(e.target.files?.[0] || null)}
+            required
+            className="block w-full rounded-[20px] border border-gray-300 bg-background px-4 py-3 text-sm text-foreground file:mr-3 file:rounded-full file:border-0 file:bg-primary file:px-4 file:py-2 file:text-xs file:font-semibold file:text-primary-foreground"
+          />
+        </div>
+
+        <button
+          type="submit"
+          disabled={submitting}
+          className="w-full rounded-full bg-black px-5 py-3.5 text-center text-sm font-semibold text-white transition hover:bg-gray-800 disabled:cursor-not-allowed disabled:opacity-60"
+        >
+          {submitting ? (
+            <span className="inline-flex items-center justify-center gap-2">
+              <CircularProgress size={18} sx={{ color: "#fff" }} />
+              Creating...
+            </span>
+          ) : (
+            "Create Banner"
+          )}
+        </button>
+      </form>
+
+      {snackbar.open && (
+        <div className="fixed right-4 top-20 z-[1400] max-w-sm rounded-[20px] border border-gray-300 bg-card px-4 py-3 text-sm font-semibold text-card-foreground shadow-lg">
           {snackbar.message}
-        </Alert>
-      </Snackbar>
+          <button
+            type="button"
+            onClick={handleCloseSnackbar}
+            className="ml-3 text-xs text-muted-foreground hover:text-card-foreground"
+            aria-label="Dismiss notification"
+          >
+            ×
+          </button>
+        </div>
+      )}
     </div>
   );
 };
