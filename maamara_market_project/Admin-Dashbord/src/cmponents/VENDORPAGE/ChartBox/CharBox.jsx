@@ -2,7 +2,7 @@ import React from "react";
 import { LineChart, Line, Tooltip, ResponsiveContainer } from "recharts";
 import { Link } from "react-router-dom";
 
-const ChartBox = ({ title, value, percentage, duration, link, chartData = [], percentageColor = "text-[#2563eb]" }) => (
+const ChartBox = ({ title, value, percentage, duration, link, chartData = [], percentageColor = "blue" }) => {\n  const percentageClasses = {\n    green: "text-green-600",\n    blue: "text-[#2563eb]",\n    red: "text-red-600",\n    gold: "text-amber-600",\n    gray: "text-[#595959]",\n  };\n  const percentageClass = percentageClasses[percentageColor] || (percentageColor.includes("text-") ? percentageColor : "text-[#2563eb]");\n\n  return (
   <div className="flex min-w-0 items-center justify-between gap-4">
     <div className="min-w-0">
       <p className="truncate text-xs font-semibold uppercase tracking-wide text-[#595959]">{title}</p>
