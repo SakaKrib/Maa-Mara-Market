@@ -1,21 +1,11 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import {
-  Box,
-  Typography,
-  Card,
-  CardContent,
-  CardMedia,
-  Button,
-} from "@mui/material";
-import { useTheme } from "@mui/material/styles";
+import { Edit3, PackageOpen } from "lucide-react";
 import { baseUrl } from "../../../Constant/Constant";
 import api from "../../../../Services/Api";
-import { tokens } from "../../../../theme";
 import EditItem from "../Forms/EditItem/EditItem";
 import { useVendor } from "../vendorhooks";
 
-// Helper to truncate text
 const truncateWords = (text, numWords) => {
   if (!text) return "";
   const words = text.split(" ");
@@ -25,24 +15,26 @@ const truncateWords = (text, numWords) => {
 };
 
 const ItemsOnsite = () => {
-  const theme = useTheme();
-  const colors = tokens(theme.palette.mode);
   const navigate = useNavigate();
-
-  // --- State hooks ---
   const [items, setItems] = useState([]);
-  const [showRight, setShowRight] = useState(false);
-  const { vendor } = useVendor(); // Assuming useVendor provides vendor info
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const { vendor } = useVendor();
 
-  // --- Fetch vendor items ---
   const fetchItems = async () => {
+    setLoading(true);
+    setError("");
+
     try {
       const res = await api.get(`${baseUrl}/api/item-post/update/`, {
         withCredentials: true,
       });
-      setItems(res.data.results || []);
+      setItems(res.data?.results || []);
     } catch (err) {
       console.error("Error fetching vendor items:", err);
+      setError("Unable to load your items right now.");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -51,143 +43,146 @@ const ItemsOnsite = () => {
   }, []);
 
   return (
-    <Box sx={{ marginTop: "3em" }}>
-      {/* HEADER */}
-      <Box
-        sx={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          padding: "0.5em 1em",
-        }}
-      >
-        <Typography
-          variant="h5"
-          sx={{ color: colors.gray[100], textTransform: "uppercase" }}
-        >
-          My Items
-        </Typography>
-      </Box>
+    <section className="space-y-5">
+      <div className="flex flex-col gap-4 rounded-2xl border border-border bg-card p-5 shadow-sm sm:p-6 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <p className="text-xs font-bold uppercase tracking-[0.16em] text-primary">
+            Inventory
+          </p>
+          <h1 className="mt-1 text-2xl font-bold tracking-tight text-card-foreground">
+            Items OnSite
+          </h1>
+          <p className="mt-1 text-sm text-muted-foreground">
+            View and manage products currently listed in your store.
+          </p>
+        </div>
 
-      {/* MAIN FLEX LAYOUT */}
-      <Box
-        sx={{
-          display: "flex",
-          alignItems: "flex-start",
-          gap: 2,
-          padding: ".5em 1em",
-          width: "100%",
-        }}
-      >
-        {/* LEFT: Items grid */}
-        <Box sx={{ flex: 1, minWidth: 0 }}>
-          {/* <Button
-            variant="contained"
-            onClick={() => setShowRight(!showRight)}
-            sx={{
-              backgroundColor: colors.blueAccent[500],
-              height: "max-content",
-              padding: ".2em .8em",
-              marginBottom: "1em",
-            }}
+        <div className="flex items-center gap-2">
+          <span className="rounded-xl border border-border bg-muted px-3 py-2 text-xs font-semibold text-muted-foreground">
+            {items.length} {items.length === 1 ? "item" : "items"}
+          </span>
+          <button
+            type="button"
+            onClick={() => navigate("/vendors-dashboard/add-item")}
+            className="inline-flex items-center justify-center rounded-xl bg-primary px-4 py-2.5 text-xs font-semibold text-primary-foreground transition hover:bg-primary/90"
           >
-            {showRight ? "Hide Side Panel" : "Show Side Panel"}
-          </Button> */}
+            Add product
+          </button>
+        </div>
+      </div>
 
-          <Box
-            sx={{
-              display: "flex",
-              gap: { xs: 1, sm: "2em", md: "1em" },
-              flexWrap: "wrap",
-            }}
+      {loading ? (
+        <div className="rounded-2xl border border-border bg-card p-10 text-center shadow-sm">
+          <p className="text-sm text-muted-foreground">Loading your items...</p>
+        </div>
+      ) : error ? (
+        <div className="rounded-2xl border border-destructive/30 bg-card p-10 text-center shadow-sm">
+          <p className="text-sm text-destructive">{error}</p>
+          <button
+            type="button"
+            onClick={fetchItems}
+            className="mt-4 rounded-xl border border-border bg-card px-4 py-2 text-xs font-semibold text-card-foreground hover:bg-muted"
           >
-            {items.length === 0 ? (
-              <Typography>No items found.</Typography>
-            ) : (
-              items.map((item) => (
-                <Card
-                  key={item.id}
-                  sx={{
-                    backgroundColor: colors.primary[600],
-                    width: { xs: 320, sm: 320, md: 250 },
-                    transition: "transform 0.2s ease-in-out",
-                    "&:hover": { transform: "scale(1.03)" },
-                  }}
+            Try again
+          </button>
+        </div>
+      ) : items.length === 0 ? (
+        <div className="rounded-2xl border border-border bg-card p-12 text-center shadow-sm">
+          <PackageOpen className="mx-auto h-10 w-10 text-muted-foreground" />
+          <h2 className="mt-4 text-base font-bold text-card-foreground">
+            No items found
+          </h2>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Products you add and publish will appear here.
+          </p>
+          <button
+            type="button"
+            onClick={() => navigate("/vendors-dashboard/add-item")}
+            className="mt-5 rounded-xl bg-primary px-4 py-2.5 text-xs font-semibold text-primary-foreground hover:bg-primary/90"
+          >
+            Add your first product
+          </button>
+        </div>
+      ) : (
+        <div className="grid min-w-0 grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
+          {items.map((item) => {
+            const hasDiscount =
+              item.discount_price &&
+              Number(item.discount_price) > 0 &&
+              Number(item.discount_price) < Number(item.price);
+
+            return (
+              <article
+                key={item.id}
+                className="group min-w-0 overflow-hidden rounded-2xl border border-border bg-card shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
+              >
+                <button
+                  type="button"
+                  onClick={() => navigate(`items/${item.id}`)}
+                  className="block w-full text-left"
+                  aria-label={`View ${item.name}`}
                 >
-                  <CardMedia
-                    component="img"
-                    image={item.image || "/default-product.jpg"}
-                    alt={item.name}
-                    sx={{ objectFit: "cover", height: "200px" }}
-                    onClick={() => navigate(`items/${item.id}`)}
-                  />
-                  <CardContent>
-                    <Typography
-                      variant="h6"
-                      gutterBottom
-                      sx={{ color: colors.gray[100], fontWeight: 600 }}
-                    >
+                  <div className="aspect-[4/3] w-full overflow-hidden bg-muted">
+                    <img
+                      src={item.image || "/default-product.jpg"}
+                      alt={item.name}
+                      className="h-full w-full object-cover transition duration-200 group-hover:scale-[1.02]"
+                    />
+                  </div>
+                </button>
+
+                <div className="space-y-3 p-4">
+                  <div className="min-w-0">
+                    <h2 className="truncate text-sm font-bold text-card-foreground">
                       {item.name}
-                    </Typography>
-                    <Typography
-                      variant="body2"
-                      color="text.secondary"
-                      sx={{
-                        display: { xs: "none", sm: "none", md: "block", lg: "block" },
-                      }}
+                    </h2>
+                    <p className="mt-1 min-h-10 text-xs leading-5 text-muted-foreground">
+                      {truncateWords(item.description, 10) || "No description available"}
+                    </p>
+                  </div>
+
+                  <div className="flex items-end justify-between gap-3">
+                    <div>
+                      <p className="text-base font-bold text-card-foreground">
+                        KES{" "}
+                        {Number(hasDiscount ? item.discount_price : item.price).toLocaleString()}
+                      </p>
+                      {hasDiscount && (
+                        <p className="text-xs text-muted-foreground line-through">
+                          KES {Number(item.price).toLocaleString()}
+                        </p>
+                      )}
+                    </div>
+                    <p className="shrink-0 rounded-lg bg-muted px-2 py-1 text-[11px] font-semibold text-muted-foreground">
+                      Stock: {item.in_stock}
+                    </p>
+                  </div>
+
+                  <div className="flex items-center justify-between gap-2 border-t border-border pt-3">
+                    <button
+                      type="button"
+                      onClick={() => navigate(`items/${item.id}`)}
+                      className="inline-flex items-center gap-1.5 text-xs font-semibold text-primary hover:underline"
                     >
-                      {truncateWords(item.description, 7) ||
-                        "No description available"}
-                    </Typography>
-                    <Typography
-                      variant="subtitle1"
-                      color={colors.primary[200]}
-                      component="div"
-                    >
-                      KES{" "}
-                      {item.discount_price &&
-                      Number(item.discount_price) > 0 &&
-                      Number(item.discount_price) < Number(item.price)
-                        ? Number(item.discount_price).toLocaleString()
-                        : Number(item.price).toLocaleString()}
-                      {item.discount_price &&
-                        Number(item.discount_price) > 0 &&
-                        Number(item.discount_price) < Number(item.price) && (
-                          <Box
-                            component="span"
-                            sx={{
-                              textDecoration: "line-through",
-                              marginLeft: 1,
-                              color: "#ff666b",
-                              fontSize: "0.875rem",
-                            }}
-                          >
-                            KES {Number(item.price).toLocaleString()}
-                          </Box>
-                        )}
-                    </Typography>
-                    <Box
-                      sx={{ display: "flex", justifyContent: "space-between" }}
-                    >
-                      <Typography variant="caption">
-                        Stock: {item.in_stock}
-                      </Typography>
-                      <Box className="rounded-md bg-white text-sm text-black px-2">
-                        <EditItem
-                          vendor={vendor}
-                          item={item}
-                          onSuccess={fetchItems}
-                        />
-                      </Box>
-                    </Box>
-                  </CardContent>
-                </Card>
-              ))
-            )}
-          </Box>
-        </Box>
-      </Box>
-    </Box>
+                      View item
+                    </button>
+
+                    <div className="flex items-center gap-1.5 rounded-lg border border-border bg-muted px-2 py-1">
+                      <Edit3 className="h-3.5 w-3.5 text-muted-foreground" />
+                      <EditItem
+                        vendor={vendor}
+                        item={item}
+                        onSuccess={fetchItems}
+                      />
+                    </div>
+                  </div>
+                </div>
+              </article>
+            );
+          })}
+        </div>
+      )}
+    </section>
   );
 };
 
