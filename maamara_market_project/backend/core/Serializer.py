@@ -412,7 +412,13 @@ class ActivityLogSerializer(serializers.ModelSerializer):
     def _actor_phrase(self, obj):
         request = self.context.get("request")
         current_user = getattr(request, "user", None) if request else None
-        if current_user and current_user.is_authenticated and obj.user_id == current_user.id:
+        description = (obj.description or "").strip().lower()
+        if (
+            current_user
+            and current_user.is_authenticated
+            and obj.user_id == current_user.id
+            and description.startswith("you ")
+        ):
             return "You"
         return {
             "user": "A customer",
