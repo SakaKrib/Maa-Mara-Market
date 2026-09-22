@@ -17,7 +17,6 @@ import api, {
   resolveApiAssetUrl,
 } from "../../Services/Api";
 
-const defaultAvatar = "/default-avatar.png";
 const defaultProduct = "/default-product.jpg";
 
 const formatCurrency = (value) => {
