@@ -11,6 +11,7 @@ from .users import *
 from .vendors import *
 from .items import vendor_item_growth_stats, vendor_item_stats, vendor_analytics_stats
 from .ItemInventory import *
+from .traffic import record_traffic_event, traffic_analytics
 
 router = DefaultRouter()
 # Legacy router registrations were removed: the referenced viewsets no longer
@@ -28,6 +29,8 @@ urlpatterns = [
     path('api/token/refresh/', CookieRefreshView.as_view(), name='refresh'),
     #visitor token
     path('api/vistor-token/',VisitorTokenView.as_view(), name='visitor-token'),
+    path('api/traffic/record/', record_traffic_event, name='record-traffic-event'),
+    path('api/admin/traffic-analytics/', traffic_analytics, name='admin-traffic-analytics'),
 
 
 
