@@ -124,7 +124,7 @@ const VendorSettings = () => {
               {field("Country", "country")}
               {field("Address", "address")}
             </div>
-            <button type="submit" disabled={saving} className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[#2563eb] px-4 py-2.5 text-sm font-semibold text-white hover:bg-[#1d4ed8] disabled:opacity-60">
+            <button type="submit" disabled={saving} className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-full bg-[#2563eb] px-4 py-2.5 text-sm font-semibold text-white hover:bg-[#1d4ed8] disabled:opacity-60">
               <Save size={15} /> {saving ? "Saving..." : "Save changes"}
             </button>
           </form>
@@ -156,7 +156,7 @@ const VendorSettings = () => {
             <div className="rounded-2xl border border-border bg-card p-4 shadow-sm sm:p-5">
               <h2 className="text-sm font-semibold text-card-foreground">Account</h2>
               <p className="mt-1 text-xs text-muted-foreground">Signed in as {user?.email || user?.username || "Vendor"}.</p>
-              <button type="button" onClick={() => setShowSignOutConfirm(true)} className="mt-4 w-full rounded-xl border border-red-500/20 px-4 py-2.5 text-sm font-semibold text-red-600 hover:bg-red-500/10">
+              <button type="button" onClick={() => setShowSignOutConfirm(true)} className="mt-4 w-full rounded-full border border-red-500/20 px-4 py-2.5 text-sm font-semibold text-red-600 hover:bg-red-500/10">
                 Sign out
               </button>
             </div>

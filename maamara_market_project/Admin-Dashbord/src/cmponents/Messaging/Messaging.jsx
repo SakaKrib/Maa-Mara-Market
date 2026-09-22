@@ -213,7 +213,7 @@ export default function Messaging() {
                 <button type="button" onClick={() => setTab("vendors")} className={"rounded-xl px-3 py-2 text-xs font-bold " + (tab === "vendors" ? "bg-[#2563eb] text-[#2563eb]-foreground" : "bg-[#f8f8f6] text-[#595959]")}>Vendors</button>
               </div>
             ) : (
-              <button type="button" onClick={() => contacts.admins?.[0] && startConversation(contacts.admins[0])} className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-[#2563eb] px-4 py-2.5 text-xs font-bold text-[#2563eb]-foreground"><IonIcon icon={addOutline} /> Start a chat with Admin</button>
+              <button type="button" onClick={() => contacts.admins?.[0] && startConversation(contacts.admins[0])} className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-[#2563eb] px-4 py-2.5 text-xs font-bold text-gray-100"><IonIcon icon={addOutline} /> Start a chat with Admin</button>
             )}
           </div>
 
