@@ -43,7 +43,7 @@ const Home = ({ vendor_id }) => {
             >
               Add product
             </Link>
-            <div className="inline-flex min-h-10 items-center rounded-xl border border-[#e6e6e4] bg-white p-1 shadow-sm">
+            <div className="inline-flex min-h-10 items-center rounded-full border border-[#d9d9d6] bg-white p-1 shadow-sm">
               <VendorNotifications />
             </div>
           </div>
@@ -164,10 +164,10 @@ const Home = ({ vendor_id }) => {
         </div>
       </section>
 
-      <div className="flex justify-center pb-4 pt-1">
+      <div className="sticky bottom-4 z-30 flex justify-center pt-3">
         <Link
           to="/"
-          className="inline-flex min-h-10 items-center justify-center rounded-xl border border-[#e6e6e4] bg-white px-5 py-2.5 text-sm font-semibold text-[#222] shadow-sm transition hover:bg-[#f8f8f6] focus:outline-none focus:ring-2 focus:ring-blue-500/30"
+          className="inline-flex min-h-11 items-center justify-center rounded-full bg-black px-6 py-3 text-sm font-semibold text-white shadow-lg transition hover:bg-[#262626] focus:outline-none focus:ring-2 focus:ring-black/20"
         >
           Go To Shop
         </Link>
