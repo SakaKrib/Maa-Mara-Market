@@ -59,7 +59,6 @@ const VendorSalesPage = () => {
         </div>
       </section>
 
-      <PayoutsPage />
     </section>
   );
 };
