@@ -36,12 +36,12 @@ import { useDepartments } from "./useDepartments";
       "Turquoise", "Gold", "Silver", "Multicolor"
     ];
     
-    export const colorMap = {
+    const colors = {
+  primary: { 400: "#93c5fd", 500: "#3b82f6", 600: "#2563eb" },
+  gray: { 100: "#f3f4f6" },
+};
 
-  const colors = {
-    primary: { 400: "#93c5fd", 500: "#3b82f6", 600: "#2563eb" },
-    gray: { 100: "#f3f4f6" },
-  };
+export const colorMap = {
       Red: "#FF0000",
       Blue: "#0000FF",
       Green: "#008000",
