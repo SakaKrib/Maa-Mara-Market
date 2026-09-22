@@ -351,6 +351,7 @@ class ItemDraftView(APIView):
         return ItemDraft.objects.filter(
             owner=request.user,
             status="DRAFT",
+            expires_at__gt=timezone.now(),
         ).prefetch_related("media")
 
     def _validate_upload(self, uploaded, kind):
@@ -430,6 +431,7 @@ class ItemDraftView(APIView):
             draft = ItemDraft.objects.filter(
                 owner=owner,
                 status="DRAFT",
+                expires_at__gt=timezone.now(),
             ).order_by("-updated_at").first()
 
         if draft is None:
