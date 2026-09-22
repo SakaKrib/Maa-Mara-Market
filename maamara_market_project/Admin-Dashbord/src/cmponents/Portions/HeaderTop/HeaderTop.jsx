@@ -357,6 +357,19 @@ const HeaderTop = ({ onMenuToggle }) => {
           </div>
         </div>
       )}
+
+      {showSignOutConfirm && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/55 p-4 backdrop-blur-sm" role="dialog" aria-modal="true" aria-labelledby="admin-signout-title" onMouseDown={() => !signingOut && setShowSignOutConfirm(false)}>
+          <div className="w-full max-w-md rounded-2xl border border-border bg-background p-6 shadow-2xl" onMouseDown={(event) => event.stopPropagation()}>
+            <h2 id="admin-signout-title" className="text-lg font-bold text-foreground">Sign out?</h2>
+            <p className="mt-2 text-sm leading-6 text-muted-foreground">Are you sure you want to sign out of the administrator account?</p>
+            <div className="mt-6 grid gap-2 sm:grid-cols-2">
+              <button type="button" disabled={signingOut} onClick={() => setShowSignOutConfirm(false)} className="w-full rounded-full border border-border bg-transparent px-4 py-3 text-sm font-semibold text-foreground transition hover:bg-muted disabled:opacity-50">Cancel</button>
+              <button type="button" disabled={signingOut} onClick={handleSignOut} className="w-full rounded-full border border-red-600 bg-transparent px-4 py-3 text-sm font-semibold text-red-600 transition hover:bg-red-50 dark:hover:bg-red-500/10 disabled:opacity-50">{signingOut ? "Signing out..." : "Confirm sign out"}</button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 };
