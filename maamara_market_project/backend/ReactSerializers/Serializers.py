@@ -442,13 +442,16 @@ class ItemSerializers(serializers.ModelSerializer):
         
         # ✅ Extract brand if passed
 
-        # Assign section based on is_organic flag
-        is_organic = validated_data.get('is_organic', False)
+        # Preserve the section selected/determined by the form. The organic
+        # flag is independent: an organic-section item may explicitly have
+        # is_organic=False, so section must not be derived from that checkbox.
+        section_obj = validated_data.get("section")
+        if section_obj is None:
+            is_organic = validated_data.get("is_organic", False)
+            section_name = "organic" if is_organic else "inorganic"
+            section_obj, _ = Section.objects.get_or_create(name=section_name)
 
-        section_name = 'organic' if is_organic else 'inorganic'
-        section_obj, _ = Section.objects.get_or_create(name=section_name)
-
-        validated_data['section'] = section_obj
+        validated_data["section"] = section_obj
 
 
 
