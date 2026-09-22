@@ -133,8 +133,8 @@ class VendorItemRequestCreateView(generics.CreateAPIView):
                 actor_type="admin",
                 action="vendor_item_request_received",
                 description=(
-                    f"Vendor {vendor.username} submitted "
-                    f"a new item request: {item_request.name}"
+                    "A vendor submitted "
+                    f"an item request for {item_request.name}"
                 ),
                 related_url=(
                     f"/admin/vendorDashboard/"
@@ -150,7 +150,7 @@ class VendorItemRequestCreateView(generics.CreateAPIView):
             actor_type="vendor",
             action="item_request_created",
             description=(
-                f"You have submitted a new item request: "
+                f"You submitted an item request for "
                 f"{item_request.name}"
             ),
             related_url=(
@@ -167,8 +167,8 @@ class VendorItemRequestCreateView(generics.CreateAPIView):
                 user=admin,
                 title="New Vendor Item Request",
                 message=(
-                    f"{vendor.first_name} submitted "
-                    f"an item request: {item_request.name}"
+                    "A vendor submitted "
+                    f"an item request for {item_request.name}"
                 ),
                 url=(
                     f"/vendorDashboard/"
@@ -391,7 +391,7 @@ def approve_request(request, pk):
             actor_type="admin",
             action="item_request_approved",
             description=(
-                f"Admin '{request.user.username}' approved "
+                "The administrator approved "
                 f"vendor item request '{item_request.name}'."
             ),
             related_url=f"/admin/vendorDashboard/item/{item.id}/",
@@ -405,7 +405,7 @@ def approve_request(request, pk):
             actor_type="vendor",
             action="item_request_approved",
             description=(
-                f"Your item request '{item_request.name}' "
+                f"Your item request for {item_request.name} "
                 f"was approved by the admin."
             ),
             related_url=f"/vendor/items/{item.id}/",
@@ -414,7 +414,7 @@ def approve_request(request, pk):
         Notification.objects.create(
             user=item_request.created_by,
             title="Item Request Approved",
-            message=f"Your request for '{item_request.name}' has been approved.",
+            message=f"Your request for {item_request.name} has been approved.",
             url=f"/vendor/items/{item.id}/",
         )
 
@@ -465,7 +465,7 @@ def approve_request(request, pk):
             user=request.user,
             actor_type="admin",
             action="item_request_denied",
-            description=f"Admin '{request.user.username}' denied vendor request '{item_request.name}'.",
+            description=f"The administrator declined the vendor request for {item_request.name}.",
             related_url=f"/admin/vendorDashboard/vendoritemrequest/{item_request.id}/",
         )
 
@@ -476,14 +476,14 @@ def approve_request(request, pk):
             user=vendor_user.user,   # 🔴 FIXED HERE
             actor_type="vendor",
             action="item_request_denied",
-            description=f"Your item request '{item_request.name}' was denied by admin.",
+            description=f"Your item request for {item_request.name} was declined by the administrator.",
             related_url=f"/vendors-dashboard/vendor/items/requests/{item_request.id}/",
         )
 
         Notification.objects.create(
             user=vendor_user,
             title="Item Request Denied",
-            message=f"Your request for '{item_request.name}' was denied by the admin.",
+            message=f"Your request for {item_request.name} was declined by the administrator.",
             url=f"/vendors-dashboard/vendor/requests/{item_request.id}/",
         )
 
@@ -683,8 +683,8 @@ class CreatePriceChangeRequestView(APIView):
                 action="Price Change Requested",
                 item=item,
                 description=(
-                    f"Vendor {request.user.username} requested new price {new_price} "
-                    f"for item '{item.name}'. Reason: {reason or 'N/A'}"
+                    "A vendor requested a price change "
+                    f"for {item.name}. Reason: {reason or 'No reason provided'}"
                 ),
                 related_url=f"/admin/vendorDashboard/vendoritems/{item.id}/"
             )
@@ -695,8 +695,8 @@ class CreatePriceChangeRequestView(APIView):
             actor_type="vendor",
             action="Price Change Requested",
             description=(
-                f"You requested a price change to {new_price} "
-                f"for '{item.name}'. Reason: {reason or 'N/A'}"
+                "You requested a price change "
+                f"for {item.name}. Reason: {reason or 'No reason provided'}"
             ),
             related_url=f"/vendor/vendorDashboard/vendoritems/{item.id}/"
         )
@@ -711,8 +711,8 @@ class CreatePriceChangeRequestView(APIView):
                 user=admin,
                 title="New Price Change Request",
                 message=(
-                    f"{request.user.username} submitted a price change request "
-                    f"for '{item.name}'. Reason: {reason or 'N/A'}"
+                    "A vendor submitted a price change request "
+                    f"for {item.name}. Reason: {reason or 'No reason provided'}"
                 ),
                 url=f"/admin/vendorDashboard/vendoritemPricerequest/{price_request.id}/",
             )
