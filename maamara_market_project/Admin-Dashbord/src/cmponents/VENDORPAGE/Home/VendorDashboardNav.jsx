@@ -13,7 +13,6 @@ import {
   pencilOutline,
   listCircleOutline,
   closeOutline,
-  menuOutline,
   settingsOutline,
 } from "ionicons/icons";
 import { Link, useLocation } from "react-router-dom";
@@ -26,7 +25,6 @@ const VendorDashboardNav = ({ open = false, onClose }) => {
   const location = useLocation();
   const { pending } = useVendorOrdersCombined();
   const { user, logout } = useAuth();
-  const [mobileOpen, setMobileOpen] = useState(false);
 
   const userName = user?.username || "Vendor";
 
