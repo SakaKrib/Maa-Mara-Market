@@ -48,16 +48,16 @@ const Home = ({ vendor_id }) => {
       <div className="grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-4">
         <Link
           to="/vendors-dashboard/item-stats"
-          className="group flex min-h-[148px] w-full items-center justify-center rounded-2xl border border-border bg-card p-4 text-center shadow-sm transition hover:-translate-y-0.5 hover:shadow-md sm:p-5"
+          className="group flex min-h-[132px] w-full items-center justify-center rounded-2xl border border-border bg-card p-4 text-center shadow-sm transition hover:-translate-y-0.5 hover:shadow-md sm:min-h-[136px] sm:p-4"
         >
           <div className="min-w-0">
-            <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+            <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
               Item performance
             </p>
-            <p className="mt-2 text-sm font-bold text-card-foreground">
+            <p className="mt-1.5 text-sm font-semibold text-card-foreground">
               Growth &amp; sales
             </p>
-            <p className="mt-1 text-xs text-muted-foreground">
+            <p className="mt-1 text-[11px] leading-4 text-muted-foreground">
               View detailed item statistics
             </p>
           </div>
@@ -65,7 +65,7 @@ const Home = ({ vendor_id }) => {
 
         <Link
           to="/vendors-dashboard/orders"
-          className="group flex min-h-[148px] w-full items-center justify-center rounded-2xl border border-border bg-card p-4 text-center shadow-sm transition hover:-translate-y-0.5 hover:shadow-md sm:p-5"
+          className="group flex min-h-[132px] w-full items-center justify-center rounded-2xl border border-border bg-card p-4 text-center shadow-sm transition hover:-translate-y-0.5 hover:shadow-md sm:min-h-[136px] sm:p-4"
         >
           <div className="min-w-0">
             <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
@@ -82,7 +82,7 @@ const Home = ({ vendor_id }) => {
 
         <Link
           to="/vendors-dashboard/item-onsite"
-          className="group flex min-h-[148px] w-full items-center justify-center rounded-2xl border border-border bg-card p-4 text-center shadow-sm transition hover:-translate-y-0.5 hover:shadow-md sm:p-5"
+          className="group flex min-h-[132px] w-full items-center justify-center rounded-2xl border border-border bg-card p-4 text-center shadow-sm transition hover:-translate-y-0.5 hover:shadow-md sm:min-h-[136px] sm:p-4"
         >
           <div className="min-w-0">
             <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
@@ -99,7 +99,7 @@ const Home = ({ vendor_id }) => {
 
         <Link
           to="/vendors-dashboard/vendor-payouts/payout-report"
-          className="group flex min-h-[148px] w-full items-center justify-center rounded-2xl border border-border bg-card p-4 text-center shadow-sm transition hover:-translate-y-0.5 hover:shadow-md sm:p-5"
+          className="group flex min-h-[132px] w-full items-center justify-center rounded-2xl border border-border bg-card p-4 text-center shadow-sm transition hover:-translate-y-0.5 hover:shadow-md sm:min-h-[136px] sm:p-4"
         >
           <div className="min-w-0">
             <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
