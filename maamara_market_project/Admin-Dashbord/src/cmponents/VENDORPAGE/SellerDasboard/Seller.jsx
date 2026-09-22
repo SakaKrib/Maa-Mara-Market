@@ -110,17 +110,18 @@ const Home = ({ vendor_id }) => {
         </div>
 
         <div className="grid min-w-0 grid-cols-1 gap-4 sm:gap-5 xl:grid-cols-12">
-          <article className={`${cardClass} xl:col-span-3`}>
-            <TopBox />
+          {/* Keep the four primary metric cards compact and ordered for quick scanning. */}
+          <article className={`${cardClass} min-h-[112px] p-3 sm:min-h-[120px] sm:p-4 xl:col-span-3`}>
+            <ChartBox {...vendorGrowthStats} />
           </article>
 
-          <article className={`${cardClass} xl:col-span-3`}>
+          <article className={`${cardClass} min-h-[112px] p-3 sm:min-h-[120px] sm:p-4 xl:col-span-3`}>
             {vendorStats.loading ? (
-              <div className="flex min-h-40 items-center justify-center text-sm text-[#595959]">
+              <div className="flex min-h-24 items-center justify-center text-sm text-[#595959]">
                 Loading vendor stats...
               </div>
             ) : vendorStats.error ? (
-              <div className="flex min-h-40 items-center justify-center text-center text-sm text-red-600">
+              <div className="flex min-h-24 items-center justify-center text-center text-sm text-red-600">
                 {vendorStats.error}
               </div>
             ) : (
@@ -128,19 +129,19 @@ const Home = ({ vendor_id }) => {
             )}
           </article>
 
-          <article className={`${cardClass} xl:col-span-3`}>
+          <article className={`${cardClass} min-h-[112px] p-3 sm:min-h-[120px] sm:p-4 xl:col-span-3`}>
             <ChartBox {...monthlySales} />
           </article>
 
-          <article className={`${cardClass} xl:col-span-3`}>
+          <article className={`${cardClass} min-h-[112px] p-3 sm:min-h-[120px] sm:p-4 xl:col-span-3`}>
             <ChartBox {...orderStats} />
           </article>
 
-          <article className={`${cardClass} xl:col-span-4`}>
-            <ChartBox {...vendorGrowthStats} />
+          <article className={`${cardClass} min-h-[128px] p-3 sm:min-h-[136px] sm:p-4 xl:col-span-4`}>
+            <TopBox />
           </article>
 
-          <article className={`${cardClass} xl:col-span-4`}>
+          <article className={`${cardClass} min-h-[128px] p-3 sm:min-h-[136px] sm:p-4 xl:col-span-4`}>
             <StockSummaryBox />
           </article>
 
