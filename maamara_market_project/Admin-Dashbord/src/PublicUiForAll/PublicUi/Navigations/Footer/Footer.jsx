@@ -77,7 +77,7 @@ const Footer = () => {
         <div className="mm-footer-grid">
           <div className="mm-footer-brand">
             <div>
-              <div className="logo xxs:-mt-20 xxs:relative xxs:-top-10 lg:mt-0 lg:top-0">
+              <div className="logo xxs:-mt-0 xxs:relative xxs:-top-0 lg:mt-0 lg:top-0">
                 <a href="/">Maa <span className="it-name">Mara</span> <span className="mkrt">Market</span></a>
               </div>
             </div>

@@ -79,7 +79,7 @@ const SingleItem = () => {
           <div className="min-w-0">
             <section className="rounded-2xl border border-border bg-card p-4 shadow-custom sm:p-5">
               <VendorPerformanceBadges itemId={item.id} />
-              <h1 className="mt-3 text-2xl font-semibold tracking-tight text-card-foreground xxs:text-xl">
+              <h1 className="mt-3 text-2xl font-semibold tracking-tight text-card-foreground sm:text-3xl">
                 {item.name}
               </h1>
               <p className="mt-2 text-sm font-normal leading-6 text-muted-foreground">

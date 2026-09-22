@@ -74,7 +74,7 @@ const VendorOrdersPage = () => {
   if (error) {
     return (
       <div className="rounded-xl border border-red-200 bg-red-50 p-6">
-        <h2 className="font-semibold text-red-800">Unable to load orders</h2>
+        <h5 className="font-semibold text-red-800">Unable to load orders</h5>
         <p className="mt-1 text-sm text-red-700">{String(error)}</p>
       </div>
     );

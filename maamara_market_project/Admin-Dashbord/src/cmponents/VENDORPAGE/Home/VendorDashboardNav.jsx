@@ -1,4 +1,4 @@
-import React from "react";
+import React, {useState} from "react";
 import { IonIcon } from "@ionic/react";
 import {
   statsChartOutline,
@@ -83,7 +83,7 @@ const VendorDashboardNav = ({ open = false, onClose }) => {
             <img src={Maamara} alt="Maa Mara Market" />
           </a>
           <div className="min-w-0">
-             <div className="logo xxs:-mt-20 xxs:relative xxs:-top-10 lg:mt-0 lg:top-0">
+             <div className="">
                 <a href="/vendors-dashboard">Maa <span className="it-name">Mara</span> <span className="mkrt">Market</span></a>
               </div>
             <small>Vendor Manager</small>
