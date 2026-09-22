@@ -1,207 +1,56 @@
-import * as React from "react";
-import { DataGrid } from "@mui/x-data-grid";
-import { Box, Typography, CircularProgress } from "@mui/material";
+import React from "react";
 import { useVendorCompleteItems } from "../../../Hooks/Order/OrderComplete";
-import { useTheme } from "@mui/material";
-import { tokens } from "../../../../theme";
+
+const money = (value) => `KSh ${(Number(value) || 0).toLocaleString("en-KE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
 export default function VendorCompleteOrdersTable() {
   const { data, loading, error } = useVendorCompleteItems();
-  const theme = useTheme();
-  const colors = tokens(theme.palette.mode);
+  const items = Array.isArray(data?.completed_items) ? data.completed_items : [];
+  const totalQuantity = Number(data?.total_quantity) || 0;
+  const totalValue = items.reduce((sum, item) => sum + (Number(item?.item_price) || 0) * (Number(item?.quantity) || 0), 0);
 
-  // 🧩 Safe number parser
-  const cleanNumber = (value) => {
-    if (value == null || value === "" || isNaN(value)) return 0;
-    if (typeof value === "string") return parseFloat(value.replace(/,/g, "")) || 0;
-    return Number(value) || 0;
-  };
+  if (loading) return <section className="rounded-2xl border border-[#e6e6e4] bg-white p-6 text-sm text-gray-500">Loading completed orders...</section>;
+  if (error) return <section className="rounded-2xl border border-red-200 bg-red-50 p-6 text-sm text-red-700">Unable to load completed orders.</section>;
 
-  // 💰 Currency formatter
-  const formatKsh = (num) =>
-    `KSh ${cleanNumber(num).toLocaleString("en-KE", {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    })}`;
-
-  // 🌀 Loading state
-  if (loading) {
-    return (
-      <Box display="flex" justifyContent="center" alignItems="center" height="300px">
-        <CircularProgress />
-      </Box>
-    );
-  }
-
-  // ⚠️ Error state
-  if (error) {
-    return (
-      <Typography color="error" align="center">
-        {error}
-      </Typography>
-    );
-  }
-
-  // 🧠 Data extraction (✅ use completed_items)
-  const completedItems = Array.isArray(data?.completed_items)
-    ? data.completed_items
-    : [];
-
-  const totalQuantity = cleanNumber(data?.total_quantity);
-  const totalValue = completedItems.reduce(
-    (acc, item) =>
-      acc + cleanNumber(item?.item_price) * cleanNumber(item?.quantity),
-    0
-  );
-
-  // 🧮 Rows
-  const rows = completedItems.map((item, idx) => ({
-    id: `${item?.order_id || idx}-${item?.item_name || "unknown"}`,
-    ...item,
-  }));
-
-  // 🧩 Columns
-  const columns = [
-    { field: "order_id", headerName: "Order ID", width: 100 },
-    { field: "item_name", headerName: "Item", flex: 1, minWidth: 150 },
-
-    {
-      field: "quantity",
-      headerName: "Qty",
-      width: 90,
-      align: "center",
-      headerAlign: "center",
-      renderCell: (params) => (
-        <Typography>{cleanNumber(params.row.quantity).toLocaleString("en-KE")}</Typography>
-      ),
-    },
-    {
-      field: "item_price",
-      headerName: "Price (KSh)",
-      width: 140,
-      renderCell: (params) => (
-        <Typography>{formatKsh(params.row.item_price)}</Typography>
-      ),
-    },
-    {
-      field: "total_value",
-      headerName: "Total (KSh)",
-      width: 150,
-      renderCell: (params) => {
-        const total =
-          cleanNumber(params.row.item_price) * cleanNumber(params.row.quantity);
-        return <Typography>{formatKsh(total)}</Typography>;
-      },
-    },
-    { field: "customer", headerName: "Customer", flex: 1, minWidth: 180 },
-    {
-      field: "order_status",
-      headerName: "Status",
-      width: 120,
-      renderCell: (params) => (
-        <Box
-          sx={{
-            backgroundColor:
-              params.value === "completed"
-                ? "#4ade80" // ✅ green for completed
-                : params.value === "pending"
-                ? "#facc15"
-                : "#f87171",
-            color: "#000",
-            px: 1,
-            py: 0.3,
-            borderRadius: "8px",
-            fontSize: "0.8rem",
-            fontWeight: "600",
-            textTransform: "capitalize",
-            textAlign: "center",
-            width: "100%",
-          }}
-        >
-          {params.value || "N/A"}
-        </Box>
-      ),
-    },
-    {
-      field: "created_at",
-      headerName: "Created",
-      width: 200,
-      renderCell: (params) => {
-        let raw = params.row.created_at;
-
-        if (!raw) return "N/A";
-
-        // 🧹 Clean up potential microseconds (".036789Z" → "Z")
-        const cleanDateStr = raw.replace(/\.\d+Z$/, "Z");
-        const date = new Date(cleanDateStr);
-
-        if (isNaN(date.getTime())) {
-          console.warn("Invalid date:", raw);
-          return "N/A";
-        }
-
-        return date.toLocaleString("en-KE", {
-          dateStyle: "medium",
-          timeStyle: "short",
-        });
-      },
-    },
-  ];
-
-  // 🎨 Render
   return (
-    <Box
-      sx={{
-        height: 600,
-        width: "100%",
-        backgroundColor: colors.primary[500],
-        borderRadius: 2,
-        boxShadow: 3,
-        p: 2,
-      }}
-    >
-      <Typography
-        variant="h6"
-        fontWeight="bold"
-        mb={2}
-        sx={{ color: colors.gray[100] }}
-      >
-        Completed Orders ({data?.total_completed_items || 0})
-      </Typography>
-
-      <DataGrid
-        rows={rows}
-        columns={columns}
-        getRowId={(row) => row.id}
-        pageSize={8}
-        disableSelectionOnClick
-        sx={{
-          "& .MuiDataGrid-columnHeaders": {
-            backgroundColor: colors.primary[600],
-            color: colors.gray[100],
-            fontWeight: "bold",
-          },
-          "& .MuiDataGrid-cell": {
-            color: colors.gray[100],
-          },
-          "& .MuiTablePagination-root": {
-            color: colors.gray[100],
-          },
-          "& .MuiDataGrid-row:hover": {
-            backgroundColor: `${colors.primary[700]}55`,
-          },
-        }}
-      />
-
-      <Box mt={2} textAlign="right">
-        <Typography variant="body2" sx={{ color: colors.gray[100] }}>
-          <strong>Total Quantity:</strong>{" "}
-          {totalQuantity.toLocaleString("en-KE")}
-        </Typography>
-        <Typography variant="body2" sx={{ color: colors.gray[100] }}>
-          <strong>Total Value:</strong> {formatKsh(totalValue)}
-        </Typography>
-      </Box>
-    </Box>
+    <section className="rounded-2xl border border-[#e6e6e4] bg-white p-4 shadow-sm sm:p-5">
+      <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-green-700">Orders</p>
+          <h2 className="mt-1 text-xl font-bold text-gray-900">Completed orders</h2>
+          <p className="mt-1 text-sm text-gray-500">Completed sales containing your products.</p>
+        </div>
+        <span className="rounded-full bg-green-50 px-3 py-1.5 text-xs font-semibold text-green-700">{items.length} line items</span>
+      </div>
+      {items.length === 0 ? (
+        <div className="rounded-2xl border border-dashed border-[#d7d7d3] bg-[#f8f8f6] p-8 text-center">
+          <p className="text-sm font-semibold text-gray-700">No completed orders yet</p>
+          <p className="mt-1 text-xs text-gray-500">Completed sales will appear here.</p>
+        </div>
+      ) : (
+        <div className="overflow-x-auto rounded-xl border border-[#e6e6e4]">
+          <table className="w-full min-w-[760px] text-left text-sm">
+            <thead className="bg-[#f8f8f6] text-xs font-semibold uppercase tracking-wide text-gray-500">
+              <tr>{["Order ID","Item","Qty","Price","Total","Customer","Status","Created"].map((h)=><th key={h} className="px-4 py-3">{h}</th>)}</tr>
+            </thead>
+            <tbody className="divide-y divide-[#eeeeeb]">
+              {items.map((item,index)=>{const total=(Number(item?.item_price)||0)*(Number(item?.quantity)||0);return <tr key={`${item?.order_id||index}-${item?.item_name||"item"}`} className="hover:bg-[#fcfcfa]">
+                <td className="px-4 py-3 font-semibold text-gray-900">#{item?.order_id??"—"}</td>
+                <td className="px-4 py-3 text-gray-700">{item?.item_name||"Item unavailable"}</td>
+                <td className="px-4 py-3">{Number(item?.quantity||0).toLocaleString("en-KE")}</td>
+                <td className="px-4 py-3">{money(item?.item_price)}</td><td className="px-4 py-3 font-semibold">{money(total)}</td>
+                <td className="px-4 py-3 text-gray-600">{item?.customer||"Customer"}</td>
+                <td className="px-4 py-3"><span className="rounded-full bg-green-50 px-2.5 py-1 text-xs font-semibold capitalize text-green-700">{item?.order_status||"completed"}</span></td>
+                <td className="whitespace-nowrap px-4 py-3 text-gray-500">{item?.created_at?new Date(item.created_at).toLocaleString("en-KE",{dateStyle:"medium",timeStyle:"short"}):"—"}</td>
+              </tr>})}
+            </tbody>
+          </table>
+        </div>
+      )}
+      <div className="mt-4 flex flex-wrap justify-end gap-5 border-t border-[#e6e6e4] pt-4 text-sm">
+        <span className="text-gray-600"><strong className="text-gray-900">Total quantity:</strong> {totalQuantity.toLocaleString("en-KE")}</span>
+        <span className="text-gray-600"><strong className="text-gray-900">Total value:</strong> {money(totalValue)}</span>
+      </div>
+    </section>
   );
 }
