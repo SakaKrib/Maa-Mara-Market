@@ -161,14 +161,17 @@ def traffic_analytics(request):
             unique_visitor_keys.add(key)
 
     sessions = events.exclude(session_id="").values("session_id").distinct().count()
+    landing_events = TrafficEvent.objects.filter(event_type="session_start", created_at__gte=start)
 
-    def grouped(field, limit=10):
-        return list(events.values(field).exclude(**{f"{field}__exact": ""}).annotate(count=Count("id")).order_by("-count")[:limit])
+    def grouped(field, limit=10, queryset=None):
+        queryset = queryset or events
+        lookup = field + "__exact"
+        return list(queryset.values(field).exclude(**{lookup: ""}).annotate(count=Count("id")).order_by("-count")[:limit])
 
     source_data = grouped("source")
     country_data = grouped("country_code")
     device_data = grouped("device_type")
-    page_data = grouped("path")
+    page_data = grouped("path", queryset=landing_events)
 
     trend_counter = Counter()
     for value in events.values_list("created_at", flat=True):
