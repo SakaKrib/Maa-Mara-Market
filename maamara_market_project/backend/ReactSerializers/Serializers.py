@@ -141,6 +141,8 @@ class AdminProfilePic(serializers.ModelSerializer):
 ###***************Vendor's items**************###
 class VendorPublicSerializer(serializers.ModelSerializer):
     profile_picture_url = serializers.SerializerMethodField()
+    company_logo_url = serializers.SerializerMethodField()
+    brand_logo_url = serializers.SerializerMethodField()
     items = serializers.SerializerMethodField()
 
     class Meta:
@@ -157,11 +159,24 @@ class VendorPublicSerializer(serializers.ModelSerializer):
             context={'request': request}
         ).data
 
+    def _absolute_media_url(self, request, field):
+        if not field or not hasattr(field, 'url'):
+            return None
+        try:
+            url = field.url
+        except (ValueError, AttributeError):
+            return None
+        return request.build_absolute_uri(url) if request else url
+
     def get_profile_picture_url(self, obj):
-        request = self.context.get('request')
-        if obj.profile_picture and hasattr(obj.profile_picture, 'url'):
-            return request.build_absolute_uri(obj.profile_picture.url)
-        return None
+        return self._absolute_media_url(self.context.get('request'), obj.profile_picture)
+
+    def get_company_logo_url(self, obj):
+        return self._absolute_media_url(self.context.get('request'), obj.vendor_company_logo)
+
+    def get_brand_logo_url(self, obj):
+        brand = getattr(obj, 'brand', None)
+        return self._absolute_media_url(self.context.get('request'), getattr(brand, 'logo', None))
 
  # items/serializers.py
 
