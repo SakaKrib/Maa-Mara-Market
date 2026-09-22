@@ -159,7 +159,21 @@ const Home = ({ vendor_id }) => {
           </article>
 
           <article className={`${cardClass} xl:col-span-4`}>
-            <Activities />
+            <div className="flex items-center justify-between gap-3 border-b border-[#e6e6e4] pb-3">
+              <div className="min-w-0">
+                <h2 className="text-base font-semibold text-[#222] sm:text-lg">Recent activities</h2>
+                <p className="mt-0.5 text-xs text-[#595959]">Your latest store actions and updates.</p>
+              </div>
+              <Link
+                to="/vendors-dashboard/activities"
+                className="shrink-0 rounded-full border border-[#d9d9d6] bg-white px-3.5 py-2 text-xs font-semibold text-[#222] transition hover:bg-[#f8f8f6] focus:outline-none focus:ring-2 focus:ring-[#2563eb]/20"
+              >
+                View All
+              </Link>
+            </div>
+            <div className="mt-4">
+              <Activities />
+            </div>
           </article>
         </div>
       </section>
