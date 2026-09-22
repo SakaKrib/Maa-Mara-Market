@@ -30,7 +30,8 @@ from .views import (
     update_cart_quantity,
     vendor_transactions,
     dashboard_stats,
-    revenue_area_chart,\n    dashboard_chart_data,
+    revenue_area_chart,
+    dashboard_chart_data,
     revenue_growth,
     transaction_totals,
     vendor_sales,
@@ -46,20 +47,22 @@ from .invoice_views import invoice_list
 urlpatterns = [
     path('api/cart/add/<int:pk>/', add_to_cart_api, name='api_add_to_cart'),
     path("api/cart/remove/<int:pk>/", remove_from_cart_api, name="remove_from_cart"),
-    path("api/cart/",get_cart_view, name="cart_view"),
-    path("api/cart/<int:pk>/update-quantity/",update_cart_quantity, name="update-cart-quantity"),
+    path("api/cart/", get_cart_view, name="cart_view"),
+    path("api/cart/<int:pk>/update-quantity/", update_cart_quantity, name="update-cart-quantity"),
 
-    # account summery
+    # account summary
     path("api/dashboard/summary/", DashboardSummaryView.as_view()),
-    path("api/admin/dashboard-chart-data/", dashboard_chart_data, name="admin-dashboard-chart-data"),\n\n    path("api/transactions/", create_admin_transaction, name="create-admin-transaction"),
+    path("api/admin/dashboard-chart-data/", dashboard_chart_data, name="admin-dashboard-chart-data"),
+
+    path("api/transactions/", create_admin_transaction, name="create-admin-transaction"),
     path("api/transactions/history/", admin_transaction_history, name="admin-transaction-history"),
     path("api/transactions/<int:transaction_id>/", update_admin_transaction, name="update-admin-transaction"),
     path("api/transactions/<int:transaction_id>/delete/", delete_admin_transaction, name="delete-admin-transaction"),
 
-    #shipping rates
+    # shipping rates
     path('api/shipping-rates', get_shipping_rates, name='shipping-rates'),
 
-    #create order api
+    # create order api
     path("api/checkout/", checkout_view, name="checkout"),
     path("api/customers/", get_customers, name="api-customers"),
     path("api/paypal/capture/<str:order_id>/", capture_paypal_order, name="paypal-capture"),
@@ -87,12 +90,12 @@ urlpatterns = [
     path("api/mpesa/refund/result/", mpesa_refund_result, name="mpesa-refund-result"),
     path("api/mpesa/refund/timeout/", mpesa_refund_timeout, name="mpesa-refund-timeout"),
 
-    #mpesa payment gateways (B2C)
+    # mpesa payment gateways (B2C)
     path("mpesa/b2c/", mpesa_b2c_payment, name="mpesa_b2c"),
     path("mpesa/result/", mpesa_result, name="mpesa_result"),
     path("mpesa/timeout/", mpesa_timeout, name="mpesa_timeout"),
 
-    #mpesa payment gateways (B2C)
+    # mpesa payment gateways (B2C)
     path("api/mpesa/stk-push/", stk_push, name="mpesa-stk-push"),
     path("api/mpesa/stk-callback/", stk_callback, name="mpesa-stk-callback"),
 ]
