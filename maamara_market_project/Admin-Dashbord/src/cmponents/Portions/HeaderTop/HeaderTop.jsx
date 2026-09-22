@@ -161,7 +161,7 @@ const HeaderTop = ({ onMenuToggle }) => {
         <div className="flex h-full items-center gap-2 px-3 sm:gap-3 sm:px-5 lg:px-7">
           <button
             type="button"
-            aria-label="Open admin navigation"
+            aria-label="Open dashboard navigation"
             onClick={onMenuToggle}
             className="grid h-10 w-10 shrink-0 place-items-center rounded-xl text-muted-foreground hover:bg-muted lg:hidden"
           >
