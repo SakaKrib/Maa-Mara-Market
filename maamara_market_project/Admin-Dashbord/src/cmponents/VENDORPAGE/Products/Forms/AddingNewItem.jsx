@@ -228,34 +228,28 @@ const ItemAddNew = ({ initialItem, vendorId, itemId, onSave = () => {}, vendor, 
  const [activeData, setActiveData] = useState(null);
 
  useEffect(() => {
-   if (!productType) return;
+   // Existing items may be opened from inventory without a vendor object.
+   // In that case, the saved section is the source of truth for the
+   // department/category dataset.
+   const existingSection = String(initialItem?.section || "").trim().toLowerCase();
+   const section =
+     existingSection === "organic" || existingSection === "inorganic"
+       ? existingSection
+       : productType === "organic" || productType === "inorganic"
+         ? productType
+         : selectedSection;
 
-   if (productType === "organic") {
+   if (section === "organic") {
      setSelectedSection("organic");
      setActiveData(organicDepartmentMap);
      setValue("section", "organic");
      return;
    }
 
-   if (productType === "inorganic") {
+   if (section === "inorganic") {
      setSelectedSection("inorganic");
      setActiveData(departmentMap);
      setValue("section", "inorganic");
-     return;
-   }
-
-   if (productType === "both") {
-     const existingSection = String(initialItem?.section || "").trim().toLowerCase();
-     const section =
-       existingSection === "organic" || existingSection === "inorganic"
-         ? existingSection
-         : selectedSection;
-
-     setSelectedSection(section);
-     setActiveData(
-       section === "organic" ? organicDepartmentMap : departmentMap
-     );
-     setValue("section", section);
    }
  }, [
    productType,
@@ -265,6 +259,23 @@ const ItemAddNew = ({ initialItem, vendorId, itemId, onSave = () => {}, vendor, 
    organicDepartmentMap,
    departmentMap,
  ]);
+
+// Keep the saved department visible when the department dataset becomes
+// available after the edit form has already been initialized.
+useEffect(() => {
+  if (!initialItem?.department || !activeData) return;
+
+  const savedDepartment = String(initialItem.department).trim();
+  const matchingDepartment = Object.keys(activeData).find(
+    (department) =>
+      department.toLowerCase() === savedDepartment.toLowerCase()
+  );
+
+  if (matchingDepartment) {
+    setSelectedDepartment(matchingDepartment);
+    setValue("department", matchingDepartment);
+  }
+}, [initialItem?.department, activeData, setValue]);
  
  
    //reset form inputs when togle for both
