@@ -27,6 +27,13 @@ import VendorProfileSheet from "./EditProfile";
 const infoValue = (value) =>
   value === null || value === undefined || value === "" ? "N/A" : value;
 
+const mediaUrl = (value) => {
+  if (!value) return "";
+  if (/^(https?:)?\\/\\//i.test(value) || value.startsWith("data:")) return value;
+  const normalized = value.startsWith("/") ? value : `/${value}`;
+  return `${baseUrl}${normalized}`;
+};
+
 const SingleVendorProfile = () => {
   const [vendor, setVendor] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -326,7 +333,7 @@ const SingleVendorProfile = () => {
             <div className="grid gap-6 p-5 sm:p-6 lg:grid-cols-[240px_minmax(0,1fr)]">
               <div>
                 <img
-                  src={vendor.profile_picture || "/default-avatar.png"}
+                  src={mediaUrl(vendor.profile_picture) || mediaUrl("/default-avatar.png")}
                   alt={vendor.company_name || fullName || "Vendor profile"}
                   className="h-56 w-full rounded-xl border border-gray-200 object-cover"
                 />
