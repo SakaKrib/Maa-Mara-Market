@@ -1,7 +1,7 @@
 from django.urls import path
 from . import views  # Make sure views.py exists
 from .VendorRequests import *
-from .views import AdminPayoutAPIView, monthly_sales_report
+from .views import AdminPayoutAPIView, VendorPayoutAPIView, monthly_sales_report
 from .payout.services.vendor_monthly_payout_runner import process_payouts_by_group, pay_single_vendor_payout, generate_monthly_payouts, reconcile_single_vendor_payout, reconcile_bank_vendor_payout
 from .calback import *
 from . GlobalSearchEngine import GlobalSearchView
@@ -50,6 +50,7 @@ urlpatterns = [
 
     # admin payouts fetch
     path('api/admin-payouts/', AdminPayoutAPIView.as_view(), name='admin-payouts'),
+    path('api/vendor-payouts/', VendorPayoutAPIView.as_view(), name='vendor-payouts'),
 
     # generate payout
     path("api/payout/generate-monthly-payouts/", generate_monthly_payouts, name="generate_monthly_payouts"),
