@@ -72,6 +72,13 @@ const VendorItemRequestDetail = () => {
   }, [fetchRequest, id]);
 
   const handleAction = async (action) => {
+    // Approval must always go through AddingNewItem so the admin reviews and
+    // approves the complete vendor submission, including persisted media.
+    if (action === "approve") {
+      navigate(`/admin-dashboard/vendor/create-item/${id}`, { state: request });
+      return;
+    }
+
     setActionLoading(action);
     setMessage("");
     setError("");
@@ -162,7 +169,7 @@ const VendorItemRequestDetail = () => {
               <h2 className="text-sm font-bold text-card-foreground">Request Actions</h2>
               <p className="mt-1 text-xs leading-5 text-muted-foreground">Use the same approval workflow as the request list.</p>
               <div className="mt-5 grid gap-2">
-                <button type="button" disabled={status === "approved" || actionLoading !== ""} onClick={() => handleAction("approve")} className="rounded-[20px] bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50">{actionLoading === "approve" ? "Approving..." : status === "approved" ? "Approved" : "Approve"}</button>
+                <button type="button" disabled={status === "approved" || actionLoading !== ""} onClick={() => handleAction("approve")} className="rounded-[20px] bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50">{status === "approved" ? "Approved" : "Review & Approve"}</button>
                 <button type="button" disabled={status === "denied" || actionLoading !== ""} onClick={() => handleAction("deny")} className="rounded-[20px] bg-red-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-50">{actionLoading === "deny" ? "Denying..." : status === "denied" ? "Denied" : "Deny"}</button>
                 <button type="button" onClick={() => navigate(`/admin-dashboard/vendor/create-item/${id}`, { state: request })} className="rounded-[20px] border border-border bg-transparent px-4 py-2.5 text-sm font-semibold text-foreground hover:bg-muted">Create Item</button>
               </div>
