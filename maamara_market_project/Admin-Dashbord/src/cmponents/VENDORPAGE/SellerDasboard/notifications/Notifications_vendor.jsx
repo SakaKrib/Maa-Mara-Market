@@ -6,7 +6,7 @@ import { useVendorNotifications } from "../../../Hooks/VendorNotificationHook/Ve
 export default function VendorNotifications() {
   const [open, setOpen] = useState(false);
   const navigate = useNavigate();
-  const { notifications, unseenCount } = useVendorNotificationsWS();
+  const { notifications = [], unseenCount = 0 } = useVendorNotifications();
 
   const handleNotificationClick = (notification) => {
     if (notification.url) {
