@@ -20,7 +20,7 @@ from django.http import HttpResponse
 from ReactSerializers.Serializers import VendorPayoutSerializer
 from ReactSerializers.models import Item
 from order.models import OrderItem, Order
-from .models import SoldItem, VendorAdjustment, VendorPayout, VendorDraft, VendorDraftImage, VendorRequest
+from .models import Vendor, SoldItem, VendorAdjustment, VendorPayout, VendorDraft, VendorDraftImage, VendorRequest
 
 
 def dashboard(request):
