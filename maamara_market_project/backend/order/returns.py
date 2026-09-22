@@ -273,7 +273,7 @@ def return_request_handler_api(request, item_id):
 
             Notification.objects.create(
                 user=vendor.user,
-                title="Refund Approved",
+                title="Refund Requested",
                 message=f"A customer requested a refund for your product {product_name}.",
                 url=f"/vendor/orders/{order.id}/returns/"
             )
@@ -732,6 +732,23 @@ def approve_return_request_api(request, return_id):
                     item=product,
                     description=msg,
                     related_url=f"/orders/returns/{return_request.id}/"
+                )
+
+            if customer:
+                Notification.objects.create(
+                    user=customer,
+                    title="Return Request Declined",
+                    message=f"The administrator rejected your return request for {product.name}."
+                            + (f" Reason: {admin_note}" if admin_note else ""),
+                    url=f"/orders/returns/{return_request.id}/"
+                )
+            elif visitor_id:
+                Notification.objects.create(
+                    visitor_id=visitor_id,
+                    title="Return Request Declined",
+                    message=f"The administrator rejected your return request for {product.name}."
+                            + (f" Reason: {admin_note}" if admin_note else ""),
+                    url=f"/orders/returns/{return_request.id}/"
                 )
 
             # Vendor Notification
