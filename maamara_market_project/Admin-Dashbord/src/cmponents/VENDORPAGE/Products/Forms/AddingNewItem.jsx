@@ -1214,52 +1214,137 @@ const ItemAddNew = ({ initialItem, vendorId, itemId, onSave = () => {}, vendor, 
           )}
         />
 
-<FormField
-  control={form.control}
-  name="image"
-  render={({ field }) => (
-    <FormItem>
-      <FormLabel className="text-sm leading-6 font-semibold text-foreground">Item Image</FormLabel>
-      <FormControl>
-      <div className="flex flex-col gap-3">
-          {field.value && (
-            <div className="relative h-40 w-full max-w-xs overflow-hidden rounded-[20px] border border-border bg-muted/40">
-              <img
-                src={
-                  typeof field.value === "string"
-                    ? field.value.startsWith("http")
-                      ? field.value
-                      : resolveApiAssetUrl(field.value)
-                    : URL.createObjectURL(field.value)
-                }
-                alt="Item preview"
-                className="h-full w-full object-contain bg-card p-2"
-              />
-              {typeof field.value === "string" && (
-                <p className="absolute bottom-0 left-0 w-full truncate bg-black/60 px-2 py-1 text-xs text-white">
-                  {field.value}
-                </p>
-              )}
-            </div>
-          )}
-          <Input
-            type="file"
-            accept="image/*"
-            onChange={(e) => {
-              const file = e.target.files?.[0];
-              if (file) {
-                field.onChange(file);
+<div className="rounded-[20px] border border-gray-300 p-4 space-y-5">
+  <div className="border-b border-[#e6e6e4] pb-3">
+    <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[#595959]">Photos & video</p>
+    <h3 className="mt-1 text-sm font-semibold text-[#222] sm:text-base">Product media</h3>
+    <p className="mt-1 text-xs leading-5 text-[#595959]">
+      Up to 10 images total, including the main image and color-variant images. Each image is limited to 10 MB.
+      You can also add one product video up to 100 MB and 15 seconds.
+    </p>
+  </div>
+
+  <FormField
+    control={form.control}
+    name="image"
+    render={({ field }) => (
+      <FormItem>
+        <FormLabel className="text-sm leading-6 font-semibold text-foreground">Main image</FormLabel>
+        <FormControl>
+          <div className="space-y-3">
+            {field.value && (
+              <div className="relative h-48 w-full max-w-sm overflow-hidden rounded-[20px] border border-gray-300 bg-[#f8f8f6]">
+                <img
+                  src={
+                    typeof field.value === "string"
+                      ? field.value.startsWith("http")
+                        ? field.value
+                        : resolveApiAssetUrl(field.value)
+                      : URL.createObjectURL(field.value)
+                  }
+                  alt="Main product preview"
+                  className="h-full w-full object-contain bg-white p-2"
+                />
+              </div>
+            )}
+            <Input
+              type="file"
+              accept="image/*"
+              onChange={(event) => handleMainImageChange(event.target.files?.[0])}
+            />
+          </div>
+        </FormControl>
+        <FormDescription>
+          One primary image. Maximum 10 MB.
+        </FormDescription>
+      </FormItem>
+    )}
+  />
+
+  <div className="space-y-3">
+    <div>
+      <p className="text-sm font-semibold text-gray-900">Additional gallery images</p>
+      <p className="mt-1 text-xs leading-5 text-gray-500">
+        Add more views of the product. Gallery images count toward the 10-image total.
+      </p>
+    </div>
+    <Input
+      type="file"
+      accept="image/*"
+      multiple
+      onChange={(event) => {
+        handleGalleryImagesChange(event.target.files);
+        event.target.value = "";
+      }}
+    />
+    {galleryImages.length > 0 && (
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+        {galleryImages.map((asset) => (
+          <div key={asset.slotKey} className="relative overflow-hidden rounded-2xl border border-gray-300 bg-[#f8f8f6] p-1">
+            <img
+              src={
+                asset.url ||
+                (asset.value instanceof File ? URL.createObjectURL(asset.value) : resolveApiAssetUrl(asset.value))
               }
-            }}
-          />
-        </div>
-      </FormControl>
-      <FormDescription>
-        Upload a clear, well-lit photo of the product. This is the main image shown to shoppers.
-      </FormDescription>
-    </FormItem>
-  )}
-/>
+              alt={asset.name || "Product gallery preview"}
+              className="aspect-square w-full rounded-xl object-cover bg-white"
+            />
+            <button
+              type="button"
+              onClick={() => setGalleryImages((current) => current.filter((item) => item.slotKey !== asset.slotKey))}
+              className="mt-1 w-full rounded-full border border-gray-300 bg-white px-2 py-1.5 text-xs font-semibold text-gray-700 hover:bg-gray-50"
+            >
+              Remove
+            </button>
+          </div>
+        ))}
+      </div>
+    )}
+  </div>
+
+  <div className="space-y-3">
+    <div>
+      <p className="text-sm font-semibold text-gray-900">Product video</p>
+      <p className="mt-1 text-xs leading-5 text-gray-500">
+        Optional. MP4, MOV, or WEBM; 100 MB maximum; 3–15 seconds.
+      </p>
+    </div>
+    <Input
+      type="file"
+      accept="video/mp4,video/quicktime,video/webm,.mp4,.mov,.webm"
+      onChange={(event) => handleVideoChange(event.target.files?.[0])}
+    />
+    {productVideo?.value && (
+      <div className="max-w-xl overflow-hidden rounded-2xl border border-gray-300 bg-black">
+        <video
+          controls
+          preload="metadata"
+          src={
+            productVideo.url ||
+            (productVideo.value instanceof File
+              ? URL.createObjectURL(productVideo.value)
+              : resolveApiAssetUrl(productVideo.value))
+          }
+          className="max-h-[360px] w-full bg-black"
+        />
+        <button
+          type="button"
+          onClick={() => {
+            setProductVideo(null);
+            form.setValue("video", "", { shouldDirty: true });
+          }}
+          className="m-3 rounded-full border border-white/30 bg-white px-4 py-2 text-xs font-semibold text-gray-900 hover:bg-gray-100"
+        >
+          Remove video
+        </button>
+      </div>
+    )}
+  </div>
+
+  <div className="rounded-2xl border border-gray-300 bg-[#f8f8f6] px-4 py-3 text-xs font-medium text-gray-600">
+    {currentImageCount}/{MAX_ITEM_IMAGES} images selected
+  </div>
+</div>
 
     <FormField
       control={form.control}
