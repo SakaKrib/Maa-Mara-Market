@@ -58,7 +58,7 @@ class NotificationSerializer(serializers.ModelSerializer):
         title = (obj.title or '').strip().lower()
 
         def unquote(value):
-            return re.sub(r"'([^']+)'", r"\\1", value)
+            return re.sub(r"'([^']+)'", r"\1", value)
 
         # Normalize the most common marketplace notifications so names are
         # natural, readable text rather than quoted fragments or usernames.
