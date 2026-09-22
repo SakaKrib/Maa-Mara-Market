@@ -16,6 +16,7 @@ import "../src/PublicUiForAll/PublicUi/maamara.css";
 
 // Admin Pages
 import Dashboard from "./Scenes/Dashboard/Dashboard";
+import InboundTraffic from "./Scenes/InboundTraffic/InboundTraffic";
 import Vendors from "./Scenes/Vendors/Vendors";
 import PaymentReport from "./Scenes/PayoutReports/VendorReport";
 import Bar from "./Scenes/Bar/BarChartsBar";
@@ -262,6 +263,7 @@ function AppContent() {
               {/* Protected Admin Routes */}
               <Route path="/admin-dashboard/*" element={<ProtectedRoute requiredRole="admin"><AdminLayout /></ProtectedRoute>}>
               <Route index element={<Dashboard />} />
+              <Route path="inbound-traffic" element={<InboundTraffic />} />
               <Route path="vendors" element={<Vendors />} />
               <Route path="vendor-payout" element={<PaymentReport />} />
               <Route path="faq" element={<FAQ />} />
