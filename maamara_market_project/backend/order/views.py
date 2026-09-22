@@ -412,30 +412,9 @@ def add_to_cart_api(request, pk):
         actor_type=actor_type,
         action="item_added_to_cart",
         item=item,
-        description=f"You added {item.name} to cart.",
-        related_url=f"/item-client/{item.id}/"
-    )
-
-    ActivityLog.objects.create(
-        user=user,
-        visitor_id=visitor_id,
-        actor_type='user',
-        action="item_added_to_cart",
-        item=item,
-        description=f"A customer added {item.name} to cart.",
+        description=f"A customer added {item.name} to their cart.",
         related_url=f"/item/{item.id}/"
     )
-
-    for admin in User.objects.filter(is_staff=True):
-        ActivityLog.objects.create(
-            user=admin,
-            visitor_id=visitor_id,
-            actor_type="admin",
-            action="item_added_to_cart",
-            item=item,
-            description=f"A customer added {item.name} to their cart.",
-            related_url=f"/admin-item/vendorDashboard/items/{item.id}/"
-        )
 
     # --- Build response ---
     message = "Item added to cart" if created else "Item quantity updated in cart"
@@ -558,55 +537,17 @@ def remove_from_cart_api(request, pk):
     cart_item.delete()
 
     # -----------------------------
-    # Log user/visitor activity
-    # -----------------------------
+    # Log one canonical customer event. The serializer renders it as
+    # "You ..." for the customer and "A customer ..." for staff/vendor views.
     ActivityLog.objects.create(
         user=user,
         visitor_id=visitor_id,
         actor_type=actor_type,
         action="item_removed_from_cart",
         item=item,
-        description=f"You removed {item.name} from cart.",
-        related_url=f"/item-client/{item.id}/"
-    )
-
-    # Log vendor activity
-    vendor = getattr(item, 'vendor', None)
-    if vendor:
-        vendor_user = getattr(vendor, 'user', None)  # Adjust if your Vendor model has 'user' field
-        if vendor_user:
-            ActivityLog.objects.create(
-                user=vendor_user,
-                visitor_id=visitor_id,
-                actor_type='user',
-                action="cart_item_removed_notification",
-                item=item,
-                description=f"A customer removed {item.name} from their cart.",
-                related_url=f"/vendor-dashboard/items/{item.id}/"
-            )
-
-    # Log vendor info as actor for frontend reference
-    ActivityLog.objects.create(
-        user=user,
-        visitor_id=visitor_id,
-        actor_type='user',
-        action="item_removed_from_cart",
-        item=item,
-        description=f"A customer removed {item.name} from cart.",
+        description=f"A customer removed {item.name} from their cart.",
         related_url=f"/item/{item.id}/"
     )
-
-    # Log admin activities
-    for admin in User.objects.filter(is_staff=True):
-        ActivityLog.objects.create(
-            user=admin,
-            visitor_id=visitor_id,
-            actor_type="admin",
-            action="item_removed_from_cart",
-            item=item,
-            description=f"A customer removed {item.name} from their cart.",
-            related_url=f"/admin-item/vendorDashboard/items/{item.id}/"
-        )
 
     # -----------------------------
     # Return response
