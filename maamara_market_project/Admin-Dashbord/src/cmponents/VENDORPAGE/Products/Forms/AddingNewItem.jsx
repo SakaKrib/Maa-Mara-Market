@@ -102,6 +102,10 @@ const ItemAddNew = ({ initialItem, vendorId, itemId, onSave = () => {}, vendor, 
   const [isCustomSubcategory, setIsCustomSubcategory] = useState(false);
   const [isCustomAttribute, setIsCustomAttribute] = useState(false);
   const [colorVariants, setColorVariants] = useState([]);
+  const [galleryImages, setGalleryImages] = useState([]);
+  const [productVideo, setProductVideo] = useState(null);
+  const [draftMessage, setDraftMessage] = useState("");
+  const [draftError, setDraftError] = useState("");
 
   const [selectedSection, setSelectedSection] = useState(() => {
     const existingSection = String(initialItem?.section || "").trim().toLowerCase();
