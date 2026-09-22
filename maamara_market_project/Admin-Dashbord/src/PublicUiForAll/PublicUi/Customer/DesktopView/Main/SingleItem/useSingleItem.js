@@ -9,6 +9,12 @@ const useSingleItem = () => {
   const [error, setError] = useState(null);
   const [selectedVariant, setSelectedVariant] = useState(null);
   const [selectedSize, setSelectedSize] = useState(null);
+  const [selectedAgeVariant, setSelectedAgeVariant] = useState(null);
+  const [selectedShoe, setSelectedShoe] = useState(null);
+  const [selectedShoeSize, setSelectedShoeSize] = useState(null);
+  const [selectedWeight, setSelectedWeight] = useState(null);
+  const [selectedLength, setSelectedLength] = useState(null);
+  const [customPreferences, setCustomPreferences] = useState("");
   const [selectedImage, setSelectedImage] = useState(null);
   const [quantity, setQuantity] = useState(1);
 
@@ -24,6 +30,12 @@ const useSingleItem = () => {
       const firstVariant = data?.variants?.[0] || null;
       setSelectedVariant(firstVariant);
       setSelectedSize(null);
+      setSelectedAgeVariant(null);
+      setSelectedShoe(null);
+      setSelectedShoeSize(null);
+      setSelectedWeight(null);
+      setSelectedLength(null);
+      setCustomPreferences("");
       setSelectedImage(null);
       setQuantity(1);
     } catch (err) {
@@ -55,6 +67,12 @@ const useSingleItem = () => {
     setSelectedImage(null);
   }, []);
 
+  const selectAgeVariant = useCallback((age) => setSelectedAgeVariant(age), []);
+  const selectShoe = useCallback((shoe) => { setSelectedShoe(shoe); setSelectedShoeSize(null); }, []);
+  const selectShoeSize = useCallback((size) => setSelectedShoeSize(size), []);
+  const selectWeight = useCallback((weight) => setSelectedWeight(weight), []);
+  const selectLength = useCallback((length) => setSelectedLength(length), []);
+
   const selectImage = useCallback((image) => {
     setSelectedImage(image);
   }, []);
@@ -69,9 +87,9 @@ const useSingleItem = () => {
   const remainingStock = Math.max(availableStock - quantity, 0);
 
   return {
-    item, loading, error, selectedVariant, selectedSize, selectedImage,
+    item, loading, error, selectedVariant, selectedSize, selectedAgeVariant, selectedShoe, selectedShoeSize, selectedWeight, selectedLength, customPreferences, setCustomPreferences, selectedImage,
     quantity, setQuantity, availableStock, remainingStock,
-    selectColor, selectSize, selectImage, refreshItem: fetchItem,
+    selectColor, selectSize, selectAgeVariant, selectShoe, selectShoeSize, selectWeight, selectLength, selectImage, refreshItem: fetchItem,
   };
 };
 
