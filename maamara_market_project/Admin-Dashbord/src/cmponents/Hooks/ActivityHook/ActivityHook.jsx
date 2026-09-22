@@ -12,26 +12,13 @@ export const useVendorActivityLogs = ({ all = false } = {}) => {
   const wsRef = useRef(null);
   const reconnectRef = useRef(null);
 
-  // -----------------------------
-  // FILTER ONLY THIS VENDOR
-  // -----------------------------
+  // The backend now applies the vendor-store scope. Keep customer,
+  // vendor, and administrator activities tied to this vendor's items.
+  // Do not filter by actor_role here because customer actions are valid
+  // store activities (for example, a customer adding an item to a cart).
   const filterVendorLogs = useCallback(
-    (logs = []) => {
-      if (!user) return [];
-
-      return logs.filter((log) => {
-        if (log.actor_role !== "vendor") return false;
-        if (!log.user) return false;
-
-        const logUserId =
-          typeof log.user === "object"
-            ? log.user.id
-            : log.user;
-
-        return logUserId === user.id;
-      });
-    },
-    [user]
+    (logs = []) => logs,
+    []
   );
 
   // -----------------------------
