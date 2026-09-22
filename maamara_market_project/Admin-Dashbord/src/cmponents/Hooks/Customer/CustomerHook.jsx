@@ -17,7 +17,10 @@ export function useCustomerSocket() {
     if (!userId) return;
 
     const wsScheme = window.location.protocol === "https:" ? "wss" : "ws";
-    const backendHost = "127.0.0.1:8000"; // Django backend
+    // Keep the WebSocket host on the same hostname as the frontend so
+    // HttpOnly auth cookies are sent to Django (localhost and 127.0.0.1 are
+    // different cookie hosts in the browser).
+    const backendHost = `${window.location.hostname}:8000`;
     const socketUrl = `${wsScheme}://${backendHost}/ws/customers/${userId}/`;
     console.log("Connecting WebSocket to:", socketUrl);
 
@@ -60,8 +63,9 @@ export function useCustomerSocket() {
 
     return () => {
       clearTimeout(reconnectTimer.current);
-      if (socketRef.current && socketRef.current.readyState === WebSocket.OPEN) {
+      if (socketRef.current) {
         socketRef.current.close();
+        socketRef.current = null;
       }
     };
   }, [userId]);
