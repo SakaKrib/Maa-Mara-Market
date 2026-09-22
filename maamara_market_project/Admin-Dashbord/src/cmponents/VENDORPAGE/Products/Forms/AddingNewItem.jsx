@@ -88,7 +88,7 @@ const OCCASION_OPTIONS = [
 ];
 
 
-const ItemAddNew = ({ initialItem, vendorId, itemId, onSave = () => {}, vendor, isAdmin = false, adminCreateNew = false }) => {
+const ItemAddNew = ({ initialItem, vendorId, itemId, onSave = () => {}, vendor, isAdmin = false, adminCreateNew = false, approvalMode = false, approvalRequestId = null }) => {
   const { departmentMap, organicDepartmentMap } = useDepartments();
 
   // Vendor data may arrive directly or nested under vendor_data (vendor-request API).
@@ -121,6 +121,7 @@ const ItemAddNew = ({ initialItem, vendorId, itemId, onSave = () => {}, vendor, 
 
   // An existing item prop means vendor edit mode. A missing item means create mode.
   const isEditing = Boolean(initialItem?.id);
+  const isApprovalMode = Boolean(isAdmin && approvalMode && approvalRequestId);
   // Vendor edits keep protected fields muted; admin item creation/editing never does.
   const shouldMuteProtectedFields = isEditing && !isAdmin;
 
@@ -173,6 +174,24 @@ const ItemAddNew = ({ initialItem, vendorId, itemId, onSave = () => {}, vendor, 
       });
       setSelectedDepartment(initialItem.department || "");
       setSelectedCategory(initialItem.category || "");
+      const requestMedia = Array.isArray(initialItem.draft_media) ? initialItem.draft_media : [];
+      setGalleryImages(
+        requestMedia
+          .filter((asset) => asset.kind === "gallery")
+          .sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0))
+          .map((asset) => ({
+            slotKey: asset.slot_key,
+            value: asset.url,
+            url: asset.url,
+            name: asset.name,
+          }))
+      );
+      const requestVideo = requestMedia.find((asset) => asset.kind === "video");
+      setProductVideo(
+        requestVideo
+          ? { slotKey: "video", value: requestVideo.url, url: requestVideo.url, name: requestVideo.name }
+          : null
+      );
       setIsCustomCategory(false);
       setIsCustomSubcategory(false);
       setIsCustomAttribute(false);
@@ -778,6 +797,34 @@ const ItemAddNew = ({ initialItem, vendorId, itemId, onSave = () => {}, vendor, 
             })
           ),
         };
+
+        // Vendor-request approval uses this same form. Save the complete edited
+        // product snapshot back to the request, then run the existing approval
+        // endpoint so the backend creates the final Item and finalizes draft media.
+        if (isApprovalMode) {
+          const draftResponse = await api.put(
+            `/api/vendor-requests/${approvalRequestId}/save-draft/`,
+            { draft_item: formattedItem },
+            { withCredentials: true }
+          );
+
+          if (draftResponse.status !== 200) {
+            throw new Error("Failed to save the edited vendor request.");
+          }
+
+          const approvalResponse = await api.post(
+            `/api/vendor/requests/${approvalRequestId}/approve/`,
+            { action: "approve" },
+            { withCredentials: true }
+          );
+
+          if (approvalResponse.status === 200) {
+            onSave(approvalResponse.data);
+          } else {
+            throw new Error("Failed to approve the vendor item request.");
+          }
+          return;
+        }
 
         // Existing items use the same form for direct vendor/admin edits.
         // This replaces the legacy EditItem/EditItemForm submission path.
@@ -2653,7 +2700,7 @@ const ItemAddNew = ({ initialItem, vendorId, itemId, onSave = () => {}, vendor, 
                 type="submit"
                 className="w-full rounded-full bg-[#2563eb] px-4 py-3 text-center text-white hover:bg-[#1d4ed8]"
               >
-                Save Changes
+                {isApprovalMode ? "Save & Approve" : "Save Changes"}
               </Button>
             </div>
             </div>
