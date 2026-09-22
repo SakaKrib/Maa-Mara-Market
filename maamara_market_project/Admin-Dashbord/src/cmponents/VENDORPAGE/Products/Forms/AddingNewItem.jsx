@@ -365,6 +365,7 @@ const ItemAddNew = ({ initialItem, vendorId, itemId, onSave = () => {}, vendor, 
     restoring: draftRestoring,
     saving: draftSaving,
     lastSavedAt,
+    saveNow: saveDraftNow,
     error: draftAutosaveError,
   } = useItemDraftAutosave({
     enabled: draftEnabled,
@@ -544,6 +545,15 @@ const ItemAddNew = ({ initialItem, vendorId, itemId, onSave = () => {}, vendor, 
         const occasions = form.getValues("occasions") || [];
         const image = typeof data.image === "string" ? data.image : null;
 
+        let submittedDraftId = draftId || null;
+        if (draftEnabled) {
+          const savedDraft = await saveDraftNow(data, draftMedia);
+          if (!savedDraft?.draft_id) {
+            throw new Error("The item draft could not be saved. The item was not submitted.");
+          }
+          submittedDraftId = savedDraft.draft_id;
+        }
+
         const formattedItem = {
           name: data.name,
           description: data.description,
@@ -561,6 +571,7 @@ const ItemAddNew = ({ initialItem, vendorId, itemId, onSave = () => {}, vendor, 
           available: data.available ?? true,
           returnable: data.returnable ?? true,
           image,
+          video: typeof data.video === "string" ? data.video : null,
           brand: data.brand || null,
           is_organic,
           is_fresh_food,
@@ -749,6 +760,7 @@ const ItemAddNew = ({ initialItem, vendorId, itemId, onSave = () => {}, vendor, 
 
           const adminFormData = new FormData();
           adminFormData.append("vendor_id", String(vendor.id));
+          if (submittedDraftId) adminFormData.append("draft_id", submittedDraftId);
 
           Object.entries(formattedItem).forEach(([key, value]) => {
             if (value === null || value === undefined || value === "") return;
@@ -796,6 +808,7 @@ const ItemAddNew = ({ initialItem, vendorId, itemId, onSave = () => {}, vendor, 
         vendorFormData.append("description", String(formattedItem.description || ""));
         vendorFormData.append("price", String(formattedItem.price || 0));
         vendorFormData.append("draft_item", JSON.stringify(formattedItem));
+        if (submittedDraftId) vendorFormData.append("draft_id", submittedDraftId);
 
         if (data.image instanceof File) {
           vendorFormData.append("image", data.image);
