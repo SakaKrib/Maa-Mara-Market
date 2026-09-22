@@ -61,7 +61,7 @@ const SingleItem = () => {
     <main className="mm-single-item mm-page pb-12 pt-6">
       <div className="mm-container">
         <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-2 lg:gap-8 xl:gap-10">
-          <div className="min-w-0 lg:sticky lg:top-4">
+          <div className="min-w-0">
             <ProductGallery
               item={item}
               selectedImage={selectedImage}
