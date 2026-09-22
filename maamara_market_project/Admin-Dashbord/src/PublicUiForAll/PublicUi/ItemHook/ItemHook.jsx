@@ -18,7 +18,9 @@ const formatItem = (item) => {
   };
 };
 
-// The public item-list endpoint is the filtered marketplace feed.\n// /api/items/ is not registered; /api/items/<id>/ is detail-only.\nconst useItems = (initialUrl = `/api/filtered-items/`) => {
+// The public item-list endpoint is the filtered marketplace feed.
+// /api/items/ is not registered; /api/items/<id>/ is detail-only.
+const useItems = (initialUrl = `/api/filtered-items/`) => {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [nextUrl, setNextUrl] = useState(null);
@@ -48,8 +50,10 @@ const formatItem = (item) => {
       const formattedItems = results.map(formatItem);
 
       setItems(formattedItems);
-      setNextUrl(data.next || null);
-      setPrevUrl(data.previous || null);
+      // The filtered-items endpoint exposes next/previous as booleans,
+      // not URLs. Only retain a value when the API actually returns a URL.
+      setNextUrl(typeof data.next === "string" ? data.next : null);
+      setPrevUrl(typeof data.previous === "string" ? data.previous : null);
     } catch (error) {
       console.error("Error fetching items:", error);
       setItems([]);
