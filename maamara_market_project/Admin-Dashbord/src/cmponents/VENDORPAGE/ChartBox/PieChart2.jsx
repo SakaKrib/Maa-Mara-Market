@@ -26,7 +26,7 @@ const CombinedVendorStatsChart = ({ vendorStats, vendorGrowthStats, orderStats }
         <h3 className="text-base font-bold text-[#222] sm:text-lg">Overview</h3>
         <p className="mt-0.5 text-xs text-[#595959]">Views, item growth and pending orders.</p>
       </div>
-      <div className="h-[285px] w-full min-w-0">
+      <div className="mt-3 h-[300px] w-full min-w-0 overflow-hidden sm:h-[320px]">
         <ResponsiveContainer width="100%" height="100%">
           <PieChart margin={{ top: 8, right: 8, bottom: 8, left: 8 }}>
             <Pie
@@ -34,9 +34,9 @@ const CombinedVendorStatsChart = ({ vendorStats, vendorGrowthStats, orderStats }
               dataKey="value"
               nameKey="name"
               cx="50%"
-              cy="44%"
-              innerRadius="43%"
-              outerRadius="68%"
+              cy="42%"
+              innerRadius="40%"
+              outerRadius="58%"
               paddingAngle={3}
               label={false}
             >
@@ -57,7 +57,13 @@ const CombinedVendorStatsChart = ({ vendorStats, vendorGrowthStats, orderStats }
               verticalAlign="bottom"
               align="center"
               iconType="circle"
-              wrapperStyle={{ fontSize: 11, color: "#374151", paddingTop: 6 }}
+              wrapperStyle={{
+                fontSize: 11,
+                color: "#374151",
+                paddingTop: 8,
+                width: "100%",
+                whiteSpace: "normal",
+              }}
             />
           </PieChart>
         </ResponsiveContainer>
