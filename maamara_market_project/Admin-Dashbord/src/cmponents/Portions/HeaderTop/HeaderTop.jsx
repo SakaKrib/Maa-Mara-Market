@@ -223,7 +223,7 @@ const HeaderTop = ({ onMenuToggle }) => {
                 />
               ) : (
                 <span
-                  className="grid h-9 w-9 place-items-center rounded-full border border-primary/20 bg-primary text-xs font-bold tracking-wide text-white"
+                  className="grid h-9 w-9 place-items-center rounded-full border border-primary/20 bg-black text-xs font-bold tracking-wide text-white"
                   aria-hidden="true"
                 >
                   {profileInitials}
@@ -253,12 +253,12 @@ const HeaderTop = ({ onMenuToggle }) => {
               </button>
             </div>
 
-            <div className="flex items-center gap-4 rounded-2xl bg-slate-50 p-4 dark:bg-slate-800/60">
+            <div className="flex items-center gap-4 rounded-2xl border border-gray-300 bg-white p-4 shadow-sm">
               <button type="button" onClick={() => fileInputRef.current?.click()} className="relative shrink-0">
                 {previewImage || profilePicture ? (
                   <img src={previewImage || profilePicture} alt="Profile" className="h-20 w-20 rounded-full border-2 border-[#2563eb]/20 object-cover dark:border-[#2563eb]/40" />
                 ) : (
-                  <span className="grid h-20 w-20 place-items-center rounded-full border-2 border-[#2563eb]/20 bg-[#2563eb] text-xl font-bold tracking-wide text-white dark:border-[#2563eb]/40" aria-label={displayName}>
+                  <span className="grid h-20 w-20 place-items-center rounded-full border-2 border-gray-300 bg-black text-xl font-bold tracking-wide text-white shadow-sm" aria-label={displayName}>
                     {profileInitials}
                   </span>
                 )}
@@ -267,8 +267,8 @@ const HeaderTop = ({ onMenuToggle }) => {
                 </span>
               </button>
               <div className="min-w-0">
-                <p className="truncate font-semibold text-slate-900 dark:text-white">{form.first_name || "Administrator"} {form.last_name}</p>
-                <p className="truncate text-sm text-slate-500 dark:text-slate-400">{form.email || user?.username}</p>
+                <p className="truncate text-base font-semibold tracking-tight text-gray-900">{form.first_name || "Administrator"} {form.last_name}</p>
+                <p className="truncate text-sm font-medium text-gray-500">{form.email || user?.username}</p>
                 <input ref={fileInputRef} type="file" accept="image/*" hidden onChange={handleImageChange} />
               </div>
             </div>
@@ -278,12 +278,12 @@ const HeaderTop = ({ onMenuToggle }) => {
                 <button onClick={() => setActiveView("view")} className="rounded-full border border-border bg-transparent px-4 py-3 text-left text-sm font-semibold text-foreground transition hover:bg-muted">View account</button>
                 <button onClick={() => setActiveView("edit")} className="rounded-full border border-border bg-transparent px-4 py-3 text-left text-sm font-semibold text-foreground transition hover:bg-muted">Edit profile</button>
                 <button onClick={() => setActiveView("manage")} className="rounded-full border border-border bg-transparent px-4 py-3 text-left text-sm font-semibold text-foreground transition hover:bg-muted">Manage account</button>
-                <button type="button" onClick={() => setShowSignOutConfirm(true)} className="rounded-full border border-transparent bg-transparent px-4 py-3 text-left text-sm font-semibold text-red-600 transition hover:bg-red-50 dark:text-red-300 dark:hover:bg-red-500/10">Sign out</button>
+                <button type="button" onClick={() => setShowSignOutConfirm(true)} className="rounded-full border border-red-200 bg-red-50 px-4 py-3 text-left text-sm font-semibold text-red-700 ring-1 ring-red-100 transition hover:bg-red-50 dark:text-red-300 dark:hover:bg-red-500/10">Sign out</button>
               </div>
             )}
 
             {activeView === "view" && (
-              <div className="mt-5 space-y-2 text-sm">
+              <div className="mt-5 rounded-2xl border border-gray-300 bg-white p-4 shadow-sm">
                 {[
                   ["First name", form.first_name],
                   ["Last name", form.last_name],
@@ -325,7 +325,7 @@ const HeaderTop = ({ onMenuToggle }) => {
                         value={form[name] || ""}
                         onChange={handleChange}
                         disabled={!editMode}
-                        className="h-11 rounded-[20px] border border-border bg-background px-4 text-sm text-foreground outline-none transition focus:border-primary focus:ring-4 focus:ring-primary/10 disabled:cursor-not-allowed disabled:opacity-60"
+                        className="h-11 w-full rounded-[20px] border border-gray-300 bg-white px-4 py-3 text-sm text-gray-900 outline-none transition focus:border-[#2563eb] focus:ring-4 focus:ring-[#2563eb]/10 disabled:cursor-not-allowed disabled:opacity-60"
                       />
                     </label>
                   ))}
@@ -337,7 +337,7 @@ const HeaderTop = ({ onMenuToggle }) => {
                       value={form.date_of_birth || ""}
                       onChange={handleChange}
                       disabled={!editMode}
-                      className="h-10 rounded-xl border border-slate-200 bg-transparent px-3 text-sm text-slate-900 outline-none ring-indigo-500 focus:ring-2 disabled:cursor-not-allowed disabled:opacity-60 dark:border-slate-700 dark:text-white"
+                      className="h-11 w-full rounded-[20px] border border-gray-300 bg-white px-4 py-3 text-sm text-gray-900 outline-none transition focus:border-[#2563eb] focus:ring-4 focus:ring-[#2563eb]/10 disabled:cursor-not-allowed disabled:opacity-60"
                     />
                   </label>
                 </div>
