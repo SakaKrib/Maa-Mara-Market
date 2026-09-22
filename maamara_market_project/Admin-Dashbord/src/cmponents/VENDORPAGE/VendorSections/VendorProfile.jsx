@@ -38,6 +38,46 @@ const SingleVendorProfile = () => {
   const [error, setError] = useState(null);
   const [activityLogs, setActivityLogs] = useState([]);
   const [activeBadge, setActiveBadge] = useState(null);
+  const [badgePosition, setBadgePosition] = useState(null);
+  const badgeButtonRefs = React.useRef({});
+
+  const positionBadge = (label) => {
+    const button = badgeButtonRefs.current[label];
+    if (!button) return;
+
+    const rect = button.getBoundingClientRect();
+    const tooltipWidth = Math.min(256, window.innerWidth - 24);
+    const tooltipHeight = 120;
+    const gap = 12;
+    const spaceBelow = window.innerHeight - rect.bottom;
+    const spaceAbove = rect.top;
+    const showAbove = spaceBelow < tooltipHeight + gap && spaceAbove >= tooltipHeight + gap;
+    const top = showAbove
+      ? Math.max(12, rect.top - tooltipHeight - gap)
+      : Math.min(window.innerHeight - tooltipHeight - 12, rect.bottom + gap);
+    const left = Math.min(
+      Math.max(12, rect.left + rect.width / 2 - tooltipWidth / 2),
+      window.innerWidth - tooltipWidth - 12
+    );
+
+    setBadgePosition({ top, left, width: tooltipWidth });
+  };
+
+  useEffect(() => {
+    if (!activeBadge) {
+      setBadgePosition(null);
+      return undefined;
+    }
+
+    const updatePosition = () => positionBadge(activeBadge);
+    updatePosition();
+    window.addEventListener("scroll", updatePosition, true);
+    window.addEventListener("resize", updatePosition);
+    return () => {
+      window.removeEventListener("scroll", updatePosition, true);
+      window.removeEventListener("resize", updatePosition);
+    };
+  }, [activeBadge]);
 
   const fetchActivityLogs = async () => {
     try {
@@ -379,17 +419,50 @@ const SingleVendorProfile = () => {
                     {badges.map((badge) => {
                       const isActive = activeBadge === badge.label;
                       return (
-                        <div key={badge.label} className="group relative">
-                          <button type="button" aria-label={badge.label} aria-expanded={isActive} onClick={() => setActiveBadge(isActive ? null : badge.label)} className="grid h-10 w-10 place-items-center rounded-full border border-gray-300 bg-[#f8f8f6] text-gray-700 transition hover:border-[#2563eb]/40 hover:bg-blue-50 hover:text-[#2563eb] focus:outline-none focus:ring-4 focus:ring-[#2563eb]/10">
-                            <IonIcon icon={badge.icon} className="text-xl" />
-                          </button>
-                          <div className={`absolute left-1/2 top-12 z-20 w-64 -translate-x-1/2 rounded-2xl border border-[#e6e6e4] bg-white p-4 text-left shadow-xl ${isActive ? "block" : "hidden"} sm:group-hover:block`}>
-                            <h3 className="text-sm font-semibold text-gray-900">{badge.label}</h3>
-                            <p className="mt-1 text-xs leading-5 text-gray-600">{badge.description}</p>
-                          </div>
-                        </div>
+                        <button
+                          key={badge.label}
+                          ref={(element) => {
+                            badgeButtonRefs.current[badge.label] = element;
+                          }}
+                          type="button"
+                          aria-label={badge.label}
+                          aria-expanded={isActive}
+                          onMouseEnter={() => {
+                            setActiveBadge(badge.label);
+                            window.requestAnimationFrame(() => positionBadge(badge.label));
+                          }}
+                          onFocus={() => {
+                            setActiveBadge(badge.label);
+                            window.requestAnimationFrame(() => positionBadge(badge.label));
+                          }}
+                          onClick={() => {
+                            const next = isActive ? null : badge.label;
+                            setActiveBadge(next);
+                            if (next) window.requestAnimationFrame(() => positionBadge(next));
+                          }}
+                          className="grid h-10 w-10 place-items-center rounded-full border border-gray-300 bg-[#f8f8f6] text-gray-700 transition hover:border-[#2563eb]/40 hover:bg-blue-50 hover:text-[#2563eb] focus:outline-none focus:ring-4 focus:ring-[#2563eb]/10"
+                        >
+                          <IonIcon icon={badge.icon} className="text-xl" />
+                        </button>
                       );
-                    })}}
+                    })}
+
+                    {activeBadge && badgePosition && (
+                      <div
+                        role="tooltip"
+                        className="fixed z-[9999] rounded-2xl border border-[#e6e6e4] bg-white p-4 text-left shadow-2xl"
+                        style={{
+                          top: badgePosition.top,
+                          left: badgePosition.left,
+                          width: badgePosition.width,
+                        }}
+                      >
+                        <h3 className="text-sm font-semibold text-gray-900">{activeBadge}</h3>
+                        <p className="mt-1 text-xs leading-5 text-gray-600">
+                          {badges.find((badge) => badge.label === activeBadge)?.description}
+                        </p>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
