@@ -177,7 +177,7 @@ const SingleVendorProfile = () => {
 
   if (loading) {
     return (
-      <div className="rounded-xl border border-gray-200 bg-white p-8 text-center shadow-sm">
+      <div className="rounded-2xl border border-[#e6e6e4] bg-white p-8 text-center shadow-sm">
         <p className="text-sm font-medium text-gray-600">Loading vendor profile...</p>
       </div>
     );
@@ -185,7 +185,7 @@ const SingleVendorProfile = () => {
 
   if (error) {
     return (
-      <div className="rounded-xl border border-red-200 bg-red-50 p-6">
+      <div className="rounded-2xl border border-red-200 bg-red-50 p-6">
         <h2 className="text-base font-semibold text-red-800">Unable to load profile</h2>
         <p className="mt-1 text-sm text-red-700">
           Please try again. Your vendor profile could not be loaded.
@@ -307,7 +307,7 @@ const SingleVendorProfile = () => {
     <div className="mx-auto w-full max-w-[1500px] space-y-6">
       <section className="flex flex-col gap-4 rounded-xl border border-gray-200 bg-white p-5 shadow-sm sm:p-6 lg:flex-row lg:items-center lg:justify-between">
         <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#b94b13]">
+          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#2563eb]">
             Seller account
           </p>
           <h1 className="mt-1 text-2xl font-bold text-gray-900 sm:text-3xl">
@@ -344,7 +344,7 @@ const SingleVendorProfile = () => {
                   </div>
 
                   <div className="flex flex-wrap gap-2">
-                    <span className="rounded-full bg-blue-50 px-3 py-1 text-xs font-semibold text-[#b94b13]">
+                    <span className="rounded-full bg-blue-50 px-3 py-1 text-xs font-semibold text-[#2563eb]">
                       {vendor.product_type || "Vendor"}
                     </span>
                     {vendor.Are_You_KEBS_certified && vendor.product_type === "organic" && (
@@ -376,7 +376,7 @@ const SingleVendorProfile = () => {
                           <button
                             type="button"
                             aria-label={badge.label}
-                            className="grid h-10 w-10 place-items-center rounded-full border border-gray-200 bg-gray-50 text-gray-700 transition hover:border-orange-200 hover:bg-blue-50 hover:text-[#b94b13]"
+                            className="grid h-10 w-10 place-items-center rounded-full border border-gray-200 bg-gray-50 text-gray-700 transition hover:border-[#d9d9d6] hover:bg-blue-50 hover:text-[#2563eb]"
                           >
                             <IonIcon icon={badge.icon} className="text-xl" />
                           </button>
