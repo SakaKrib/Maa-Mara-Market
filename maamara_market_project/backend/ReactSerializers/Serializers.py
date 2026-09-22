@@ -406,6 +406,10 @@ class ItemSerializers(serializers.ModelSerializer):
                         department=department,
                     )
                 data["category"] = category.name
+                # SlugRelatedField normally searches globally by name. Restrict
+                # it to the category we just resolved so duplicate names across
+                # departments cannot attach the wrong Category object.
+                self.fields["category"].queryset = Category.objects.filter(pk=category.pk)
 
                 if subcategory_name:
                     subcategory = SubCategory.objects.filter(
@@ -418,6 +422,7 @@ class ItemSerializers(serializers.ModelSerializer):
                             category=category,
                         )
                     data["subcategory"] = subcategory.name
+                    self.fields["subcategory"].queryset = SubCategory.objects.filter(pk=subcategory.pk)
 
         return super().to_internal_value(data)
     
