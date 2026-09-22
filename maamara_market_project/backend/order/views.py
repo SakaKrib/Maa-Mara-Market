@@ -578,7 +578,7 @@ def remove_from_cart_api(request, pk):
             ActivityLog.objects.create(
                 user=vendor_user,
                 visitor_id=visitor_id,
-                actor_type='vendor',
+                actor_type='user',
                 action="cart_item_removed_notification",
                 item=item,
                 description=f"A customer removed {item.name} from their cart.",
