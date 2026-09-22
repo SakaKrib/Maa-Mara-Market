@@ -122,7 +122,7 @@ export const useVendorActivityLogs = ({ all = false } = {}) => {
                 new Date(b.timestamp) -
                 new Date(a.timestamp)
             )
-            .slice(0, 100);
+            .slice(0, all ? undefined : 100);
         });
       } catch (err) {
         console.error(
@@ -150,7 +150,7 @@ export const useVendorActivityLogs = ({ all = false } = {}) => {
       );
       ws.close();
     };
-  }, [user, filterVendorLogs]);
+  }, [user, filterVendorLogs, all]);
 
   // -----------------------------
   // LIFECYCLE
