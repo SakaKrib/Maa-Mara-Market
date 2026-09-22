@@ -31,7 +31,7 @@ const BarVendor = () => {
 
   return (
     <div className="pie-chart">
-      <h1 className="text-4xl">Sales for {monthRange}</h1>
+      <h2 className="text-base font-bold leading-5 text-[#222] sm:text-lg">Sales for {monthRange}</h2>
 
       <div className="chart">
         {loading ? <p>Loading chart...</p> : <VendorBar payouts={payouts} />}
