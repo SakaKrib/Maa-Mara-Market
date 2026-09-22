@@ -264,10 +264,10 @@ const HeaderTop = ({ onMenuToggle }) => {
 
             {activeView === "main" && (
               <div className="mt-5 grid gap-2 sm:grid-cols-2">
-                <button onClick={() => setActiveView("view")} className="rounded-xl border border-slate-200 px-4 py-3 text-left text-sm font-semibold hover:bg-slate-50 dark:border-slate-700 dark:hover:bg-slate-800">View account</button>
+                <button onClick={() => setActiveView("view")} className="rounded-full border border-border bg-transparent px-4 py-3 text-left text-sm font-semibold text-foreground transition hover:bg-muted">View account</button>
                 <button onClick={() => setActiveView("edit")} className="rounded-xl border border-slate-200 px-4 py-3 text-left text-sm font-semibold hover:bg-slate-50 dark:border-slate-700 dark:hover:bg-slate-800">Edit profile</button>
                 <button onClick={() => setActiveView("manage")} className="rounded-xl border border-slate-200 px-4 py-3 text-left text-sm font-semibold hover:bg-slate-50 dark:border-slate-700 dark:hover:bg-slate-800">Manage account</button>
-                <button type="button" onClick={() => setShowSignOutConfirm(true)} className="rounded-xl border border-transparent px-4 py-3 text-left text-sm font-semibold text-red-600 hover:bg-red-50 dark:text-red-300 dark:hover:bg-red-500/10">Sign out</button>
+                <button type="button" onClick={() => setShowSignOutConfirm(true)} className="rounded-full border border-transparent bg-transparent px-4 py-3 text-left text-sm font-semibold text-red-600 transition hover:bg-red-50 dark:text-red-300 dark:hover:bg-red-500/10">Sign out</button>
               </div>
             )}
 
@@ -289,7 +289,7 @@ const HeaderTop = ({ onMenuToggle }) => {
                     <span className="max-w-[65%] truncate text-right font-medium text-slate-900 dark:text-slate-100">{value || "—"}</span>
                   </div>
                 ))}
-                <button onClick={() => setActiveView("main")} className="mt-3 w-full rounded-xl bg-slate-100 px-4 py-2.5 text-sm font-semibold dark:bg-slate-800">Back</button>
+                <button onClick={() => setActiveView("main")} className="mt-3 w-full rounded-full bg-black px-4 py-3 text-sm font-semibold text-white transition hover:bg-[#262626]">Back</button>
               </div>
             )}
 
@@ -333,9 +333,9 @@ const HeaderTop = ({ onMenuToggle }) => {
 
                 <div className="mt-5 flex flex-wrap gap-2">
                   {!editMode ? (
-                    <button onClick={() => setEditMode(true)} className="rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-indigo-700">Edit profile</button>
+                    <button onClick={() => setEditMode(true)} className="rounded-full bg-black px-5 py-3 text-sm font-semibold text-white transition hover:bg-[#262626]">Edit profile</button>
                   ) : (
-                    <button onClick={handleSave} className="rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-emerald-700">Save changes</button>
+                    <button onClick={handleSave} className="rounded-full bg-black px-5 py-3 text-sm font-semibold text-white transition hover:bg-[#262626]">Save changes</button>
                   )}
                   <button onClick={() => { setEditMode(false); setActiveView("main"); }} className="rounded-xl bg-slate-100 px-4 py-2.5 text-sm font-semibold dark:bg-slate-800">Back</button>
                 </div>
@@ -343,26 +343,15 @@ const HeaderTop = ({ onMenuToggle }) => {
             )}
 
             {activeView === "manage" && (
-              <div className="mt-5 rounded-xl border border-slate-200 p-4 text-sm dark:border-slate-700">
-                <h3 className="font-semibold text-slate-900 dark:text-white">Account settings</h3>
+              <div className="mt-5 rounded-2xl border border-border bg-muted/40 p-5 text-sm">
+                <h3 className="text-base font-semibold text-foreground">Account settings</h3>
                 <p className="mt-1 text-slate-500 dark:text-slate-400">Manage security, password changes, notifications, and other administrator preferences.</p>
                 <a href="/admin-dashboard/settings" onClick={closeProfile} className="mt-4 inline-flex w-full items-center justify-center rounded-full border border-border bg-transparent px-4 py-3 text-sm font-semibold text-foreground transition hover:bg-muted">Open account settings</a>
-                <button type="button" onClick={() => setActiveView("main")} className="mt-2 w-full rounded-full border border-border bg-transparent px-4 py-3 text-sm font-semibold text-foreground transition hover:bg-muted">Back</button>
+                <button type="button" onClick={() => setActiveView("main")} className="mt-4 w-full rounded-full bg-black px-5 py-3 text-sm font-semibold text-white transition hover:bg-[#262626]">Back</button>
               </div>
             )}
 
-            <div className="mt-6 border-t border-slate-200 pt-4 dark:border-slate-800">
-              <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-slate-400">Appearance</p>
-              <div className="grid grid-cols-2 gap-2">
-                <button onClick={() => colorMode.setLightMode()} className="rounded-xl border border-slate-200 px-3 py-2.5 text-sm font-semibold hover:bg-slate-50 dark:border-slate-700 dark:hover:bg-slate-800">
-                  <IonIcon icon={sunnyOutline} className="mr-2 align-middle" /> Light
-                </button>
-                <button onClick={() => colorMode.setDarkMode()} className="rounded-xl border border-slate-200 px-3 py-2.5 text-sm font-semibold hover:bg-slate-50 dark:border-slate-700 dark:hover:bg-slate-800">
-                  <IonIcon icon={moon} className="mr-2 align-middle" /> Dark
-                </button>
-              </div>
             </div>
-          </div>
         </div>
       )}
 
