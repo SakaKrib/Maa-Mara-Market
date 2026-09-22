@@ -60,6 +60,7 @@ import VendorItemRequestDetail from "./cmponents/AdminPages/Notifications/Vendor
 import AdminPriceRequestDetail from "./cmponents/AdminPages/Notifications/AdminApprovePriceChangeRequest";
 import SingleVendorProfile from "./cmponents/VENDORPAGE/VendorSections/VendorProfile";
 import PayoutsPage from "./cmponents/VendorPayoutReport/vendorPayouts/vendorPayouts";
+import VendorSettings from "./cmponents/VENDORPAGE/VendorSettings";
 
 // ✅ ProtectedRoute wrapper
 import ProtectedRoute from "./cmponents/Auth/Routes/ProtectRoute";
@@ -337,6 +338,7 @@ function AppContent() {
                 <Route path="create-item" element={<ItemCreateDrawer />} />
                 <Route path="add-item" element={<VendorItems />} />
                 <Route path="vendor-profile" element={<SingleVendorProfile />} />
+                <Route path="settings" element={<VendorSettings />} />
                 <Route path="vendor-payouts/payout-report" element={<PayoutsPage />} />
                 <Route path="item-onsite/items/:id" element={<SingleItemProfile />} />
 
