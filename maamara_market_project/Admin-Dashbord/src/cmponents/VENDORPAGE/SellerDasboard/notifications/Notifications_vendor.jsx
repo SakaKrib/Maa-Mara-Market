@@ -1,12 +1,15 @@
 import React, { useState } from "react";
 import { Bell, X } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { useVendorNotifications } from "../../../Hooks/VendorNotificationHook/VendorNotificationsHook";\nimport { useAdminPreferences } from "../../../Settings/AdminPreferencesContext";
+import { useVendorNotifications } from "../../../Hooks/VendorNotificationHook/VendorNotificationsHook";
+import { useAdminPreferences } from "../../../Settings/AdminPreferencesContext";
 
 export default function VendorNotifications() {
   const [open, setOpen] = useState(false);
   const navigate = useNavigate();
-  const { notifications = [], unseenCount = 0 } = useVendorNotifications();\n  const { preferences } = useAdminPreferences();\n  const notificationsEnabled = preferences.notifications;
+  const { notifications = [], unseenCount = 0 } = useVendorNotifications();
+  const { preferences } = useAdminPreferences();
+  const notificationsEnabled = preferences.notifications;
 
   const handleNotificationClick = (notification) => {
     if (notification.url) {
@@ -21,7 +24,8 @@ export default function VendorNotifications() {
         type="button"
         onClick={() => notificationsEnabled && setOpen(true)}
         className={`relative inline-flex h-10 w-10 items-center justify-center rounded-full border border-[#d9d9d6] bg-white text-[#222] shadow-sm transition focus:outline-none focus:ring-2 focus:ring-[#2563eb]/20 ${notificationsEnabled ? "hover:border-[#2563eb] hover:bg-[#eff6ff] hover:text-[#2563eb]" : "cursor-not-allowed opacity-50"}`}
-        aria-label={notificationsEnabled ? "Open notifications" : "Notifications disabled"}\n        title={notificationsEnabled ? "Open notifications" : "Notifications are disabled in settings"}
+        aria-label={notificationsEnabled ? "Open notifications" : "Notifications disabled"}
+        title={notificationsEnabled ? "Open notifications" : "Notifications are disabled in settings"}
       >
         <Bell className="h-5 w-5" strokeWidth={2.2} />
         {unseenCount > 0 && (
