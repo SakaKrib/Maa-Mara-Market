@@ -1,56 +1,68 @@
-.topbox {
-    display: flex;
-    flex-direction: column;
-    max-height: calc(180px * 3);  
-    overflow-x: hidden; 
-  
-    h1 {
-      margin-bottom: 20px;
-    }
-  
-    .list {
-      flex: 1;
-      overflow-y: auto;
-      max-height: 100%; 
-      padding: 10px 10px;
-      width: 100%;
-  
-      .listItem {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        margin-bottom: 30px;
-  
-        .user {
-          display: flex;
-          gap: 20px;
-  
-          img {
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            object-fit: cover;
-          }
-  
-          .userText {
-            display: flex;
-            flex-direction: column;
-            gap: 5px;
-  
-            .username {
-              font-size: 14px;
-              font-weight: 500;
+.topbox{
+    display:flex;
+    flex-direction:column;
+    max-height:136px;
+    overflow:hidden;
+
+    h1{margin-bottom:8px;}
+
+    .list{
+        flex:1;
+        overflow-y:auto;
+        max-height:100%;
+        padding:2px 0;
+        width:100%;
+
+        .listItem{
+            display:flex;
+            align-items:center;
+            justify-content:space-between;
+            margin-bottom:6px;
+            gap:8px;
+            padding:4px !important;
+
+            .user{
+                display:flex;
+                align-items:center;
+                gap:10px;
+                min-width:0;
+
+                img{
+                    width:32px;
+                    height:32px;
+                    flex:0 0 32px;
+                    border-radius:50%;
+                    object-fit:cover;
+                }
+
+                .userText{
+                    display:flex;
+                    flex-direction:column;
+                    gap:2px;
+                    min-width:0;
+
+                    .username{
+                        font-size:12px;
+                        font-weight:600;
+                        white-space:nowrap;
+                        overflow:hidden;
+                        text-overflow:ellipsis;
+                    }
+
+                    .email{
+                        font-size:10px;
+                        white-space:nowrap;
+                        overflow:hidden;
+                        text-overflow:ellipsis;
+                    }
+                }
             }
-            .email {
-              font-size: 12px;
+
+            .amount{
+                font-size:10px;
+                font-weight:500;
+                flex:0 0 auto;
             }
-          }
         }
-  
-        .amount {
-          font-weight: 500;
-        }
-      }
     }
-  }
-  
+}
