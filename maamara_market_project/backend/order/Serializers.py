@@ -46,8 +46,6 @@ class PaymentSerializer(serializers.ModelSerializer):
         if "payment_method" in attrs:
             attrs["payment_method"] = sanitize_text(attrs["payment_method"])
         return attrs
-    
-    
 
 
 class BaseSerializer(serializers.ModelSerializer):
@@ -66,10 +64,12 @@ class BaseSerializer(serializers.ModelSerializer):
             return float(obj)
 
         return obj
-    
+
+
 # ✅ OrderItem Serializer
 class OrderItemSerializer(serializers.ModelSerializer):
     item = ItemSerializer(read_only=True)
+    item_name = serializers.SerializerMethodField()
 
     total_item_price = serializers.SerializerMethodField()
     total_discount = serializers.SerializerMethodField()
@@ -83,6 +83,7 @@ class OrderItemSerializer(serializers.ModelSerializer):
         fields = [
             "id",
             "item",
+            "item_name",
             "user",
             "quantity",
             "color_variant",
@@ -105,6 +106,10 @@ class OrderItemSerializer(serializers.ModelSerializer):
             "final_price",
             "final_price_for_vendor",
         ]
+
+    def get_item_name(self, obj):
+        item = getattr(obj, "item", None)
+        return getattr(item, "name", None) or f"Item #{getattr(obj, 'item_id', obj.id)}"
 
     def get_selection_summary(self, obj):
         return {
@@ -246,9 +251,9 @@ class OrderSerializer(serializers.ModelSerializer):
 
         return float(total)
 
+
 # fetch transaction for vendor
 # serializers.py
-
 
 
 class TransactionSerializer(serializers.ModelSerializer):
