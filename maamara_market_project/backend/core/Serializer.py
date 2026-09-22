@@ -564,8 +564,38 @@ def get_activity_logs(request):
         if vendor is None:
             logs = logs.none()
         else:
+            # A single business event can have audience-specific ActivityLog
+            # rows (customer, vendor, and admin). The vendor feed should not
+            # show all of those copies as separate activities.
+            #
+            # Keep:
+            #   1. the vendor's own activities;
+            #   2. customer/visitor actions on this vendor's items;
+            #   3. genuine administrator decisions that affect this store.
+            # This prevents return/refund/cart/wishlist events from appearing
+            # two or three times in the vendor dashboard.
+            admin_store_actions = {
+                "item_request_approved",
+                "item_request_denied",
+                "Price Change Approved",
+                "banner_approved",
+                "banner_rejected",
+                "return_rejected_admin",
+                "refund_approved_admin",
+                "exchange_approved_admin",
+                "approved_vendor",
+            }
             logs = logs.filter(
-                Q(user=request.user) | Q(item__vendor=vendor)
+                Q(user=request.user)
+                | Q(
+                    item__vendor=vendor,
+                    actor_type__in=["user", "visitor"],
+                )
+                | Q(
+                    item__vendor=vendor,
+                    actor_type="admin",
+                    action__in=admin_store_actions,
+                )
             ).distinct()
 
     # The dashboard only needs a compact recent window. The dedicated vendor
