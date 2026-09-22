@@ -906,27 +906,20 @@ class WishlistAPIView(APIView):
 
             message = "Item added to wishlist"
 
-            # --- Activity log for actor ---
+            # --- One canonical activity event ---
+            # The serializer renders "You ..." for the actor and
+            # "A customer ..." for other audiences.
             ActivityLog.objects.create(
                 user=actor["user"],
                 actor_type=actor["actor_type"],
                 action="item_added_to_wishlist",
                 item=item,
-                description=f"You added {item.name} to your wishlist.",
-                related_url=f"/item-client/{item.id}/"
+                description=f"A customer added {item.name} to their wishlist.",
+                related_url=f"/item/{item.id}/"
             )
 
-            # --- Vendor activity log & notification ---
+            # --- Vendor notification ---
             if item.vendor and item.vendor.user:
-                ActivityLog.objects.create(
-                    user=item.vendor.user,
-                    actor_type="user",
-                    action="item_added_to_wishlist",
-                    item=item,
-                    description=f"A customer added {item.name} to their wishlist.",
-                    related_url=f"/item/{item.id}/"
-                )
-
                 Notification.objects.create(
                     user=item.vendor.user,
                     title="Item added to wishlist",
@@ -934,18 +927,7 @@ class WishlistAPIView(APIView):
                     url=f"/item/{item.id}/"
                 )
 
-            # --- Admin logs & notifications ---
-            admins = User.objects.filter(is_staff=True)
-            for admin in admins:
-                ActivityLog.objects.create(
-                    user=admin,
-                    actor_type="admin",
-                    action="item_added_to_wishlist",
-                    item=item,
-                    description=f"A customer added {item.name} to their wishlist.",
-                    related_url=f"/admin-item/vendorDashboard/items/{item.id}/"
-                )
-
+            # --- Admin notifications ---
             superadmins = User.objects.filter(is_superuser=True)
             for admin in superadmins:
                 Notification.objects.create(
@@ -996,37 +978,15 @@ class WishlistAPIView(APIView):
 
         if wishlist_qs.exists():
             wishlist_qs.delete()
-            # ... existing logging and notifications
-             # Log for user/visitor
+            # One canonical activity event for the wishlist change.
             ActivityLog.objects.create(
                 user=actor["user"],
                 actor_type=actor["actor_type"],
                 action="item_removed_from_wishlist",
                 item=item,
-                description=f"You removed {item.name} from your wishlist.",
-                related_url=f"/item-client/{item.id}/"
-            )
-
-            # Vendor log
-            ActivityLog.objects.create(
-                user=item.vendor.user if item.vendor and item.vendor.user else None,
-                actor_type="user",
-                action="item_removed_from_wishlist",
-                item=item,
                 description=f"A customer removed {item.name} from their wishlist.",
                 related_url=f"/item/{item.id}/"
             )
-
-            # Admin logs
-            for admin in User.objects.filter(is_superuser=True):
-                ActivityLog.objects.create(
-                    user=admin,
-                    actor_type="admin",
-                    action="item_removed_from_wishlist",
-                    item=item,
-                    description=f"A customer removed {item.name} from their wishlist.",
-                    related_url=f"/admin-item/vendorDashboard/items/{item.id}/"
-                )
 
             # Notifications
             if item.vendor and item.vendor.user:
