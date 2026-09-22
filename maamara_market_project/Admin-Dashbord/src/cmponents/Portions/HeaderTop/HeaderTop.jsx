@@ -1,5 +1,6 @@
 import { useRef, useState, useEffect, useContext } from "react";
 import { IonIcon } from "@ionic/react";
+import { UserRound } from "lucide-react";
 import { menuOutline, searchOutline, sunnyOutline, moon, closeOutline, cameraOutline, notificationsOutline } from "ionicons/icons";
 import { useAuth } from "../../Auth/AuthContext/Context";
 import { useCsrfToken } from "../../Hooks/AccessCRF/UseCSRFToken";
@@ -39,7 +40,8 @@ const HeaderTop = ({ onMenuToggle }) => {
   const displayName = form.first_name?.trim() || user?.username || "Admin";
   const shortDisplayName = displayName.length > 12 ? `${displayName.slice(0, 12)}…` : displayName;
 
-  const profilePicture = profile?.profile?.profile_picture || "/default-avatar.png";
+  const profilePicture = profile?.profile?.profile_picture || "";
+  const profileInitials = `${form.first_name?.trim()?.[0] || displayName?.[0] || "A"}${form.last_name?.trim()?.[0] || ""}`.toUpperCase();
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -242,7 +244,13 @@ const HeaderTop = ({ onMenuToggle }) => {
 
             <div className="flex items-center gap-4 rounded-2xl bg-slate-50 p-4 dark:bg-slate-800/60">
               <button type="button" onClick={() => fileInputRef.current?.click()} className="relative shrink-0">
-                <img src={previewImage || profilePicture} alt="Profile" className="h-20 w-20 rounded-full border-2 border-indigo-200 object-cover dark:border-indigo-500/40" />
+                {previewImage || profilePicture ? (
+                  <img src={previewImage || profilePicture} alt="Profile" className="h-20 w-20 rounded-full border-2 border-[#2563eb]/20 object-cover dark:border-[#2563eb]/40" />
+                ) : (
+                  <span className="grid h-20 w-20 place-items-center rounded-full border-2 border-[#2563eb]/20 bg-[#2563eb] text-xl font-bold tracking-wide text-white dark:border-[#2563eb]/40" aria-label={displayName}>
+                    {profileInitials}
+                  </span>
+                )}
                 <span className="absolute bottom-0 right-0 grid h-7 w-7 place-items-center rounded-full bg-indigo-600 text-white">
                   <IonIcon icon={cameraOutline} />
                 </span>
