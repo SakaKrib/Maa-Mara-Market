@@ -923,14 +923,14 @@ class WishlistAPIView(APIView):
                     actor_type="vendor",
                     action="item_added_to_wishlist",
                     item=item,
-                    description=f"{actor['actor_name']} added '{item.name}' to wishlist.",
+                    description=f"A customer added {item.name} to their wishlist.",
                     related_url=f"/item/{item.id}/"
                 )
 
                 Notification.objects.create(
                     user=item.vendor.user,
                     title="Item added to wishlist",
-                    message=f"{actor['actor_name']} added '{item.name}' from wishlist.",
+                    message=f"A customer added {item.name} to their wishlist.",
                     url=f"/item/{item.id}/"
                 )
 
@@ -942,7 +942,7 @@ class WishlistAPIView(APIView):
                     actor_type="admin",
                     action="item_added_to_wishlist",
                     item=item,
-                    description=f"{actor['actor_name']} added '{item.name}' to their wishlist.",
+                    description=f"A customer added {item.name} to their wishlist.",
                     related_url=f"/admin-item/vendorDashboard/items/{item.id}/"
                 )
 
@@ -1009,11 +1009,11 @@ class WishlistAPIView(APIView):
 
             # Vendor log
             ActivityLog.objects.create(
-                user=actor["user"],
+                user=item.vendor.user if item.vendor and item.vendor.user else None,
                 actor_type="vendor",
                 action="item_removed_from_wishlist",
                 item=item,
-                description=f"{actor['actor_name']} removed '{item.name}' from wishlist.",
+                description=f"A customer removed {item.name} from their wishlist.",
                 related_url=f"/item/{item.id}/"
             )
 
@@ -1024,7 +1024,7 @@ class WishlistAPIView(APIView):
                     actor_type="admin",
                     action="item_removed_from_wishlist",
                     item=item,
-                    description=f"{actor['actor_name']} removed '{item.name}' from their wishlist.",
+                    description=f"A customer removed {item.name} from their wishlist.",
                     related_url=f"/admin-item/vendorDashboard/items/{item.id}/"
                 )
 
@@ -1033,7 +1033,7 @@ class WishlistAPIView(APIView):
                 Notification.objects.create(
                     user=item.vendor.user,
                     title="Wishlist Update",
-                    message=f"{actor['actor_name']} removed '{item.name}' from wishlist.",
+                    message=f"A customer removed {item.name} from their wishlist.",
                     url=f"/item/{item.id}/"
                 )
 
@@ -1041,7 +1041,7 @@ class WishlistAPIView(APIView):
                 Notification.objects.create(
                     user=admin,
                     title="Wishlist Update",
-                    message=f"{actor['actor_name']} removed '{item.name}' from their wishlist.",
+                    message=f"A customer removed {item.name} from their wishlist.",
                     url=f"/admin-item/vendorDashboard/items/{item.id}/"
                 )
 
