@@ -88,7 +88,7 @@ export default function SearchBarForVendorAdmin({ fullscreen = false, onClose })
         <div className="relative min-w-0 flex-1">
           <Search className="pointer-events-none absolute left-4 top-1/2 z-10 h-5 w-5 -translate-y-1/2 text-gray-400" />
           <input
-            type="search"
+            type="text"
             autoComplete="off"
             value={value}
             onChange={(event) => setValue(event.target.value)}
