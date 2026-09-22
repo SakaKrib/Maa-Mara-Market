@@ -177,6 +177,97 @@ class VendorDraftImage(models.Model):
 
 # vendor request save temoralily
 
+class ItemDraft(models.Model):
+    STATUS_CHOICES = [
+        ("DRAFT", "Draft"),
+        ("SUBMITTED", "Submitted"),
+        ("COMPLETED", "Completed"),
+        ("ABANDONED", "Abandoned"),
+    ]
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    owner = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name="item_drafts",
+    )
+    vendor = models.ForeignKey(
+        Vendor,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="item_drafts",
+    )
+    data = models.JSONField(default=dict, blank=True)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="DRAFT")
+    created_item = models.ForeignKey(
+        "ReactSerializers.Item",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="source_drafts",
+    )
+    created_request = models.ForeignKey(
+        "VendorItemRequest",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="source_draft_links",
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    expires_at = models.DateTimeField()
+
+    class Meta:
+        indexes = [
+            models.Index(fields=["owner", "status", "-updated_at"]),
+            models.Index(fields=["vendor", "status", "-updated_at"]),
+        ]
+
+    def __str__(self):
+        return f"{self.owner_id} - {self.status} - {self.id}"
+
+
+class ItemDraftMedia(models.Model):
+    MEDIA_TYPE_CHOICES = [
+        ("image", "Image"),
+        ("video", "Video"),
+    ]
+
+    KIND_CHOICES = [
+        ("main", "Main image"),
+        ("gallery", "Gallery image"),
+        ("variant", "Variant image"),
+        ("video", "Product video"),
+    ]
+
+    draft = models.ForeignKey(
+        ItemDraft,
+        on_delete=models.CASCADE,
+        related_name="media",
+    )
+    media_type = models.CharField(max_length=10, choices=MEDIA_TYPE_CHOICES)
+    kind = models.CharField(max_length=10, choices=KIND_CHOICES)
+    slot_key = models.CharField(max_length=120)
+    variant_key = models.CharField(max_length=100, blank=True, default="")
+    sort_order = models.PositiveIntegerField(default=0)
+    file = models.FileField(upload_to="item_drafts/")
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["draft", "slot_key"],
+                name="unique_item_draft_media_slot",
+            )
+        ]
+        ordering = ("sort_order", "id")
+
+    def __str__(self):
+        return f"{self.draft_id} - {self.slot_key}"
+
+
 class VendorRequest(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
     vendor_data = models.JSONField()  # All form fields
