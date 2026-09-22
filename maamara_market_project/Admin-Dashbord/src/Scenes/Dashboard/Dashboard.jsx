@@ -76,6 +76,7 @@ const Dashboard = () => {
   const [analytics, setAnalytics] = useState({ total_revenue: 0, monthly_revenue: [] });
   const [selectedListView, setSelectedListView] = useState("activities");
   const lastNotificationIdRef = useRef(null);
+  const notificationsHydratedRef = useRef(false);
 
   useEffect(() => {
     const loadDashboard = async () => {
@@ -98,7 +99,12 @@ const Dashboard = () => {
           transactionsResponse.data?.summary || { total_transactions: 0, total_revenue: 0 }
         );
         setActivityLogs(Array.isArray(activity.data) ? activity.data : []);
-        setNotifications(Array.isArray(notificationList.data) ? notificationList.data : (Array.isArray(notificationList.data?.results) ? notificationList.data.results : []));
+        const initialNotifications = Array.isArray(notificationList.data)
+          ? notificationList.data
+          : (Array.isArray(notificationList.data?.results) ? notificationList.data.results : []);
+        setNotifications(initialNotifications);
+        lastNotificationIdRef.current = initialNotifications[0]?.id ?? null;
+        notificationsHydratedRef.current = true;
       } catch (error) {
         console.error("Admin dashboard data load failed:", error);
       }
@@ -145,16 +151,15 @@ const Dashboard = () => {
 
   useEffect(() => {
     const latest = notifications[0];
-    if (!preferences.notifications || !latest || latest.id === lastNotificationIdRef.current) return;
+    if (!notificationsHydratedRef.current || !preferences.notifications || !latest) return;
+    if (latest.id === lastNotificationIdRef.current) return;
 
     lastNotificationIdRef.current = latest.id;
-    if (preferences.notifications) {
-      toast({
-        title: "New notification",
-        description: latest.message,
-        duration: 5000,
-      });
-    }
+    toast({
+      title: latest.display_title || latest.title || "New notification",
+      description: latest.display_message || latest.message,
+      duration: 5000,
+    });
   }, [notifications, toast, preferences.notifications]);
 
   const markAsSeen = async (id) => {
