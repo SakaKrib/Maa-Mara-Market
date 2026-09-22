@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { Bell, X } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { useVendorNotificationsWS } from "../../../Hooks/VendorNotificationHook/VendorNotificationsHook";
+import { useVendorNotifications } from "../../../Hooks/VendorNotificationHook/VendorNotificationsHook";
 
 export default function VendorNotifications() {
   const [open, setOpen] = useState(false);
