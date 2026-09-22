@@ -6,7 +6,7 @@ from django.template.loader import render_to_string
 from django.conf import settings
 from django.contrib.auth import get_user_model
 
-from .models import Vendor, VendorItemRequest, Item
+from .models import Vendor, VendorItemRequest, Item, ItemDraft
 from .serializers import VendorItemRequestSerializer
 from core.models import ActivityLog, Notification  # adjust import to your app
 from rest_framework.views import APIView
@@ -24,6 +24,7 @@ from ReactSerializers.Serializers import ItemSerializers
 from django.core.exceptions import ValidationError
 from rest_framework.permissions import IsAdminUser, IsAuthenticated
 from order.Base import IsVendor
+from .draft_service import submit_item_draft, finalize_item_draft
 import hashlib
 from django.core.files.storage import default_storage
 
@@ -76,11 +77,27 @@ class VendorItemRequestCreateView(generics.CreateAPIView):
         # =========================
         # CREATE REQUEST
         # =========================
+        draft_id = self.request.data.get("draft_id")
+        draft = None
+        if draft_id:
+            draft = ItemDraft.objects.filter(
+                id=draft_id,
+                owner=self.request.user,
+                status="DRAFT",
+            ).first()
+            if draft is None:
+                raise ValidationError("The selected draft is no longer active.")
+
         item_request = serializer.save(
             vendor=vendor,
-            created_by=self.request.user
-            
+            created_by=self.request.user,
+            draft=draft,
         )
+
+        if draft:
+            # The request is now the submitted workflow record. The draft
+            # remains stored for audit/approval, but is no longer active.
+            submit_item_draft(draft, item_request)
 
         # =========================
         # EMAIL TO ADMIN
