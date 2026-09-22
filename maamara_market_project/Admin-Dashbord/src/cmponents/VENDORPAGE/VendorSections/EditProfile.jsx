@@ -255,7 +255,7 @@ export default function VendorProfileSheet({ vendor = {}, onSave }) {
               type="button"
               onClick={handleSubmit}
               disabled={saving}
-              className="rounded-lg bg-[#2563eb] px-5 py-2 font-semibold text-white hover:bg-[#1d4ed8] disabled:cursor-not-allowed disabled:opacity-60"
+              className="w-full rounded-full bg-[#2563eb] px-5 py-3 font-semibold text-white transition hover:bg-[#1d4ed8] disabled:cursor-not-allowed disabled:opacity-60"
             >
               {saving ? "Saving..." : "Save Profile"}
             </Button>
