@@ -273,7 +273,7 @@ def return_request_handler_api(request, item_id):
 
             Notification.objects.create(
                 user=vendor.user,
-                title="Refund Requested",
+                title="Refund Approved",
                 message=f"A customer requested a refund for your product {product_name}.",
                 url=f"/vendor/orders/{order.id}/returns/"
             )
@@ -542,7 +542,7 @@ def approve_return_request_api(request, return_id):
                     transaction.on_commit(lambda refund_id=refund.id: process_refund_task.delay(refund_id))
 
                 # --- 🔔 Notifications ---
-                msg = f"Refund approved for '{product.name}'. Amount will be refunded shortly."
+                msg = f"The administrator approved your refund request for {product.name}. The amount will be refunded shortly."
 
                 # Customer / Visitor Notification
                 if customer:
@@ -558,8 +558,8 @@ def approve_return_request_api(request, return_id):
                     # notifications
                     Notification.objects.create(
                         user=customer,
-                        title="Refund Requested",
-                        message=f"Your refund request for {product.name} has been received.",
+                        title="Refund Approved",
+                        message=f"Your refund request for {product.name} has been approved. The amount will be refunded shortly.",
                         url=f"/orders/returns/{return_request.id}/"
                     )
                 elif visitor_id:
@@ -575,8 +575,8 @@ def approve_return_request_api(request, return_id):
                     # notify visitor
                     Notification.objects.create(
                         visitor_id=visitor_id,
-                        title="Refund Requested",
-                        message=f"Your refund request for {product.name} has been received.",
+                        title="Refund Approved",
+                        message=f"Your refund request for {product.name} has been approved. The amount will be refunded shortly.",
                         url=f"/orders/returns/{return_request.id}/"
                     )
 
@@ -629,7 +629,7 @@ def approve_return_request_api(request, return_id):
                     adjustment.save(update_fields=["is_approved"])
 
                 # --- 🔔 Notifications ---
-                msg = f"Exchange approved for '{product.name}'. You can now redeem your exchange credit."
+                msg = f"The administrator approved your exchange request for {product.name}. You can now redeem your exchange credit."
 
                 # Customer / Visitor Notification
                 if customer:
@@ -645,8 +645,8 @@ def approve_return_request_api(request, return_id):
                     # notifications
                     Notification.objects.create(
                         user=customer,
-                        title="Exchange Request",
-                        message=f"Your exchange request for {product.name} has been received.",
+                        title="Exchange Approved",
+                        message=f"Your exchange request for {product.name} has been approved.",
                         url=f"/vendor/orders/{product.user.order.id}/returns/"
                     )
 
@@ -663,8 +663,8 @@ def approve_return_request_api(request, return_id):
                      # notify visitor
                     Notification.objects.create(
                         visitor_id=visitor_id,
-                        title="Exchange Request",
-                        message=f"Your exchange request for {product.name} has been received.",
+                        title="Exchange Approved",
+                        message=f"Your exchange request for {product.name} has been approved.",
                         url=f"/vendor/orders/{product.user.order.id}/returns/"
                     )
 
@@ -712,7 +712,7 @@ def approve_return_request_api(request, return_id):
             return_request.admin_note = admin_note
             return_request.save()
 
-            msg = f"Your return request for '{product.name}' was rejected. {admin_note or ''}"
+            msg = f"The administrator rejected your return request for {product.name}. {admin_note or ''}".strip()
 
             # Customer / Visitor Notification
             if customer:
