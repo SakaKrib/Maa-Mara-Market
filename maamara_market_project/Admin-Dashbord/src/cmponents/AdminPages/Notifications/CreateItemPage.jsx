@@ -1,12 +1,41 @@
 import React from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { Button } from "../../../../components/ui/button";
-import AdminCreateExistingVendorItems from "../../VENDORPAGE/Products/Forms/CreateItem/AdminCreateItemForExistingVendor";
+import AddingNewItem from "../../VENDORPAGE/Products/Forms/AddingNewItem";
 
 export default function CreateItemPage() {
   const location = useLocation();
   const navigate = useNavigate();
-  const item = location.state || null;
+  const request = location.state || {};
+  const draftData =
+    request.draft_item && typeof request.draft_item === "object"
+      ? request.draft_item
+      : {};
+  const draftMedia = Array.isArray(request.draft_media) ? request.draft_media : [];
+  const mainMedia = draftMedia.find((asset) => asset.kind === "main");
+  const mediaByVariant = new Map(
+    draftMedia
+      .filter((asset) => asset.kind === "variant" && asset.variant_key)
+      .map((asset) => [String(asset.variant_key).toLowerCase(), asset.url])
+  );
+
+  const item = {
+    ...request,
+    ...draftData,
+    name: draftData.name ?? request.name ?? "",
+    description: draftData.description ?? request.description ?? "",
+    price: draftData.price ?? request.price ?? 0,
+    image: mainMedia?.url ?? draftData.image ?? request.image ?? "",
+    draft_media: draftMedia,
+    color_variants: (draftData.color_variants || draftData.variants || []).map((variant) => ({
+      ...variant,
+      color_image:
+        mediaByVariant.get(String(variant.color).toLowerCase()) ||
+        variant.color_image ||
+        variant.image ||
+        null,
+    })),
+  };
 
   return (
     <section className="min-w-0 space-y-3 rounded-[12px] border border-border bg-card p-2 text-card-foreground">
@@ -28,11 +57,13 @@ export default function CreateItemPage() {
       </div>
 
       <div className="min-w-0">
-        <AdminCreateExistingVendorItems
+        <AddingNewItem
           initialItem={item}
-          itemId={item?.id ?? null}
-          vendorId={item?.vendor?.id ?? null}
-          vendor={item?.vendor ?? null}
+          vendorId={request?.vendor?.id ?? null}
+          vendor={request?.vendor ?? null}
+          isAdmin
+          approvalMode
+          approvalRequestId={request?.id ?? null}
           onSave={() => navigate(-1)}
         />
       </div>
