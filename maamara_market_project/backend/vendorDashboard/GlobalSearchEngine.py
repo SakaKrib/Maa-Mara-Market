@@ -131,10 +131,18 @@ def _search_queryset_from_queryset(queryset, model, query):
             continue
 
         if field_type in NUMERIC_FIELD_TYPES:
+            # Numeric fields must only be queried with a value Django can
+            # prepare for that field. Building Q(field=value) itself can
+            # raise ValueError before queryset.filter() is reached.
             try:
-                search_q |= Q(**{field.name: query})
+                if field_type in {"DecimalField", "FloatField"}:
+                    numeric_value = float(query)
+                else:
+                    numeric_value = int(query)
             except (ValueError, TypeError):
-                pass
+                continue
+
+            search_q |= Q(**{field.name: numeric_value})
             continue
 
         if field_type == "BooleanField":
