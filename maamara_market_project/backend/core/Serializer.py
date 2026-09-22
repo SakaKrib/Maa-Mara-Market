@@ -26,6 +26,8 @@ class OfferSerializer(serializers.ModelSerializer):
 class NotificationSerializer(serializers.ModelSerializer):
     user = serializers.StringRelatedField()
     vendor_request = serializers.PrimaryKeyRelatedField(read_only=True)
+    display_title = serializers.SerializerMethodField()
+    display_message = serializers.SerializerMethodField()
 
     class Meta:
         model = Notification
@@ -34,6 +36,8 @@ class NotificationSerializer(serializers.ModelSerializer):
             'user',
             'title',
             'message',
+            'display_title',
+            'display_message',
             'vendor_request',
             'url',
             'seen',
@@ -41,6 +45,18 @@ class NotificationSerializer(serializers.ModelSerializer):
             'created_at'
         ]
         read_only_fields = ['id', 'created_at']
+
+    def get_display_title(self, obj):
+        title = (obj.title or '').strip()
+        if title:
+            return title
+        return 'Maa Mara Market update'
+
+    def get_display_message(self, obj):
+        message = (obj.message or '').strip()
+        if message:
+            return message
+        return 'There is a new update in your marketplace workspace.'
 
 # mark as seen when opened
 @api_view(['POST'])
