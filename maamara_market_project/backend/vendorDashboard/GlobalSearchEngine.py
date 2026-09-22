@@ -200,6 +200,48 @@ def _display_value(obj):
     return str(obj)
 
 
+def _search_relevance(obj, model, query):
+    """
+    Give exact/near-exact matches priority over incidental matches such as
+    activity descriptions. This score is applied after the database filter.
+    """
+    query = query.casefold().strip()
+    values = []
+
+    for field_name in ("name", "title", "company_name", "full_name", "subject",
+                       "invoice_number", "reference", "vendor_code", "email",
+                       "key", "action", "description", "message"):
+        if hasattr(obj, field_name):
+            value = getattr(obj, field_name, None)
+            if value not in (None, ""):
+                values.append((field_name, str(value).casefold()))
+
+    score = 0
+    for field_name, value in values:
+        if value == query:
+            score = max(score, 1000)
+        elif value.startswith(query):
+            score = max(score, 800)
+        elif query in value:
+            score = max(score, 500)
+
+        if field_name in {"name", "title", "company_name", "full_name", "subject",
+                          "invoice_number", "reference", "vendor_code"}:
+            if value == query:
+                score = max(score, 1200)
+            elif value.startswith(query):
+                score = max(score, 1000)
+            elif query in value:
+                score = max(score, 700)
+
+    # Activity/notification text is useful context, but should rank below the
+    # actual object being searched for.
+    if model.__name__.lower() in {"activitylog", "notification"}:
+        score = min(score, 250)
+
+    return score
+
+
 def _serialize_object(obj, model):
     display = _display_value(obj)
     return {
@@ -252,7 +294,12 @@ class GlobalSearchView(APIView):
             )
 
             queryset = _search_queryset_from_queryset(queryset, model, query)
-            objects = queryset.order_by("-pk")[:10]
+            objects = list(queryset.order_by("-pk")[:50])
+            objects.sort(
+                key=lambda obj: (_search_relevance(obj, model, query), obj.pk),
+                reverse=True,
+            )
+            objects = objects[:10]
 
             if not objects:
                 continue
