@@ -97,7 +97,11 @@ class CustomerConsumer(AsyncWebsocketConsumer):
         await self.send_customers()
 
     async def disconnect(self, close_code):
-        await self.channel_layer.group_discard(self.group_name, self.channel_name)
+        # connect() can reject before group_name is created.
+        if getattr(self, "group_name", None):
+            await self.channel_layer.group_discard(
+                self.group_name, self.channel_name
+            )
 
     @database_sync_to_async
     def can_access_vendor(self):
