@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { CalendarDays, X } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
 import FullCalendar from "@fullcalendar/react";
@@ -21,6 +21,14 @@ const Calendar = () => {
   const [eventStart, setEventStart] = useState(null);
   const [eventEnd, setEventEnd] = useState(null);
   const [allDay, setAllDay] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const updateViewport = () => setIsMobile(window.innerWidth < 768);
+    updateViewport();
+    window.addEventListener("resize", updateViewport);
+    return () => window.removeEventListener("resize", updateViewport);
+  }, []);
 
   const isValidDate = (date) => date instanceof Date && !Number.isNaN(date.getTime());
 
@@ -162,16 +170,15 @@ const Calendar = () => {
         </aside>
 
         <section className="min-w-0 overflow-hidden rounded-2xl border border-[#e6e6e4] bg-white p-2 shadow-sm sm:p-4">
-          <div className="overflow-x-auto">
-            <div className="min-w-[680px]">
+          <div className="min-w-0">
               <FullCalendar
                 height="auto"
-                aspectRatio={isVendorCalendar ? 1.35 : 1.5}
+                aspectRatio={isMobile ? 0.82 : isVendorCalendar ? 1.35 : 1.5}
                 plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin, listPlugin]}
                 headerToolbar={{
-                  left: "prev,next today",
+                  left: isMobile ? "prev,next" : "prev,next today",
                   center: "title",
-                  right: "dayGridMonth,timeGridWeek,timeGridDay,listMonth",
+                  right: isMobile ? "dayGridMonth" : "dayGridMonth,timeGridWeek,timeGridDay,listMonth",
                 }}
                 initialView="dayGridMonth"
                 editable
@@ -188,7 +195,6 @@ const Calendar = () => {
                   info.el.style.borderStyle = "solid";
                 }}
               />
-            </div>
           </div>
         </section>
       </div>
