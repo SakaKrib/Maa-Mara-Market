@@ -8,7 +8,7 @@ import uuid
 class Migration(migrations.Migration):
 
     dependencies = [
-        ("ReactSerializers", "0011_item_occasions"),
+        ("ReactSerializers", "0011_occasion_item_occasions"),
         ("vendorDashboard", "0022_vendorpayout_mpesa_correlation_constraints"),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
     ]
