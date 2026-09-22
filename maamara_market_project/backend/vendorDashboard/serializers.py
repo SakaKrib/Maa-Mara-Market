@@ -16,9 +16,9 @@ class VendorItemRequestSerializer(serializers.ModelSerializer):
     class Meta:
         model = VendorItemRequest
         fields = [
-            "id", "vendor", "name", "description", "price", "image", "status", "created_at", "draft_item", 'created_by'
+            "id", "vendor", "name", "description", "price", "image", "status", "created_at", "draft_item", "draft", "created_by"
         ]
-        read_only_fields = ("vendor", "status")
+        read_only_fields = ("vendor", "status", "draft")
 
 
 #price change request serializer
