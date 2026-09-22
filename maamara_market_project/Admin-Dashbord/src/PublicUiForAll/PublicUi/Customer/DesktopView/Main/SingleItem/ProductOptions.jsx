@@ -1,27 +1,265 @@
 import React from "react";
 
-const ProductOptions = ({ item, selectedVariant, selectedSize, selectedAgeVariant, selectedShoe, selectedShoeSize, selectedWeight, selectedLength, customPreferences, onColorChange, onSizeChange, onAgeChange, onShoeChange, onShoeSizeChange, onWeightChange, onLengthChange, onCustomPreferencesChange }) => {
+const formatSizeValue = (value) => {
+  if (value === null || value === undefined || value === "") return "Custom size";
+
+  if (Array.isArray(value)) {
+    return value.map((entry) => formatSizeValue(entry)).join(" / ");
+  }
+
+  if (typeof value === "object") {
+    const preferredKeys = ["label", "name", "value", "size", "measurement", "unit"];
+    const preferred = preferredKeys
+      .filter((key) => value[key] !== undefined && value[key] !== null && value[key] !== "")
+      .map((key) => String(value[key]));
+
+    if (preferred.length > 0) return preferred.join(" ");
+
+    return Object.entries(value)
+      .filter(([key]) => !["id", "quantity_in_stock"].includes(key))
+      .map(([key, entry]) => `${key.replace(/_/g, " ")}: ${formatSizeValue(entry)}`)
+      .join(" · ");
+  }
+
+  return String(value);
+};
+
+const OptionButton = ({ selected, disabled, children, onClick, ariaLabel }) => (
+  <button
+    type="button"
+    onClick={onClick}
+    disabled={disabled}
+    aria-pressed={selected}
+    aria-label={ariaLabel}
+    className={[
+      "min-h-10 rounded-xl border px-3 py-2 text-sm font-medium transition-colors",
+      selected
+        ? "border-gray-900 bg-gray-900 text-white"
+        : disabled
+          ? "cursor-not-allowed border-gray-200 bg-gray-50 text-gray-400"
+          : "border-border bg-background text-card-foreground hover:border-gray-900 hover:bg-muted",
+    ].join(" ")}
+  >
+    {children}
+  </button>
+);
+
+const ProductOptions = ({
+  item,
+  selectedVariant,
+  selectedSize,
+  selectedAgeVariant,
+  selectedShoe,
+  selectedShoeSize,
+  selectedWeight,
+  selectedLength,
+  customPreferences,
+  onColorChange,
+  onSizeChange,
+  onAgeChange,
+  onShoeChange,
+  onShoeSizeChange,
+  onWeightChange,
+  onLengthChange,
+  onCustomPreferencesChange,
+}) => {
   const variants = Array.isArray(item?.variants) ? item.variants : [];
   const variantSizes = Array.isArray(selectedVariant?.sizes) ? selectedVariant.sizes : [];
   const sizeOnly = Array.isArray(item?.size_only_icon) ? item.size_only_icon : [];
   const kidsSizes = Array.isArray(item?.kids_sizes) ? item.kids_sizes : [];
   const shoes = Array.isArray(item?.shoe_input) ? item.shoe_input : [];
   const shoeSizes = Array.isArray(selectedShoe?.shoe_size) ? selectedShoe.shoe_size : [];
+  const hasSizeOptions = variantSizes.length > 0 || (!selectedVariant && sizeOnly.length > 0);
+  const hasCustomSize = hasSizeOptions || item?.item_attribute;
+
   return (
-    <div className="space-y-5">
-      {variants.length > 0 && (
-        <fieldset><legend className="font-semibold text-sm mb-3">Color{selectedVariant?.color && <span className="ml-2 font-normal text-gray-500">· {selectedVariant.color}</span>}</legend>
-          <div className="flex flex-wrap gap-2">{variants.map((variant) => { const selected = selectedVariant?.id === variant.id; const color = variant.color || "Other"; return <label key={variant.id} className="cursor-pointer"><input type="radio" name="product-color" checked={selected} onChange={() => onColorChange(color)} className="sr-only" /><span className={"inline-flex items-center gap-2 rounded-full border px-3 py-2 text-sm " + (selected ? "border-gray-900 ring-2 ring-gray-900/10 bg-gray-50" : "border-gray-300 hover:border-gray-700 bg-white")}><span className="h-4 w-4 rounded-full border border-black/10" style={{ backgroundColor: color.toLowerCase() }} /><span>{color}</span></span></label>; })}</div>
-        </fieldset>
-      )}
-      {selectedVariant && variantSizes.length > 0 && <fieldset><legend className="font-semibold text-sm mb-3">Size{!selectedSize && <span className="ml-2 font-normal text-gray-500">· Required</span>}</legend><div className="flex flex-wrap gap-2">{variantSizes.map((sizeObj) => { const stock = Number(sizeObj.quantity_in_stock || 0); const selected = selectedSize?.id === sizeObj.id; const disabled = stock <= 0; return <label key={sizeObj.id} className={disabled ? "cursor-not-allowed" : "cursor-pointer"}><input type="radio" name="product-size" checked={selected} onChange={() => onSizeChange(sizeObj)} disabled={disabled} className="sr-only" /><span className={"inline-flex min-w-14 justify-center rounded-md border px-3 py-2 text-sm font-medium " + (selected ? "border-gray-900 bg-gray-900 text-white" : disabled ? "border-gray-200 bg-gray-50 text-gray-400 line-through" : "border-gray-300 bg-white hover:border-gray-900")}>{typeof sizeObj.size === "object" ? JSON.stringify(sizeObj.size) : sizeObj.size}</span></label>; })}</div>{selectedSize && <p className="mt-2 text-xs text-gray-500">{Number(selectedSize.quantity_in_stock || 0)} available in this size.</p>}</fieldset>}
-      {!selectedVariant && sizeOnly.length > 0 && <fieldset><legend className="font-semibold text-sm mb-3">Size</legend><div className="flex flex-wrap gap-2">{sizeOnly.map((sizeObj) => { const selected = selectedSize?.id === sizeObj.id; const disabled = Number(sizeObj.quantity_in_stock || 0) <= 0; return <label key={sizeObj.id}><input type="radio" name="product-size" checked={selected} onChange={() => onSizeChange(sizeObj)} disabled={disabled} className="sr-only" /><span className={"inline-flex min-w-14 justify-center rounded-md border px-3 py-2 text-sm font-medium " + (selected ? "border-gray-900 bg-gray-900 text-white" : disabled ? "border-gray-200 bg-gray-50 text-gray-400 line-through" : "border-gray-300 bg-white")}>{typeof sizeObj.size === "object" ? JSON.stringify(sizeObj.size) : sizeObj.size}</span></label>; })}</div></fieldset>}
-      {kidsSizes.length > 0 && <fieldset><legend className="font-semibold text-sm mb-3">Age / Size</legend><div className="flex flex-wrap gap-2">{kidsSizes.map((age) => { const selected = selectedAgeVariant?.id === age.id; const disabled = Number(age.quantity_in_stock || 0) <= 0; return <label key={age.id}><input type="radio" name="product-age" checked={selected} onChange={() => onAgeChange(age)} disabled={disabled} className="sr-only" /><span className={"inline-flex rounded-md border px-3 py-2 text-sm font-medium " + (selected ? "border-gray-900 bg-gray-900 text-white" : disabled ? "border-gray-200 bg-gray-50 text-gray-400 line-through" : "border-gray-300 bg-white")}>{age.age_group}</span></label>; })}</div></fieldset>}
-      {shoes.length > 0 && <fieldset><legend className="font-semibold text-sm mb-3">Shoe</legend><div className="flex flex-wrap gap-2">{shoes.map((shoe) => <button key={shoe.id} type="button" onClick={() => onShoeChange(shoe)} className={"rounded-md border px-3 py-2 text-sm " + (selectedShoe?.id === shoe.id ? "border-gray-900 bg-gray-900 text-white" : "border-gray-300 bg-white")}>{shoe.shoe_type || "Shoe"}{shoe.shoe_gender ? " · " + shoe.shoe_gender : ""}</button>)}</div>{selectedShoe && shoeSizes.length > 0 && <div className="mt-3 flex flex-wrap gap-2">{shoeSizes.map((size) => <button key={String(size)} type="button" onClick={() => onShoeSizeChange(size)} className={"rounded-md border px-3 py-2 text-sm " + (String(selectedShoeSize) === String(size) ? "border-gray-900 bg-gray-900 text-white" : "border-gray-300 bg-white")}>{String(size)}</button>)}</div>}</fieldset>}
-      {item?.weight && <fieldset><legend className="font-semibold text-sm mb-3">Weight</legend><button type="button" onClick={() => onWeightChange(item.weight)} className={"rounded-md border px-3 py-2 text-sm " + (selectedWeight?.id === item.weight.id ? "border-gray-900 bg-gray-900 text-white" : "border-gray-300 bg-white")}>{item.weight.value} {item.weight.unit}</button></fieldset>}
-      {item?.length && <fieldset><legend className="font-semibold text-sm mb-3">Length</legend><button type="button" onClick={() => onLengthChange(item.length)} className={"rounded-md border px-3 py-2 text-sm " + (selectedLength?.id === item.length.id ? "border-gray-900 bg-gray-900 text-white" : "border-gray-300 bg-white")}>{item.length.value} {item.length.unit}</button></fieldset>}
-      <fieldset><legend className="font-semibold text-sm mb-2">Custom preference <span className="font-normal text-gray-500">· Optional</span></legend><textarea value={customPreferences} onChange={(event) => onCustomPreferencesChange(event.target.value)} maxLength={1000} rows={3} placeholder="Add measurements, engraving, fit instructions, or other vendor instructions…" className="w-full rounded-xl border border-border bg-background px-3 py-2 text-sm text-card-foreground outline-none focus:ring-2 focus:ring-gray-900/10" /></fieldset>
-    </div>
+    <section className="rounded-2xl border border-border bg-card p-4 shadow-custom sm:p-5">
+      <div className="mb-5">
+        <h2 className="text-base font-semibold text-card-foreground">Choose your options</h2>
+        <p className="mt-1 text-xs leading-5 text-muted-foreground">
+          Select every applicable option before adding this item to your cart.
+        </p>
+      </div>
+
+      <div className="space-y-6">
+        {variants.length > 0 && (
+          <fieldset>
+            <legend className="mb-3 text-sm font-semibold text-card-foreground">
+              Color
+              {selectedVariant?.color && (
+                <span className="ml-2 font-normal text-muted-foreground">· {selectedVariant.color}</span>
+              )}
+            </legend>
+            <div className="flex gap-2 overflow-x-auto pb-1">
+              {variants.map((variant) => (
+                <OptionButton
+                  key={variant.id}
+                  selected={selectedVariant?.id === variant.id}
+                  onClick={() => onColorChange(variant.color)}
+                  ariaLabel={variant.color || "Color variant"}
+                >
+                  {variant.color || "Other"}
+                </OptionButton>
+              ))}
+            </div>
+          </fieldset>
+        )}
+
+        {selectedVariant && variantSizes.length > 0 && (
+          <fieldset>
+            <legend className="mb-3 text-sm font-semibold text-card-foreground">
+              Size <span className="ml-1 font-normal text-muted-foreground">· Required</span>
+            </legend>
+            <div className="flex flex-wrap gap-2">
+              {variantSizes.map((sizeObj) => {
+                const stock = Number(sizeObj.quantity_in_stock || 0);
+                return (
+                  <OptionButton
+                    key={sizeObj.id}
+                    selected={selectedSize?.id === sizeObj.id}
+                    disabled={stock <= 0}
+                    onClick={() => onSizeChange(sizeObj)}
+                  >
+                    {formatSizeValue(sizeObj.size)}
+                  </OptionButton>
+                );
+              })}
+            </div>
+            {selectedSize && (
+              <p className="mt-2 text-xs text-muted-foreground">
+                {Number(selectedSize.quantity_in_stock || 0)} available in this size.
+              </p>
+            )}
+          </fieldset>
+        )}
+
+        {!selectedVariant && sizeOnly.length > 0 && (
+          <fieldset>
+            <legend className="mb-3 text-sm font-semibold text-card-foreground">
+              Size <span className="ml-1 font-normal text-muted-foreground">· Required</span>
+            </legend>
+            <div className="flex flex-wrap gap-2">
+              {sizeOnly.map((sizeObj) => {
+                const stock = Number(sizeObj.quantity_in_stock || 0);
+                return (
+                  <OptionButton
+                    key={sizeObj.id}
+                    selected={selectedSize?.id === sizeObj.id}
+                    disabled={stock <= 0}
+                    onClick={() => onSizeChange(sizeObj)}
+                  >
+                    {formatSizeValue(sizeObj.size)}
+                  </OptionButton>
+                );
+              })}
+            </div>
+          </fieldset>
+        )}
+
+        {kidsSizes.length > 0 && (
+          <fieldset>
+            <legend className="mb-3 text-sm font-semibold text-card-foreground">
+              Age / Size <span className="ml-1 font-normal text-muted-foreground">· Required</span>
+            </legend>
+            <div className="flex flex-wrap gap-2">
+              {kidsSizes.map((age) => {
+                const stock = Number(age.quantity_in_stock || 0);
+                return (
+                  <OptionButton
+                    key={age.id}
+                    selected={selectedAgeVariant?.id === age.id}
+                    disabled={stock <= 0}
+                    onClick={() => onAgeChange(age)}
+                  >
+                    {age.age_group}
+                  </OptionButton>
+                );
+              })}
+            </div>
+          </fieldset>
+        )}
+
+        {shoes.length > 0 && (
+          <fieldset>
+            <legend className="mb-3 text-sm font-semibold text-card-foreground">
+              Shoe type / fit <span className="ml-1 font-normal text-muted-foreground">· Required</span>
+            </legend>
+            <div className="flex flex-wrap gap-2">
+              {shoes.map((shoe) => (
+                <OptionButton
+                  key={shoe.id || `${shoe.shoe_type}-${shoe.shoe_gender}`}
+                  selected={selectedShoe?.id === shoe.id}
+                  onClick={() => onShoeChange(shoe)}
+                >
+                  {shoe.shoe_type || "Shoe"}{shoe.shoe_gender ? ` · ${shoe.shoe_gender}` : ""}
+                </OptionButton>
+              ))}
+            </div>
+
+            {selectedShoe && shoeSizes.length > 0 && (
+              <div className="mt-4">
+                <p className="mb-2 text-xs font-medium text-muted-foreground">Shoe size · Required</p>
+                <div className="flex flex-wrap gap-2">
+                  {shoeSizes.map((size, index) => (
+                    <OptionButton
+                      key={`${String(size)}-${index}`}
+                      selected={String(selectedShoeSize) === String(size)}
+                      onClick={() => onShoeSizeChange(size)}
+                    >
+                      {String(size)}
+                    </OptionButton>
+                  ))}
+                </div>
+              </div>
+            )}
+          </fieldset>
+        )}
+
+        {item?.weight && (
+          <fieldset>
+            <legend className="mb-3 text-sm font-semibold text-card-foreground">Weight</legend>
+            <OptionButton
+              selected={selectedWeight?.id === item.weight.id}
+              onClick={() => onWeightChange(item.weight)}
+            >
+              {item.weight.value} {item.weight.unit}
+            </OptionButton>
+          </fieldset>
+        )}
+
+        {item?.length && (
+          <fieldset>
+            <legend className="mb-3 text-sm font-semibold text-card-foreground">Length</legend>
+            <OptionButton
+              selected={selectedLength?.id === item.length.id}
+              onClick={() => onLengthChange(item.length)}
+            >
+              {item.length.value} {item.length.unit}
+            </OptionButton>
+          </fieldset>
+        )}
+
+        {hasCustomSize && (
+          <fieldset>
+            <legend className="mb-2 text-sm font-semibold text-card-foreground">
+              Custom size / measurements
+              <span className="ml-2 font-normal text-muted-foreground">· Optional</span>
+            </legend>
+            <textarea
+              value={customPreferences}
+              onChange={(event) => onCustomPreferencesChange(event.target.value)}
+              maxLength={1000}
+              rows={4}
+              placeholder="For example: waist 32 in, length 54 in, sleeve 24 in. You can also add fit, engraving, or other vendor instructions."
+              className="w-full resize-y rounded-xl border border-border bg-background px-3 py-2.5 text-sm leading-6 text-card-foreground outline-none transition focus:border-gray-900 focus:ring-2 focus:ring-gray-900/10"
+            />
+            <p className="mt-2 text-xs text-muted-foreground">
+              {customPreferences.length}/1000 characters
+            </p>
+          </fieldset>
+        )}
+      </div>
+    </section>
   );
 };
 
