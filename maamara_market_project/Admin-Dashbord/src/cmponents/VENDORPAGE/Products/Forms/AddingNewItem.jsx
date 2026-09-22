@@ -7,7 +7,6 @@ import {
     FormControl,
     FormMessage,
     FormDescription,
-    
   } from "../../../../../components/ui/form";
   import { Input } from "../../../../../components/ui/input";
   import { Textarea } from "../../../../../components/ui/textarea";
@@ -20,66 +19,52 @@ import { Controller } from "react-hook-form";
 import { useDepartments } from "./useDepartments";
 import { FormControlLabel, Switch } from "@mui/material";
 
- // adjust path as needed
+// Sizes
+const sizeOptions = [
+  "XS", "S", "M", "L", "XL", "2XL", "3XL", "2XS", "3XS", "Oversize"
+];
 
-
-
-
-    //sizes
-    const sizeOptions = [
-      "XS", "S", "M", "L", "XL", "2XL", "3XL", "2XS", "3XS", "Oversize"
-    ];
-  
-    //colors
-    export const colorOptions = [
-      "Red", "Blue", "Green", "Yellow", "Pink", "Purple", "Orange", "Black",
-      "White", "Grey", "Brown", "Beige", "Navy", "Teal", "Maroon", "Olive",
-      "Turquoise", "Gold", "Silver", "Multicolor"
-    ];
-    
-    const colors = {
-  primary: { 400: "#93c5fd", 500: "#3b82f6", 600: "#2563eb" },
-  gray: { 100: "#f3f4f6" },
-};
+// Colors
+export const colorOptions = [
+  "Red", "Blue", "Green", "Yellow", "Pink", "Purple", "Orange", "Black",
+  "White", "Grey", "Brown", "Beige", "Navy", "Teal", "Maroon", "Olive",
+  "Turquoise", "Gold", "Silver", "Multicolor"
+];
 
 export const colorMap = {
-      Red: "#FF0000",
-      Blue: "#0000FF",
-      Green: "#008000",
-      Yellow: "#FFFF00",
-      Pink: "#FFC0CB",
-      Purple: "#800080",
-      Orange: "#FFA500",
-      Black: "#000000",
-      White: "#FFFFFF",
-      Grey: "#808080",
-      Brown: "#A52A2A",
-      Beige: "#F5F5DC",
-      Navy: "#000080",
-      Teal: "#008080",
-      Maroon: "#800000",
-      Olive: "#808000",
-      Turquoise: "#40E0D0",
-      Gold: "#FFD700",
-      Silver: "#C0C0C0",
-      Multicolor: "linear-gradient(to right, red, orange, yellow, green, blue, purple)"
-    };
-    
-    
-  const shoeGenders = ["Men", "Women", "Unisex", "Children"];
-  
-  const adultSizes = ["36","37","38","39","40","41","42","43","44","45","46","47"];
-  
-  
-  
-  
-    const kidsSizeOptions = [
-      "Newborn", "0-3M", "3-6M", "6-9M", "9-12M",
-      "12-18M", "18-24M", "2T", "3T", "4T", "5T",
-      "XS", "S", "M", "L"
-    ];
-    
-    const shoeTypes = ["Sneakers", "Sandals", "Boots", "Heels"];
+  Red: "#FF0000",
+  Blue: "#0000FF",
+  Green: "#008000",
+  Yellow: "#FFFF00",
+  Pink: "#FFC0CB",
+  Purple: "#800080",
+  Orange: "#FFA500",
+  Black: "#000000",
+  White: "#FFFFFF",
+  Grey: "#808080",
+  Brown: "#A52A2A",
+  Beige: "#F5F5DC",
+  Navy: "#000080",
+  Teal: "#008080",
+  Maroon: "#800000",
+  Olive: "#808000",
+  Turquoise: "#40E0D0",
+  Gold: "#FFD700",
+  Silver: "#C0C0C0",
+  Multicolor: "linear-gradient(to right, red, orange, yellow, green, blue, purple)"
+};
+
+const shoeGenders = ["Men", "Women", "Unisex", "Children"];
+
+const adultSizes = ["36","37","38","39","40","41","42","43","44","45","46","47"];
+
+const kidsSizeOptions = [
+  "Newborn", "0-3M", "3-6M", "6-9M", "9-12M",
+  "12-18M", "18-24M", "2T", "3T", "4T", "5T",
+  "XS", "S", "M", "L"
+];
+
+const shoeTypes = ["Sneakers", "Sandals", "Boots", "Heels"];
 
 const OCCASION_OPTIONS = [
   { key: "wedding", label: "Wedding" },
@@ -94,8 +79,8 @@ const OCCASION_OPTIONS = [
   { key: "home", label: "Home" },
   { key: "office", label: "Office" },
 ];
-  
-  
+
+
 const ItemAddNew = ({ initialItem, vendorId, itemId, onSave = () => {}, vendor, isAdmin = false, adminCreateNew = false }) => {
   const { departmentMap, organicDepartmentMap } = useDepartments();
 
@@ -128,16 +113,12 @@ const ItemAddNew = ({ initialItem, vendorId, itemId, onSave = () => {}, vendor, 
   // Vendor edits keep protected fields muted; admin item creation/editing never does.
   const shouldMuteProtectedFields = isEditing && !isAdmin;
 
-
-  
-
- 
     const form = useForm({
       defaultValues: initialItem || {},
       mode: "onChange",
     });
 
-    //initialize the data
+    // Initialize the form with the item's existing data
     useEffect(() => {
       if (!initialItem) return;
       form.reset({
@@ -189,9 +170,7 @@ const ItemAddNew = ({ initialItem, vendorId, itemId, onSave = () => {}, vendor, 
       setSelectedSection(existingSection);
     }
     }, [initialItem, form]);
-    
-    
-  
+
     const {
       control,
       setValue,
@@ -224,139 +203,124 @@ const ItemAddNew = ({ initialItem, vendorId, itemId, onSave = () => {}, vendor, 
     form.setValue("coffee_state", "");
   }, [selectedSection, form]);
 
- // Define department and category based on the vendor product type.
- const [activeData, setActiveData] = useState(null);
+  // Define department and category based on the vendor product type.
+  const [activeData, setActiveData] = useState(null);
 
- useEffect(() => {
-   // Existing items may be opened from inventory without a vendor object.
-   // In that case, the saved section is the source of truth for the
-   // department/category dataset.
-   const existingSection = String(initialItem?.section || "").trim().toLowerCase();
-   const section =
-     existingSection === "organic" || existingSection === "inorganic"
-       ? existingSection
-       : productType === "organic" || productType === "inorganic"
-         ? productType
-         : selectedSection;
+  useEffect(() => {
+    // Existing items may be opened from inventory without a vendor object.
+    // In that case, the saved section is the source of truth for the
+    // department/category dataset.
+    const existingSection = String(initialItem?.section || "").trim().toLowerCase();
+    const section =
+      existingSection === "organic" || existingSection === "inorganic"
+        ? existingSection
+        : productType === "organic" || productType === "inorganic"
+          ? productType
+          : selectedSection;
 
-   if (section === "organic") {
-     setSelectedSection("organic");
-     setActiveData(organicDepartmentMap);
-     setValue("section", "organic");
-     return;
-   }
+    if (section === "organic") {
+      setSelectedSection("organic");
+      setActiveData(organicDepartmentMap);
+      setValue("section", "organic");
+      return;
+    }
 
-   if (section === "inorganic") {
-     setSelectedSection("inorganic");
-     setActiveData(departmentMap);
-     setValue("section", "inorganic");
-   }
- }, [
-   productType,
-   selectedSection,
-   initialItem?.section,
-   setValue,
-   organicDepartmentMap,
-   departmentMap,
- ]);
+    if (section === "inorganic") {
+      setSelectedSection("inorganic");
+      setActiveData(departmentMap);
+      setValue("section", "inorganic");
+    }
+  }, [
+    productType,
+    selectedSection,
+    initialItem?.section,
+    setValue,
+    organicDepartmentMap,
+    departmentMap,
+  ]);
 
-// Keep the saved department visible when the department dataset becomes
-// available after the edit form has already been initialized.
-useEffect(() => {
-  if (!initialItem?.department || !activeData) return;
+  // Keep the saved department visible when the department dataset becomes
+  // available after the edit form has already been initialized.
+  useEffect(() => {
+    if (!initialItem?.department || !activeData) return;
 
-  const savedDepartment = String(initialItem.department).trim();
-  const matchingDepartment = Object.keys(activeData).find(
-    (department) =>
-      department.toLowerCase() === savedDepartment.toLowerCase()
-  );
+    const savedDepartment = String(initialItem.department).trim();
+    const matchingDepartment = Object.keys(activeData).find(
+      (department) =>
+        department.toLowerCase() === savedDepartment.toLowerCase()
+    );
 
-  if (matchingDepartment) {
-    setSelectedDepartment(matchingDepartment);
-    setValue("department", matchingDepartment);
-  }
-}, [initialItem?.department, activeData, setValue]);
- 
- 
-   //reset form inputs when togle for both
-   // 🔹 Reset the entire form when activeData changes
- // 📝 Define your empty state once (outside the component or at top of component)
- const emptyValues = {
-   
- 
-   // ✅ Dropdown & attributes
-   item_attribute: undefined, // or "" if you prefer string fallback
-   occasions: [],
-   is_food: false,
-   is_organic: false,
-   roast_type: "",
-   coffee_state: "",
- 
-   // ✅ Images
-   image: undefined,
- 
-   // ✅ Variants
-   color_variants: [],
-   size_variant: [],
-   kids_sizes: [],
-   shoe_type: "",
-   shoe_gender: "",
-   shoe_size: [],
- 
-   // ✅ Measurements
-   length: { value: null, unit: "cm" },
-   weight: { value: null, unit: "kg" },
- 
-   // ✅ Organic-specific
-   manufactured_date: "",
-   expiry_date: "",
- };
- 
- useEffect(() => {
-   if (initialItem) return;
-   if (activeData === organicDepartmentMap) {
-     form.reset({ ...emptyValues, section: "organic" });
-   } else if (activeData === departmentMap) {
-     form.reset({ ...emptyValues, section: "inorganic" });
-   }
- }, [activeData, form, initialItem]);
+    if (matchingDepartment) {
+      setSelectedDepartment(matchingDepartment);
+      setValue("department", matchingDepartment);
+    }
+  }, [initialItem?.department, activeData, setValue]);
 
- // Organic-only fields must never remain active when the form is switched
- // to Handmade/Inorganic. This keeps vendor and admin approval flows aligned.
- useEffect(() => {
-   if (selectedSection !== "organic") {
-     setValue("is_organic", false);
-     setValue("is_fresh_food", false);
-     setValue("manufactured_date", "");
-     setValue("expiry_date", "");
-     setValue("roast_type", "");
-     setValue("coffee_state", "");
-   }
- }, [selectedSection, setValue]);
- 
- 
-   
- 
- // 🔹 Reset manufactured/expiry when activeData changes
- useEffect(() => {
-   if (activeData !== organicDepartmentMap) {
-     form.setValue("manufactured_date", null);
-     form.setValue("expiry_date", null);
- 
-     // Also unregister so validation doesn’t trigger
-     form.unregister("manufactured_date");
-     form.unregister("expiry_date");
-   }
- }, [activeData, form]);
+  // Reset the entire form when activeData changes for a new item.
+  const emptyValues = {
+    item_attribute: undefined,
+    occasions: [],
+    is_food: false,
+    is_organic: false,
+    roast_type: "",
+    coffee_state: "",
+
+    image: undefined,
+
+    color_variants: [],
+    size_variant: [],
+    kids_sizes: [],
+    shoe_type: "",
+    shoe_gender: "",
+    shoe_size: [],
+
+    length: { value: null, unit: "cm" },
+    weight: { value: null, unit: "kg" },
+
+    manufactured_date: "",
+    expiry_date: "",
+  };
+
+  useEffect(() => {
+    if (initialItem) return;
+    if (activeData === organicDepartmentMap) {
+      form.reset({ ...emptyValues, section: "organic" });
+    } else if (activeData === departmentMap) {
+      form.reset({ ...emptyValues, section: "inorganic" });
+    }
+  }, [activeData, form, initialItem]);
+
+  // Organic-only fields must never remain active when the form is switched
+  // to Handmade/Inorganic. This keeps vendor and admin approval flows aligned.
+  useEffect(() => {
+    if (selectedSection !== "organic") {
+      setValue("is_organic", false);
+      setValue("is_fresh_food", false);
+      setValue("manufactured_date", "");
+      setValue("expiry_date", "");
+      setValue("roast_type", "");
+      setValue("coffee_state", "");
+    }
+  }, [selectedSection, setValue]);
+
+  // Reset manufactured/expiry dates when activeData changes
+  useEffect(() => {
+    if (activeData !== organicDepartmentMap) {
+      form.setValue("manufactured_date", null);
+      form.setValue("expiry_date", null);
+
+      // Also unregister so validation doesn't trigger
+      form.unregister("manufactured_date");
+      form.unregister("expiry_date");
+    }
+  }, [activeData, form]);
 
     // Update returnable
-
     useEffect(() => {
       if (initialItem) {
         form.setValue("returnable", initialItem.returnable ?? true);
       }
     }, [initialItem, form]);
-
 
     useEffect(() => {
       if (initialItem) {
@@ -369,9 +333,6 @@ useEffect(() => {
         );
       }
     }, [initialItem, form]);
-    
-    
-   
 
     const onSubmit = async (data) => {
       try {
@@ -657,15 +618,12 @@ useEffect(() => {
     };
 
   return (
-  
-      // separate
       <Form {...form}>
         <form onSubmit={handleSubmit(onSubmit)} className="px-2 py-2 text-foreground">
       <div className="space-y-4" >
 
-        
-  
-         {/* 🔀 Toggle switch (only for organicDepartmentMap or departmentMap) */}
+         {/* Toggle switch (only shown when a vendor sells both organic and inorganic items) */}
+      <div className='border rounded-[20px] border-gray-300 p-4'>
        {!isEditing && productType === "both" && (
         <div className="my-4 space-y-2">
           <label className="block text-sm leading-6 font-semibold text-foreground">Select Form</label>
@@ -690,7 +648,7 @@ useEffect(() => {
                 Organic
               </span>
             </label>
-  
+
             {/* Normal */}
             <label className="flex items-center gap-2 cursor-pointer">
               <input
@@ -714,8 +672,8 @@ useEffect(() => {
           </div>
         </div>
       )}
-  
-         {/* section read only */}
+
+         {/* Section (read only) */}
           <FormField
           className="relative mb-4"
           control={form.control}
@@ -730,15 +688,17 @@ useEffect(() => {
                   value={field.value}
                   disabled
                   className="w-full rounded-[20px] border border-border bg-card px-2 py-2 text-sm leading-6 text-foreground outline-none transition focus:border-[#2563eb] focus:ring-2 focus:ring-[#2563eb]/20 text-center"
-                  
                 />
               </FormControl>
+              <FormDescription>
+                This is set automatically based on your vendor type and cannot be edited directly.
+              </FormDescription>
               <FormMessage />
             </FormItem>
           )}
         />
-    
-         {/* 🔷 Department Select */}
+
+         {/* Department Select */}
         <FormField
           className=''
           control={control}
@@ -768,14 +728,14 @@ useEffect(() => {
                 </select>
               </FormControl>
               <FormDescription>
-                Enter the department of the product.
+                Choose the department this product belongs to. This determines which categories are available next.
               </FormDescription>
               <FormMessage />
             </FormItem>
           )}
         />
-    
-        {/* 🔷 Category Select */}
+
+        {/* Category Select */}
         {selectedDepartment && (
           <FormField
             control={control}
@@ -822,7 +782,7 @@ useEffect(() => {
           />
         )}
 
-        {/* 🔷 Subcategory Select */}
+        {/* Subcategory Select */}
         {selectedCategory && (
           <FormField
             control={control}
@@ -857,11 +817,9 @@ useEffect(() => {
             )}
           />
         )}
+      </div>
 
-        {/* SEPARATE */}
-    
-          
-            <FormField
+          <FormField
           control={form.control}
           name="name"
           render={({ field }) => (
@@ -875,14 +833,14 @@ useEffect(() => {
                 />
               </FormControl>
               <FormDescription>
-                Enter the name of the product.
+                Enter a clear, descriptive name for the product as it will appear to shoppers.
               </FormDescription>
               <FormMessage />
             </FormItem>
           )}
         />
-    
-    
+
+
         <FormField
           control={form.control}
           name="discount_price"
@@ -902,7 +860,7 @@ useEffect(() => {
                 />
               </FormControl>
               <FormDescription>
-                Enter the discount of the product.
+                Optional. Set a discounted price to show alongside the regular price.
               </FormDescription>
               <FormMessage>
                 {form.formState.errors.discount_price && form.formState.errors.discount_price.message}
@@ -910,7 +868,7 @@ useEffect(() => {
             </FormItem>
           )}
         />
-    
+
         <FormField
           control={form.control}
           name="in_stock"
@@ -931,7 +889,7 @@ useEffect(() => {
                 />
               </FormControl>
               <FormDescription>
-                Enter the Qty in stock.
+                Enter the total quantity currently available for sale.
               </FormDescription>
               <FormMessage />
             </FormItem>
@@ -959,7 +917,6 @@ useEffect(() => {
                 alt="Item preview"
                 className="h-full w-full object-contain bg-card p-2"
               />
-              {/* 📝 Show clean image path if it's a string */}
               {typeof field.value === "string" && (
                 <p className="absolute bottom-0 left-0 w-full truncate bg-black/60 px-2 py-1 text-xs text-white">
                   {field.value}
@@ -979,15 +936,13 @@ useEffect(() => {
           />
         </div>
       </FormControl>
+      <FormDescription>
+        Upload a clear, well-lit photo of the product. This is the main image shown to shoppers.
+      </FormDescription>
     </FormItem>
   )}
 />
 
-    
-    
-    
-    
-    
     <FormField
       control={form.control}
       name="price"
@@ -1015,11 +970,7 @@ useEffect(() => {
         </FormItem>
       )}
     />
-    
-    
-    
-            {/* Repeat for other fields like subcategory, itemName, itemDescription, etc. */}
-    
+
             <FormField
               control={form.control}
               name="description"
@@ -1036,8 +987,8 @@ useEffect(() => {
                 </FormItem>
               )}
             />
-    
-            {/* attribute */}
+
+            {/* Product Attribute */}
             <FormField
               control={control}
               name="item_attribute"
@@ -1181,19 +1132,18 @@ useEffect(() => {
                 </div>
               )}
 
-        {/* conditional rendering */}
         {activeData === departmentMap && (
           <>
-                  {/* select sizes */}
+                  {/* Size selection for clothing categories */}
                   {["Men's Clothing", "Women's Clothing"].includes(selectedCatSizes) && (
       <>
-        {/* ✅ Size Variants */}
+        {/* Size Variants */}
         <FormField
           control={form.control}
           name="size_variant"
           render={({ field }) => {
             const { value = [], onChange } = field;
-    
+
             const handleCheckboxChange = (checked, size) => {
               if (checked) {
                 // Prevent duplicate entries
@@ -1204,7 +1154,7 @@ useEffect(() => {
                 onChange(value.filter((v) => v.size !== size));
               }
             };
-    
+
             const handleStockChange = (size, stock) => {
               onChange(
                 value.map((v) =>
@@ -1212,22 +1162,21 @@ useEffect(() => {
                 )
               );
             };
-    
+
             const selectedSizes = value.map((v) => v.size);
-    
+
             return (
               <FormItem>
                 <FormLabel className="text-sm leading-6 font-semibold text-foreground">Sizes & Stock</FormLabel>
                 <FormControl>
                   <div
                     className="grid grid-cols-3 gap-5 my-2 p-2 rounded-lg"
-                    
                   >
                     {sizeOptions.map((size) => {
                       const selected = selectedSizes.includes(size);
                       const stockValue =
                         value.find((v) => v.size === size)?.stock?.toString() || "1";
-    
+
                       return (
                         <div key={size} className="flex flex-col gap-1">
                           <div className="flex min-w-0 items-center gap-2">
@@ -1263,29 +1212,29 @@ useEffect(() => {
                   </div>
                 </FormControl>
                 <FormDescription>
-                  Enter the sizes and stock quantities for this product.
+                  Select each size you carry and enter its available stock quantity.
                 </FormDescription>
                 <FormMessage />
               </FormItem>
             );
           }}
         />
-    
-        {/* ✅ Length field (Optional) */}
+
+        {/* Length field (Optional) */}
         <FormField
           control={form.control}
           name="length"
           render={({ field }) => {
             const { value = {}, onChange } = field;
-    
+
             const handleValueChange = (val) => {
               onChange({ ...value, value: parseFloat(val) || 0 });
             };
-    
+
             const handleUnitChange = (unit) => {
               onChange({ ...value, unit });
             };
-    
+
             return (
               <FormItem>
                 <FormLabel className="text-sm leading-6 font-semibold text-foreground">Length (Optional)</FormLabel>
@@ -1302,7 +1251,6 @@ useEffect(() => {
                     />
                     <select
                       className="w-full rounded-[20px] border border-border bg-card px-2 py-2 text-sm leading-6 text-foreground outline-none transition focus:border-[#2563eb] focus:ring-2 focus:ring-[#2563eb]/20"
-                      
                       value={value?.unit ?? "cm"}
                       onChange={(e) => handleUnitChange(e.target.value)}
                     >
@@ -1313,7 +1261,7 @@ useEffect(() => {
                   </div>
                 </FormControl>
                 <FormDescription>
-                  Select the length of the product.
+                  Optional. Enter the product's length and choose a unit of measurement.
                 </FormDescription>
                 <FormMessage />
               </FormItem>
@@ -1322,12 +1270,7 @@ useEffect(() => {
         />
       </>
     )}
-    
-    
-    
-    
-    
-    {/* beauty and cosmetics */}
+
     {/* Weight field (only for Beauty & Personal Care) */}
     {selectedCategory === "Beauty & Personal Care" && (
       <FormField
@@ -1335,21 +1278,20 @@ useEffect(() => {
         name="weight"
         render={({ field }) => {
           const { value = {}, onChange } = field;
-    
+
           const handleValueChange = (val) => {
             onChange({ ...value, value: parseFloat(val) || 0 });
           };
-    
+
           const handleUnitChange = (unit) => {
             onChange({ ...value, unit });
           };
-    
+
           return (
             <FormItem>
               <FormLabel className="text-sm leading-6 font-semibold text-foreground">Weight</FormLabel>
               <FormControl>
                 <div className="flex gap-3 items-center my-2">
-                  {/* Numeric input */}
                   <Input
                     type="number"
                     min="0"
@@ -1359,8 +1301,7 @@ useEffect(() => {
                     placeholder="Enter weight"
                     className="w-full rounded-[20px] border border-border bg-card px-2 py-2 text-sm leading-6 text-foreground outline-none transition focus:border-[#2563eb] focus:ring-2 focus:ring-[#2563eb]/20 md:w-32"
                   />
-    
-                  {/* Dropdown for unit */}
+
                   <select
                     className="w-full rounded-[20px] border border-border bg-card px-2 py-2 text-sm leading-6 text-foreground outline-none transition focus:border-[#2563eb] focus:ring-2 focus:ring-[#2563eb]/20"
                     value={value?.unit ?? "g"}
@@ -1383,10 +1324,8 @@ useEffect(() => {
         }}
       />
     )}
-    
-    
-    
-    {/* if shoes is selected */}
+
+    {/* Shoe-specific fields */}
     {(selectedCategory === "Shoes" || selectedSubcategory === "Shoes") && (
       <>
         {/* Shoe Type Selection */}
@@ -1410,14 +1349,13 @@ useEffect(() => {
                 </select>
               </FormControl>
               <FormDescription>
-                Enter the Shoe type.
+                Select the type of shoe, such as Sneakers, Sandals, Boots, or Heels.
               </FormDescription>
-              <FormMessage/>
               <FormMessage />
             </FormItem>
           )}
         />
-    
+
         {/* Gender Selection */}
         <FormField
           control={form.control}
@@ -1439,14 +1377,13 @@ useEffect(() => {
                 </select>
               </FormControl>
               <FormDescription>
-                Select Gender.
+                Select which group this shoe is designed for. Choosing Children shows kids' size options below.
               </FormDescription>
-              <FormMessage></FormMessage>
               <FormMessage />
             </FormItem>
           )}
         />
-    
+
         {/* Size Selection Based on Gender */}
         <FormField
           control={form.control}
@@ -1454,10 +1391,10 @@ useEffect(() => {
           render={({ field }) => {
             const { value = [], onChange } = field;
             const gender = form.watch("shoe_gender");
-    
+
             const sizeOptions =
               gender === "Children" ? kidsSizeOptions : adultSizes;
-    
+
             const handleCheckboxChange = (checked, size) => {
               if (checked) {
                 onChange([...value, size]);
@@ -1465,7 +1402,7 @@ useEffect(() => {
                 onChange(value.filter((v) => v !== size));
               }
             };
-    
+
             return (
               <FormItem>
                 <FormLabel className="text-sm leading-6 font-semibold text-foreground">Select Sizes</FormLabel>
@@ -1486,8 +1423,8 @@ useEffect(() => {
                   </div>
                 </FormControl>
                 <FormDescription>
-                Enter the size.
-              </FormDescription>
+                  Select all sizes this shoe is available in.
+                </FormDescription>
                 <FormMessage />
               </FormItem>
             );
@@ -1495,14 +1432,8 @@ useEffect(() => {
         />
       </>
     )}
-    
-    
-    
-    
-              
-    
-            {/* for kids size  */}
-            {/* select sizes */}
+
+            {/* Kids sizing */}
             {["Kids & Baby Wear"].includes(selectedCatChildSize) && (
       <>
         {/* Kids Sizes & Stock */}
@@ -1511,7 +1442,7 @@ useEffect(() => {
           name="kids_sizes"
           render={({ field }) => {
             const { value = [], onChange } = field;
-    
+
             const handleCheckboxChange = (checked, size) => {
               if (checked) {
                 onChange([...value, { size, stock: 1 }]); // default stock = 1
@@ -1519,7 +1450,7 @@ useEffect(() => {
                 onChange(value.filter((v) => v.size !== size));
               }
             };
-    
+
             const handleStockChange = (size, stock) => {
               onChange(
                 value.map((v) =>
@@ -1527,27 +1458,25 @@ useEffect(() => {
                 )
               );
             };
-    
+
             const selectedSizes = value.map((v) => v.size);
-    
+
             return (
               <FormItem>
                 <FormLabel className="text-sm leading-6 font-semibold text-foreground">Kids Sizes & Stock</FormLabel>
                 <FormControl>
                   <div
                     className="grid grid-cols-[repeat(auto-fit,minmax(140px,1fr))] gap-3 my-2"
-                    
                   >
                     {kidsSizeOptions.map((size) => {
                       const selected = selectedSizes.includes(size);
                       const stockValue =
                         value.find((v) => v.size === size)?.stock?.toString() || "1";
-    
+
                       return (
                         <div key={size} className="flex flex-col gap-1">
                           <div className="flex min-w-0 items-center gap-2">
                             <Checkbox
-                              
                               id={`size-${size}`}
                               checked={selected}
                               onCheckedChange={(checked) =>
@@ -1576,29 +1505,29 @@ useEffect(() => {
                   </div>
                 </FormControl>
                 <FormDescription>
-                Select size and qty in stock related to the product.
-              </FormDescription>
+                  Select each age or size group you carry and enter its available stock quantity.
+                </FormDescription>
                 <FormMessage />
               </FormItem>
             );
           }}
         />
-    
+
         {/* Length field (optional) */}
         <FormField
           control={form.control}
           name="length"
           render={({ field }) => {
             const { value = {}, onChange } = field;
-    
+
             const handleValueChange = (val) => {
               onChange({ ...value, value: parseFloat(val) || 0 });
             };
-    
+
             const handleUnitChange = (unit) => {
               onChange({ ...value, unit });
             };
-    
+
             return (
               <FormItem>
                 <FormLabel className="text-sm leading-6 font-semibold text-foreground">Length (Optional)</FormLabel>
@@ -1615,7 +1544,6 @@ useEffect(() => {
                     />
                     <select
                       className="w-full rounded-[20px] border border-border bg-card px-2 py-2 text-sm leading-6 text-foreground outline-none transition focus:border-[#2563eb] focus:ring-2 focus:ring-[#2563eb]/20"
-                      
                       value={value?.unit ?? "cm"}
                       onChange={(e) => handleUnitChange(e.target.value)}
                     >
@@ -1626,8 +1554,8 @@ useEffect(() => {
                   </div>
                 </FormControl>
                 <FormDescription>
-                Select the length of the product.
-              </FormDescription>
+                  Optional. Enter the product's length and choose a unit of measurement.
+                </FormDescription>
                 <FormMessage />
               </FormItem>
             );
@@ -1637,18 +1565,11 @@ useEffect(() => {
     )}
     </>
     )}
-    
-   
-    
- 
-    
-    
-            {/* expiry and manufactured dates */}
-    
+
+            {/* Organic-only extra fields: manufactured/expiry dates, roast, weight */}
     {activeData === organicDepartmentMap && showExtraFields && (
       <>
-    
-      {/* is organic check */}
+
       <FormField
       control={form.control}
       name="is_organic"
@@ -1669,7 +1590,7 @@ useEffect(() => {
         </FormItem>
       )}
     />
-    
+
     <FormField
       control={form.control}
       name="is_fresh_food"
@@ -1690,11 +1611,11 @@ useEffect(() => {
         </FormItem>
       )}
     />
-    
-      {/* if cofee */}
+
+      {/* Coffee-specific fields */}
       {selectedSubcategory === "Coffee" && (
       <>
-        {/* ✅ Roast Type */}
+        {/* Roast Type */}
         <FormField
           control={form.control}
           name="roast_type"
@@ -1704,10 +1625,9 @@ useEffect(() => {
               <FormControl>
                 <select
                   {...field}
-                  value={field.value ?? ""} // keeps it controlled
+                  value={field.value ?? ""}
                   onChange={(e) => field.onChange(e.target.value)}
                   className="border rounded-full p-2 w-full"
-                 
                 >
                   <option value="">Select Roast Type</option>
                   <option value="light">Light Roast</option>
@@ -1724,8 +1644,8 @@ useEffect(() => {
             </FormItem>
           )}
         />
-    
-        {/* ✅ Coffee State */}
+
+        {/* Coffee State */}
         <FormField
           control={form.control}
           name="coffee_state"
@@ -1735,10 +1655,9 @@ useEffect(() => {
               <FormControl>
                 <select
                   {...field}
-                  value={field.value ?? ""} // keeps it controlled
+                  value={field.value ?? ""}
                   onChange={(e) => field.onChange(e.target.value)}
                   className="border rounded-full p-2 w-full"
-                 
                 >
                   <option value="">Select Coffee State</option>
                   <option value="whole_beans">Whole Beans</option>
@@ -1750,7 +1669,7 @@ useEffect(() => {
                 </select>
               </FormControl>
               <FormDescription>
-                Choose whether it’s whole beans or ground, and what grind size.
+                Choose whether it's whole beans or ground, and what grind size.
               </FormDescription>
               <FormMessage />
             </FormItem>
@@ -1758,32 +1677,30 @@ useEffect(() => {
         />
       </>
     )}
-    
-      {/* weight */}
+
       <FormField
         control={form.control}
         name="weight"
         render={({ field }) => {
           const { value = {}, onChange } = field;
-    
+
           const handleValueChange = (val) => {
             onChange({ ...value, value: parseFloat(val) || 0 });
           };
-    
+
           const handleUnitChange = (unit) => {
             onChange({ ...value, unit });
           };
-    
+
           return (
             <FormItem>
               <FormLabel className="text-lg">Weight</FormLabel>
               <FormControl>
                 <div className="flex gap-3 items-center my-2">
-                  {/* Numeric input */}
                   <Input
                   type="number"
                   min={1}
-                  step={1}               // ✅ whole numbers only
+                  step={1}
                   value={value?.value ?? ""}
                   onChange={(e) => {
                     const val = e.target.value;
@@ -1792,9 +1709,7 @@ useEffect(() => {
                   placeholder="Enter weight"
                   className="w-32"
                 />
-    
-    
-                  {/* Dropdown for unit */}
+
                   <select
                     className="border rounded-full p-2"
                     value={value?.unit ?? "g"}
@@ -1816,7 +1731,7 @@ useEffect(() => {
           );
         }}
       />
-    
+
         {/* Manufactured Date */}
         <FormField
           control={form.control}
@@ -1831,19 +1746,19 @@ useEffect(() => {
               <Input
               type="date"
               {...field}
-              value={field.value ?? ""}  // 👈 fallback ensures it's always controlled
+              value={field.value ?? ""}
               className="border rounded p-2"
             />
-    
+
               </FormControl>
               <FormDescription>
-                Enter Manufactured date.
+                Select the date this product was manufactured or produced.
               </FormDescription>
               <FormMessage />
             </FormItem>
           )}
         />
-    
+
         {/* Expiry Date */}
         <FormField
           control={form.control}
@@ -1866,12 +1781,11 @@ useEffect(() => {
                 <Input
                   type="date"
                   {...field}
-                  className="border rounded p-2 "
-                  style={{color:colors.gray[100], backgroundColor:colors.primary[600]}}
+                  className="border rounded p-2"
                 />
               </FormControl>
               <FormDescription>
-                Enter Expiry date.
+                Select the date this product expires. Must be later than the manufactured date.
               </FormDescription>
               <FormMessage />
             </FormItem>
@@ -1879,10 +1793,8 @@ useEffect(() => {
         />
       </>
     )}
-    
-    
-            {/* PUT ITEM ON OFFRE */}
-            {/* ✅ In-offer checkbox */}
+
+            {/* In-offer checkbox */}
             <FormField
               control={form.control}
               name="in_offer"
@@ -1899,13 +1811,13 @@ useEffect(() => {
                   <FormLabel className="text-base mt-2">Mark item as on Offer</FormLabel>
                   </div>
                   <FormDescription>
-                Put this item on offer.
+                Enable this to run a limited-time discount on this item.
               </FormDescription>
                 </FormItem>
               )}
             />
-    
-            {/* ✅ Offer fields (conditionally shown if in_offer is true) */}
+
+            {/* Offer fields (conditionally shown if in_offer is true) */}
             {form.watch("in_offer") && (
               <div className="grid grid-cols-1 gap-4 md:grid-cols-3 mt-4">
                 {/* Discount percentage */}
@@ -1924,11 +1836,14 @@ useEffect(() => {
                           {...field}
                         />
                       </FormControl>
+                      <FormDescription>
+                        Enter the percentage off the regular price while the offer runs.
+                      </FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
-    
+
                 {/* Start date */}
                 <FormField
                   control={form.control}
@@ -1939,11 +1854,14 @@ useEffect(() => {
                       <FormControl>
                         <Input type="date" {...field} />
                       </FormControl>
+                      <FormDescription>
+                        Select the date the offer begins.
+                      </FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
-    
+
                 {/* End date */}
                 <FormField
                   control={form.control}
@@ -1954,23 +1872,24 @@ useEffect(() => {
                       <FormControl>
                         <Input type="date" {...field} />
                       </FormControl>
+                      <FormDescription>
+                        Select the date the offer ends.
+                      </FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
               </div>
             )}
-    
-    
-            {/* GENERAL COLOUR */}
-            {/* conditional rendering */}
+
+            {/* Color variants (inorganic items only) */}
         {activeData === departmentMap && (
             <FormField
           control={form.control}
           name="color_variants"
           render={({ field }) => {
             const { value = [], onChange } = field;
-    
+
             const handleColorToggle = (color) => {
               const exists = value.find((v) => v.color === color);
               if (exists) {
@@ -1979,7 +1898,7 @@ useEffect(() => {
                 onChange([...value, { color, color_image: null, sizes: [] }]);
               }
             };
-    
+
             const handleImageUpload = (color, file) => {
               onChange(
                 value.map((v) =>
@@ -1987,7 +1906,7 @@ useEffect(() => {
                 )
               );
             };
-    
+
             const handleSizeToggle = (color, size) => {
               onChange(
                 value.map((v) =>
@@ -2002,7 +1921,7 @@ useEffect(() => {
                 )
               );
             };
-    
+
             const handleStockChange = (color, size, stock) => {
               onChange(
                 value.map((v) =>
@@ -2019,9 +1938,9 @@ useEffect(() => {
                 )
               );
             };
-    
+
             const selectedColors = value.map((v) => v.color);
-    
+
             return (
               <FormItem className='rounded-[20px] p-4 border border-gray-300 bg-transparent'>
                 <FormLabel className="text-lg">Color Variants</FormLabel>
@@ -2063,7 +1982,7 @@ useEffect(() => {
                         );
                       })}
                     </div>
-    
+
                     {/* Color details */}
                     {value.map((variant) => (
                       <div key={variant.color} className="space-y-4">
@@ -2080,14 +1999,13 @@ useEffect(() => {
                               handleImageUpload(variant.color, e.target.files[0])
                             }
                             style={{
-                              outline: `1px solid ${colors.gray[100]}`,
                               width: "200px",
                               padding: ".5em 1em",
                               borderRadius: "20px",
                             }}
                           />
                         </div>
-    
+
                         {/* Sizes + Stock */}
                         <div className="grid grid-cols-2 gap-4">
                           {sizeOptions.map((size) => {
@@ -2130,26 +2048,24 @@ useEffect(() => {
                   </div>
                 </FormControl>
                 <FormDescription>
-                Enter colors related to the product.
+                Select each color you carry, upload an image for it, and set stock per size.
               </FormDescription>
-    
+
                 {/* Optional error display */}
                 {form.formState.errors.color_variants?.message && (
                   <p className="text-red-500 text-sm">
                     {form.formState.errors.color_variants.message}
                   </p>
                 )}
-    
+
                 <FormMessage />
               </FormItem>
             );
           }}
         />
         )}
-    
-    
- {/* shipping dimensions */}
-     {/* ✅ Shipping Dimensions */}
+
+ {/* Shipping dimensions */}
  <Controller
    name="shipping_dimension_data.length"
    control={form.control}
@@ -2159,11 +2075,12 @@ useEffect(() => {
        <FormControl>
          <Input type="number" min="0" step="0.01" placeholder="Length" {...field} />
        </FormControl>
+       <FormDescription>Enter the packaged item's length for shipping calculations.</FormDescription>
        <FormMessage />
      </FormItem>
    )}
  />
- 
+
  <Controller
    name="shipping_dimension_data.width"
    control={form.control}
@@ -2173,11 +2090,12 @@ useEffect(() => {
        <FormControl>
          <Input type="number" min="0" step="0.01" placeholder="Width" {...field} />
        </FormControl>
+       <FormDescription>Enter the packaged item's width for shipping calculations.</FormDescription>
        <FormMessage />
      </FormItem>
    )}
  />
- 
+
  <Controller
    name="shipping_dimension_data.height"
    control={form.control}
@@ -2187,11 +2105,12 @@ useEffect(() => {
        <FormControl>
          <Input type="number" min="0" step="0.01" placeholder="Height" {...field} />
        </FormControl>
+       <FormDescription>Enter the packaged item's height for shipping calculations.</FormDescription>
        <FormMessage />
      </FormItem>
    )}
  />
- 
+
  <Controller
    name="shipping_dimension_data.unit"
    control={form.control}
@@ -2209,11 +2128,12 @@ useEffect(() => {
            <option value="ft">Feet</option>
          </select>
        </FormControl>
+       <FormDescription>Choose the unit used for the length, width, and height above.</FormDescription>
        <FormMessage />
      </FormItem>
    )}
  />
- 
+
  <Controller
    name="shipping_dimension_data.weight"
    control={form.control}
@@ -2223,11 +2143,12 @@ useEffect(() => {
        <FormControl>
          <Input type="number" min="0" step="0.01" placeholder="Weight" {...field} />
        </FormControl>
+       <FormDescription>Enter the packaged item's weight for shipping calculations.</FormDescription>
        <FormMessage />
      </FormItem>
    )}
  />
- 
+
  <Controller
    name="shipping_dimension_data.weight_unit"
    control={form.control}
@@ -2245,12 +2166,12 @@ useEffect(() => {
            <option value="lb">Pounds</option>
          </select>
        </FormControl>
+       <FormDescription>Choose the unit used for the shipping weight above.</FormDescription>
        <FormMessage />
      </FormItem>
    )}
  />
- 
- 
+
  <Controller
      name="returnable"
      control={form.control}
@@ -2266,7 +2187,7 @@ useEffect(() => {
                  color: "#9ca3af",
                },
                "& .MuiSwitch-switchBase.Mui-checked": {
-                 color: "#2563eb",
+                 color: "#d1d5db",
                },
                "& .MuiSwitch-track": {
                  backgroundColor: "#d1d5db",
@@ -2283,9 +2204,7 @@ useEffect(() => {
        />
      )}
    />
-        
-    
-    
+
             <div className="mt-10 mb-10 w-full">
               <Button
                 type="submit"
@@ -2299,6 +2218,5 @@ useEffect(() => {
         </Form>
       );
     };
-    
+
     export default ItemAddNew;
-    

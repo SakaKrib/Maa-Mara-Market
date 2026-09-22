@@ -39,7 +39,7 @@ const Home = ({ vendor_id }) => {
           <div className="flex shrink-0 items-center gap-2">
             <Link
               to="/vendors-dashboard/add-item"
-              className="inline-flex min-h-10 items-center justify-center rounded-xl bg-[#2563eb] px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-[#1d4ed8] focus:outline-none focus:ring-2 focus:ring-blue-500/30"
+              className="inline-flex min-h-10 items-center justify-center rounded-full bg-primary px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-blue-500/30"
             >
               Add product
             </Link>
