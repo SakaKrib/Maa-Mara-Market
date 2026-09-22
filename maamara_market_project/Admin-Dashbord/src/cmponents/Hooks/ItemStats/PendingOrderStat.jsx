@@ -2,86 +2,36 @@ import { useEffect, useState } from "react";
 import api from "../../../Services/Api";
 
 export const useVendorPendingOrdersStats = () => {
-  const [data, setData] = useState({
-    total_pending_orders: 0,
-    monthly_stats: [],
-  });
+  const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    const fetchStats = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-
-        const response = await api.get("/api/pending-orders-stats/", {
-          withCredentials: true,
-        });
-
-        const resData = response.data || {};
-        setData({
-          total_pending_orders: resData.total_pending_orders || 0,
-          monthly_stats: Array.isArray(resData.monthly_stats)
-            ? resData.monthly_stats
-            : [],
-        });
-      } catch (err) {
-        console.error("❌ Error fetching pending orders stats:", err);
-        setError("Failed to load stats.");
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchStats();
+    api.get("/api/vendor-analytics/?period=month", { withCredentials: true })
+      .then((response) => setData(response.data))
+      .catch(() => setError("Failed to load pending order stats."))
+      .finally(() => setLoading(false));
   }, []);
 
-  if (loading || error) {
-    return {
-      title: "Pending Orders",
-      value: 0,
-      percentage: "N/A",
-      percentageColor: "gray",
-      duration: "Last 6 Months",
-      link: "/orders",
-      chartData: [],
-      loading,
-      error,
-    };
-  }
+  if (loading || error || !data) return {
+    title: "Pending Orders", value: 0, percentage: "N/A", percentageColor: "gray",
+    duration: "Last 6 Months", link: "order-stats", chartData: [], loading, error
+  };
 
-  const chartData = data.monthly_stats.map((stat) => ({
-    name: stat.month || "Unknown",
-    pv: stat.total_pending_orders || 0,
+  const chartData = (data.series?.pending_orders || []).map((stat) => ({
+    name: new Date(stat.period).toLocaleDateString("en-KE", { month: "short", year: "2-digit" }),
+    pv: stat.value || 0,
   }));
-
-  const latest =
-    data.monthly_stats.length > 0
-      ? data.monthly_stats[data.monthly_stats.length - 1]
-      : null;
-
-  const percentageChange =
-    latest && typeof latest.percentage_change === "number"
-      ? latest.percentage_change.toFixed(1)
-      : 0;
-
-  const percentage = `${
-    percentageChange > 0 ? "+" : ""
-  }${percentageChange}%`;
-
-  const percentageColor =
-    percentageChange > 0
-      ? "green"
-      : percentageChange < 0
-      ? "red"
-      : "gray";
+  const values = chartData.map((x) => x.pv);
+  const latest = values.at(-1) || 0;
+  const previous = values.at(-2) || 0;
+  const change = previous ? ((latest - previous) / previous) * 100 : 0;
 
   return {
     title: "Pending Orders",
-    value: data.total_pending_orders,
-    percentage,
-    percentageColor,
+    value: data.totals?.pending_orders || 0,
+    percentage: `${change >= 0 ? "+" : ""}${Math.round(change)}%`,
+    percentageColor: change > 0 ? "green" : change < 0 ? "red" : "gray",
     duration: "Last 6 Months",
     link: "order-stats",
     chartData,
