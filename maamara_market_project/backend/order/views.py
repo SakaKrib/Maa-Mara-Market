@@ -412,7 +412,7 @@ def add_to_cart_api(request, pk):
         actor_type=actor_type,
         action="item_added_to_cart",
         item=item,
-        description=f"You added '{item.name}' to cart.",
+        description=f"You added {item.name} to cart.",
         related_url=f"/item-client/{item.id}/"
     )
 
@@ -422,7 +422,7 @@ def add_to_cart_api(request, pk):
         actor_type='vendor',
         action="item_added_to_cart",
         item=item,
-        description=f"{actor_name} added '{item.name}' to cart.",
+        description=f"A customer added {item.name} to cart.",
         related_url=f"/item/{item.id}/"
     )
 
@@ -433,7 +433,7 @@ def add_to_cart_api(request, pk):
             actor_type="admin",
             action="item_added_to_cart",
             item=item,
-            description=f"{actor_name} added '{item.name}' to their cart.",
+            description=f"A customer added {item.name} to their cart.",
             related_url=f"/admin-item/vendorDashboard/items/{item.id}/"
         )
 
@@ -566,7 +566,7 @@ def remove_from_cart_api(request, pk):
         actor_type=actor_type,
         action="item_removed_from_cart",
         item=item,
-        description=f"You removed '{item.name}' from cart.",
+        description=f"You removed {item.name} from cart.",
         related_url=f"/item-client/{item.id}/"
     )
 
@@ -581,7 +581,7 @@ def remove_from_cart_api(request, pk):
                 actor_type='vendor',
                 action="cart_item_removed_notification",
                 item=item,
-                description=f"{actor_name} removed '{item.name}' from their cart.",
+                description=f"A customer removed {item.name} from their cart.",
                 related_url=f"/vendor-dashboard/items/{item.id}/"
             )
 
@@ -592,7 +592,7 @@ def remove_from_cart_api(request, pk):
         actor_type='vendor',
         action="item_removed_from_cart",
         item=item,
-        description=f"{actor_name} removed '{item.name}' from cart.",
+        description=f"A customer removed {item.name} from cart.",
         related_url=f"/item/{item.id}/"
     )
 
@@ -604,7 +604,7 @@ def remove_from_cart_api(request, pk):
             actor_type="admin",
             action="item_removed_from_cart",
             item=item,
-            description=f"{actor_name} removed '{item.name}' from their cart.",
+            description=f"A customer removed {item.name} from their cart.",
             related_url=f"/admin-item/vendorDashboard/items/{item.id}/"
         )
 
@@ -764,7 +764,7 @@ def update_cart_quantity(request, pk):
         actor_type=actor_type,
         action="item_updated_qty",
         item=item,
-        description=f"You updated '{item.name}' quantity in cart.",
+        description=f"You updated the quantity of {item.name} in your cart.",
         related_url=f"/item-client/{item.id}/"
     )
 
@@ -774,7 +774,7 @@ def update_cart_quantity(request, pk):
         actor_type='vendor',
         action="item_updated_qty",
         item=item,
-        description=f"{actor_name} updated '{item.name}' quantity in cart.",
+        description=f"A customer updated the quantity of {item.name} in their cart.",
         related_url=f"/item/{item.id}/"
     )
 
@@ -785,7 +785,7 @@ def update_cart_quantity(request, pk):
             actor_type="admin",
             action="item_updated_qty",
             item=item,
-            description=f"{actor_name} updated '{item.name}' quantity in their cart.",
+            description=f"A customer updated the quantity of {item.name} in their cart.",
             related_url=f"/admin-item/vendorDashboard/items/{item.id}/"
         )
 
