@@ -68,6 +68,14 @@ class NotificationSerializer(serializers.ModelSerializer):
         if re.match(r"^(A customer|A vendor|The administrator|An administrator|Your|You)\b", normalized_message):
             return normalized_message
 
+        legacy_patterns = [
+            (r"^New vendor request submitted by .+\\.?$", "A vendor submitted a new vendor request."),
+            (r"^Vendor request \\d+ updated to status .+$", "A vendor request was updated."),
+        ]
+        for pattern, replacement in legacy_patterns:
+            if re.match(pattern, normalized_message, re.I):
+                return replacement
+
         # Normalize legacy marketplace notifications so old records remain
         # readable without exposing usernames or quoted item names.
         if title == "item added to wishlist":
