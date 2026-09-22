@@ -35,6 +35,7 @@ from .models import Item, ItemAdditionalImage, ColorVariant, SizeStock, AgeVaria
 from .Serializers import ItemSerializers
 from rest_framework.permissions import IsAuthenticated
 import json
+import os
 import hashlib
 from django.core.files.storage import default_storage
 from django.utils.text import slugify
