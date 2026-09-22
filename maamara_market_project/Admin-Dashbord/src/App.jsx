@@ -130,6 +130,7 @@ import SalesPage from "./cmponents/Admin/AdminAccounts/Reports/SalesStatsPage";
 import RevenueGrowthCard from "./cmponents/AdminPages/Notifications/Transactions/AdminTransactionGrowthTrack";
 import VendorSuccessPage from "./cmponents/VENDORPAGE/VendorRegistration/VendorSuccessPage";
 import CreateItemPage from "./cmponents/AdminPages/Notifications/CreateItemPage";
+import AdminCreateNewVendorItemPage from "./cmponents/AdminPages/Notifications/AdminCreateNewVendorItemPage";
 import AdminBannerApprovalPage from "./cmponents/Admin/ApproveBanner/ApproveBanner";
 import AdminPostCareer from "./cmponents/AdminPages/Notifications/PostCareers/AdminPostCareer";
 import SupportAdminPanel from "./cmponents/AdminPages/Notifications/Support/SupportMessages";
@@ -283,6 +284,7 @@ function AppContent() {
 
               {/* vendor create new item */}
               <Route path="vendor/create-item/:requestId" element={<CreateItemPage />} />
+              <Route path="vendor/create-item" element={<AdminCreateNewVendorItemPage />} />
 
                {/* vendor create new item */}
                <Route path="approve-banner" element={<AdminBannerApprovalPage />} />
