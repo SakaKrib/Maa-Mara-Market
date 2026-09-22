@@ -176,9 +176,30 @@ const AdminPostCareer = ({ open = true, onClose }) => {
             </select></label>
             <label>Application deadline<input type="date" value={form.application_deadline} onChange={(e) => setForm({ ...form, application_deadline: e.target.value })} /></label>
           </div>
-          <label>Description<textarea rows="6" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} required /></label>
-          <div><span className="mm-admin-editor-label">Requirements</span><RichTextEditor value={form.requirements} onChange={(value) => setForm({ ...form, requirements: value })}/></div>
-          <div><span className="mm-admin-editor-label">Responsibilities</span><RichTextEditor value={form.responsibilities} onChange={(value) => setForm({ ...form, responsibilities: value })}/></div>
+          <div>
+            <span className="mm-admin-editor-label">Description</span>
+            <RichTextEditor
+              value={form.description}
+              onChange={(value) => setForm({ ...form, description: value })}
+              placeholder="Describe the role, team, and what the successful candidate will be doing."
+            />
+          </div>
+          <div>
+            <span className="mm-admin-editor-label">Requirements</span>
+            <RichTextEditor
+              value={form.requirements}
+              onChange={(value) => setForm({ ...form, requirements: value })}
+              placeholder="List the skills, experience, qualifications, or capabilities required."
+            />
+          </div>
+          <div>
+            <span className="mm-admin-editor-label">Responsibilities</span>
+            <RichTextEditor
+              value={form.responsibilities}
+              onChange={(value) => setForm({ ...form, responsibilities: value })}
+              placeholder="Describe the key responsibilities and day-to-day expectations."
+            />
+          </div>
           <label className="mm-admin-checkbox"><input type="checkbox" checked={form.is_active} onChange={(e) => setForm({ ...form, is_active: e.target.checked })}/><span>Publish this position</span></label>
           <div className="mm-careers-form-actions">
             <button type="button" className="mm-careers-secondary" onClick={() => { setForm(emptyForm); setEditingId(null); setTab("jobs"); }}>Cancel</button>
