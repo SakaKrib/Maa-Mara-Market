@@ -27,7 +27,7 @@ const TopBox = () => {
 
   return (
     <div className="topbox">
-      <h1 className="text-4xl">Customers</h1>
+      <h1 className="text-base font-bold leading-5 text-[#222] sm:text-lg">Customers</h1>
 
       {!connected && <p>Connecting to WebSocket...</p>}
 
@@ -86,7 +86,7 @@ const TopBox = () => {
             );
           })
         ) : (
-          <p style={{color:colors.gray[100]}}>No customers yet</p>
+          <p className="text-sm text-[#595959]" style={{color:colors.gray[100]}}>No customers yet</p>
         )}
       </div>
     </div>
