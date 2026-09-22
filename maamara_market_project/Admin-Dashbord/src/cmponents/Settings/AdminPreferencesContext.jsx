@@ -2,7 +2,7 @@ import React, { createContext, useCallback, useContext, useEffect, useMemo, useR
 import { useLocation } from "react-router-dom";
 import api from "../../Services/Api";
 
-const STORAGE_KEY = "maamara-admin-preferences";
+const STORAGE_KEYS = {\n  admin: "maamara-admin-preferences",\n  vendor: "maamara-vendor-preferences",\n};
 const POLL_INTERVAL = 15000;
 
 export const preferenceDefaults = {
