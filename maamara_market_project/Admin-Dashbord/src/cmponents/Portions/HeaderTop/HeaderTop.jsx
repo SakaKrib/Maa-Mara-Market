@@ -1,16 +1,13 @@
-import { useRef, useState, useEffect, useContext } from "react";
+import { useRef, useState, useEffect } from "react";
 import { IonIcon } from "@ionic/react";
-import { UserRound } from "lucide-react";
-import { menuOutline, searchOutline, sunnyOutline, moon, closeOutline, cameraOutline, notificationsOutline } from "ionicons/icons";
+import { Store } from "lucide-react";
+import { menuOutline, closeOutline, cameraOutline } from "ionicons/icons";
 import { useAuth } from "../../Auth/AuthContext/Context";
 import { useCsrfToken } from "../../Hooks/AccessCRF/UseCSRFToken";
 import api from "../../../Services/Api";
-import { ColourModeContext } from "../../../theme";
 import SearchBarForVendorAdmin from "../../SearchPage/GlobalSearchPage";
-import Maamara from "../../../assets/Logo/Maamara.jpg";
 
 const HeaderTop = ({ onMenuToggle }) => {
-  const colorMode = useContext(ColourModeContext);
   const { isAuthenticated, loading, user } = useAuth();
   const csrfToken = useCsrfToken();
 
@@ -199,25 +196,39 @@ const HeaderTop = ({ onMenuToggle }) => {
             </a>
           </div>
 
-          <div className="hidden min-w-0 max-w-2xl flex-1 md:block">
-            <div className="relative min-w-0">
-              <IonIcon icon={searchOutline} className="pointer-events-none absolute left-3 top-1/2 z-10 -translate-y-1/2 text-muted-foreground" />
-              <SearchBarForVendorAdmin />
-            </div>
+          <div className="hidden min-w-0 max-w-2xl flex-1 sm:block">
+            <SearchBarForVendorAdmin />
           </div>
 
-          <div className="ml-auto flex items-center gap-2">
+          <div className="ml-auto flex items-center gap-1.5 sm:gap-2">
+            <a
+              href="/"
+              aria-label="Go to shop"
+              title="Go to shop"
+              className="grid h-10 w-10 shrink-0 place-items-center rounded-full border border-border bg-transparent text-foreground transition hover:bg-muted focus:outline-none focus:ring-2 focus:ring-primary/20"
+            >
+              <Store className="h-[18px] w-[18px]" aria-hidden="true" />
+            </a>
             <button
               type="button"
               onClick={() => setOpenProfile(true)}
               className="flex items-center gap-2 rounded-xl p-1.5 pr-2 hover:bg-muted"
               aria-label="Open admin profile"
             >
-              <img
-                src={previewImage || profilePicture}
-                alt="Admin profile"
-                className="h-9 w-9 rounded-full border border-border object-cover"
-              />
+              {previewImage || profilePicture ? (
+                <img
+                  src={previewImage || profilePicture}
+                  alt="Admin profile"
+                  className="h-9 w-9 rounded-full border border-border object-cover"
+                />
+              ) : (
+                <span
+                  className="grid h-9 w-9 place-items-center rounded-full border border-primary/20 bg-primary text-xs font-bold tracking-wide text-white"
+                  aria-hidden="true"
+                >
+                  {profileInitials}
+                </span>
+              )}
               <span className="hidden max-w-28 truncate text-left text-xs font-semibold text-foreground sm:block">
                 {displayName}
               </span>
@@ -265,8 +276,8 @@ const HeaderTop = ({ onMenuToggle }) => {
             {activeView === "main" && (
               <div className="mt-5 grid gap-2 sm:grid-cols-2">
                 <button onClick={() => setActiveView("view")} className="rounded-full border border-border bg-transparent px-4 py-3 text-left text-sm font-semibold text-foreground transition hover:bg-muted">View account</button>
-                <button onClick={() => setActiveView("edit")} className="rounded-xl border border-slate-200 px-4 py-3 text-left text-sm font-semibold hover:bg-slate-50 dark:border-slate-700 dark:hover:bg-slate-800">Edit profile</button>
-                <button onClick={() => setActiveView("manage")} className="rounded-xl border border-slate-200 px-4 py-3 text-left text-sm font-semibold hover:bg-slate-50 dark:border-slate-700 dark:hover:bg-slate-800">Manage account</button>
+                <button onClick={() => setActiveView("edit")} className="rounded-full border border-border bg-transparent px-4 py-3 text-left text-sm font-semibold text-foreground transition hover:bg-muted">Edit profile</button>
+                <button onClick={() => setActiveView("manage")} className="rounded-full border border-border bg-transparent px-4 py-3 text-left text-sm font-semibold text-foreground transition hover:bg-muted">Manage account</button>
                 <button type="button" onClick={() => setShowSignOutConfirm(true)} className="rounded-full border border-transparent bg-transparent px-4 py-3 text-left text-sm font-semibold text-red-600 transition hover:bg-red-50 dark:text-red-300 dark:hover:bg-red-500/10">Sign out</button>
               </div>
             )}
@@ -337,7 +348,7 @@ const HeaderTop = ({ onMenuToggle }) => {
                   ) : (
                     <button onClick={handleSave} className="rounded-full bg-black px-5 py-3 text-sm font-semibold text-white transition hover:bg-[#262626]">Save changes</button>
                   )}
-                  <button onClick={() => { setEditMode(false); setActiveView("main"); }} className="rounded-xl bg-slate-100 px-4 py-2.5 text-sm font-semibold dark:bg-slate-800">Back</button>
+                  <button onClick={() => { setEditMode(false); setActiveView("main"); }} className="rounded-full border border-border bg-transparent px-4 py-2.5 text-sm font-semibold text-foreground transition hover:bg-muted">Back</button>
                 </div>
               </div>
             )}
