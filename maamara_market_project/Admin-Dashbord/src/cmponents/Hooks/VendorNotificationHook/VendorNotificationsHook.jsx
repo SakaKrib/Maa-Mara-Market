@@ -1,14 +1,16 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import api from "../../../../src/Services/Api";
 
-export function useVendorNotifications() {
+export function useVendorNotifications({ enabled = true } = {}) {
   const [notifications, setNotifications] = useState([]);
   const [unseenCount, setUnseenCount] = useState(0);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(enabled);
   const [error, setError] = useState(null);
   const mountedRef = useRef(true);
 
   const loadNotifications = useCallback(async () => {
+    if (!enabled) return;
+
     try {
       const response = await api.get("/api/notifications/", {
         withCredentials: true,
@@ -30,28 +32,30 @@ export function useVendorNotifications() {
       if (!mountedRef.current) return;
       setError(err);
     } finally {
-      if (mountedRef.current) {
-        setLoading(false);
-      }
+      if (mountedRef.current) setLoading(false);
     }
-  }, []);
+  }, [enabled]);
 
   useEffect(() => {
     mountedRef.current = true;
-    loadNotifications();
 
+    if (!enabled) {
+      setNotifications([]);
+      setUnseenCount(0);
+      setLoading(false);
+      setError(null);
+      return undefined;
+    }
+
+    setLoading(true);
+    loadNotifications();
     const interval = window.setInterval(loadNotifications, 15000);
 
     return () => {
       mountedRef.current = false;
       window.clearInterval(interval);
     };
-  }, [loadNotifications]);
+  }, [enabled, loadNotifications]);
 
-  return {
-    notifications,
-    unseenCount,
-    loading,
-    error,
-  };
+  return { notifications, unseenCount, loading, error };
 }
