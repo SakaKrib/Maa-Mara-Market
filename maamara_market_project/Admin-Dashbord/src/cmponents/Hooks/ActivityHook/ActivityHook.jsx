@@ -2,7 +2,7 @@ import { useEffect, useState, useRef, useCallback } from "react";
 import api from "../../../../src/Services/Api";
 import { useAuth } from "../../Auth/AuthContext/Context";
 
-export const useVendorActivityLogs = () => {
+export const useVendorActivityLogs = ({ all = false } = {}) => {
   const { user } = useAuth();
 
   const [activityLogs, setActivityLogs] = useState([]);
@@ -43,7 +43,10 @@ export const useVendorActivityLogs = () => {
     try {
       const response = await api.get(
         "/api/activity-logs/",
-        { withCredentials: true }
+        {
+          withCredentials: true,
+          params: { scope: "vendor", ...(all ? { all: "true" } : {}) },
+        }
       );
 
       const vendorLogs = filterVendorLogs(
@@ -61,7 +64,7 @@ export const useVendorActivityLogs = () => {
     } finally {
       setLoading(false);
     }
-  }, [user, filterVendorLogs]);
+  }, [user, filterVendorLogs, all]);
 
   // -----------------------------
   // WEBSOCKET
