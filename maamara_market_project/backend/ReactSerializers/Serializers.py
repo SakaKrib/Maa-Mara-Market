@@ -529,7 +529,7 @@ class ItemSerializers(serializers.ModelSerializer):
             user=user,
             actor_type='vendor' if hasattr(user, 'vendor') else 'admin' if user and user.is_staff else 'user',
             action='item_created',
-            description=f"{'Vendor' if hasattr(user, 'vendor') else 'Admin'} '{user.username}' created item '{item.name}'"
+            description=f"{'A vendor' if hasattr(user, 'vendor') else 'An administrator' if user and user.is_staff else 'A customer'} added {item.name}."
         )
 
         return item
@@ -684,7 +684,7 @@ class ItemSerializers(serializers.ModelSerializer):
             user=user,
             actor_type="vendor" if hasattr(user, "vendor") else "admin" if user and user.is_staff else "user",
             action="item_updated",
-            description=f"{'Vendor' if hasattr(user, 'vendor') else 'Admin'} '{user.username}' updated item '{instance.name}'",
+            description=f"{'A vendor' if hasattr(user, 'vendor') else 'An administrator' if user and user.is_staff else 'A customer'} updated {instance.name}.",
         )
 
         return instance
