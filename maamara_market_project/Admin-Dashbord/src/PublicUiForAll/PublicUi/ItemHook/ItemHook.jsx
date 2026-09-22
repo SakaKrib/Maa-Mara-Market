@@ -18,7 +18,7 @@ const formatItem = (item) => {
   };
 };
 
-const useItems = (initialUrl = `/api/items/`) => {
+// The public item-list endpoint is the filtered marketplace feed.\n// /api/items/ is not registered; /api/items/<id>/ is detail-only.\nconst useItems = (initialUrl = `/api/filtered-items/`) => {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [nextUrl, setNextUrl] = useState(null);
