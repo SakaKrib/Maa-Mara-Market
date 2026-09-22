@@ -930,14 +930,12 @@ useEffect(() => {
                         control={form.control}
                         name="is_organic"
                         render={({ field }) => {
-                          const vendorType = vendor?.vendor_data?.product_type;
-                          const checked = vendorType === "organic" ? true : !!field.value;
+                          const checked = !!field.value;
 
                           return (
                             <label className="flex cursor-pointer items-center gap-2 py-1 text-sm leading-6 text-foreground">
                               <Checkbox
                                 checked={checked}
-                                disabled={vendorType === "organic"}
                                 onCheckedChange={field.onChange}
                                 className="h-4 w-4 shrink-0 rounded-sm border-primary shadow-none focus-visible:ring-0"
                               />
@@ -951,14 +949,12 @@ useEffect(() => {
                         control={form.control}
                         name="is_fresh_food"
                         render={({ field }) => {
-                          const vendorType = vendor?.vendor_data?.product_type;
-                          const checked = vendorType === "organic" ? true : !!field.value;
+                          const checked = !!field.value;
 
                           return (
                             <label className="flex cursor-pointer items-center gap-2 py-1 text-sm leading-6 text-foreground">
                               <Checkbox
                                 checked={checked}
-                                disabled={vendorType === "organic"}
                                 onCheckedChange={field.onChange}
                                 className="h-4 w-4 shrink-0 rounded-[4px] border-primary shadow-none focus-visible:ring-0"
                               />
