@@ -60,7 +60,7 @@ const truncate = (value, maxWords = 12) => {
     : value;
 };
 
-const VendorItemCard = ({ vendor, item }) => {
+const VendorItemCard = ({ vendor, item, onRefresh }) => {
   const { current, original } = getItemPrice(item);
   const image = resolveApiAssetUrl(item.image) || defaultProduct;
 
@@ -102,7 +102,7 @@ const VendorItemCard = ({ vendor, item }) => {
         <div className="flex items-center justify-between gap-3 border-t border-border pt-3 text-xs text-muted-foreground">
           <span>Size: {item.size || "—"}</span>
           <span>Stock: {item.in_stock ?? 0}</span>
-          <EditItem vendor={vendor} item={item} />
+          <EditItem vendor={{ ...vendor, isAdmin: true }} item={item} isAdmin onSuccess={onRefresh} />
         </div>
       </div>
     </article>
@@ -312,7 +312,7 @@ const Vendor_list = () => {
         <div className="space-y-6">
           {vendors.map((vendor) => {
             const vendorName = getVendorName(vendor);
-            const avatar = resolveApiAssetUrl(vendor.profile_picture_url) || defaultAvatar;
+            const avatar = resolveApiAssetUrl(vendor.profile_picture_url) || resolveApiAssetUrl(vendor.company_logo_url) || resolveApiAssetUrl(vendor.brand_logo_url) || defaultAvatar;
 
             return (
               <article
@@ -321,15 +321,38 @@ const Vendor_list = () => {
               >
                 <div className="flex flex-col gap-4 border-b border-border p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5">
                   <div className="flex min-w-0 items-center gap-3">
-                    <img
-                      src={avatar}
-                      alt={vendorName}
-                      className="h-12 w-12 shrink-0 rounded-full border border-border object-cover"
-                      onError={(event) => {
-                        event.currentTarget.onerror = null;
-                        event.currentTarget.src = defaultAvatar;
-                      }}
-                    />
+                    {(() => {
+                      const candidates = [
+                        resolveApiAssetUrl(vendor.profile_picture_url),
+                        resolveApiAssetUrl(vendor.company_logo_url),
+                        resolveApiAssetUrl(vendor.brand_logo_url),
+                      ].filter(Boolean);
+                      return candidates.length ? (
+                        <img
+                          src={candidates[0]}
+                          data-fallback-index="0"
+                          alt={vendorName}
+                          className="h-12 w-12 shrink-0 rounded-full border border-border object-cover"
+                          onError={(event) => {
+                            const current = Number(event.currentTarget.dataset.fallbackIndex || 0);
+                            const next = current + 1;
+                            if (next < candidates.length) {
+                              event.currentTarget.dataset.fallbackIndex = String(next);
+                              event.currentTarget.src = candidates[next];
+                              return;
+                            }
+                            event.currentTarget.style.display = "none";
+                            event.currentTarget.nextElementSibling?.classList.remove("hidden");
+                          }}
+                        />
+                      ) : null;
+                    })()}
+                    <div className="hidden h-12 w-12 shrink-0 items-center justify-center rounded-full border border-border bg-black text-sm font-bold tracking-wide text-white">
+                      {(
+                        (vendor.first_name || "") + (vendor.surname_name || "")
+                      ).trim().slice(0, 2).toUpperCase() ||
+                        (vendor.company_name || vendor.username || "V").slice(0, 2).toUpperCase()}
+                    </div>
                     <div className="min-w-0">
                       <h2 className="truncate text-base font-bold text-card-foreground">
                         {vendorName}
@@ -340,13 +363,55 @@ const Vendor_list = () => {
                     </div>
                   </div>
 
-                  <Link
-                    to={`/admin-dashboard/vendors/${vendor.id}`}
-                    className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground transition hover:opacity-90 sm:w-auto"
-                  >
-                    <IonIcon icon={eyeOutline} />
-                    View vendor
-                  </Link>
+                  <div className="flex w-full flex-wrap gap-2 sm:w-auto sm:justify-end">
+                    <Link
+                      to={"/admin-dashboard/vendors/" + vendor.id}
+                      className="inline-flex flex-1 items-center justify-center gap-2 rounded-xl border border-border px-4 py-2.5 text-sm font-semibold text-card-foreground transition hover:bg-muted sm:flex-none"
+                    >
+                      <IonIcon icon={eyeOutline} />
+                      View vendor
+                    </Link>
+                    <Link
+                      to={"/admin-dashboard/vendors/" + vendor.id + "/performance"}
+                      className="inline-flex flex-1 items-center justify-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground transition hover:opacity-90 sm:flex-none"
+                    >
+                      Performance
+                    </Link>
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        const nextActive = vendor.is_active === false;
+                        const actionLabel = nextActive ? "activate" : "suspend";
+                        if (!window.confirm("Are you sure you want to " + actionLabel + " this vendor?")) return;
+                        try {
+                          await api.patch("/api/vendors/" + vendor.id + "/", { is_active: nextActive }, { withCredentials: true });
+                          await fetchVendors();
+                        } catch (actionError) {
+                          console.error("Vendor status update failed:", actionError);
+                          window.alert(actionError.response?.data?.detail || "Unable to update vendor status.");
+                        }
+                      }}
+                      className="inline-flex flex-1 items-center justify-center rounded-xl border border-amber-200 px-4 py-2.5 text-sm font-semibold text-amber-700 transition hover:bg-amber-50 sm:flex-none"
+                    >
+                      {vendor.is_active === false ? "Activate" : "Suspend"}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        if (!window.confirm("Delete this vendor permanently? This can also remove records linked to the vendor. This action cannot be undone.")) return;
+                        try {
+                          await api.delete("/api/vendors/" + vendor.id + "/", { withCredentials: true });
+                          await fetchVendors();
+                        } catch (actionError) {
+                          console.error("Vendor deletion failed:", actionError);
+                          window.alert(actionError.response?.data?.detail || "Unable to delete vendor.");
+                        }
+                      }}
+                      className="inline-flex flex-1 items-center justify-center rounded-xl border border-red-200 px-4 py-2.5 text-sm font-semibold text-red-700 transition hover:bg-red-50 sm:flex-none"
+                    >
+                      Delete
+                    </button>
+                  </div>
                 </div>
 
                 <div className="grid gap-3 border-b border-border p-4 sm:grid-cols-2 lg:grid-cols-4 sm:p-5">
@@ -405,6 +470,7 @@ const Vendor_list = () => {
                           key={`${vendor.id}-${item.id}`}
                           vendor={vendor}
                           item={item}
+                          onRefresh={fetchVendors}
                         />
                       ))}
                     </div>
