@@ -25,6 +25,44 @@ const formatCurrency = (value) => {
   return Number.isFinite(amount) ? amount.toLocaleString() : "0";
 };
 
+const VendorAvatar = ({ vendor, className = "h-12 w-12" }) => {
+  const candidates = [
+    resolveApiAssetUrl(vendor.profile_picture_url),
+    resolveApiAssetUrl(vendor.company_logo_url),
+    resolveApiAssetUrl(vendor.brand_logo_url),
+  ].filter(Boolean);
+  const initials = (
+    ((vendor.first_name || "") + (vendor.surname_name || "")).trim() ||
+    vendor.company_name ||
+    vendor.username ||
+    "V"
+  ).slice(0, 2).toUpperCase();
+
+  return candidates.length ? (
+    <img
+      src={candidates[0]}
+      data-fallback-index="0"
+      alt={getVendorName(vendor)}
+      className={className + " shrink-0 rounded-full border border-border bg-muted object-cover"}
+      onError={(event) => {
+        const current = Number(event.currentTarget.dataset.fallbackIndex || 0);
+        const next = current + 1;
+        if (next < candidates.length) {
+          event.currentTarget.dataset.fallbackIndex = String(next);
+          event.currentTarget.src = candidates[next];
+          return;
+        }
+        event.currentTarget.style.display = "none";
+        event.currentTarget.nextElementSibling?.classList.remove("hidden");
+      }}
+    />
+  ) : (
+    <div className={className + " flex shrink-0 items-center justify-center rounded-full border border-border bg-black text-sm font-bold tracking-wide text-white"}>
+      {initials}
+    </div>
+  );
+};
+
 const getVendorName = (vendor) =>
   [vendor.first_name, vendor.surname_name]
     .filter(Boolean)
@@ -327,38 +365,7 @@ const Vendor_list = () => {
               >
                 <div className="flex flex-col gap-4 border-b border-border p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5">
                   <div className="flex min-w-0 items-center gap-3">
-                    {(() => {
-                      const candidates = [
-                        resolveApiAssetUrl(vendor.profile_picture_url),
-                        resolveApiAssetUrl(vendor.company_logo_url),
-                        resolveApiAssetUrl(vendor.brand_logo_url),
-                      ].filter(Boolean);
-                      return candidates.length ? (
-                        <img
-                          src={candidates[0]}
-                          data-fallback-index="0"
-                          alt={vendorName}
-                          className="h-12 w-12 shrink-0 rounded-full border border-border object-cover"
-                          onError={(event) => {
-                            const current = Number(event.currentTarget.dataset.fallbackIndex || 0);
-                            const next = current + 1;
-                            if (next < candidates.length) {
-                              event.currentTarget.dataset.fallbackIndex = String(next);
-                              event.currentTarget.src = candidates[next];
-                              return;
-                            }
-                            event.currentTarget.style.display = "none";
-                            event.currentTarget.nextElementSibling?.classList.remove("hidden");
-                          }}
-                        />
-                      ) : null;
-                    })()}
-                    <div className="h-12 w-12 shrink-0 items-center justify-center rounded-full border border-border bg-black text-sm font-bold tracking-wide text-white">
-                      {(
-                        (vendor.first_name || "") + (vendor.surname_name || "")
-                      ).trim().slice(0, 2).toUpperCase() ||
-                        (vendor.company_name || vendor.username || "V").slice(0, 2).toUpperCase()}
-                    </div>
+                    <VendorAvatar vendor={vendor} />
                     <div className="min-w-0">
                       <h2 className="truncate text-base font-bold text-card-foreground">
                         {vendorName}
