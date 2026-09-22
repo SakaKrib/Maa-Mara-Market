@@ -7,6 +7,7 @@ from .calback import *
 from . GlobalSearchEngine import GlobalSearchView
 urlpatterns = [
     path("api/vendor-draft/", views.VendorDraftView.as_view(), name="vendor-draft"),
+    path("api/item-draft/", views.ItemDraftView.as_view(), name="item-draft"),
     path('', views.dashboard, name='vendor-dashboard'),  # Replace with your actual view
 
     # search engine, global
