@@ -12,13 +12,35 @@ class VendorDraftSerializer(serializers.ModelSerializer):
 class VendorItemRequestSerializer(serializers.ModelSerializer):
     description = serializers.CharField(max_length=1000)  # or larger if needed
     vendor = VendorSerializer(read_only=True)
+    draft_media = serializers.SerializerMethodField()
+
+    def get_draft_media(self, obj):
+        """Expose persisted draft media to admin clients without putting files in draft_item JSON."""
+        request = self.context.get("request")
+        draft = getattr(obj, "draft", None)
+        if not draft:
+            return []
+        return [
+            {
+                "id": media.id,
+                "kind": media.kind,
+                "media_type": media.media_type,
+                "slot_key": media.slot_key,
+                "variant_key": media.variant_key,
+                "sort_order": media.sort_order,
+                "url": request.build_absolute_uri(media.file.url) if request else media.file.url,
+                "name": media.file.name.rsplit("/", 1)[-1],
+            }
+            for media in draft.media.all().order_by("sort_order", "id")
+        ]
 
     class Meta:
         model = VendorItemRequest
         fields = [
-            "id", "vendor", "name", "description", "price", "image", "status", "created_at", "draft_item", "draft", "created_by"
+            "id", "vendor", "name", "description", "price", "image", "status",
+            "created_at", "draft_item", "draft", "draft_media", "created_by"
         ]
-        read_only_fields = ("vendor", "status", "draft")
+        read_only_fields = ("vendor", "status", "draft", "draft_media")
 
 
 #price change request serializer
