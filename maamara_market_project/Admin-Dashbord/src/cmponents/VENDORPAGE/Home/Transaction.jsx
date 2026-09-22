@@ -81,7 +81,7 @@ const TransactionTable = () => {
       <div className="rounded-2xl border border-[#e6e6e4] bg-white p-5 shadow-sm sm:p-6">
         <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#f1641e]">
+            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#2563eb]">
               Financial activity
             </p>
             <h1 className="mt-1 text-2xl font-bold tracking-tight text-[#222]">
@@ -101,8 +101,8 @@ const TransactionTable = () => {
               <p className="text-xs font-medium text-[#595959]">Items sold</p>
               <p className="mt-1 text-lg font-bold text-[#222]">{totalItems}</p>
             </div>
-            <div className="min-w-[160px] rounded-xl border border-[#ffe0cf] bg-[#fff7f2] px-4 py-3">
-              <p className="text-xs font-medium text-[#b94b13]">Recorded amount</p>
+            <div className="min-w-[160px] rounded-xl border border-[#e6e6e4] bg-[#f8f8f6] px-4 py-3">
+              <p className="text-xs font-medium text-[#595959]">Recorded amount</p>
               <p className="mt-1 text-lg font-bold text-[#222]">
                 {formatCurrency(totalAmount)}
               </p>
@@ -125,7 +125,7 @@ const TransactionTable = () => {
             value={search}
             onChange={(event) => setSearch(event.target.value)}
             placeholder="Search transactions..."
-            className="w-full rounded-xl border border-[#d9d9d6] bg-white px-4 py-2.5 text-sm text-[#222] outline-none transition placeholder:text-[#999] focus:border-[#f1641e] focus:ring-2 focus:ring-[#f1641e]/15 md:max-w-xs"
+            className="w-full rounded-xl border border-[#d9d9d6] bg-white px-4 py-2.5 text-sm text-[#222] outline-none transition placeholder:text-[#999] focus:border-[#2563eb] focus:ring-2 focus:ring-[#2563eb]/15 md:max-w-xs"
             aria-label="Search transactions"
           />
         </div>
@@ -134,7 +134,7 @@ const TransactionTable = () => {
           <div className="flex min-h-64 items-center justify-center p-8">
             <div className="flex flex-col items-center gap-3 text-sm text-[#595959]">
               <div
-                className="h-8 w-8 animate-spin rounded-full border-4 border-[#f1641e]/20 border-t-[#f1641e]"
+                className="h-8 w-8 animate-spin rounded-full border-4 border-[#2563eb]/20 border-t-[#2563eb]"
                 aria-label="Loading transactions"
               />
               Loading transactions...
@@ -142,7 +142,7 @@ const TransactionTable = () => {
           </div>
         ) : filteredRows.length === 0 ? (
           <div className="p-10 text-center">
-            <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-[#fff0e8] text-xl text-[#f1641e]">
+            <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-blue-50 text-xl text-[#2563eb]">
               ₵
             </div>
             <h3 className="mt-4 text-lg font-semibold text-[#222]">
