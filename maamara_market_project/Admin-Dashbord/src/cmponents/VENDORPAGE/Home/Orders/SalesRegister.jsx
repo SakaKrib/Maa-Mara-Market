@@ -258,15 +258,6 @@ const SalesReportPage = () => {
           </div>
         </section>
       )}
-
-      <div>
-        <Link
-          to="/vendors-dashboard"
-          className="inline-flex rounded-xl border border-[#d9d9d6] bg-white px-4 py-2.5 text-sm font-semibold text-[#222] transition hover:bg-[#f8f8f6]"
-        >
-          Back to dashboard
-        </Link>
-      </div>
     </section>
   );
 };
