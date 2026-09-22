@@ -1,93 +1,37 @@
 import { useEffect, useState } from "react";
 import api from "../../../Services/Api";
 
-const useVendorStatsBox = ({
-  endpoint = "/api/item-stats/",
-  vendorId = null,
-}) => {
+const useVendorStatsBox = () => {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    const fetchStats = async () => {
-      try {
-        setLoading(true);
-        setError(null);
+    api.get("/api/vendor-analytics/?period=month", { withCredentials: true })
+      .then((response) => setData(response.data))
+      .catch(() => setError("Failed to load view stats."))
+      .finally(() => setLoading(false));
+  }, []);
 
-        const url = vendorId ? `${endpoint}?vendorId=${vendorId}` : endpoint;
-        const response = await api.get(url, { withCredentials: true });
+  if (loading || error || !data) return {
+    title: "Monthly Views", value: 0, percentage: "N/A", percentageColor: "gray",
+    duration: "Last 6 Months", link: "item-views", chartData: [], loading, error
+  };
 
-        setData(response.data);
-        console.log("✅ Vendor Stats:", response.data);
-      } catch (err) {
-        console.error("❌ Error fetching vendor stats:", err);
-        setError("Failed to load stats.");
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchStats();
-  }, [endpoint, vendorId]);
-
-  // ⏳ Loading or error states
-  if (loading || error || !data) {
-    return {
-      title: "Monthly Views",
-      value: 0,
-      percentage: "N/A",
-      percentageColor: "gray",
-      duration: "",
-      link: "/views",
-      chartData: [],
-      loading,
-      error,
-    };
-  }
-
-  // 🧭 Safely map monthly stats
-  const chartData = Array.isArray(data.monthly_stats)
-    ? data.monthly_stats.map((stat) => ({
-        name: stat.month,
-        pv: stat.total_views || 0,
-      }))
-    : [];
-
-  // 📊 Calculate percentage change between last two months
-  const lastIndex = chartData.length - 1;
-  const thisMonthViews = chartData[lastIndex]?.pv || 0;
-  const lastMonthViews = chartData[lastIndex - 1]?.pv || 0;
-
-  let percentageChange = "N/A";
-  let percentageColor = "gray";
-
-  if (lastMonthViews > 0) {
-    const change = ((thisMonthViews - lastMonthViews) / lastMonthViews) * 100;
-    const roundedChange = Math.round(change);
-
-    percentageChange = `${change >= 0 ? "+" : ""}${roundedChange}%`;
-
-    if (change < 0) {
-      percentageColor = "red";
-    } else if (roundedChange < 50) {
-      percentageColor = "gold";
-    } else if (roundedChange < 80) {
-      percentageColor = "blue";
-    } else {
-      percentageColor = "green";
-    }
-  }else if (chartData.length === 1) {
-    // 👇 Add this fallback
-    percentageChange = "+0%";
-    percentageColor = "gray";
-  }
+  const chartData = (data.series?.views || []).map((stat) => ({
+    name: new Date(stat.period).toLocaleDateString("en-KE", { month: "short", year: "2-digit" }),
+    pv: stat.value || 0,
+  }));
+  const values = chartData.map((x) => x.pv);
+  const latest = values.at(-1) || 0;
+  const previous = values.at(-2) || 0;
+  const change = previous ? ((latest - previous) / previous) * 100 : 0;
 
   return {
     title: "Monthly Views",
-    value: data.total_views || 0,
-    percentage: percentageChange,
-    percentageColor,
+    value: data.totals?.views || 0,
+    percentage: `${change >= 0 ? "+" : ""}${Math.round(change)}%`,
+    percentageColor: change > 80 ? "green" : change > 50 ? "blue" : change > 0 ? "gold" : change < 0 ? "red" : "gray",
     duration: "Last 6 Months",
     link: "item-views",
     chartData,
