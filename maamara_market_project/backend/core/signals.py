@@ -22,20 +22,11 @@ def create_vendor_request_notification(sender, instance, created, **kwargs):
         for admin in admins:
             Notification.objects.create(
                 user=admin,
-                message=f"New vendor request submitted by {instance.user.username}.",
+                title="New Vendor Request",
+                message="A vendor submitted a new vendor request.",
                 vendor_request=instance,
                 url=frontend_review_url
             )
-    else:
-        # For example, notify only when status becomes 'pending'
-        if instance.status == 'pending':
-            for admin in admins:
-                Notification.objects.create(
-                    user=admin,
-                    message=f"Vendor request {instance.id} updated to status '{instance.status}'.",
-                    vendor_request=instance,
-                    url=frontend_review_url
-                )
 
 
 @receiver(post_save, sender=Notification)
