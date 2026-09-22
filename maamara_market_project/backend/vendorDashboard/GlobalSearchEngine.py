@@ -92,9 +92,14 @@ def _vendor_scope(model, vendor):
         # Vendor/customer/support relations.
         "customer__vendor__vendor",
         "order_set__order_items__item__vendor",
+        "order_set__customer__vendor__vendor",
         "conversation__participant__vendor",
         "conversation__admin__vendor",
         "vendor_request__user__vendor",
+        "draft__user__vendor",
+        "post__vendor",
+        "post__item__vendor",
+        "vendor__user__vendor",
     )
 
     scope = Q(pk__in=[])
