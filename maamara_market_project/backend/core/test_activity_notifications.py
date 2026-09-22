@@ -92,7 +92,7 @@ class ActivityNotificationPresentationTests(TestCase):
             user=self.customer,
             actor_type="user",
             action="item_added_to_cart",
-            description="You added Bidets Tool to your cart.",
+            description="A customer added Bidets Tool to their cart.",
             item=self.item,
         )
 
