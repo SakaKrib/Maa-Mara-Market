@@ -117,8 +117,8 @@ const SalesReportPage = () => {
                   }}
                   className={`rounded-xl border px-3 py-2 text-sm font-semibold transition ${
                     selected
-                      ? "border-[#f1641e] bg-[#f1641e] text-white shadow-sm"
-                      : "border-[#d9d9d6] bg-white text-[#222] hover:border-[#f1641e] hover:bg-[#fff7f2]"
+                      ? "border-[#2563eb] bg-[#2563eb] text-white shadow-sm"
+                      : "border-[#d9d9d6] bg-white text-[#222] hover:border-[#2563eb] hover:bg-[#eff6ff]"
                   }`}
                 >
                   {formatMonthLabel(m)}
