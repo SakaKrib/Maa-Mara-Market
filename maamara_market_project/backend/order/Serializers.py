@@ -76,6 +76,7 @@ class OrderItemSerializer(serializers.ModelSerializer):
     amount_saved = serializers.SerializerMethodField()
     final_price = serializers.SerializerMethodField()
     final_price_for_vendor = serializers.SerializerMethodField()
+    selection_summary = serializers.SerializerMethodField()
 
     class Meta:
         model = OrderItem
@@ -91,6 +92,7 @@ class OrderItemSerializer(serializers.ModelSerializer):
             "selected_length",
             "shoe_size",
             "custom_preferences",
+            "selection_summary",
             "refunded",
             "refunded_at",
             "is_returned",
@@ -103,6 +105,17 @@ class OrderItemSerializer(serializers.ModelSerializer):
             "final_price",
             "final_price_for_vendor",
         ]
+
+    def get_selection_summary(self, obj):
+        return {
+            "color": obj.color_variant.color if obj.color_variant else None,
+            "size": obj.size_stock.size if obj.size_stock else None,
+            "age_group": obj.age_variant.age_group if obj.age_variant else None,
+            "weight": obj.selected_weight,
+            "length": obj.selected_length,
+            "shoe_size": obj.shoe_size,
+            "custom_preferences": obj.custom_preferences or {},
+        }
 
     # =========================
     # ULTRA SAFE CONVERTER
