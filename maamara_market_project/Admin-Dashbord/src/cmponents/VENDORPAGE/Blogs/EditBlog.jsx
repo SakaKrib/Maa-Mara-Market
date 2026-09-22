@@ -142,7 +142,8 @@ const EditBlogModal = ({ open, onClose, blog, onUpdated }) => {
                 variant="contained"
                 onClick={handleUpdate}
                 sx={{
-                  backgroundColor: colors.greenAccent[500],
+                  backgroundColor: "#2563eb",
+                  "&:hover": { backgroundColor: "#1d4ed8" },
                 }}
               >
                 Save Changes
