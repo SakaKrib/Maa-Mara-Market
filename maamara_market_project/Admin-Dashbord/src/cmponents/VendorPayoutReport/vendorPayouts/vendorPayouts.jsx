@@ -50,57 +50,57 @@ const PayoutsPage = () => {
   const formatKsh = (value) => `Ksh ${value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
   const renderPayout = (p) => (
-    <div key={p.id} className="rounded-2xl border border-border bg-card p-4 shadow-sm sm:p-5">
+    <div key={p.id} className="rounded-2xl border border-[#e6e6e4] bg-white p-5 shadow-sm">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0">
-          <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{p.reference}</p>
-          <h3 className="mt-1 break-words text-sm font-bold text-card-foreground sm:text-base">{p.vendor_name}</h3>
-          <p className="mt-1 break-all text-xs text-muted-foreground">{p.vendor_email}</p>
+          <p className="text-xs font-semibold uppercase tracking-wide text-[#595959]">{p.reference}</p>
+          <h3 className="mt-1 break-words text-sm font-bold text-[#222] sm:text-base">{p.vendor_name}</h3>
+          <p className="mt-1 break-all text-xs text-[#595959]">{p.vendor_email}</p>
         </div>
         <span className={`rounded-full px-3 py-1 text-xs font-bold ${p.paid ? "bg-green-500/10 text-green-600 dark:text-green-400" : "bg-yellow-500/10 text-yellow-700 dark:text-yellow-400"}`}>
           {p.paid ? "Paid" : "Pending"}
         </span>
       </div>
       <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <div className="rounded-xl bg-muted/50 p-3"><p className="text-[10px] uppercase tracking-wide text-muted-foreground">Gross Sales</p><p className="mt-1 text-sm font-bold text-card-foreground">{formatKsh(p.gross_sales)}</p></div>
-        <div className="rounded-xl bg-muted/50 p-3"><p className="text-[10px] uppercase tracking-wide text-muted-foreground">Net Payout</p><p className="mt-1 text-sm font-bold text-card-foreground">{formatKsh(p.amount)}</p></div>
-        <div className="rounded-xl bg-muted/50 p-3"><p className="text-[10px] uppercase tracking-wide text-muted-foreground">Adjustments</p><p className="mt-1 text-sm font-bold text-card-foreground">{formatKsh(p.adjustment_amount)}</p></div>
-        <div className="rounded-xl bg-muted/50 p-3"><p className="text-[10px] uppercase tracking-wide text-muted-foreground">Payment</p><p className="mt-1 text-sm font-bold text-card-foreground">{p.payment_method}</p></div>
+        <div className="rounded-xl bg-muted/50 p-3"><p className="text-[10px] uppercase tracking-wide text-[#595959]">Gross Sales</p><p className="mt-1 text-sm font-bold text-[#222]">{formatKsh(p.gross_sales)}</p></div>
+        <div className="rounded-xl bg-muted/50 p-3"><p className="text-[10px] uppercase tracking-wide text-[#595959]">Net Payout</p><p className="mt-1 text-sm font-bold text-[#222]">{formatKsh(p.amount)}</p></div>
+        <div className="rounded-xl bg-muted/50 p-3"><p className="text-[10px] uppercase tracking-wide text-[#595959]">Adjustments</p><p className="mt-1 text-sm font-bold text-[#222]">{formatKsh(p.adjustment_amount)}</p></div>
+        <div className="rounded-xl bg-muted/50 p-3"><p className="text-[10px] uppercase tracking-wide text-[#595959]">Payment</p><p className="mt-1 text-sm font-bold text-[#222]">{p.payment_method}</p></div>
       </div>
-      <div className="mt-4 grid gap-2 border-t border-border pt-3 text-xs text-muted-foreground sm:grid-cols-2">
-        <span>Month: <strong className="text-card-foreground">{p.month}</strong></span>
-        <span>Period: <strong className="text-card-foreground">{p.payout_period}</strong></span>
+      <div className="mt-4 grid gap-2 border-t border-[#e6e6e4] pt-3 text-xs text-[#595959] sm:grid-cols-2">
+        <span>Month: <strong className="text-[#222]">{p.month}</strong></span>
+        <span>Period: <strong className="text-[#222]">{p.payout_period}</strong></span>
       </div>
     </div>
   );
 
-  if (loading) return <div className="min-h-full bg-background p-4 text-sm text-muted-foreground">Loading payouts...</div>;
-  if (error) return <div className="min-h-full bg-background p-4 text-sm text-red-600 dark:text-red-400">{error}</div>;
-  if (!sorted.length) return <div className="min-h-full bg-background p-4"><div className="rounded-2xl border border-dashed border-border bg-card p-8 text-center text-sm text-muted-foreground">No payout history available.</div></div>;
+  if (loading) return <div className="min-h-full bg-[#f8f8f6] p-4 text-sm text-[#595959]">Loading payouts...</div>;
+  if (error) return <div className="min-h-full bg-[#f8f8f6] p-4 text-sm text-red-600 dark:text-red-400">{error}</div>;
+  if (!sorted.length) return <div className="min-h-full bg-[#f8f8f6] p-4"><div className="rounded-2xl border border-dashed border-[#e6e6e4] bg-white p-8 text-center text-sm text-[#595959]">No payout history available.</div></div>;
 
   return (
-    <div className="min-h-full bg-background p-2 text-foreground sm:p-4 lg:p-6">
-      <div className="mx-auto max-w-7xl">
-        <div className="mb-5 rounded-2xl border border-border bg-card p-5 shadow-custom sm:p-6">
-          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">Money</p>
-          <h1 className="mt-1 text-xl font-bold text-card-foreground sm:text-2xl">Payouts</h1>
-          <p className="mt-2 text-sm text-muted-foreground">Monthly vendor payout history and payment status.</p>
+    <div className="w-full space-y-6">
+      <div className="w-full">
+        <div className="rounded-2xl border border-[#e6e6e4] bg-white p-5 shadow-sm">
+          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#595959]">Money</p>
+          <h1 className="mt-1 text-xl font-bold text-[#222] sm:text-2xl">Payouts</h1>
+          <p className="mt-2 text-sm text-[#595959]">Monthly vendor payout history and payment status.</p>
         </div>
 
         <section>
           <div className="mb-3 flex flex-wrap items-end justify-between gap-2">
-            <div><h2 className="text-base font-bold text-card-foreground">Current Month Payout</h2><p className="text-xs text-muted-foreground">Latest/current payout period</p></div>
-            <p className="text-sm font-bold text-primary">{formatKsh(currentTotal)}</p>
+            <div><h2 className="text-base font-bold text-[#222]">Current Month Payout</h2><p className="text-xs text-[#595959]">Latest/current payout period</p></div>
+            <p className="text-sm font-bold text-[#f1641e]">{formatKsh(currentTotal)}</p>
           </div>
           <div className="grid gap-3">{currentMonth.map(renderPayout)}</div>
         </section>
 
         <section className="mt-8">
           <div className="mb-3 flex flex-wrap items-end justify-between gap-2">
-            <div><h2 className="text-base font-bold text-card-foreground">Previous Months</h2><p className="text-xs text-muted-foreground">Historical payout periods</p></div>
-            <p className="text-sm font-bold text-card-foreground">{formatKsh(pastTotal)}</p>
+            <div><h2 className="text-base font-bold text-[#222]">Previous Months</h2><p className="text-xs text-[#595959]">Historical payout periods</p></div>
+            <p className="text-sm font-bold text-[#222]">{formatKsh(pastTotal)}</p>
           </div>
-          <div className="grid gap-3">{past.length ? past.map(renderPayout) : <div className="rounded-2xl border border-dashed border-border bg-card p-6 text-center text-sm text-muted-foreground">No previous payout periods.</div>}</div>
+          <div className="grid gap-3">{past.length ? past.map(renderPayout) : <div className="rounded-2xl border border-dashed border-[#e6e6e4] bg-white p-6 text-center text-sm text-[#595959]">No previous payout periods.</div>}</div>
         </section>
       </div>
     </div>
