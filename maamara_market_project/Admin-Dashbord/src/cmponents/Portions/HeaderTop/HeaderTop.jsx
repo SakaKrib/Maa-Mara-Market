@@ -5,7 +5,6 @@ import { useAuth } from "../../Auth/AuthContext/Context";
 import { useCsrfToken } from "../../Hooks/AccessCRF/UseCSRFToken";
 import api from "../../../Services/Api";
 import { ColourModeContext } from "../../../theme";
-import LogoutButton from "../../Auth/AdminLogin/Logout";
 import SearchBarForVendorAdmin from "../../SearchPage/GlobalSearchPage";
 import Maamara from "../../../assets/Logo/Maamara.jpg";
 
@@ -15,6 +14,8 @@ const HeaderTop = ({ onMenuToggle }) => {
   const csrfToken = useCsrfToken();
 
   const [openProfile, setOpenProfile] = useState(false);
+  const [showSignOutConfirm, setShowSignOutConfirm] = useState(false);
+  const [signingOut, setSigningOut] = useState(false);
   const [activeView, setActiveView] = useState("main");
   const [editMode, setEditMode] = useState(false);
   const [profile, setProfile] = useState(null);
@@ -149,6 +150,20 @@ const HeaderTop = ({ onMenuToggle }) => {
     }
   };
 
+  const handleSignOut = async () => {
+    if (signingOut) return;
+    setSigningOut(true);
+    try {
+      await api.post("/api/logout/", {}, { withCredentials: true });
+    } catch (error) {
+      console.error("Logout error:", error);
+    } finally {
+      localStorage.clear();
+      sessionStorage.clear();
+      window.location.replace("/login");
+    }
+  };
+
   const closeProfile = () => {
     setOpenProfile(false);
     setActiveView("main");
@@ -244,7 +259,7 @@ const HeaderTop = ({ onMenuToggle }) => {
                 <button onClick={() => setActiveView("view")} className="rounded-xl border border-slate-200 px-4 py-3 text-left text-sm font-semibold hover:bg-slate-50 dark:border-slate-700 dark:hover:bg-slate-800">View account</button>
                 <button onClick={() => setActiveView("edit")} className="rounded-xl border border-slate-200 px-4 py-3 text-left text-sm font-semibold hover:bg-slate-50 dark:border-slate-700 dark:hover:bg-slate-800">Edit profile</button>
                 <button onClick={() => setActiveView("manage")} className="rounded-xl border border-slate-200 px-4 py-3 text-left text-sm font-semibold hover:bg-slate-50 dark:border-slate-700 dark:hover:bg-slate-800">Manage account</button>
-                <button onClick={() => setActiveView("logout")} className="rounded-xl bg-red-50 px-4 py-3 text-left text-sm font-semibold text-red-600 hover:bg-red-100 dark:bg-red-500/10 dark:text-red-300">Sign out</button>
+                <button type="button" onClick={() => setShowSignOutConfirm(true)} className="rounded-xl border border-transparent px-4 py-3 text-left text-sm font-semibold text-red-600 hover:bg-red-50 dark:text-red-300 dark:hover:bg-red-500/10">Sign out</button>
               </div>
             )}
 
@@ -324,14 +339,6 @@ const HeaderTop = ({ onMenuToggle }) => {
                 <h3 className="font-semibold text-slate-900 dark:text-white">Account settings</h3>
                 <p className="mt-1 text-slate-500 dark:text-slate-400">Security and account management controls can be added here.</p>
                 <button onClick={() => setActiveView("main")} className="mt-4 rounded-xl bg-slate-100 px-4 py-2.5 font-semibold dark:bg-slate-800">Back</button>
-              </div>
-            )}
-
-            {activeView === "logout" && (
-              <div className="mt-5 rounded-xl border border-red-200 bg-red-50 p-4 dark:border-red-500/20 dark:bg-red-500/10">
-                <p className="font-semibold text-red-700 dark:text-red-300">Sign out of the admin workspace?</p>
-                <LogoutButton />
-                <button onClick={() => setActiveView("main")} className="mt-2 w-full rounded-xl bg-white px-4 py-2.5 text-sm font-semibold dark:bg-slate-900">Cancel</button>
               </div>
             )}
 
