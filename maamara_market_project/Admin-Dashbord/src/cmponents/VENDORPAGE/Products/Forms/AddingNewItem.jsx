@@ -93,6 +93,11 @@ const OCCASION_OPTIONS = [
 const ItemAddNew = ({ initialItem, vendorId, itemId, onSave, vendor }) => {
   const { departmentMap, organicDepartmentMap } = useDepartments();
 
+  // Vendor data may arrive directly or nested under vendor_data (vendor-request API).
+  const productType = String(
+    vendor?.product_type ?? vendor?.vendor_data?.product_type ?? ""
+  ).trim().toLowerCase();
+
   const [selectedDepartment, setSelectedDepartment] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("");
   const [isCustomCategory, setIsCustomCategory] = useState(false);
@@ -100,9 +105,16 @@ const ItemAddNew = ({ initialItem, vendorId, itemId, onSave, vendor }) => {
   const [isCustomAttribute, setIsCustomAttribute] = useState(false);
   const [colorVariants, setColorVariants] = useState([]);
 
-  const [selectedSection, setSelectedSection] = useState(
-    initialItem?.section === "inorganic" ? "inorganic" : "organic"
-  );
+  const [selectedSection, setSelectedSection] = useState(() => {
+    const existingSection = String(initialItem?.section || "").trim().toLowerCase();
+
+    if (existingSection === "organic" || existingSection === "inorganic") {
+      return existingSection;
+    }
+
+    // For a new item, the vendor's product type determines the section.
+    return productType === "inorganic" ? "inorganic" : "organic";
+  });
   const [showExtraFields, setShowExtraFields] = useState(false);
   const isEditing = Boolean(initialItem?.id || itemId);
 
@@ -144,7 +156,10 @@ const ItemAddNew = ({ initialItem, vendorId, itemId, onSave, vendor }) => {
       setIsCustomCategory(false);
       setIsCustomSubcategory(false);
       setIsCustomAttribute(false);
-      setSelectedSection(initialItem.section === "inorganic" ? "inorganic" : "organic");
+      const existingSection = String(initialItem.section || "").trim().toLowerCase();
+    if (existingSection === "organic" || existingSection === "inorganic") {
+      setSelectedSection(existingSection);
+    }
     }, [initialItem, form]);
     
     
@@ -163,56 +178,65 @@ const ItemAddNew = ({ initialItem, vendorId, itemId, onSave, vendor }) => {
   const selectedSizes = watch("size") || [];
   const selectedSubcategory = form.watch("subcategory") || "";
 
-  // Organic-only fields are visible and active only for the Organic form.
+  // Organic section automatically starts with both organic flags enabled.
+  // The vendor can explicitly uncheck them; changing to Handmade/Inorganic
+  // clears them and the organic-only fields.
   useEffect(() => {
-    if (selectedSection !== "organic") {
-      form.setValue("is_organic", false);
-      form.setValue("is_fresh_food", false);
-      form.setValue("manufactured_date", "");
-      form.setValue("expiry_date", "");
-      form.setValue("roast_type", "");
-      form.setValue("coffee_state", "");
+    if (selectedSection === "organic") {
+      form.setValue("is_organic", true);
+      form.setValue("is_fresh_food", true);
+      return;
     }
+
+    form.setValue("is_organic", false);
+    form.setValue("is_fresh_food", false);
+    form.setValue("manufactured_date", "");
+    form.setValue("expiry_date", "");
+    form.setValue("roast_type", "");
+    form.setValue("coffee_state", "");
   }, [selectedSection, form]);
 
- // define department and category based on vendor product type
+ // Define department and category based on the vendor product type.
  const [activeData, setActiveData] = useState(null);
 
-//  gett vendor data
-const getProductType = (vendor) => {
-  return (
-    vendor?.product_type ||
-    vendor?.vendor_data?.product_type ||
-    null
-  );
-};
+ useEffect(() => {
+   if (!productType) return;
 
-useEffect(() => {
-  const productType = getProductType(vendor);
+   if (productType === "organic") {
+     setSelectedSection("organic");
+     setActiveData(organicDepartmentMap);
+     setValue("section", "organic");
+     return;
+   }
 
-  if (!productType) return;
+   if (productType === "inorganic") {
+     setSelectedSection("inorganic");
+     setActiveData(departmentMap);
+     setValue("section", "inorganic");
+     return;
+   }
 
-  if (productType === "organic") {
-    setActiveData(organicDepartmentMap);
-    setValue("section", "organic");
-  } 
-  else if (productType === "inorganic") {
-    setActiveData(departmentMap);
-    setValue("section", "inorganic");
-  } 
-  else if (productType === "both") {
-    const selectedMap =
-      selectedSection === "organic"
-        ? organicDepartmentMap
-        : departmentMap;
+   if (productType === "both") {
+     const existingSection = String(initialItem?.section || "").trim().toLowerCase();
+     const section =
+       existingSection === "organic" || existingSection === "inorganic"
+         ? existingSection
+         : selectedSection;
 
-    setActiveData(selectedMap);
-    setValue(
-      "section",
-      selectedSection === "organic" ? "organic" : "inorganic"
-    );
-  }
-}, [vendor, selectedSection, setValue, isEditing, initialItem, organicDepartmentMap, departmentMap]);
+     setSelectedSection(section);
+     setActiveData(
+       section === "organic" ? organicDepartmentMap : departmentMap
+     );
+     setValue("section", section);
+   }
+ }, [
+   productType,
+   selectedSection,
+   initialItem?.section,
+   setValue,
+   organicDepartmentMap,
+   departmentMap,
+ ]);
  
  
    //reset form inputs when togle for both
@@ -457,7 +481,7 @@ useEffect(() => {
         
   
          {/* 🔀 Toggle switch (only for organicDepartmentMap or departmentMap) */}
-       {!isEditing && vendor.vendor_data?.product_type === "both" && (
+       {!isEditing && productType === "both" && (
         <div className="my-4 space-y-2">
           <label className="block text-sm leading-6 font-semibold text-foreground">Select Form</label>
           <div className="flex flex-wrap gap-2">
