@@ -18,6 +18,7 @@ import { useForm } from "react-hook-form";
 import { organicAttributes, inorganicAttributes } from "./itemattribute";
 import { Controller } from "react-hook-form";
 import { useDepartments } from "./useDepartments";
+import { FormControlLabel, Switch } from "@mui/material";
 
  // adjust path as needed
 
@@ -341,23 +342,20 @@ const ItemAddNew = ({ initialItem, vendorId, itemId, onSave = () => {}, vendor, 
 
     useEffect(() => {
       if (initialItem) {
-        form.reset({
-          // ... other fields
-          returnable: initialItem.returnable ?? true,
-        });
+        form.setValue("returnable", initialItem.returnable ?? true);
       }
     }, [initialItem, form]);
 
 
     useEffect(() => {
       if (initialItem) {
-        form.reset({
-          ...initialItem,
-          image:
-            typeof initialItem.image === "string"
-              ? initialItem.image
-              : "", // make sure it's either a string (URL) or empty
-        });
+        // Do not reset the whole form here: the normalization effect above
+        // prepares nested variants, sizes, shoes, and other edit fields.
+        // Resetting again would silently discard that normalized state.
+        form.setValue(
+          "image",
+          typeof initialItem.image === "string" ? initialItem.image : ""
+        );
       }
     }, [initialItem, form]);
     
