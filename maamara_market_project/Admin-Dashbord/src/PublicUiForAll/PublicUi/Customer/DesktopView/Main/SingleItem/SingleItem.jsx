@@ -58,7 +58,7 @@ const SingleItem = () => {
   const hasDiscount = Number(item.discount_price || item.discount || 0) > 0;
 
   return (
-    <main className="mm-single-item w-full px-4 pb-12 pt-6 md:px-8 lg:px-12 xl:px-16 2xl:px-24">
+    <main className="mm-single-item w-full px-4 pb-12 pt-6 sm:px-6 md:px-8 lg:px-10 xl:px-12 2xl:px-16">
       <div className="mx-auto grid w-full max-w-[1600px] grid-cols-1 gap-6 lg:grid-cols-2 lg:items-start lg:gap-8 xl:gap-10">
         {/* At desktop these are two independent columns. At mobile they become
             direct grid children so the customer gets the natural purchase flow. */}
