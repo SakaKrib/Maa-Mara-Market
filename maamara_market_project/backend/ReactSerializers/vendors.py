@@ -43,6 +43,7 @@ from django.template.loader import render_to_string
 import bleach # type: ignore
 from urllib.parse import urlparse, unquote
 from order.Base import IsVendor
+from vendorDashboard.draft_service import finalize_item_draft
 
 
 
@@ -301,6 +302,19 @@ class VendorItemViewSet(viewsets.ModelViewSet):
 
         for kids_data in kids_sizes_data:
             AgeVariant.objects.create(item=item, **{k: sanitize(v) for k, v in kids_data.items()})
+
+        # Admin-created items may originate from the server-side Add New Item
+        # draft. Finalize its persisted media only after Item creation succeeds.
+        draft_id = self.request.data.get("draft_id")
+        if draft_id:
+            draft = ItemDraft.objects.filter(
+                id=draft_id,
+                owner=self.request.user,
+                status="DRAFT",
+            ).first()
+            if draft is None:
+                raise ValidationError("The selected item draft is no longer active.")
+            finalize_item_draft(draft, item)
 
     @transaction.atomic
     def perform_update(self, serializer):
