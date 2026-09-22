@@ -9,14 +9,18 @@ export function useVendorNotificationsWS() {
   const [unseenCount, setUnseenCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const mountedRef = useRef(true);
 
   // ✅ FIX: ALWAYS point to Django backend, not frontend (5173)
-  const WS_BASE =
-   "ws://127.0.0.1:8000";
+  const wsScheme = window.location.protocol === "https:" ? "wss" : "ws";
+  // Use the same hostname as the frontend so HttpOnly auth cookies are sent.
+  const WS_BASE = `${wsScheme}://${window.location.hostname}:8000`;
 
   const WS_URL = WS_BASE + "/ws/vendor-notifications/";
 
   const connect = () => {
+    if (!mountedRef.current) return;
+
     console.log("🌐 Connecting WS:", WS_URL);
 
     const ws = new WebSocket(WS_URL);
@@ -54,6 +58,8 @@ export function useVendorNotificationsWS() {
     ws.onclose = () => {
       console.log("🔌 WS closed");
 
+      if (!mountedRef.current) return;
+
       wsRef.current = null;
 
       const delay = Math.min(
@@ -67,9 +73,12 @@ export function useVendorNotificationsWS() {
   };
 
   useEffect(() => {
+    mountedRef.current = true;
     connect();
 
     return () => {
+      mountedRef.current = false;
+
       if (reconnectTimer.current) {
         clearTimeout(reconnectTimer.current);
       }
