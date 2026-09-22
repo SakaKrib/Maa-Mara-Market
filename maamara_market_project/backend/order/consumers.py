@@ -416,7 +416,7 @@ class ActivityLogsConsumer(AsyncWebsocketConsumer):
         self.group_name = "activity_logs"
         self.user = self.scope.get("user")
 
-        if not self.user or not self.user.is_authenticated or not self.user.is_staff:
+        if not self.user or not self.user.is_authenticated:
             await self.close(code=4003)
             return
 
@@ -442,14 +442,28 @@ class ActivityLogsConsumer(AsyncWebsocketConsumer):
             )
 
     async def activity_logs_update(self, event):
+        logs = event.get("logs", [])
+        if not self.user.is_staff:
+            logs = [
+                log for log in logs
+                if (log.get("user") == self.user.id)
+                or (
+                    isinstance(log.get("user"), dict)
+                    and log["user"].get("id") == self.user.id
+                )
+            ]
+
         await self.send(text_data=json.dumps({
             "type": "activity_logs_update",
-            "logs": event["logs"]
+            "logs": logs
         }, cls=SafeJSONEncoder))
 
     @database_sync_to_async
     def get_logs(self):
-        logs = ActivityLog.objects.all().order_by("-timestamp")[:100]
+        if self.user.is_staff:
+            logs = ActivityLog.objects.all().order_by("-timestamp")[:100]
+        else:
+            logs = ActivityLog.objects.filter(user=self.user).order_by("-timestamp")[:100]
         return ActivityLogSerializer(logs, many=True).data
 
 # Admin activity
