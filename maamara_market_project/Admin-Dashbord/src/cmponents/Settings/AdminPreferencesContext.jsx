@@ -2,7 +2,10 @@ import React, { createContext, useCallback, useContext, useEffect, useMemo, useR
 import { useLocation } from "react-router-dom";
 import api from "../../Services/Api";
 
-const STORAGE_KEYS = {\n  admin: "maamara-admin-preferences",\n  vendor: "maamara-vendor-preferences",\n};
+const STORAGE_KEYS = {
+  admin: "maamara-admin-preferences",
+  vendor: "maamara-vendor-preferences",
+};
 const POLL_INTERVAL = 15000;
 
 export const preferenceDefaults = {
@@ -13,28 +16,30 @@ export const preferenceDefaults = {
 
 const AdminPreferencesContext = createContext(null);
 
-const readStoredPreferences = () => {
+const readStoredPreferences = (role = "admin") => {
   if (typeof window === "undefined") return preferenceDefaults;
   try {
-    const stored = JSON.parse(window.localStorage.getItem(STORAGE_KEY) || "{}");
+    const stored = JSON.parse(
+      window.localStorage.getItem(STORAGE_KEYS[role] || STORAGE_KEYS.admin) || "{}"
+    );
     return { ...preferenceDefaults, ...stored };
   } catch {
     return preferenceDefaults;
   }
 };
 
-const getNotificationResults = (data) => {
-  if (Array.isArray(data)) return data;
-  return Array.isArray(data?.results) ? data.results : [];
-};
+const getNotificationResults = (data) => (
+  Array.isArray(data) ? data : Array.isArray(data?.results) ? data.results : []
+);
 
 const getConversationResults = (data) => (
   Array.isArray(data) ? data : Array.isArray(data?.results) ? data.results : []
 );
 
 export const AdminPreferencesProvider = ({ children }) => {
-  const [preferences, setPreferences] = useState(readStoredPreferences);
   const location = useLocation();
+  const workspaceRole = location.pathname.startsWith("/vendors-dashboard") ? "vendor" : "admin";
+  const [preferences, setPreferences] = useState(() => readStoredPreferences(workspaceRole));
   const notificationStateRef = useRef({
     initialized: false,
     notificationIds: new Set(),
@@ -43,15 +48,27 @@ export const AdminPreferencesProvider = ({ children }) => {
   });
 
   useEffect(() => {
-    if (typeof window !== "undefined") {
-      window.localStorage.setItem(STORAGE_KEY, JSON.stringify(preferences));
-      const isAdminWorkspace = location.pathname.startsWith("/admin-dashboard");
-      document.documentElement.classList.toggle(
-        "maamara-compact-workspace",
-        isAdminWorkspace && preferences.compactMode
-      );
-    }
-  }, [preferences, location.pathname]);
+    setPreferences(readStoredPreferences(workspaceRole));
+  }, [workspaceRole]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    window.localStorage.setItem(STORAGE_KEYS[workspaceRole], JSON.stringify(preferences));
+
+    const isWorkspace =
+      location.pathname.startsWith("/admin-dashboard") ||
+      location.pathname.startsWith("/vendors-dashboard");
+
+    document.documentElement.classList.toggle(
+      "maamara-compact-workspace",
+      isWorkspace && preferences.compactMode
+    );
+  }, [preferences, location.pathname, workspaceRole]);
+
+  useEffect(() => () => {
+    document.documentElement.classList.remove("maamara-compact-workspace");
+  }, []);
 
   const updatePreference = async (key, value) => {
     if (
@@ -68,10 +85,11 @@ export const AdminPreferencesProvider = ({ children }) => {
         value = false;
       }
     }
+
     setPreferences((current) => ({ ...current, [key]: value }));
   };
 
-  const resetPreferences = () => setPreferences(preferenceDefaults);
+  const resetPreferences = () => setPreferences({ ...preferenceDefaults });
 
   const notifyBrowser = useCallback((title, options = {}) => {
     if (
@@ -92,6 +110,7 @@ export const AdminPreferencesProvider = ({ children }) => {
 
   useEffect(() => {
     const isAdminWorkspace = location.pathname.startsWith("/admin-dashboard");
+
     if (!isAdminWorkspace) {
       notificationStateRef.current = {
         initialized: false,
@@ -110,25 +129,29 @@ export const AdminPreferencesProvider = ({ children }) => {
       polling = true;
 
       try {
-        const [notificationResponse, conversationResponse, supportResponse] = await Promise.allSettled([
-          api.get("/api/notifications/"),
-          api.get("/api/messaging/conversations/"),
-          api.get("/api/support/status-counts/"),
-        ]);
+        const [notificationResponse, conversationResponse, supportResponse] =
+          await Promise.allSettled([
+            api.get("/api/notifications/"),
+            api.get("/api/messaging/conversations/"),
+            api.get("/api/support/status-counts/"),
+          ]);
 
         if (!active) return;
 
-        const notifications = notificationResponse.status === "fulfilled"
-          ? getNotificationResults(notificationResponse.value.data)
-          : [];
+        const notifications =
+          notificationResponse.status === "fulfilled"
+            ? getNotificationResults(notificationResponse.value.data)
+            : [];
 
-        const conversations = conversationResponse.status === "fulfilled"
-          ? getConversationResults(conversationResponse.value.data)
-          : [];
+        const conversations =
+          conversationResponse.status === "fulfilled"
+            ? getConversationResults(conversationResponse.value.data)
+            : [];
 
-        const supportPending = supportResponse.status === "fulfilled"
-          ? Number(supportResponse.value.data?.pending ?? 0)
-          : notificationStateRef.current.supportPending;
+        const supportPending =
+          supportResponse.status === "fulfilled"
+            ? Number(supportResponse.value.data?.pending ?? 0)
+            : notificationStateRef.current.supportPending;
 
         const state = notificationStateRef.current;
 
@@ -146,16 +169,16 @@ export const AdminPreferencesProvider = ({ children }) => {
         }
 
         if (preferences.browserAlerts) {
-          const newNotifications = notifications
+          notifications
             .filter((item) => item.id != null && !state.notificationIds.has(item.id))
-            .sort((a, b) => new Date(a.created_at || 0) - new Date(b.created_at || 0));
-
-          newNotifications.slice(0, 5).forEach((item) => {
-            notifyBrowser(item.title || "Maa Mara Market", {
-              body: item.message || "You have a new admin notification.",
-              tag: `maamara-notification-${item.id}`,
+            .sort((a, b) => new Date(a.created_at || 0) - new Date(b.created_at || 0))
+            .slice(0, 5)
+            .forEach((item) => {
+              notifyBrowser(item.title || "Maa Mara Market", {
+                body: item.message || "You have a new admin notification.",
+                tag: `maamara-notification-${item.id}`,
+              });
             });
-          });
 
           conversations.forEach((conversation) => {
             const unread = Number(conversation.unread_count || 0);
@@ -163,7 +186,11 @@ export const AdminPreferencesProvider = ({ children }) => {
 
             if (unread > previousUnread) {
               const latest = conversation.last_message;
-              const sender = latest?.sender?.name || latest?.sender?.username || "New message";
+              const sender =
+                latest?.sender?.name ||
+                latest?.sender?.username ||
+                "New message";
+
               notifyBrowser(`New message from ${sender}`, {
                 body: latest?.body || "You have a new message.",
                 tag: `maamara-message-${conversation.id}`,
@@ -218,6 +245,8 @@ export const AdminPreferencesProvider = ({ children }) => {
 
 export const useAdminPreferences = () => {
   const context = useContext(AdminPreferencesContext);
-  if (!context) throw new Error("useAdminPreferences must be used within AdminPreferencesProvider");
+  if (!context) {
+    throw new Error("useAdminPreferences must be used within AdminPreferencesProvider");
+  }
   return context;
 };
