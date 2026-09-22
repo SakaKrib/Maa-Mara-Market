@@ -11,7 +11,6 @@ import {
 } from "ionicons/icons";
 import { useNavigate } from "react-router-dom";
 import api, { getWebSocketUrl, resolveApiAssetUrl } from "../../../../Services/Api";
-import CreateItemModal from "../../../../cmponents/AdminPages/Notifications/ApproveCreatedItem";
 
 const statusClasses = {
   pending: "bg-amber-500/10 text-amber-700 dark:text-amber-300",
@@ -28,8 +27,6 @@ const VendorItemCreateRequests = ({ onCountChange }) => {
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
   const [actionLoading, setActionLoading] = useState("");
-  const [openModal, setOpenModal] = useState(false);
-  const [selectedItem, setSelectedItem] = useState(null);
   const navigate = useNavigate();
 
   const fetchRequests = useCallback(async (silent = false) => {
@@ -107,6 +104,16 @@ const VendorItemCreateRequests = ({ onCountChange }) => {
   );
 
   const handleItemAction = async (id, action) => {
+    // Approval is intentionally routed through AddingNewItem so the admin
+    // reviews the complete product and its media before approval.
+    if (action === "approve") {
+      const request = itemRequests.find((entry) => String(entry.id) === String(id));
+      if (request) {
+        navigate(`/admin-dashboard/vendor/create-item/${id}`, { state: request });
+      }
+      return;
+    }
+
     setActionLoading(`item-${id}-${action}`);
     setError("");
     setNotice("");
@@ -116,10 +123,10 @@ const VendorItemCreateRequests = ({ onCountChange }) => {
         { action },
         { withCredentials: true }
       );
-      setNotice(action === "approve" ? "Item request approved." : "Item request denied.");
+      setNotice("Item request denied.");
       await fetchRequests(true);
     } catch (requestError) {
-      setError(requestError?.response?.data?.error || `Failed to ${action} the item request.`);
+      setError(requestError?.response?.data?.error || "Failed to deny the item request.");
     } finally {
       setActionLoading("");
     }
@@ -145,8 +152,7 @@ const VendorItemCreateRequests = ({ onCountChange }) => {
   };
 
   const handleCreateItem = (request) => {
-    setSelectedItem(request);
-    setOpenModal(true);
+    navigate(`/admin-dashboard/vendor/create-item/${request.id}`, { state: request });
   };
 
   const pendingCount = pendingItemRequests.length + priceRequests.length;
@@ -397,16 +403,6 @@ const VendorItemCreateRequests = ({ onCountChange }) => {
         </section>
       </div>
 
-      <CreateItemModal
-        open={openModal}
-        item={selectedItem}
-        itemId={selectedItem?.id}
-        onClose={() => setOpenModal(false)}
-        onSave={() => {
-          setOpenModal(false);
-          fetchRequests(true);
-        }}
-      />
     </div>
   );
 };
