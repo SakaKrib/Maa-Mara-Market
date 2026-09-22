@@ -122,6 +122,22 @@ const ItemAddNew = ({ initialItem, vendorId, itemId, onSave, vendor }) => {
         ...initialItem,
         image: initialItem.image || "",
         section: initialItem.section || "",
+        // Normalize backend serializer names to the names used by this form.
+        color_variants: (initialItem.variants || initialItem.color_variants || []).map((variant) => ({
+          id: variant.id,
+          color: variant.color,
+          color_image: variant.image ?? variant.color_image ?? null,
+          sizes: (variant.sizes || []).map((size) => ({
+            id: size.id,
+            size: size.size,
+            quantity_in_stock: size.quantity_in_stock ?? size.stock ?? 0,
+          })),
+        })),
+        size_variant: (initialItem.size_only_icon || initialItem.size_variant || []).map((size) => ({
+          id: size.id,
+          size: size.size,
+          stock: size.quantity_in_stock ?? size.stock ?? 0,
+        })),
       });
       setSelectedDepartment(initialItem.department || "");
       setSelectedCategory(initialItem.category || "");
