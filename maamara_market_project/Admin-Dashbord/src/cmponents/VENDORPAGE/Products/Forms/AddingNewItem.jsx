@@ -90,7 +90,7 @@ const OCCASION_OPTIONS = [
 ];
   
   
-const ItemAddNew = ({ initialItem, vendorId, itemId, onSave, vendor, isAdmin = false, adminCreateNew = false }) => {
+const ItemAddNew = ({ initialItem, vendorId, itemId, onSave = () => {}, vendor, isAdmin = false, adminCreateNew = false }) => {
   const { departmentMap, organicDepartmentMap } = useDepartments();
 
   // Vendor data may arrive directly or nested under vendor_data (vendor-request API).
@@ -499,6 +499,80 @@ const ItemAddNew = ({ initialItem, vendorId, itemId, onSave, vendor, isAdmin = f
             })
           ),
         };
+
+        // Existing items use the same form for direct vendor/admin edits.
+        // This replaces the legacy EditItem/EditItemForm submission path.
+        if (isEditing && itemId && !adminCreateNew) {
+          const editFormData = new FormData();
+          const appendValue = (key, value) => {
+            if (value === null || value === undefined || value === "") return;
+            if (Array.isArray(value) || typeof value === "object") {
+              editFormData.append(key, JSON.stringify(value));
+            } else {
+              editFormData.append(key, String(value));
+            }
+          };
+
+          appendValue("name", formattedItem.name);
+          appendValue("description", formattedItem.description);
+          appendValue("price", formattedItem.price);
+          appendValue("discount_price", formattedItem.discount_price);
+          appendValue("department", formattedItem.department);
+          appendValue("category", formattedItem.category);
+          appendValue("subcategory", formattedItem.subcategory);
+          appendValue("available", formattedItem.available);
+          appendValue("returnable", formattedItem.returnable);
+          appendValue("in_stock", formattedItem.in_stock);
+          appendValue("section", formattedItem.section);
+          appendValue("in_offer", formattedItem.in_offer);
+          appendValue("offer", formattedItem.offer);
+          appendValue("is_organic", formattedItem.is_organic);
+          appendValue("is_fresh_food", formattedItem.is_fresh_food);
+          appendValue("manufactured_date", formattedItem.manufactured_date);
+          appendValue("expiry_date", formattedItem.expiry_date);
+          appendValue("roast_type", formattedItem.roast_type);
+          appendValue("coffee_state", formattedItem.coffee_state);
+          appendValue("item_attribute", formattedItem.item_attribute);
+          appendValue("shoe_input", formattedItem.shoe_input);
+          appendValue("size_only_icon", formattedItem.size_only_icon);
+          appendValue("kids_sizes", formattedItem.kids_sizes);
+          appendValue("variants", (data.color_variants || []).map((variant, index) => ({
+            ...(variant.id ? { id: variant.id } : {}),
+            color: variant.color,
+            sizes: (variant.sizes || []).map(({ id, size, quantity_in_stock, stock }) => ({
+              ...(id ? { id } : {}),
+              size,
+              quantity_in_stock: quantity_in_stock ?? stock ?? 0,
+            })),
+            image_field: `variant_image_${index}`,
+          })));
+          appendValue("length", formattedItem.length);
+          appendValue("weight", formattedItem.weight);
+          appendValue("shipping_dimension_data", formattedItem.shipping_dimension_data);
+
+          if (data.image instanceof File) {
+            editFormData.append("image", data.image);
+          }
+
+          (data.color_variants || []).forEach((variant, index) => {
+            if (variant.color_image instanceof File) {
+              editFormData.append(`variant_image_${index}`, variant.color_image);
+            }
+          });
+
+          const response = await api.put(
+            `/api/item-post/update/${itemId}/`,
+            editFormData,
+            { withCredentials: true, headers: { "Content-Type": "multipart/form-data" } }
+          );
+
+          if (response.status === 200 || response.status === 201) {
+            onSave(response.data);
+          } else {
+            throw new Error("Failed to update item.");
+          }
+          return;
+        }
 
         // Admin-created items are persisted directly against the selected vendor.
         // Vendor create/edit continues through the existing vendor-request draft flow.
