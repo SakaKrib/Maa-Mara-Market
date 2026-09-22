@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Briefcase, MapPin, Clock3, Search, Users, Globe2, HeartHandshake, ArrowRight, X, Upload } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import api from "../../../../../Services/Api";
+import { sanitizeRichText } from "../../../../../utils/sanitizeRichText";
 
 const initialForm = { full_name: "", email: "", phone: "", cover_letter: "", cv: null };
 
@@ -177,7 +178,7 @@ const CareerPage = () => {
                   <span><Briefcase size={15} />{String(job.employment_type || "").replaceAll("_", " ")}</span>
                   {job.salary && <span>{job.salary}</span>}
                 </div>
-                <p className="mm-careers-description">{job.description}</p>
+                <div className="mm-careers-description mm-careers-richtext" dangerouslySetInnerHTML={{ __html: sanitizeRichText(job.description || "") }} />
                 <div className="mm-careers-job-actions">
                   <button type="button" className="mm-careers-secondary" onClick={() => navigate(`/careers/${job.id}`)}>
                     View details
