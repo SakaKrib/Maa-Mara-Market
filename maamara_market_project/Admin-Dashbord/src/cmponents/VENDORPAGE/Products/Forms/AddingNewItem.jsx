@@ -37,6 +37,11 @@ import { useDepartments } from "./useDepartments";
     ];
     
     export const colorMap = {
+
+  const colors = {
+    primary: { 400: "#93c5fd", 500: "#3b82f6", 600: "#2563eb" },
+    gray: { 100: "#f3f4f6" },
+  };
       Red: "#FF0000",
       Blue: "#0000FF",
       Green: "#008000",
