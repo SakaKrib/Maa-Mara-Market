@@ -35,7 +35,7 @@ const Home = ({ vendor_id }) => {
         <div className="flex items-center gap-2">
           <Link
             to="/vendors-dashboard/add-item"
-            className="inline-flex items-center justify-center rounded-xl bg-primary px-4 py-2.5 text-xs font-semibold text-primary-foreground transition hover:bg-primary/90"
+            className="inline-flex items-center justify-center rounded-xl bg-[#2563eb] px-4 py-2.5 text-xs font-semibold text-white transition hover:bg-[#1d4ed8]"
           >
             Add product
           </Link>
