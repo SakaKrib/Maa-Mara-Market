@@ -1,6 +1,6 @@
 import { useRef, useState, useEffect } from "react";
 import { IonIcon } from "@ionic/react";
-import { Store } from "lucide-react";
+import { Search, Store } from "lucide-react";
 import { menuOutline, closeOutline, cameraOutline } from "ionicons/icons";
 import { useAuth } from "../../Auth/AuthContext/Context";
 import { useCsrfToken } from "../../Hooks/AccessCRF/UseCSRFToken";
@@ -12,6 +12,7 @@ const HeaderTop = ({ onMenuToggle }) => {
   const csrfToken = useCsrfToken();
 
   const [openProfile, setOpenProfile] = useState(false);
+  const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
   const [showSignOutConfirm, setShowSignOutConfirm] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
   const [activeView, setActiveView] = useState("main");
@@ -205,6 +206,14 @@ const HeaderTop = ({ onMenuToggle }) => {
           </div>
 
           <div className="ml-auto flex items-center gap-1.5 sm:gap-2">
+            <button
+              type="button"
+              onClick={() => setMobileSearchOpen(true)}
+              aria-label="Open search"
+              className="grid h-10 w-10 shrink-0 place-items-center rounded-full border border-border bg-transparent text-foreground transition hover:bg-muted focus:outline-none focus:ring-2 focus:ring-primary/20 sm:hidden"
+            >
+              <Search className="h-[18px] w-[18px]" aria-hidden="true" />
+            </button>
             <a
               href="/"
               aria-label="Go to shop"
@@ -240,6 +249,30 @@ const HeaderTop = ({ onMenuToggle }) => {
           </div>
         </div>
       </header>
+
+      {mobileSearchOpen && (
+        <div className="fixed inset-0 z-[90] bg-[#f8f8f6] p-4 sm:hidden">
+          <div className="mx-auto flex h-full w-full max-w-2xl flex-col">
+            <div className="mb-4 flex items-center justify-between gap-3">
+              <div>
+                <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[#595959]">Workspace search</p>
+                <h2 className="mt-1 text-lg font-bold text-[#222]">Search Maa Mara Market</h2>
+              </div>
+              <button
+                type="button"
+                onClick={() => setMobileSearchOpen(false)}
+                aria-label="Close search"
+                className="grid h-10 w-10 shrink-0 place-items-center rounded-full border border-gray-300 bg-white text-gray-700 transition hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-[#2563eb]/20"
+              >
+                <span className="text-xl leading-none">×</span>
+              </button>
+            </div>
+            <div className="min-h-0 flex-1">
+              <SearchBarForVendorAdmin fullscreen onClose={() => setMobileSearchOpen(false)} />
+            </div>
+          </div>
+        </div>
+      )}
 
       {openProfile && (
         <div className="fixed inset-0 z-[70] flex items-center justify-center bg-slate-950/55 p-3" onMouseDown={closeProfile}>
