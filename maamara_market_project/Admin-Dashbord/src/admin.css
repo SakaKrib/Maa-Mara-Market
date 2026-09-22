@@ -335,3 +335,8 @@
 @media(max-width:560px){.etsy-shop-sidebar{width:0;padding:0;overflow:hidden;border:0}.etsy-manager-main{margin-left:0;padding:82px 12px 24px}.etsy-manager .header-top{left:0}}
 
 .vendor-sidebar-logo{display:flex;align-items:center;justify-content:center;flex:0 0 auto;width:44px;height:44px;overflow:hidden;border:1px solid #e6e6e4;border-radius:10px;background:#fff;text-decoration:none}.vendor-sidebar-logo img{display:block;width:100%;height:100%;object-fit:cover}
+
+/* Vendor dashboard typography follows the compact Admin dashboard scale. */
+.etsy-sidebar-nav a,.etsy-sidebar-bottom a,.etsy-sidebar-bottom button{font-size:.875rem;font-weight:500;line-height:1.25rem}
+.etsy-sidebar-nav a span,.etsy-sidebar-bottom span{font-size:.875rem}
+.etsy-sidebar-brand strong{font-size:.875rem;font-weight:600;line-height:1.25rem}.etsy-sidebar-brand small{font-size:.75rem;line-height:1rem}
