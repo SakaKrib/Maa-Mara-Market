@@ -1,12 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
-import DOMPurify from "dompurify";
+import { sanitizeRichText } from "../../utils/sanitizeRichText";
 import RichTextEditor from "../RichTextEditor/RichTextEdit";
 import api, { getWebSocketUrl } from "../../Services/Api";
 
-const safeHtml = (value) =>
-  DOMPurify.sanitize(value || "No answer yet.", {
-    USE_PROFILES: { html: true },
-  });
+const safeHtml = (value) => sanitizeRichText(value || "No answer yet.");
 
 const FAQ = () => {
   const [faqs, setFaqs] = useState([]);
@@ -213,11 +210,11 @@ const FAQ = () => {
                     {editingId === faq.id ? (
                       <div className="mt-3">
                         <RichTextEditor value={editedAnswer} onChange={setEditedAnswer} />
-                        <div className="mt-3 flex flex-wrap gap-2">
-                          <button type="button" disabled={saving} onClick={() => handleSave(faq.id)} className="rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground disabled:opacity-50">
+                        <div className="mt-4 flex flex-wrap gap-2">
+                          <button type="button" disabled={saving} onClick={() => handleSave(faq.id)} className="rounded-full bg-[#2563eb] px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-[#1d4ed8] disabled:cursor-not-allowed disabled:opacity-50">
                             {saving ? "Saving..." : "Save"}
                           </button>
-                          <button type="button" disabled={saving} onClick={() => { setEditingId(null); setEditedAnswer(""); }} className="rounded-xl border border-border px-4 py-2 text-sm font-semibold text-card-foreground">
+                          <button type="button" disabled={saving} onClick={() => { setEditingId(null); setEditedAnswer(""); }} className="rounded-full border border-border bg-card px-5 py-2.5 text-sm font-semibold text-card-foreground transition hover:bg-muted">
                             Cancel
                           </button>
                         </div>
