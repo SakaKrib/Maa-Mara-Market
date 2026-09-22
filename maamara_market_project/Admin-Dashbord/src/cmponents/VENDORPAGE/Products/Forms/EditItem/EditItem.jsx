@@ -52,7 +52,7 @@ const EditItem = ({ vendor, item, onSuccess }) => {
             }
           }}
         >
-          <div className="ml-auto flex h-full w-full flex-col overflow-hidden border-l border-border bg-card shadow-2xl sm:max-w-3xl lg:max-w-5xl">
+          <div className="flex h-full w-full flex-col overflow-hidden border-border bg-card shadow-2xl">
             <div className="flex shrink-0 items-center justify-between gap-4 border-b border-border bg-card px-4 py-3 sm:px-6">
               <div className="min-w-0">
                 <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-primary">
@@ -71,7 +71,11 @@ const EditItem = ({ vendor, item, onSuccess }) => {
 
               <button
                 type="button"
-                onClick={close}
+                onClick={(event) => {
+                  event.preventDefault();
+                  event.stopPropagation();
+                  close();
+                }}
                 aria-label="Close edit item"
                 className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-border bg-card text-muted-foreground transition hover:bg-muted hover:text-card-foreground"
               >
@@ -80,7 +84,7 @@ const EditItem = ({ vendor, item, onSuccess }) => {
             </div>
 
             <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain bg-[#f8f8f6] px-3 py-4 sm:px-5 sm:py-5 lg:px-6">
-              <div className="mx-auto w-full max-w-5xl rounded-2xl border border-border bg-card p-4 shadow-sm sm:p-6">
+              <div className="w-full rounded-none border-0 bg-card p-3 shadow-none sm:p-5 lg:p-6">
                 <ItemAddNew
                   initialItem={item}
                   vendorId={vendor?.id}
