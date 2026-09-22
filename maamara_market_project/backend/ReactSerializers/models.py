@@ -604,12 +604,12 @@ class ItemView(models.Model):
     class Meta:
         constraints = [
             models.UniqueConstraint(
-                fields=("item", "user", "view_date"),
+                fields=("item", "user"),
                 condition=models.Q(user__isnull=False),
                 name="unique_item_user_day_view",
             ),
             models.UniqueConstraint(
-                fields=("item", "visitor_id", "view_date"),
+                fields=("item", "visitor_id"),
                 condition=models.Q(user__isnull=True, visitor_id__isnull=False),
                 name="unique_item_visitor_day_view",
             ),
