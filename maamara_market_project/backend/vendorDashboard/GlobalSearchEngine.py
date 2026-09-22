@@ -39,6 +39,19 @@ SENSITIVE_FIELD_NAMES = {
     "otp",
     "otp_secret",
     "api_key",
+    "jti",
+}
+
+# Authentication/session records are never workspace-searchable. In
+# particular, SimpleJWT's OutstandingToken model contains token/session
+# metadata and must not become visible through the dynamic model discovery.
+SECURITY_MODEL_NAMES = {
+    "token",
+    "outstandingtoken",
+    "blacklistedtoken",
+    "accesstoken",
+    "refreshtoken",
+    "emailotp",
 }
 
 
@@ -259,6 +272,8 @@ def _serialize_object(obj, model):
 def _searchable_models():
     for model in apps.get_models():
         if model._meta.app_label in SYSTEM_APPS | EXCLUDED_APPS:
+            continue
+        if model._meta.model_name.lower() in SECURITY_MODEL_NAMES:
             continue
         if model._meta.proxy or not _model_search_fields(model):
             continue
