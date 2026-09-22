@@ -57,7 +57,9 @@ export function useVendorStockItems() {
   useEffect(() => {
     if (!vendorId) return; // do not connect until vendorId is known
 
-    const ws = new WebSocket(`ws://127.0.0.1:8000/ws/stock/${vendorId}/`);
+    const wsScheme = window.location.protocol === "https:" ? "wss" : "ws";
+    const backendHost = `${window.location.hostname}:8000`;
+    const ws = new WebSocket(`${wsScheme}://${backendHost}/ws/stock/${vendorId}/`);
 
     ws.onmessage = () => {
       fetchStockItems(); // 🔥 AUTO REFRESH
