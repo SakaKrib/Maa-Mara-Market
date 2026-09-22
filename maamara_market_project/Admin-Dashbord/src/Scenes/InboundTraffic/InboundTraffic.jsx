@@ -13,6 +13,7 @@ const emptyData = {
   devices: [],
   goals: [],
   recent_sessions: [],
+  top_items: [],
 };
 
 const Stat = ({ label, value, detail }) => (
@@ -191,6 +192,20 @@ const InboundTraffic = () => {
           </section>
         ))}
       </div>
+
+      <section className="rounded-2xl border border-border bg-card p-4 shadow-sm sm:p-5">
+        <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Product engagement</p>
+        <h2 className="mt-1 text-lg font-bold text-card-foreground">Most viewed products</h2>
+        <div className="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+          {(data.top_items || []).slice(0, 12).map((row) => (
+            <div key={row.item_id} className="rounded-xl bg-muted p-3">
+              <p className="truncate text-sm font-semibold text-card-foreground">{row["item__name"] || "Unknown product"}</p>
+              <p className="mt-1 text-xs text-muted-foreground">{Number(row.count || 0).toLocaleString()} unique views</p>
+            </div>
+          ))}
+          {!data.top_items?.length && <p className="text-sm text-muted-foreground">Product engagement will appear after customers view items.</p>}
+        </div>
+      </section>
 
       <section className="rounded-2xl border border-border bg-card p-4 shadow-sm sm:p-5">
         <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Visitor journeys</p>
