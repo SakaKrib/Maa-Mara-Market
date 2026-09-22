@@ -116,7 +116,9 @@ const ItemAddNew = ({ initialItem, vendorId, itemId, onSave, vendor }) => {
     return productType === "inorganic" ? "inorganic" : "organic";
   });
   const [showExtraFields, setShowExtraFields] = useState(false);
-  const isEditing = Boolean(initialItem?.id || itemId);
+
+  // An existing item prop means vendor edit mode. A missing item means create mode.
+  const isEditing = Boolean(initialItem?.id);
 
 
   
