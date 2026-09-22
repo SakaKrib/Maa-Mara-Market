@@ -80,15 +80,7 @@ const VendorActivitiesPage = () => {
                         </div>
                       </div>
 
-                      {log.related_url && (
-                        <a
-                          href={log.related_url}
-                          className="mt-3 inline-flex items-center gap-1.5 text-xs font-semibold text-[#222] underline decoration-[#bdbdb8] underline-offset-4 transition hover:text-[#2563eb]"
-                        >
-                          View related item
-                          <ArrowUpRight className="h-3.5 w-3.5" />
-                        </a>
-                      )}
+}
                     </div>
                   </div>
                 </article>
