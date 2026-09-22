@@ -300,7 +300,7 @@ const Dashboard = () => {
             {selectedListView === "activities" &&
               (activityLogs.length ? activityLogs.map((log) => (
                 <div key={log.id} className="rounded-xl bg-muted p-3 dark:bg-muted">
-                  <p className="text-xs font-medium text-card-foreground dark:text-card-foreground">{log.description}</p>
+                  <p className="text-xs font-medium text-card-foreground dark:text-card-foreground">{log.display_message || log.description}</p>
                   <p className="mt-1 text-[10px] text-muted-foreground">{new Date(log.timestamp).toLocaleString()}</p>
                 </div>
               )) : <p className="p-4 text-sm text-muted-foreground">No recent activity found.</p>)}
@@ -316,7 +316,7 @@ const Dashboard = () => {
                   <div className="flex items-start gap-2">
                     <span className={`mt-1.5 h-2 w-2 shrink-0 rounded-full ${note.seen ? "bg-slate-300" : "bg-primary/100"}`} />
                     <div className="min-w-0">
-                      <p className={`text-xs ${note.seen ? "text-foreground dark:text-muted-foreground" : "font-semibold text-card-foreground dark:text-card-foreground"}`}>{note.message}</p>
+                      <p className={`text-xs ${note.seen ? "text-foreground dark:text-muted-foreground" : "font-semibold text-card-foreground dark:text-card-foreground"}`}>{note.display_message || note.message}</p>
                       <p className="mt-1 text-[10px] text-muted-foreground">{new Date(note.created_at).toLocaleString()}</p>
                     </div>
                   </div>
