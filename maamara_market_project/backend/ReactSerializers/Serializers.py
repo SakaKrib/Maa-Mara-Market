@@ -404,6 +404,20 @@ class ItemSerializers(serializers.ModelSerializer):
                     department=department,
                 ).first()
                 if not category:
+                    # Category names are globally unique in the current schema.
+                    # Do not let a custom value collide with an existing category
+                    # belonging to another department and become a database 500.
+                    existing_category = Category.objects.filter(
+                        name__iexact=category_name
+                    ).first()
+                    if existing_category:
+                        raise serializers.ValidationError({
+                            "category": (
+                                f"Category '{category_name}' already exists under "
+                                f"department '{existing_category.department.name}'. "
+                                "Please choose a different custom category name."
+                            )
+                        })
                     category = Category.objects.create(
                         name=category_name[:50],
                         department=department,
