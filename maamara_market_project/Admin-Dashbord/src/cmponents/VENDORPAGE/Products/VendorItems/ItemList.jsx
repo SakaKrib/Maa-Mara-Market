@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from "react";
 import { Plus, RefreshCw, Tag, Megaphone, FileText } from "lucide-react";
-import { baseUrl } from "../../../Constant/Constant";
 import api from "../../../../Services/Api";
 import VendorItemRequestForm from "../Forms/VendorItemRequest/VendorItemRequest";
 import BannerAdd from "../../Banners/Banners";
@@ -30,7 +29,7 @@ const VendorItems = () => {
 
   const fetchItems = async () => {
     try {
-      const res = await api.get(`${baseUrl}/api/item-post/update/`, { withCredentials: true });
+      const res = await api.get("/api/item-post/update/", { withCredentials: true });
       setItems(res.data?.results || []);
     } catch (err) {
       console.error("Items fetch error:", err);
@@ -113,7 +112,7 @@ const VendorItems = () => {
         <button
           type="button"
           onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
-          className="inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-xs font-semibold text-primary-foreground hover:bg-primary/90"
+          className="inline-flex items-center justify-center gap-2 rounded-full bg-primary px-4 py-2.5 text-xs font-semibold text-primary-foreground hover:bg-primary/90"
         >
           <Plus className="h-4 w-4" />
           Create product
@@ -145,7 +144,7 @@ const VendorItems = () => {
             <select
               value={selectedItem}
               onChange={(e) => setSelectedItem(e.target.value)}
-              className="w-full rounded-xl border border-border bg-background px-3 py-2.5 text-sm text-foreground outline-none focus:border-primary"
+              className="w-full rounded-[20px] border border-border bg-background px-3 py-2.5 text-sm text-foreground outline-none focus:border-primary"
             >
               <option value="">Select item</option>
               {items.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}
@@ -158,7 +157,7 @@ const VendorItems = () => {
               value={newPrice}
               onChange={(e) => setNewPrice(e.target.value)}
               placeholder="New price"
-              className="w-full rounded-xl border border-border bg-background px-3 py-2.5 text-sm text-foreground outline-none focus:border-primary"
+              className="w-full rounded-[20px] border border-border bg-background px-3 py-2.5 text-sm text-foreground outline-none focus:border-primary"
             />
 
             <textarea
@@ -166,13 +165,13 @@ const VendorItems = () => {
               onChange={(e) => setReason(e.target.value)}
               placeholder="Reason for the price change"
               rows={4}
-              className="w-full resize-y rounded-xl border border-border bg-background px-3 py-2.5 text-sm text-foreground outline-none focus:border-primary"
+              className="w-full resize-y rounded-[20px] border border-border bg-background px-3 py-2.5 text-sm text-foreground outline-none focus:border-primary"
             />
 
             <button
               type="submit"
               disabled={priceLoading}
-              className="inline-flex items-center justify-center rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground disabled:cursor-not-allowed disabled:opacity-60"
+              className="inline-flex items-center justify-center rounded-full bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground disabled:cursor-not-allowed disabled:opacity-60"
             >
               {priceLoading ? "Submitting..." : "Submit price request"}
             </button>
@@ -211,7 +210,7 @@ const VendorItems = () => {
           <button
             type="button"
             onClick={() => { fetchItems(); fetchHistory(); }}
-            className="inline-flex w-fit items-center gap-2 rounded-xl border border-border bg-card px-3 py-2 text-xs font-semibold text-card-foreground hover:bg-muted"
+            className="inline-flex w-fit items-center gap-2 rounded-full border border-border bg-card px-3 py-2 text-xs font-semibold text-card-foreground hover:bg-muted"
           >
             <RefreshCw className="h-3.5 w-3.5" />
             Refresh
@@ -259,7 +258,7 @@ const VendorItems = () => {
       </section>
 
       {snack.open && (
-        <div className="fixed right-4 top-20 z-[1400] max-w-sm rounded-xl border border-border bg-card px-4 py-3 text-sm font-semibold text-card-foreground shadow-lg">
+        <div className="fixed right-4 top-20 z-[1400] max-w-sm rounded-full border border-border bg-card px-4 py-3 text-sm font-semibold text-card-foreground shadow-lg">
           {snack.message}
           <button
             type="button"
