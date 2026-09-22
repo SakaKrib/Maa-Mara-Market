@@ -579,7 +579,7 @@ class ItemSerializers(serializers.ModelSerializer):
 
         # ✅ Handle shoes (use correct related_name!)
         if shoe_data:
-            existing_shoes = {s.id: s for s in instance.shoes.all()}  # assumes Shoe has related_name="shoes"
+            existing_shoes = {s.id: s for s in instance.shoe_input.all()}
             for s in shoe_data:
                 obj_id = s.get("id")
                 if obj_id and obj_id in existing_shoes:
