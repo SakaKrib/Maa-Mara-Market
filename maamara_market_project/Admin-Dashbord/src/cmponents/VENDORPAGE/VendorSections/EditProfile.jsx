@@ -129,7 +129,7 @@ export default function VendorProfileSheet({ vendor = {}, onSave }) {
   return (
     <Sheet>
       <SheetTrigger asChild>
-        <Button className="rounded-lg bg-[#f1641e] px-4 py-2 font-semibold text-white hover:bg-[#d95718]">
+        <Button className="rounded-lg bg-[#2563eb] px-4 py-2 font-semibold text-white hover:bg-[#1d4ed8]">
           Edit Profile
         </Button>
       </SheetTrigger>
@@ -185,7 +185,7 @@ export default function VendorProfileSheet({ vendor = {}, onSave }) {
                   type="checkbox"
                   checked={Boolean(formData.is_food)}
                   onChange={(event) => handleChange("is_food", event.target.checked)}
-                  className="h-4 w-4 accent-[#f1641e]"
+                  className="h-4 w-4 accent-[#2563eb]"
                 />
                 Food item vendor
               </label>
@@ -196,7 +196,7 @@ export default function VendorProfileSheet({ vendor = {}, onSave }) {
                   onChange={(event) =>
                     handleChange("Are_You_KEBS_certified", event.target.checked)
                   }
-                  className="h-4 w-4 accent-[#f1641e]"
+                  className="h-4 w-4 accent-[#2563eb]"
                 />
                 KEBS certified
               </label>
@@ -255,7 +255,7 @@ export default function VendorProfileSheet({ vendor = {}, onSave }) {
               type="button"
               onClick={handleSubmit}
               disabled={saving}
-              className="rounded-lg bg-[#f1641e] px-5 py-2 font-semibold text-white hover:bg-[#d95718] disabled:cursor-not-allowed disabled:opacity-60"
+              className="rounded-lg bg-[#2563eb] px-5 py-2 font-semibold text-white hover:bg-[#1d4ed8] disabled:cursor-not-allowed disabled:opacity-60"
             >
               {saving ? "Saving..." : "Save Profile"}
             </Button>
