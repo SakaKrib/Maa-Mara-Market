@@ -36,6 +36,7 @@ const navigation = [
       { label: "Vendors", to: "/admin-dashboard/vendors", icon: peopleOutline },
       { label: "Vendor requests", to: "/admin-dashboard/vendor-requests", icon: shieldCheckmarkOutline },
       { label: "Item requests", to: "/admin-dashboard/vendor/create-items/requests", icon: cubeOutline },
+      { label: "Create item for vendor", to: "/admin-dashboard/vendor/create-item", icon: cubeOutline },
       { label: "Returns & customer requests", to: "/admin-dashboard/customer-requests", icon: clipboardOutline },
     ],
   },
