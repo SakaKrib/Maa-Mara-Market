@@ -707,6 +707,9 @@ class ItemSerializer(serializers.ModelSerializer):
     department = serializers.StringRelatedField()
     category = serializers.StringRelatedField()
     subcategory = serializers.StringRelatedField()
+    brand = BrandSerializer(read_only=True)
+    occasions = serializers.StringRelatedField(many=True, read_only=True)
+    shipping_dimension = ShippingDimensionSerializer(read_only=True)
     image = serializers.ImageField(use_url=True, allow_null=True)
     video = serializers.FileField(use_url=True, allow_null=True)
     additional_images = ItemAdditionalImageSerializer(many=True, read_only=True)
@@ -744,6 +747,9 @@ class ItemSerializer(serializers.ModelSerializer):
             'department',
             'category',
             'subcategory',
+            'brand',
+            'occasions',
+            'shipping_dimension',
             'item_attribute',
             'gender_based',
             'children_size_based_age',
