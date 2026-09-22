@@ -53,7 +53,7 @@ const CombinedVendorStatsChart = ({ vendorStats, /* monthlySales, */ vendorGrowt
 
   return (
     <div style={{ width: "100%", height: 300 }} className="relative">
-      <h3 style={{ color: colors.gray[100], textAlign: "start", marginBottom: 12 }} className="absolute">
+      <h3 style={{ color: colors.gray[100], textAlign: "start", marginBottom: 12 }} className="absolute text-base font-bold text-[#222]">
         Overview
       </h3>
       <ResponsiveContainer>
@@ -86,7 +86,7 @@ const CombinedVendorStatsChart = ({ vendorStats, /* monthlySales, */ vendorGrowt
           />
           <Legend
             verticalAlign="bottom"
-            wrapperStyle={{ color: colors.gray[100], fontSize: 14 }}
+            wrapperStyle={{ color: colors.gray[100], fontSize: 12 }}
           />
         </PieChart>
       </ResponsiveContainer>
