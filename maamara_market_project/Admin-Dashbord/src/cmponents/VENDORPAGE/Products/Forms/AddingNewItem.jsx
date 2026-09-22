@@ -413,24 +413,48 @@ const ItemAddNew = ({ initialItem, vendorId, itemId, onSave, vendor, isAdmin = f
                 }
               : null,
           kids_sizes: (data.kids_sizes || []).map(
-            ({ id, age_group, quantity_in_stock }) => ({
+            ({ id, age_group, size, quantity_in_stock, stock }) => ({
               ...(id ? { id } : {}),
-              age_group,
-              quantity_in_stock: quantity_in_stock ?? 0,
+              age_group: age_group ?? size ?? "",
+              quantity_in_stock: quantity_in_stock ?? stock ?? 0,
             })
           ),
-          shoe_input: (data.shoe_input || []).map(
-            ({ id, shoe_type, shoe_gender, shoe_size }) => ({
-              ...(id ? { id } : {}),
-              shoe_type: shoe_type || "",
-              shoe_gender: shoe_gender || "",
-              shoe_size: Array.isArray(shoe_size)
-                ? shoe_size
-                : shoe_size
-                  ? [shoe_size]
-                  : [],
-            })
-          ),
+          shoe_input: (() => {
+            const existingShoes = Array.isArray(data.shoe_input)
+              ? data.shoe_input
+              : [];
+            const hasLegacyShoeFields =
+              data.shoe_type ||
+              data.shoe_gender ||
+              (Array.isArray(data.shoe_size) && data.shoe_size.length > 0);
+
+            if (existingShoes.length > 0 || !hasLegacyShoeFields) {
+              return existingShoes.map(
+                ({ id, shoe_type, shoe_gender, shoe_size }) => ({
+                  ...(id ? { id } : {}),
+                  shoe_type: shoe_type || "",
+                  shoe_gender: shoe_gender || "",
+                  shoe_size: Array.isArray(shoe_size)
+                    ? shoe_size
+                    : shoe_size
+                      ? [shoe_size]
+                      : [],
+                })
+              );
+            }
+
+            return [
+              {
+                shoe_type: data.shoe_type || "",
+                shoe_gender: data.shoe_gender || "",
+                shoe_size: Array.isArray(data.shoe_size)
+                  ? data.shoe_size
+                  : data.shoe_size
+                    ? [data.shoe_size]
+                    : [],
+              },
+            ];
+          })(),
           size_only_icon: (data.size_variant || []).map(
             ({ id, size, stock, quantity_in_stock }) => ({
               ...(id ? { id } : {}),
