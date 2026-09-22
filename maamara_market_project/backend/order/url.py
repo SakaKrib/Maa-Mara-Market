@@ -61,6 +61,7 @@ urlpatterns = [
 
     #create order api
     path("api/checkout/", checkout_view, name="checkout"),
+    path("api/customers/", get_customers, name="api-customers"),
     path("api/paypal/capture/<str:order_id>/", capture_paypal_order, name="paypal-capture"),
 
     # invoices
