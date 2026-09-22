@@ -163,6 +163,7 @@ export default function useItemDraftAutosave({
             err?.response?.data?.error ||
             "Draft could not be saved."
         );
+        return null;
       } finally {
         savingRef.current = false;
         setSaving(false);
