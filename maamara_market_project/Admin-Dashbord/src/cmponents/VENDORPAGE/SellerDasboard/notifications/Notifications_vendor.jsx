@@ -78,13 +78,13 @@ export default function VendorNotifications() {
                     }`}
                   >
                     <div className="flex items-start justify-between gap-3">
-                      <p className="text-sm font-bold text-[#222]">{notification.title}</p>
+                      <p className="text-sm font-bold text-[#222]">{notification.display_title || notification.title || "Maa Mara Market update"}</p>
                       {!notification.seen && (
                         <span className="mt-1 h-2 w-2 shrink-0 rounded-full bg-[#2563eb]" />
                       )}
                     </div>
                     <p className="mt-1 text-sm leading-6 text-[#595959]">
-                      {notification.message}
+                      {notification.display_message || notification.message || "There is a new update in your marketplace workspace."}
                     </p>
                   </button>
                 ))}
