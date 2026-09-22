@@ -802,10 +802,62 @@ const ItemAddNew = ({ initialItem, vendorId, itemId, onSave = () => {}, vendor, 
         // product snapshot back to the request, then run the existing approval
         // endpoint so the backend creates the final Item and finalizes draft media.
         if (isApprovalMode) {
+          // Keep the JSON snapshot and uploaded media synchronized. Browser
+          // File objects stay in multipart media; they are never serialized
+          // into draft_item.
+          const approvalMedia = draftMedia.filter(
+            (asset) => asset?.slotKey && asset?.kind
+          );
+          const persistedSlots = new Set(
+            (initialItem?.draft_media || [])
+              .map((asset) => asset?.slot_key)
+              .filter(Boolean)
+          );
+          const currentSlots = new Set(
+            approvalMedia.map((asset) => asset.slotKey)
+          );
+          const removedMediaSlots = [...persistedSlots].filter(
+            (slotKey) => !currentSlots.has(slotKey)
+          );
+
+          const makeApprovalUploadKey = (slotKey) =>
+            "approval_" + String(slotKey).replace(/[^a-zA-Z0-9_-]/g, "_");
+
+          const approvalFormData = new FormData();
+          approvalFormData.append("draft_item", JSON.stringify(formattedItem));
+          approvalFormData.append(
+            "removed_media_slots",
+            JSON.stringify(removedMediaSlots)
+          );
+          approvalFormData.append(
+            "media_manifest",
+            JSON.stringify(
+              approvalMedia.map((asset, index) => ({
+                slot_key: asset.slotKey,
+                kind: asset.kind,
+                variant_key: asset.variantKey || "",
+                sort_order: asset.sortOrder ?? index,
+                upload_key: makeApprovalUploadKey(asset.slotKey),
+              }))
+            )
+          );
+
+          approvalMedia.forEach((asset) => {
+            if (asset.value instanceof File) {
+              approvalFormData.append(
+                makeApprovalUploadKey(asset.slotKey),
+                asset.value
+              );
+            }
+          });
+
           const draftResponse = await api.put(
             `/api/vendor-requests/${approvalRequestId}/save-draft/`,
-            { draft_item: formattedItem },
-            { withCredentials: true }
+            approvalFormData,
+            {
+              withCredentials: true,
+              headers: { "Content-Type": "multipart/form-data" },
+            }
           );
 
           if (draftResponse.status !== 200) {
