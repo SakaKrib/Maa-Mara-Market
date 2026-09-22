@@ -9,7 +9,7 @@ export const useVendorPayoutHistory = () => {
   const fetchPayouts = useCallback(async (silent = false) => {
     if (!silent) setLoading(true);
     try {
-      const response = await api.get("/api/admin-payouts/", {
+      const response = await api.get("/api/vendor-payouts/", {
         withCredentials: true,
       });
       setPayouts(Array.isArray(response.data) ? response.data : response.data?.results || []);
@@ -34,7 +34,7 @@ export const useVendorPayoutHistory = () => {
 
     const connect = () => {
       if (closed) return;
-      socket = new WebSocket(getWebSocketUrl("/ws/admin/payouts/"));
+      socket = new WebSocket(getWebSocketUrl("/ws/vendor/payouts/"));
       socket.onopen = () => { attempts = 0; };
       socket.onmessage = (event) => {
         try {
