@@ -9,7 +9,7 @@ from rest_framework_simplejwt.views import (
 )
 from .users import *
 from .vendors import *
-from .items import vendor_item_growth_stats
+from .items import vendor_item_growth_stats, vendor_item_stats
 from .ItemInventory import *
 
 router = DefaultRouter()
@@ -46,6 +46,7 @@ urlpatterns = [
     path("google/success/", google_login_success),
     
     # item stats
+    path("api/item-stats/", vendor_item_stats, name="item-stats"),
     path("api/vendor-item-growth/", vendor_item_growth_stats, name="vendor-item-growth"),
 
     
