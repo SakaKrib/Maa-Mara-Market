@@ -215,7 +215,7 @@ const BannerAdd = () => {
               />
             </div>
 
-            <Button type="submit" disabled={submitting} className="w-full">
+            <Button type="submit" disabled={submitting} className="w-full bg-[#2563eb] text-white hover:bg-[#1d4ed8]">
               {submitting ? (
                 <>
                   <CircularProgress size={18} /> Creating...
