@@ -61,18 +61,23 @@ const SingleItem = () => {
     <main className="mm-single-item mm-page pb-12 pt-6">
       <div className="mm-container">
         <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-2 lg:gap-8 xl:gap-10">
-          <div className="min-w-0">
-            <ProductGallery
-              item={item}
-              selectedImage={selectedImage}
-              selectedVariant={selectedVariant}
-              selectedSize={selectedSize}
-              onSelectImage={selectImage}
-              onSelectColor={selectColor}
-            />
-          </div>
+        <div className="min-w-0 lg:row-span-2">
+          <ProductGallery
+            item={item}
+            selectedImage={selectedImage}
+            selectedVariant={selectedVariant}
+            selectedSize={selectedSize}
+            onSelectImage={selectImage}
+            onSelectColor={selectColor}
+          />
 
-          <section className="min-w-0 rounded-2xl border border-border bg-card p-4 shadow-custom sm:p-5">
+          <div className="mt-6">
+            <ProductDetails item={item} />
+          </div>
+        </div>
+
+        <div className="min-w-0">
+          <section className="rounded-2xl border border-border bg-card p-4 shadow-custom sm:p-5">
             <VendorPerformanceBadges itemId={item.id} />
             <h1 className="mt-3 text-2xl font-semibold tracking-tight text-card-foreground sm:text-3xl">
               {item.name}
@@ -110,11 +115,7 @@ const SingleItem = () => {
             </div>
           </section>
 
-          <div className="min-w-0">
-            <ProductDetails item={item} />
-          </div>
-
-          <div className="min-w-0">
+          <div className="mt-6">
             <ProductOptions
               item={item}
               selectedVariant={selectedVariant}
@@ -178,12 +179,12 @@ const SingleItem = () => {
                 </button>
               </div>
             </div>
-
-            <section className="mt-6 min-w-0 rounded-2xl border border-border bg-card p-4 shadow-custom sm:p-5">
-              <ProductReviews item={item} />
-            </section>
           </div>
         </div>
+
+        <section className="min-w-0 rounded-2xl border border-border bg-card p-4 shadow-custom sm:p-5">
+          <ProductReviews item={item} />
+        </section>
       </div>
 
       <div className="mm-container mt-8 min-w-0">
