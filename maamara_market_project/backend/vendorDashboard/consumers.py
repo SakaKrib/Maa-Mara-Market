@@ -102,3 +102,47 @@ class AdminPayoutsConsumer(AsyncWebsocketConsumer):
             "action": event.get("action", "updated"),
             "payout_id": event.get("payout_id"),
         }))
+
+
+class VendorPayoutsConsumer(AsyncWebsocketConsumer):
+    """Real-time payout invalidation channel for the authenticated vendor."""
+
+    async def connect(self):
+        self.user = self.scope.get("user")
+        if not self.user or not self.user.is_authenticated:
+            await self.close(code=4403)
+            return
+
+        self.vendor_id = await self.get_vendor_id()
+        if not self.vendor_id:
+            await self.close(code=4403)
+            return
+
+        self.group_name = f"vendor_payouts_{self.vendor_id}"
+        await self.channel_layer.group_add(self.group_name, self.channel_name)
+        await self.accept()
+
+    async def disconnect(self, close_code):
+        if getattr(self, "group_name", None):
+            await self.channel_layer.group_discard(
+                self.group_name, self.channel_name
+            )
+
+    async def payout_changed(self, event):
+        await self.send(text_data=json.dumps({
+            "type": "payout.changed",
+            "action": event.get("action", "updated"),
+            "payout_id": event.get("payout_id"),
+        }))
+
+    from channels.db import database_sync_to_async
+
+    @database_sync_to_async
+    def get_vendor_id(self):
+        from .models import Vendor
+        return (
+            Vendor.objects
+            .filter(user=self.user)
+            .values_list("id", flat=True)
+            .first()
+        )
