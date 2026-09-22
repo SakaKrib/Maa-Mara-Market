@@ -339,6 +339,7 @@ useEffect(() => {
           // ✅ Add boolean fields here
           is_organic,
           is_fresh_food,
+          occasions,
     
           shipping_dimension: data.shipping_dimension_data
             ? {
