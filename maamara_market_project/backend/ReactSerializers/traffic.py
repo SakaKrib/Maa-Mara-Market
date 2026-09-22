@@ -194,3 +194,116 @@ def traffic_analytics(request):
         "devices": device_data,
         "landing_pages": page_data,
     })
+
+
+@api_view(["GET"])
+@permission_classes([IsAdminUser])
+def inbound_traffic_analytics(request):
+    """Detailed first-party storefront journey analytics for the admin inbound dashboard."""
+    try:
+        days = max(1, min(int(request.GET.get("days", 30)), 90))
+    except (TypeError, ValueError):
+        days = 30
+
+    now = timezone.now()
+    start = now - timedelta(days=days)
+    events = TrafficEvent.objects.filter(created_at__gte=start)
+
+    page_views = events.filter(event_type="page_view")
+    session_starts = events.filter(event_type="session_start")
+    event_rows = events.filter(event_type="event")
+
+    visitor_keys = set()
+    for row in page_views.values("visitor_id", "user_id"):
+        key = row["visitor_id"] or (f"user:{row['user_id']}" if row["user_id"] else None)
+        if key:
+            visitor_keys.add(key)
+
+    sessions = list(
+        page_views.exclude(session_id__isnull=True)
+        .exclude(session_id="")
+        .values("session_id")
+        .annotate(first_seen=Count("id"))
+    )
+
+    trend_counter = Counter()
+    for value in page_views.values_list("created_at", flat=True):
+        trend_counter[timezone.localtime(value).date().isoformat()] += 1
+
+    trend = [
+        {"date": key, "page_views": trend_counter[key]}
+        for key in sorted(trend_counter)
+    ]
+
+    def grouped(field, limit=20, queryset=page_views):
+        return list(
+            queryset.exclude(**{f"{field}__exact": ""})
+            .values(field)
+            .annotate(count=Count("id"))
+            .order_by("-count")[:limit]
+        )
+
+    pages = grouped("path", 50)
+    countries = grouped("country_code", 30)
+    sources = grouped("source", 20)
+    devices = grouped("device_type", 10)
+
+    # Funnel milestones are derived from actual storefront routes/events.
+    # Counts are distinct visitor/session keys, so repeated refreshes do not
+    # inflate the number of people reaching a milestone.
+    def milestone_count(predicate):
+        qs = event_rows.filter(path__icontains=predicate)
+        keys = set()
+        for row in qs.values("visitor_id", "user_id", "session_id"):
+            key = row["session_id"] or row["visitor_id"] or (f"user:{row['user_id']}" if row["user_id"] else None)
+            if key:
+                keys.add(key)
+        return len(keys)
+
+    goals = [
+        {"key": "product_interest", "label": "Viewed a product", "count": milestone_count("/item/")},
+        {"key": "cart_intent", "label": "Reached the cart", "count": milestone_count("shopping-cart")},
+        {"key": "checkout_start", "label": "Started checkout", "count": milestone_count("checkout-page")},
+        {"key": "purchase_complete", "label": "Reached payment success", "count": milestone_count("payment-success")},
+    ]
+
+    recent_sessions = []
+    session_ids = list(
+        page_views.exclude(session_id__isnull=True)
+        .exclude(session_id="")
+        .values_list("session_id", flat=True)
+        .distinct()
+    )[:40]
+    for session_id in session_ids:
+        rows = list(
+            page_views.filter(session_id=session_id)
+            .order_by("created_at")
+            .values("path", "created_at")[:50]
+        )
+        if rows:
+            recent_sessions.append({
+                "session_id": session_id,
+                "started_at": rows[0]["created_at"],
+                "last_seen": rows[-1]["created_at"],
+                "pages": [row["path"] for row in rows],
+                "page_count": len(rows),
+            })
+
+    return Response({
+        "period_days": days,
+        "summary": {
+            "page_views": page_views.count(),
+            "unique_visitors": len(visitor_keys),
+            "sessions": page_views.exclude(session_id__isnull=True).exclude(session_id="").values("session_id").distinct().count(),
+            "countries": countries.__len__(),
+            "pages": pages.__len__(),
+            "events": event_rows.count(),
+        },
+        "trend": trend,
+        "pages": pages,
+        "countries": countries,
+        "sources": sources,
+        "devices": devices,
+        "goals": goals,
+        "recent_sessions": recent_sessions,
+    })
