@@ -10,9 +10,11 @@ const getSessionId = () => {
     const key = "maaMaraAnalyticsSessionId";
     const existing = window.sessionStorage.getItem(key);
     if (existing) return existing;
+
     const id = typeof crypto !== "undefined" && crypto.randomUUID
       ? crypto.randomUUID()
       : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+
     window.sessionStorage.setItem(key, id);
     return id;
   } catch {
@@ -25,9 +27,16 @@ const classifySource = (url) => {
     const parsed = new URL(url);
     const params = parsed.searchParams;
     if (params.get("utm_source")) return params.get("utm_source").toLowerCase();
+
     const host = parsed.hostname.toLowerCase();
-    if (SEARCH_HOSTS.some((value) => host.includes(value))) return host.includes("google.") ? "google" : "search";
-    if (SOCIAL_HOSTS.some((value) => host === value || host.endsWith(`.${value}`))) return "social";
+    if (SEARCH_HOSTS.some((value) => host.includes(value))) {
+      return host.includes("google.") ? "google" : "search";
+    }
+
+    if (SOCIAL_HOSTS.some((value) => host === value || host.endsWith(`.${value}`))) {
+      return "social";
+    }
+
     return host || "referral";
   } catch {
     return "direct";
@@ -37,36 +46,59 @@ const classifySource = (url) => {
 const AnalyticsTracker = () => {
   const location = useLocation();
   const sessionIdRef = useRef(null);
-  const firstPageRef = useRef(true);
+  const lastRecordedRouteRef = useRef(null);
 
   useEffect(() => {
-    sessionIdRef.current = sessionIdRef.current || getSessionId();
+    const recordRoute = async () => {
+      const routeKey = `${location.pathname}${location.search}`;
 
-    const url = new URL(window.location.href);
-    const referrer = document.referrer || "";
-    const params = url.searchParams;
+      // React StrictMode can run effects twice during development. Do not
+      // turn one browser navigation into two analytics page views.
+      if (lastRecordedRouteRef.current === routeKey) return;
+      lastRecordedRouteRef.current = routeKey;
 
-    const payload = {
-      path: `${location.pathname}${location.search}`,
-      referrer,
-      source: params.get("utm_source") || (referrer ? classifySource(referrer) : "direct"),
-      medium: params.get("utm_medium") || "",
-      campaign: params.get("utm_campaign") || "",
-      session_id: sessionIdRef.current,
+      sessionIdRef.current = sessionIdRef.current || getSessionId();
+
+      const url = new URL(window.location.href);
+      const referrer = document.referrer || "";
+      const params = url.searchParams;
+
+      const payload = {
+        path: routeKey || "/",
+        referrer,
+        source: params.get("utm_source") || (referrer ? classifySource(referrer) : "direct"),
+        medium: params.get("utm_medium") || "",
+        campaign: params.get("utm_campaign") || "",
+        session_id: sessionIdRef.current,
+      };
+
+      try {
+        // Anonymous visitors receive their existing server-issued visitorId
+        // before the first event is recorded. Authenticated users are left
+        // untouched by this endpoint.
+        await api.get("/api/vistor-token/");
+
+        const sessionStartedKey = "maaMaraAnalyticsSessionStarted";
+        const sessionStarted = sessionStorage.getItem(sessionStartedKey) === sessionIdRef.current;
+
+        if (!sessionStarted) {
+          sessionStorage.setItem(sessionStartedKey, sessionIdRef.current);
+          await api.post("/api/traffic/record/", {
+            ...payload,
+            event_type: "session_start",
+          });
+        }
+
+        await api.post("/api/traffic/record/", {
+          ...payload,
+          event_type: "page_view",
+        });
+      } catch {
+        // Analytics must never interfere with storefront navigation.
+      }
     };
 
-    const requests = firstPageRef.current
-      ? [
-          api.post("/api/traffic/record/", { ...payload, event_type: "session_start" }),
-          api.post("/api/traffic/record/", { ...payload, event_type: "page_view" }),
-        ]
-      : [api.post("/api/traffic/record/", { ...payload, event_type: "page_view" })];
-
-    Promise.all(requests).catch(() => {
-      // Analytics must never interfere with storefront navigation.
-    });
-
-    firstPageRef.current = false;
+    recordRoute();
   }, [location.pathname, location.search]);
 
   return null;
