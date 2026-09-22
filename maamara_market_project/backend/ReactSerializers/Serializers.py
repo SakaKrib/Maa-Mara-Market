@@ -713,6 +713,11 @@ class ItemSerializer(serializers.ModelSerializer):
     final_discounted_price = serializers.SerializerMethodField()
     save_upto = serializers.SerializerMethodField()
     variants = ColorVariantSerializer(many=True, read_only=True)
+    size_only_icon = SizeStockSerializer(many=True, read_only=True)
+    kids_sizes = AgeVariantSerializer(many=True, read_only=True)
+    shoe_input = ShoeSerializer(many=True, read_only=True)
+    weight = WeightSerializer(read_only=True)
+    length = LengthSerializer(read_only=True)
     reviews = ReviewSerializer(many=True, read_only=True)
     average_rating = serializers.SerializerMethodField()
     review_count = serializers.SerializerMethodField()
@@ -755,6 +760,11 @@ class ItemSerializer(serializers.ModelSerializer):
             'final_discounted_price',
             'save_upto',
             'variants',
+            'size_only_icon',
+            'kids_sizes',
+            'shoe_input',
+            'weight',
+            'length',
             'average_rating',
             'reviews',
             'review_count',
