@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import api from "../../../../src/Services/Api";
 
-export function useVendorNotificationsWS() {
+export function useVendorNotifications() {
   const [notifications, setNotifications] = useState([]);
   const [unseenCount, setUnseenCount] = useState(0);
   const [loading, setLoading] = useState(true);
