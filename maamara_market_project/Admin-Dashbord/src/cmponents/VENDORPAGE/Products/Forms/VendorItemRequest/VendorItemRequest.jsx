@@ -1,12 +1,10 @@
 import React, { useState } from "react";
 import api from "../../../../../Services/Api";
-import { baseUrl } from "../../../../Constant/Constant";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 
 import {
-  useTheme,
   Snackbar,
   Alert,
   CircularProgress,
@@ -14,8 +12,6 @@ import {
   Box,
 } from "@mui/material";
 
-import { tokens } from "../../../../../theme";
-import { colorPaletteOutline } from "ionicons/icons";
 
 // ✅ Validation Schema
 const requestSchema = z.object({
@@ -41,9 +37,6 @@ function VendorItemRequestForm() {
   } = useForm({
     resolver: zodResolver(requestSchema),
   });
-
-  const theme = useTheme();
-  const colors = tokens(theme.palette.mode);
 
   // ✅ Preview state
   const [preview, setPreview] = useState(null);
@@ -94,7 +87,7 @@ function VendorItemRequestForm() {
 
     try {
       await api.post(
-        `${baseUrl}/api/vendor/item-requests/create/`,
+        "/api/vendor/item-requests/create/",
         formData,
         {
           headers: {
@@ -156,11 +149,11 @@ function VendorItemRequestForm() {
           <input
             type="text"
             {...register("name")}
-            className="border rounded p-2 w-full"
+            className="border rounded-[20px] p-2 w-full"
             style={{
-              backgroundColor: colors.primary[500],
-              outline: `1px solid ${colors.gray[100]}`,
-              color: colors.gray[100],
+              backgroundColor: "transparent",
+              outline: "1px solid #e6e6e4",
+              color: "#222",
             }}
           />
 
@@ -179,12 +172,12 @@ function VendorItemRequestForm() {
 
           <textarea
             {...register("description")}
-            className="border rounded p-2 w-full"
+            className="border rounded-[20px] p-2 w-full"
             rows={5}
             style={{
-              backgroundColor: colors.primary[500],
-              outline: `1px solid ${colors.gray[100]}`,
-              color: colors.gray[100],
+              backgroundColor: "transparent",
+              outline: "1px solid #e6e6e4",
+              color: "#222",
             }}
           />
 
@@ -205,11 +198,11 @@ function VendorItemRequestForm() {
             type="number"
             step="0.01"
             {...register("price")}
-            className="border rounded p-2 w-full"
+            className="border rounded-[20px] p-2 w-full"
             style={{
-              backgroundColor: colors.primary[500],
-              outline: `1px solid ${colors.gray[100]}`,
-              color: colors.gray[100],
+              backgroundColor: "transparent",
+              outline: "1px solid #e6e6e4",
+              color: "#222",
             }}
           />
 
@@ -231,11 +224,11 @@ function VendorItemRequestForm() {
             accept="image/*"
             {...register("image")}
             onChange={handleImageChange}
-            className="w-full"
+            className="w-full rounded-[20px] border border-border p-2"
             style={{
-              backgroundColor: colors.primary[500],
-              outline: `1px solid ${colors.gray[100]}`,
-              color: colors.gray[100],
+              backgroundColor: "transparent",
+              outline: "1px solid #e6e6e4",
+              color: "#222",
             }}
           />
 
@@ -263,22 +256,22 @@ function VendorItemRequestForm() {
           variant="contained"
           disabled={submitting}
           sx={{
-            backgroundColor: colors.greenAccent[700],
-            color: colors.gray[100],
+            backgroundColor: "#2563eb",
+            color: "#222",
             px: 4,
             py: 1.2,
-            borderRadius: "10px",
+            borderRadius: "9999px",
             textTransform: "none",
             fontWeight: "bold",
             minWidth: "180px",
 
             "&:hover": {
-              backgroundColor: colors.greenAccent[700],
+              backgroundColor: "#2563eb",
             },
 
             "&.Mui-disabled": {
-              backgroundColor: colors.greenAccent[700],
-              color: colors.gray[100],
+              backgroundColor: "#2563eb",
+              color: "#222",
 
               opacity: 0.7,
             },
@@ -318,7 +311,7 @@ function VendorItemRequestForm() {
           elevation={6}
           sx={{
             width: "100%",
-            borderRadius: "10px",
+            borderRadius: "9999px",
             fontWeight: "bold",
           }}
         >
