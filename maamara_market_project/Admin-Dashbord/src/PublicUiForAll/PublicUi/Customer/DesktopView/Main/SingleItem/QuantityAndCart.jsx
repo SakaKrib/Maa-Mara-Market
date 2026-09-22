@@ -40,7 +40,7 @@ const QuantityAndCart = ({ item, quantity, setQuantity, availableStock, remainin
             : <span className="font-semibold text-red-600">This is the last item in stock!</span>}
         </p>
 
-        {needsSize && <p className="w-full text-sm text-red-500">Please select a size</p>}{needsAge && <p className="w-full text-sm text-red-500">Please select an age/size</p>}{needsShoeSize && <p className="w-full text-sm text-red-500">Please select a shoe and shoe size</p>}
+        {needsSize && <p className="w-full text-sm text-red-500">Please select a size</p>}\n        {needsAge && <p className="w-full text-sm text-red-500">Please select an age/size</p>}\n        {needsShoeSize && <p className="w-full text-sm text-red-500">Please select a shoe and shoe size</p>}
 
         <div className="w-full [&>*]:w-full">
           <AddToCartButton
