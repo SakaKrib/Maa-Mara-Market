@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Edit3, PackageOpen } from "lucide-react";
-import { baseUrl } from "../../../Constant/Constant";
 import api from "../../../../Services/Api";
 import EditItem from "../Forms/EditItem/EditItem";
 
@@ -24,7 +23,7 @@ const ItemsOnsite = () => {
     setError("");
 
     try {
-      const res = await api.get(`${baseUrl}/api/item-post/update/`, {
+      const res = await api.get("/api/item-post/update/", {
         withCredentials: true,
       });
       setItems(res.data?.results || []);
