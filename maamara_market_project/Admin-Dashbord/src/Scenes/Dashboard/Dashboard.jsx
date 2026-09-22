@@ -74,6 +74,7 @@ const Dashboard = () => {
   const [jobsCount, setJobsCount] = useState(0);
   const [supportCount, setSupportCount] = useState(0);
   const [analytics, setAnalytics] = useState({ total_revenue: 0, monthly_revenue: [] });
+  const [chartData, setChartData] = useState({ sales_activity: [], category_distribution: [] });
   const [trafficData, setTrafficData] = useState({
     total_visits: 0,
     page_views: 0,
@@ -148,18 +149,15 @@ const Dashboard = () => {
 
 
   useEffect(() => {
-    const loadTraffic = async () => {
+    const loadChartData = async () => {
       try {
-        const response = await api.get("/api/admin/traffic-analytics/?days=30");
-        setTrafficData(response.data || {});
+        const response = await api.get("/api/admin/dashboard-chart-data/");
+        setChartData(response.data || { sales_activity: [], category_distribution: [] });
       } catch (error) {
-        console.error("Admin traffic analytics load failed:", error);
+        console.error("Admin chart data load failed:", error);
       }
     };
-
-    loadTraffic();
-    const interval = setInterval(loadTraffic, 30000);
-    return () => clearInterval(interval);
+    loadChartData();
   }, []);
 
   useEffect(() => {
@@ -280,77 +278,11 @@ const Dashboard = () => {
           icon={personAddOutline}
           label="Traffic inbound"
           value={Number(trafficData.unique_visitors || 0).toLocaleString()}
-          detail={`${Number(trafficData.growth_percent || 0)}% traffic growth • ${Number(trafficData.sessions || 0).toLocaleString()} sessions`}
+          detail="Customer journeys, pages, countries and goals"
+          to="/admin-dashboard/inbound-traffic"
         />
       </div>
 
-
-      <section className="rounded-2xl border border-border bg-card p-4 shadow-sm sm:p-5">
-        <div className="flex flex-col gap-2 border-b border-border pb-4 sm:flex-row sm:items-end sm:justify-between">
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Inbound traffic</p>
-            <h2 className="mt-1 text-lg font-bold text-card-foreground">Real storefront activity</h2>
-            <p className="mt-1 text-xs text-muted-foreground">Last 30 days • collected from customer storefront sessions</p>
-          </div>
-          <p className="text-xs font-semibold text-primary">Updates automatically</p>
-        </div>
-
-        <div className="mt-4 grid grid-cols-2 gap-3 lg:grid-cols-4">
-          {[
-            ["Unique visitors", trafficData.unique_visitors],
-            ["Page views", trafficData.page_views],
-            ["Sessions", trafficData.sessions],
-            ["Item views", trafficData.item_views],
-          ].map(([label, value]) => (
-            <div key={label} className="rounded-xl bg-muted p-3">
-              <p className="text-[10px] uppercase tracking-wider text-muted-foreground">{label}</p>
-              <p className="mt-1 text-lg font-bold text-card-foreground">{Number(value || 0).toLocaleString()}</p>
-            </div>
-          ))}
-        </div>
-
-        <div className="mt-5 grid gap-5 lg:grid-cols-3">
-          {[
-            ["Traffic sources", trafficData.sources, "source"],
-            ["Countries", trafficData.countries, "country_code"],
-            ["Devices", trafficData.devices, "device_type"],
-          ].map(([title, rows, field]) => {
-            const max = Math.max(...(rows || []).map((row) => Number(row.count || 0)), 1);
-            return (
-              <div key={title}>
-                <h3 className="mb-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">{title}</h3>
-                <div className="space-y-2">
-                  {(rows || []).slice(0, 5).map((row) => (
-                    <div key={row[field]}>
-                      <div className="mb-1 flex items-center justify-between gap-3 text-xs">
-                        <span className="truncate text-card-foreground">{row[field] || "Unknown"}</span>
-                        <span className="shrink-0 font-semibold text-muted-foreground">{Number(row.count || 0).toLocaleString()}</span>
-                      </div>
-                      <div className="h-1.5 overflow-hidden rounded-full bg-muted">
-                        <div className="h-full rounded-full bg-primary" style={{ width: `${Math.max(4, (Number(row.count || 0) / max) * 100)}%` }} />
-                      </div>
-                    </div>
-                  ))}
-                  {!rows?.length && <p className="text-xs text-muted-foreground">No traffic recorded yet.</p>}
-                </div>
-              </div>
-            );
-          })}
-        </div>
-
-        <div className="mt-5 border-t border-border pt-4">
-          <h3 className="mb-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Top landing pages</h3>
-          <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
-            {(trafficData.landing_pages || []).slice(0, 8).map((row) => (
-              <div key={row.path} className="rounded-xl bg-muted p-3">
-                <p className="truncate text-xs font-semibold text-card-foreground">{row.path}</p>
-                <p className="mt-1 text-[10px] text-muted-foreground">{Number(row.count || 0).toLocaleString()} sessions started here</p>
-              </div>
-            ))}
-            {!trafficData.landing_pages?.length && <p className="text-xs text-muted-foreground">Landing-page data will appear as customers visit the storefront.</p>}
-          </div>
-        </div>
-      </section>
 
       <div className="grid min-w-0 grid-cols-1 gap-5 xl:grid-cols-[minmax(0,1.7fr)_minmax(320px,0.8fr)]">
         <Link
