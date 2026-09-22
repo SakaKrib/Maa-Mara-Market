@@ -85,9 +85,18 @@ class VendorProfileView(generics.RetrieveAPIView):
 class VendorItemViewSet(viewsets.ModelViewSet):
     parser_classes = [MultiPartParser, FormParser, JSONParser]
     serializer_class = ItemSerializers
-    permission_classes = [IsAuthenticated, IsVendor]
+    permission_classes = [IsAuthenticated]
+
+    def get_permissions(self):
+        # Admins may create an item for a selected vendor. Existing vendor
+        # create/update/delete behavior remains restricted to vendors.
+        if self.action == "create" and self.request.user.is_staff:
+            return [IsAuthenticated(), IsAdminUser()]
+        return [IsAuthenticated(), IsVendor()]
 
     def get_queryset(self):
+        if self.request.user.is_staff:
+            return Item.objects.all()
         return Item.objects.filter(created_by=self.request.user)
 
     def get_serializer(self, *args, **kwargs):
@@ -242,7 +251,18 @@ class VendorItemViewSet(viewsets.ModelViewSet):
         shipping_dimension_data = validated.pop("shipping_dimension_data", None)
         offer_data = validated.pop("offer", None) 
 
-        item = serializer.save(created_by=self.request.user)
+        if self.request.user.is_staff:
+            vendor_id = self.request.data.get("vendor_id")
+            if not vendor_id:
+                raise ValidationError({"vendor_id": "A vendor is required when an admin creates an item."})
+            try:
+                vendor = Vendor.objects.get(pk=vendor_id)
+            except Vendor.DoesNotExist:
+                raise ValidationError({"vendor_id": "Selected vendor was not found."})
+            item = serializer.save(created_by=self.request.user, vendor=vendor)
+        else:
+            item = serializer.save(created_by=self.request.user)
+
         self._current_item = item
 
         self._handle_item_media(item)
