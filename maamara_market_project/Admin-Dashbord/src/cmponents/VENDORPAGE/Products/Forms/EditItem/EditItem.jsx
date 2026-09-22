@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { X } from "lucide-react";
 import ItemAddNew from "../AddingNewItem";
 
-const EditItem = ({ vendor, item, onSuccess }) => {
+const EditItem = ({ vendor, item, onSuccess, isAdmin = false }) => {
   const itemId = item?.id ?? null;
   const [isOpen, setIsOpen] = useState(false);
 
@@ -90,7 +90,7 @@ const EditItem = ({ vendor, item, onSuccess }) => {
                   vendorId={vendor?.id}
                   itemId={itemId}
                   vendor={vendor}
-                  isAdmin={Boolean(vendor?.isAdmin || vendor?.is_admin)}
+                  isAdmin={isAdmin || Boolean(vendor?.isAdmin || vendor?.is_admin)}
                   onSave={handleSave}
                 />
               </div>
