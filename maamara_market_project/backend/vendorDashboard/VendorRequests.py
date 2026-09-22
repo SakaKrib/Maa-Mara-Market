@@ -392,7 +392,7 @@ def approve_request(request, pk):
             action="item_request_approved",
             description=(
                 "The administrator approved "
-                f"vendor item request '{item_request.name}'."
+                f"the vendor item request for {item_request.name}."
             ),
             related_url=f"/admin/vendorDashboard/item/{item.id}/",
         )
