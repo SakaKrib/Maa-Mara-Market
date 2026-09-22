@@ -239,6 +239,28 @@ class AdminPayoutAPIView(APIView):
         return Response(serializer.data, status=status.HTTP_200_OK)
 
 
+class VendorPayoutAPIView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request, format=None):
+        vendor = Vendor.objects.filter(user=request.user).first()
+        if not vendor:
+            return Response(
+                {"detail": "Vendor profile not found."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+        payouts = (
+            VendorPayout.objects
+            .filter(vendor=vendor)
+            .select_related("vendor")
+            .prefetch_related("adjustments")
+            .order_by("-created_at")
+        )
+        serializer = VendorPayoutSerializer(payouts, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+
 
 # ==============================================================
 # 💰 FUNCTION: get_monthly sale report
