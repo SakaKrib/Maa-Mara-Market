@@ -1,389 +1,201 @@
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import api from "../../../Services/Api";
-
-import {
-  Box,
-  Typography,
-  Paper,
-  Button,
-  Modal,
-  Stack,
-  Chip,
-  Snackbar,
-  Alert,
-} from "@mui/material";
-
-import { useTheme } from "@mui/material";
-import { tokens } from "../../../theme";
-
-import {
-  Input,
-} from "../../../../components/ui/input";
-
-import {
-  Label,
-} from "../../../../components/ui/label";
-
-import {
-  Select,
-  SelectTrigger,
-  SelectContent,
-  SelectItem,
-  SelectValue,
-} from "../../../../components/ui/select";
-
 import RichTextEditor from "../../RichTextEditor/RichTextEdit";
 
-/**
- * Utility: strip HTML + truncate words
- */
-const getShortTitle = (html, limit = 3) => {
-  const text = html?.replace(/<[^>]*>/g, "") || "";
-  return text.split(" ").slice(0, limit).join(" ") + "...";
-};
+const inputClass =
+  "w-full rounded-[20px] border border-gray-300 bg-white px-4 py-3 text-sm text-gray-900 outline-none transition placeholder:text-gray-400 focus:border-[#2563eb] focus:ring-2 focus:ring-[#2563eb]/10";
 
-const VendorBlogManager = () => {
-  const theme = useTheme();
-  const colors = tokens(theme.palette.mode);
+const labelClass = "mb-2 block text-xs font-semibold text-gray-700";
 
-  const [blogs, setBlogs] = useState([]);
-  const [loading, setLoading] = useState(true);
-
-  // modal
-  const [open, setOpen] = useState(false);
-  const [selected, setSelected] = useState(null);
-
-  // edit fields
+const BlogCreate = ({ items = [] }) => {
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
+  const [item, setItem] = useState("");
   const [image, setImage] = useState(null);
   const [video, setVideo] = useState(null);
-  const [item, setItem] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [message, setMessage] = useState("");
+  const [error, setError] = useState("");
 
-  const [snack, setSnack] = useState({
-    open: false,
-    message: "",
-    severity: "success",
-  });
-
-  // ======================
-  // FETCH BLOGS
-  // ======================
-  useEffect(() => {
-    const fetchBlogs = async () => {
-      try {
-        const res = await api.get(`/api/vendor/blogs/`, {
-          withCredentials: true,
-        });
-
-        // ensure array
-        setBlogs(Array.isArray(res.data) ? res.data : []);
-      } catch (err) {
-        console.error(err);
-        setBlogs([]);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchBlogs();
-  }, []);
-
-  // ======================
-  // OPEN EDIT MODAL
-  // ======================
-  const handleEditOpen = (blog) => {
-    setSelected(blog);
-
-    setTitle(blog.title || "");
-    setContent(blog.content || "");
-    setItem(blog.item ? blog.item.toString() : "");
-
+  const resetForm = () => {
+    setTitle("");
+    setContent("");
+    setItem("");
     setImage(null);
     setVideo(null);
 
-    setOpen(true);
+    const imageInput = document.getElementById("blog-image");
+    const videoInput = document.getElementById("blog-video");
+    if (imageInput) imageInput.value = "";
+    if (videoInput) videoInput.value = "";
   };
 
-  const handleClose = () => {
-    setOpen(false);
-    setSelected(null);
-  };
+  const handleSubmit = async (event) => {
+    event.preventDefault();
+    setMessage("");
+    setError("");
 
-  // ======================
-  // UPDATE BLOG
-  // ======================
-  const handleUpdate = async () => {
+    if (!title.trim()) {
+      setError("Please enter a blog title.");
+      return;
+    }
+
+    if (!content.trim()) {
+      setError("Please enter blog content.");
+      return;
+    }
+
     try {
+      setSubmitting(true);
+
       const formData = new FormData();
-
-      formData.append("title", title);
+      formData.append("title", title.trim());
       formData.append("content", content);
-      if (item) formData.append("item", item);
-      if (image) formData.append("image", image);
-      if (video) formData.append("video", video);
 
-      await api.patch(
-        `/api/vendor/blogs/${selected.id}/`,
-        formData,
-        { withCredentials: true }
-      );
+      if (item) {
+        formData.append("item", item);
+      }
 
-      setSnack({
-        open: true,
-        message: "Blog updated successfully",
-        severity: "success",
+      if (image) {
+        formData.append("image", image);
+      }
+
+      if (video) {
+        formData.append("video", video);
+      }
+
+      await api.post("/api/vendor/blogs/", formData, {
+        withCredentials: true,
       });
 
-      // refresh
-      setBlogs((prev) =>
-        prev.map((b) =>
-          b.id === selected.id
-            ? { ...b, title, content }
-            : b
-        )
-      );
-
-      handleClose();
+      setMessage("Blog created successfully and submitted for approval.");
+      resetForm();
     } catch (err) {
-      setSnack({
-        open: true,
-        message: "Update failed",
-        severity: "error",
-      });
+      console.error("Create blog failed:", err);
+
+      const data = err?.response?.data;
+      const detail =
+        data?.detail ||
+        data?.title?.[0] ||
+        data?.content?.[0] ||
+        "Unable to create the blog. Please try again.";
+
+      setError(detail);
+    } finally {
+      setSubmitting(false);
     }
   };
-
-  // ======================
-  // DELETE BLOG
-  // ======================
-  const handleDelete = async (id) => {
-    try {
-      await api.delete(
-        `/api/vendor/blogs/${id}/`,
-        { withCredentials: true }
-      );
-
-      setBlogs((prev) =>
-        prev.filter((b) => b.id !== id)
-      );
-
-      setSnack({
-        open: true,
-        message: "Blog deleted",
-        severity: "success",
-      });
-    } catch (err) {
-      setSnack({
-        open: true,
-        message: "Delete failed",
-        severity: "error",
-      });
-    }
-  };
-
-  // ======================
-  // SPLIT BLOGS
-  // ======================
-  const approved = Array.isArray(blogs)
-    ? blogs.filter((b) => b.approved)
-    : [];
-
-  const pending = Array.isArray(blogs)
-    ? blogs.filter((b) => !b.approved)
-    : [];
-
-  if (loading) {
-    return (
-      <Typography color={colors.gray[300]}>
-        Loading blogs...
-      </Typography>
-    );
-  }
 
   return (
-    <Box p={3}>
-      <Typography variant="h4" mb={3}>
-        My Blogs
-      </Typography>
+    <div className="w-full">
+      <div className="rounded-2xl border border-[#e6e6e4] bg-white p-4 sm:p-6">
+        <div className="mb-6 border-b border-[#e6e6e4] pb-4">
+          <p className="mb-1 text-xs font-semibold uppercase tracking-[0.16em] text-[#2563eb]">
+            Blog
+          </p>
+          <h2 className="text-2xl font-bold text-gray-900">
+            Create New Blog
+          </h2>
+          <p className="mt-1 text-sm text-gray-600">
+            Write and submit a new blog post for review.
+          </p>
+        </div>
 
-      {/* ================= APPROVED ================= */}
-      <Typography variant="h6" mb={2} color="green">
-        Approved Blogs
-      </Typography>
+        {message && (
+          <div className="mb-5 rounded-2xl border border-green-200 bg-green-50 px-4 py-3 text-sm font-medium text-green-700">
+            {message}
+          </div>
+        )}
 
-      <Stack spacing={2} mb={4}>
-        {approved.map((blog) => (
-          <Paper
-            key={blog.id}
-            sx={{
-              p: 2,
-              display: "flex",
-              justifyContent: "space-between",
-              backgroundColor: colors.primary[600],
-            }}
-          >
-            <Box>
-              <Typography fontWeight="bold">
-                {getShortTitle(blog.content)}
-              </Typography>
+        {error && (
+          <div className="mb-5 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700">
+            {error}
+          </div>
+        )}
 
-              <Chip
-                label="Approved"
-                color="success"
-                size="small"
-              />
-            </Box>
+        <form onSubmit={handleSubmit} className="w-full max-w-2xl space-y-5">
+          <div>
+            <label htmlFor="blog-title" className={labelClass}>
+              Blog Title
+            </label>
+            <input
+              id="blog-title"
+              type="text"
+              value={title}
+              onChange={(event) => setTitle(event.target.value)}
+              placeholder="Enter your blog title"
+              className={inputClass}
+              disabled={submitting}
+            />
+          </div>
 
-            <Stack direction="row" spacing={1}>
-              <Button
-                variant="outlined"
-                onClick={() => handleEditOpen(blog)}
-              >
-                Edit
-              </Button>
-
-              <Button
-                color="error"
-                variant="contained"
-                onClick={() => handleDelete(blog.id)}
-              >
-                Delete
-              </Button>
-            </Stack>
-          </Paper>
-        ))}
-      </Stack>
-
-      {/* ================= PENDING ================= */}
-      <Typography variant="h6" mb={2} color="orange">
-        Pending Blogs
-      </Typography>
-
-      <Stack spacing={2}>
-        {pending.map((blog) => (
-          <Paper
-            key={blog.id}
-            sx={{
-              p: 2,
-              display: "flex",
-              justifyContent: "space-between",
-              backgroundColor: colors.primary[500],
-            }}
-          >
-            <Box>
-              <Typography>
-                {getShortTitle(blog.content)}
-              </Typography>
-
-              <Chip
-                label="Pending"
-                color="warning"
-                size="small"
-              />
-            </Box>
-
-            <Stack direction="row" spacing={1}>
-              <Button
-                variant="outlined"
-                onClick={() => handleEditOpen(blog)}
-              >
-                Edit
-              </Button>
-
-              <Button
-                color="error"
-                variant="contained"
-                onClick={() => handleDelete(blog.id)}
-              >
-                Delete
-              </Button>
-            </Stack>
-          </Paper>
-        ))}
-      </Stack>
-
-      {/* ================= EDIT MODAL ================= */}
-      <Modal open={open} onClose={handleClose}>
-        <Box
-          sx={{
-            width: "80%",
-            maxWidth: 800,
-            mx: "auto",
-            mt: 5,
-            p: 3,
-            backgroundColor: colors.primary[600],
-            borderRadius: 2,
-          }}
-        >
-          <Typography variant="h5" mb={2}>
-            Edit Blog
-          </Typography>
-
-          <Stack spacing={2}>
-            <div>
-              <Label>Title</Label>
-              <Input
-                value={title}
-                onChange={(e) =>
-                  setTitle(e.target.value)
-                }
-              />
+          <div>
+            <label className={labelClass}>Blog Content</label>
+            <div className="overflow-hidden rounded-[20px] border border-gray-300 bg-white focus-within:border-[#2563eb] focus-within:ring-2 focus-within:ring-[#2563eb]/10">
+              <RichTextEditor value={content} onChange={setContent} />
             </div>
+          </div>
 
-            <div>
-              <Label>Content</Label>
-              <RichTextEditor
-                value={content}
-                onChange={setContent}
-              />
-            </div>
-
-            <div>
-              <Label>Image</Label>
-              <Input
-                type="file"
-                onChange={(e) =>
-                  setImage(e.target.files[0])
-                }
-              />
-            </div>
-
-            <div>
-              <Label>Video</Label>
-              <Input
-                type="file"
-                onChange={(e) =>
-                  setVideo(e.target.files[0])
-                }
-              />
-            </div>
-
-            <Button
-              variant="contained"
-              onClick={handleUpdate}
-              sx={{ backgroundColor: "#2563eb", "&:hover": { backgroundColor: "#1d4ed8" } }}
+          <div>
+            <label htmlFor="blog-item" className={labelClass}>
+              Related Item <span className="font-normal text-gray-400">(optional)</span>
+            </label>
+            <select
+              id="blog-item"
+              value={item}
+              onChange={(event) => setItem(event.target.value)}
+              className={inputClass}
+              disabled={submitting}
             >
-              Save Changes
-            </Button>
-          </Stack>
-        </Box>
-      </Modal>
+              <option value="">No related item</option>
+              {Array.isArray(items) &&
+                items.map((product) => (
+                  <option key={product.id} value={product.id}>
+                    {product.name}
+                  </option>
+                ))}
+            </select>
+          </div>
 
-      {/* ================= SNACKBAR ================= */}
-      <Snackbar
-        open={snack.open}
-        autoHideDuration={3000}
-        onClose={() =>
-          setSnack({ ...snack, open: false })
-        }
-      >
-        <Alert severity={snack.severity}>
-          {snack.message}
-        </Alert>
-      </Snackbar>
-    </Box>
+          <div>
+            <label htmlFor="blog-image" className={labelClass}>
+              Blog Image <span className="font-normal text-gray-400">(optional)</span>
+            </label>
+            <input
+              id="blog-image"
+              type="file"
+              accept="image/*"
+              onChange={(event) => setImage(event.target.files?.[0] || null)}
+              className={inputClass}
+              disabled={submitting}
+            />
+          </div>
+
+          <div>
+            <label htmlFor="blog-video" className={labelClass}>
+              Blog Video <span className="font-normal text-gray-400">(optional)</span>
+            </label>
+            <input
+              id="blog-video"
+              type="file"
+              accept="video/*"
+              onChange={(event) => setVideo(event.target.files?.[0] || null)}
+              className={inputClass}
+              disabled={submitting}
+            />
+          </div>
+
+          <button
+            type="submit"
+            disabled={submitting}
+            className="w-full rounded-full bg-[#2563eb] px-5 py-3 text-sm font-semibold text-white transition duration-200 hover:bg-[#1d4ed8] focus:outline-none focus:ring-2 focus:ring-[#2563eb]/20 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {submitting ? "Creating Blog..." : "Create Blog"}
+          </button>
+        </form>
+      </div>
+    </div>
   );
 };
 
-export default VendorBlogManager;
+export default BlogCreate;
