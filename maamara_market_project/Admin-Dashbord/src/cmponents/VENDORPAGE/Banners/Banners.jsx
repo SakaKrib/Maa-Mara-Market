@@ -21,6 +21,7 @@ const BannerAdd = ({ items = [], onSave = () => {} }) => {
 
   const [ctaType, setCtaType] = useState("item");
   const [ctaItem, setCtaItem] = useState("");
+  const [ctaUrl, setCtaUrl] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
   const [snackbar, setSnackbar] = useState({
@@ -69,7 +70,7 @@ const BannerAdd = ({ items = [], onSave = () => {} }) => {
     formData.append("background_color", backgroundColor);
     formData.append("cta_type", ctaType);
     formData.append("cta_item", ctaType === "item" ? ctaItem : "");
-    formData.append("cta_url", "");
+    formData.append("cta_url", ctaType === "external" ? ctaUrl.trim() : "");
 
     if (image instanceof File) {
       formData.append("image", image);
@@ -94,6 +95,7 @@ const BannerAdd = ({ items = [], onSave = () => {} }) => {
         setImage(null);
         setCtaType("item");
         setCtaItem(items.length > 0 ? String(items[0].id) : "");
+        setCtaUrl("");
         onSave(response.data);
       }
     } catch (error) {
@@ -215,11 +217,9 @@ const BannerAdd = ({ items = [], onSave = () => {} }) => {
             </label>
             <input
               type="url"
+              value={ctaUrl}
+              onChange={(e) => setCtaUrl(e.target.value)}
               placeholder="https://example.com"
-              onChange={(e) => {
-                const value = e.target.value;
-                e.currentTarget.form.dataset.ctaUrl = value;
-              }}
               className="w-full rounded-[20px] border border-gray-300 bg-background px-4 py-3 text-sm text-foreground outline-none transition focus:border-primary"
             />
           </div>
