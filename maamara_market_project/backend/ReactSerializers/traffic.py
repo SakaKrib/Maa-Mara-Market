@@ -247,6 +247,12 @@ def inbound_traffic_analytics(request):
     countries = grouped("country_code", 30)
     sources = grouped("source", 20)
     devices = grouped("device_type", 10)
+    top_items = list(
+        ItemView.objects.filter(viewed_at__gte=start)
+        .values("item_id", "item__name")
+        .annotate(count=Count("id"))
+        .order_by("-count")[:20]
+    )
 
     # Funnel milestones are derived from actual storefront routes/events.
     # Counts are distinct visitor/session keys, so repeated refreshes do not
@@ -304,6 +310,7 @@ def inbound_traffic_analytics(request):
         "countries": countries,
         "sources": sources,
         "devices": devices,
+        "top_items": top_items,
         "goals": goals,
         "recent_sessions": recent_sessions,
     })
