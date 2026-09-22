@@ -161,6 +161,20 @@ const Dashboard = () => {
   }, []);
 
   useEffect(() => {
+    const loadTrafficSummary = async () => {
+      try {
+        const response = await api.get("/api/admin/traffic-analytics/?days=30");
+        setTrafficData(response.data || {});
+      } catch (error) {
+        console.error("Admin traffic summary load failed:", error);
+      }
+    };
+    loadTrafficSummary();
+    const interval = setInterval(loadTrafficSummary, 30000);
+    return () => clearInterval(interval);
+  }, []);
+
+  useEffect(() => {
     const loadCounts = async () => {
       try {
         const [jobs, support] = await Promise.all([
@@ -406,7 +420,7 @@ const Dashboard = () => {
             </div>
             <IonIcon icon={statsChartOutline} className="text-primary" />
           </div>
-          <div className="h-[320px] min-w-0 overflow-hidden"><PieGraph isDashboard /></div>
+          <div className="h-[320px] min-w-0 overflow-hidden"><PieGraph data={chartData.category_distribution || []} /></div>
         </Link>
 
         <Link
@@ -420,7 +434,7 @@ const Dashboard = () => {
             </div>
             <IonIcon icon={statsChartOutline} className="text-primary" />
           </div>
-          <div className="h-[320px] min-w-0 overflow-hidden"><BarChart isDashboard /></div>
+          <div className="h-[320px] min-w-0 overflow-hidden"><BarChart data={chartData.sales_activity || []} /></div>
         </Link>
       </div>
 
