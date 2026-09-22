@@ -362,6 +362,7 @@ const VendorBlogManager = () => {
             <Button
               variant="contained"
               onClick={handleUpdate}
+              sx={{ backgroundColor: "#2563eb", "&:hover": { backgroundColor: "#1d4ed8" } }}
             >
               Save Changes
             </Button>
