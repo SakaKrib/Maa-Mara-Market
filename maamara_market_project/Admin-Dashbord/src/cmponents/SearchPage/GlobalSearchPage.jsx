@@ -17,6 +17,15 @@ export default function SearchBarForVendorAdmin({ fullscreen = false, onClose })
   }, [fullscreen]);
 
   useEffect(() => {
+    if (fullscreen) return undefined;
+    const handleClickOutside = (event) => {
+      if (wrapperRef.current && !wrapperRef.current.contains(event.target)) setOpen(false);
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [fullscreen]);
+
+  useEffect(() => {
     const handleEscape = (event) => {
       if (event.key === "Escape") {
         if (open) setOpen(false);
