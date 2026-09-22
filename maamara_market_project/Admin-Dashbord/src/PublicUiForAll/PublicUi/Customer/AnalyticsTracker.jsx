@@ -53,10 +53,16 @@ const AnalyticsTracker = () => {
       medium: params.get("utm_medium") || "",
       campaign: params.get("utm_campaign") || "",
       session_id: sessionIdRef.current,
-      event_type: firstPageRef.current ? "session_start" : "page_view",
     };
 
-    api.post("/api/traffic/record/", payload).catch(() => {
+    const requests = firstPageRef.current
+      ? [
+          api.post("/api/traffic/record/", { ...payload, event_type: "session_start" }),
+          api.post("/api/traffic/record/", { ...payload, event_type: "page_view" }),
+        ]
+      : [api.post("/api/traffic/record/", { ...payload, event_type: "page_view" })];
+
+    Promise.all(requests).catch(() => {
       // Analytics must never interfere with storefront navigation.
     });
 
