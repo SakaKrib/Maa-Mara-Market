@@ -3,10 +3,12 @@ import Header from "../PublicUiForAll/PublicUi/Customer/DesktopView/Header/Heade
 import Footer from "./PublicUi/Navigations/Footer/Footer";
 import MobileMenu from "./PublicUi/Navigations/Footer/MobileFooter";
 import ChatGpt from "./PublicUi/Navigations/Search/NavIcons/OpenAi/OpenAiGPT";
+import AnalyticsTracker from "./PublicUi/Customer/AnalyticsTracker";
 
 const CustomerShop = () => {
   return (
     <>
+      <AnalyticsTracker />
       <Header />
       <main className="relative flex flex-col min-h-screen">
         <Outlet />
