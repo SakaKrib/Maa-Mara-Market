@@ -698,37 +698,17 @@ def update_cart_quantity(request, pk):
     cart_item.price_at_purchase = item.discount_price or item.get_item_final_price()
     cart_item.save()
 
-    # 🔹 Log activity
+    # Log one canonical quantity-change event. The serializer renders
+    # "You ..." for the customer and "A customer ..." for staff/vendor views.
     ActivityLog.objects.create(
         user=user,
         visitor_id=visitor_id,
         actor_type=actor_type,
         action="item_updated_qty",
         item=item,
-        description=f"You updated the quantity of {item.name} in your cart.",
-        related_url=f"/item-client/{item.id}/"
-    )
-
-    ActivityLog.objects.create(
-        user=user,
-        visitor_id=visitor_id,
-        actor_type='user',
-        action="item_updated_qty",
-        item=item,
         description=f"A customer updated the quantity of {item.name} in their cart.",
         related_url=f"/item/{item.id}/"
     )
-
-    for admin in User.objects.filter(is_staff=True):
-        ActivityLog.objects.create(
-            user=admin,
-            visitor_id=visitor_id,
-            actor_type="admin",
-            action="item_updated_qty",
-            item=item,
-            description=f"A customer updated the quantity of {item.name} in their cart.",
-            related_url=f"/admin-item/vendorDashboard/items/{item.id}/"
-        )
 
     return Response({
         "success": True,
