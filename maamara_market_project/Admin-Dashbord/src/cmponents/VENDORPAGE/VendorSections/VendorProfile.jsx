@@ -1,4 +1,4 @@
-import React, { createPortal, useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
   LineChart,
   Line,
@@ -12,6 +12,7 @@ import {
 import { baseUrl } from "../../Constant/Constant";
 import api from "../../../Services/Api";
 import { IonIcon } from "@ionic/react";
+import { createPortal } from "react-dom";
 import {
   shieldCheckmarkSharp,
   personCircleSharp,
