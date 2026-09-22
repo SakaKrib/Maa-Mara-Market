@@ -7,7 +7,7 @@ import { useAdminPreferences } from "../../../Settings/AdminPreferencesContext";
 export default function VendorNotifications() {
   const [open, setOpen] = useState(false);
   const navigate = useNavigate();
-  const { notifications = [], unseenCount = 0 } = useVendorNotifications();
+  const { notifications = [], unseenCount = 0 } = useVendorNotifications({ enabled: notificationsEnabled });
   const { preferences } = useAdminPreferences();
   const notificationsEnabled = preferences.notifications;
 
