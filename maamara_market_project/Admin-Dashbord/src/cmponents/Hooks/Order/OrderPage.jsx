@@ -2,7 +2,7 @@ import React from "react";
 import { useVendorOrdersCombined } from "./CombinedOrderHook";
 
 const truncate = (text, length = 40) => {
-  if (!text || typeof text !== "string") return "Unnamed Item";
+  if (!text || typeof text !== "string") return "Item unavailable";
   return text.length > length ? `${text.substring(0, length)}…` : text;
 };
 
@@ -45,7 +45,11 @@ const OrderCard = ({ order, status }) => (
         >
           <div className="min-w-0">
             <p className="truncate text-sm font-semibold text-gray-800">
-              {truncate(item?.item?.name)}
+              {truncate(
+                item?.item_name ||
+                  item?.item?.name ||
+                  item?.name
+              )}
             </p>
             <p className="mt-1 text-xs text-gray-500">
               Quantity: {Number(item.quantity || 0).toLocaleString("en-KE")}
@@ -61,21 +65,12 @@ const OrderCard = ({ order, status }) => (
 );
 
 const VendorOrdersPage = () => {
-  const { pending = [], completed = [], loading, error } = useVendorOrdersCombined();
+  const { pending = [], completed = [], loading } = useVendorOrdersCombined();
 
   if (loading) {
     return (
       <div className="rounded-xl border border-gray-200 bg-white p-10 text-center shadow-sm">
         <p className="text-sm font-medium text-gray-600">Loading orders...</p>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="rounded-xl border border-red-200 bg-red-50 p-6">
-        <h5 className="font-semibold text-red-800">Unable to load orders</h5>
-        <p className="mt-1 text-sm text-red-700">{String(error)}</p>
       </div>
     );
   }
