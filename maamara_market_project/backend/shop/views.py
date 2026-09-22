@@ -1010,7 +1010,7 @@ class WishlistAPIView(APIView):
             # Vendor log
             ActivityLog.objects.create(
                 user=item.vendor.user if item.vendor and item.vendor.user else None,
-                actor_type="vendor",
+                actor_type="user",
                 action="item_removed_from_wishlist",
                 item=item,
                 description=f"A customer removed {item.name} from their wishlist.",
