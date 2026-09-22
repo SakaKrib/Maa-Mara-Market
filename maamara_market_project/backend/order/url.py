@@ -30,7 +30,7 @@ from .views import (
     update_cart_quantity,
     vendor_transactions,
     dashboard_stats,
-    revenue_area_chart,
+    revenue_area_chart,\n    dashboard_chart_data,
     revenue_growth,
     transaction_totals,
     vendor_sales,
@@ -51,7 +51,7 @@ urlpatterns = [
 
     # account summery
     path("api/dashboard/summary/", DashboardSummaryView.as_view()),
-    path("api/transactions/", create_admin_transaction, name="create-admin-transaction"),
+    path("api/admin/dashboard-chart-data/", dashboard_chart_data, name="admin-dashboard-chart-data"),\n\n    path("api/transactions/", create_admin_transaction, name="create-admin-transaction"),
     path("api/transactions/history/", admin_transaction_history, name="admin-transaction-history"),
     path("api/transactions/<int:transaction_id>/", update_admin_transaction, name="update-admin-transaction"),
     path("api/transactions/<int:transaction_id>/delete/", delete_admin_transaction, name="delete-admin-transaction"),
