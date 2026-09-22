@@ -1,132 +1,116 @@
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import { useVendorStockItems } from "../../../Hooks/StockInventory/StockInventoryHook";
-import "./StockSummaryBox.css";
-import { useTheme } from "@mui/material";
-import { tokens } from "../../../../theme";
 import StockRangeModal from "./StockModal";
 
 const StockSummaryBox = () => {
   const { lowStockItems, highStockItems, loading, error, refresh, updateStock } =
-    useVendorStockItems(); // ✅ make sure to include updateStock and refresh
-
+    useVendorStockItems();
   const [open, setOpen] = useState(false);
   const [modalItems, setModalItems] = useState([]);
 
-  const theme = useTheme();
-  const colors = tokens(theme.palette.mode);
+  const allItems = useMemo(() => {
+    const map = new Map();
+    [...(lowStockItems || []), ...(highStockItems || [])].forEach((item) => {
+      if (item?.id != null) map.set(item.id, item);
+    });
+    return [...map.values()].sort(
+      (a, b) => (Number(a.in_stock) || 0) - (Number(b.in_stock) || 0)
+    );
+  }, [lowStockItems, highStockItems]);
 
-  if (loading) return <p>Loading stock info...</p>;
-  if (error) return <p>Error loading stock info: {error.message}</p>;
+  const criticalCount = allItems.filter((item) => Number(item.in_stock) < 10).length;
 
-  // Flatten all items
-  const allItems = [...lowStockItems, ...highStockItems];
-
-  // FILTER RANGES
-  const critical = allItems.filter((item) => item.in_stock < 10);
-  const range10to20 = allItems.filter(
-    (item) => item.in_stock >= 10 && item.in_stock <= 20
-  );
-  const range20to30 = allItems.filter(
-    (item) => item.in_stock > 20 && item.in_stock <= 30
-  );
-  const above50 = allItems.filter((item) => item.in_stock >= 50);
-
-  const handleOpen = (items) => {
+  const handleOpen = (items = allItems) => {
     setModalItems(items);
     setOpen(true);
   };
 
+  if (loading) {
+    return <p className="text-sm text-[#595959]">Loading stock information...</p>;
+  }
+
+  if (error) {
+    return <p className="text-sm text-red-600">Error loading stock information.</p>;
+  }
+
   return (
-    <div className="stock-summary-box">
-      <h3 className="title border-b rounded-full flex justify-center items-center text-base font-bold text-[#222] sm:text-lg">
-        Stock Summary
-      </h3>
-
-      <div className="space-y-2">
-        {/* LOW STOCK */}
-        {critical.length > 0 && (
-        <div className="row ">
-          <div className="status low-stock">
-            <span className="dot red_dot blinking"></span>
-            
-              <span className="text-sm" style={{color:colors.redAccent[500]}}>
-              Low Stock ({critical.length})
-            </span>
-           
-            <span className="blinking text-[10px] bg-red-800 font-semibold p-1 text-gray-200" >
-              Critical
-            </span>
-            <p className="text-xs  restock" style={{color:colors.gray[100]}}>
-              please restock ASAP!
-            </p>
-          </div>
-          <button
-            className="ring py-2 px-4 text-xs rounded-full hover:bg-blue-800"
-            onClick={() => handleOpen(critical)}
-          >
-            View
-          </button>
-        </div> ) }
-
-        {/* 10–20 STOCK */}
-      {range10to20 > 0 &&(
-        <div className="row">
-          <div className="status mid-stock">
-            <span className="dot yellow"></span>
-            <span className="text-yellow-500 text-sm">
-              Stock 10–20 ({range10to20.length})
-            </span>
-          </div>
-          <button
-            className="ring py-2 px-4 text-xs rounded-full hover:bg-blue-800"
-            onClick={() => handleOpen(range10to20)}
-          >
-            View
-          </button>
-        </div>)}
-
-        {/* 20–30 STOCK */}
-        {range20to30 > 0 && (
-        <div className="row">
-          <div className="status mid-high-stock">
-            <span className="dot blue"></span>
-            <span className="text-blue-700 text-sm">
-              Stock 20–30 ({range20to30.length})
-            </span>
-          </div>
-          <button
-            className="ring py-2 px-4 text-xs rounded-full hover:bg-blue-800"
-            onClick={() => handleOpen(range20to30)}
-          >
-            View
-          </button>
-        </div>)}
-
-        {/* 50+ STOCK */}
-      {above50 > 0 && (
-        <div className="row">
-          <div className="status high-stock">
-            <span className="dot green"></span>
-            <span className="text-green-800 text-sm">
-              50+ in Stock ({above50.length})
-            </span>
-          </div>
-          <button
-            className="ring py-2 px-4 text-xs rounded-full hover:bg-blue-800"
-            onClick={() => handleOpen(above50)}
-          >
-            View
-          </button>
-        </div>)}
+    <div className="flex min-h-[136px] min-w-0 flex-col">
+      <div className="flex items-center justify-between gap-3 border-b border-[#e6e6e4] pb-3">
+        <div>
+          <h3 className="text-base font-bold text-[#222] sm:text-lg">Stock Summary</h3>
+          <p className="mt-0.5 text-xs text-[#595959]">
+            {allItems.length} item{allItems.length === 1 ? "" : "s"} tracked
+          </p>
+        </div>
+        {criticalCount > 0 && (
+          <span className="rounded-full bg-red-50 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-red-700">
+            {criticalCount} critical
+          </span>
+        )}
       </div>
 
-      {/* ---------- USE EXTERNAL MODAL ---------- */}
+      <div className="mt-3 max-h-[230px] space-y-2 overflow-y-auto pr-1">
+        {allItems.length === 0 ? (
+          <div className="rounded-xl border border-dashed border-[#d7d7d3] bg-[#f8f8f6] p-4 text-sm text-[#374151]">
+            No inventory items available.
+          </div>
+        ) : (
+          allItems.map((item) => {
+            const quantity = Number(item.in_stock) || 0;
+            const critical = quantity < 10;
+            const good = quantity > 20;
+            return (
+              <div
+                key={item.id}
+                className="flex items-center justify-between gap-3 rounded-xl border border-[#eeeeeb] bg-[#fcfcfa] px-3 py-2.5"
+              >
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-semibold text-[#222]">
+                    {item.name || "Unnamed item"}
+                  </p>
+                  <p
+                    className={`mt-0.5 text-xs font-semibold ${
+                      critical
+                        ? "text-red-600"
+                        : good
+                        ? "text-green-700"
+                        : "text-amber-600"
+                    }`}
+                  >
+                    {critical ? "Critical stock" : good ? "Good stock" : "Watch stock"}
+                  </p>
+                </div>
+                <span
+                  className={`shrink-0 rounded-full px-2.5 py-1 text-xs font-bold ${
+                    critical
+                      ? "bg-red-50 text-red-700"
+                      : good
+                      ? "bg-green-50 text-green-700"
+                      : "bg-amber-50 text-amber-700"
+                  }`}
+                >
+                  {quantity}
+                </span>
+              </div>
+            );
+          })
+        )}
+      </div>
+
+      <button
+        type="button"
+        onClick={() => handleOpen(allItems)}
+        className="mt-3 inline-flex w-full items-center justify-center rounded-full border border-[#d9d9d6] bg-white px-4 py-2 text-xs font-semibold text-[#222] transition hover:bg-[#f8f8f6]"
+      >
+        View all items
+      </button>
+
       <StockRangeModal
         open={open}
         onClose={() => setOpen(false)}
         items={modalItems}
         refresh={refresh}
-        updateStock={updateStock}  
+        updateStock={updateStock}
       />
     </div>
   );
