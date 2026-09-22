@@ -4,6 +4,7 @@ from rest_framework import generics, serializers
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
+import re
 
 from ReactSerializers.models import (
     AgeVariant, Brand, Category, ColorVariant, Department, Item, Length,
@@ -54,8 +55,43 @@ class NotificationSerializer(serializers.ModelSerializer):
 
     def get_display_message(self, obj):
         message = (obj.message or '').strip()
+        title = (obj.title or '').strip().lower()
+
+        def unquote(value):
+            return re.sub(r"'([^']+)'", r"\\1", value)
+
+        # Normalize the most common marketplace notifications so names are
+        # natural, readable text rather than quoted fragments or usernames.
+        if title == "item added to wishlist":
+            match = re.search(r"added ['\"]?(.+?)['\"]? (?:from )?wishlist", message, re.I)
+            item_name = match.group(1).strip(" .\"'") if match else None
+            if item_name:
+                return f"A customer added {item_name} to their wishlist."
+        if title == "wishlist update":
+            match = re.search(r"removed ['\"]?(.+?)['\"]? from wishlist", message, re.I)
+            item_name = match.group(1).strip(" .\"'") if match else None
+            if item_name:
+                return f"A customer removed {item_name} from their wishlist."
+        if title == "item request approved":
+            match = re.search(r"request for ['\"]?(.+?)['\"]? (?:has|was) approved", message, re.I)
+            if match:
+                return f"Your request for {match.group(1).strip(' .\\\"\\\'')} has been approved."
+        if title == "item request denied":
+            match = re.search(r"request for ['\"]?(.+?)['\"]? (?:has|was) declined", message, re.I)
+            if match:
+                return f"Your request for {match.group(1).strip(' .\\\"\\\'')} was declined by the administrator."
+        if title == "new price change request":
+            match = re.search(r"for ['\"]?(.+?)['\"]?\\.?(?: Reason: (.*))?$", message, re.I)
+            if match:
+                item_name = match.group(1).strip(" .\\\"'")
+                reason = (match.group(2) or "").strip()
+                return f"A vendor submitted a price change request for {item_name}." + (f" Reason: {reason}" if reason else "")
+        if title == "price change request approved":
+            message = unquote(message)
+            return re.sub(r"^Your request for ", "Your request for ", message)
+
         if message:
-            return message
+            return unquote(message)
         return 'There is a new update in your marketplace workspace.'
 
 # mark as seen when opened
