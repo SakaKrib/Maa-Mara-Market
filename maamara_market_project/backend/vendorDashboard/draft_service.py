@@ -36,7 +36,7 @@ def finalize_item_draft(draft, item):
     if video:
         _copy_draft_file(video.file, item.video)
 
-    item.save(update_fields=["image", "video", "updated"])
+    item.save()
 
     ItemAdditionalImage.objects.filter(item=item).delete()
     for gallery in (m for m in media if m.kind == "gallery"):
