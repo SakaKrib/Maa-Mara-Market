@@ -290,7 +290,7 @@ class ActivityLog(models.Model):
     
     @property
     def actor_role(self):
-        return "vendor" if hasattr(self.user, "vendor") else "admin"
+        return self.actor_type
 
 # NOTIFICATIONS MODEL
 class Notification(models.Model):
