@@ -5608,3 +5608,29 @@ h1,h2,h3,h4{font-family:'regular','Poppins',Arial,sans-serif}
   overflow: hidden;
   text-overflow: ellipsis;
 }
+
+/* SINGLE ITEM PAGE
+ * Scoped overrides protect the modern SingleItem layout from the legacy
+ * global h1/h2/h3/h4 rules above. Keep these selectors page-scoped so the
+ * existing marketplace pages retain their current styling.
+ */
+.mm-single-item h1,
+.mm-single-item h2,
+.mm-single-item h3,
+.mm-single-item h4 {
+    font-family: 'regular', 'Poppins', Arial, sans-serif;
+}
+
+.mm-single-item h1 {
+    font-size: clamp(1.5rem, 2vw, 2.25rem);
+    line-height: 1.2;
+    font-weight: 600;
+}
+
+.mm-single-item h2,
+.mm-single-item h3,
+.mm-single-item h4 {
+    font-size: 1rem;
+    line-height: 1.5;
+}
+
