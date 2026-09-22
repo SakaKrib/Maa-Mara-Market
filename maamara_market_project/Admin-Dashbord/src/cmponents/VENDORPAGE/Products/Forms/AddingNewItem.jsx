@@ -350,23 +350,23 @@ useEffect(() => {
               }
             : null,
     
-          size_variant: (data.size_variant || []).map(({ size, stock }) => ({
+          // Backend ItemSerializers expects the canonical relation names.
+          size_only_icon: (data.size_variant || []).map(({ size, stock, quantity_in_stock }) => ({
             size,
-            quantity_in_stock: stock,
+            quantity_in_stock: quantity_in_stock ?? stock ?? 0,
           })),
-    
-          colors: (data.color_variants || []).map((variant) => variant.color),
-    
-          color_variants: (data.color_variants || []).map(
-            ({ color, sizes, color_image }) => ({
+
+          variants: (data.color_variants || []).map(
+            ({ color, sizes, color_image, image }) => ({
               color,
               sizes: (sizes || []).map(({ size, quantity_in_stock, stock }) => ({
                 size,
                 quantity_in_stock: quantity_in_stock ?? stock ?? 0,
               })),
-              color_image,
+              image: image ?? color_image ?? null,
             })
           ),
+
         };
     
         // API call
