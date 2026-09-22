@@ -379,7 +379,7 @@ const SingleVendorProfile = () => {
                     {badges.map((badge) => {
                       const isActive = activeBadge === badge.label;
                       return (
-                        <div key={badge.label} className="relative">
+                        <div key={badge.label} className="group relative">
                           <button type="button" aria-label={badge.label} aria-expanded={isActive} onClick={() => setActiveBadge(isActive ? null : badge.label)} className="grid h-10 w-10 place-items-center rounded-full border border-gray-300 bg-[#f8f8f6] text-gray-700 transition hover:border-[#2563eb]/40 hover:bg-blue-50 hover:text-[#2563eb] focus:outline-none focus:ring-4 focus:ring-[#2563eb]/10">
                             <IonIcon icon={badge.icon} className="text-xl" />
                           </button>
