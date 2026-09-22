@@ -6,7 +6,8 @@ const resolveImage = (value) => {
   return value.startsWith("http") ? value : `${baseUrl || ""}${value}`;
 };
 
-const ProductGallery = ({ item, selectedImage, selectedVariant, selectedSize, onSelectImage, onSelectColor }) => {\n  const [isImageFullscreen, setIsImageFullscreen] = useState(false);
+const ProductGallery = ({ item, selectedImage, selectedVariant, selectedSize, onSelectImage, onSelectColor }) => {
+  const [isImageFullscreen, setIsImageFullscreen] = useState(false);
   const media = useMemo(() => {
     const entries = [];
 
