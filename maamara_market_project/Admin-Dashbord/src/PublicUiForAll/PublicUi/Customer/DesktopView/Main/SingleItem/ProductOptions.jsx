@@ -1,55 +1,26 @@
 import React from "react";
 
-const normalize = (value) => String(value ?? "").trim().toLowerCase();
-
-const ProductOptions = ({ item, selectedVariant, selectedSize, onColorChange, onSizeChange }) => {
+const ProductOptions = ({ item, selectedVariant, selectedSize, selectedAgeVariant, selectedShoe, selectedShoeSize, selectedWeight, selectedLength, customPreferences, onColorChange, onSizeChange, onAgeChange, onShoeChange, onShoeSizeChange, onWeightChange, onLengthChange, onCustomPreferencesChange }) => {
   const variants = Array.isArray(item?.variants) ? item.variants : [];
-  const sizes = Array.isArray(selectedVariant?.sizes) ? selectedVariant.sizes : [];
-
+  const variantSizes = Array.isArray(selectedVariant?.sizes) ? selectedVariant.sizes : [];
+  const sizeOnly = Array.isArray(item?.size_only_icon) ? item.size_only_icon : [];
+  const kidsSizes = Array.isArray(item?.kids_sizes) ? item.kids_sizes : [];
+  const shoes = Array.isArray(item?.shoe_input) ? item.shoe_input : [];
+  const shoeSizes = Array.isArray(selectedShoe?.shoe_size) ? selectedShoe.shoe_size : [];
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       {variants.length > 0 && (
-        <fieldset>
-          <legend className="font-semibold text-sm mb-3">Color{selectedVariant?.color && <span className="ml-2 font-normal text-gray-500">· {selectedVariant.color}</span>}</legend>
-          <div className="flex flex-wrap gap-2">
-            {variants.map((variant) => {
-              const selected = selectedVariant?.id === variant.id;
-              const color = variant.color || "Other";
-              return (
-                <label key={variant.id} className="cursor-pointer">
-                  <input type="radio" name="product-color" value={variant.id} checked={selected} onChange={() => onColorChange(color)} className="sr-only" />
-                  <span className={"inline-flex items-center gap-2 rounded-full border px-3 py-2 text-sm transition " + (selected ? "border-gray-900 ring-2 ring-gray-900/10 bg-gray-50" : "border-gray-300 hover:border-gray-700 bg-white")}>
-                    <span aria-hidden="true" className="h-4 w-4 rounded-full border border-black/10" style={{ backgroundColor: normalize(color) }} />
-                    <span>{color}</span>
-                  </span>
-                </label>
-              );
-            })}
-          </div>
+        <fieldset><legend className="font-semibold text-sm mb-3">Color{selectedVariant?.color && <span className="ml-2 font-normal text-gray-500">· {selectedVariant.color}</span>}</legend>
+          <div className="flex flex-wrap gap-2">{variants.map((variant) => { const selected = selectedVariant?.id === variant.id; const color = variant.color || "Other"; return <label key={variant.id} className="cursor-pointer"><input type="radio" name="product-color" checked={selected} onChange={() => onColorChange(color)} className="sr-only" /><span className={"inline-flex items-center gap-2 rounded-full border px-3 py-2 text-sm " + (selected ? "border-gray-900 ring-2 ring-gray-900/10 bg-gray-50" : "border-gray-300 hover:border-gray-700 bg-white")}><span className="h-4 w-4 rounded-full border border-black/10" style={{ backgroundColor: color.toLowerCase() }} /><span>{color}</span></span></label>; })}</div>
         </fieldset>
       )}
-
-      {selectedVariant && sizes.length > 0 && (
-        <fieldset>
-          <legend className="font-semibold text-sm mb-3">Size{!selectedSize && <span className="ml-2 font-normal text-gray-500">· Required</span>}</legend>
-          <div className="flex flex-wrap gap-2">
-            {sizes.map((sizeObj) => {
-              const stock = Number(sizeObj.quantity_in_stock || 0);
-              const selected = selectedSize?.id === sizeObj.id;
-              const disabled = stock <= 0;
-              return (
-                <label key={sizeObj.id} className={disabled ? "cursor-not-allowed" : "cursor-pointer"}>
-                  <input type="radio" name="product-size" value={sizeObj.id} checked={selected} onChange={() => onSizeChange(sizeObj)} disabled={disabled} className="sr-only" />
-                  <span className={"inline-flex min-w-14 justify-center rounded-md border px-3 py-2 text-sm font-medium transition " + (selected ? "border-gray-900 bg-gray-900 text-white" : disabled ? "border-gray-200 bg-gray-50 text-gray-400 line-through" : "border-gray-300 bg-white hover:border-gray-900")}>
-                    {sizeObj.size}
-                  </span>
-                </label>
-              );
-            })}
-          </div>
-          {selectedSize && <p className="mt-2 text-xs text-gray-500">{Number(selectedSize.quantity_in_stock || 0)} available in this size.</p>}
-        </fieldset>
-      )}
+      {selectedVariant && variantSizes.length > 0 && <fieldset><legend className="font-semibold text-sm mb-3">Size{!selectedSize && <span className="ml-2 font-normal text-gray-500">· Required</span>}</legend><div className="flex flex-wrap gap-2">{variantSizes.map((sizeObj) => { const stock = Number(sizeObj.quantity_in_stock || 0); const selected = selectedSize?.id === sizeObj.id; const disabled = stock <= 0; return <label key={sizeObj.id} className={disabled ? "cursor-not-allowed" : "cursor-pointer"}><input type="radio" name="product-size" checked={selected} onChange={() => onSizeChange(sizeObj)} disabled={disabled} className="sr-only" /><span className={"inline-flex min-w-14 justify-center rounded-md border px-3 py-2 text-sm font-medium " + (selected ? "border-gray-900 bg-gray-900 text-white" : disabled ? "border-gray-200 bg-gray-50 text-gray-400 line-through" : "border-gray-300 bg-white hover:border-gray-900")}>{typeof sizeObj.size === "object" ? JSON.stringify(sizeObj.size) : sizeObj.size}</span></label>; })}</div>{selectedSize && <p className="mt-2 text-xs text-gray-500">{Number(selectedSize.quantity_in_stock || 0)} available in this size.</p>}</fieldset>}
+      {!selectedVariant && sizeOnly.length > 0 && <fieldset><legend className="font-semibold text-sm mb-3">Size</legend><div className="flex flex-wrap gap-2">{sizeOnly.map((sizeObj) => { const selected = selectedSize?.id === sizeObj.id; const disabled = Number(sizeObj.quantity_in_stock || 0) <= 0; return <label key={sizeObj.id}><input type="radio" name="product-size" checked={selected} onChange={() => onSizeChange(sizeObj)} disabled={disabled} className="sr-only" /><span className={"inline-flex min-w-14 justify-center rounded-md border px-3 py-2 text-sm font-medium " + (selected ? "border-gray-900 bg-gray-900 text-white" : disabled ? "border-gray-200 bg-gray-50 text-gray-400 line-through" : "border-gray-300 bg-white")}>{typeof sizeObj.size === "object" ? JSON.stringify(sizeObj.size) : sizeObj.size}</span></label>; })}</div></fieldset>}
+      {kidsSizes.length > 0 && <fieldset><legend className="font-semibold text-sm mb-3">Age / Size</legend><div className="flex flex-wrap gap-2">{kidsSizes.map((age) => { const selected = selectedAgeVariant?.id === age.id; const disabled = Number(age.quantity_in_stock || 0) <= 0; return <label key={age.id}><input type="radio" name="product-age" checked={selected} onChange={() => onAgeChange(age)} disabled={disabled} className="sr-only" /><span className={"inline-flex rounded-md border px-3 py-2 text-sm font-medium " + (selected ? "border-gray-900 bg-gray-900 text-white" : disabled ? "border-gray-200 bg-gray-50 text-gray-400 line-through" : "border-gray-300 bg-white")}>{age.age_group}</span></label>; })}</div></fieldset>}
+      {shoes.length > 0 && <fieldset><legend className="font-semibold text-sm mb-3">Shoe</legend><div className="flex flex-wrap gap-2">{shoes.map((shoe) => <button key={shoe.id} type="button" onClick={() => onShoeChange(shoe)} className={"rounded-md border px-3 py-2 text-sm " + (selectedShoe?.id === shoe.id ? "border-gray-900 bg-gray-900 text-white" : "border-gray-300 bg-white")}>{shoe.shoe_type || "Shoe"}{shoe.shoe_gender ? " · " + shoe.shoe_gender : ""}</button>)}</div>{selectedShoe && shoeSizes.length > 0 && <div className="mt-3 flex flex-wrap gap-2">{shoeSizes.map((size) => <button key={String(size)} type="button" onClick={() => onShoeSizeChange(size)} className={"rounded-md border px-3 py-2 text-sm " + (String(selectedShoeSize) === String(size) ? "border-gray-900 bg-gray-900 text-white" : "border-gray-300 bg-white")}>{String(size)}</button>)}</div>}</fieldset>}
+      {item?.weight && <fieldset><legend className="font-semibold text-sm mb-3">Weight</legend><button type="button" onClick={() => onWeightChange(item.weight)} className={"rounded-md border px-3 py-2 text-sm " + (selectedWeight?.id === item.weight.id ? "border-gray-900 bg-gray-900 text-white" : "border-gray-300 bg-white")}>{item.weight.value} {item.weight.unit}</button></fieldset>}
+      {item?.length && <fieldset><legend className="font-semibold text-sm mb-3">Length</legend><button type="button" onClick={() => onLengthChange(item.length)} className={"rounded-md border px-3 py-2 text-sm " + (selectedLength?.id === item.length.id ? "border-gray-900 bg-gray-900 text-white" : "border-gray-300 bg-white")}>{item.length.value} {item.length.unit}</button></fieldset>}
+      <fieldset><legend className="font-semibold text-sm mb-2">Custom preference <span className="font-normal text-gray-500">· Optional</span></legend><textarea value={customPreferences} onChange={(event) => onCustomPreferencesChange(event.target.value)} maxLength={1000} rows={3} placeholder="Add measurements, engraving, fit instructions, or other vendor instructions…" className="w-full rounded-xl border border-border bg-background px-3 py-2 text-sm text-card-foreground outline-none focus:ring-2 focus:ring-gray-900/10" /></fieldset>
     </div>
   );
 };
