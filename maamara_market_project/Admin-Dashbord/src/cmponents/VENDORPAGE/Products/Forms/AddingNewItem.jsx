@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useCallback, useMemo, useState, useEffect } from "react";
 import {
     Form,
     FormField,
@@ -18,8 +18,15 @@ import { organicAttributes, inorganicAttributes } from "./itemattribute";
 import { Controller } from "react-hook-form";
 import { useDepartments } from "./useDepartments";
 import { FormControlLabel, Switch } from "@mui/material";
+import useItemDraftAutosave from "./useItemDraftAutosave";
 
 // Sizes
+const MAX_ITEM_IMAGES = 10;
+const MAX_IMAGE_BYTES = 10 * 1024 * 1024;
+const MAX_VIDEO_BYTES = 100 * 1024 * 1024;
+const VIDEO_TYPES = ["video/mp4", "video/quicktime", "video/webm"];
+const VIDEO_EXTENSIONS = [".mp4", ".mov", ".webm"];
+
 const sizeOptions = [
   "XS", "S", "M", "L", "XL", "2XL", "3XL", "2XS", "3XS", "Oversize"
 ];
