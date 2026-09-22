@@ -1,7 +1,7 @@
 from django.conf import settings
 from django.http import HttpResponse
 from rest_framework.decorators import api_view, permission_classes, action
-from rest_framework.permissions import IsAuthenticated, IsAdminUser, AllowAny
+from rest_framework.permissions import IsAuthenticated, IsAdminUser, IsAdminUser, AllowAny
 from rest_framework.response import Response
 from rest_framework import status, permissions, viewsets
 from rest_framework import viewsets, permissions
@@ -56,10 +56,14 @@ def home(request):
 # All notifications (admin)
 # -------------------------------
 class AllNotificationsView(APIView):
-    permission_classes = [IsAdminUser]
+    permission_classes = [IsAuthenticated]
 
     def get(self, request):
-        notifications = Notification.objects.all().order_by('-created_at')
+        # Administrators can review the full notification stream. Vendors and
+        # customers only receive notifications addressed to their own account.
+        notifications = Notification.objects.all().order_by("-created_at")
+        if not request.user.is_staff and not request.user.is_superuser:
+            notifications = notifications.filter(user=request.user)
         serializer = NotificationSerializer(notifications, many=True)
         data = serializer.data
         # Sanitize string fields in notifications
