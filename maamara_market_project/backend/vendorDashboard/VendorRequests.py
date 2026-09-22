@@ -386,6 +386,13 @@ def approve_request(request, pk):
             item.image_hash = image_hash
             item.save(update_fields=["image_hash"])
 
+        # If this request came from the new server-side item draft, its
+        # persisted media is the canonical source for gallery/video/variant
+        # files. Finalize it only after the Item itself has been created.
+        source_draft = item_request.draft
+        if source_draft and source_draft.status == "SUBMITTED":
+            finalize_item_draft(source_draft, item)
+
         if hasattr(item_request, "approved_item"):
             item_request.approved_item = item
 
