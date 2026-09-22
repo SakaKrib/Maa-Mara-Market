@@ -2,6 +2,7 @@ from datetime import date, timedelta
 from decimal import Decimal
 import uuid
 import json
+import os
 
 from dateutil.relativedelta import relativedelta
 from django.db import transaction
@@ -16,11 +17,12 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from django.http import HttpResponse
+from PIL import Image
 
 from ReactSerializers.Serializers import VendorPayoutSerializer
 from ReactSerializers.models import Item
 from order.models import OrderItem, Order
-from .models import Vendor, SoldItem, VendorAdjustment, VendorPayout, VendorDraft, VendorDraftImage, VendorRequest
+from .models import Vendor, SoldItem, VendorAdjustment, VendorPayout, VendorDraft, VendorDraftImage, VendorRequest, VendorItemRequest, ItemDraft, ItemDraftMedia
 
 
 def dashboard(request):
@@ -323,6 +325,211 @@ def monthly_sales_report(request):
         'year': year,
         'available_months': available_months,
     })
+
+
+class ItemDraftView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    MAX_IMAGES = 10
+    MAX_IMAGE_BYTES = 10 * 1024 * 1024
+    MAX_VIDEO_BYTES = 100 * 1024 * 1024
+    ALLOWED_VIDEO_EXTENSIONS = {".mp4", ".mov", ".webm"}
+    ALLOWED_VIDEO_TYPES = {"video/mp4", "video/quicktime", "video/webm"}
+
+    def _owner(self, request):
+        if request.user.is_staff:
+            vendor_id = request.data.get("vendor_id")
+            vendor = Vendor.objects.filter(pk=vendor_id).first() if vendor_id else None
+            return request.user, vendor
+        vendor = getattr(request.user, "vendor", None)
+        if vendor is None:
+            raise PermissionError("Vendor account not found.")
+        return request.user, vendor
+
+    def _draft_queryset(self, request):
+        return ItemDraft.objects.filter(
+            owner=request.user,
+            status="DRAFT",
+        ).prefetch_related("media")
+
+    def _validate_upload(self, uploaded, kind):
+        if kind in {"main", "gallery", "variant"}:
+            if uploaded.size > self.MAX_IMAGE_BYTES:
+                raise ValueError("Each image must be 10 MB or smaller.")
+            try:
+                uploaded.seek(0)
+                with Image.open(uploaded) as image:
+                    image.verify()
+                uploaded.seek(0)
+                with Image.open(uploaded) as image:
+                    if image.width * image.height > 25_000_000:
+                        raise ValueError("Images must not exceed 25 megapixels.")
+            except ValueError:
+                uploaded.seek(0)
+                raise
+            except Exception:
+                uploaded.seek(0)
+                raise ValueError("The uploaded file is not a valid image.")
+            uploaded.seek(0)
+            return
+
+        if kind == "video":
+            if uploaded.size > self.MAX_VIDEO_BYTES:
+                raise ValueError("The product video must be 100 MB or smaller.")
+            extension = os.path.splitext(uploaded.name or "")[1].lower()
+            if extension not in self.ALLOWED_VIDEO_EXTENSIONS:
+                raise ValueError("Video must be MP4, MOV, or WEBM.")
+            if uploaded.content_type and uploaded.content_type not in self.ALLOWED_VIDEO_TYPES:
+                raise ValueError("The uploaded video type is not supported.")
+            return
+
+        raise ValueError("Unsupported draft media type.")
+
+    def _serialize_draft(self, request, draft):
+        data = dict(draft.data or {})
+        media = []
+        for asset in draft.media.all().order_by("sort_order", "id"):
+            media.append({
+                "id": asset.id,
+                "kind": asset.kind,
+                "media_type": asset.media_type,
+                "slot_key": asset.slot_key,
+                "variant_key": asset.variant_key,
+                "sort_order": asset.sort_order,
+                "url": request.build_absolute_uri(asset.file.url),
+                "name": os.path.basename(asset.file.name),
+            })
+        data["draft_id"] = str(draft.id)
+        return {
+            "exists": True,
+            "draft_id": str(draft.id),
+            "status": draft.status,
+            "updated_at": draft.updated_at,
+            "data": data,
+            "media": media,
+        }
+
+    def get(self, request):
+        draft = self._draft_queryset(request).order_by("-updated_at").first()
+        if not draft:
+            return Response({"exists": False, "draft": None})
+        return Response({"draft": self._serialize_draft(request, draft)})
+
+    @transaction.atomic
+    def post(self, request):
+        try:
+            owner, vendor = self._owner(request)
+        except PermissionError as exc:
+            return Response({"detail": str(exc)}, status=status.HTTP_403_FORBIDDEN)
+
+        draft_id = request.data.get("draft_id")
+        if draft_id:
+            draft = get_object_or_404(self._draft_queryset(request), id=draft_id)
+        else:
+            draft = ItemDraft.objects.filter(
+                owner=owner,
+                status="DRAFT",
+            ).order_by("-updated_at").first()
+
+        if draft is None:
+            draft = ItemDraft.objects.create(
+                owner=owner,
+                vendor=vendor,
+                data={},
+                expires_at=timezone.now() + timezone.timedelta(days=30),
+            )
+        elif vendor and draft.vendor_id != vendor.id:
+            draft.vendor = vendor
+
+        try:
+            data = json.loads(request.data.get("data", "{}"))
+            manifest = json.loads(request.data.get("media_manifest", "[]"))
+            removed_slots = json.loads(request.data.get("removed_media_slots", "[]"))
+        except (TypeError, ValueError, json.JSONDecodeError):
+            return Response({"detail": "Invalid draft data or media metadata."}, status=status.HTTP_400_BAD_REQUEST)
+
+        if not isinstance(data, dict) or not isinstance(manifest, list) or not isinstance(removed_slots, list):
+            return Response({"detail": "Invalid draft payload."}, status=status.HTTP_400_BAD_REQUEST)
+
+        existing = {asset.slot_key: asset for asset in draft.media.all()}
+        for slot in removed_slots:
+            asset = existing.get(str(slot))
+            if asset:
+                asset.file.delete(save=False)
+                asset.delete()
+                existing.pop(str(slot), None)
+
+        image_slots = {slot for slot, asset in existing.items() if asset.media_type == "image"}
+
+        for entry in manifest:
+            if not isinstance(entry, dict):
+                continue
+            slot_key = str(entry.get("slot_key") or "").strip()
+            kind = str(entry.get("kind") or "").strip()
+            upload_key = str(entry.get("upload_key") or "").strip()
+            if not slot_key or kind not in {"main", "gallery", "variant", "video"}:
+                continue
+
+            uploaded = request.FILES.get(upload_key) if upload_key else None
+            if not uploaded:
+                continue
+
+            try:
+                self._validate_upload(uploaded, kind)
+            except ValueError as exc:
+                return Response({"detail": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+
+            media_type = "video" if kind == "video" else "image"
+            if media_type == "image":
+                image_slots.add(slot_key)
+
+            old = existing.get(slot_key)
+            if old:
+                old.file.delete(save=False)
+                old.delete()
+
+            asset = ItemDraftMedia(
+                draft=draft,
+                media_type=media_type,
+                kind=kind,
+                slot_key=slot_key,
+                variant_key=str(entry.get("variant_key") or ""),
+                sort_order=int(entry.get("sort_order") or 0),
+            )
+            asset.file.save(os.path.basename(uploaded.name), uploaded, save=False)
+            asset.save()
+            existing[slot_key] = asset
+
+        if len(image_slots) > self.MAX_IMAGES:
+            return Response(
+                {"detail": f"An item can contain at most {self.MAX_IMAGES} images, including the main and variant images."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        if sum(1 for asset in existing.values() if asset.kind == "video") > 1:
+            return Response({"detail": "An item can contain only one product video."}, status=status.HTTP_400_BAD_REQUEST)
+
+        data["draft_id"] = str(draft.id)
+        data.pop("image_file", None)
+        data.pop("video_file", None)
+        draft.data = data
+        draft.expires_at = timezone.now() + timezone.timedelta(days=30)
+        draft.save(update_fields=["vendor", "data", "expires_at", "updated_at"])
+
+        return Response(self._serialize_draft(request, draft), status=status.HTTP_200_OK)
+
+    @transaction.atomic
+    def delete(self, request):
+        draft = self._draft_queryset(request).first()
+        if not draft:
+            return Response(status=status.HTTP_204_NO_CONTENT)
+
+        draft.status = "ABANDONED"
+        draft.save(update_fields=["status", "updated_at"])
+        for asset in draft.media.all():
+            asset.file.delete(save=False)
+        draft.media.all().delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
 
 class VendorDraftView(APIView):
