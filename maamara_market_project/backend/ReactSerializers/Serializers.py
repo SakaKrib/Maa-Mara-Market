@@ -39,10 +39,21 @@ class BrandSerializer(serializers.ModelSerializer):
 class VendorSerializer(serializers.ModelSerializer):
     brand = BrandSerializer(required=False, allow_null=True)
     profile_completion = serializers.SerializerMethodField()
+    profile_picture_url = serializers.SerializerMethodField()
 
     class Meta:
         model = Vendor
-        fields = "__all__"   # include all vendor fields + profile_completion
+        fields = "__all__"   # include all vendor fields + profile_completion + profile_picture_url
+
+    def get_profile_picture_url(self, obj):
+        request = self.context.get("request")
+        if not obj.profile_picture:
+            return None
+        try:
+            url = obj.profile_picture.url
+        except (ValueError, AttributeError):
+            return None
+        return request.build_absolute_uri(url) if request else url
 
     def get_profile_completion(self, obj):
         # fields considered for profile completion
