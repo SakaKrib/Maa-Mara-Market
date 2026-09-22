@@ -149,6 +149,7 @@ class OrderItem(models.Model):
     price_at_purchase = models.DecimalField(max_digits=10, decimal_places=2)
 
     shoe_size = models.CharField(max_length=50, null=True, blank=True)
+\n    # Customer-specific selections/instructions that are part of this order line.\n    # Stored on OrderItem so vendors can fulfill the exact request even if the\n    # product definition changes after the order is placed.\n    custom_preferences = models.JSONField(default=dict, blank=True)
 
 
     visitor_id = models.CharField(max_length=255, null=True, blank=True)
