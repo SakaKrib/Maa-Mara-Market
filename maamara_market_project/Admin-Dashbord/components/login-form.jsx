@@ -98,8 +98,33 @@ export function LoginForm({ className, ...props }) {
 
       if (!response.ok) {
         const errorText = await response.text()
-        console.error("Server error:", errorText)
-        const msg = "Login failed. Server returned an error."
+        console.error(`Login request failed with status ${response.status}:`, errorText)
+
+        let serverMessage = ""
+        try {
+          const errorData = errorText ? JSON.parse(errorText) : null
+          serverMessage =
+            errorData?.error ||
+            errorData?.detail ||
+            errorData?.message ||
+            ""
+        } catch {
+          // The response was not JSON; use the status-specific message below.
+        }
+
+        let msg
+        if (response.status === 401) {
+          msg = "Invalid username or password. Please check your credentials and try again."
+        } else if (response.status === 403) {
+          msg = "You are not authorized to log in with these credentials."
+        } else if (response.status === 404) {
+          msg = "Login service was not found. Please try again later."
+        } else if (response.status >= 500) {
+          msg = "A server error occurred while logging you in. Please try again later."
+        } else {
+          msg = serverMessage || `Login failed (error ${response.status}). Please try again.`
+        }
+
         setError(msg)
         setSnackbar({ open: true, severity: "error", message: msg })
         return
@@ -187,7 +212,7 @@ export function LoginForm({ className, ...props }) {
                   <Input
                     id="password"
                     type={showPassword ? "text" : "password"}
-                    autoComplete="new-password"
+                    autoComplete="off"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     required
