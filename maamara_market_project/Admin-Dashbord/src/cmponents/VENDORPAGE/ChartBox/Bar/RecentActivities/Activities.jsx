@@ -56,7 +56,8 @@ const Activities = () => {
                 <div className="flex items-start gap-3">
                   <span aria-hidden="true" className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-[#9ca3af]" />
                   <div className="min-w-0 flex-1">
-                    <p className="text-sm leading-6 text-[#222]">{truncateWords(log.description, 12)}</p>
+                    <p className="text-xs font-semibold uppercase tracking-[0.08em] text-[#595959]">{log.display_title || "Store activity"}</p>
+                    <p className="mt-1 text-sm leading-6 text-[#222]">{truncateWords(log.display_message || log.description, 16)}</p>
                     <p className="mt-1 text-xs text-[#6b7280]">{log.timestamp ? dayjs(log.timestamp).fromNow() : "Recently"}</p>
                   </div>
                 </div>
