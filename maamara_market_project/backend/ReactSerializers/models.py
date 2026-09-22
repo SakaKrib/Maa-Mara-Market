@@ -599,9 +599,21 @@ class ItemView(models.Model):
     )
     visitor_id = models.CharField(max_length=255, null=True, blank=True, db_index=True)
     viewed_at = models.DateTimeField(auto_now_add=True)
+    view_date = models.DateField(default=timezone.localdate, db_index=True)
 
     class Meta:
-        unique_together = ("item", "user", "visitor_id")  # ✅ prevent duplicates
+        constraints = [
+            models.UniqueConstraint(
+                fields=("item", "user", "view_date"),
+                condition=models.Q(user__isnull=False),
+                name="unique_item_user_day_view",
+            ),
+            models.UniqueConstraint(
+                fields=("item", "visitor_id", "view_date"),
+                condition=models.Q(user__isnull=True, visitor_id__isnull=False),
+                name="unique_item_visitor_day_view",
+            ),
+        ]
 
     def __str__(self):
         if self.user:
