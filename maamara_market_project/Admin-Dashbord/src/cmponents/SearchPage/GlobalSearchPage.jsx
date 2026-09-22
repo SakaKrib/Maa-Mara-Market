@@ -48,7 +48,20 @@ export default function SearchBarForVendorAdmin({ fullscreen = false, onClose })
     return () => window.clearTimeout(timer);
   }, [value, search]);
 
-  const sections = Object.entries(data || {}).filter(([, items]) => Array.isArray(items) && items.length);
+  const sections = Object.entries(data || {})
+    .filter(([, items]) => Array.isArray(items) && items.length)
+    .sort(([a], [b]) => {
+      const priority = (name) => {
+        const key = name.toLowerCase();
+        if (key.includes("item") || key.includes("product")) return 0;
+        if (key.includes("order")) return 1;
+        if (key.includes("vendor") || key.includes("customer") || key.includes("user")) return 2;
+        if (key.includes("request")) return 3;
+        if (key.includes("activity") || key.includes("notification")) return 9;
+        return 5;
+      };
+      return priority(a) - priority(b);
+    });
   const hasResults = sections.length > 0;
 
   const handleSubmit = (event) => {
@@ -105,19 +118,37 @@ export default function SearchBarForVendorAdmin({ fullscreen = false, onClose })
           ? "absolute left-0 right-0 top-[calc(100%+12px)] z-[100] max-h-[calc(100vh-150px)] overflow-y-auto rounded-2xl border border-[#e6e6e4] bg-white p-2 shadow-2xl"
           : "absolute left-0 right-0 top-[calc(100%+8px)] z-[1600] max-h-[min(70vh,520px)] overflow-y-auto rounded-2xl border border-[#e6e6e4] bg-white p-2 shadow-2xl"}>
           {loading && <div className="px-4 py-3 text-sm text-gray-500">Searching your workspace...</div>}
-          {!loading && !hasResults && <div className="px-4 py-5 text-center text-sm text-gray-500">No matching records found.</div>}
+          {!loading && !hasResults && (
+            <div className="m-2 rounded-2xl border border-gray-300 bg-[#f8f8f6] px-5 py-7 text-center">
+              <p className="text-sm font-semibold text-gray-900">No matching records found</p>
+              <p className="mt-1 text-xs leading-5 text-gray-500">
+                Try a product name, order number, customer, request, or another workspace record.
+              </p>
+            </div>
+          )}
           {!loading && hasResults && sections.map(([section, items]) => (
-            <div key={section} className="mb-2 last:mb-0">
-              <div className="px-3 pb-1 pt-2 text-[11px] font-bold uppercase tracking-[0.12em] text-gray-500">{section.replace(/_/g, " ")}</div>
+            <section key={section} className="border-b border-[#e6e6e4] px-1 pb-2 pt-1 last:border-b-0">
+              <div className="px-3 pb-2 pt-2 text-[10px] font-bold uppercase tracking-[0.16em] text-gray-500">
+                {section.replace(/_/g, " ")}
+              </div>
               {items.slice(0, 8).map((item) => (
-                <button type="button" key={String(item.type) + "-" + String(item.id)} onClick={() => handleClick(item)} className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left transition hover:bg-[#f8f8f6]">
+                <button
+                  type="button"
+                  key={String(item.type) + "-" + String(item.id)}
+                  onClick={() => handleClick(item)}
+                  className="flex w-full items-center gap-3 border-b border-gray-100 px-3 py-3 text-left transition last:border-b-0 hover:bg-[#f8f8f6]"
+                >
                   <span className="min-w-0 flex-1">
-                    <span className="block truncate text-sm font-semibold text-gray-900">{item.display_name || item.name || item.title || item.company_name || "Untitled record"}</span>
-                    <span className="mt-0.5 block text-xs text-gray-500">{item.type || section.replace(/_/g, " ")}</span>
+                    <span className="block truncate text-sm font-semibold tracking-tight text-gray-900">
+                      {item.display_name || item.name || item.title || item.company_name || "Untitled record"}
+                    </span>
+                    <span className="mt-0.5 block text-xs font-medium text-gray-500">
+                      {item.type || section.replace(/_/g, " ")}
+                    </span>
                   </span>
                 </button>
               ))}
-            </div>
+            </section>
           ))}
         </div>
       )}
