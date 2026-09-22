@@ -69,8 +69,8 @@ class NotificationSerializer(serializers.ModelSerializer):
             return normalized_message
 
         legacy_patterns = [
-            (r"^New vendor request submitted by .+\\.?$", "A vendor submitted a new vendor request."),
-            (r"^Vendor request \\d+ updated to status .+$", "A vendor request was updated."),
+            (r"^New vendor request submitted by .+\.?$", "A vendor submitted a new vendor request."),
+            (r"^Vendor request \d+ updated to status .+$", "A vendor request was updated."),
         ]
         for pattern, replacement in legacy_patterns:
             if re.match(pattern, normalized_message, re.I):
