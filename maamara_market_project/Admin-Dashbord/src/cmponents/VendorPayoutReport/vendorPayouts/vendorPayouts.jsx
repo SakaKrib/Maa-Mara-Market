@@ -76,7 +76,20 @@ const PayoutsPage = () => {
 
   if (loading) return <div className="min-h-full bg-[#f8f8f6] p-4 text-sm text-[#595959]">Loading payouts...</div>;
   if (error) return <div className="min-h-full bg-[#f8f8f6] p-4 text-sm text-red-600 dark:text-red-400">{error}</div>;
-  if (!sorted.length) return <div className="min-h-full bg-[#f8f8f6] p-4"><div className="rounded-2xl border border-dashed border-[#e6e6e4] bg-white p-8 text-center text-sm text-[#595959]">No payout history available.</div></div>;
+  if (!sorted.length) return (
+    <div className="w-full space-y-6">
+      <header className="rounded-2xl border border-[#e6e6e4] bg-white p-5 shadow-sm sm:p-6">
+        <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#595959]">Money</p>
+        <h1 className="mt-1 text-2xl font-bold tracking-tight text-[#222]">Payouts</h1>
+        <p className="mt-1 text-sm text-[#595959]">Monthly vendor payout history and payment status.</p>
+      </header>
+      <section className="rounded-2xl border border-dashed border-[#d7d7d3] bg-white p-10 text-center shadow-sm">
+        <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-[#f8f8f6] text-sm font-bold text-[#595959]">KSh</div>
+        <h2 className="mt-4 text-lg font-semibold text-[#222]">No payout history available</h2>
+        <p className="mt-1 text-sm text-[#595959]">Payout records will appear here once payments have been generated.</p>
+      </section>
+    </div>
+  );
 
   return (
     <div className="w-full space-y-6">
