@@ -800,7 +800,7 @@ class AdminBannerApprovalViewSet(viewsets.ModelViewSet):
             actor_type="admin",
             action="banner_rejected",
             item=banner.item,
-            description=f"Rejected banner '{title}'."
+            description=f"The administrator rejected the banner {title}."
                         + (f" Reason: {reason}" if reason else ""),
             related_url="/banners/"
         )
@@ -920,7 +920,7 @@ class WishlistAPIView(APIView):
             if item.vendor and item.vendor.user:
                 ActivityLog.objects.create(
                     user=item.vendor.user,
-                    actor_type="vendor",
+                    actor_type="user",
                     action="item_added_to_wishlist",
                     item=item,
                     description=f"A customer added {item.name} to their wishlist.",
