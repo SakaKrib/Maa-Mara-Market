@@ -98,7 +98,7 @@ class ActivityNotificationPresentationTests(TestCase):
 
         data = self.serialize_activity(activity, self.customer)
 
-        self.assertEqual(data["display_message"], "You added Bidets Tool to their cart.")
+        self.assertEqual(data["display_message"], "You added Bidets Tool to your cart.")
 
     def test_administrator_approval_does_not_expose_username(self):
         activity = ActivityLog.objects.create(
