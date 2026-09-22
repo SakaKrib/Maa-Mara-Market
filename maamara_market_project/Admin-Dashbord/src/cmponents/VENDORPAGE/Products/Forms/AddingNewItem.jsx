@@ -90,7 +90,7 @@ const OCCASION_OPTIONS = [
 ];
   
   
-const ItemAddNew = ({ initialItem, vendorId, itemId, onSave, vendor }) => {
+const ItemAddNew = ({ initialItem, vendorId, itemId, onSave, vendor, isAdmin = false, adminCreateNew = false }) => {
   const { departmentMap, organicDepartmentMap } = useDepartments();
 
   // Vendor data may arrive directly or nested under vendor_data (vendor-request API).
@@ -119,6 +119,8 @@ const ItemAddNew = ({ initialItem, vendorId, itemId, onSave, vendor }) => {
 
   // An existing item prop means vendor edit mode. A missing item means create mode.
   const isEditing = Boolean(initialItem?.id);
+  // Vendor edits keep protected fields muted; admin item creation/editing never does.
+  const shouldMuteProtectedFields = isEditing && !isAdmin;
 
 
   
@@ -455,6 +457,57 @@ const ItemAddNew = ({ initialItem, vendorId, itemId, onSave, vendor }) => {
             })
           ),
         };
+
+        // Admin-created items are persisted directly against the selected vendor.
+        // Vendor create/edit continues through the existing vendor-request draft flow.
+        if (isAdmin && adminCreateNew) {
+          if (!vendor?.id) {
+            throw new Error("Select a vendor before saving the item.");
+          }
+
+          const adminFormData = new FormData();
+          adminFormData.append("vendor_id", String(vendor.id));
+
+          Object.entries(formattedItem).forEach(([key, value]) => {
+            if (value === null || value === undefined || value === "") return;
+
+            if (key === "image") {
+              return;
+            }
+
+            if (Array.isArray(value) || typeof value === "object") {
+              adminFormData.append(key, JSON.stringify(value));
+            } else {
+              adminFormData.append(key, String(value));
+            }
+          });
+
+          if (data.image instanceof File) {
+            adminFormData.append("image", data.image);
+          }
+
+          (data.color_variants || []).forEach((variant, index) => {
+            if (variant.color_image instanceof File) {
+              adminFormData.append(`variant_image_${index}`, variant.color_image);
+            }
+          });
+
+          const response = await api.post(
+            "/api/item-post/update/",
+            adminFormData,
+            {
+              withCredentials: true,
+              headers: { "Content-Type": "multipart/form-data" },
+            }
+          );
+
+          if (response.status === 201 || response.status === 200) {
+            onSave(response.data);
+          } else {
+            alert("Failed to create item.");
+          }
+          return;
+        }
 
         const response = await api.put(
           `/api/vendor-requests/${vendorRequestId}/save-draft/`,
@@ -816,7 +869,7 @@ const ItemAddNew = ({ initialItem, vendorId, itemId, onSave, vendor }) => {
               type="number"
               step="0.01"
               min="0.01"
-              disabled={isEditing}
+              disabled={shouldMuteProtectedFields}
               value={isNaN(field.value) ? "" : field.value}
               onChange={(e) => {
                 const val = parseFloat(e.target.value);
