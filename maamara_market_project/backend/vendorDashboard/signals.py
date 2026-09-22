@@ -105,16 +105,37 @@ def return_request_deleted(sender, instance, **kwargs):
     _broadcast_request_change("return", "deleted", instance.pk)
 
 
+def _broadcast_payout_change(instance, action):
+    channel_layer = get_channel_layer()
+    if not channel_layer:
+        return
+
+    def send():
+        event = {
+            "type": "payout_changed",
+            "action": action,
+            "payout_id": instance.pk,
+        }
+        try:
+            async_to_sync(channel_layer.group_send)("admin_payouts", event)
+            async_to_sync(channel_layer.group_send)(
+                f"vendor_payouts_{instance.vendor_id}",
+                event,
+            )
+        except Exception:
+            return
+
+    transaction.on_commit(send)
+
+
 @receiver(post_save, sender=VendorPayout)
 def vendor_payout_saved(sender, instance, created, **kwargs):
-    _broadcast(
-        "admin_payouts",
-        "payout",
+    _broadcast_payout_change(
+        instance,
         "created" if created else "updated",
-        instance.pk,
     )
 
 
 @receiver(post_delete, sender=VendorPayout)
 def vendor_payout_deleted(sender, instance, **kwargs):
-    _broadcast("admin_payouts", "payout", "deleted", instance.pk)
+    _broadcast_payout_change(instance, "deleted")
