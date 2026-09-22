@@ -3,7 +3,7 @@ from rest_framework import permissions, viewsets
 from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
-from rest_framework.decorators import api_view, permission_classes
+from rest_framework.decorators import action, api_view, permission_classes
 from rest_framework.exceptions import ValidationError
 
 from core.models import Profile
@@ -123,7 +123,7 @@ class VendorAdminViewSet(viewsets.ModelViewSet):
 
 
 @api_view(["GET"])
-@permission_classes([permissions.IsAdminUser])
+@permission_classes([IsAuthenticated])
 def admin_item_performance(request, item_id):
     """
     Detailed admin/vendor item metrics.
