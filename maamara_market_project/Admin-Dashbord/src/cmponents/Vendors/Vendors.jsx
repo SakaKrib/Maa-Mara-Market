@@ -357,7 +357,6 @@ const Vendor_list = () => {
         <div className="space-y-6">
           {vendors.map((vendor) => {
             const vendorName = getVendorName(vendor);
-            const avatar = resolveApiAssetUrl(vendor.profile_picture_url) || resolveApiAssetUrl(vendor.company_logo_url) || resolveApiAssetUrl(vendor.brand_logo_url) || defaultAvatar;
 
             return (
               <article
