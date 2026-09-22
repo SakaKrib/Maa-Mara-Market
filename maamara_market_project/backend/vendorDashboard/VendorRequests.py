@@ -818,7 +818,7 @@ class ApprovePriceChangeRequestView(APIView):
                 action="Price Change Approved",
                 description=(
                     f"The administrator approved the new price {price_request.new_price} for "
-                    f"'{item.name}' (requested by {price_request.requested_by.username})."
+                    f"{item.name}."
                 ),
                 related_url=f"/admin/vendorDashboard/vendoritems/{item.id}/"
             )
