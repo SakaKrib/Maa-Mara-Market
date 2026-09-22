@@ -69,7 +69,6 @@ const ProductOptions = ({
   const kidsSizes = Array.isArray(item?.kids_sizes) ? item.kids_sizes : [];
   const shoes = Array.isArray(item?.shoe_input) ? item.shoe_input : [];
   const shoeSizes = Array.isArray(selectedShoe?.shoe_size) ? selectedShoe.shoe_size : [];
-  const hasSizeOptions = variantSizes.length > 0 || (!selectedVariant && sizeOnly.length > 0);
 
   return (
     <section className="rounded-2xl border border-border bg-card p-4 shadow-custom sm:p-5">
