@@ -1,6 +1,4 @@
 import React, { useState, useEffect } from "react";
-import axios from "axios";
-import { baseUrl } from "../../../../cmponents/Constant/Constant";
 import {
     Form,
     FormField,
@@ -373,7 +371,7 @@ useEffect(() => {
     
         // API call
         const response = await api.put(
-          `${baseUrl}/api/vendor-requests/${vendorRequestId}/update-item-list/`,
+          `/api/vendor-requests/${vendorRequestId}/update-item-list/`,
           { item_list: [formattedItem] },
           { withCredentials: true }
         );
@@ -1800,7 +1798,7 @@ useEffect(() => {
                       <div key={variant.color} className="space-y-4">
                         <div className="flex items-center gap-2">
                           <span
-                            className="inline-block h-5 w-5 shrink-0 rounded-full border border-gray-300"
+                            className="inline-block h-5 w-5 min-h-5 min-w-5 shrink-0 rounded-full border border-gray-300"
                             style={{ backgroundColor: colorMap[variant.color] || "#ccc" }}
                           />
                           <span className="text-sm font-medium">{variant.color}</span>
