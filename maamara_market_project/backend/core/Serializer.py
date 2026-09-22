@@ -65,7 +65,7 @@ class NotificationSerializer(serializers.ModelSerializer):
         # the legacy regexes below from accidentally duplicating phrases such
         # as "to their wishlist".
         normalized_message = unquote(message)
-        if re.match(r"^(A customer|A vendor|The administrator|An administrator|Your|You)\\b", normalized_message):
+        if re.match(r"^(A customer|A vendor|The administrator|An administrator|Your|You)\b", normalized_message):
             return normalized_message
 
         # Normalize legacy marketplace notifications so old records remain
