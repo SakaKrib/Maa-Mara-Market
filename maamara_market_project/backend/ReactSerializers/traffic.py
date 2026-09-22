@@ -252,7 +252,7 @@ def inbound_traffic_analytics(request):
     # Counts are distinct visitor/session keys, so repeated refreshes do not
     # inflate the number of people reaching a milestone.
     def milestone_count(predicate):
-        qs = event_rows.filter(path__icontains=predicate)
+        qs = page_views.filter(path__icontains=predicate)
         keys = set()
         for row in qs.values("visitor_id", "user_id", "session_id"):
             key = row["session_id"] or row["visitor_id"] or (f"user:{row['user_id']}" if row["user_id"] else None)
