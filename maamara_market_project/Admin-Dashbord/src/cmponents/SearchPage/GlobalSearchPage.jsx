@@ -39,7 +39,7 @@ export default function SearchBarForVendorAdmin() {
   const handleClick = (item) => {
     setOpen(false);
     if (item?.type === "Item" && item?.id) {
-      navigate("/product/" + item.id);
+      navigate("/item/" + item.id);
       return;
     }
     navigate("/search/global-results?q=" + encodeURIComponent(value.trim()));
