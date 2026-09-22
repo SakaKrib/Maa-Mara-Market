@@ -1,95 +1,55 @@
-import { useState } from "react";
-import "./TopBox.css";
 import { useCustomerSocket } from "../../../../cmponents/Hooks/Customer/CustomerHook";
-import { useTheme } from "@mui/material";
-import { tokens } from "../../../../theme";
 
-// Helper to generate a consistent color for each letter
 const getColorForLetter = (letter) => {
-  const colors = [
-    "#E57373", "#F06292", "#BA68C8", "#64B5F6", "#4DB6AC",
-    "#81C784", "#FFD54F", "#FFB74D", "#A1887F", "#90A4AE",
-    "#F44336", "#E91E63", "#9C27B0", "#2196F3", "#009688",
-    "#4CAF50", "#FFC107", "#FF9800", "#795548", "#607D8B",
-  ];
+  const colors = ["#E57373","#F06292","#BA68C8","#64B5F6","#4DB6AC","#81C784","#FFD54F","#FFB74D","#A1887F","#90A4AE"];
   if (!letter) return "#607D8B";
-  const index = (letter.toUpperCase().charCodeAt(0) - 65) % colors.length;
-  return colors[index];
+  return colors[(letter.toUpperCase().charCodeAt(0) - 65) % colors.length];
 };
 
 const TopBox = () => {
   const { customers, connected } = useCustomerSocket();
-  const theme = useTheme()
-  const colors = tokens(theme.palette.mode)
-
-  // hover state
-  const [hoveredId, setHoveredId] = useState(null);
 
   return (
-    <div className="topbox">
-      <h1 className="text-base font-bold leading-5 text-[#222] sm:text-lg">Customers</h1>
+    <div className="flex min-h-[136px] min-w-0 flex-col">
+      <div className="flex items-center justify-between border-b border-[#e6e6e4] pb-3">
+        <div>
+          <h2 className="text-base font-bold text-[#222] sm:text-lg">Customers</h2>
+          <p className="mt-0.5 text-xs text-[#595959]">{customers.length} customer{customers.length === 1 ? "" : "s"}</p>
+        </div>
+        <span className={`h-2.5 w-2.5 rounded-full ${connected ? "bg-green-500" : "bg-amber-500"}`} title={connected ? "Connected" : "Connecting"} />
+      </div>
 
-      {!connected && <p>Connecting to WebSocket...</p>}
-
-    <div>
-      <div className="list" >
-        {customers.length > 0 ? (
-          customers.map((customer) => {
-            const fullName =
-              customer.full_name ||
-              `${customer.first_name || ""} ${customer.last_name || ""}`.trim();
-            const initials = fullName
-              .split(" ")
-              .map((n) => n[0])
-              .join("")
-              .toUpperCase()
-              .slice(0, 2);
-
+      <div className="mt-3 max-h-[230px] overflow-y-auto pr-1">
+        <div className="space-y-2">
+          {customers.length > 0 ? customers.map((customer) => {
+            const fullName = customer.full_name || `${customer.first_name || ""} ${customer.last_name || ""}`.trim() || "Guest User";
+            const initials = fullName.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2);
             const bgColor = getColorForLetter(initials[0]);
-
             return (
-              <div className="listItem rounded-full cursor-pointer" key={customer.id}
-              onMouseEnter={() => setHoveredId(customer.id)}
-              onMouseLeave={() => setHoveredId(null)}
-              style={{
-                color: colors.gray[100],padding:'5px',borderBottom:`1px solid ${colors.gray[800]}`,
-                backgroundColor:
-                  hoveredId === customer.id ? colors.primary[900] : colors.gray[900]
-              }} >
-                <div className="user">
+              <div key={customer.id} className="flex items-center justify-between gap-3 rounded-2xl border border-[#eeeeeb] bg-[#fcfcfa] p-2.5 transition hover:bg-[#f8f8f6]">
+                <div className="flex min-w-0 items-center gap-3">
                   {customer.profile_picture ? (
-                    <img
-                      src={customer.profile_picture}
-                      alt={fullName || "No name"}
-                      className="w-11 h-11 rounded-full object-cover" style={{border: `1px solid ${colors.gray[100]}`}}
-                    />
+                    <img src={customer.profile_picture} alt={fullName} className="h-10 w-10 shrink-0 rounded-full border border-[#d9d9d6] object-cover" />
                   ) : (
-                    <div
-                      className="w-11 h-11 flex items-center justify-center rounded-full font-bold text-base uppercase "
-                      style={{ color: bgColor, border: `1px solid ${colors.gray[100]}` }}
-                    >
+                    <div className="grid h-10 w-10 shrink-0 place-items-center rounded-full border border-[#d9d9d6] bg-white text-sm font-bold" style={{ color: bgColor }}>
                       {initials}
                     </div>
                   )}
-
-                  <div className="userText">
-                    <span className="username">
-                      {fullName || "Guest User"}
-                    </span>
-                    <span className="email">
-                      {customer.email || "No email"}
-                    </span>
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-semibold text-[#222]">{fullName}</p>
+                    <p className="truncate text-xs text-[#595959]">{customer.email || "No email"}</p>
                   </div>
                 </div>
-                <span className="amount">{customer.city || "Nairobi"}</span>
+                <span className="shrink-0 text-xs font-medium text-[#595959]">{customer.city || "Nairobi"}</span>
               </div>
             );
-          })
-        ) : (
-          <p className="text-sm text-[#595959]" style={{color:colors.gray[100]}}>No customers yet</p>
-        )}
+          }) : (
+            <div className="rounded-xl border border-dashed border-[#d7d7d3] bg-[#f8f8f6] p-5 text-sm font-medium text-[#374151]">
+              No customers yet.
+            </div>
+          )}
+        </div>
       </div>
-    </div>
     </div>
   );
 };
