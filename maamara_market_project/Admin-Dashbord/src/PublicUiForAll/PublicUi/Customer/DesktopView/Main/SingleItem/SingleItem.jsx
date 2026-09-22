@@ -110,9 +110,9 @@ const SingleItem = () => {
             </div>
           </section>
 
-          <section className="min-w-0 rounded-2xl border border-border bg-card p-4 shadow-custom sm:p-5">
+          <div className="min-w-0">
             <ProductDetails item={item} />
-          </section>
+          </div>
 
           <div className="min-w-0">
             <ProductOptions
