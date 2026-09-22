@@ -844,8 +844,18 @@ class VendorItemRequest(models.Model):
     price = models.DecimalField(max_digits=10, decimal_places=2)
     image = models.ImageField(upload_to="item_requests/", null=True, blank=True)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="pending")
-    # 📝 Draft field
+    # 📝 Complete submitted product snapshot (kept for backward compatibility)
     draft_item = models.JSONField(null=True, blank=True)
+    # Link the approval request to the server-side ItemDraft that owns uploaded media.
+    # This mirrors migration 0024_vendoritemrequest_draft.py and lets approval
+    # retrieve gallery, video, main-image, and variant media without embedding files in JSON.
+    draft = models.ForeignKey(
+        "ItemDraft",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="vendor_item_requests",
+    )
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
