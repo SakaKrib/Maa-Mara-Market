@@ -70,6 +70,11 @@ const ProductOptions = ({
   const shoes = Array.isArray(item?.shoe_input) ? item.shoe_input : [];
   const shoeSizes = Array.isArray(selectedShoe?.shoe_size) ? selectedShoe.shoe_size : [];
 
+  // A product may have both color variants and standalone sizes. Prefer the
+  // selected variant's sizes when they exist; otherwise expose the item's
+  // standalone SizeStock records.
+  const sizesToShow = variantSizes.length > 0 ? variantSizes : sizeOnly;
+
   return (
     <section className="rounded-2xl border border-border bg-card p-4 shadow-custom sm:p-5">
       <div className="mb-5">
@@ -88,12 +93,12 @@ const ProductOptions = ({
                 <span className="ml-2 font-normal text-muted-foreground">· {selectedVariant.color}</span>
               )}
             </legend>
-            <div className="flex gap-2 overflow-x-auto pb-1">
+            <div className="flex flex-wrap gap-2">
               {variants.map((variant) => (
                 <OptionButton
                   key={variant.id}
                   selected={selectedVariant?.id === variant.id}
-                  onClick={() => onColorChange(variant.color)}
+                  onClick={() => onColorChange(variant)}
                   ariaLabel={variant.color || "Color variant"}
                 >
                   {variant.color || "Other"}
@@ -103,13 +108,13 @@ const ProductOptions = ({
           </fieldset>
         )}
 
-        {selectedVariant && variantSizes.length > 0 && (
+        {sizesToShow.length > 0 && (
           <fieldset>
             <legend className="mb-3 text-sm font-semibold text-card-foreground">
               Size <span className="ml-1 font-normal text-muted-foreground">· Required</span>
             </legend>
             <div className="flex flex-wrap gap-2">
-              {variantSizes.map((sizeObj) => {
+              {sizesToShow.map((sizeObj) => {
                 const stock = Number(sizeObj.quantity_in_stock || 0);
                 return (
                   <OptionButton
@@ -128,29 +133,6 @@ const ProductOptions = ({
                 {Number(selectedSize.quantity_in_stock || 0)} available in this size.
               </p>
             )}
-          </fieldset>
-        )}
-
-        {!selectedVariant && sizeOnly.length > 0 && (
-          <fieldset>
-            <legend className="mb-3 text-sm font-semibold text-card-foreground">
-              Size <span className="ml-1 font-normal text-muted-foreground">· Required</span>
-            </legend>
-            <div className="flex flex-wrap gap-2">
-              {sizeOnly.map((sizeObj) => {
-                const stock = Number(sizeObj.quantity_in_stock || 0);
-                return (
-                  <OptionButton
-                    key={sizeObj.id}
-                    selected={selectedSize?.id === sizeObj.id}
-                    disabled={stock <= 0}
-                    onClick={() => onSizeChange(sizeObj)}
-                  >
-                    {formatSizeValue(sizeObj.size)}
-                  </OptionButton>
-                );
-              })}
-            </div>
           </fieldset>
         )}
 
@@ -174,6 +156,11 @@ const ProductOptions = ({
                 );
               })}
             </div>
+            {selectedAgeVariant && (
+              <p className="mt-2 text-xs text-muted-foreground">
+                {Number(selectedAgeVariant.quantity_in_stock || 0)} available in this age/size.
+              </p>
+            )}
           </fieldset>
         )}
 
@@ -237,25 +224,23 @@ const ProductOptions = ({
           </fieldset>
         )}
 
-        {(
-          <fieldset>
-            <legend className="mb-2 text-sm font-semibold text-card-foreground">
-              Custom size / measurements
-              <span className="ml-2 font-normal text-muted-foreground">· Optional</span>
-            </legend>
-            <textarea
-              value={customPreferences}
-              onChange={(event) => onCustomPreferencesChange(event.target.value)}
-              maxLength={1000}
-              rows={4}
-              placeholder="For example: waist 32 in, length 54 in, sleeve 24 in. You can also add fit, engraving, or other vendor instructions."
-              className="w-full resize-y rounded-xl border border-border bg-background px-3 py-2.5 text-sm leading-6 text-card-foreground outline-none transition focus:border-gray-900 focus:ring-2 focus:ring-gray-900/10"
-            />
-            <p className="mt-2 text-xs text-muted-foreground">
-              {customPreferences.length}/1000 characters
-            </p>
-          </fieldset>
-        )}
+        <fieldset>
+          <legend className="mb-2 text-sm font-semibold text-card-foreground">
+            Custom size / measurements
+            <span className="ml-2 font-normal text-muted-foreground">· Optional</span>
+          </legend>
+          <textarea
+            value={customPreferences}
+            onChange={(event) => onCustomPreferencesChange(event.target.value)}
+            maxLength={1000}
+            rows={4}
+            placeholder="If the available options do not fit your request, enter your measurements or other vendor instructions here."
+            className="w-full resize-y rounded-xl border border-border bg-background px-3 py-2.5 text-sm leading-6 text-card-foreground outline-none transition focus:border-gray-900 focus:ring-2 focus:ring-gray-900/10"
+          />
+          <p className="mt-2 text-xs text-muted-foreground">
+            {customPreferences.length}/1000 characters
+          </p>
+        </fieldset>
       </div>
     </section>
   );
