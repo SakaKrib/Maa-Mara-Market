@@ -35,7 +35,6 @@ export default function useItemDraftAutosave({
   const restoredRef = useRef(false);
   const timerRef = useRef(null);
   const savingRef = useRef(false);
-  const queuedRef = useRef(null);
   const knownSlotsRef = useRef(new Set());
   const valuesRef = useRef(values);
   const mediaRef = useRef(media);
@@ -87,9 +86,20 @@ export default function useItemDraftAutosave({
 
   const save = useCallback(
     async (nextValues = valuesRef.current, nextMedia = mediaRef.current) => {
-      if (!enabled || !restoredRef.current || savingRef.current) {
-        if (savingRef.current) queuedRef.current = { nextValues, nextMedia };
-        return;
+      if (!enabled || !restoredRef.current) return null;
+
+      if (savingRef.current) {
+        await new Promise((resolve) => {
+          const waitForSave = () => {
+            if (!savingRef.current) {
+              resolve();
+              return;
+            }
+            window.setTimeout(waitForSave, 100);
+          };
+          waitForSave();
+        });
+        return save(nextValues, nextMedia);
       }
 
       savingRef.current = true;
@@ -146,6 +156,7 @@ export default function useItemDraftAutosave({
         setLastSavedAt(saved?.updated_at || new Date().toISOString());
         setError(null);
         onSaved?.(saved);
+        return saved;
       } catch (err) {
         setError(
           err?.response?.data?.detail ||
@@ -155,12 +166,6 @@ export default function useItemDraftAutosave({
       } finally {
         savingRef.current = false;
         setSaving(false);
-
-        if (queuedRef.current) {
-          const queued = queuedRef.current;
-          queuedRef.current = null;
-          save(queued.nextValues, queued.nextMedia);
-        }
       }
     },
     [currentDraftId, enabled, onSaved]
