@@ -1,95 +1,67 @@
 import React, { useMemo } from "react";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from "recharts";
-import { useTheme } from "@mui/material";
-import { tokens } from "../../../theme";
 
-const CombinedVendorStatsChart = ({ vendorStats, /* monthlySales, */ vendorGrowthStats, orderStats }) => {
-  const theme = useTheme();
-  const colors = tokens(theme.palette.mode);
+const COLORS = ["#2563eb", "#f59e0b", "#dc2626"];
 
-  // Compose the combined data for the pie chart, excluding monthlySales
-  const data = useMemo(() => {
-    return [
-      {
-        name: "Views",
-        value: Number(vendorStats.value) || 0,
-        color: colors.blueAccent[400],
-      },
-      // {
-      //   name: "Sales",
-      //   value: Number(monthlySales.value) || 0,
-      //   color: colors.greenAccent[400],
-      // },
-      {
-        name: "Growth",
-        value: Number(vendorGrowthStats.value) || 0,
-        color: colors.orangeAccent[400],
-      },
-      {
-        name: "Orders",
-        value: Number(orderStats.value) || 0,
-        color: colors.redAccent[400],
-      },
-    ];
-  }, [vendorStats, /* monthlySales, */ vendorGrowthStats, orderStats, colors]);
+const CombinedVendorStatsChart = ({ vendorStats, vendorGrowthStats, orderStats }) => {
+  const data = useMemo(() => [
+    { name: "Views", value: Number(vendorStats?.value) || 0 },
+    { name: "Growth", value: Number(vendorGrowthStats?.value) || 0 },
+    { name: "Orders", value: Number(orderStats?.value) || 0 },
+  ], [vendorStats, vendorGrowthStats, orderStats]);
 
-  console.log(
-    'Chart data values:',
-    vendorStats.value,
-    // monthlySales.value,
-    vendorGrowthStats.value,
-    orderStats.value
-  );
-
-  // If all zeros or loading
   const totalValue = data.reduce((sum, item) => sum + item.value, 0);
+
   if (totalValue === 0) {
     return (
-      <div style={{ color: colors.gray[400], textAlign: "center", padding: 20 }}>
+      <div className="flex min-h-[280px] items-center justify-center text-center text-sm text-[#595959]">
         No vendor data available for chart.
       </div>
     );
   }
 
   return (
-    <div style={{ width: "100%", height: 300 }} className="relative">
-      <h3 style={{ color: colors.gray[100], textAlign: "start", marginBottom: 12 }} className="absolute text-base font-bold text-[#222]">
-        Overview
-      </h3>
-      <ResponsiveContainer>
-        <PieChart>
-          <Pie
-            data={data}
-            dataKey="value"
-            nameKey="name"
-            cx="50%"
-            cy="50%"
-            innerRadius={70}
-            outerRadius={100}
-            paddingAngle={4}
-            label={({ name, percent }) =>
-              percent > 0 ? `${name}: ${(percent * 100).toFixed(0)}%` : `${name}: 0%`
-            }
-          >
-            {data.map((entry, index) => (
-              <Cell key={`cell-${index}`} fill={entry.color} />
-            ))}
-          </Pie>
-          <Tooltip
-            formatter={(value) => new Intl.NumberFormat().format(value)}
-            contentStyle={{
-              backgroundColor: colors.primary[400],
-              border: "1px solid #444",
-            }}
-            itemStyle={{ color: colors.gray[100] }}
-            labelStyle={{ color: colors.gray[100] }}
-          />
-          <Legend
-            verticalAlign="bottom"
-            wrapperStyle={{ color: colors.gray[100], fontSize: 12 }}
-          />
-        </PieChart>
-      </ResponsiveContainer>
+    <div className="min-w-0">
+      <div className="mb-2">
+        <h3 className="text-base font-bold text-[#222] sm:text-lg">Overview</h3>
+        <p className="mt-0.5 text-xs text-[#595959]">Views, item growth and pending orders.</p>
+      </div>
+      <div className="h-[285px] w-full min-w-0">
+        <ResponsiveContainer width="100%" height="100%">
+          <PieChart margin={{ top: 8, right: 8, bottom: 8, left: 8 }}>
+            <Pie
+              data={data}
+              dataKey="value"
+              nameKey="name"
+              cx="50%"
+              cy="44%"
+              innerRadius="43%"
+              outerRadius="68%"
+              paddingAngle={3}
+              label={false}
+            >
+              {data.map((entry, index) => (
+                <Cell key={entry.name} fill={COLORS[index % COLORS.length]} />
+              ))}
+            </Pie>
+            <Tooltip
+              formatter={(value, name) => [Number(value).toLocaleString(), name]}
+              contentStyle={{
+                borderRadius: 12,
+                border: "1px solid #e6e6e4",
+                background: "#ffffff",
+                boxShadow: "0 8px 24px rgba(0,0,0,0.08)",
+              }}
+            />
+            <Legend
+              verticalAlign="bottom"
+              align="center"
+              iconType="circle"
+              wrapperStyle={{ fontSize: 11, color: "#374151", paddingTop: 6 }}
+            />
+          </PieChart>
+        </ResponsiveContainer>
+      </div>
     </div>
   );
 };
