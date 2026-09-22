@@ -418,7 +418,7 @@ def approve_request(request, pk):
             url=f"/vendor/items/{item.id}/",
         )
 
-        subject = f"Your Item Request '{item_request.name}' Was Approved"
+        subject = f"Your Item Request for {item_request.name} Was Approved"
 
         context = {
             "item": item,
@@ -489,7 +489,7 @@ def approve_request(request, pk):
 
         current_year = timezone.now().year
 
-        subject = f"Your Item Request '{item_request.name}' Was Denied"
+        subject = f"Your Item Request for {item_request.name} Was Denied"
 
         context = {
             "item": item_request,
@@ -817,7 +817,7 @@ class ApprovePriceChangeRequestView(APIView):
                 actor_type="admin",
                 action="Price Change Approved",
                 description=(
-                    f"Approved new price {price_request.new_price} for "
+                    f"The administrator approved the new price {price_request.new_price} for "
                     f"'{item.name}' (requested by {price_request.requested_by.username})."
                 ),
                 related_url=f"/admin/vendorDashboard/vendoritems/{item.id}/"
@@ -831,7 +831,7 @@ class ApprovePriceChangeRequestView(APIView):
             actor_type="vendor",
             action="Price Change Approved",
             description=(
-                f"Your price change request for '{item.name}' "
+                f"Your price change request for {item.name} "
                 f"has been approved. New price: {price_request.new_price}"
             ),
             related_url=f"/vendor/vendorDashboard/vendoritems/{item.id}/"
@@ -855,7 +855,7 @@ class ApprovePriceChangeRequestView(APIView):
             user=price_request.requested_by,
             title="Price Change Request Approved",
             message=(
-                f"Your request for '{item.name}' has been approved. "
+                f"Your request for {item.name} has been approved. "
                 f"The new price is {item.price}."
             ),
             url=f"/vendors-dashboard/vendor/items/{item.id}/"
