@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Search, X } from "lucide-react";
+import { Search } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import useDynamicSearch from "../Hooks/SearchHook/GlobalSearchHook";
 
@@ -82,25 +82,22 @@ export default function SearchBarForVendorAdmin({ fullscreen = false, onClose })
             onFocus={() => value.trim().length > 1 && setOpen(true)}
             placeholder="Search your workspace..."
             className={fullscreen
-              ? "h-12 w-full rounded-full border border-[#d9d9d6] bg-white pl-12 pr-11 text-sm text-gray-900 shadow-sm outline-none transition placeholder:text-gray-400 focus:border-[#2563eb] focus:ring-4 focus:ring-[#2563eb]/10"
+              ? "h-12 w-full rounded-full border border-[#d9d9d6] bg-white pl-12 pr-12 text-sm text-gray-900 shadow-sm outline-none transition placeholder:text-gray-400 focus:border-[#2563eb] focus:ring-4 focus:ring-[#2563eb]/10"
               : "h-11 w-full rounded-full border border-[#d9d9d6] bg-white pl-10 pr-11 text-sm text-gray-900 outline-none transition placeholder:text-gray-400 focus:border-[#2563eb] focus:ring-4 focus:ring-[#2563eb]/10"}
             aria-label="Search workspace"
             aria-expanded={open}
           />
-          {value && (
-            <button
-              type="button"
-              onClick={() => { setValue(""); setOpen(false); }}
-              className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-900"
-              aria-label="Clear search"
-            >
-              <X size={15} />
-            </button>
-          )}
+          <button
+            type="submit"
+            disabled={!value.trim()}
+            aria-label="Search"
+            title="Search"
+            className="absolute right-1.5 top-1/2 grid h-8 w-8 -translate-y-1/2 place-items-center rounded-full bg-black text-white transition hover:bg-[#262626] disabled:cursor-not-allowed disabled:opacity-40"
+          >
+            <Search className="h-4 w-4" aria-hidden="true" />
+          </button>
         </div>
-        <button type="submit" className="hidden min-h-11 shrink-0 rounded-full bg-black px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-[#262626] sm:inline-flex">
-          Search
-        </button>
+
       </form>
 
       {open && value.trim().length > 1 && (
