@@ -79,8 +79,13 @@ const useSingleItem = () => {
 
   const availableStock =
     selectedSize?.quantity_in_stock ??
+    selectedAgeVariant?.quantity_in_stock ??
+    (selectedShoe && selectedShoeSize ? 1 : null) ??
     (Array.isArray(selectedVariant?.sizes)
       ? selectedVariant.sizes.reduce((sum, size) => sum + Number(size.quantity_in_stock || 0), 0)
+      : null) ??
+    (Array.isArray(item?.size_only_icon)
+      ? item.size_only_icon.reduce((sum, size) => sum + Number(size.quantity_in_stock || 0), 0)
       : null) ??
     Number(item?.in_stock || 0);
 
