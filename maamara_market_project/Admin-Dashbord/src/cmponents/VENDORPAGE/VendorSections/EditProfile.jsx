@@ -129,7 +129,7 @@ export default function VendorProfileSheet({ vendor = {}, onSave }) {
   return (
     <Sheet>
       <SheetTrigger asChild>
-        <Button className="rounded-full bg-[#2563eb] px-4 py-2 font-semibold text-white hover:bg-[#1d4ed8]">
+        <Button className="rounded-full bg-black px-4 py-2.5 font-semibold text-white transition hover:bg-[#262626]">
           Edit Profile
         </Button>
       </SheetTrigger>
