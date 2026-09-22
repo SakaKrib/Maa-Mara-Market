@@ -450,7 +450,20 @@ class ActivityLogSerializer(serializers.ModelSerializer):
             current_user
             and current_user.is_authenticated
             and obj.user_id == current_user.id
-            and description.startswith("you ")
+            and obj.actor_type in {"user", "vendor"}
+            and obj.action in {
+                "item_added_to_cart",
+                "item_removed_from_cart",
+                "item_updated_qty",
+                "item_added_to_wishlist",
+                "item_removed_from_wishlist",
+                "item_viewed",
+                "item_shared",
+                "item_reviewed",
+                "return_requested",
+                "refund_requested",
+                "exchange_requested",
+            }
         ):
             return "You"
         return {
