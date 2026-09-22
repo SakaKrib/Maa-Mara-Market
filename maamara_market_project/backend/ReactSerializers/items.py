@@ -3,7 +3,7 @@ from rest_framework.permissions import AllowAny, IsAuthenticated, IsAdminUser
 from rest_framework.response import Response
 from django.db.models import Count, Sum
 from django.db.models.functions import TruncDay, TruncWeek, TruncMonth
-from datetime import timedelta\nfrom dateutil.relativedelta import relativedelta
+from datetime import datetime, timedelta
 from django.utils import timezone
 from order.models import Order, OrderItem
 import calendar
@@ -160,8 +160,18 @@ def _analytics_period(period):
     if period == "day":
         return today - timedelta(days=29), today, TruncDay
     if period == "week":
-        return today - timedelta(weeks=11), today, TruncWeek
-    return today.replace(day=1) - timedelta(days=180), today, TruncMonth
+        current_week_start = today - timedelta(days=today.weekday())
+        return current_week_start - timedelta(weeks=11), today, TruncWeek
+
+    # First day of the current month and the five preceding calendar months.
+    month_index = (today.year * 12 + today.month - 1) - 5
+    start_year, start_month_zero_based = divmod(month_index, 12)
+    start = today.replace(
+        year=start_year,
+        month=start_month_zero_based + 1,
+        day=1,
+    )
+    return start, today, TruncMonth
 
 
 @api_view(["GET"])
@@ -183,8 +193,8 @@ def vendor_analytics_stats(request):
         return Response({"detail": "period must be day, week, or month."}, status=400)
 
     start, end, truncator = _analytics_period(period)
-    start_dt = timezone.make_aware(timezone.datetime.combine(start, timezone.datetime.min.time()))
-    end_dt = timezone.make_aware(timezone.datetime.combine(end + timedelta(days=1), timezone.datetime.min.time()))
+    start_dt = timezone.make_aware(datetime.combine(start, datetime.min.time()))
+    end_dt = timezone.make_aware(datetime.combine(end + timedelta(days=1), datetime.min.time()))
 
     items = Item.objects.filter(vendor=vendor)
     views_qs = ItemView.objects.filter(item__in=items, viewed_at__gte=start_dt, viewed_at__lt=end_dt)
