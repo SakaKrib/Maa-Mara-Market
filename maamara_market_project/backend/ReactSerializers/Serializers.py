@@ -138,8 +138,10 @@ class VendorPublicSerializer(serializers.ModelSerializer):
 
     def get_items(self, obj):
         request = self.context.get('request')
+        # The vendor relation is authoritative, including items created
+        # by an admin on the vendor's behalf.
         return ItemSerializer(
-            Item.objects.filter(created_by=obj.user),
+            Item.objects.filter(vendor=obj),
             many=True,
             context={'request': request}
         ).data
