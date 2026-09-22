@@ -13,7 +13,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useTheme } from "@mui/material";
 import { tokens } from "../../../../../theme";
-import ItemUpdateForm from "../ItemUpdateForm";
+import ItemAddNew from "../AddingNewItem";
 import { z } from "zod";
 
 
@@ -330,7 +330,11 @@ const CreateItem = ({ vendor }) => {
 
   return (
     <div className="relative flex flex-1">
-      <ItemUpdateForm form={form} vendorId={vendor?.id ?? ""} />
+      <ItemAddNew
+        vendor={vendor}
+        vendorId={vendor?.id}
+        onSave={() => {}}
+      />
     </div>
   );
 };
