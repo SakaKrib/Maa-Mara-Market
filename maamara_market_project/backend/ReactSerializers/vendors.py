@@ -717,7 +717,7 @@ def list_verified_vendor_requests(request):
         user=request.user,
         actor_type='admin',
         action='viewed_vendor_requests',
-        description=f"Admin '{request.user.username}' viewed vendor requests (status='{status}' if status else 'all')"
+        description=f"The administrator viewed vendor requests ({status or 'all'})."
     )    
     serializer = VendorRequestSerializer(requests, many=True)
     return Response(serializer.data)
@@ -1051,7 +1051,7 @@ def approve_vendor(request, vendor_request_id):
         user=request.user,
         actor_type='admin',
         action='approved_vendor',
-        description=f"Admin approved vendor for user '{vendor.user.username}'"
+        description="The administrator approved a vendor account."
     )
 
     # The draft has now been promoted. Delete only its database record;
