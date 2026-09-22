@@ -413,6 +413,24 @@ class ActivityLogSerializer(serializers.ModelSerializer):
         request = self.context.get("request")
         current_user = getattr(request, "user", None) if request else None
         description = (obj.description or "").strip().lower()
+        if description.startswith("the administrator"):
+            return "The administrator"
+        if description.startswith("a customer"):
+            return "A customer"
+        if description.startswith("a vendor"):
+            return "A vendor"
+        if description.startswith("your ") and obj.action in {
+            "item_request_approved",
+            "item_request_denied",
+            "Price Change Approved",
+            "refund_approved",
+            "refund_approved_vendor",
+            "exchange_approved",
+            "exchange_approved_vendor",
+            "return_rejected",
+            "return_rejected_vendor",
+        }:
+            return "The administrator"
         if (
             current_user
             and current_user.is_authenticated
