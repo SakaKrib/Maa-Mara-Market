@@ -38,7 +38,7 @@ const StockSummaryBox = () => {
 
   return (
     <div className="stock-summary-box">
-      <h3 className="title border-b rounded-full flex justify-center items-center">
+      <h3 className="title border-b rounded-full flex justify-center items-center text-base font-bold text-[#222] sm:text-lg">
         Stock Summary
       </h3>
 
