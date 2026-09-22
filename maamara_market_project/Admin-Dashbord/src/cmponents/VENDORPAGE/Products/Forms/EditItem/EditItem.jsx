@@ -14,7 +14,7 @@ import { useTheme } from "@mui/material";
 import { tokens } from "../../../../../theme";
 import { useEffect } from "react";
 import { ScrollArea } from "../../../../../../components/ui/scroll-area";
-import ItemEditForm from "../EditItemForm";
+import ItemAddNew from "../AddingNewItem";
 
 
 // ✅ Schema definition
@@ -249,7 +249,7 @@ if (data.category === "Coffee % cocoa" || data.subcategory === "Coffee") {
   
 
 
-const EditItem = ({ vendor, item }) => {
+const EditItem = ({ vendor, item }) => {\n  if (!item?.id) return null;
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
   console.log("this is item in edititem", item)
@@ -452,7 +452,7 @@ const EditItem = ({ vendor, item }) => {
           </SheetHeader>
 
           <div className="relative top-10">
-            <ItemEditForm form={form} vendor={vendor} vendorId={vendor.id} itemId={item.id} item={item} />
+            <ItemAddNew initialItem={item} vendorId={vendor?.id} itemId={item.id} vendor={vendor} isAdmin={Boolean(vendor?.isAdmin || vendor?.is_admin)} onSave={() => {}} />
           </div>
         </ScrollArea>
       </SheetContent>
