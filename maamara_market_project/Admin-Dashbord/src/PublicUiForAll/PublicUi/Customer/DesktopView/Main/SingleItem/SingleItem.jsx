@@ -19,9 +19,9 @@ const truncateWords = (text, limit = 15) => {
 
 const SingleItem = () => {
   const {
-    item, loading, error, selectedVariant, selectedSize, selectedImage,
+    item, loading, error, selectedVariant, selectedSize, selectedAgeVariant, selectedShoe, selectedShoeSize, selectedWeight, selectedLength, customPreferences, setCustomPreferences, selectedImage,
     quantity, setQuantity, availableStock, remainingStock,
-    selectColor, selectSize, selectImage, refreshItem,
+    selectColor, selectSize, selectAgeVariant, selectShoe, selectShoeSize, selectWeight, selectLength, selectImage, refreshItem,
   } = useSingleItem();
   const { wishlist, addToWishlist, removeFromWishlist } = useWishlistContext();
   const isWishlisted = Array.isArray(wishlist) && wishlist.some((entry) => (entry.item?.id || entry.id) === item?.id);
@@ -75,8 +75,20 @@ const SingleItem = () => {
           item={item}
           selectedVariant={selectedVariant}
           selectedSize={selectedSize}
+          selectedAgeVariant={selectedAgeVariant}
+          selectedShoe={selectedShoe}
+          selectedShoeSize={selectedShoeSize}
+          selectedWeight={selectedWeight}
+          selectedLength={selectedLength}
+          customPreferences={customPreferences}
           onColorChange={selectColor}
           onSizeChange={selectSize}
+          onAgeChange={selectAgeVariant}
+          onShoeChange={selectShoe}
+          onShoeSizeChange={selectShoeSize}
+          onWeightChange={selectWeight}
+          onLengthChange={selectLength}
+          onCustomPreferencesChange={setCustomPreferences}
         />
 
         <QuantityAndCart
@@ -87,6 +99,10 @@ const SingleItem = () => {
           remainingStock={remainingStock}
           selectedVariant={selectedVariant}
           selectedSize={selectedSize}
+          selectedAgeVariant={selectedAgeVariant}
+          selectedShoe={selectedShoe}
+          selectedShoeSize={selectedShoeSize}
+          customPreferences={customPreferences}
           onAdded={refreshItem}
         />
 
