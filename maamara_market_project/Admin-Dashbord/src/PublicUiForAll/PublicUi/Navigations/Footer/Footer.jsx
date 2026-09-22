@@ -100,7 +100,7 @@ const Footer = () => {
           <div className="mm-footer-links">
             <div>
               <h3>Company</h3>
-              <a href="mailto:maamaramarket@gmail.com?subject=About%20Maa%20Mara%20Market">About Us</a>
+              <Link to="/about-us">About Us</Link>
               <a href="mailto:maamaramarket@gmail.com?subject=Contact%20Maa%20Mara%20Market">Contact us</a>
               <Link to="/customer-order">Order History</Link>
               <Link to="/request-returns">Return Policy &amp; Returns</Link>
