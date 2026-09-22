@@ -583,7 +583,6 @@ class ItemDetailView(generics.RetrieveAPIView):
                 item=item,
                 user=user,
                 visitor_id=None,
-                view_date=view_date,
             )
         else:
             _, created = ItemView.objects.get_or_create(
