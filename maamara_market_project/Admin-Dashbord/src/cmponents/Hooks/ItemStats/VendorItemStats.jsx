@@ -7,59 +7,31 @@ export const useVendorItemGrowthStats = () => {
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    const fetchStats = async () => {
-      try {
-        setLoading(true);
-        const response = await api.get("/api/vendor-item-growth/", { withCredentials: true });
-        setData(response.data);
-      } catch (err) {
-        console.error("❌ Error fetching vendor item growth:", err);
-        setError("Failed to load vendor item growth stats");
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchStats();
+    api.get("/api/vendor-analytics/?period=month", { withCredentials: true })
+      .then((response) => setData(response.data))
+      .catch(() => setError("Failed to load vendor item growth stats."))
+      .finally(() => setLoading(false));
   }, []);
 
-  if (loading || error || !data) {
-    return {
-      title: "Item Growth",
-      value: 0,
-      percentage: "N/A",
-      percentageColor: "gray",
-      duration: "",
-      link: "/items",
-      chartData: [],
-      loading,
-      error,
-    };
-  }
+  if (loading || error || !data) return {
+    title: "Item Growth", value: 0, percentage: "N/A", percentageColor: "gray",
+    duration: "Last 6 Months", link: "item-stats", chartData: [], loading, error
+  };
 
-  // Map monthly stats for chart display
-  const chartData = Array.isArray(data.monthly_stats)
-    ? data.monthly_stats.map((stat) => ({
-        name: stat.month,
-        pv: stat.total_items || 0,
-      }))
-    : [];
-
-  // Get percentage change from last month
-  const last = data.monthly_stats?.at(-1)?.percentage_change || 0;
-  const percentageChange = `${last >= 0 ? "+" : ""}${last}%`;
-
-  // Assign color dynamically
-  let percentageColor = "gray";
-  if (last > 50) percentageColor = "green";
-  else if (last > 0) percentageColor = "blue";
-  else if (last < 0) percentageColor = "red";
+  const chartData = (data.series?.items || []).map((stat) => ({
+    name: new Date(stat.period).toLocaleDateString("en-KE", { month: "short", year: "2-digit" }),
+    pv: stat.value || 0,
+  }));
+  const values = chartData.map((x) => x.pv);
+  const latest = values.at(-1) || 0;
+  const previous = values.at(-2) || 0;
+  const change = previous ? ((latest - previous) / previous) * 100 : 0;
 
   return {
     title: "Item Growth",
-    value: data.total_items || 0,
-    percentage: percentageChange,
-    percentageColor,
+    value: data.totals?.items || 0,
+    percentage: `${change >= 0 ? "+" : ""}${Math.round(change)}%`,
+    percentageColor: change > 50 ? "green" : change > 0 ? "blue" : change < 0 ? "red" : "gray",
     duration: "Last 6 Months",
     link: "item-stats",
     chartData,
