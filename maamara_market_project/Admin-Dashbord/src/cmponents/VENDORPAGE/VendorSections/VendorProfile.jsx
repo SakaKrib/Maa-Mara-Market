@@ -1,5 +1,4 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { Progress } from "../../../../components/ui/progress";
 import {
   LineChart,
   Line,
@@ -12,7 +11,6 @@ import {
 } from "recharts";
 import { baseUrl } from "../../Constant/Constant";
 import api from "../../../Services/Api";
-import { HoverCard, HoverCardContent, HoverCardTrigger } from "../../../../components/ui/hover-card";
 import { IonIcon } from "@ionic/react";
 import {
   shieldCheckmarkSharp,
@@ -39,6 +37,7 @@ const SingleVendorProfile = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [activityLogs, setActivityLogs] = useState([]);
+  const [activeBadge, setActiveBadge] = useState(null);
 
   const fetchActivityLogs = async () => {
     try {
@@ -333,7 +332,7 @@ const SingleVendorProfile = () => {
             <div className="grid gap-6 p-5 sm:p-6 lg:grid-cols-[240px_minmax(0,1fr)]">
               <div>
                 <img
-                  src={mediaUrl(vendor.profile_picture) || mediaUrl("/default-avatar.png")}
+                  src={vendor.profile_picture_url || mediaUrl(vendor.profile_picture) || mediaUrl("/default-avatar.png")}
                   alt={vendor.company_name || fullName || "Vendor profile"}
                   className="h-56 w-full rounded-xl border border-gray-200 object-cover"
                 />
@@ -369,7 +368,7 @@ const SingleVendorProfile = () => {
                       {vendor.profile_completion ?? 0}%
                     </span>
                   </div>
-                  <Progress value={vendor.profile_completion ?? 0} />
+                  <div className="h-2.5 w-full overflow-hidden rounded-full bg-gray-200"><div className="h-full rounded-full bg-[#2563eb] transition-all duration-500" style={{ width: `${Math.min(100, Math.max(0, vendor.profile_completion ?? 0))}%` }} /></div>
                 </div>
 
                 <div className="mt-6 border-t border-gray-100 pt-5">
@@ -377,23 +376,20 @@ const SingleVendorProfile = () => {
                     Vendor badges
                   </p>
                   <div className="flex flex-wrap gap-3">
-                    {badges.map((badge) => (
-                      <HoverCard key={badge.label}>
-                        <HoverCardTrigger asChild>
-                          <button
-                            type="button"
-                            aria-label={badge.label}
-                            className="grid h-10 w-10 place-items-center rounded-full border border-gray-200 bg-gray-50 text-gray-700 transition hover:border-[#d9d9d6] hover:bg-blue-50 hover:text-[#2563eb]"
-                          >
+                    {badges.map((badge) => {
+                      const isActive = activeBadge === badge.label;
+                      return (
+                        <div key={badge.label} className="relative">
+                          <button type="button" aria-label={badge.label} aria-expanded={isActive} onClick={() => setActiveBadge(isActive ? null : badge.label)} className="grid h-10 w-10 place-items-center rounded-full border border-gray-300 bg-[#f8f8f6] text-gray-700 transition hover:border-[#2563eb]/40 hover:bg-blue-50 hover:text-[#2563eb] focus:outline-none focus:ring-4 focus:ring-[#2563eb]/10">
                             <IonIcon icon={badge.icon} className="text-xl" />
                           </button>
-                        </HoverCardTrigger>
-                        <HoverCardContent>
-                          <h3 className="font-semibold text-gray-900">{badge.label}</h3>
-                          <p className="mt-1 text-sm text-gray-600">{badge.description}</p>
-                        </HoverCardContent>
-                      </HoverCard>
-                    ))}
+                          <div className={`absolute left-1/2 top-12 z-20 w-64 -translate-x-1/2 rounded-2xl border border-[#e6e6e4] bg-white p-4 text-left shadow-xl ${isActive ? "block" : "hidden"} sm:group-hover:block`}>
+                            <h3 className="text-sm font-semibold text-gray-900">{badge.label}</h3>
+                            <p className="mt-1 text-xs leading-5 text-gray-600">{badge.description}</p>
+                          </div>
+                        </div>
+                      );
+                    })}}
                   </div>
                 </div>
               </div>
