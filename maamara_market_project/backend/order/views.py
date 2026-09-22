@@ -197,6 +197,7 @@ def get_cart_view(request):
                 "selected_length": cart_item.selected_length,
                 "selected_weight": cart_item.selected_weight,
                 "shoe_size": cart_item.shoe_size,
+                "custom_preferences": cart_item.custom_preferences or {},
             })
 
             items_data.append(item_data)
@@ -278,6 +279,9 @@ def add_to_cart_api(request, pk):
     weight_id = request.data.get("weight_id")
     shoe_id = request.data.get("shoe_id")
     selected_shoe_size = request.data.get("selected_shoe_size")
+    custom_preferences = request.data.get("custom_preferences") or {}
+    if not isinstance(custom_preferences, dict):
+        return Response({"success": False, "error": "Custom preferences must be an object."}, status=400)
 
     variant = get_object_or_404(ColorVariant, pk=variant_id) if variant_id else None
     size_stock = get_object_or_404(SizeStock.objects.select_for_update(), pk=size_id) if size_id else None
@@ -348,6 +352,7 @@ def add_to_cart_api(request, pk):
         selected_length=str(length.value) + " " + length.unit if length else None,
         selected_weight=str(weight.value) + " " + weight.unit if weight else None,
         shoe_size=str(selected_shoe_size) if selected_shoe_size is not None else None,
+        custom_preferences=custom_preferences,
     )
 
     if cart_item_qs.exists():
@@ -369,6 +374,7 @@ def add_to_cart_api(request, pk):
             selected_length=str(length.value) + " " + length.unit if length else None,
             selected_weight=str(weight.value) + " " + weight.unit if weight else None,
             shoe_size=str(selected_shoe_size) if selected_shoe_size is not None else None,
+            custom_preferences=custom_preferences,
         )
         new_quantity = requested_qty
         created = True  
