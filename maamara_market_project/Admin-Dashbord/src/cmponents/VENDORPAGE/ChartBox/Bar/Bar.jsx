@@ -1,40 +1,36 @@
-import "../CharBox.css";
+import { useMemo } from "react";
+import { useVendorPayoutHistory } from "../../../Hooks/Payouts/Payouts";
 import VendorBar from "../VendorBarGraph/VendorBarG";
-import { useVendorPayoutHistory } from "../../../Hooks/Payouts/Payouts"; 
-import { format } from "date-fns";
 
 const BarVendor = () => {
-  const { payouts, loading } = useVendorPayoutHistory();
+  const { payouts, loading, error } = useVendorPayoutHistory();
+  const now = new Date();
+  const monthName = now.toLocaleDateString("en-KE", { month: "long" });
+  const year = now.getFullYear();
 
-  // Get month range dynamically
-  const monthRange = (() => {
-    if (!payouts || payouts.length === 0) return "N/A";
-
-    // Extract valid dates from payout_period_start
-    const validDates = payouts
-      .map((p) => new Date(p.payout_period_start))
-      .filter((d) => !isNaN(d.getTime())) // Keep only valid dates
-      .sort((a, b) => a - b); // oldest → newest
-
-    if (validDates.length === 0) return "No valid dates";
-
-    const oldest = validDates[0];
-    const newest = validDates[validDates.length - 1];
-
-    const oldestLabel = format(oldest, "MMM ");
-    const newestLabel = format(newest, "MMM ");
-
-    if (oldestLabel === newestLabel) return newestLabel;
-
-    return `${oldestLabel} – ${newestLabel}`;
-  })();
+  const currentMonthPayouts = useMemo(
+    () => (payouts || []).filter((payout) => {
+      if (!payout.payout_period_start) return false;
+      const date = new Date(payout.payout_period_start);
+      return date.getFullYear() === year && date.getMonth() === now.getMonth();
+    }),
+    [payouts, year, now.getMonth()]
+  );
 
   return (
-    <div className="pie-chart">
-      <h2 className="text-base font-bold leading-5 text-[#222] sm:text-lg">Sales for {monthRange}</h2>
-
-      <div className="chart">
-        {loading ? <p>Loading chart...</p> : <VendorBar payouts={payouts} />}
+    <div className="min-w-0">
+      <div className="border-b border-[#e6e6e4] pb-3">
+        <h2 className="text-base font-bold text-[#222] sm:text-lg">Sales for {monthName} {year}</h2>
+        <p className="mt-0.5 text-xs text-[#595959]">Current-month vendor sales.</p>
+      </div>
+      <div className="mt-4 h-[280px] min-w-0">
+        {loading ? (
+          <p className="text-sm text-[#595959]">Loading sales...</p>
+        ) : error ? (
+          <p className="text-sm text-red-600">Unable to load sales.</p>
+        ) : (
+          <VendorBar payouts={currentMonthPayouts} />
+        )}
       </div>
     </div>
   );
