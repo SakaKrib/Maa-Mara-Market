@@ -554,7 +554,7 @@ const ItemAddNew = ({ initialItem, vendorId, itemId, onSave, vendor, isAdmin = f
                 className={`px-2 py-2 rounded-[20px] px-3 py-2 text-sm font-medium border transition
                   ${selectedSection === "organic"
                     ? "bg-blue-600 text-white border-blue-600"
-                    : "bg-card text-muted-foreground border-border hover:border-primary/50"}
+                    : "bg-card text-muted-foreground border-border hover:border-[#2563eb]/50"}
                 `}
               >
                 Organic
@@ -575,7 +575,7 @@ const ItemAddNew = ({ initialItem, vendorId, itemId, onSave, vendor, isAdmin = f
                 className={`px-2 py-2 rounded-[20px] px-3 py-2 text-sm font-medium border transition
                   ${selectedSection === "inorganic"
                     ? "bg-blue-600 text-white border-blue-600"
-                    : "bg-card text-muted-foreground border-border hover:border-primary/50"}
+                    : "bg-card text-muted-foreground border-border hover:border-[#2563eb]/50"}
                 `}
               >
                 Handmade
@@ -599,7 +599,7 @@ const ItemAddNew = ({ initialItem, vendorId, itemId, onSave, vendor, isAdmin = f
                   {...field}
                   value={field.value}
                   disabled
-                  className="w-full rounded-[20px] border border-border bg-card px-2 py-2 text-sm leading-6 text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20 text-center"
+                  className="w-full rounded-[20px] border border-border bg-card px-2 py-2 text-sm leading-6 text-foreground outline-none transition focus:border-[#2563eb] focus:ring-2 focus:ring-[#2563eb]/20 text-center"
                   
                 />
               </FormControl>
@@ -618,7 +618,7 @@ const ItemAddNew = ({ initialItem, vendorId, itemId, onSave, vendor, isAdmin = f
               <FormLabel className='text-sm font-semibold text-foreground'>Department</FormLabel>
               <FormControl className='flex flex-col justify-end h-65'>
                 <select
-                  className="w-full rounded-[20px] border border-border bg-card px-2 py-2 text-sm leading-6 text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
+                  className="w-full rounded-[20px] border border-border bg-card px-2 py-2 text-sm leading-6 text-foreground outline-none transition focus:border-[#2563eb] focus:ring-2 focus:ring-[#2563eb]/20"
                   {...field}
                   onChange={(e) => {
                     const dept = e.target.value;
@@ -659,7 +659,7 @@ const ItemAddNew = ({ initialItem, vendorId, itemId, onSave, vendor, isAdmin = f
                       onChange={(e) => { setSelectedCategory(e.target.value); field.onChange(e.target.value); }} />
                   ) : (
                     <select {...field} value={field.value ?? ""}
-                      className="w-full rounded-[20px] border border-border bg-card px-2 py-2 text-sm leading-6 text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
+                      className="w-full rounded-[20px] border border-border bg-card px-2 py-2 text-sm leading-6 text-foreground outline-none transition focus:border-[#2563eb] focus:ring-2 focus:ring-[#2563eb]/20"
                       onChange={(e) => {
                         const cat = e.target.value;
                         setSelectedCategory(cat);
@@ -674,7 +674,7 @@ const ItemAddNew = ({ initialItem, vendorId, itemId, onSave, vendor, isAdmin = f
                     </select>
                   )}
                 </FormControl>
-                <button type="button" className="w-fit text-sm font-medium text-primary hover:underline"
+                <button type="button" className="w-fit text-sm font-medium text-[#2563eb] hover:underline"
                   onClick={() => {
                     const next = !isCustomCategory;
                     setIsCustomCategory(next);
@@ -705,7 +705,7 @@ const ItemAddNew = ({ initialItem, vendorId, itemId, onSave, vendor, isAdmin = f
                     <Input {...field} value={field.value ?? ""} placeholder="Enter custom subcategory" />
                   ) : (
                     <select {...field} value={field.value ?? ""}
-                      className="w-full rounded-[20px] border border-border bg-card px-2 py-2 text-sm leading-6 text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20">
+                      className="w-full rounded-[20px] border border-border bg-card px-2 py-2 text-sm leading-6 text-foreground outline-none transition focus:border-[#2563eb] focus:ring-2 focus:ring-[#2563eb]/20">
                       <option value="">Select Subcategory</option>
                       {(activeData?.[selectedDepartment]?.subcategories?.[selectedCategory] || []).map((subcat) => (
                         <option key={subcat} value={subcat}>{subcat}</option>
@@ -713,7 +713,7 @@ const ItemAddNew = ({ initialItem, vendorId, itemId, onSave, vendor, isAdmin = f
                     </select>
                   )}
                 </FormControl>
-                <button type="button" className="w-fit text-sm font-medium text-primary hover:underline"
+                <button type="button" className="w-fit text-sm font-medium text-[#2563eb] hover:underline"
                   onClick={() => {
                     const next = !isCustomSubcategory;
                     setIsCustomSubcategory(next);
@@ -927,13 +927,13 @@ const ItemAddNew = ({ initialItem, vendorId, itemId, onSave, vendor, isAdmin = f
                         <Input {...field} value={field.value ?? ""} placeholder="Enter custom attribute" />
                       ) : (
                         <select {...field} value={field.value ?? ""}
-                          className="w-full rounded-[20px] border border-border bg-card px-2 py-2 text-sm leading-6 text-foreground outline-none focus:border-primary focus:ring-2 focus:ring-primary/20">
+                          className="w-full rounded-[20px] border border-border bg-card px-2 py-2 text-sm leading-6 text-foreground outline-none focus:border-[#2563eb] focus:ring-2 focus:ring-[#2563eb]/20">
                           <option value="">Select attribute</option>
                           {attributes.map((attr) => <option key={attr.value} value={attr.value}>{attr.label}</option>)}
                         </select>
                       )}
                     </FormControl>
-                    <button type="button" className="w-fit text-sm font-medium text-primary hover:underline"
+                    <button type="button" className="w-fit text-sm font-medium text-[#2563eb] hover:underline"
                       onClick={() => {
                         const next = !isCustomAttribute;
                         setIsCustomAttribute(next);
@@ -1016,7 +1016,7 @@ const ItemAddNew = ({ initialItem, vendorId, itemId, onSave, vendor, isAdmin = f
                               <Checkbox
                                 checked={checked}
                                 onCheckedChange={field.onChange}
-                                className="h-4 w-4 shrink-0 rounded-sm border-primary shadow-none focus-visible:ring-0"
+                                className="h-4 w-4 shrink-0 rounded-sm border-[#2563eb] shadow-none focus-visible:ring-0"
                               />
                               <span className="leading-5">Is Organic</span>
                             </label>
@@ -1035,7 +1035,7 @@ const ItemAddNew = ({ initialItem, vendorId, itemId, onSave, vendor, isAdmin = f
                               <Checkbox
                                 checked={checked}
                                 onCheckedChange={field.onChange}
-                                className="h-4 w-4 shrink-0 rounded-[4px] border-primary shadow-none focus-visible:ring-0"
+                                className="h-4 w-4 shrink-0 rounded-[4px] border-[#2563eb] shadow-none focus-visible:ring-0"
                               />
                               <span className="leading-5">Is Fresh Food</span>
                             </label>
@@ -1124,7 +1124,7 @@ const ItemAddNew = ({ initialItem, vendorId, itemId, onSave, vendor, isAdmin = f
                                 handleStockChange(size, e.target.value)
                               }
                               placeholder="Stock"
-                              className="w-24 rounded-[20px] border border-border bg-card px-2 py-2 text-sm leading-6 text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
+                              className="w-24 rounded-[20px] border border-border bg-card px-2 py-2 text-sm leading-6 text-foreground outline-none transition focus:border-[#2563eb] focus:ring-2 focus:ring-[#2563eb]/20"
                             />
                           )}
                         </div>
@@ -1168,10 +1168,10 @@ const ItemAddNew = ({ initialItem, vendorId, itemId, onSave, vendor, isAdmin = f
                       value={value?.value ?? ""}
                       onChange={(e) => handleValueChange(e.target.value)}
                       placeholder="Enter length"
-                      className="w-full rounded-[20px] border border-border bg-card px-2 py-2 text-sm leading-6 text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20 md:w-32"
+                      className="w-full rounded-[20px] border border-border bg-card px-2 py-2 text-sm leading-6 text-foreground outline-none transition focus:border-[#2563eb] focus:ring-2 focus:ring-[#2563eb]/20 md:w-32"
                     />
                     <select
-                      className="w-full rounded-[20px] border border-border bg-card px-2 py-2 text-sm leading-6 text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
+                      className="w-full rounded-[20px] border border-border bg-card px-2 py-2 text-sm leading-6 text-foreground outline-none transition focus:border-[#2563eb] focus:ring-2 focus:ring-[#2563eb]/20"
                       
                       value={value?.unit ?? "cm"}
                       onChange={(e) => handleUnitChange(e.target.value)}
@@ -1227,12 +1227,12 @@ const ItemAddNew = ({ initialItem, vendorId, itemId, onSave, vendor, isAdmin = f
                     value={value?.value ?? ""}
                     onChange={(e) => handleValueChange(e.target.value)}
                     placeholder="Enter weight"
-                    className="w-full rounded-[20px] border border-border bg-card px-2 py-2 text-sm leading-6 text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20 md:w-32"
+                    className="w-full rounded-[20px] border border-border bg-card px-2 py-2 text-sm leading-6 text-foreground outline-none transition focus:border-[#2563eb] focus:ring-2 focus:ring-[#2563eb]/20 md:w-32"
                   />
     
                   {/* Dropdown for unit */}
                   <select
-                    className="w-full rounded-[20px] border border-border bg-card px-2 py-2 text-sm leading-6 text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
+                    className="w-full rounded-[20px] border border-border bg-card px-2 py-2 text-sm leading-6 text-foreground outline-none transition focus:border-[#2563eb] focus:ring-2 focus:ring-[#2563eb]/20"
                     value={value?.unit ?? "g"}
                     onChange={(e) => handleUnitChange(e.target.value)}
                   >
@@ -1269,7 +1269,7 @@ const ItemAddNew = ({ initialItem, vendorId, itemId, onSave, vendor, isAdmin = f
               <FormControl>
                 <select
                   {...field}
-                  className="w-full rounded-[20px] border border-border bg-card px-2 py-2 text-sm leading-6 text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
+                  className="w-full rounded-[20px] border border-border bg-card px-2 py-2 text-sm leading-6 text-foreground outline-none transition focus:border-[#2563eb] focus:ring-2 focus:ring-[#2563eb]/20"
                 >
                   <option value="">Select Shoe Type</option>
                   {shoeTypes.map((type) => (
@@ -1298,7 +1298,7 @@ const ItemAddNew = ({ initialItem, vendorId, itemId, onSave, vendor, isAdmin = f
               <FormControl>
                 <select
                   {...field}
-                  className="w-full rounded-[20px] border border-border bg-card px-2 py-2 text-sm leading-6 text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
+                  className="w-full rounded-[20px] border border-border bg-card px-2 py-2 text-sm leading-6 text-foreground outline-none transition focus:border-[#2563eb] focus:ring-2 focus:ring-[#2563eb]/20"
                 >
                   <option value="">Select Gender</option>
                   {shoeGenders.map((gender) => (
@@ -1437,7 +1437,7 @@ const ItemAddNew = ({ initialItem, vendorId, itemId, onSave, vendor, isAdmin = f
                                 handleStockChange(size, e.target.value)
                               }
                               placeholder="Stock"
-                              className="w-24 rounded-[20px] border border-border bg-card px-2 py-2 text-sm leading-6 text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
+                              className="w-24 rounded-[20px] border border-border bg-card px-2 py-2 text-sm leading-6 text-foreground outline-none transition focus:border-[#2563eb] focus:ring-2 focus:ring-[#2563eb]/20"
                             />
                           )}
                         </div>
@@ -1481,10 +1481,10 @@ const ItemAddNew = ({ initialItem, vendorId, itemId, onSave, vendor, isAdmin = f
                       value={value?.value ?? ""}
                       onChange={(e) => handleValueChange(e.target.value)}
                       placeholder="Enter length"
-                      className="w-full rounded-[20px] border border-border bg-card px-2 py-2 text-sm leading-6 text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20 md:w-32"
+                      className="w-full rounded-[20px] border border-border bg-card px-2 py-2 text-sm leading-6 text-foreground outline-none transition focus:border-[#2563eb] focus:ring-2 focus:ring-[#2563eb]/20 md:w-32"
                     />
                     <select
-                      className="w-full rounded-[20px] border border-border bg-card px-2 py-2 text-sm leading-6 text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
+                      className="w-full rounded-[20px] border border-border bg-card px-2 py-2 text-sm leading-6 text-foreground outline-none transition focus:border-[#2563eb] focus:ring-2 focus:ring-[#2563eb]/20"
                       
                       value={value?.unit ?? "cm"}
                       onChange={(e) => handleUnitChange(e.target.value)}
@@ -2142,7 +2142,7 @@ const ItemAddNew = ({ initialItem, vendorId, itemId, onSave, vendor, isAdmin = f
         
     
     
-            <Button type="submit" className=" px-4 mb-10 mt-10 " style={{ backgroundColor:colors.gray[100], color:colors.gray[900]}}>
+            <Button type="submit" className="mb-10 mt-10 bg-[#2563eb] px-4 text-white hover:bg-[#1d4ed8]">
               Save Changes
             </Button>
             </div>
