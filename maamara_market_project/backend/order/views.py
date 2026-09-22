@@ -10,7 +10,7 @@ from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.db import models, transaction
 from django.db.models import Count, Prefetch, Q, Sum
-from django.db.models.functions import TruncMonth
+from django.db.models.functions import TruncMonth, TruncDate
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from rest_framework.decorators import api_view, permission_classes
@@ -1301,3 +1301,47 @@ def revenue_area_chart(request):
     ]
 
     return Response(formatted)
+
+@api_view(["GET"])
+@permission_classes([IsAuthenticated, IsAdminUser])
+def dashboard_chart_data(request):
+    """Real sales/category datasets for admin dashboard charts."""
+    completed = Order.objects.filter(status__iexact="completed", ordered_date__isnull=False)
+
+    sales_rows = (
+        completed.annotate(day=TruncDate("ordered_date"))
+        .values("day")
+        .annotate(
+            sales=Sum("updated_total_price"),
+            orders=Count("id"),
+        )
+        .order_by("-day")[:30]
+    )
+    sales_activity = [
+        {
+            "label": row["day"].strftime("%d %b") if row["day"] else "Unknown",
+            "sales": float(row["sales"] or 0),
+            "orders": int(row["orders"] or 0),
+        }
+        for row in reversed(list(sales_rows))
+    ]
+
+    category_rows = (
+        OrderItem.objects.filter(order__status__iexact="completed", item__category__isnull=False)
+        .values("item__category__name")
+        .annotate(value=Sum("quantity"))
+        .order_by("-value")[:10]
+    )
+    category_distribution = [
+        {
+            "id": row["item__category__name"],
+            "label": row["item__category__name"],
+            "value": int(row["value"] or 0),
+        }
+        for row in category_rows
+    ]
+
+    return Response({
+        "sales_activity": sales_activity,
+        "category_distribution": category_distribution,
+    })
