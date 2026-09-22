@@ -480,8 +480,8 @@ class BlogPostViewSet(viewsets.ModelViewSet):
         for admin in admins:
             Notification.objects.create(
                 user=admin,
-                title=f"New Blog Created by Vendor {vendor.company_name if vendor else 'Unknown'}",
-                message=f"Blog '{blog.title}' was created by {self.request.user.username}.",
+                title="New Blog Created",
+                message=f"A vendor created the blog {blog.title}.",
                 url=f"/admin-dashboard/blogs/{blog.id}/"
             )
             print(f"📢 Admin {admin.username} notified")
@@ -491,7 +491,7 @@ class BlogPostViewSet(viewsets.ModelViewSet):
             Notification.objects.create(
                 user=vendor.user,
                 title="Your Blog Was Created",
-                message=f"Your blog '{blog.title}' has been successfully created.",
+                message=f"Your blog {blog.title} has been successfully created.",
                 url=f"/vendor/blogs/{blog.id}/"
             )
             print(f"📢 Vendor {vendor.user.username} notified")
@@ -502,7 +502,7 @@ class BlogPostViewSet(viewsets.ModelViewSet):
             actor_type='vendor' if vendor else 'user',
             action="blog_created",
             item=None,  # Not an item, can use blog.id in description
-            description=f"Blog '{blog.title}' was created by. The admin has approved your blog and will be visible to the Users",
+            description=f"You created the blog {blog.title}. The blog is awaiting publication.",
             related_url=f"/blog/{blog.id}/"
         )
 
@@ -512,7 +512,7 @@ class BlogPostViewSet(viewsets.ModelViewSet):
             actor_type='admin',
             action="blog_created",
             item=None,  # Not an item, can use blog.id in description
-            description=f"Blog '{blog.title}' was created by {self.request.user.username}.",
+            description=f"A vendor created the blog {blog.title}.",
             related_url=f"/blog/{blog.id}/"
         )
         
@@ -533,7 +533,7 @@ class BlogPostViewSet(viewsets.ModelViewSet):
                     Notification.objects.create(
                         user=vendor.user,
                         title="New Comment on Your Blog",
-                        message=f"Your blog '{post.title}' has a new comment by {request.user.username}.",
+                        message=f"Your blog {post.title} received a new comment from a customer.",
                         url=f"/vendor/blogs/{post.id}/"
                     )
                     print(f"📢 Vendor {vendor.user.username} notified")
@@ -544,7 +544,7 @@ class BlogPostViewSet(viewsets.ModelViewSet):
                     actor_type='user',
                     action="comment_created",
                     item=None,
-                    description=f"You commented on blog '{post.title}'.",
+                    description=f"You commented on the blog {post.title}.",
                     related_url=f"/blog/{post.id}/"
                 )
 
@@ -556,7 +556,7 @@ class BlogPostViewSet(viewsets.ModelViewSet):
                         actor_type='admin',
                         action="comment_created",
                         item=None,
-                        description=f"Blog '{post.title}' received a new comment by {request.user.username}.",
+                        description=f"A customer commented on the blog {post.title}.",
                         related_url=f"/admin-dashboard/blogs/{post.id}/"
                     )
                     print(f"📝 Admin {admin.username} activity logged")
@@ -592,7 +592,7 @@ class BlogPostViewSet(viewsets.ModelViewSet):
                 Notification.objects.create(
                     user=vendor.user,
                     title="New Reaction on Your Blog",
-                    message=f"Your blog '{post.title}' received a new reaction ({reaction_type}) from {request.user.username}.",
+                    message=f"Your blog {post.title} received a {reaction_type} reaction from a customer.",
                     url=f"/vendors-dashboard/vendor/blogs/{post.id}/"
                 )
                 print(f"📢 Vendor {vendor.user.username} notified")
@@ -603,7 +603,7 @@ class BlogPostViewSet(viewsets.ModelViewSet):
                 actor_type='user',
                 action="react_created",
                 item=None,
-                description=f"You reacted '{reaction_type}' to blog '{post.title}'.",
+                description=f"You reacted with {reaction_type} to the blog {post.title}.",
                 related_url=f"/blog/{post.id}/"
             )
 
@@ -615,7 +615,7 @@ class BlogPostViewSet(viewsets.ModelViewSet):
                     actor_type='admin',
                     action="react_created",
                     item=None,
-                    description=f"Blog '{post.title}' received a new reaction ({reaction_type}) from {request.user.username}.",
+                    description=f"A customer reacted with {reaction_type} to the blog {post.title}.",
                     related_url=f"/admin-dashboard/blogs/{post.id}/"
                 )
                 print(f"📝 Admin {admin.username} activity logged")
@@ -653,7 +653,7 @@ class BlogPostViewSet(viewsets.ModelViewSet):
                 Notification.objects.create(
                     user=vendor.user,
                     title="Reaction Removed from Your Blog",
-                    message=f"A reaction ({reaction_type}) was removed from your blog '{post.title}'.",
+                    message=f"A {reaction_type} reaction was removed from your blog {post.title}.",
                     url=f"/vendors-dashboard/vendor/blogs/{post.id}/"
                 )
                 print(f"📢 Vendor {vendor.user.username} notified of removed reaction")
@@ -665,7 +665,7 @@ class BlogPostViewSet(viewsets.ModelViewSet):
                     actor_type='user',
                     action="react_removed",
                     item=None,
-                    description=f"You removed your '{reaction_type}' reaction from blog '{post.title}'.",
+                    description=f"You removed your {reaction_type} reaction from the blog {post.title}.",
                     related_url=f"/blog/{post.id}/"
                 )
 
@@ -677,7 +677,7 @@ class BlogPostViewSet(viewsets.ModelViewSet):
                     actor_type='admin',
                     action="react_removed",
                     item=None,
-                    description=f"Blog '{post.title}' had a reaction ({reaction_type}) removed by {request.user.username if request.user.is_authenticated else 'a visitor'}.",
+                    description=f"A customer removed a {reaction_type} reaction from the blog {post.title}.",
                     related_url=f"/admin-dashboard/blogs/{post.id}/"
                 )
                 print(f"📝 Admin {admin.username} activity logged")
@@ -711,7 +711,7 @@ class AdminBlogApprovalViewSet(viewsets.ModelViewSet):
             Notification.objects.create(
                 user=blog.vendor.user,
                 title="Your blog was approved",
-                message=f"Your blog '{blog.title}' has been approved by admin.",
+                message=f"Your blog {blog.title} has been approved by the administrator.",
                 url=f"/vendors-dashboard/vendor/blogs/{blog.id}/"
             )
 
@@ -721,7 +721,7 @@ class AdminBlogApprovalViewSet(viewsets.ModelViewSet):
             actor_type='admin',
             action="blog_approved",
             item=None,
-            description=f"Blog '{blog.title}' approved by {request.user.username}.",
+            description=f"The administrator approved the blog {blog.title}.",
             related_url=f"/blog/{blog.id}/"
         )
 
@@ -758,7 +758,7 @@ class AdminBannerApprovalViewSet(viewsets.ModelViewSet):
             Notification.objects.create(
                 user=banner.vendor.user,
                 title="Banner Approved",
-                message=f"Your banner '{banner.title}' was approved.",
+                message=f"Your banner {banner.title} was approved by the administrator.",
                 url=f"/vendors-dashboard/vendor/banners/{banner.id}/"
             )
 
@@ -767,7 +767,7 @@ class AdminBannerApprovalViewSet(viewsets.ModelViewSet):
             actor_type="admin",
             action="banner_approved",
             item=banner.item,
-            description=f"Approved banner '{banner.title}'",
+            description=f"The administrator approved the banner {banner.title}.",
             related_url=f"/banners/{banner.id}/"
         )
 
@@ -790,7 +790,7 @@ class AdminBannerApprovalViewSet(viewsets.ModelViewSet):
             Notification.objects.create(
                 user=banner.vendor.user,
                 title="Banner Rejected",
-                message=f"Your banner '{title}' was rejected."
+                message=f"Your banner {title} was rejected by the administrator."
                         + (f" Reason: {reason}" if reason else ""),
                 url="/vendors-dashboard/vendor/banners/"
             )
@@ -912,7 +912,7 @@ class WishlistAPIView(APIView):
                 actor_type=actor["actor_type"],
                 action="item_added_to_wishlist",
                 item=item,
-                description=f"You added '{item.name}' to wishlist.",
+                description=f"You added {item.name} to your wishlist.",
                 related_url=f"/item-client/{item.id}/"
             )
 
@@ -951,7 +951,7 @@ class WishlistAPIView(APIView):
                 Notification.objects.create(
                     user=admin,
                     title="Item added to wishlist",
-                    message=f"{actor['actor_name']} added '{item.name}' to their wishlist.",
+                    message=f"A customer added {item.name} to their wishlist.",
                     url=f"/admin-item/vendorDashboard/items/{item.id}/"
                 )
 
@@ -1003,7 +1003,7 @@ class WishlistAPIView(APIView):
                 actor_type=actor["actor_type"],
                 action="item_removed_from_wishlist",
                 item=item,
-                description=f"You removed '{item.name}' from wishlist.",
+                description=f"You removed {item.name} from your wishlist.",
                 related_url=f"/item-client/{item.id}/"
             )
 
