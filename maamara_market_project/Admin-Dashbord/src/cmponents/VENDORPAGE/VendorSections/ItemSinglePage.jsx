@@ -8,7 +8,6 @@ import {
   starSharp,
   cashSharp,
   cubeSharp,
-  pencilSharp,
   trashSharp,
 } from "ionicons/icons";
 import EditItem from "../Products/Forms/EditItem/EditItem";
