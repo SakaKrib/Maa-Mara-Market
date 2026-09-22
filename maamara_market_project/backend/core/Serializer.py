@@ -319,8 +319,8 @@ class ActivityLogSerializer(serializers.ModelSerializer):
         "item_reviewed": "Customer review received",
         "item_added_to_cart": "Item added to cart",
         "item_removed_from_cart": "Item removed from cart",
-        "item_added_to_wishlist": "Item added to wishlist",
-        "item_removed_from_wishlist": "Item removed from wishlist",
+        "item_added_to_wishlist": "Added to wishlist",
+        "item_removed_from_wishlist": "Removed from wishlist",
         "order_created": "New order received",
         "order_completed": "Order completed",
         "refund_requested": "Refund requested",
@@ -329,6 +329,16 @@ class ActivityLogSerializer(serializers.ModelSerializer):
         "exchange_approved": "Exchange approved",
         "vendor_approved": "Vendor account approved",
         "vendor_denied": "Vendor request declined",
+        "user_registered": "New customer registered",
+        "vendor_registered": "New vendor registered",
+        "login": "Signed in",
+        "logout": "Signed out",
+        "blog_created": "Blog created",
+        "comment_created": "Blog comment received",
+        "react_created": "Blog reaction received",
+        "react_removed": "Blog reaction removed",
+        "banner_approved": "Banner approved",
+        "banner_rejected": "Banner rejected",
     }
 
     class Meta:
@@ -348,14 +358,66 @@ class ActivityLogSerializer(serializers.ModelSerializer):
             'item',
         ]
 
+    def _actor_phrase(self, obj):
+        request = self.context.get("request")
+        current_user = getattr(request, "user", None) if request else None
+        if current_user and current_user.is_authenticated and obj.user_id == current_user.id:
+            return "You"
+        return {
+            "user": "A customer",
+            "vendor": "A vendor",
+            "admin": "An administrator",
+        }.get(obj.actor_type, "A user")
+
+    def _item_name(self, obj):
+        item = getattr(obj, "item", None)
+        return (getattr(item, "name", None) or "").strip() or "the item"
+
     def get_display_title(self, obj):
         return self.FRIENDLY_TITLES.get(obj.action, obj.get_action_display())
 
     def get_display_message(self, obj):
+        actor = self._actor_phrase(obj)
+        item_name = self._item_name(obj)
+
+        templates = {
+            "item_added_to_wishlist": f"{actor} added {item_name} to their wishlist.",
+            "item_removed_from_wishlist": f"{actor} removed {item_name} from their wishlist.",
+            "item_added_to_cart": f"{actor} added {item_name} to their cart.",
+            "item_removed_from_cart": f"{actor} removed {item_name} from their cart.",
+            "item_viewed": f"{actor} viewed {item_name}.",
+            "item_shared": f"{actor} shared {item_name}.",
+            "item_reviewed": f"{actor} left a review for {item_name}.",
+            "item_sold": f"{item_name} was purchased.",
+            "item_created": f"{actor} added {item_name}.",
+            "item_updated": f"{actor} updated {item_name}.",
+            "item_updated_qty": f"{actor} updated the stock for {item_name}.",
+            "item_request_created": f"{actor} submitted an item request for {item_name}.",
+            "item_request_approved": f"The item request for {item_name} was approved.",
+            "item_request_denied": f"The item request for {item_name} was declined.",
+            "Price Change Requested": f"{actor} requested a price change for {item_name}.",
+            "Price Change Approved": f"The price change request for {item_name} was approved.",
+            "order_created": "A new order was received.",
+            "order_completed": "An order was completed.",
+            "refund_requested": "A refund was requested.",
+            "refund_approved": "A refund was approved.",
+            "exchange_requested": "An exchange was requested.",
+            "exchange_approved": "An exchange was approved.",
+            "vendor_approved": "The vendor account was approved.",
+            "vendor_denied": "The vendor request was declined.",
+            "user_registered": "A new customer account was registered.",
+            "vendor_registered": "A new vendor account was registered.",
+            "login": f"{actor} signed in.",
+            "logout": f"{actor} signed out.",
+        }
+
+        if obj.action in templates:
+            return templates[obj.action]
+
         description = (obj.description or "").strip()
-        if description:
-            return description
-        return self.FRIENDLY_TITLES.get(obj.action, obj.get_action_display())
+        return description or self.FRIENDLY_TITLES.get(obj.action, obj.get_action_display())
+
+
 
 
 @api_view(['GET'])
