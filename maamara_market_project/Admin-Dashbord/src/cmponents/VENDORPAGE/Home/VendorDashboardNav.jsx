@@ -17,6 +17,7 @@ import {
 } from "ionicons/icons";
 import { Link, useLocation } from "react-router-dom";
 import { useAuth } from "../../Auth/AuthContext/Context";
+import Maamara from "../../../assets/Logo/Maamara.jpg";
 import { useVendorOrdersCombined } from "../../Hooks/Order/CombinedOrderHook";
 
 const VendorDashboardNav = () => {
@@ -90,9 +91,15 @@ const VendorDashboardNav = () => {
         aria-label="Vendor dashboard navigation"
       >
         <div className="etsy-sidebar-brand">
-          <div className="etsy-brand-mark" aria-hidden="true">M</div>
-          <div>
-            <strong>Maa Mara</strong>
+          <a
+            href="/"
+            aria-label="Maa Mara Market"
+            className="vendor-sidebar-logo"
+          >
+            <img src={Maamara} alt="Maa Mara Market" />
+          </a>
+          <div className="min-w-0">
+            <strong>Maa Mara Market</strong>
             <small>Vendor Manager</small>
           </div>
           <button
