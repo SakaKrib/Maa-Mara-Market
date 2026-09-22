@@ -286,7 +286,34 @@ class ItemSerializer(serializers.ModelSerializer):
 
 
 class ActivityLogSerializer(serializers.ModelSerializer):
-    item = ItemSerializer(read_only=True)  # 👈 nested item data
+    item = ItemSerializer(read_only=True)
+    display_title = serializers.SerializerMethodField()
+    display_message = serializers.SerializerMethodField()
+
+    FRIENDLY_TITLES = {
+        "item_request_created": "Item request submitted",
+        "item_request_approved": "Item request approved",
+        "item_request_denied": "Item request declined",
+        "Price Change Requested": "Price change requested",
+        "Price Change Approved": "Price change approved",
+        "item_created": "Item added",
+        "item_updated": "Item updated",
+        "item_updated_qty": "Stock updated",
+        "item_sold": "Item sold",
+        "item_reviewed": "Customer review received",
+        "item_added_to_cart": "Item added to cart",
+        "item_removed_from_cart": "Item removed from cart",
+        "item_added_to_wishlist": "Item added to wishlist",
+        "item_removed_from_wishlist": "Item removed from wishlist",
+        "order_created": "New order received",
+        "order_completed": "Order completed",
+        "refund_requested": "Refund requested",
+        "refund_approved": "Refund approved",
+        "exchange_requested": "Exchange requested",
+        "exchange_approved": "Exchange approved",
+        "vendor_approved": "Vendor account approved",
+        "vendor_denied": "Vendor request declined",
+    }
 
     class Meta:
         model = ActivityLog
@@ -298,16 +325,36 @@ class ActivityLogSerializer(serializers.ModelSerializer):
             'actor_role',
             'action',
             'description',
+            'display_title',
+            'display_message',
             'related_url',
             'timestamp',
-            'item',  # 👈 include item
+            'item',
         ]
+
+    def get_display_title(self, obj):
+        return self.FRIENDLY_TITLES.get(obj.action, obj.get_action_display())
+
+    def get_display_message(self, obj):
+        description = (obj.description or "").strip()
+        if description:
+            return description
+        return self.FRIENDLY_TITLES.get(obj.action, obj.get_action_display())
 
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def get_activity_logs(request):
-    logs = ActivityLog.objects.all().order_by('-timestamp')[:100]
+    logs = ActivityLog.objects.all().select_related('user', 'item').order_by('-timestamp')
+
+    if request.query_params.get('scope') == 'vendor':
+        logs = logs.filter(actor_type='vendor', user__vendor__isnull=False)
+
+    # The dashboard only needs a compact recent window. The dedicated vendor
+    # activity page can request all matching records with ?all=true.
+    if request.query_params.get('all') != 'true':
+        logs = logs[:100]
+
     serializer = ActivityLogSerializer(logs, many=True)
     return Response(serializer.data)
 
