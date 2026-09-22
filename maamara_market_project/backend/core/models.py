@@ -213,6 +213,8 @@ class ActivityLog(models.Model):
         ('user', 'User'),
         ('vendor', 'Vendor'),
         ('admin', 'Admin'),
+        ('visitor', 'Visitor'),
+        ('guest', 'Guest'),
     ]
 
     ACTION_CHOICES = [
@@ -248,6 +250,27 @@ class ActivityLog(models.Model):
         ('refund_approved', 'Refund Approved'),
         ('exchange_requested', 'Exchange Requested'),
         ('exchange_approved', 'Exchange Approved'),
+        ('vendor_item_request_received', 'Vendor Item Request Received'),
+        ('viewed_vendor_requests', 'Vendor Requests Viewed'),
+        ('approved_vendor', 'Vendor Approved'),
+        ('blog_created', 'Blog Created'),
+        ('blog_approved', 'Blog Approved'),
+        ('comment_created', 'Blog Comment Created'),
+        ('react_created', 'Blog Reaction Created'),
+        ('react_removed', 'Blog Reaction Removed'),
+        ('banner_approved', 'Banner Approved'),
+        ('banner_rejected', 'Banner Rejected'),
+        ('return_requested', 'Return Requested'),
+        ('return_rejected', 'Return Rejected'),
+        ('return_rejected_vendor', 'Return Rejected'),
+        ('return_rejected_admin', 'Return Rejected'),
+        ('refund_approved_vendor', 'Refund Approved'),
+        ('refund_approved_admin', 'Refund Approved'),
+        ('exchange_approved_vendor', 'Exchange Approved'),
+        ('exchange_approved_admin', 'Exchange Approved'),
+        ('cart_item_removed_notification', 'Item Removed From Cart'),
+        ('paypal_payment', 'PayPal Payment'),
+
     ]
 
     user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
