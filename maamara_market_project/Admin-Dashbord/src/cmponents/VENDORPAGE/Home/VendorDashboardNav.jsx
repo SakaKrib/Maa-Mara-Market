@@ -1,4 +1,4 @@
-import React, {useState} from "react";
+import React,{useState} from "react";
 import { IonIcon } from "@ionic/react";
 import {
   statsChartOutline,
@@ -122,7 +122,7 @@ const VendorDashboardNav = ({ open = false, onClose }) => {
         </nav>
 
         <div className="etsy-sidebar-bottom">
-          <Link to="/vendors-dashboard/settings" onClick={() => setMobileOpen(false)}>
+          <Link to="/vendors-dashboard/settings" onClick={onClose}>
             <IonIcon icon={settingsOutline} aria-hidden="true" />
             <span>Settings</span>
           </Link>
