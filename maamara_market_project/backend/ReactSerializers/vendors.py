@@ -244,11 +244,43 @@ class VendorItemViewSet(viewsets.ModelViewSet):
                     "remove_additional_image_ids": "Expected a JSON array of image IDs."
                 })
 
+    def _validate_upload_limits(self):
+        image_files = []
+        main_image = self.request.FILES.get("image")
+        if main_image:
+            image_files.append(main_image)
+
+        image_files.extend(self.request.FILES.getlist("additional_images"))
+        image_files.extend(self.request.FILES.getlist("additional_images[]"))
+
+        for key, upload in self.request.FILES.items():
+            if key.startswith("variant_image_") or "[image]" in key:
+                image_files.append(upload)
+
+        # Drafts use the same product-wide media policy: ten images total.
+        # Uploaded variant/gallery files are counted here as well so a direct
+        # API call cannot bypass the frontend limit.
+        if len(image_files) > 10:
+            raise ValidationError("An item can contain at most 10 images in total.")
+
+        for upload in image_files:
+            if upload.size > 10 * 1024 * 1024:
+                raise ValidationError("Each image must be 10 MB or smaller.")
+
+        video = self.request.FILES.get("video")
+        if video:
+            if video.size > 100 * 1024 * 1024:
+                raise ValidationError("The product video must be 100 MB or smaller.")
+            extension = os.path.splitext(video.name or "")[1].lower()
+            if extension not in {".mp4", ".mov", ".webm"}:
+                raise ValidationError("Video must be MP4, MOV, or WEBM.")
+
     # -------------------------------
     # Create / Update
     # -------------------------------
     @transaction.atomic
     def perform_create(self, serializer):
+        self._validate_upload_limits()
         validated = serializer.validated_data
 
         variants_data = validated.pop("variants", [])
