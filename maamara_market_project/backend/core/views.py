@@ -32,6 +32,7 @@ import random
 import string
 import logging
 import uuid
+from shop.sanitizers import sanitize_rich_text
 
 logger = logging.getLogger(__name__)
 
@@ -87,12 +88,15 @@ def _about_payload(request, about):
 
 
 @api_view(["GET", "POST"])
-@permission_classes([IsAdminUser])
+@permission_classes([AllowAny])
 def admin_about(request):
     about, _ = AboutPage.objects.get_or_create(pk=1)
 
     if request.method == "GET":
         return Response(_about_payload(request, about))
+
+    if not request.user.is_authenticated or not request.user.is_staff:
+        return Response({"detail": "Admin access required."}, status=status.HTTP_403_FORBIDDEN)
 
     for field in (
         "hero_title",
@@ -105,7 +109,10 @@ def admin_about(request):
         "materials_content",
     ):
         if field in request.data:
-            setattr(about, field, request.data.get(field, ""))
+            value = request.data.get(field, "")
+            if field.endswith("_content"):
+                value = sanitize_rich_text(value)
+            setattr(about, field, value)
 
     if request.FILES.get("hero_image"):
         about.hero_image = request.FILES["hero_image"]
