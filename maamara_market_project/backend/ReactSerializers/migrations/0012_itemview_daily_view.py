@@ -17,20 +17,39 @@ def backfill_view_dates_and_dedupe(apps, schema_editor):
         )
         view.save(update_fields=["view_date"])
 
-    # Keep the first view for each item/viewer/day. This also cleans up
-    # anonymous duplicate rows that could exist because SQL NULL values do
-    # not make the previous unique_together constraint fully unique.
-    duplicate_keys = (
+    # Keep the first authenticated view for each item/user/day.
+    authenticated_duplicate_keys = (
         ItemView.objects
-        .values("item_id", "user_id", "visitor_id", "view_date")
+        .filter(user_id__isnull=False)
+        .values("item_id", "user_id", "view_date")
         .annotate(row_count=Count("id"))
         .filter(row_count__gt=1)
     )
 
-    for key in duplicate_keys.iterator():
+    for key in authenticated_duplicate_keys.iterator():
         rows = ItemView.objects.filter(
             item_id=key["item_id"],
             user_id=key["user_id"],
+            view_date=key["view_date"],
+        ).order_by("viewed_at", "id")
+        keep_id = rows.values_list("id", flat=True).first()
+        if keep_id is not None:
+            rows.exclude(id=keep_id).delete()
+
+    # Keep the first anonymous view for each item/visitor/day. This also
+    # cleans up duplicates that the old NULL-based unique_together allowed.
+    visitor_duplicate_keys = (
+        ItemView.objects
+        .filter(user_id__isnull=True, visitor_id__isnull=False)
+        .values("item_id", "visitor_id", "view_date")
+        .annotate(row_count=Count("id"))
+        .filter(row_count__gt=1)
+    )
+
+    for key in visitor_duplicate_keys.iterator():
+        rows = ItemView.objects.filter(
+            item_id=key["item_id"],
+            user_id__isnull=True,
             visitor_id=key["visitor_id"],
             view_date=key["view_date"],
         ).order_by("viewed_at", "id")
@@ -42,6 +61,7 @@ def backfill_view_dates_and_dedupe(apps, schema_editor):
     for item in Item.objects.all().iterator():
         total_views = ItemView.objects.filter(item_id=item.pk).count()
         Item.objects.filter(pk=item.pk).update(views=total_views)
+
 
 
 class Migration(migrations.Migration):
