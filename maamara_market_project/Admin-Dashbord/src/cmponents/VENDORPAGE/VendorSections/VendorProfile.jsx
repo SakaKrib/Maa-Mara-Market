@@ -344,7 +344,7 @@ const SingleVendorProfile = () => {
                   </div>
 
                   <div className="flex flex-wrap gap-2">
-                    <span className="rounded-full bg-orange-50 px-3 py-1 text-xs font-semibold text-[#b94b13]">
+                    <span className="rounded-full bg-blue-50 px-3 py-1 text-xs font-semibold text-[#b94b13]">
                       {vendor.product_type || "Vendor"}
                     </span>
                     {vendor.Are_You_KEBS_certified && vendor.product_type === "organic" && (
@@ -376,7 +376,7 @@ const SingleVendorProfile = () => {
                           <button
                             type="button"
                             aria-label={badge.label}
-                            className="grid h-10 w-10 place-items-center rounded-full border border-gray-200 bg-gray-50 text-gray-700 transition hover:border-orange-200 hover:bg-orange-50 hover:text-[#b94b13]"
+                            className="grid h-10 w-10 place-items-center rounded-full border border-gray-200 bg-gray-50 text-gray-700 transition hover:border-orange-200 hover:bg-blue-50 hover:text-[#b94b13]"
                           >
                             <IonIcon icon={badge.icon} className="text-xl" />
                           </button>
@@ -436,7 +436,7 @@ const SingleVendorProfile = () => {
                     type="monotone"
                     dataKey="payout"
                     name="Payout"
-                    stroke="#f1641e"
+                    stroke="#2563eb"
                     strokeWidth={2}
                     dot={{ r: 3 }}
                   />
@@ -468,9 +468,9 @@ const SingleVendorProfile = () => {
                 {activityLogs.map((log, index) => (
                   <li
                     key={log.id || `${log.timestamp || "activity"}-${index}`}
-                    className="relative border-l-2 border-orange-100 pl-5"
+                    className="relative border-l-2 border-blue-100 pl-5"
                   >
-                    <span className="absolute -left-[5px] top-1 h-2 w-2 rounded-full bg-[#f1641e]" />
+                    <span className="absolute -left-[5px] top-1 h-2 w-2 rounded-full bg-[#2563eb]" />
                     <p className="text-sm font-medium leading-6 text-gray-800">
                       {log.description?.trim() || "No description available"}
                     </p>
