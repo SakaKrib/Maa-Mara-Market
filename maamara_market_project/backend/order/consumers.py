@@ -190,20 +190,30 @@ class PayoutConsumer(AsyncWebsocketConsumer):
 #  stock inventory
 class StockConsumer(AsyncWebsocketConsumer):
     async def connect(self):
-        vendor_id = self.scope["url_route"]["kwargs"]["vendor_id"]
-        user = self.scope.get("user")
-        allowed = bool(
-            user and user.is_authenticated and (
-                user.is_staff or Vendor.objects.filter(id=vendor_id, user=user).exists()
-            )
-        )
-        if not allowed:
+        self.vendor_id = self.scope["url_route"]["kwargs"]["vendor_id"]
+
+        if not await self.can_access_stock():
             await self.close(code=4003)
             return
-        self.group_name = f"stock_{vendor_id}"
 
+        self.group_name = f"stock_{self.vendor_id}"
         await self.channel_layer.group_add(self.group_name, self.channel_name)
         await self.accept()
+
+    async def disconnect(self, close_code):
+        if getattr(self, "group_name", None):
+            await self.channel_layer.group_discard(
+                self.group_name, self.channel_name
+            )
+
+    @database_sync_to_async
+    def can_access_stock(self):
+        user = self.scope.get("user")
+        if not user or not user.is_authenticated:
+            return False
+        if user.is_staff:
+            return True
+        return Vendor.objects.filter(id=self.vendor_id, user=user).exists()
 
     async def stock_update(self, event):
         await self.send(text_data="updated")
