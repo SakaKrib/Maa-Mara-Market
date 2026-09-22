@@ -1,7 +1,6 @@
 import React from "react";
 import { useVendorCustomers } from "../../../Hooks/Customer/CustomerHookFetchForVendor";
 import { useAuth } from "../../../Auth/AuthContext/Context";
-import { Link } from "react-router-dom";
 
 const getColorForLetter = (letter) => {
   const colors = [
