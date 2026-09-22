@@ -101,6 +101,7 @@ import CareerPage from "./PublicUiForAll/PublicUi/Navigations/Footer/Career/Care
 import CareerDetails from "./PublicUiForAll/PublicUi/Navigations/Footer/Career/CareerDetails";
 import CustomerFAQ from "./PublicUiForAll/PublicUi/Navigations/Footer/FAQ/CustomerFAQ";
 import Support from "./PublicUiForAll/PublicUi/Navigations/Footer/Support/Support";
+import AboutUs from "./PublicUiForAll/PublicUi/Navigations/Footer/AboutUs";
 import CustomerToAdminRequests from "./cmponents/Admin/CustomerRequests/CustomerRequests";
 import VendorPendingOrdersTable from "./cmponents/VENDORPAGE/Home/Orders/VendorPendingOrders";
 import AdminPayoutTriggerPayment from "./cmponents/VendorPayoutReport/vendorPayouts/Business2Customer";
@@ -232,6 +233,7 @@ function AppContent() {
                 <Route path="careers/jobs" element={<CareerPage />} />
                 <Route path="careers/:id" element={<CareerDetails />} />
                 <Route path="faq" element={<CustomerFAQ />} />
+                <Route path="about-us" element={<AboutUs />} />
                 <Route path="support" element={<Support />} />
                 <Route path="messages" element={<Messaging />} />
               </Route>
