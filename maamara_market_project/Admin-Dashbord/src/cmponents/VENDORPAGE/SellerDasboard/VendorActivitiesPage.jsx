@@ -1,7 +1,7 @@
 import { Activity, Clock3 } from "lucide-react";
 import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
-import useVendorActivityLogs from "../../Hooks/ActivityHook/ActivityHook";
+import { useVendorActivityLogs } from "../../Hooks/ActivityHook/ActivityHook";
 
 dayjs.extend(relativeTime);
 
