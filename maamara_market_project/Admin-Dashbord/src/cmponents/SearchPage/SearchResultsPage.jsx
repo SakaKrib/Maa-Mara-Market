@@ -60,7 +60,7 @@ export default function SearchGlobalResultsPage() {
                     key={String(item.type) + "-" + String(item.id)}
                     type="button"
                     onClick={() => {
-                      if (item.type === "Item" && item.id) navigate("/product/" + item.id);
+                      if (item.type === "Item" && item.id) navigate("/item/" + item.id);
                     }}
                     className="rounded-xl border border-gray-200 bg-white p-4 text-left transition hover:border-gray-300 hover:bg-[#f8f8f6]"
                   >
