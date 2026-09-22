@@ -283,30 +283,42 @@ const HeaderTop = ({ onMenuToggle }) => {
             )}
 
             {activeView === "view" && (
-              <div className="mt-5 rounded-2xl border border-gray-300 bg-white p-4 shadow-sm">
-                {[
-                  ["First name", form.first_name],
-                  ["Last name", form.last_name],
-                  ["Email", form.email],
-                  ["Phone", form.phone_number],
-                  ["Location", form.location],
-                  ["Address", form.address],
-                  ["City", form.city],
-                  ["Country", form.country],
-                  ["Date of birth", form.date_of_birth],
-                ].map(([label, value]) => (
-                  <div key={label} className="flex items-center justify-between gap-4 border-b border-slate-100 py-2.5 dark:border-slate-800">
-                    <span className="text-slate-500 dark:text-slate-400">{label}</span>
-                    <span className="max-w-[65%] truncate text-right font-medium text-slate-900 dark:text-slate-100">{value || "—"}</span>
-                  </div>
-                ))}
-                <button onClick={() => setActiveView("main")} className="mt-3 w-full rounded-full bg-black px-4 py-3 text-sm font-semibold text-white transition hover:bg-[#262626]">Back</button>
+              <div className="mt-5 rounded-2xl border border-[#e6e6e4] bg-white p-4 shadow-sm sm:p-5">
+                <div className="mb-4 border-b border-[#e6e6e4] pb-3">
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[#595959]">Account information</p>
+                  <h3 className="mt-1 text-sm font-semibold text-[#222] sm:text-base">Personal details</h3>
+                  <p className="mt-1 text-xs leading-5 text-[#595959]">Your administrator profile information and contact details.</p>
+                </div>
+                <div className="grid gap-2.5 sm:grid-cols-2">
+                  {[
+                    ["First name", form.first_name],
+                    ["Last name", form.last_name],
+                    ["Email", form.email],
+                    ["Phone", form.phone_number],
+                    ["Location", form.location],
+                    ["Address", form.address],
+                    ["City", form.city],
+                    ["Country", form.country],
+                    ["Date of birth", form.date_of_birth],
+                  ].map(([label, value]) => (
+                    <div key={label} className="min-w-0 rounded-2xl border border-gray-300 bg-[#f8f8f6] px-4 py-3">
+                      <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-[#595959]">{label}</p>
+                      <p className="mt-1 truncate text-sm font-semibold text-[#222]">{value || "—"}</p>
+                    </div>
+                  ))}
+                </div>
+                <button onClick={() => setActiveView("main")} className="mt-4 w-full rounded-full bg-black px-4 py-3 text-sm font-semibold text-white transition hover:bg-[#262626]">Back</button>
               </div>
             )}
 
             {activeView === "edit" && (
-              <div className="mt-5">
-                <div className="grid gap-3 sm:grid-cols-2">
+              <div className="mt-5 rounded-2xl border border-[#e6e6e4] bg-white p-4 shadow-sm sm:p-5">
+                <div className="mb-4 border-b border-[#e6e6e4] pb-3">
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[#595959]">Profile settings</p>
+                  <h3 className="mt-1 text-sm font-semibold text-[#222] sm:text-base">Edit account information</h3>
+                  <p className="mt-1 text-xs leading-5 text-[#595959]">Update your personal details and contact information.</p>
+                </div>
+                <div className="grid gap-4 sm:grid-cols-2">
                   {[
                     ["username", "Username"],
                     ["email", "Email"],
@@ -318,27 +330,31 @@ const HeaderTop = ({ onMenuToggle }) => {
                     ["city", "City"],
                     ["country", "Country"],
                   ].map(([name, label]) => (
-                    <label key={name} className="grid gap-1.5 text-xs font-semibold text-slate-600 dark:text-slate-300">
+                    <label key={name} className="grid gap-2 text-[11px] font-semibold uppercase tracking-[0.1em] text-[#595959]">
                       {label}
-                      <input
-                        name={name}
-                        value={form[name] || ""}
-                        onChange={handleChange}
-                        disabled={!editMode}
-                        className="h-11 w-full rounded-[20px] border border-gray-300 bg-white px-4 py-3 text-sm text-gray-900 outline-none transition focus:border-[#2563eb] focus:ring-4 focus:ring-[#2563eb]/10 disabled:cursor-not-allowed disabled:opacity-60"
-                      />
+                      <span className="rounded-2xl border border-gray-300 bg-[#f8f8f6] p-1.5">
+                        <input
+                          name={name}
+                          value={form[name] || ""}
+                          onChange={handleChange}
+                          disabled={!editMode}
+                          className="h-11 w-full rounded-[18px] border border-gray-200 bg-white px-4 py-3 text-sm font-medium normal-case tracking-normal text-gray-900 outline-none transition focus:border-[#2563eb] focus:ring-4 focus:ring-[#2563eb]/10 disabled:cursor-not-allowed disabled:opacity-60"
+                        />
+                      </span>
                     </label>
                   ))}
-                  <label className="grid gap-1.5 text-xs font-semibold text-slate-600 dark:text-slate-300">
+                  <label className="grid gap-2 text-[11px] font-semibold uppercase tracking-[0.1em] text-[#595959]">
                     Date of birth
-                    <input
-                      type="date"
-                      name="date_of_birth"
-                      value={form.date_of_birth || ""}
-                      onChange={handleChange}
-                      disabled={!editMode}
-                      className="h-11 w-full rounded-[20px] border border-gray-300 bg-white px-4 py-3 text-sm text-gray-900 outline-none transition focus:border-[#2563eb] focus:ring-4 focus:ring-[#2563eb]/10 disabled:cursor-not-allowed disabled:opacity-60"
-                    />
+                    <span className="rounded-2xl border border-gray-300 bg-[#f8f8f6] p-1.5">
+                      <input
+                        type="date"
+                        name="date_of_birth"
+                        value={form.date_of_birth || ""}
+                        onChange={handleChange}
+                        disabled={!editMode}
+                        className="h-11 w-full rounded-[18px] border border-gray-200 bg-white px-4 py-3 text-sm font-medium normal-case tracking-normal text-gray-900 outline-none transition focus:border-[#2563eb] focus:ring-4 focus:ring-[#2563eb]/10 disabled:cursor-not-allowed disabled:opacity-60"
+                      />
+                    </span>
                   </label>
                 </div>
 
@@ -354,9 +370,12 @@ const HeaderTop = ({ onMenuToggle }) => {
             )}
 
             {activeView === "manage" && (
-              <div className="mt-5 rounded-2xl border border-border bg-muted/40 p-5 text-sm">
-                <h3 className="text-base font-semibold text-foreground">Account settings</h3>
-                <p className="mt-1 text-slate-500 dark:text-slate-400">Manage security, password changes, notifications, and other administrator preferences.</p>
+              <div className="mt-5 rounded-2xl border border-[#e6e6e4] bg-white p-5 shadow-sm text-sm">
+                <div className="border-b border-[#e6e6e4] pb-3">
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[#595959]">Account management</p>
+                  <h3 className="mt-1 text-sm font-semibold text-[#222] sm:text-base">Account settings</h3>
+                  <p className="mt-1 text-xs leading-5 text-[#595959]">Manage security, password changes, notifications, and other administrator preferences.</p>
+                </div>
                 <a href="/admin-dashboard/settings" onClick={closeProfile} className="mt-4 inline-flex w-full items-center justify-center rounded-full border border-border bg-transparent px-4 py-3 text-sm font-semibold text-foreground transition hover:bg-muted">Open account settings</a>
                 <button type="button" onClick={() => setActiveView("main")} className="mt-4 w-full rounded-full bg-black px-5 py-3 text-sm font-semibold text-white transition hover:bg-[#262626]">Back</button>
               </div>
