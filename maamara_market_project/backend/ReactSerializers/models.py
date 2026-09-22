@@ -625,3 +625,38 @@ class ItemView(models.Model):
     
 
     
+
+
+class TrafficEvent(models.Model):
+    """First-party storefront traffic/event record used by admin analytics."""
+    EVENT_CHOICES = [
+        ("page_view", "Page view"),
+        ("session_start", "Session start"),
+        ("event", "Event"),
+    ]
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name="traffic_events")
+    visitor_id = models.CharField(max_length=255, null=True, blank=True, db_index=True)
+    session_id = models.CharField(max_length=255, null=True, blank=True, db_index=True)
+    event_type = models.CharField(max_length=30, choices=EVENT_CHOICES, default="page_view", db_index=True)
+    path = models.CharField(max_length=1000, db_index=True)
+    referrer = models.URLField(max_length=2000, blank=True, default="")
+    source = models.CharField(max_length=120, blank=True, default="direct", db_index=True)
+    medium = models.CharField(max_length=120, blank=True, default="")
+    campaign = models.CharField(max_length=255, blank=True, default="")
+    ip_address = models.GenericIPAddressField(null=True, blank=True, db_index=True)
+    country_code = models.CharField(max_length=8, blank=True, default="")
+    country_name = models.CharField(max_length=120, blank=True, default="")
+    device_type = models.CharField(max_length=30, blank=True, default="unknown", db_index=True)
+    user_agent = models.TextField(blank=True, default="")
+    created_at = models.DateTimeField(auto_now_add=True, db_index=True)
+
+    class Meta:
+        ordering = ("-created_at",)
+        indexes = [
+            models.Index(fields=("created_at", "event_type")),
+            models.Index(fields=("source", "created_at")),
+            models.Index(fields=("country_code", "created_at")),
+        ]
+
+    def __str__(self):
+        return f"{self.event_type}: {self.path}"
