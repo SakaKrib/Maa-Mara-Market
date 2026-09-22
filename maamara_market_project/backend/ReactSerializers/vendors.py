@@ -30,6 +30,7 @@ from rest_framework.exceptions import ValidationError
 from rest_framework.response import Response
 from rest_framework import status
 from django.db import transaction
+from django.db.models import Q
 from .models import Item, ItemAdditionalImage, ColorVariant, SizeStock, AgeVariant, Occasion
 from .Serializers import ItemSerializers
 from rest_framework.permissions import IsAuthenticated
@@ -97,6 +98,13 @@ class VendorItemViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         if self.request.user.is_staff:
             return Item.objects.all()
+
+        vendor = getattr(self.request.user, "vendor", None)
+        if vendor:
+            return Item.objects.filter(
+                Q(created_by=self.request.user) | Q(vendor=vendor)
+            ).distinct()
+
         return Item.objects.filter(created_by=self.request.user)
 
     def get_serializer(self, *args, **kwargs):
