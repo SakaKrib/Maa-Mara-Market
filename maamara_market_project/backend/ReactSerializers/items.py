@@ -65,8 +65,9 @@ def vendor_item_growth_stats(request):
 
     vendor = user.vendor
 
-    # 🧮 Get only items created by this vendor
-    items = Item.objects.filter(created_by=user)
+    # 🧮 Count all items belonging to this vendor, including items
+    # created by an admin on the vendor's behalf.
+    items = Item.objects.filter(vendor=vendor)
 
     total_items = items.count()
 
