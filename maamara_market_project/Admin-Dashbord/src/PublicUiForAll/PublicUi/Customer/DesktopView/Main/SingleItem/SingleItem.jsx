@@ -58,11 +58,9 @@ const SingleItem = () => {
   const hasDiscount = Number(item.discount_price || item.discount || 0) > 0;
 
   return (
-    <main className="mm-single-item w-full px-4 pb-12 pt-6 sm:px-6 md:px-8 lg:px-10 xl:px-12 2xl:px-16">
-      <div className="mx-auto grid w-full max-w-[1600px] grid-cols-1 gap-6 lg:grid-cols-2 lg:items-start lg:gap-8 xl:gap-10">
-        {/* At desktop these are two independent columns. At mobile they become
-            direct grid children so the customer gets the natural purchase flow. */}
-        <div className="contents lg:block">
+    <main className="mm-single-item mm-page pb-12 pt-6">
+      <div className="mm-container">
+        <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-2 lg:gap-8 xl:gap-10">
           <div className="min-w-0 lg:sticky lg:top-4">
             <ProductGallery
               item={item}
@@ -74,13 +72,7 @@ const SingleItem = () => {
             />
           </div>
 
-          <section className="order-5 mt-6 min-w-0 rounded-2xl border border-border bg-card p-4 shadow-custom sm:p-5 lg:order-none">
-            <ProductDetails item={item} />
-          </section>
-        </div>
-
-        <div className="contents lg:block">
-          <section className="order-2 min-w-0 rounded-2xl border border-border bg-card p-4 shadow-custom sm:p-5 lg:order-none">
+          <section className="min-w-0 rounded-2xl border border-border bg-card p-4 shadow-custom sm:p-5">
             <VendorPerformanceBadges itemId={item.id} />
             <h1 className="mt-3 text-2xl font-semibold tracking-tight text-card-foreground sm:text-3xl">
               {item.name}
@@ -118,7 +110,11 @@ const SingleItem = () => {
             </div>
           </section>
 
-          <div className="order-3 min-w-0 lg:order-none">
+          <section className="min-w-0 rounded-2xl border border-border bg-card p-4 shadow-custom sm:p-5">
+            <ProductDetails item={item} />
+          </section>
+
+          <div className="min-w-0">
             <ProductOptions
               item={item}
               selectedVariant={selectedVariant}
@@ -138,59 +134,59 @@ const SingleItem = () => {
               onLengthChange={selectLength}
               onCustomPreferencesChange={setCustomPreferences}
             />
-          </div>
 
-          <div className="order-4 min-w-0 lg:order-none">
-            <QuantityAndCart
-              item={item}
-              quantity={quantity}
-              setQuantity={setQuantity}
-              availableStock={availableStock}
-              remainingStock={remainingStock}
-              selectedVariant={selectedVariant}
-              selectedSize={selectedSize}
-              selectedAgeVariant={selectedAgeVariant}
-              selectedShoe={selectedShoe}
-              selectedShoeSize={selectedShoeSize}
-              customPreferences={customPreferences}
-              onAdded={refreshItem}
-            />
+            <div className="mt-6">
+              <QuantityAndCart
+                item={item}
+                quantity={quantity}
+                setQuantity={setQuantity}
+                availableStock={availableStock}
+                remainingStock={remainingStock}
+                selectedVariant={selectedVariant}
+                selectedSize={selectedSize}
+                selectedAgeVariant={selectedAgeVariant}
+                selectedShoe={selectedShoe}
+                selectedShoeSize={selectedShoeSize}
+                customPreferences={customPreferences}
+                onAdded={refreshItem}
+              />
 
-            <div className="mt-4 flex w-full flex-col gap-3">
-              <button
-                type="button"
-                className="flex w-full items-center justify-center rounded-full border border-border bg-background px-4 py-2.5 text-center text-sm font-semibold text-card-foreground transition-colors hover:bg-muted"
-                onClick={() =>
-                  isWishlisted ? removeFromWishlist(item.id) : addToWishlist(item.id)
-                }
-                aria-pressed={isWishlisted}
-              >
-                {isWishlisted ? "♥ Saved" : "♡ Wishlist"}
-              </button>
-
-              <button
-                type="button"
-                className="flex w-full items-center justify-center rounded-full border border-border bg-background px-4 py-2.5 text-center text-sm font-semibold text-card-foreground transition-colors hover:bg-muted"
-                onClick={() => {
-                  if (navigator.share) {
-                    navigator.share({ title: item.name, url: window.location.href }).catch(() => {});
-                  } else if (navigator.clipboard) {
-                    navigator.clipboard.writeText(window.location.href);
+              <div className="mt-4 flex w-full flex-col gap-3">
+                <button
+                  type="button"
+                  className="flex w-full items-center justify-center rounded-full border border-border bg-background px-4 py-2.5 text-center text-sm font-semibold text-card-foreground transition-colors hover:bg-muted"
+                  onClick={() =>
+                    isWishlisted ? removeFromWishlist(item.id) : addToWishlist(item.id)
                   }
-                }}
-              >
-                ↗ Share
-              </button>
-            </div>
-          </div>
+                  aria-pressed={isWishlisted}
+                >
+                  {isWishlisted ? "♥ Saved" : "♡ Wishlist"}
+                </button>
 
-          <section className="order-6 min-w-0 rounded-2xl border border-border bg-card p-4 shadow-custom sm:p-5 lg:order-none">
-            <ProductReviews item={item} />
-          </section>
+                <button
+                  type="button"
+                  className="flex w-full items-center justify-center rounded-full border border-border bg-background px-4 py-2.5 text-center text-sm font-semibold text-card-foreground transition-colors hover:bg-muted"
+                  onClick={() => {
+                    if (navigator.share) {
+                      navigator.share({ title: item.name, url: window.location.href }).catch(() => {});
+                    } else if (navigator.clipboard) {
+                      navigator.clipboard.writeText(window.location.href);
+                    }
+                  }}
+                >
+                  ↗ Share
+                </button>
+              </div>
+            </div>
+
+            <section className="mt-6 min-w-0 rounded-2xl border border-border bg-card p-4 shadow-custom sm:p-5">
+              <ProductReviews item={item} />
+            </section>
+          </div>
         </div>
       </div>
 
-      <div className="mx-auto mt-8 w-full max-w-[1600px] min-w-0">
+      <div className="mm-container mt-8 min-w-0">
         <TrendingProduct
           itemId={item.id}
           title="You may also like"
@@ -200,7 +196,7 @@ const SingleItem = () => {
         />
       </div>
 
-      <div className="mx-auto mt-8 w-full max-w-[1600px] min-w-0">
+      <div className="mm-container mt-8 min-w-0">
         <MarketplaceItemContext item={item} availableStock={availableStock} />
       </div>
     </main>
