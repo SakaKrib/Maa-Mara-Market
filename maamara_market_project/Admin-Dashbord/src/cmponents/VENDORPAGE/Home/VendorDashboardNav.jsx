@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React from "react";
 import { IonIcon } from "@ionic/react";
 import {
   statsChartOutline,
@@ -22,7 +22,7 @@ import Maamara from "../../../assets/Logo/Maamara.jpg";
 import { useVendorOrdersCombined } from "../../Hooks/Order/CombinedOrderHook";
 import LogoutConfirmationModal from "../../Auth/LogoutConfirmationModal";
 
-const VendorDashboardNav = () => {
+const VendorDashboardNav = ({ open = false, onClose }) => {
   const location = useLocation();
   const { pending } = useVendorOrdersCombined();
   const { user, logout } = useAuth();
@@ -62,35 +62,17 @@ const VendorDashboardNav = () => {
 
   return (
     <>
-      {!mobileOpen && (
-        <button
-          type="button"
-          onClick={() => setMobileOpen(true)}
-          className="fixed left-3 top-[72px] z-[1300] inline-flex h-10 w-10 items-center justify-center rounded-xl border border-[#e6e6e4] bg-white text-[#222] shadow-sm sm:hidden"
-          aria-label="Open vendor navigation"
-        >
-          <IonIcon icon={menuOutline} className="text-xl" />
-        </button>
-      )}
-
-      {mobileOpen && (
-        <button
-          type="button"
-          className="fixed inset-0 z-[1190] bg-black/30 sm:hidden"
-          onClick={() => setMobileOpen(false)}
-          aria-label="Close vendor navigation overlay"
-        />
-      )}
+      <button
+        type="button"
+        className={`fixed inset-0 z-[1190] bg-black/30 transition-opacity sm:hidden ${open ? "opacity-100" : "pointer-events-none opacity-0"}`}
+        onClick={onClose}
+        aria-label="Close vendor navigation overlay"
+      />
 
       <aside
-        className={
-          "etsy-shop-sidebar " +
-          (mobileOpen ? "!w-[244px] shadow-2xl" : "")
-        }
+        className={`etsy-shop-sidebar ${open ? "!w-[244px] shadow-2xl" : ""}`}
         style={{
-          ...(mobileOpen
-            ? { width: "244px" }
-            : {}),
+          ...(open ? { width: "244px" } : {}),
         }}
         aria-label="Vendor dashboard navigation"
       >
@@ -108,7 +90,7 @@ const VendorDashboardNav = () => {
           </div>
           <button
             type="button"
-            onClick={() => setMobileOpen(false)}
+            onClick={onClose}
             className="ml-auto inline-flex h-8 w-8 items-center justify-center rounded-lg text-[#595959] hover:bg-[#f8f8f6] hover:text-[#222] sm:hidden"
             aria-label="Close vendor navigation"
           >
@@ -125,7 +107,7 @@ const VendorDashboardNav = () => {
             <Link
               key={item.to}
               to={item.to}
-              onClick={() => setMobileOpen(false)}
+              onClick={onClose}
               className={isActive(item.to, item.exact) ? "active" : ""}
             >
               <IonIcon icon={item.icon} aria-hidden="true" />
