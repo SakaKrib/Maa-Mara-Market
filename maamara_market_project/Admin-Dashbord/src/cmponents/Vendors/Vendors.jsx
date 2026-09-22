@@ -26,6 +26,8 @@ const formatCurrency = (value) => {
 };
 
 const VendorAvatar = ({ vendor, className = "h-12 w-12" }) => {
+  const [failed, setFailed] = useState(false);
+  const [index, setIndex] = useState(0);
   const candidates = [
     resolveApiAssetUrl(vendor.profile_picture_url),
     resolveApiAssetUrl(vendor.company_logo_url),
@@ -38,28 +40,27 @@ const VendorAvatar = ({ vendor, className = "h-12 w-12" }) => {
     "V"
   ).slice(0, 2).toUpperCase();
 
-  return candidates.length ? (
+  if (!candidates.length || failed) {
+    return (
+      <div className={className + " flex shrink-0 items-center justify-center rounded-full border border-border bg-black text-sm font-bold tracking-wide text-white"}>
+        {initials}
+      </div>
+    );
+  }
+
+  return (
     <img
-      src={candidates[0]}
-      data-fallback-index="0"
+      src={candidates[index]}
       alt={getVendorName(vendor)}
       className={className + " shrink-0 rounded-full border border-border bg-muted object-cover"}
-      onError={(event) => {
-        const current = Number(event.currentTarget.dataset.fallbackIndex || 0);
-        const next = current + 1;
-        if (next < candidates.length) {
-          event.currentTarget.dataset.fallbackIndex = String(next);
-          event.currentTarget.src = candidates[next];
-          return;
+      onError={() => {
+        if (index + 1 < candidates.length) {
+          setIndex((current) => current + 1);
+        } else {
+          setFailed(true);
         }
-        event.currentTarget.style.display = "none";
-        event.currentTarget.nextElementSibling?.classList.remove("hidden");
       }}
     />
-  ) : (
-    <div className={className + " flex shrink-0 items-center justify-center rounded-full border border-border bg-black text-sm font-bold tracking-wide text-white"}>
-      {initials}
-    </div>
   );
 };
 
