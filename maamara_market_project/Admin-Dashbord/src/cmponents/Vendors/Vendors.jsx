@@ -141,7 +141,7 @@ const VendorItemCard = ({ vendor, item, onRefresh }) => {
           <span>Size: {item.size || "—"}</span>
           <span>Stock: {item.in_stock ?? 0}</span>
           <Link
-            to={"/admin-dashboard/item-onsite/items/" + item.id}
+            to={"/admin-dashboard/items/" + item.id}
             className="inline-flex items-center rounded-lg border border-border bg-white px-2 py-1 text-xs font-semibold text-black transition hover:bg-gray-100"
           >
             View item
