@@ -91,9 +91,9 @@ class VendorItemViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
 
     def get_permissions(self):
-        # Admins may create an item for a selected vendor. Existing vendor
-        # create/update/delete behavior remains restricted to vendors.
-        if self.action == "create" and self.request.user.is_staff:
+        # Admins may create, update, and delete items for any vendor.
+        # Existing vendor behavior remains restricted to the owning vendor.
+        if self.request.user.is_staff and self.action in {"create", "update", "partial_update", "destroy"}:
             return [IsAuthenticated(), IsAdminUser()]
         return [IsAuthenticated(), IsVendor()]
 
@@ -351,6 +351,17 @@ class VendorItemViewSet(viewsets.ModelViewSet):
 
     @transaction.atomic
     def perform_update(self, serializer):
+        # Item.price is protected at the model layer. Vendors must continue
+        # using the existing price-change request/approval workflow; admins
+        # are explicitly allowed to change it from the admin item editor.
+        if "price" in self.request.data and not self.request.user.is_staff:
+            raise ValidationError({
+                "price": "Direct price changes require administrator approval."
+            })
+
+        if self.request.user.is_staff:
+            self.get_object()._allow_price_update = True
+
         validated = serializer.validated_data
 
         variants_data = validated.pop("variants", [])
