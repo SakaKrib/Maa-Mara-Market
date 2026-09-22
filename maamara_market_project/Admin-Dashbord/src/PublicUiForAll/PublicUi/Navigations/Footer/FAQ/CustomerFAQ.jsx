@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import DOMPurify from "dompurify";
+import { sanitizeRichText } from "../../../../../utils/sanitizeRichText";
 import { IonIcon } from "@ionic/react";
 import { chevronDownOutline, searchOutline } from "ionicons/icons";
 import api from "../../../../../Services/Api";
@@ -114,15 +114,8 @@ const CustomerFAQ = () => {
                 </button>
                 {isOpen && (
                   <div
-                    className="prose prose-sm max-w-none border-t border-border px-4 py-5 text-foreground sm:px-6"
-                    dangerouslySetInnerHTML={{
-                      __html: DOMPurify.sanitize(faq.answer || "", {
-                        USE_PROFILES: { html: true },
-                        ALLOWED_TAGS: ["p", "br", "strong", "b", "em", "i", "u", "s", "h2", "h3", "h4", "ul", "ol", "li", "blockquote", "a"],
-                        ALLOWED_ATTR: ["href", "title"],
-                        ALLOW_UNKNOWN_PROTOCOLS: false,
-                      }),
-                    }}
+                    className="prose prose-sm max-w-none border-t border-border px-4 py-5 text-foreground sm:px-6 [&_h1]:mb-3 [&_h1]:text-2xl [&_h1]:font-bold [&_h2]:mb-3 [&_h2]:text-xl [&_h2]:font-bold [&_h3]:mb-2 [&_h3]:text-lg [&_h3]:font-semibold [&_p]:mb-3 [&_p]:leading-7 [&_ul]:mb-3 [&_ul]:list-disc [&_ul]:pl-6 [&_ol]:mb-3 [&_ol]:list-decimal [&_ol]:pl-6 [&_li]:mb-1 [&_blockquote]:my-4 [&_blockquote]:border-l-4 [&_blockquote]:border-[#2563eb] [&_blockquote]:pl-4 [&_blockquote]:italic [&_a]:text-[#2563eb] [&_a]:underline"
+                    dangerouslySetInnerHTML={{ __html: sanitizeRichText(faq.answer || "") }}
                   />
                 )}
               </section>
