@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { createPortal, useEffect, useMemo, useState } from "react";
 import {
   LineChart,
   Line,
@@ -482,22 +482,24 @@ const SingleVendorProfile = () => {
                       );
                     })}
 
-                    {activeBadge && badgePosition && (
-                      <div
-                        role="tooltip"
-                        className="fixed z-[9999] rounded-2xl border border-[#e6e6e4] bg-white p-4 text-left shadow-2xl"
-                        style={{
-                          top: badgePosition.top,
-                          left: badgePosition.left,
-                          width: badgePosition.width,
-                        }}
-                      >
-                        <h3 className="text-sm font-semibold text-gray-900">{activeBadge}</h3>
-                        <p className="mt-1 text-xs leading-5 text-gray-600">
-                          {badges.find((badge) => badge.label === activeBadge)?.description}
-                        </p>
-                      </div>
-                    )}
+                    {activeBadge && badgePosition &&
+                      createPortal(
+                        <div
+                          role="tooltip"
+                          className="pointer-events-none fixed z-[2147483647] rounded-2xl border border-[#e6e6e4] bg-white p-4 text-left shadow-2xl"
+                          style={{
+                            top: badgePosition.top,
+                            left: badgePosition.left,
+                            width: badgePosition.width,
+                          }}
+                        >
+                          <h3 className="text-sm font-semibold text-gray-900">{activeBadge}</h3>
+                          <p className="mt-1 text-xs leading-5 text-gray-600">
+                            {badges.find((badge) => badge.label === activeBadge)?.description}
+                          </p>
+                        </div>,
+                        document.body
+                      )}
                   </div>
                 </div>
               </div>
