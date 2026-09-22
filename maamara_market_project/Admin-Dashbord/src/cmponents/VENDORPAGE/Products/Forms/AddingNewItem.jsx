@@ -154,6 +154,24 @@ const ItemAddNew = ({ initialItem, vendorId, itemId, onSave, vendor, isAdmin = f
           size: size.size,
           stock: size.quantity_in_stock ?? size.stock ?? 0,
         })),
+        kids_sizes: (initialItem.kids_sizes || []).map((size) => ({
+          id: size.id,
+          age_group: size.age_group ?? size.size ?? "",
+          size: size.age_group ?? size.size ?? "",
+          quantity_in_stock: size.quantity_in_stock ?? size.stock ?? 0,
+          stock: size.quantity_in_stock ?? size.stock ?? 0,
+        })),
+        ...(Array.isArray(initialItem.shoe_input) && initialItem.shoe_input.length > 0
+          ? {
+              shoe_type: initialItem.shoe_input[0].shoe_type || "",
+              shoe_gender: initialItem.shoe_input[0].shoe_gender || "",
+              shoe_size: Array.isArray(initialItem.shoe_input[0].shoe_size)
+                ? initialItem.shoe_input[0].shoe_size
+                : initialItem.shoe_input[0].shoe_size
+                  ? [initialItem.shoe_input[0].shoe_size]
+                  : [],
+            }
+          : {}),
       });
       setSelectedDepartment(initialItem.department || "");
       setSelectedCategory(initialItem.category || "");
