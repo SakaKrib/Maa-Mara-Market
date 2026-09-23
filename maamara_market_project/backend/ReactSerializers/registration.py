@@ -102,6 +102,7 @@ def register(request):
             "first_name": firstname,
             "otp": pending.otp_code,
             "otp_expiry_minutes": OTP_EXPIRY_MINUTES,
+            "frontend_url": settings.FRONTEND_URL.rstrip("/"),
         },
     )
     email_message = EmailMultiAlternatives(
@@ -224,7 +225,8 @@ def verify_otp_register_otp(request):
             {
                 "first_name": user.first_name,
                 "username": user.username,
-                "dashboard_url": "/dashboard",
+                "dashboard_url": f"{settings.FRONTEND_URL.rstrip('/')}/user-account",
+                "frontend_url": settings.FRONTEND_URL.rstrip("/"),
             },
         )
         email_message = EmailMultiAlternatives(
@@ -283,6 +285,7 @@ def resend_otp_register_otp(request):
             "first_name": pending.first_name,
             "otp": pending.otp_code,
             "otp_expiry_minutes": OTP_EXPIRY_MINUTES,
+            "frontend_url": settings.FRONTEND_URL.rstrip("/"),
         },
     )
     email_message = EmailMultiAlternatives(
