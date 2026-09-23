@@ -92,9 +92,15 @@ const OCCASION_OPTIONS = [
 const ItemAddNew = ({ initialItem, vendorId, itemId, onSave = () => {}, vendor, isAdmin = false, adminCreateNew = false, approvalMode = false, approvalRequestId = null }) => {
   const { departmentMap, organicDepartmentMap } = useDepartments();
 
-  // Vendor data may arrive directly or nested under vendor_data (vendor-request API).
+  // Vendor data can come from the authenticated vendor profile, a parent
+  // vendor object, or a vendor-request payload. Normalize all supported
+  // shapes so "both" is not missed because of casing/nesting.
   const productType = String(
-    vendor?.product_type ?? vendor?.vendor_data?.product_type ?? ""
+    vendor?.product_type ??
+      vendor?.productType ??
+      vendor?.vendor_data?.product_type ??
+      vendor?.vendor_data?.productType ??
+      ""
   ).trim().toLowerCase();
 
   const [selectedDepartment, setSelectedDepartment] = useState("");
@@ -1130,7 +1136,7 @@ const ItemAddNew = ({ initialItem, vendorId, itemId, onSave = () => {}, vendor, 
          {/* Vendor-only selector: only a new item from a "both" vendor can
              choose between organic and inorganic. Existing items never show it. */}
       <div className='border rounded-[20px] border-gray-300 p-4'>
-       {!isAdmin && !isEditing && productType === "both" && (
+       {!isAdmin && !adminCreateNew && !approvalMode && !isEditing && productType === "both" && (
         <div className="my-4 space-y-2">
           <label className="block text-sm leading-6 font-semibold text-foreground">Select Form</label>
           <div className="flex flex-wrap gap-2">
