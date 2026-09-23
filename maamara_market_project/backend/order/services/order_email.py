@@ -108,9 +108,7 @@ def send_paid_order_emails(order_id):
     Send the customer confirmation and one vendor fulfillment email per vendor.
     This function is called only after the paid-order transaction commits.
     """
-    from order.models import OrderItem
-
-    try:
+        try:
         order = (
             order.__class__.objects
             .select_related("billing_address", "payment", "user")
@@ -135,7 +133,9 @@ def send_paid_order_emails(order_id):
     shipping_amount = Decimal(str(getattr(order, "shipping_amount", 0) or 0))
     order_total = Decimal(str(getattr(order, "updated_total_price", 0) or 0))
 
-    customer_email = billing["email"] or getattr(order.user, "email", "") if order.user_id else billing["email"]
+    customer_email = billing["email"]
+    if not customer_email and order.user_id:
+        customer_email = getattr(order.user, "email", "") or ""
     customer_name = billing["name"] or (
         getattr(order.user, "get_full_name", lambda: "")() if order.user_id else "Customer"
     ) or "Customer"
