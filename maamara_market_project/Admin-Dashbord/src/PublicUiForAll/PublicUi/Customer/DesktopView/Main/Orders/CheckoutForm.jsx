@@ -205,12 +205,8 @@ const fetchShippingQuote = async () => {
 
     try {
       await ensureCheckoutIdentity();
+      const res = await api.post("/api/checkout/", payload);
       const responseData = res.data;
-
-      console.log("✅ Checkout successful:", responseData);
-
-      if (!res.ok) throw new Error("Checkout failed");
-      const responseData = await res.json();
 
       console.log("✅ Checkout successful:", responseData);
 
