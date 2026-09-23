@@ -1,5 +1,6 @@
 # shop/serializers.py
 from rest_framework import serializers
+import json
 from vendorDashboard.models import Vendor,VendorPayout, VendorAdjustment
 from django.contrib.auth.models import User
 from core.models import Profile
@@ -415,8 +416,46 @@ class ItemSerializers(serializers.ModelSerializer):
     
 
     def to_internal_value(self, data):
-        # Decode HTML entities before resolving category relationships.
+        # Multipart requests can represent list/JSON fields as strings or as
+        # repeated form keys. Normalize them before DRF validates the fields.
         data = data.copy()
+
+        if hasattr(data, "getlist"):
+            occasion_values = data.getlist("occasions") if "occasions" in data else []
+            if len(occasion_values) > 1:
+                data.setlist("occasions", occasion_values)
+            elif occasion_values:
+                occasion_value = occasion_values[0]
+                if isinstance(occasion_value, str):
+                    try:
+                        parsed_occasions = json.loads(occasion_value)
+                    except (TypeError, ValueError, json.JSONDecodeError):
+                        parsed_occasions = None
+                    if isinstance(parsed_occasions, list):
+                        data.setlist("occasions", [str(value) for value in parsed_occasions])
+                    else:
+                        data.setlist("occasions", [occasion_value])
+        elif isinstance(data.get("occasions"), str):
+            try:
+                parsed_occasions = json.loads(data["occasions"])
+            except (TypeError, ValueError, json.JSONDecodeError):
+                parsed_occasions = None
+            if isinstance(parsed_occasions, list):
+                data["occasions"] = parsed_occasions
+
+        gallery_keep_ids = data.get("gallery_keep_ids")
+        if isinstance(gallery_keep_ids, str):
+            try:
+                parsed_gallery_ids = json.loads(gallery_keep_ids)
+            except (TypeError, ValueError, json.JSONDecodeError):
+                parsed_gallery_ids = None
+            if isinstance(parsed_gallery_ids, list):
+                data["gallery_keep_ids"] = parsed_gallery_ids
+
+        # Decode HTML entities before resolving category relationships.
+        for field_name in ("department", "category", "subcategory", "item_attribute"):
+            if field_name in data and data[field_name]:
+                data[field_name] = html.unescape(str(data[field_name])).strip()
         for field_name in ("department", "category", "subcategory", "item_attribute"):
             if field_name in data and data[field_name]:
                 data[field_name] = html.unescape(str(data[field_name])).strip()
