@@ -200,8 +200,6 @@ class SizeStockSerializer(serializers.ModelSerializer):
 
 class ColorVariantSerializer(serializers.ModelSerializer):
     image = serializers.ImageField(use_url=True)
-    additional_images = ItemAdditionalImageSerializer(many=True, read_only=True)
-    occasions = serializers.SerializerMethodField()
     sizes = SizeStockSerializer(many=True, read_only=True)
 
     class Meta:
