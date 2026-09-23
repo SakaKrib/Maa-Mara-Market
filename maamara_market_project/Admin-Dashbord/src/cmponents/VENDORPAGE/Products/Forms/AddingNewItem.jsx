@@ -2833,7 +2833,11 @@ const ItemAddNew = ({ initialItem, vendorId, itemId, onSave = () => {}, vendor, 
                           min="1"
                           max="100"
                           placeholder="e.g. 20"
-                          {...field}
+                          value={field.value ?? ""}
+                          onChange={(e) => {
+                            const value = e.target.value;
+                            field.onChange(value === "" ? "" : parseFloat(value));
+                          }}
                         />
                       </FormControl>
                       <FormDescription>
