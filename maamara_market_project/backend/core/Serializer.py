@@ -290,8 +290,8 @@ class ItemSerializer(serializers.ModelSerializer):
     shoe_inputs = ShoeSerializer(source="shoe_input", many=True, read_only=True)
     # Preserve the relation names consumed by the customer product page while
     # retaining the existing age_variants/shoe_inputs response aliases.
-    kids_sizes = AgeVariantSerializer(source="kids_sizes", many=True, read_only=True)
-    shoe_input = ShoeSerializer(source="shoe_input", many=True, read_only=True)
+    kids_sizes = AgeVariantSerializer(many=True, read_only=True)
+    shoe_input = ShoeSerializer(many=True, read_only=True)
 
     class Meta:
         model = Item
