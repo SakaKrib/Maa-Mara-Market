@@ -10,7 +10,6 @@ import { getData } from "country-list";
 import PhoneInput from "react-phone-input-2";
 import { useNavigate } from "react-router-dom";
 import "react-phone-input-2/lib/style.css";
-import CheckoutPaypalPayment from "./Payment/Paypal";
 
 // Zod validation schema
 const checkoutSchema = z.object({
@@ -411,11 +410,6 @@ const fetchShippingQuote = async () => {
               <div className="flex justify-between font-bold text-lg">
                 <span>Total</span>
                 <span>KES {Number(totalOrder + shippingCost).toLocaleString()}</span>
-              </div>
-
-              {/* Hidden PayPal Component for reference */}
-              <div style={{ display: "none" }}>
-                <CheckoutPaypalPayment order={order} />
               </div>
             </CardContent>
           </Card>
