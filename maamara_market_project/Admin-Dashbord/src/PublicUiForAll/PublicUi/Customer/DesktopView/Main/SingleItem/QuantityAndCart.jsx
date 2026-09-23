@@ -37,6 +37,16 @@ const QuantityAndCart = ({
 
   const configurationReady = !needsSize && !needsAge && !needsShoeSize;
   const stock = Math.max(Number(availableStock || 0), 0);
+  const hasExplicitConfiguration =
+    Boolean(selectedVariant || selectedSize || selectedAgeVariant || selectedShoe || selectedShoeSize || selectedWeight || selectedLength);
+  const selectionLabel = [
+    selectedVariant?.color,
+    selectedSize?.size !== undefined && selectedSize?.size !== null
+      ? (typeof selectedSize.size === "object" ? JSON.stringify(selectedSize.size) : selectedSize.size)
+      : null,
+    selectedAgeVariant?.age_group,
+    selectedShoeSize ? "Shoe " + selectedShoeSize : null,
+  ].filter(Boolean).join(" · ");
 
   const setSafeQuantity = (value) => {
     const next = Number(value);
@@ -92,24 +102,15 @@ const QuantityAndCart = ({
     <div className="mt-2 border-t border-border pt-5">
       <p className="mb-3 text-sm font-bold text-card-foreground">Choose Quantity</p>
 
-      {!configurationReady ? (
-        <div className="rounded-xl border border-dashed border-border bg-muted/30 px-4 py-3 text-sm text-muted-foreground">
-          Select all required product options above to choose the quantity.
-        </div>
-      ) : (
-        <div className="rounded-xl border border-border bg-background p-4">
+      <div className="rounded-xl border border-border bg-background p-4">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
               <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                 Selected configuration
               </p>
               <p className="mt-1 text-sm font-medium text-card-foreground">
-                {selectedVariant?.color || "Standard"}
-                {selectedSize?.size !== undefined && selectedSize?.size !== null
-                  ? " · " + (typeof selectedSize.size === "object" ? JSON.stringify(selectedSize.size) : selectedSize.size)
-                  : ""}
-                {selectedAgeVariant?.age_group ? " · " + selectedAgeVariant.age_group : ""}
-                {selectedShoeSize ? " · Shoe " + selectedShoeSize : ""}
+                {selectionLabel || "Standard item"}
+                {hasExplicitConfiguration ? "" : " · Base item"}
               </p>
             </div>
 
@@ -196,8 +197,7 @@ const QuantityAndCart = ({
               </div>
             </div>
           </div>
-        </div>
-      )}
+      </div>
 
       {needsSize && (
         <p className="mt-3 text-sm text-red-500">
