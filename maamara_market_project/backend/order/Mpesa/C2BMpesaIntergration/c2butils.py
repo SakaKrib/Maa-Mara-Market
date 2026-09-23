@@ -54,6 +54,7 @@ def sanitize_phone(phone: str) -> str:
 
 @api_view(["POST"])
 @permission_classes([IsAuthenticatedOrVisitor])
+@db_transaction.atomic
 def stk_push(request):
     """Initiate STK Push against a transient checkout session."""
     checkout_id = request.data.get("checkout_id")
