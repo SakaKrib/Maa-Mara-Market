@@ -109,19 +109,14 @@ const useSingleItem = () => {
         : null)
     : null;
 
-  const sizeOnlyStock = !selectedVariant && Array.isArray(item?.size_only_icon)
-    ? item.size_only_icon.reduce(
-        (sum, size) => sum + Number(size.quantity_in_stock || 0),
-        0
-      )
-    : null;
-
+  // Stock follows the customer's active configuration.
+  // With no explicit option selected, the base item's own stock is authoritative.
+  // Variant/size/age selections override that base stock only after selection.
   const availableStock =
     selectedSize?.quantity_in_stock ??
     selectedAgeVariant?.quantity_in_stock ??
     (selectedShoe && selectedShoeSize ? 1 : null) ??
     (variantStock !== null ? variantStock : null) ??
-    (sizeOnlyStock !== null ? sizeOnlyStock : null) ??
     Number(item?.in_stock || 0);
 
   const remainingStock = Math.max(Number(availableStock || 0) - quantity, 0);
