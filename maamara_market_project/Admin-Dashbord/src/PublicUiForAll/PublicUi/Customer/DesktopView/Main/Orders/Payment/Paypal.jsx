@@ -1,22 +1,26 @@
 import { PayPalScriptProvider, PayPalButtons, FUNDING } from "@paypal/react-paypal-js";
 import { useCartContext } from "../../CartHook/cart";
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 
 export default function CheckoutPaypalPayment() {
   const clientId = import.meta.env.VITE_PAYPAL_CLIENT_ID;
   if (!clientId) throw new Error("SDK Validation error: 'Expected client-id to be passed'");
 
   const { order } = useCartContext();
+  const location = useLocation();
+  const checkoutResult = location.state || null;
+  const localOrderId = checkoutResult?.order_id || order?.order?.id || null;
+  const paypalOrderId = checkoutResult?.paypal_order_id || null;
+  const kesAmount = Number(checkoutResult?.payment?.amount ?? order?.order?.final_total ?? order?.order?.total ?? 0);
   const [usdAmount, setUsdAmount] = useState("0.01");
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
-  const kesAmount = order?.order?.total || order?.order?.final_total || 0;
 
   // --- WebSocket for real-time payment status ---
   useEffect(() => {
-    if (!order?.order?.id) return;
-    const orderId = order.order.id;
+    if (!localOrderId) return;
+    const orderId = localOrderId;
     const wsScheme = window.location.protocol === "https:" ? "wss" : "ws";
     const socket = new WebSocket(`${wsScheme}://127.0.0.1:8000/ws/orders/${orderId}/`);
 
@@ -31,7 +35,7 @@ export default function CheckoutPaypalPayment() {
       }
     };
     return () => socket.close();
-  }, [order?.order?.id, navigate]);
+  }, [localOrderId, navigate]);
 
   // --- Convert KES to USD ---
   useEffect(() => {
@@ -52,16 +56,17 @@ export default function CheckoutPaypalPayment() {
   const handlePaymentApproval = async (details) => {
     setLoading(true);
     try {
-      console.log("💳 PayPal payment captured:", details);
+      console.log("💳 PayPal payment approved:", details);
 
-      const paypalOrderId = details.id;
+      const providerOrderId = details.id || paypalOrderId;
+      if (!providerOrderId || !localOrderId) throw new Error("Missing PayPal or local order reference.");
       const response = await fetch(
-        `http://127.0.0.1:8000/api/paypal/capture-order/${paypalOrderId}/`,
+        `/api/paypal/capture/${providerOrderId}/`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            ref_order_id: order.order.id,
+            ref_order_id: localOrderId,
            
           }),
           credentials: "include",
@@ -123,16 +128,10 @@ export default function CheckoutPaypalPayment() {
             <PayPalButtons
               fundingSource={FUNDING.PAYPAL}
               style={{ layout: "vertical", color: "blue", shape: "pill", label: "paypal", height: 45 }}
-              createOrder={(data, actions) =>
-                actions.order.create({
-                  purchase_units: [
-                    {
-                      amount: { currency_code: "USD", value: usdAmount },
-                      reference_id: order?.order?.id?.toString(),
-                    },
-                  ],
-                })
-              }
+              createOrder={() => {
+                if (!paypalOrderId) throw new Error("Missing PayPal order ID from checkout.");
+                return paypalOrderId;
+              }}
               onApprove={async (data) => {
                 if (!loading) await handlePaymentApproval({ id: data.orderID });
               }}
@@ -143,16 +142,10 @@ export default function CheckoutPaypalPayment() {
             <PayPalButtons
               fundingSource={FUNDING.CARD}
               style={{ layout: "vertical", color: "black", shape: "pill", label: "pay", height: 45 }}
-              createOrder={(data, actions) =>
-                actions.order.create({
-                  purchase_units: [
-                    {
-                      amount: { currency_code: "USD", value: usdAmount },
-                      reference_id: order?.order?.id?.toString(),
-                    },
-                  ],
-                })
-              }
+              createOrder={() => {
+                if (!paypalOrderId) throw new Error("Missing PayPal order ID from checkout.");
+                return paypalOrderId;
+              }}
               onApprove={async (data) => {
                 if (!loading) await handlePaymentApproval({ id: data.orderID });
               }}
