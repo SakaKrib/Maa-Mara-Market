@@ -24,7 +24,7 @@ const formatSizeValue = (value) => {
   return String(value);
 };
 
-const OptionButton = ({ selected, disabled, children, onClick, ariaLabel }) => (
+const OptionButton = ({ selected, disabled, children, onClick, ariaLabel, sizeStyle = false }) => (
   <button
     type="button"
     onClick={onClick}
@@ -32,7 +32,7 @@ const OptionButton = ({ selected, disabled, children, onClick, ariaLabel }) => (
     aria-pressed={selected}
     aria-label={ariaLabel}
     className={[
-      "min-h-10 rounded-xl border px-3 py-2 text-sm font-medium transition-colors",
+      sizeStyle ? "h-9 min-w-9 rounded-full border px-2 py-0 text-xs font-medium transition-colors" : "min-h-10 rounded-xl border px-3 py-2 text-sm font-medium transition-colors",
       selected
         ? "border-gray-900 bg-gray-900 text-white"
         : disabled
@@ -122,6 +122,7 @@ const ProductOptions = ({
                     selected={selectedSize?.id === sizeObj.id}
                     disabled={stock <= 0}
                     onClick={() => onSizeChange(sizeObj)}
+                    sizeStyle
                   >
                     {formatSizeValue(sizeObj.size)}
                   </OptionButton>
@@ -150,6 +151,7 @@ const ProductOptions = ({
                     selected={selectedAgeVariant?.id === age.id}
                     disabled={stock <= 0}
                     onClick={() => onAgeChange(age)}
+                    sizeStyle
                   >
                     {age.age_group}
                   </OptionButton>
@@ -190,6 +192,7 @@ const ProductOptions = ({
                       key={`${String(size)}-${index}`}
                       selected={String(selectedShoeSize) === String(size)}
                       onClick={() => onShoeSizeChange(size)}
+                      sizeStyle
                     >
                       {String(size)}
                     </OptionButton>
