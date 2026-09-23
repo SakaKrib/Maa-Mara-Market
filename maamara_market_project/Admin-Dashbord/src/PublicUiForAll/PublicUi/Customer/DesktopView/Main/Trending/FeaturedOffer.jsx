@@ -29,10 +29,10 @@ const FeaturedOffer = ({ item }) => {
         <p className="text-sm text-gray-600">({item.average_rating ?? 0} reviews)</p>
         <div className="flex items-center gap-3 mt-2">
           <span className="text-xl font-bold text-red-600">
-            KES {Number(item.final_discounted_price ?? item.price ?? 0).toLocaleString()}
+            KES {Number(item.final_price ?? 0).toLocaleString()}
           </span>
-          {Number(item.discount_price || 0) > 0 && (
-            <span className="line-through text-gray-500">KES {Number(item.final_price || 0).toLocaleString()}</span>
+          {Number(item.original_price || 0) > Number(item.final_price || 0) && (
+            <span className="line-through text-gray-500">KES {Number(item.original_price || 0).toLocaleString()}</span>
           )}
         </div>
         <p className="text-sm text-gray-600 mt-1">
