@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
-import api from "../../../Services/Api";
+import api from "../../../../Services/Api";
 import ItemAddNew from "./AddingNewItem";
 import { useVendor } from "../vendorhooks";
 
