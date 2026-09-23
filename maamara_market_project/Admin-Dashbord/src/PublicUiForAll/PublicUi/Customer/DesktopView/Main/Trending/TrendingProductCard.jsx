@@ -10,13 +10,36 @@ const TrendingProductCard = ({ item, isWishlisted: controlledWishlist, onToggleW
   const { wishlist, addToWishlist, removeFromWishlist } = useWishlistContext();
 
   const image = item.image || "";
-  const hasDiscount = Number(item.discount_price || 0) > 0 || Number(item.discount || 0) > 0;
+
+  // The customer serializer already exposes the nested Offer. Use its
+  // configured dates to distinguish an active offer from an ordinary discount.
+  const now = Date.now();
+  const offerStart = item.offer?.start_date ? new Date(item.offer.start_date).getTime() : null;
+  const offerEnd = item.offer?.end_date ? new Date(item.offer.end_date).getTime() : null;
+  const hasActiveOffer =
+    Boolean(item.in_offer && item.offer) &&
+    (offerStart === null || Number.isNaN(offerStart) || now >= offerStart) &&
+    (offerEnd === null || Number.isNaN(offerEnd) || now <= offerEnd);
+
+  const hasOrdinaryDiscount =
+    !hasActiveOffer &&
+    (Number(item.discount_price || 0) > 0 || Number(item.discount || 0) > 0);
+
+  const pricingType = hasActiveOffer
+    ? "offer"
+    : hasOrdinaryDiscount
+      ? "discount"
+      : "none";
+
+  const hasDiscount = pricingType !== "none";
   const currentPrice = hasDiscount
     ? (item.final_discounted_price ?? item.discount_price ?? item.final_price ?? item.price ?? 0)
     : (item.final_price ?? item.price ?? 0);
-  const originalPrice = item.original_price ?? item.price ?? item.final_price ?? 0;
+  const originalPrice = item.price ?? item.final_price ?? 0;
   const savings = Math.max(0, Number(originalPrice) - Number(currentPrice));
-  const discountPercent = Number(item.discount || item.percentage_discount || 0);
+  const discountPercent = hasActiveOffer
+    ? Number(item.offer?.discount_percentage || 0)
+    : Number(item.discount || item.percentage_discount || 0);
   const rating = item.rating ?? item.average_rating ?? 0;
   const reviewCount = item.review_count ?? item.reviews_count ?? item.reviews ?? 0;
   const stock = Number(item.in_stock ?? 0);
@@ -81,9 +104,9 @@ const TrendingProductCard = ({ item, isWishlisted: controlledWishlist, onToggleW
               Best seller
             </span>
           )}
-          {Number(item.discount || item.percentage_discount || 0) > 0 && (
+          {hasDiscount && discountPercent > 0 && (
             <span className="mm-product-discount">
-              {Number(item.discount || item.percentage_discount)}% OFF
+              {discountPercent}% OFF
             </span>
           )}
         </div>
