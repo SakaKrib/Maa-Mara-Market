@@ -33,7 +33,7 @@ export default function MpesaSTKPayment() {
     
   
     const wsScheme = window.location.protocol === "https:" ? "wss" : "ws";
-const socket = new WebSocket(`${wsScheme}://127.0.0.1:8000/ws/orders/${order.order.id}/`);
+const socket = new WebSocket(`${wsScheme}://127.0.0.1:8000/ws/orders/${paymentOrderId}/`);
 
   
     socket.onopen = () => {
@@ -47,7 +47,7 @@ const socket = new WebSocket(`${wsScheme}://127.0.0.1:8000/ws/orders/${order.ord
   
         if (data.status === "completed") {
           navigate(`/payment-success`, {
-            state: { order: order.order }, // ✅ carry full order object
+            state: { order: checkoutResult || order?.order }, // carry checkout result for Buy Now and cart checkout
           });
         }
       } catch (error) {
@@ -61,7 +61,7 @@ const socket = new WebSocket(`${wsScheme}://127.0.0.1:8000/ws/orders/${order.ord
   
     socket.onclose = () => {
       console.log(`🔌 WebSocket closed for order ${orderId}`);
-      console.log(`🔌 WebSocket closed for order ${orderId}`, event);
+
     };
   
     // Cleanup
