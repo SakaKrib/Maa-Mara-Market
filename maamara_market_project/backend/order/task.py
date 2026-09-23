@@ -1,7 +1,7 @@
 from celery import shared_task
 from django.utils import timezone
 from datetime import timedelta
-from .models import Order
+from .models import CheckoutSession, Order
 
 @shared_task
 def cleanup_old_visitor_orders():
@@ -16,3 +16,15 @@ def cleanup_old_visitor_orders():
     for order in old_orders:
         order.items.all().delete()  # delete cart items
         order.delete()
+
+
+@shared_task
+def cleanup_expired_checkout_sessions():
+    CheckoutSession.objects.filter(
+        expires_at__lt=timezone.now(),
+        status__in=["draft", "payment_pending"],
+    ).update(status="expired")
+    CheckoutSession.objects.filter(
+        expires_at__lt=timezone.now() - timedelta(days=1),
+        status__in=["expired", "failed", "completed"],
+    ).delete()
