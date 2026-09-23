@@ -1155,7 +1155,7 @@ def approve_vendor(request, vendor_request_id):
     vendor_request.save()
 
     user_first_name = user.first_name or user.username
-    dashboard_url = "https://yourdomain.com/vendor-dashboard"
+    dashboard_url = f"{settings.FRONTEND_URL.rstrip('/')}/vendors-dashboard"
     total_items = len(created_items)
     current_year = timezone.now().year
 
@@ -1166,7 +1166,8 @@ def approve_vendor(request, vendor_request_id):
             "user_first_name": user_first_name,
             "dashboard_url": dashboard_url,
             "total_items": total_items,
-            "current_year": current_year
+            "current_year": current_year,
+            "frontend_url": settings.FRONTEND_URL.rstrip("/"),
         }
     )
 
@@ -1231,7 +1232,8 @@ def deny_vendor(request, vendor_request_id):
         "emails/vendor_denial.html",
         {
             "user_first_name": user.first_name,
-            "current_year": current_year
+            "current_year": current_year,
+            "frontend_url": settings.FRONTEND_URL.rstrip("/"),
         }
     )
 
