@@ -111,7 +111,50 @@ class VendorItemViewSet(viewsets.ModelViewSet):
 
     def get_serializer(self, *args, **kwargs):
         data = kwargs.get("data")
-        if data and isinstance(data, dict):
+        if data and hasattr(data, "getlist"):
+            # Multipart requests use QueryDict/MultiValueDict. Preserve repeated
+            # values so gallery uploads and the many-to-many occasions field
+            # arrive at the serializer as lists instead of a single value.
+            decoded = {}
+            list_fields = {"gallery_images", "occasions"}
+
+            for key in data.keys():
+                values = data.getlist(key)
+
+                if key in list_fields:
+                    if key == "occasions" and len(values) == 1 and isinstance(values[0], str):
+                        try:
+                            parsed = json.loads(values[0])
+                            values = parsed if isinstance(parsed, list) else values
+                        except json.JSONDecodeError:
+                            pass
+
+                    decoded[key] = [sanitize(value) for value in values]
+                    continue
+
+                value = values[-1] if values else None
+
+                if key in [
+                    "variants",
+                    "size_only_icon",
+                    "kids_sizes",
+                    "colors",
+                    "sizes",
+                    "weight",
+                    "length",
+                    "shoe_input",
+                    "shipping_dimension_data",
+                    "offer",
+                ] and isinstance(value, str):
+                    try:
+                        decoded[key] = json.loads(value)
+                    except json.JSONDecodeError:
+                        decoded[key] = []
+                else:
+                    decoded[key] = sanitize(value)
+
+            kwargs["data"] = decoded
+        elif data and isinstance(data, dict):
             decoded = {}
             for key, value in data.items():
                 if key in [
