@@ -33,11 +33,17 @@ PRIVATE_FIELDS = {
 def _json_value(value: Any):
     if hasattr(value, "isoformat"):
         return value.isoformat()
-    if hasattr(value, "url"):
-        try:
-            return value.url
-        except Exception:
-            return str(value)
+    # Django FieldFile.url can raise ValueError when no file is attached.
+    # Avoid letting realtime catalog signals turn an otherwise valid save
+    # into a 500 response for optional media fields.
+    try:
+        file_url = value.url
+    except (AttributeError, ValueError):
+        file_url = None
+    except Exception:
+        file_url = None
+    if file_url is not None:
+        return file_url
     return value
 
 def model_snapshot(instance):
