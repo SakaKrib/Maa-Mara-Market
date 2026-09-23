@@ -107,14 +107,21 @@ const ItemAddNew = ({ initialItem, vendorId, itemId, onSave = () => {}, vendor, 
   const [draftMessage, setDraftMessage] = useState("");
   const [draftError, setDraftError] = useState("");
 
+  const normalizeSection = (value) => {
+    const section = String(value || "").trim().toLowerCase();
+    if (section === "departmental") return "inorganic";
+    return section;
+  };
+
   const [selectedSection, setSelectedSection] = useState(() => {
-    const existingSection = String(initialItem?.section || "").trim().toLowerCase();
+    const existingSection = normalizeSection(initialItem?.section);
 
     if (existingSection === "organic" || existingSection === "inorganic") {
       return existingSection;
     }
 
-    // For a new item, the vendor's product type determines the section.
+    // For a new vendor item, the vendor's registered product type is the
+    // authority. "both" starts on organic and exposes the selector below.
     return productType === "inorganic" ? "inorganic" : "organic";
   });
   const [showExtraFields, setShowExtraFields] = useState(false);
@@ -195,7 +202,7 @@ const ItemAddNew = ({ initialItem, vendorId, itemId, onSave = () => {}, vendor, 
       setIsCustomCategory(false);
       setIsCustomSubcategory(false);
       setIsCustomAttribute(false);
-      const existingSection = String(initialItem.section || "").trim().toLowerCase();
+      const existingSection = normalizeSection(initialItem.section);
     if (existingSection === "organic" || existingSection === "inorganic") {
       setSelectedSection(existingSection);
     }
@@ -425,13 +432,16 @@ const ItemAddNew = ({ initialItem, vendorId, itemId, onSave = () => {}, vendor, 
     // Existing items may be opened from inventory without a vendor object.
     // In that case, the saved section is the source of truth for the
     // department/category dataset.
-    const existingSection = String(initialItem?.section || "").trim().toLowerCase();
+    const existingSection = normalizeSection(initialItem?.section);
+    const isVendorCreate = !isAdmin && !isEditing;
     const section =
       existingSection === "organic" || existingSection === "inorganic"
         ? existingSection
-        : productType === "organic" || productType === "inorganic"
-          ? productType
-          : selectedSection;
+        : isVendorCreate
+          ? (productType === "inorganic" ? "inorganic" : "organic")
+          : productType === "organic" || productType === "inorganic"
+            ? productType
+            : selectedSection;
 
     if (section === "organic") {
       setSelectedSection("organic");
@@ -1058,9 +1068,10 @@ const ItemAddNew = ({ initialItem, vendorId, itemId, onSave = () => {}, vendor, 
       )}
       <div className="space-y-4" >
 
-         {/* Toggle switch (only shown when a vendor sells both organic and inorganic items) */}
+         {/* Vendor-only selector: only a new item from a "both" vendor can
+             choose between organic and inorganic. Existing items never show it. */}
       <div className='border rounded-[20px] border-gray-300 p-4'>
-       {!isEditing && productType === "both" && (
+       {!isAdmin && !isEditing && productType === "both" && (
         <div className="my-4 space-y-2">
           <label className="block text-sm leading-6 font-semibold text-foreground">Select Form</label>
           <div className="flex flex-wrap gap-2">
@@ -1085,7 +1096,7 @@ const ItemAddNew = ({ initialItem, vendorId, itemId, onSave = () => {}, vendor, 
               </span>
             </label>
 
-            {/* Normal */}
+            {/* Inorganic */}
             <label className="flex items-center gap-2 cursor-pointer">
               <input
                 type="radio"
@@ -1102,7 +1113,7 @@ const ItemAddNew = ({ initialItem, vendorId, itemId, onSave = () => {}, vendor, 
                     : "bg-card text-muted-foreground border-border hover:border-[#2563eb]/50"}
                 `}
               >
-                Handmade
+                Inorganic
               </span>
             </label>
           </div>
