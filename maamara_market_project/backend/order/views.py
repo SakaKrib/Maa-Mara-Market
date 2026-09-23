@@ -574,6 +574,68 @@ def remove_from_cart_api(request, pk):
 
 
 # -------------------------------
+# Remove all items from cart
+# -------------------------------
+@api_view(["DELETE"])
+@permission_classes([IsAuthenticatedOrVisitor])
+@transaction.atomic
+def remove_all_from_cart_api(request):
+    """Remove every pending cart item for the current user or visitor."""
+    if request.user and request.user.is_authenticated:
+        user = request.user
+        visitor_id = None
+        actor_type = "user"
+    else:
+        user = None
+        visitor_id = request.COOKIES.get("visitorId")
+        actor_type = "visitor"
+
+    if not visitor_id and not user:
+        return Response({
+            "success": True,
+            "message": "Cart is already empty.",
+            "removed_count": 0,
+        })
+
+    order_qs = Order.objects.select_for_update().filter(
+        user=user,
+        visitor_id=visitor_id,
+        status="pending",
+    )
+    order = order_qs.first()
+    if not order:
+        return Response({
+            "success": True,
+            "message": "Cart is already empty.",
+            "removed_count": 0,
+        })
+
+    cart_items = list(order.items.filter(status="pending").select_related("item"))
+    removed_count = len(cart_items)
+
+    for cart_item in cart_items:
+        ActivityLog.objects.create(
+            user=user,
+            visitor_id=visitor_id,
+            actor_type=actor_type,
+            action="item_removed_from_cart",
+            item=cart_item.item,
+            description=f"A customer removed {cart_item.item.name} from their cart.",
+            related_url=f"/item/{cart_item.item.id}/",
+        )
+
+    if cart_items:
+        OrderItem.objects.filter(id__in=[cart_item.id for cart_item in cart_items]).delete()
+
+    return Response({
+        "success": True,
+        "message": "All items removed from cart.",
+        "order_id": order.id,
+        "removed_count": removed_count,
+    })
+
+
+# -------------------------------
 # Update cart quantity
 # -------------------------------
 @api_view(["PATCH"])
