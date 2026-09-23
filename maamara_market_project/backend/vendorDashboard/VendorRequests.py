@@ -116,7 +116,8 @@ class VendorItemRequestCreateView(generics.CreateAPIView):
             "vendor": vendor,
             "item": item_request,
             "user": self.request.user,
-            "current_year": current_year
+            "current_year": current_year,
+            "frontend_url": settings.FRONTEND_URL.rstrip("/"),
         }
 
         html_content = render_to_string(
@@ -448,7 +449,8 @@ def approve_request(request, pk):
         context = {
             "item": item,
             "vendor": item_request.vendor,
-            "current_year": timezone.now().year
+            "current_year": timezone.now().year,
+            "frontend_url": settings.FRONTEND_URL.rstrip("/"),
         }
 
         html_content = render_to_string(
@@ -519,7 +521,8 @@ def approve_request(request, pk):
         context = {
             "item": item_request,
             "vendor": item_request.vendor,
-            "current_year": current_year
+            "current_year": current_year,
+            "frontend_url": settings.FRONTEND_URL.rstrip("/"),
         }
 
         html_content = render_to_string(
@@ -946,6 +949,7 @@ class CreatePriceChangeRequestView(APIView):
                     "price_request": price_request,
                     "vendor": request.user,
                     "current_year": current_year,
+                    "frontend_url": settings.FRONTEND_URL.rstrip("/"),
                 }
             )
             text_content = strip_tags(html_content)
@@ -968,6 +972,7 @@ class CreatePriceChangeRequestView(APIView):
                 "vendor": request.user,
                 "item": item,
                 "price_request": price_request,
+                "frontend_url": settings.FRONTEND_URL.rstrip("/"),
             }
         )
 
