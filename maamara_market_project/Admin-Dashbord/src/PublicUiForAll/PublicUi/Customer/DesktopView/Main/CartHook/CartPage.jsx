@@ -190,6 +190,27 @@ const CartPage = () => {
             <Link to="/checkout-page" onClick={() => sessionStorage.removeItem("maaMaraBuyNow")} className="primary-button mt-5 hidden w-full justify-center rounded-md px-5 py-3 text-white font-semibold sm:flex">Proceed to checkout</Link>
           </aside>
         </div>
+
+        <div className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-white/95 p-3 shadow-lg backdrop-blur sm:hidden">
+          <div className="mx-auto flex max-w-xl items-center gap-2">
+            <button
+              type="button"
+              onClick={handleRemoveAll}
+              disabled={removingAll || items.length === 0}
+              className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full border border-red-200 text-red-600 disabled:opacity-50"
+              aria-label="Delete all items from cart"
+            >
+              <DeleteOutlineIcon />
+            </button>
+            <Link
+              to="/checkout-page"
+              onClick={() => sessionStorage.removeItem("maaMaraBuyNow")}
+              className="primary-button flex min-h-12 flex-1 items-center justify-center rounded-full px-5 text-white font-semibold"
+            >
+              Proceed to checkout
+            </Link>
+          </div>
+        </div>
       </div>
     </main>
   );
