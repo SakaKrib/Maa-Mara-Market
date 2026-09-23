@@ -246,7 +246,7 @@ const fetchShippingQuote = async () => {
                   </div>
                 </div>
 
-                <div className="primary-button mt-4 w-full rounded-full px-5 py-3 text-white font-semibold">
+                <div className="mt-4">
                   <Input type="email" placeholder="Email address" {...register("email")} />
                   {errors.email && <p className="mt-1 text-sm text-red-500">{errors.email.message}</p>}
                 </div>
@@ -318,7 +318,7 @@ const fetchShippingQuote = async () => {
                 <h2 className="text-lg font-semibold">Delivery</h2>
                 <p className="mt-1 text-sm text-muted-foreground">Get an available shipping quote for this address.</p>
 
-                <Button type="button" onClick={fetchShippingQuote} className="mt-4">
+                <Button type="button" onClick={fetchShippingQuote} className="primary-button mm-button-fit mt-4 rounded-full px-5 text-white font-semibold">
                   Get shipping quote
                 </Button>
 
@@ -368,7 +368,7 @@ const fetchShippingQuote = async () => {
               </div>
 
               <div className="border-t border-border pt-7">
-                <Button type="submit" className="primary-button w-full rounded-full px-5 py-3 text-white font-semibold">
+                <Button type="submit" className="primary-button mm-button-full rounded-full px-5 py-3 text-white font-semibold">
                   Complete order
                 </Button>
               </div>
