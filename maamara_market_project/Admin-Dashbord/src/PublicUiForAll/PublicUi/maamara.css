@@ -5674,3 +5674,57 @@ h1,h2,h3,h4{font-family:'regular','Poppins',Arial,sans-serif}
 .mm-single-item .border-t {
     box-sizing: border-box;
 }
+
+
+/* Checkout and payment pages share the same visual language as SingleItem. */
+.mm-checkout .mm-card,
+.mm-payment-page .mm-card{
+  background:var(--mm-surface,#fff);
+  border:1px solid var(--mm-border,#e6e3de);
+  border-radius:16px;
+  box-shadow:0 1px 3px rgba(0,0,0,.08);
+}
+.mm-checkout input,
+.mm-checkout select,
+.mm-checkout .react-tel-input .form-control,
+.mm-payment-page input{
+  font-family:'regular','Poppins',Arial,sans-serif!important;
+  color:var(--mm-text,#222)!important;
+  background:var(--mm-surface,#fff)!important;
+  border-color:var(--mm-border,#e6e3de)!important;
+  border-radius:12px!important;
+}
+.mm-checkout input:focus,
+.mm-checkout select:focus,
+.mm-checkout .react-tel-input .form-control:focus,
+.mm-payment-page input:focus{
+  border-color:#222!important;
+  box-shadow:0 0 0 2px rgba(0,0,0,.06)!important;
+}
+.mm-checkout h1,.mm-checkout h2,.mm-checkout h3,
+.mm-payment-page h1,.mm-payment-page h2,.mm-payment-page h3{
+  font-family:'regular','Poppins',Arial,sans-serif!important;
+  color:var(--mm-text,#222);
+}
+.mm-checkout p,.mm-checkout label,.mm-checkout span,
+.mm-payment-page p,.mm-payment-page label,.mm-payment-page span{
+  font-family:'regular','Poppins',Arial,sans-serif;
+}
+.mm-payment-page{
+  min-height:100vh;
+  background:var(--mm-page-bg,#faf9f7);
+  color:var(--mm-text,#222);
+}
+.mm-payment-page .mm-payment-card{
+  width:min(100%,520px);
+  margin-inline:auto;
+  padding:24px;
+  background:var(--mm-surface,#fff);
+  border:1px solid var(--mm-border,#e6e3de);
+  border-radius:16px;
+  box-shadow:0 1px 3px rgba(0,0,0,.08);
+}
+@media(max-width:639px){
+  .mm-checkout .mm-card,.mm-payment-page .mm-payment-card{border-radius:14px}
+  .mm-payment-page .mm-payment-card{padding:18px}
+}
