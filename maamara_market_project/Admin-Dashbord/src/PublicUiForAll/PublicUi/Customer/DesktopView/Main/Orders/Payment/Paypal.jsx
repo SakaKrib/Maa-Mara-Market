@@ -60,7 +60,6 @@ export default function CheckoutPaypalPayment() {
         "error"
       );
     } catch (error) {
-      console.error("PayPal capture error:", error);
       showSnackbar(
         error?.response?.data?.message ||
           "PayPal payment could not be completed. Please try again.",
@@ -142,7 +141,6 @@ export default function CheckoutPaypalPayment() {
                   if (!loading) await handlePaymentApproval({ id: data.orderID });
                 }}
                 onError={(err) => {
-                  console.error("PayPal wallet error:", err);
                   showSnackbar(
                     "PayPal payment could not be started. Please try again.",
                     "error"
@@ -168,7 +166,6 @@ export default function CheckoutPaypalPayment() {
                   if (!loading) await handlePaymentApproval({ id: data.orderID });
                 }}
                 onError={(err) => {
-                  console.error("Card payment error:", err);
                   showSnackbar(
                     "Card payment could not be started. Please try again.",
                     "error"
