@@ -80,8 +80,8 @@ export default function CheckoutPage() {
   }, [errors]);
 
   useEffect(() => {
-    if (order?.items?.length > 0) {
-      const subtotal = order.items.reduce((acc, item) => {
+    if (checkoutItems.length > 0) {
+      const subtotal = checkoutItems.reduce((acc, item) => {
         const price = Number(item.final_price || item.price || 0);
         const quantity = Number(item.quantity || 1);
         return acc + price * quantity;
@@ -90,7 +90,7 @@ export default function CheckoutPage() {
     } else {
       setTotalOrder(0);
     }
-  }, [checkoutItems]);
+  }, [checkoutItems.length, buyNowItem, order?.items]);
   
 
   // shipping rstes
@@ -156,18 +156,18 @@ const fetchShippingQuote = async () => {
       zip: data.zip || "",
       payment_method: data.payment || "",
       shipping: selectedShipping || "",
-      items:
-        checkoutItems.map((item) => ({
-          id: item?.id ?? null,
-          quantity: item?.quantity ?? 1,
-          variant_id: item?.variant_id ?? null,
-          size_id: item?.size_id ?? null,
-          age_variant_id: item?.age_variant_id ?? null,
-          length_id: item?.length_id ?? null,
-          weight_id: item?.weight_id ?? null,
-          shoe_id: item?.shoe_id ?? null,
-          selected_shoe_size: item?.shoe_size ?? null,
-        })) || [],
+      items: checkoutItems.map((item) => ({
+        id: item?.id ?? null,
+        quantity: item?.quantity ?? 1,
+        variant_id: item?.variant_id ?? null,
+        size_id: item?.size_id ?? null,
+        age_variant_id: item?.age_variant_id ?? null,
+        length_id: item?.length_id ?? null,
+        weight_id: item?.weight_id ?? null,
+        shoe_id: item?.shoe_id ?? null,
+        selected_shoe_size: item?.shoe_size ?? null,
+        custom_preferences: item?.custom_preferences ?? {},
+      })),
     };
 
     try {
@@ -352,8 +352,8 @@ const fetchShippingQuote = async () => {
               <CardTitle>Order Summary</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              {order?.items?.length > 0 ? (
-                order.items.map((item, idx) => (
+              {checkoutItems.length > 0 ? (
+                checkoutItems.map((item, idx) => (
                   <div key={idx} className="flex justify-between items-center gap-4">
                     <div className="flex items-center gap-3">
                       <img src={item.image} alt={item.name} className="w-12 h-12 object-cover rounded-md" />
@@ -369,7 +369,7 @@ const fetchShippingQuote = async () => {
                         {item.custom_preferences && <p className="text-xs text-gray-600">Custom: {typeof item.custom_preferences === "object" ? JSON.stringify(item.custom_preferences) : item.custom_preferences}</p>}
                       </div>
                     </div>
-                    <span className="font-medium">${((item.final_price || item.price) * item.quantity).toFixed(2)}</span>
+                    <span className="font-medium">KES {((Number(item.final_price || item.price || 0)) * Number(item.quantity || 1)).toLocaleString()}</span>
                   </div>
                 ))
               ) : (
