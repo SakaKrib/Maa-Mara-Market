@@ -44,6 +44,39 @@ const QuantityAndCart = ({
 
   const disabled = !configurationReady || quantity > stock || stock === 0;
 
+  const buyNowPayload = {
+    itemId: item?.id ?? null,
+    itemName: item?.name ?? "",
+    quantity,
+    variantId: selectedVariant?.id ?? null,
+    color: selectedVariant?.color ?? null,
+    sizeId: selectedSize?.id ?? null,
+    size: selectedSize?.size ?? null,
+    ageVariantId: selectedAgeVariant?.id ?? null,
+    ageGroup: selectedAgeVariant?.age_group ?? null,
+    shoeId: selectedShoe?.id ?? null,
+    shoeType: selectedShoe?.shoe_type ?? null,
+    shoeGender: selectedShoe?.shoe_gender ?? null,
+    selectedShoeSize: selectedShoeSize ?? null,
+    weightId: item?.weight?.id ?? null,
+    weight: item?.weight ?? null,
+    lengthId: item?.length?.id ?? null,
+    length: item?.length ?? null,
+    customPreferences: customPreferences || "",
+    unitPrice: Number(item?.final_discounted_price || item?.final_price || item?.price || 0),
+    availableStock: stock,
+  };
+
+  const handleBuyNow = () => {
+    if (disabled) return;
+    try {
+      sessionStorage.setItem("maaMaraBuyNow", JSON.stringify(buyNowPayload));
+      onAdded?.({ buyNow: true, ...buyNowPayload });
+    } catch (error) {
+      console.error("Unable to prepare Buy Now selection", error);
+    }
+  };
+
   return (
     <div className="mt-2 border-t border-border pt-5">
       <p className="mb-3 text-sm font-bold text-card-foreground">Choose Quantity</p>
@@ -122,7 +155,17 @@ const QuantityAndCart = ({
               ) : null}
             </p>
 
-            <div className="w-full [&>*]:w-full">
+            <div className="w-full space-y-2">
+              <button
+                type="button"
+                onClick={handleBuyNow}
+                disabled={disabled}
+                className="flex w-full items-center justify-center rounded-full bg-black px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-gray-800 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                Buy Now
+              </button>
+
+              <div className="[&>*]:w-full">
               <AddToCartButton
                 itemId={item.id}
                 quantity={quantity}
@@ -139,6 +182,7 @@ const QuantityAndCart = ({
                 disabled={disabled}
                 onAddSuccess={onAdded}
               />
+              </div>
             </div>
           </div>
         </div>
