@@ -127,10 +127,7 @@ const TrendingProduct = ({
             <p className="mt-1 text-sm font-semibold text-card-foreground">
               <FormattedCurrency
                 value={Number(
-                  product.final_discounted_price ??
-                    product.final_price ??
-                    product.price ??
-                    0
+                  product.final_price ?? 0
                 )}
               />
             </p>
