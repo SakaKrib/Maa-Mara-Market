@@ -219,203 +219,242 @@ const fetchShippingQuote = async () => {
   
 
   return (
-    <div className="flex flex-col w-full min-h-screen bg-gray-50">
-      {/* Header / Logo */}
-      <div className="bg-white shadow-sm p-4 flex items-center justify-between border-b border-gray-300 logo fixed w-full">
-        <a href="#" className="flex items-center space-x-2 text-2xl font-bold text-gray-800">
-          <span className="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center text-white text-xs">
-            MMM
-          </span>
-          <span>
-            Maa <span className="it-name">Mara</span> <span className="mkrt">Market</span>
-          </span>
-        </a>
-        <span className="font-semibold hover:underline cursor-pointer">Go to Shop</span>
-      </div>
-    <div className="bg-muted flex flex-col items-center justify-center p-6 md:p-10">
-     
+    <main className="mm-page min-h-screen py-6 md:py-10">
+      <div className="mm-container">
+        <div className="mb-6 border-b border-border pb-4">
+          <h1 className="text-2xl md:text-3xl font-bold">Checkout</h1>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Complete your delivery details and choose your payment method.
+          </p>
+        </div>
 
-      <div className="min-h-screen mt-10 flex justify-center items-start py-10">
-        <div className="w-full max-w-6xl grid grid-cols-1 lg:grid-cols-3 gap-8 px-4">
-          {/* Left Section - Form */}
-          <div className="lg:col-span-2 bg-white p-6 rounded-2xl shadow-md">
-            <h2 className="text-2xl font-semibold mb-6">Checkout</h2>
-            <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
-              {/* Contact Info */}
+        <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_360px] items-start">
+          <section className="mm-card p-5 sm:p-6 md:p-8">
+            <form onSubmit={handleSubmit(onSubmit)} className="space-y-7">
               <div>
-                <h3 className="text-lg font-medium mb-3">Contact Information</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <Input placeholder="First name" {...register("firstName")} />
-                  {errors.firstName && <p className="text-red-500 text-sm">{errors.firstName.message}</p>}
+                <h2 className="text-lg font-semibold">Contact information</h2>
+                <p className="mt-1 text-sm text-muted-foreground">How we can reach you about this order.</p>
 
-                  <Input placeholder="Last name" {...register("lastName")} />
-                  {errors.lastName && <p className="text-red-500 text-sm">{errors.lastName.message}</p>}
+                <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2">
+                  <div>
+                    <Input placeholder="First name" {...register("firstName")} />
+                    {errors.firstName && <p className="mt-1 text-sm text-red-500">{errors.firstName.message}</p>}
+                  </div>
+                  <div>
+                    <Input placeholder="Last name" {...register("lastName")} />
+                    {errors.lastName && <p className="mt-1 text-sm text-red-500">{errors.lastName.message}</p>}
+                  </div>
                 </div>
 
-                <Input type="email" placeholder="Email address" {...register("email")} className="mt-3"/>
-                {errors.email && <p className="text-red-500 text-sm">{errors.email.message}</p>}
+                <div className="mt-4">
+                  <Input type="email" placeholder="Email address" {...register("email")} />
+                  {errors.email && <p className="mt-1 text-sm text-red-500">{errors.email.message}</p>}
+                </div>
 
                 <Controller
                   name="phone"
                   control={control}
                   render={({ field }) => (
-                    <div className="mt-3">
+                    <div className="mt-4">
                       <PhoneInput
                         country={"us"}
                         value={field.value}
                         onChange={field.onChange}
                         enableSearch
-                        inputClass="!w-full"
+                        inputClass="!w-full !h-10 !rounded-md !border-gray-200"
                         containerClass="!w-full"
                       />
-                      {errors.phone && <p className="text-red-500 text-sm">{errors.phone.message}</p>}
+                      {errors.phone && <p className="mt-1 text-sm text-red-500">{errors.phone.message}</p>}
                     </div>
                   )}
                 />
               </div>
 
-              {/* Shipping Address */}
-              <div>
-                <h3 className="text-lg font-medium mb-3">Shipping Address</h3>
-                <Input placeholder="Street address" className="mt-3" {...register("address")} />
-                {errors.address && <p className="text-red-500 text-sm">{errors.address.message}</p>}
+              <div className="border-t border-border pt-7">
+                <h2 className="text-lg font-semibold">Shipping address</h2>
+                <p className="mt-1 text-sm text-muted-foreground">Where should we deliver your order?</p>
 
-                <Input placeholder="Apartment, suite, etc. (optional)" className="mt-3" {...register("apartment")} />
+                <div className="mt-4 space-y-4">
+                  <div>
+                    <Input placeholder="Street address" {...register("address")} />
+                    {errors.address && <p className="mt-1 text-sm text-red-500">{errors.address.message}</p>}
+                  </div>
 
-                <div className="grid grid-cols-3 gap-4 mt-3">
-                  <Input placeholder="City" {...register("city")} />
-                  {errors.city && <p className="text-red-500 text-sm">{errors.city.message}</p>}
+                  <Input placeholder="Apartment, suite, etc. (optional)" {...register("apartment")} />
 
-                  <Input placeholder="State" {...register("state")} />
-                  {errors.state && <p className="text-red-500 text-sm">{errors.state.message}</p>}
+                  <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+                    <div>
+                      <Input placeholder="City" {...register("city")} />
+                      {errors.city && <p className="mt-1 text-sm text-red-500">{errors.city.message}</p>}
+                    </div>
+                    <div>
+                      <Input placeholder="State" {...register("state")} />
+                      {errors.state && <p className="mt-1 text-sm text-red-500">{errors.state.message}</p>}
+                    </div>
+                    <div>
+                      <Input placeholder="ZIP Code" {...register("zip")} />
+                      {errors.zip && <p className="mt-1 text-sm text-red-500">{errors.zip.message}</p>}
+                    </div>
+                  </div>
 
-                  <Input placeholder="ZIP Code" {...register("zip")} />
-                  {errors.zip && <p className="text-red-500 text-sm">{errors.zip.message}</p>}
+                  <div>
+                    <label htmlFor="country" className="mb-1.5 block text-sm font-medium">Country</label>
+                    <select
+                      id="country"
+                      {...register("country")}
+                      className="w-full rounded-md border border-gray-200 bg-white px-3 py-2 text-sm outline-none transition focus:border-gray-400"
+                    >
+                      <option value="">Select country</option>
+                      {countries.map((country, idx) => (
+                        <option key={idx} value={country.code}>{country.name}</option>
+                      ))}
+                    </select>
+                    {errors.country && <p className="mt-1 text-sm text-red-500">{errors.country.message}</p>}
+                  </div>
                 </div>
-
-                <div className="mt-3">
-                  <label htmlFor="country" className="block mb-1 text-sm font-medium">
-                    Country
-                  </label>
-                  <select
-                    id="country"
-                    {...register("country")}
-                    className="w-full border rounded p-2"
-                  >
-                    <option value="">Select country</option>
-                    {countries.map((country, idx) => (
-                      <option key={idx} value={country.code}>
-                        {country.name}
-                      </option>
-                    ))}
-                  </select>
-                  {errors.country && (
-                    <p className="text-red-500 text-sm">{errors.country.message}</p>
-                  )}
-                </div>
-
-
-                
               </div>
 
-              {/* Shipping Options */}
-              {shippingOptions.length > 0 && (
-                <div>
-                  <h3 className="text-lg font-medium mb-3">Shipping Options</h3>
-                  {shippingOptions.map((option, idx) => (
-                    <label key={idx} className="flex items-center gap-2">
-                      <input
-                        type="radio"
-                        value={option.service}
-                        {...register("shippingMethod")}
-                        onChange={() => setSelectedShipping(option)}
-                      />
-                      {option.service} - KES {Number(option.price_kes ?? option.price ?? 0).toLocaleString()}
+              <div className="border-t border-border pt-7">
+                <h2 className="text-lg font-semibold">Delivery</h2>
+                <p className="mt-1 text-sm text-muted-foreground">Get an available shipping quote for this address.</p>
+
+                <Button type="button" onClick={fetchShippingQuote} className="mt-4">
+                  Get shipping quote
+                </Button>
+
+                {shippingOptions.length > 0 && (
+                  <div className="mt-5 space-y-3">
+                    {shippingOptions.map((option, idx) => (
+                      <label
+                        key={idx}
+                        className="flex cursor-pointer items-center justify-between gap-4 rounded-xl border border-border bg-white px-4 py-3 text-sm transition hover:bg-muted/30"
+                      >
+                        <span className="flex items-center gap-3">
+                          <input
+                            type="radio"
+                            value={option.service}
+                            {...register("shippingMethod")}
+                            onChange={() => setSelectedShipping(option)}
+                            className="h-4 w-4"
+                          />
+                          <span className="font-medium">{option.service}</span>
+                        </span>
+                        <span className="font-semibold">
+                          KES {Number(option.price_kes ?? option.price ?? 0).toLocaleString()}
+                        </span>
+                      </label>
+                    ))}
+                    {errors.shippingMethod && <p className="text-sm text-red-500">{errors.shippingMethod.message}</p>}
+                  </div>
+                )}
+              </div>
+
+              <div className="border-t border-border pt-7">
+                <h2 className="text-lg font-semibold">Payment method</h2>
+                <p className="mt-1 text-sm text-muted-foreground">Choose how you would like to pay.</p>
+
+                <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
+                  {["Mpesa", "PayPal"].map((method) => (
+                    <label
+                      key={method}
+                      className="flex cursor-pointer items-center gap-3 rounded-xl border border-border bg-white px-4 py-3 text-sm font-medium transition hover:bg-muted/30"
+                    >
+                      <input type="radio" value={method} {...register("payment")} className="h-4 w-4" />
+                      {method}
                     </label>
                   ))}
-                  {errors.shippingMethod && <p className="text-red-500 text-sm">{errors.shippingMethod.message}</p>}
                 </div>
-              )}
-
-              {/* Payment Method */}
-              <div>
-                <h3 className="text-lg font-medium mb-3">Payment Method</h3>
-                {["Mpesa", "PayPal"].map((method) => (
-                  <label key={method} className="flex items-center gap-2">
-                    <input type="radio" value={method} {...register("payment")} />
-                    {method}
-                  </label>
-                ))}
-                {errors.payment && <p className="text-red-500 text-sm">{errors.payment.message}</p>}
+                {errors.payment && <p className="mt-1 text-sm text-red-500">{errors.payment.message}</p>}
               </div>
 
-              <div>
-                  <p  className="mt-4 ">Do you want to ship the Order to the billing address?</p>
-                 
-                  <Button type="button" onClick={fetchShippingQuote}>Get Shipping Quote</Button>
-                </div>
-
-              <Button type="submit" className="w-full mt-6">Complete Order</Button>
+              <div className="border-t border-border pt-7">
+                <Button type="submit" className="w-full rounded-md py-3 font-semibold">
+                  Complete order
+                </Button>
+              </div>
             </form>
-          </div>
+          </section>
 
-          {/* Right Section - Order Summary */}
-          <Card className="h-fit bg-transparent rounded-md">
-            <CardHeader>
-              <CardTitle>Order Summary</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
+          <aside className="mm-card p-5 sm:p-6 lg:sticky lg:top-6">
+            <div className="border-b border-border pb-4">
+              <h2 className="text-lg font-bold">Order summary</h2>
+              <p className="mt-1 text-sm text-muted-foreground">
+                {checkoutItems.length} {checkoutItems.length === 1 ? "item" : "items"}
+              </p>
+            </div>
+
+            <div className="space-y-4 py-5">
               {checkoutItems.length > 0 ? (
                 checkoutItems.map((item, idx) => (
-                  <div key={idx} className="flex justify-between items-center gap-4">
-                    <div className="flex items-center gap-3">
-                      <img src={item.image} alt={item.name} className="w-12 h-12 object-cover rounded-md" />
-                      <div>
-                        <p className="text-sm font-medium">{item.name}</p>
-                        <p className="text-xs text-gray-600">Qty: {item.quantity}</p>
-                        {item.variant_color && <p className="text-xs text-gray-600">Color: {item.variant_color}</p>}
-                        {item.size !== null && item.size !== undefined && <p className="text-xs text-gray-600">Size: {typeof item.size === "object" ? JSON.stringify(item.size) : item.size}</p>}
-                        {item.age_group && <p className="text-xs text-gray-600">Age: {item.age_group}</p>}
-                        {item.shoe_size && <p className="text-xs text-gray-600">Shoe size: {item.shoe_size}</p>}
-                        {item.selected_weight && <p className="text-xs text-gray-600">Weight: {typeof item.selected_weight === "object" ? JSON.stringify(item.selected_weight) : item.selected_weight}</p>}
-                        {item.selected_length && <p className="text-xs text-gray-600">Length: {typeof item.selected_length === "object" ? JSON.stringify(item.selected_length) : item.selected_length}</p>}
-                        {item.custom_preferences && <p className="text-xs text-gray-600">Custom: {typeof item.custom_preferences === "object" ? JSON.stringify(item.custom_preferences) : item.custom_preferences}</p>}
-                      </div>
+                  <div key={idx} className="flex items-start justify-between gap-4">
+                    <div className="min-w-0">
+                      <p className="text-sm font-semibold">{item.name}</p>
+                      <p className="mt-1 text-xs text-muted-foreground">Qty: {item.quantity}</p>
+                      {item.variant_color && <p className="text-xs text-muted-foreground">Color: {item.variant_color}</p>}
+                      {item.size !== null && item.size !== undefined && (
+                        <p className="text-xs text-muted-foreground">
+                          Size: {typeof item.size === "object" ? JSON.stringify(item.size) : item.size}
+                        </p>
+                      )}
+                      {item.age_group && <p className="text-xs text-muted-foreground">Age: {item.age_group}</p>}
+                      {item.shoe_size && <p className="text-xs text-muted-foreground">Shoe size: {item.shoe_size}</p>}
+                      {item.selected_weight && (
+                        <p className="text-xs text-muted-foreground">
+                          Weight: {typeof item.selected_weight === "object" ? JSON.stringify(item.selected_weight) : item.selected_weight}
+                        </p>
+                      )}
+                      {item.selected_length && (
+                        <p className="text-xs text-muted-foreground">
+                          Length: {typeof item.selected_length === "object" ? JSON.stringify(item.selected_length) : item.selected_length}
+                        </p>
+                      )}
+                      {item.custom_preferences && (
+                        <p className="mt-2 rounded-lg border border-border bg-muted/30 px-3 py-2 text-xs leading-5 text-muted-foreground">
+                          <span className="font-semibold text-card-foreground">Custom request:</span>{" "}
+                          {typeof item.custom_preferences === "object"
+                            ? JSON.stringify(item.custom_preferences)
+                            : item.custom_preferences}
+                        </p>
+                      )}
                     </div>
-                    <span className="font-medium">KES {((Number(item.final_price || item.price || 0)) * Number(item.quantity || 1)).toLocaleString()}</span>
+                    <span className="shrink-0 text-sm font-semibold">
+                      KES {((Number(item.final_price || item.price || 0)) * Number(item.quantity || 1)).toLocaleString()}
+                    </span>
                   </div>
                 ))
               ) : (
-                <p className="text-gray-500 text-sm">Your cart is empty</p>
+                <p className="text-sm text-muted-foreground">Your cart is empty.</p>
               )}
+            </div>
 
-              <hr />
-              <div className="flex justify-between font-semibold">
+            <div className="mm-divider" />
+
+            <div className="space-y-3 pt-4 text-sm">
+              <div className="flex justify-between">
                 <span>Subtotal</span>
-                <span>KES {Number(totalOrder + shippingCost).toLocaleString()}</span>
-
+                <span className="font-semibold">KES {Number(totalOrder).toLocaleString()}</span>
               </div>
               <div className="flex justify-between">
-  <span>Shipping</span>
-  <span>
-    {shippingOptions.length === 0
-      ? "--" // no shipping rates available
-      : selectedShipping
-      ? `KES ${Number(selectedShipping.price_kes ?? selectedShipping.price ?? 0).toLocaleString()}`
-      : "Select shipping"} 
-  </span>
-</div>
-
-              <hr />
-              <div className="flex justify-between font-bold text-lg">
-                <span>Total</span>
-                <span>KES {Number(totalOrder + shippingCost).toLocaleString()}</span>
+                <span>Shipping</span>
+                <span className="font-semibold">
+                  {shippingOptions.length === 0
+                    ? "--"
+                    : selectedShipping
+                    ? `KES ${Number(selectedShipping.price_kes ?? selectedShipping.price ?? 0).toLocaleString()}`
+                    : "Select shipping"}
+                </span>
               </div>
-            </CardContent>
-          </Card>
+            </div>
+
+            <div className="mm-divider" />
+
+            <div className="flex items-baseline justify-between">
+              <span className="font-semibold">Total</span>
+              <strong className="text-xl">KES {Number(totalOrder + shippingCost).toLocaleString()}</strong>
+            </div>
+          </aside>
         </div>
       </div>
-    </div>
-    </div>
+    </main>
   );
 }
