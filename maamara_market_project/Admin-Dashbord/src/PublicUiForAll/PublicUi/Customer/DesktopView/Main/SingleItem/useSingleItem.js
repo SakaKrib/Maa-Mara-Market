@@ -27,8 +27,9 @@ const useSingleItem = () => {
       const response = await api.get(`/api/items/${itemId}/`, { signal: controller.signal });
       const data = response.data;
       setItem(data);
-      const firstVariant = data?.variants?.[0] || null;
-      setSelectedVariant(firstVariant);
+      // Keep the base item as the initial purchase configuration.
+      // A variant becomes active only after the customer explicitly selects it.
+      setSelectedVariant(null);
       setSelectedSize(null);
       setSelectedAgeVariant(null);
       setSelectedShoe(null);
@@ -99,14 +100,16 @@ const useSingleItem = () => {
     setSelectedImage(image);
   }, []);
 
-  const variantStock = Array.isArray(selectedVariant?.sizes)
-    ? selectedVariant.sizes.reduce(
-        (sum, size) => sum + Number(size.quantity_in_stock || 0),
-        0
-      )
+  const variantStock = selectedVariant
+    ? (Array.isArray(selectedVariant.sizes)
+        ? selectedVariant.sizes.reduce(
+            (sum, size) => sum + Number(size.quantity_in_stock || 0),
+            0
+          )
+        : null)
     : null;
 
-  const sizeOnlyStock = Array.isArray(item?.size_only_icon)
+  const sizeOnlyStock = !selectedVariant && Array.isArray(item?.size_only_icon)
     ? item.size_only_icon.reduce(
         (sum, size) => sum + Number(size.quantity_in_stock || 0),
         0
@@ -117,8 +120,8 @@ const useSingleItem = () => {
     selectedSize?.quantity_in_stock ??
     selectedAgeVariant?.quantity_in_stock ??
     (selectedShoe && selectedShoeSize ? 1 : null) ??
-    (variantStock !== null && variantStock > 0 ? variantStock : null) ??
-    (sizeOnlyStock !== null && sizeOnlyStock > 0 ? sizeOnlyStock : null) ??
+    (variantStock !== null ? variantStock : null) ??
+    (sizeOnlyStock !== null ? sizeOnlyStock : null) ??
     Number(item?.in_stock || 0);
 
   const remainingStock = Math.max(Number(availableStock || 0) - quantity, 0);
