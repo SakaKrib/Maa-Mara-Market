@@ -198,7 +198,7 @@ def get_owned_checkout_session(request, session_id, *, for_update=False):
         return None
     if session.status in {"completed", "failed", "expired"}:
         return session
-    if session.expires_at <= timezone.now():
+    if session.status == "draft" and session.expires_at <= timezone.now():
         session.status = "expired"
         session.save(update_fields=["status", "updated_at"])
         return session
