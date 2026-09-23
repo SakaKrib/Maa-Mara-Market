@@ -8,7 +8,7 @@ from rest_framework.response import Response
 from rest_framework import status
 
 from .Payment import get_paypal_access_token
-from .checkout_sessions import get_owned_checkout_session, materialize_paid_checkout
+from .checkout_sessions import materialize_paid_checkout, session_owner_matches
 from .models import CheckoutSession, Transaction
 from .views import IsAuthenticatedOrVisitor
 
@@ -48,22 +48,19 @@ def capture_paypal_order(request, order_id):
     BillingAddress, Payment, Order and OrderItem records.
     """
     try:
-        checkout_session = get_owned_checkout_session(
-            request,
-            order_id if order_id else request.data.get("checkout_id"),
+        paypal_order_id = order_id or request.data.get("paypal_order_id")
+        checkout_id = request.data.get("checkout_id")
+
+        checkout_session = (
+            CheckoutSession.objects.filter(pk=checkout_id).first()
+            if checkout_id
+            else CheckoutSession.objects.filter(paypal_order_id=paypal_order_id).first()
         )
-        if not checkout_session:
-            checkout_session = CheckoutSession.objects.filter(paypal_order_id=order_id).first()
-            if not checkout_session or not (
-                checkout_session.status in {"payment_pending", "completed"}
-                and (
-                    checkout_session.user_id == getattr(request.user, "id", None)
-                    if request.user and request.user.is_authenticated
-                    else checkout_session.user_id is None
-                    and checkout_session.visitor_id == request.COOKIES.get("visitorId")
-                )
-            ):
-                return Response({"status": "error", "message": "PayPal checkout not found."}, status=404)
+        if not checkout_session or not session_owner_matches(checkout_session, request):
+            return Response({"status": "error", "message": "PayPal checkout not found."}, status=404)
+
+        if checkout_session.status in {"expired", "failed"}:
+            return Response({"status": "error", "message": "PayPal checkout is no longer payable."}, status=409)
 
         if checkout_session.status == "completed" and checkout_session.order_id:
             return Response({
