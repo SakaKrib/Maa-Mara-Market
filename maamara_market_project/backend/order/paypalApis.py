@@ -286,6 +286,10 @@ def checkout_view(request):
                 raise ValueError("PayPal did not return an order ID.")
 
             checkout_session.paypal_order_id = paypal_order_id
+            checkout_session.payload["paypal"] = {
+                "provider_amount": str(provider_amount),
+                "provider_currency": "USD",
+            }
             checkout_session.status = "payment_pending"
             checkout_session.save(update_fields=["paypal_order_id", "status", "updated_at"])
 
