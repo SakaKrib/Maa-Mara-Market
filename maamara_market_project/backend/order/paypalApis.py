@@ -11,7 +11,7 @@ from rest_framework.response import Response
 from ReactSerializers.models import AgeVariant, ColorVariant, Item, Length, Shoe, SizeStock, Weight
 from .Base import get_usd_to_kes_rate
 from .Payment import create_paypal_order
-from .checkout_sessions import session_owner_matches
+from .checkout_sessions import get_owned_checkout_session, session_owner_matches
 from .models import CheckoutSession
 from .paymentserializer import CheckoutSerializer
 from .shipping import _ShippingItemsProxy, _dimensions_for_items, get_rates_for_destination
@@ -306,6 +306,27 @@ def checkout_view(request):
         return Response({"success": False, "error": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
 
 
+
+
+@api_view(["GET"])
+@permission_classes([IsAuthenticatedOrVisitor])
+def checkout_status(request, checkout_id):
+    """Return the status of a short-lived checkout session."""
+    try:
+        checkout_session = get_owned_checkout_session(request, checkout_id)
+    except (ValueError, TypeError):
+        checkout_session = None
+
+    if not checkout_session:
+        return Response({"error": "Checkout session not found"}, status=404)
+
+    return Response({
+        "checkout_id": str(checkout_session.id),
+        "status": checkout_session.status,
+        "order_id": checkout_session.order_id,
+        "amount": str(checkout_session.amount),
+        "payment_method": checkout_session.payment_method,
+    })
 
 
 # ==============================
