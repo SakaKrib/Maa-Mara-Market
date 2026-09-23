@@ -432,62 +432,6 @@ def get_customers(request):
 
 
 # ==============================
-# 🔹 Verify PayPal Webhook Signature (Optional)
-# ==============================
-def verify_paypal_signature(raw_body, request):
-    """
-    Verifies PayPal webhook authenticity by validating the signature
-    using PayPal's REST API.
-    """
-    PAYPAL = settings.PAYMENT_GATEWAYS["paypal"]
-    try:
-        # 1️⃣ Get OAuth token
-        auth_resp = requests.post(
-            PAYPAL["auth_url"],
-            data={"grant_type": "client_credentials"},
-            auth=(PAYPAL["client_id"], PAYPAL["client_secret"]),
-            timeout=10,
-        )
-        if auth_resp.status_code != 200:
-            logger.error("PayPal OAuth request failed.")
-            return False
-
-        access_token = auth_resp.json().get("access_token")
-        if not access_token:
-            logger.error("⚠️ PayPal access_token missing")
-            return False
-
-        # 2️⃣ Prepare verification headers
-        verify_url = f"{PAYPAL['base_url']}/v1/notifications/verify-webhook-signature"
-        headers = {
-            "Content-Type": "application/json",
-            "Authorization": f"Bearer {access_token}",
-        }
-
-        # 3️⃣ Prepare verification body
-        body = {
-            "auth_algo": request.headers.get("Paypal-Auth-Algo"),
-            "cert_url": request.headers.get("Paypal-Cert-Url"),
-            "transmission_id": request.headers.get("Paypal-Transmission-Id"),
-            "transmission_sig": request.headers.get("Paypal-Transmission-Sig"),
-            "transmission_time": request.headers.get("Paypal-Transmission-Time"),
-            "webhook_id": PAYPAL["webhook_id"],  # Must match your PayPal dashboard webhook ID
-            "webhook_event": json.loads(raw_body),
-        }
-
-        # 4️⃣ Send verification request
-        resp = requests.post(verify_url, headers=headers, json=body, timeout=10)
-        logger.info("PayPal webhook signature verification completed.")
-
-        return resp.json().get("verification_status") == "SUCCESS"
-
-    except Exception as e:
-        logger.exception("PayPal webhook signature verification failed.")
-        return False
-
-
-
-# ==============================
 # 🔹 PAYPAL INVOICE
 # ==============================
 def send_paypal_invoice(order):
