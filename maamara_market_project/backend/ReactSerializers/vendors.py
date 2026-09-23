@@ -342,6 +342,9 @@ class VendorItemViewSet(viewsets.ModelViewSet):
         self._validate_upload_limits()
         validated = serializer.validated_data
 
+        variants_supplied = "variants" in validated
+        size_only_supplied = "size_only_icon" in validated
+        kids_sizes_supplied = "kids_sizes" in validated
         variants_data = validated.pop("variants", [])
         size_only_data = validated.pop("size_only_icon", [])
         kids_sizes_data = validated.pop("kids_sizes", [])
@@ -462,25 +465,28 @@ class VendorItemViewSet(viewsets.ModelViewSet):
                 Offer.objects.create(item=item, **{k: sanitize(v) for k, v in offer_data.items()})
 
         # Handle variant and nested updates
-        self._update_nested(
-            variants_data,
-            item.variants.all(),
-            ColorVariant,
-            parent_field="item",
-            nested_field="sizes"
-        )
-        self._update_nested(
-            size_only_data,
-            item.size_only_icon.all(),
-            SizeStock,
-            parent_field="item"
-        )
-        self._update_nested(
-            kids_sizes_data,
-            item.kids_sizes.all(),
-            AgeVariant,
-            parent_field="item"
-        )
+        if variants_supplied:
+            self._update_nested(
+                variants_data,
+                item.variants.all(),
+                ColorVariant,
+                parent_field="item",
+                nested_field="sizes"
+            )
+        if size_only_supplied:
+            self._update_nested(
+                size_only_data,
+                item.size_only_icon.all(),
+                SizeStock,
+                parent_field="item"
+            )
+        if kids_sizes_supplied:
+            self._update_nested(
+                kids_sizes_data,
+                item.kids_sizes.all(),
+                AgeVariant,
+                parent_field="item"
+            )
 
 
 
