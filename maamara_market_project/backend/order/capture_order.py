@@ -176,19 +176,39 @@ def capture_paypal_order(request, order_id):
                 transaction_id=capture_id,
             )
 
-            Transaction.objects.update_or_create(
-                paypal_transaction_id=capture_id,
-                order=locked_order,
-                defaults={
-                    "transaction_type": "PayPal",
-                    "payment_method": "paypal",
-                    "amount": provider_amount,
-                    "status": "completed",
-                    "payment": locked_order.payment,
-                    "visitor_id": locked_order.visitor_id,
-                    "raw_data": capture_response,
-                },
+            vendor_ids = list(
+                locked_order.order_items.values_list("item__vendor", flat=True).distinct()
             )
+            if vendor_ids:
+                for vendor_id in vendor_ids:
+                    Transaction.objects.update_or_create(
+                        paypal_transaction_id=capture_id,
+                        vendor_id=vendor_id,
+                        defaults={
+                            "transaction_type": "PayPal",
+                            "payment_method": "paypal",
+                            "order": locked_order,
+                            "payment": locked_order.payment,
+                            "amount": provider_amount,
+                            "status": "completed",
+                            "visitor_id": locked_order.visitor_id,
+                            "raw_data": capture_response,
+                        },
+                    )
+            else:
+                Transaction.objects.update_or_create(
+                    paypal_transaction_id=capture_id,
+                    order=locked_order,
+                    defaults={
+                        "transaction_type": "PayPal",
+                        "payment_method": "paypal",
+                        "amount": provider_amount,
+                        "status": "completed",
+                        "payment": locked_order.payment,
+                        "visitor_id": locked_order.visitor_id,
+                        "raw_data": capture_response,
+                    },
+                )
 
         return Response({
             "status": "ok",
