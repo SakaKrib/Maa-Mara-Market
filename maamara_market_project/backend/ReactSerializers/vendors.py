@@ -246,7 +246,19 @@ class VendorItemViewSet(viewsets.ModelViewSet):
                     sanitized_data["image"] = image_file
 
             if obj_id:
-                obj = existing_qs.get(id=obj_id)
+                obj = existing_qs.filter(id=obj_id).first()
+                if obj is None:
+                    # The edit form can retain a stale nested ID. Never use a
+                    # stale ID to access a related row outside this item.
+                    sanitized_data.pop("id", None)
+                    new_obj = model.objects.create(**{parent_field: self._current_item}, **sanitized_data)
+                    if nested_field and nested_data:
+                        for nested_item in nested_data:
+                            SizeStock.objects.create(
+                                variant=new_obj,
+                                **{k: sanitize(v) for k, v in nested_item.items() if k != "id"}
+                            )
+                    continue
                 for attr, val in sanitized_data.items():
                     setattr(obj, attr, val)
                 obj.save()
