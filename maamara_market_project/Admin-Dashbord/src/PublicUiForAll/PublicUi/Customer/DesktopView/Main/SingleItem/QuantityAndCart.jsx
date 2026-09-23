@@ -73,7 +73,7 @@ const QuantityAndCart = ({
     if (disabled) return;
     try {
       sessionStorage.setItem("maaMaraBuyNow", JSON.stringify(buyNowPayload));
-      onAdded?.({ buyNow: true, ...buyNowPayload });
+      window.location.assign("/checkout-page");
     } catch (error) {
       console.error("Unable to prepare Buy Now selection", error);
     }
