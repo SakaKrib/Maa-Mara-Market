@@ -49,7 +49,7 @@ export default function CheckoutPage() {
   const navigate = useNavigate();
   const [totalOrder, setTotalOrder] = useState(0);
 
-  const shippingCost = selectedShipping ? Number(selectedShipping.rate) : 0;\n\n  useEffect(() => {\n    try {\n      const raw = sessionStorage.getItem("maaMaraBuyNow");\n      if (raw) {\n        const parsed = JSON.parse(raw);\n        if (parsed?.itemId) setBuyNowItem(parsed);\n      }\n    } catch (error) {\n      console.error("Unable to restore Buy Now selection:", error);\n    }\n  }, []);
+  const shippingCost = selectedShipping ? Number(selectedShipping.price_kes ?? selectedShipping.price ?? 0) : 0;\n\n  useEffect(() => {\n    try {\n      const raw = sessionStorage.getItem("maaMaraBuyNow");\n      if (raw) {\n        const parsed = JSON.parse(raw);\n        if (parsed?.itemId) setBuyNowItem(parsed);\n      }\n    } catch (error) {\n      console.error("Unable to restore Buy Now selection:", error);\n    }\n  }, []);
   const checkoutItems = buyNowItem ? [{
     id: buyNowItem.itemId,
     name: buyNowItem.itemName,
@@ -317,7 +317,7 @@ const fetchShippingQuote = async () => {
                         {...register("shippingMethod")}
                         onChange={() => setSelectedShipping(option)}
                       />
-                      {option.service} - {option.price} {option.currency}
+                      {option.service} - KES {Number(option.price_kes ?? option.price ?? 0).toLocaleString()}
                     </label>
                   ))}
                   {errors.shippingMethod && <p className="text-red-500 text-sm">{errors.shippingMethod.message}</p>}
@@ -388,7 +388,7 @@ const fetchShippingQuote = async () => {
     {shippingOptions.length === 0
       ? "--" // no shipping rates available
       : selectedShipping
-      ? `$${Number(selectedShipping.rate).toFixed(2)}`
+      ? `KES ${Number(selectedShipping.price_kes ?? selectedShipping.price ?? 0).toLocaleString()}`
       : "Select shipping"} 
   </span>
 </div>
