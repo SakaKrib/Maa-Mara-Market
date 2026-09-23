@@ -6,6 +6,8 @@ from decimal import Decimal
 import requests
 from django.conf import settings
 from django.db import transaction as db_transaction
+from asgiref.sync import async_to_sync
+from channels.layers import get_channel_layer
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
@@ -233,7 +235,7 @@ def stk_callback(request):
                 provider_currency="KES",
             )
 
-            locked_order, _completed = complete_paid_order(
+            locked_order, completed = complete_paid_order(
                 order,
                 order.payment,
                 transaction_id=receipt,
@@ -254,6 +256,13 @@ def stk_callback(request):
                     "visitor_id": locked_order.visitor_id,
                 },
             )
+
+            if completed:
+                channel_layer = get_channel_layer()
+                async_to_sync(channel_layer.group_send)(
+                    f"order_{locked_order.id}",
+                    {"type": "payment_status", "status": "completed"},
+                )
 
         return Response({"ResultCode": 0, "ResultDesc": "Accepted"})
 
