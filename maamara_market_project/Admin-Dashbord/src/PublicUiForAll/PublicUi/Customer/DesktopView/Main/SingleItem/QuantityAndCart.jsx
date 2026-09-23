@@ -155,7 +155,7 @@ const QuantityAndCart = ({
           Please select a shoe and shoe size
         </p>
       )}
-    </div>>
+    </div>
   );
 };
 
