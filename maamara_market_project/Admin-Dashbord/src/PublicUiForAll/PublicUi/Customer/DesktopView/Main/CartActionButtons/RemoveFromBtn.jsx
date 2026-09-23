@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import api from "../../../../../../Services/Api";
 import { Snackbar, Alert, Button } from "@mui/material";
+import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
 import { useCartContext } from "../CartHook/cart";
 
 // Helper to read CSRF token from cookies
@@ -78,7 +79,7 @@ const RemoveFromCartButton = ({ itemId, cartItemId, variantId, sizeId, ageVarian
         variant="outlined"
         disabled={loading}
       >
-        {loading ? "Removing..." : "Remove"}
+        <><DeleteOutlineIcon fontSize="small" /><span className="hidden sm:inline">{loading ? "Removing..." : "Remove"}</span></>
       </Button>
 
       <Snackbar
