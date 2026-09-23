@@ -145,13 +145,83 @@ const ItemAddNew = ({ initialItem, vendorId, itemId, onSave = () => {}, vendor, 
       mode: "onChange",
     });
 
-    // Initialize the form with the item's existing data
+    // Initialize every edit field from the authoritative item payload.
+    // The API exposes read-only relationships/media under several serializer
+    // names, so normalize those into the exact field names used by this form.
     useEffect(() => {
       if (!initialItem) return;
+
+      const relationName = (value) => {
+        if (value && typeof value === "object") {
+          return value.name ?? value.label ?? value.title ?? value.key ?? "";
+        }
+        return value ?? "";
+      };
+
+      const department = relationName(initialItem.department);
+      const category = relationName(initialItem.category);
+      const subcategory = relationName(initialItem.subcategory);
+      const section = normalizeSection(relationName(initialItem.section));
+
+      const shipping = initialItem.shipping_dimension_data || initialItem.shipping_dimension || null;
+      const additionalImages = Array.isArray(initialItem.additional_images)
+        ? initialItem.additional_images
+        : [];
+
+      const requestMedia = Array.isArray(initialItem.draft_media)
+        ? initialItem.draft_media
+        : [];
+
+      const galleryMedia = requestMedia.filter((asset) => asset.kind === "gallery");
+      const galleryFromItem = additionalImages.map((asset, index) => ({
+        slotKey: asset.id ? `additional:${asset.id}` : `gallery:${index}`,
+        value: asset.image ?? asset.url ?? asset.file ?? asset,
+        url: asset.image ?? asset.url ?? asset.file ?? asset,
+        name: asset.name ?? `Product image ${index + 1}`,
+      }));
+
+      const normalizedGallery = (galleryMedia.length ? galleryMedia : galleryFromItem)
+        .filter((asset) => asset.value || asset.url)
+        .sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0))
+        .map((asset, index) => ({
+          slotKey: asset.slot_key || `gallery:${index}`,
+          value: asset.value ?? asset.url,
+          url: asset.url ?? asset.value,
+          name: asset.name,
+        }));
+
+      const requestVideo = requestMedia.find((asset) => asset.kind === "video");
+      const existingVideo = requestVideo || (
+        initialItem.video
+          ? {
+              slotKey: "video",
+              value: initialItem.video,
+              url: initialItem.video,
+              name: "Product video",
+            }
+          : null
+      );
+
       form.reset({
         ...initialItem,
+        section,
+        department,
+        category,
+        subcategory,
         image: initialItem.image || "",
-        section: initialItem.section || "",
+        video: initialItem.video || "",
+        ...(shipping
+          ? {
+              shipping_dimension_data: {
+                length: shipping.length ?? "",
+                width: shipping.width ?? "",
+                height: shipping.height ?? "",
+                weight: shipping.weight ?? "",
+                unit: shipping.unit ?? "cm",
+                weight_unit: shipping.weight_unit ?? "kg",
+              },
+            }
+          : {}),
         // Normalize backend serializer names to the names used by this form.
         color_variants: (initialItem.variants || initialItem.color_variants || []).map((variant) => ({
           id: variant.id,
@@ -187,33 +257,18 @@ const ItemAddNew = ({ initialItem, vendorId, itemId, onSave = () => {}, vendor, 
             }
           : {}),
       });
-      setSelectedDepartment(initialItem.department || "");
-      setSelectedCategory(initialItem.category || "");
-      const requestMedia = Array.isArray(initialItem.draft_media) ? initialItem.draft_media : [];
-      setGalleryImages(
-        requestMedia
-          .filter((asset) => asset.kind === "gallery")
-          .sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0))
-          .map((asset) => ({
-            slotKey: asset.slot_key,
-            value: asset.url,
-            url: asset.url,
-            name: asset.name,
-          }))
-      );
-      const requestVideo = requestMedia.find((asset) => asset.kind === "video");
-      setProductVideo(
-        requestVideo
-          ? { slotKey: "video", value: requestVideo.url, url: requestVideo.url, name: requestVideo.name }
-          : null
-      );
+
+      setSelectedDepartment(department);
+      setSelectedCategory(category);
+      setGalleryImages(normalizedGallery);
+      setProductVideo(existingVideo);
       setIsCustomCategory(false);
       setIsCustomSubcategory(false);
       setIsCustomAttribute(false);
-      const existingSection = normalizeSection(initialItem.section);
-    if (existingSection === "organic" || existingSection === "inorganic") {
-      setSelectedSection(existingSection);
-    }
+
+      if (section === "organic" || section === "inorganic") {
+        setSelectedSection(section);
+      }
     }, [initialItem, form]);
 
     const {
@@ -1222,7 +1277,14 @@ const ItemAddNew = ({ initialItem, vendorId, itemId, onSave = () => {}, vendor, 
                   <option  value="">
                     Select Department
                   </option>
-                  {Object.keys(activeData || {}).map((dept) => (
+                  {(() => {
+                    const departments = Object.keys(activeData || {});
+                    const current = String(selectedDepartment || "").trim();
+                    if (current && !departments.some((dept) => dept.toLowerCase() === current.toLowerCase())) {
+                      return [current, ...departments];
+                    }
+                    return departments;
+                  })().map((dept) => (
                     <option key={dept} value={dept}>{dept}</option>
                   ))}
                 </select>
@@ -1258,7 +1320,14 @@ const ItemAddNew = ({ initialItem, vendorId, itemId, onSave = () => {}, vendor, 
                         setIsCustomSubcategory(false);
                       }}>
                       <option value="">Select Category</option>
-                      {(activeData?.[selectedDepartment]?.categories || []).map((cat) => (
+                      {(() => {
+                        const categories = activeData?.[selectedDepartment]?.categories || [];
+                        const current = String(field.value || "").trim();
+                        if (current && !categories.some((cat) => cat.toLowerCase() === current.toLowerCase())) {
+                          return [current, ...categories];
+                        }
+                        return categories;
+                      })().map((cat) => (
                         <option key={cat} value={cat}>{cat}</option>
                       ))}
                     </select>
@@ -1297,7 +1366,15 @@ const ItemAddNew = ({ initialItem, vendorId, itemId, onSave = () => {}, vendor, 
                     <select {...field} value={field.value ?? ""}
                       className="w-full rounded-[20px] border border-border bg-card px-2 py-2 text-sm leading-6 text-foreground outline-none transition focus:border-[#2563eb] focus:ring-2 focus:ring-[#2563eb]/20">
                       <option value="">Select Subcategory</option>
-                      {(activeData?.[selectedDepartment]?.subcategories?.[selectedCategory] || []).map((subcat) => (
+                      {(() => {
+                        const subcategories =
+                          activeData?.[selectedDepartment]?.subcategories?.[selectedCategory] || [];
+                        const current = String(field.value || "").trim();
+                        if (current && !subcategories.some((subcat) => subcat.toLowerCase() === current.toLowerCase())) {
+                          return [current, ...subcategories];
+                        }
+                        return subcategories;
+                      })().map((subcat) => (
                         <option key={subcat} value={subcat}>{subcat}</option>
                       ))}
                     </select>
