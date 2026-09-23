@@ -22,7 +22,7 @@ def cleanup_old_visitor_orders():
 def cleanup_expired_checkout_sessions():
     CheckoutSession.objects.filter(
         expires_at__lt=timezone.now(),
-        status__in=["draft", "payment_pending"],
+        status="draft",
     ).update(status="expired")
     CheckoutSession.objects.filter(
         expires_at__lt=timezone.now() - timedelta(days=1),
