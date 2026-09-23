@@ -264,10 +264,11 @@ class Item(models.Model):
         return self.get_item_final_price()
     
     def get_current_price(self):
-        """Return the price considering active offers, fallback to discount/normal price."""
-        if hasattr(self, "offer") and self.offer.is_active():
-            return self.offer.final_price
-        if self.discount_price:
+        """Return the effective selling price, honoring an active offer first."""
+        offer = getattr(self, "offer", None)
+        if self.in_offer and offer and offer.is_active():
+            return offer.calculate_final_price()
+        if self.discount_price is not None:
             return self.discount_price
         return self.price
 
@@ -526,19 +527,23 @@ class Offer(models.Model):
         if self.start_date > self.end_date:
             raise ValidationError("start_date must be before or equal to end_date")
 
+    def calculate_final_price(self):
+        """Calculate the offer price from the item's normal price and percentage discount."""
+        if self.discount_percentage is None or self.discount_percentage <= 0:
+            return self.item.price
+        return (
+            self.item.price
+            - (self.item.price * (self.discount_percentage / Decimal("100")))
+        ).quantize(Decimal("0.01"))
+
     def save(self, *args, **kwargs):
-        super().save(*args, **kwargs)  # Save to get PK if new
+        self.full_clean()
+        super().save(*args, **kwargs)
 
-        if self.discount_percentage and self.discount_percentage > 0:
-            self.final_price = self.item.price - (
-                self.item.price * (self.discount_percentage / Decimal("100"))
-            )
-            self.item.discount_price = self.final_price
-        else:
-            self.final_price = None
-            self.item.discount_price = None
-
-        self.item.save(update_fields=["discount_price"])
+        self.final_price = self.calculate_final_price()
+        self.item.discount_price = self.final_price
+        self.item.in_offer = True
+        self.item.save(update_fields=["discount_price", "in_offer"])
         super().save(update_fields=["final_price"])
 
     def is_active(self):
