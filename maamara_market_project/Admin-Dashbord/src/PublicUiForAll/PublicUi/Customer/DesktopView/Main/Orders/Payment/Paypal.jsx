@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import Snackbar from "@mui/material/Snackbar";
 import Alert from "@mui/material/Alert";
+import api from "../../../../../../../Services/Api";
 
 export default function CheckoutPaypalPayment() {
   const clientId = import.meta.env.VITE_PAYPAL_CLIENT_ID;
@@ -14,42 +15,110 @@ export default function CheckoutPaypalPayment() {
   const checkoutResult = location.state || null;
   const localOrderId = checkoutResult?.order_id || order?.order?.id || null;
   const paypalOrderId = checkoutResult?.paypal_order_id || null;
-  const kesAmount = Number(checkoutResult?.payment?.amount ?? order?.order?.final_total ?? order?.order?.total ?? 0);
-  const [usdAmount, setUsdAmount] = useState(String(checkoutResult?.payment?.provider_amount ?? "0.01"));
+  const kesAmount = Number(
+    checkoutResult?.payment?.amount ??
+      order?.order?.final_total ??
+      order?.order?.total ??
+      0
+  );
+  const [usdAmount] = useState(
+    String(checkoutResult?.payment?.provider_amount ?? "0.01")
+  );
   const [loading, setLoading] = useState(false);
-  const [snackbar, setSnackbar] = useState({ open: false, severity: "info", text: "" });
-  const showSnackbar = (text, severity = "info") => setSnackbar({ open: true, severity, text });
+  const [snackbar, setSnackbar] = useState({
+    open: false,
+    severity: "info",
+    text: "",
+  });
+  const showSnackbar = (text, severity = "info") =>
+    setSnackbar({ open: true, severity, text });
   const navigate = useNavigate();
+
+  const handlePaymentApproval = async ({ id }) => {
+    if (!id || !localOrderId) {
+      showSnackbar("PayPal order information is missing. Please return to checkout.", "error");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const response = await api.post(`/api/paypal/capture/${id}/`, {
+        order_id: localOrderId,
+      });
+
+      if (response.data?.status === "ok") {
+        navigate("/payment-success", {
+          state: {
+            order: response.data?.order || checkoutResult || order?.order,
+          },
+        });
+        return;
+      }
+
+      showSnackbar(
+        response.data?.message || "PayPal payment could not be completed.",
+        "error"
+      );
+    } catch (error) {
+      console.error("PayPal capture error:", error);
+      showSnackbar(
+        error?.response?.data?.message ||
+          "PayPal payment could not be completed. Please try again.",
+        "error"
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // --- WebSocket for real-time payment status ---
   useEffect(() => {
-    if (!localOrderId) return;
+    if (!localOrderId) return undefined;
+
     const orderId = localOrderId;
     const wsScheme = window.location.protocol === "https:" ? "wss" : "ws";
-    const socket = new WebSocket(`${wsScheme}://127.0.0.1:8000/ws/orders/${orderId}/`);
+    const socket = new WebSocket(
+      `${wsScheme}://127.0.0.1:8000/ws/orders/${orderId}/`
+    );
 
     socket.onmessage = (event) => {
       try {
         const data = JSON.parse(event.data);
         if (data.type === "payment_status" && data.status === "completed") {
-          navigate("/payment-success", { state: { order: checkoutResult || order?.order } });
+          navigate("/payment-success", {
+            state: { order: checkoutResult || order?.order },
+          });
         }
       } catch (err) {
         console.error("❌ WebSocket message error:", err);
       }
     };
-    return (
+
+    socket.onerror = (err) => {
+      console.error("PayPal payment WebSocket error:", err);
+    };
+
+    return () => {
+      socket.close();
+    };
+  }, [localOrderId, navigate, checkoutResult, order?.order]);
+
+  return (
     <main className="mm-payment-page min-h-screen px-4 py-8 md:px-6 md:py-12">
       <Snackbar
         open={snackbar.open}
         autoHideDuration={4000}
-        onClose={() => setSnackbar((current) => ({ ...current, open: false }))}
+        onClose={() =>
+          setSnackbar((current) => ({ ...current, open: false }))
+        }
         anchorOrigin={{ vertical: "top", horizontal: "right" }}
       >
         <Alert
           severity={snackbar.severity}
           variant="filled"
-          onClose={() => setSnackbar((current) => ({ ...current, open: false }))}
+          onClose={() =>
+            setSnackbar((current) => ({ ...current, open: false }))
+          }
         >
           {snackbar.text}
         </Alert>
@@ -57,8 +126,12 @@ export default function CheckoutPaypalPayment() {
 
       <div className="mm-container">
         <div className="mx-auto mb-6 max-w-xl">
-          <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Secure checkout</p>
-          <h1 className="mt-2 text-2xl font-semibold tracking-tight text-card-foreground sm:text-3xl">Pay with PayPal</h1>
+          <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+            Secure checkout
+          </p>
+          <h1 className="mt-2 text-2xl font-semibold tracking-tight text-card-foreground sm:text-3xl">
+            Pay with PayPal
+          </h1>
           <p className="mt-2 text-sm leading-6 text-muted-foreground">
             Choose PayPal or card to complete your order.
           </p>
@@ -66,19 +139,33 @@ export default function CheckoutPaypalPayment() {
 
         <section className="mm-payment-card">
           <div className="mb-6 flex items-center justify-between border-b border-border pb-5">
-            <span className="text-sm font-semibold text-muted-foreground">Order total</span>
+            <span className="text-sm font-semibold text-muted-foreground">
+              Order total
+            </span>
             <span className="text-xl font-bold text-card-foreground">
-              KES {kesAmount.toLocaleString()} <span className="text-sm font-medium text-muted-foreground">≈ USD {usdAmount}</span>
+              KES {kesAmount.toLocaleString()}{" "}
+              <span className="text-sm font-medium text-muted-foreground">
+                ≈ USD {usdAmount}
+              </span>
             </span>
           </div>
 
-          <PayPalScriptProvider options={{ "client-id": clientId, currency: "USD" }}>
+          <PayPalScriptProvider
+            options={{ "client-id": clientId, currency: "USD" }}
+          >
             <div className="space-y-3">
               <PayPalButtons
                 fundingSource={FUNDING.PAYPAL}
-                style={{ layout: "vertical", color: "blue", shape: "pill", label: "paypal", height: 45 }}
+                style={{
+                  layout: "vertical",
+                  color: "blue",
+                  shape: "pill",
+                  label: "paypal",
+                  height: 45,
+                }}
                 createOrder={() => {
-                  if (!paypalOrderId) throw new Error("Missing PayPal order ID from checkout.");
+                  if (!paypalOrderId)
+                    throw new Error("Missing PayPal order ID from checkout.");
                   return paypalOrderId;
                 }}
                 onApprove={async (data) => {
@@ -86,15 +173,25 @@ export default function CheckoutPaypalPayment() {
                 }}
                 onError={(err) => {
                   console.error("PayPal wallet error:", err);
-                  showSnackbar("PayPal payment could not be started. Please try again.", "error");
+                  showSnackbar(
+                    "PayPal payment could not be started. Please try again.",
+                    "error"
+                  );
                 }}
               />
 
               <PayPalButtons
                 fundingSource={FUNDING.CARD}
-                style={{ layout: "vertical", color: "black", shape: "pill", label: "pay", height: 45 }}
+                style={{
+                  layout: "vertical",
+                  color: "black",
+                  shape: "pill",
+                  label: "pay",
+                  height: 45,
+                }}
                 createOrder={() => {
-                  if (!paypalOrderId) throw new Error("Missing PayPal order ID from checkout.");
+                  if (!paypalOrderId)
+                    throw new Error("Missing PayPal order ID from checkout.");
                   return paypalOrderId;
                 }}
                 onApprove={async (data) => {
@@ -102,7 +199,10 @@ export default function CheckoutPaypalPayment() {
                 }}
                 onError={(err) => {
                   console.error("Card payment error:", err);
-                  showSnackbar("Card payment could not be started. Please try again.", "error");
+                  showSnackbar(
+                    "Card payment could not be started. Please try again.",
+                    "error"
+                  );
                 }}
               />
             </div>
