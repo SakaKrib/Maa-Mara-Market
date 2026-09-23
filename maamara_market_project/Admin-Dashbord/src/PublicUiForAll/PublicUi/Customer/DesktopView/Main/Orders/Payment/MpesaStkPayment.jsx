@@ -6,7 +6,7 @@ import { lockClosed } from "ionicons/icons";
 import MpesaLogo from "../../../../../../../assets/partnaship/mpesaLogo.png";
 import { Input } from "../../../../../../../../components/ui/input";
 import { Button } from "../../../../../../../../components/ui/button";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 
 export default function MpesaSTKPayment() {
   const [phone, setPhone] = useState("");
@@ -14,21 +14,22 @@ export default function MpesaSTKPayment() {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
   const { order } = useCartContext();
-  const navigate = useNavigate()
+  const location = useLocation();
+  const navigate = useNavigate();
+  const checkoutResult = location.state || null;
+  const paymentOrderId = checkoutResult?.order_id || order?.order?.id || null;
+  const paymentAmount = checkoutResult?.payment?.amount ?? order?.order?.final_total ?? order?.order?.total ?? 0;
 
   // Auto-set amount from cart
   useEffect(() => {
-    if (order?.order?.total) {
-      const total = Number(order.order.final_total);
-      setAmount(isNaN(total) ? 0 : total);
-    }
-  }, [order]);
+    const total = Number(paymentAmount);
+    setAmount(Number.isFinite(total) ? total : 0);
+  }, [paymentAmount, order]);
 
 
   useEffect(() => {
-    if (!order?.order?.id) return; // wait until we have a valid order ID
-  
-    const orderId = order.order.id; // ✅ define it here#78b981
+    if (!paymentOrderId) return;
+    const orderId = paymentOrderId; // ✅ define it here#78b981
     
   
     const wsScheme = window.location.protocol === "https:" ? "wss" : "ws";
@@ -65,7 +66,7 @@ const socket = new WebSocket(`${wsScheme}://127.0.0.1:8000/ws/orders/${order.ord
   
     // Cleanup
     return () => socket.close();
-  }, [order?.order?.id, navigate]);
+  }, [paymentOrderId, navigate]);
   
   
 
@@ -75,7 +76,7 @@ const socket = new WebSocket(`${wsScheme}://127.0.0.1:8000/ws/orders/${order.ord
     setMessage("");
   
     try {
-      if (!order?.order?.id) {
+      if (!paymentOrderId) {
         setMessage("❌ No order found. Please create an order first.");
         setLoading(false);
         return;
@@ -86,7 +87,7 @@ const socket = new WebSocket(`${wsScheme}://127.0.0.1:8000/ws/orders/${order.ord
         {
           phone,
           amount: Math.floor(amount), // integer
-          order_id: order.order.id,   // ✅ send order ID to backend
+          order_id: paymentOrderId,   // ✅ send order ID to backend
         },
         { withCredentials: true }
       );
