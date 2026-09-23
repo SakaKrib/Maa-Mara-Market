@@ -63,22 +63,37 @@ const useSingleItem = () => {
       setSelectedVariant(variant);
       setSelectedSize(null);
       setSelectedImage(null);
+      setQuantity(1);
     }
   }, [item]);
 
   const selectSize = useCallback((size) => {
     setSelectedSize(size);
     setSelectedImage(null);
+    setQuantity(1);
   }, []);
 
-  const selectAgeVariant = useCallback((age) => setSelectedAgeVariant(age), []);
+  const selectAgeVariant = useCallback((age) => {
+    setSelectedAgeVariant(age);
+    setQuantity(1);
+  }, []);
   const selectShoe = useCallback((shoe) => {
     setSelectedShoe(shoe);
     setSelectedShoeSize(null);
+    setQuantity(1);
   }, []);
-  const selectShoeSize = useCallback((size) => setSelectedShoeSize(size), []);
-  const selectWeight = useCallback((weight) => setSelectedWeight(weight), []);
-  const selectLength = useCallback((length) => setSelectedLength(length), []);
+  const selectShoeSize = useCallback((size) => {
+    setSelectedShoeSize(size);
+    setQuantity(1);
+  }, []);
+  const selectWeight = useCallback((weight) => {
+    setSelectedWeight(weight);
+    setQuantity(1);
+  }, []);
+  const selectLength = useCallback((length) => {
+    setSelectedLength(length);
+    setQuantity(1);
+  }, []);
 
   const selectImage = useCallback((image) => {
     setSelectedImage(image);
