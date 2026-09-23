@@ -73,7 +73,7 @@ export default function CheckoutPage() {
         if (parsed?.itemId) setBuyNowItem(parsed);
       }
     } catch (error) {
-      console.error("Unable to restore Buy Now selection:", error);
+      // Keep checkout recovery silent; no customer form data is written to logs.
     }
   }, []);
   const checkoutItems = buyNowItem ? [{
@@ -168,7 +168,7 @@ const fetchShippingQuote = async () => {
       showSnackbar("Shipping quotes are temporarily unavailable while DHL/FedEx integration is muted.", "info");
     }
   } catch (err) {
-    console.error("Error fetching shipping quote:", err);
+
     showSnackbar("Failed to get shipping quote. Try again.", "error");
   }
 };
@@ -208,8 +208,6 @@ const fetchShippingQuote = async () => {
       const res = await api.post("/api/checkout/", payload);
       const responseData = res.data;
 
-      console.log("✅ Checkout successful:", responseData);
-
       if (buyNowItem) sessionStorage.removeItem("maaMaraBuyNow");
 
       // call the shipping api
@@ -225,7 +223,7 @@ const fetchShippingQuote = async () => {
         navigate("/order-confirmation", { state: responseData });
       }
     } catch (error) {
-      console.error("❌ Checkout error:", error);
+
       showSnackbar("Checkout failed. Please try again.", "error");
     }
   };
