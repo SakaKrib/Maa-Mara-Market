@@ -1559,9 +1559,11 @@ const ItemAddNew = ({ initialItem, vendorId, itemId, onSave = () => {}, vendor, 
                   placeholder="Apply a discount"
                   {...field}
                   onChange={(e) => {
-                    // Ensure the value is always treated as a number (handle invalid input)
+                    // Allow the field to become temporarily empty while the
+                    // user is editing. Do not force a 0 back in here — an
+                    // empty discount is resolved at submission time instead.
                     const value = e.target.value;
-                    field.onChange(value ? parseFloat(value) : 0); // Convert to number or 0 if empty
+                    field.onChange(value === "" ? "" : parseFloat(value));
                   }}
                 />
               </FormControl>
@@ -2020,9 +2022,15 @@ const ItemAddNew = ({ initialItem, vendorId, itemId, onSave = () => {}, vendor, 
             };
 
             const handleStockChange = (size, stock) => {
+              // Let the user clear the field while editing — an empty
+              // string is kept as-is instead of snapping back to a
+              // default quantity. Only a completed, non-empty entry is
+              // parsed into a number.
               onChange(
                 value.map((v) =>
-                  v.size === size ? { ...v, stock: parseInt(stock) || 1 } : v
+                  v.size === size
+                    ? { ...v, stock: stock === "" ? "" : (parseInt(stock, 10) || 0) }
+                    : v
                 )
               );
             };
@@ -2038,8 +2046,11 @@ const ItemAddNew = ({ initialItem, vendorId, itemId, onSave = () => {}, vendor, 
                   >
                     {sizeOptions.map((size) => {
                       const selected = selectedSizes.includes(size);
+                      const sizeEntry = value.find((v) => v.size === size);
                       const stockValue =
-                        value.find((v) => v.size === size)?.stock?.toString() || "1";
+                        sizeEntry && sizeEntry.stock !== "" && sizeEntry.stock != null
+                          ? String(sizeEntry.stock)
+                          : "";
 
                       return (
                         <div key={size} className="flex flex-col gap-1">
@@ -2089,7 +2100,7 @@ const ItemAddNew = ({ initialItem, vendorId, itemId, onSave = () => {}, vendor, 
                           <Input
                             type="number"
                             min="1"
-                            value={entry.stock?.toString() || "1"}
+                            value={entry.stock === "" || entry.stock == null ? "" : String(entry.stock)}
                             onChange={(e) => handleStockChange(entry.size, e.target.value)}
                             placeholder="Stock"
                             className="w-24 rounded-[20px] border border-border bg-card px-2 py-2 text-sm leading-6 text-foreground"
@@ -2136,7 +2147,14 @@ const ItemAddNew = ({ initialItem, vendorId, itemId, onSave = () => {}, vendor, 
             const { value = {}, onChange } = field;
 
             const handleValueChange = (val) => {
-              onChange({ ...value, value: parseFloat(val) || 0 });
+              // Preserve an empty field while the user is editing rather
+              // than forcing a default number back in.
+              if (val === "" || val === null || val === undefined) {
+                onChange({ ...value, value: "" });
+                return;
+              }
+              const parsed = parseFloat(val);
+              onChange({ ...value, value: Number.isNaN(parsed) ? "" : parsed });
             };
 
             const handleUnitChange = (unit) => {
@@ -2188,7 +2206,14 @@ const ItemAddNew = ({ initialItem, vendorId, itemId, onSave = () => {}, vendor, 
           const { value = {}, onChange } = field;
 
           const handleValueChange = (val) => {
-            onChange({ ...value, value: parseFloat(val) || 0 });
+            // Preserve an empty field while the user is editing rather
+            // than forcing a default number back in.
+            if (val === "" || val === null || val === undefined) {
+              onChange({ ...value, value: "" });
+              return;
+            }
+            const parsed = parseFloat(val);
+            onChange({ ...value, value: Number.isNaN(parsed) ? "" : parsed });
           };
 
           const handleUnitChange = (unit) => {
@@ -2360,9 +2385,15 @@ const ItemAddNew = ({ initialItem, vendorId, itemId, onSave = () => {}, vendor, 
             };
 
             const handleStockChange = (size, stock) => {
+              // Let the user clear the field while editing — an empty
+              // string is kept as-is instead of snapping back to a
+              // default quantity. Only a completed, non-empty entry is
+              // parsed into a number.
               onChange(
                 value.map((v) =>
-                  v.size === size ? { ...v, stock: parseInt(stock) || 1 } : v
+                  v.size === size
+                    ? { ...v, stock: stock === "" ? "" : (parseInt(stock, 10) || 0) }
+                    : v
                 )
               );
             };
@@ -2378,8 +2409,11 @@ const ItemAddNew = ({ initialItem, vendorId, itemId, onSave = () => {}, vendor, 
                   >
                     {kidsSizeOptions.map((size) => {
                       const selected = selectedSizes.includes(size);
+                      const sizeEntry = value.find((v) => v.size === size);
                       const stockValue =
-                        value.find((v) => v.size === size)?.stock?.toString() || "1";
+                        sizeEntry && sizeEntry.stock !== "" && sizeEntry.stock != null
+                          ? String(sizeEntry.stock)
+                          : "";
 
                       return (
                         <div key={size} className="flex flex-col gap-1">
@@ -2399,7 +2433,7 @@ const ItemAddNew = ({ initialItem, vendorId, itemId, onSave = () => {}, vendor, 
                             <Input
                               type="number"
                               min="1"
-                              value={stockValue ?? "0"}
+                              value={stockValue}
                               onChange={(e) =>
                                 handleStockChange(size, e.target.value)
                               }
@@ -2426,7 +2460,7 @@ const ItemAddNew = ({ initialItem, vendorId, itemId, onSave = () => {}, vendor, 
                           <Input
                             type="number"
                             min="1"
-                            value={entry.stock?.toString() || "1"}
+                            value={entry.stock === "" || entry.stock == null ? "" : String(entry.stock)}
                             onChange={(e) => handleStockChange(entry.size, e.target.value)}
                             placeholder="Stock"
                             className="w-24 rounded-[20px] border border-border bg-card px-2 py-2 text-sm leading-6 text-foreground"
@@ -2473,7 +2507,14 @@ const ItemAddNew = ({ initialItem, vendorId, itemId, onSave = () => {}, vendor, 
             const { value = {}, onChange } = field;
 
             const handleValueChange = (val) => {
-              onChange({ ...value, value: parseFloat(val) || 0 });
+              // Preserve an empty field while the user is editing rather
+              // than forcing a default number back in.
+              if (val === "" || val === null || val === undefined) {
+                onChange({ ...value, value: "" });
+                return;
+              }
+              const parsed = parseFloat(val);
+              onChange({ ...value, value: Number.isNaN(parsed) ? "" : parsed });
             };
 
             const handleUnitChange = (unit) => {
@@ -2637,7 +2678,14 @@ const ItemAddNew = ({ initialItem, vendorId, itemId, onSave = () => {}, vendor, 
           const { value = {}, onChange } = field;
 
           const handleValueChange = (val) => {
-            onChange({ ...value, value: parseFloat(val) || 0 });
+            // Preserve an empty field while the user is editing rather
+            // than forcing a default number back in.
+            if (val === "" || val === null || val === undefined) {
+              onChange({ ...value, value: "" });
+              return;
+            }
+            const parsed = parseFloat(val);
+            onChange({ ...value, value: Number.isNaN(parsed) ? "" : parsed });
           };
 
           const handleUnitChange = (unit) => {
@@ -2885,6 +2933,10 @@ const ItemAddNew = ({ initialItem, vendorId, itemId, onSave = () => {}, vendor, 
             };
 
             const handleStockChange = (color, size, stock) => {
+              // Let the user clear the field while editing — an empty
+              // string is kept as-is instead of snapping back to a
+              // default quantity. Only a completed, non-empty entry is
+              // parsed into a number.
               onChange(
                 value.map((v) =>
                   v.color === color
@@ -2892,7 +2944,7 @@ const ItemAddNew = ({ initialItem, vendorId, itemId, onSave = () => {}, vendor, 
                         ...v,
                         sizes: v.sizes.map((s) =>
                           s.size === size
-                            ? { ...s, quantity_in_stock: parseInt(stock) || 1 }
+                            ? { ...s, quantity_in_stock: stock === "" ? "" : (parseInt(stock, 10) || 0) }
                             : s
                         ),
                       }
