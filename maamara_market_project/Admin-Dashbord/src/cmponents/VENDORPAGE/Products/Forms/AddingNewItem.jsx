@@ -141,7 +141,10 @@ const ItemAddNew = ({ initialItem, vendorId, itemId, onSave = () => {}, vendor, 
   const shouldMuteProtectedFields = isEditing && !isAdmin;
 
     const form = useForm({
-      defaultValues: initialItem || {},
+      defaultValues: {
+        in_stock: 1,
+        ...(initialItem || {}),
+      },
       mode: "onChange",
     });
 
@@ -230,20 +233,20 @@ const ItemAddNew = ({ initialItem, vendorId, itemId, onSave = () => {}, vendor, 
           sizes: (variant.sizes || []).map((size) => ({
             id: size.id,
             size: size.size,
-            quantity_in_stock: size.quantity_in_stock ?? size.stock ?? 0,
+            quantity_in_stock: size.quantity_in_stock ?? size.stock ?? 1,
           })),
         })),
         size_variant: (initialItem.size_only_icon || initialItem.size_variant || []).map((size) => ({
           id: size.id,
           size: size.size,
-          stock: size.quantity_in_stock ?? size.stock ?? 0,
+          stock: size.quantity_in_stock ?? size.stock ?? 1,
         })),
         kids_sizes: (initialItem.kids_sizes || []).map((size) => ({
           id: size.id,
           age_group: size.age_group ?? size.size ?? "",
           size: size.age_group ?? size.size ?? "",
-          quantity_in_stock: size.quantity_in_stock ?? size.stock ?? 0,
-          stock: size.quantity_in_stock ?? size.stock ?? 0,
+          quantity_in_stock: size.quantity_in_stock ?? size.stock ?? 1,
+          stock: size.quantity_in_stock ?? size.stock ?? 1,
         })),
         ...(Array.isArray(initialItem.shoe_input) && initialItem.shoe_input.length > 0
           ? {
@@ -559,6 +562,7 @@ const ItemAddNew = ({ initialItem, vendorId, itemId, onSave = () => {}, vendor, 
 
     image: undefined,
     video: "",
+    in_stock: 1,
 
     color_variants: [],
     size_variant: [],
@@ -866,7 +870,7 @@ const ItemAddNew = ({ initialItem, vendorId, itemId, onSave = () => {}, vendor, 
             ({ id, age_group, size, quantity_in_stock, stock }) => ({
               ...(id ? { id } : {}),
               age_group: age_group ?? size ?? "",
-              quantity_in_stock: quantity_in_stock ?? stock ?? 0,
+              quantity_in_stock: quantity_in_stock ?? stock ?? 1,
             })
           ),
           shoe_input: (() => {
@@ -2608,7 +2612,7 @@ const ItemAddNew = ({ initialItem, vendorId, itemId, onSave = () => {}, vendor, 
                         ...v,
                         sizes: v.sizes.some((s) => s.size === size)
                           ? v.sizes.filter((s) => s.size !== size)
-                          : [...v.sizes, { size, quantity_in_stock: 0 }],
+                          : [...v.sizes, { size, quantity_in_stock: 1 }],
                       }
                     : v
                 )
@@ -2623,7 +2627,7 @@ const ItemAddNew = ({ initialItem, vendorId, itemId, onSave = () => {}, vendor, 
                         ...v,
                         sizes: v.sizes.map((s) =>
                           s.size === size
-                            ? { ...s, quantity_in_stock: parseInt(stock) || 0 }
+                            ? { ...s, quantity_in_stock: parseInt(stock) || 1 }
                             : s
                         ),
                       }
