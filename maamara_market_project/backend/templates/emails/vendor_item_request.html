@@ -1,11 +1,15 @@
 {% extends "emails/_base.html" %}
-{% block title %}Vendor Registration{% endblock %}
-{% block heading %}Vendor Registration Update{% endblock %}
-{% block preheader %}Your vendor registration has been processed.{% endblock %}
+{% block title %}New Item Request{% endblock %}
+{% block heading %}New Item Request{% endblock %}
+{% block preheader %}A vendor has submitted an item request for administrator review.{% endblock %}
 {% block content %}
-<p>Dear {{ user_first_name }},</p>
-<p>Your vendor registration request has been processed by Maamara Market.</p>
-{% if total_items %}<div class="card">Total Items Created: <strong>{{ total_items }}</strong></div>{% endif %}
-<div class="button-wrap"><a href="{{ frontend_url }}/vendors-dashboard" class="button">Open Vendor Dashboard</a></div>
-<p>Warm regards,<br><strong>Maamara Market Team</strong></p>
+<p>Hello Admin,</p>
+<p>A new item request was submitted by <strong>{{ vendor.first_name }}</strong>.</p>
+<div class="card">
+<strong>Item:</strong> {{ item.name }}<br>
+<strong>Price:</strong> {{ item.price }}<br>
+<strong>Description:</strong><br>{{ item.description }}
+</div>
+<div class="button-wrap"><a href="{{ frontend_url }}/dashboard" class="button">Open Admin Dashboard</a></div>
+<p>— Maamara Market System Notification</p>
 {% endblock %}
