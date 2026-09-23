@@ -46,6 +46,15 @@ const QuantityAndCart = ({
 
   const disabled = !configurationReady || quantity > stock || stock === 0;
 
+  const selectedCustomPreferences = {
+    ...(typeof customPreferences === "object" && customPreferences ? customPreferences : {}),
+    ...(typeof customPreferences === "string" && customPreferences.trim()
+      ? { instructions: customPreferences.trim() }
+      : {}),
+    ...(selectedShoe?.shoe_type ? { shoe_type: selectedShoe.shoe_type } : {}),
+    ...(selectedShoe?.shoe_gender ? { shoe_gender: selectedShoe.shoe_gender } : {}),
+  };
+
   const buyNowPayload = {
     itemId: item?.id ?? null,
     itemName: item?.name ?? "",
@@ -64,7 +73,7 @@ const QuantityAndCart = ({
     weight: selectedWeight ?? item?.weight ?? null,
     lengthId: selectedLength?.id ?? item?.length?.id ?? null,
     length: selectedLength ?? item?.length ?? null,
-    customPreferences: customPreferences || "",
+    customPreferences: selectedCustomPreferences,
     unitPrice: Number(item?.final_discounted_price || item?.final_price || item?.price || 0),
     availableStock: stock,
   };
