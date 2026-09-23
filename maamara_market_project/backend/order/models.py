@@ -599,4 +599,51 @@ class Transaction(models.Model):
 
 
 # Import invoice models through Django's model module so the model is registered during app loading.
-from .invoice_models import Invoice
+from .invoice_models import Invoic
+
+class CheckoutSession(models.Model):
+    """
+    Short-lived checkout staging record.
+
+    Checkout form data is kept here only until the selected payment provider
+    confirms payment. Business records such as Order, OrderItem, BillingAddress,
+    and Payment are created only after successful provider reconciliation.
+    """
+    STATUS_CHOICES = [
+        ("draft", "Draft"),
+        ("payment_pending", "Payment Pending"),
+        ("completed", "Completed"),
+        ("failed", "Failed"),
+        ("expired", "Expired"),
+    ]
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name="checkout_sessions",
+    )
+    visitor_id = models.CharField(max_length=255, blank=True, null=True, db_index=True)
+    payload = models.JSONField(default=dict)
+    payment_method = models.CharField(max_length=20)
+    amount = models.DecimalField(max_digits=12, decimal_places=2)
+    currency = models.CharField(max_length=3, default="KES")
+    paypal_order_id = models.CharField(max_length=64, blank=True, null=True, unique=True)
+    mpesa_checkout_request_id = models.CharField(max_length=100, blank=True, null=True, unique=True)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="draft", db_index=True)
+    expires_at = models.DateTimeField(db_index=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        indexes = [
+            models.Index(fields=["user", "status"]),
+            models.Index(fields=["visitor_id", "status"]),
+            models.Index(fields=["expires_at", "status"]),
+        ]
+
+    def __str__(self):
+        return f"CheckoutSession {self.id} ({self.status})"
+e
