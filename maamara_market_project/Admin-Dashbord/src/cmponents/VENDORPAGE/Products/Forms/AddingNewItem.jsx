@@ -446,7 +446,11 @@ const ItemAddNew = ({ initialItem, vendorId, itemId, onSave = () => {}, vendor, 
       existingSection === "organic" || existingSection === "inorganic"
         ? existingSection
         : isVendorCreate
-          ? (productType === "inorganic" ? "inorganic" : "organic")
+          ? productType === "both"
+            ? selectedSection
+            : productType === "inorganic"
+              ? "inorganic"
+              : "organic"
           : productType === "organic" || productType === "inorganic"
             ? productType
             : selectedSection;
@@ -1146,8 +1150,8 @@ const ItemAddNew = ({ initialItem, vendorId, itemId, onSave = () => {}, vendor, 
               onClick={() => setSelectedSection("organic")}
               className={`rounded-[20px] border px-4 py-2 text-sm font-medium transition
                 ${selectedSection === "organic"
-                  ? "border-black bg-black text-white"
-                  : "border-border bg-card text-muted-foreground hover:border-black hover:text-foreground"}
+                  ? "border-green-600 bg-green-600 text-white"
+                  : "border-border bg-card text-muted-foreground hover:border-green-600 hover:text-foreground"}
               `}
             >
               Organic
