@@ -359,7 +359,7 @@ const fetchShippingQuote = async () => {
                     {shippingOptions.map((option, idx) => (
                       <label
                         key={idx}
-                        className="flex cursor-pointer items-center justify-between gap-4 rounded-xl border border-border bg-background p-3order border-border bg-white px-4 py-3 text-sm transition hover:bg-muted/30"
+                        className="flex cursor-pointer items-center justify-between gap-4 rounded-xl border border-border bg-background px-4 py-3 text-sm transition hover:bg-muted/30"
                       >
                         <span className="flex items-center gap-3">
                           <input
@@ -389,7 +389,7 @@ const fetchShippingQuote = async () => {
                   {["Mpesa", "PayPal"].map((method) => (
                     <label
                       key={method}
-                      className="flex cursor-pointer items-center gap-3 rounded-xl border border-border bg-white px-4 py-3 text-sm font-medium transition hover:bg-muted/30"
+                      className="flex cursor-pointer items-center gap-3 rounded-xl border border-border bg-background px-4 py-3 text-sm font-medium text-card-foreground transition hover:bg-muted/30"
                     >
                       <input type="radio" value={method} {...register("payment")} className="h-4 w-4" />
                       {method}
@@ -409,7 +409,7 @@ const fetchShippingQuote = async () => {
 
           <aside className="mm-card p-5 sm:p-6 lg:sticky lg:top-6">
             <div className="border-b border-border pb-4">
-              <h2 className="text-lg font-bold">Order summary</h2>
+              <h2 className="text-base font-semibold text-card-foreground sm:text-lg">Order summary</h2>
               <p className="mt-1 text-sm text-muted-foreground">
                 {checkoutItems.length} {checkoutItems.length === 1 ? "item" : "items"}
               </p>
