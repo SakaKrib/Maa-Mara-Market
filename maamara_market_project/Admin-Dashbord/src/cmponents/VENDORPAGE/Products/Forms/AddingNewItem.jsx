@@ -1138,49 +1138,33 @@ const ItemAddNew = ({ initialItem, vendorId, itemId, onSave = () => {}, vendor, 
       <div className='border rounded-[20px] border-gray-300 p-4'>
        {!isAdmin && !adminCreateNew && !approvalMode && !isEditing && productType === "both" && (
         <div className="my-4 space-y-2">
-          <label className="block text-sm leading-6 font-semibold text-foreground">Select Form</label>
+          <label className="block text-sm leading-6 font-semibold text-foreground">Select Section</label>
           <div className="flex flex-wrap gap-2">
-            {/* Organic */}
-            <label className="flex items-center gap-2 cursor-pointer">
-              <input
-                type="radio"
-                name="form-type"
-                value="organic"
-                checked={selectedSection === "organic"}
-                onChange={() => setSelectedSection("organic")}
-                className="hidden"
-              />
-              <span
-                className={`px-2 py-2 rounded-[20px] px-3 py-2 text-sm font-medium border transition
-                  ${selectedSection === "organic"
-                    ? "bg-blue-600 text-white border-blue-600"
-                    : "bg-card text-muted-foreground border-border hover:border-[#2563eb]/50"}
-                `}
-              >
-                Organic
-              </span>
-            </label>
+            <button
+              type="button"
+              aria-pressed={selectedSection === "organic"}
+              onClick={() => setSelectedSection("organic")}
+              className={`rounded-[20px] border px-4 py-2 text-sm font-medium transition
+                ${selectedSection === "organic"
+                  ? "border-black bg-black text-white"
+                  : "border-border bg-card text-muted-foreground hover:border-black hover:text-foreground"}
+              `}
+            >
+              Organic
+            </button>
 
-            {/* Inorganic */}
-            <label className="flex items-center gap-2 cursor-pointer">
-              <input
-                type="radio"
-                name="form-type"
-                value="inorganic"
-                checked={selectedSection === "inorganic"}
-                onChange={() => setSelectedSection("inorganic")}
-                className="hidden"
-              />
-              <span
-                className={`px-2 py-2 rounded-[20px] px-3 py-2 text-sm font-medium border transition
-                  ${selectedSection === "inorganic"
-                    ? "bg-blue-600 text-white border-blue-600"
-                    : "bg-card text-muted-foreground border-border hover:border-[#2563eb]/50"}
-                `}
-              >
-                Inorganic
-              </span>
-            </label>
+            <button
+              type="button"
+              aria-pressed={selectedSection === "inorganic"}
+              onClick={() => setSelectedSection("inorganic")}
+              className={`rounded-[20px] border px-4 py-2 text-sm font-medium transition
+                ${selectedSection === "inorganic"
+                  ? "border-black bg-black text-white"
+                  : "border-border bg-card text-muted-foreground hover:border-black hover:text-foreground"}
+              `}
+            >
+              Handmade
+            </button>
           </div>
         </div>
       )}
