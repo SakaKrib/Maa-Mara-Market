@@ -210,6 +210,9 @@ def checkout_view(request):
         weight_id = item_data.get("weight_id")
         shoe_id = item_data.get("shoe_id")
         selected_shoe_size = item_data.get("selected_shoe_size", item_data.get("shoe_size"))
+        custom_preferences = item_data.get("custom_preferences") or {}
+        if not isinstance(custom_preferences, dict):
+            return Response({"success": False, "error": "Custom preferences must be an object."}, status=400)
 
         if quantity < 1:
             return Response({"success": False, "error": "Quantity must be at least 1."}, status=400)
@@ -286,7 +289,8 @@ def checkout_view(request):
         selected_weight = f"{weight.value} {weight.unit}" if weight else None
         sync_key = (
             item.id, variant_id, size_id, age_variant_id,
-            selected_length, selected_weight, str(selected_shoe_size) if selected_shoe_size is not None else None
+            selected_length, selected_weight, str(selected_shoe_size) if selected_shoe_size is not None else None,
+            json.dumps(custom_preferences, sort_keys=True, default=str),
         )
         incoming_keys.add(sync_key)
 
@@ -299,6 +303,7 @@ def checkout_view(request):
             selected_length=selected_length,
             selected_weight=selected_weight,
             shoe_size=str(selected_shoe_size) if selected_shoe_size is not None else None,
+            custom_preferences=custom_preferences,
         ).first()
 
         if order_item:
@@ -319,6 +324,7 @@ def checkout_view(request):
                 selected_length=selected_length,
                 selected_weight=selected_weight,
                 shoe_size=str(selected_shoe_size) if selected_shoe_size is not None else None,
+                custom_preferences=custom_preferences,
             )
 
         total_amount += order_item.get_final_price()
@@ -333,6 +339,7 @@ def checkout_view(request):
             existing.selected_length,
             existing.selected_weight,
             existing.shoe_size,
+            json.dumps(existing.custom_preferences or {}, sort_keys=True, default=str),
         )
         if key not in incoming_keys:
             existing.delete()
