@@ -246,7 +246,7 @@ const fetchShippingQuote = async () => {
                   </div>
                 </div>
 
-                <div className="mt-4">
+                <div className="primary-button mt-4 w-full rounded-full px-5 py-3 text-white font-semibold">
                   <Input type="email" placeholder="Email address" {...register("email")} />
                   {errors.email && <p className="mt-1 text-sm text-red-500">{errors.email.message}</p>}
                 </div>
@@ -302,7 +302,7 @@ const fetchShippingQuote = async () => {
                     <select
                       id="country"
                       {...register("country")}
-                      className="w-full rounded-md border border-gray-200 bg-white px-3 py-2 text-sm outline-none transition focus:border-gray-400"
+                      className="w-full rounded-full border border-gray-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-gray-400"
                     >
                       <option value="">Select country</option>
                       {countries.map((country, idx) => (
@@ -368,7 +368,7 @@ const fetchShippingQuote = async () => {
               </div>
 
               <div className="border-t border-border pt-7">
-                <Button type="submit" className="w-full rounded-md py-3 font-semibold">
+                <Button type="submit" className="primary-button w-full rounded-full px-5 py-3 text-white font-semibold">
                   Complete order
                 </Button>
               </div>
