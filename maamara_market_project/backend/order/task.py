@@ -26,5 +26,9 @@ def cleanup_expired_checkout_sessions():
     ).update(status="expired")
     CheckoutSession.objects.filter(
         expires_at__lt=timezone.now() - timedelta(days=1),
+        status="payment_pending",
+    ).update(status="expired")
+    CheckoutSession.objects.filter(
+        expires_at__lt=timezone.now() - timedelta(days=1),
         status__in=["expired", "failed", "completed"],
     ).delete()
