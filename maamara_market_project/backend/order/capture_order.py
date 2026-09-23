@@ -59,6 +59,9 @@ def capture_paypal_order(request, order_id):
         if not checkout_session or not session_owner_matches(checkout_session, request):
             return Response({"status": "error", "message": "PayPal checkout not found."}, status=404)
 
+        if checkout_session.payment_method != "PayPal":
+            return Response({"status": "error", "message": "Checkout payment method mismatch."}, status=400)
+
         if checkout_session.status in {"expired", "failed"}:
             return Response({"status": "error", "message": "PayPal checkout is no longer payable."}, status=409)
 
