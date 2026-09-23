@@ -188,7 +188,7 @@ const fetchShippingQuote = async () => {
       country: data.country || "",
       zip: data.zip || "",
       payment_method: data.payment || "",
-      shipping: selectedShipping || "",
+      shipping: selectedShipping || null,
       items: checkoutItems.map((item) => ({
         id: item?.id ?? null,
         quantity: item?.quantity ?? 1,
