@@ -7,12 +7,16 @@ import MpesaLogo from "../../../../../../../assets/partnaship/mpesaLogo.png";
 import { Input } from "../../../../../../../../components/ui/input";
 import { Button } from "../../../../../../../../components/ui/button";
 import { useLocation, useNavigate } from "react-router-dom";
+import Snackbar from "@mui/material/Snackbar";
+import Alert from "@mui/material/Alert";
 
 export default function MpesaSTKPayment() {
   const [phone, setPhone] = useState("");
   const [amount, setAmount] = useState(0); // number internally
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
+  const [snackbar, setSnackbar] = useState({ open: false, severity: "info", text: "" });
+  const showSnackbar = (text, severity = "info") => setSnackbar({ open: true, severity, text });
   const { order } = useCartContext();
   const location = useLocation();
   const navigate = useNavigate();
@@ -65,129 +69,74 @@ const socket = new WebSocket(`${wsScheme}://127.0.0.1:8000/ws/orders/${paymentOr
     };
   
     // Cleanup
-    return () => socket.close();
-  }, [paymentOrderId, navigate]);
-  
-  
+    return (
+    <main className="mm-payment-page min-h-screen px-4 py-8 md:px-6 md:py-12">
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={4000}
+        onClose={() => setSnackbar((current) => ({ ...current, open: false }))}
+        anchorOrigin={{ vertical: "top", horizontal: "right" }}
+      >
+        <Alert
+          severity={snackbar.severity}
+          variant="filled"
+          onClose={() => setSnackbar((current) => ({ ...current, open: false }))}
+        >
+          {snackbar.text}
+        </Alert>
+      </Snackbar>
 
-  const handlePayment = async (e) => {
-    e.preventDefault();
-    setLoading(true);
-    setMessage("");
-  
-    try {
-      if (!paymentOrderId) {
-        setMessage("❌ No order found. Please create an order first.");
-        setLoading(false);
-        return;
-      }
-  
-      const response = await api.post(
-        "/api/mpesa/stk-push/",
-        {
-          phone,
-          amount: Math.floor(amount), // integer
-          order_id: paymentOrderId,   // ✅ send order ID to backend
-        },
-        { withCredentials: true }
-      );
-  
-      if (response.data) {
-        setMessage(
-          "✅ STK Push sent! Check your phone to enter your PIN and complete payment."
-        );
-      }
-    } catch (err) {
-      console.error("STK Push error:", err);
-      setMessage("❌ Payment failed. Please try again.");
-    } finally {
-      setLoading(false);
-    }
-  };
-  
-  // Format KES with commas for display
-  const formatAmount = (val) =>
-    new Intl.NumberFormat("en-KE", {
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    }).format(val || 0);
+      <div className="mm-container">
+        <div className="mx-auto mb-6 max-w-xl">
+          <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Secure checkout</p>
+          <h1 className="mt-2 text-2xl font-semibold tracking-tight text-card-foreground sm:text-3xl">Pay with M-Pesa</h1>
+          <p className="mt-2 text-sm leading-6 text-muted-foreground">
+            Complete your payment securely using M-Pesa.
+          </p>
+        </div>
 
-  return (
-    <div className="flex flex-col w-full min-h-screen bg-gray-50">
-      {/* Header / Logo */}
-      <div className="bg-white shadow-sm p-4 flex items-center justify-between border-b border-gray-300 logo">
-        <a href="#" className="flex items-center space-x-2 text-2xl font-bold text-gray-800">
-          <span className="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center text-white text-xs">
-            MMM
-          </span>
-          <span>
-            Maa <span className="it-name">Mara</span> <span className="mkrt">Market</span>
-          </span>
-        </a>
-        <span className="font-semibold hover:underline cursor-pointer">Go to Shop</span>
-      </div>
-
-      {/* Payment Card */}
-      <div className="flex flex-1 items-center justify-center p-6 flex-col">
-        <div className="bg-white p-6 rounded-2xl shadow-md w-full max-w-md">
-          <h2 className="text-2xl font-bold text-center mb-6">Pay with M-Pesa</h2>
-          {/* mpesa logo */}
-          <div className="flex justify-center mb-10">
-            <img
-              src={MpesaLogo} // <-- replace with your logo path or URL
-              alt="M-Pesa"
-              className="w-full h-auto"
-            />
+        <section className="mm-payment-card">
+          <div className="mb-6 flex justify-center rounded-xl border border-border bg-background p-4">
+            <img src={MpesaLogo} alt="M-Pesa" className="max-h-24 w-auto object-contain" />
           </div>
 
-          <form onSubmit={handlePayment} className="space-y-8">
-            {/* Phone Number */}
+          <form onSubmit={handlePayment} className="space-y-6">
             <div>
-              <label className="block text-sm font-medium">Phone Number</label>
+              <label className="mb-2 block text-sm font-semibold text-card-foreground">Phone number</label>
               <Input
                 type="tel"
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
                 placeholder="e.g. 254712345678"
-                className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-green-500"
+                className="w-full"
                 required
               />
             </div>
 
-            {/* Amount (auto-filled from order) */}
-            <div className="flex items-center ">
-              <label className="block text-sm font-medium w-full">Amount (KES)</label>
-              <div className="flex font-semibold">
-              <Input
-                type="text"
-                value={formatAmount(amount)}
-                readOnly
-                className="w-full px-4 py-2 border rounded-lg cursor-not-allowed border-none justify-center flex"
-                style={{fontSize:'1.4em'}}
-              />/-
-              </div>
+            <div className="flex items-center justify-between border-t border-border pt-5">
+              <span className="text-sm font-semibold text-muted-foreground">Amount</span>
+              <span className="text-xl font-bold text-card-foreground">KES {formatAmount(amount)}</span>
             </div>
 
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-green-700 text-white py-2 rounded-lg hover:bg-green-600 transition"
+              className="primary-button mm-button-full flex w-full items-center justify-center rounded-full px-5 py-3 font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50"
             >
               {loading ? "Processing..." : "Pay Now"}
             </button>
           </form>
 
           {message && (
-            <div className="mt-4 text-center text-sm font-medium">
-              {message}
-            </div>
+            <p className="mt-4 text-center text-sm font-medium text-muted-foreground">{message}</p>
           )}
-        </div>
-        <p className="mt-4 flex gap-2 text-gray-500">
-          <IonIcon icon={lockClosed} />
-          Secure payment
-        </p>
+
+          <p className="mt-6 flex items-center justify-center gap-2 border-t border-border pt-4 text-xs text-muted-foreground">
+            <IonIcon icon={lockClosed} />
+            Secure payment
+          </p>
+        </section>
       </div>
-    </div>
+    </main>
   );
 }
