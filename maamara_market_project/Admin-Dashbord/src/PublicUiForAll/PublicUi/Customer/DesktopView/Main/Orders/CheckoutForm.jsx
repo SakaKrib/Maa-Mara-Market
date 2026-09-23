@@ -49,7 +49,19 @@ export default function CheckoutPage() {
   const navigate = useNavigate();
   const [totalOrder, setTotalOrder] = useState(0);
 
-  const shippingCost = selectedShipping ? Number(selectedShipping.price_kes ?? selectedShipping.price ?? 0) : 0;\n\n  useEffect(() => {\n    try {\n      const raw = sessionStorage.getItem("maaMaraBuyNow");\n      if (raw) {\n        const parsed = JSON.parse(raw);\n        if (parsed?.itemId) setBuyNowItem(parsed);\n      }\n    } catch (error) {\n      console.error("Unable to restore Buy Now selection:", error);\n    }\n  }, []);
+  const shippingCost = selectedShipping ? Number(selectedShipping.price_kes ?? selectedShipping.price ?? 0) : 0;
+
+  useEffect(() => {
+    try {
+      const raw = sessionStorage.getItem("maaMaraBuyNow");
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (parsed?.itemId) setBuyNowItem(parsed);
+      }
+    } catch (error) {
+      console.error("Unable to restore Buy Now selection:", error);
+    }
+  }, []);
   const checkoutItems = buyNowItem ? [{
     id: buyNowItem.itemId,
     name: buyNowItem.itemName,
@@ -183,7 +195,9 @@ const fetchShippingQuote = async () => {
 
       console.log("✅ Checkout successful:", responseData);
 
-      if (buyNowItem) sessionStorage.removeItem("maaMaraBuyNow");\n\n      // call the shipping api
+      if (buyNowItem) sessionStorage.removeItem("maaMaraBuyNow");
+
+      // call the shipping api
       // fetchShippingQuote();
 
       // Route based on payment method
