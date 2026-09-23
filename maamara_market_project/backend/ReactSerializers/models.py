@@ -264,12 +264,22 @@ class Item(models.Model):
         return self.get_item_final_price()
     
     def get_current_price(self):
-        """Return the effective selling price, honoring an active offer first."""
+        """Return the effective selling price from the item's single pricing state."""
         offer = getattr(self, "offer", None)
-        if self.in_offer and offer and offer.is_active():
-            return offer.calculate_final_price()
+
+        # When an item is explicitly on offer, the offer controls its
+        # effective price for the configured time window. Once it expires,
+        # the item returns to its normal price rather than keeping the
+        # offer-generated discount_price.
+        if self.in_offer:
+            if offer and offer.is_active():
+                return offer.calculate_final_price()
+            return self.price
+
+        # A normal discount is independent of a time-bound Offer.
         if self.discount_price is not None:
             return self.discount_price
+
         return self.price
 
     def save(self, *args, **kwargs):
