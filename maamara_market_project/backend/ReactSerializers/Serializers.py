@@ -327,6 +327,9 @@ class ItemSerializers(serializers.ModelSerializer):
     shoe_input = ShoeSerializer(many=True, required=False)
 
     item_attribute = serializers.CharField(required=False, allow_blank=True, allow_null=True, max_length=100)
+    brand = serializers.PrimaryKeyRelatedField(
+        queryset=Brand.objects.all(), required=False, allow_null=True
+    )
 
     section = serializers.SlugRelatedField(
         slug_field="name", queryset=Section.objects.all()
@@ -343,6 +346,12 @@ class ItemSerializers(serializers.ModelSerializer):
 
 
     additional_images = ItemAdditionalImageSerializer(many=True, read_only=True)
+    gallery_images = serializers.ListField(
+        child=serializers.ImageField(),
+        write_only=True,
+        required=False,
+    )
+    gallery_keep_ids = serializers.JSONField(write_only=True, required=False)
     occasions = serializers.SlugRelatedField(
         many=True,
         required=False,
@@ -385,7 +394,7 @@ class ItemSerializers(serializers.ModelSerializer):
         model = Item
         fields = [
             "id", "section",
-            "name", "description", "image", "video", "additional_images", "price", "discount_price", "in_stock",
+            "name", "description", "image", "video", "additional_images", "gallery_images", "gallery_keep_ids", "price", "discount_price", "in_stock",
             "available", "returnable", "department", "category", "subcategory",
             "item_attribute",
             "occasions",
@@ -393,6 +402,7 @@ class ItemSerializers(serializers.ModelSerializer):
             "variants", "size_only_icon", "kids_sizes", "shoe_input", "shipping_dimension_data", "shipping_dimension",
             # 🔹 Brand
             "brand", 
+            "gender_based", "children_size_based_age",
             # 🔹 Single-object fields
             "weight", "length",
             # 🔹 Extra
@@ -482,6 +492,8 @@ class ItemSerializers(serializers.ModelSerializer):
         shipping_data = validated_data.pop("shipping_dimension_data", None)
         discount_price = validated_data.pop("discount_price", None)
         occasions_data = validated_data.pop("occasions", None)
+        gallery_images_data = validated_data.pop("gallery_images", [])
+        validated_data.pop("gallery_keep_ids", None)
         
         # ✅ Extract brand if passed
 
@@ -502,6 +514,9 @@ class ItemSerializers(serializers.ModelSerializer):
 
         if occasions_data is not None:
             item.occasions.set(occasions_data)
+
+        for gallery_image in gallery_images_data:
+            ItemAdditionalImage.objects.create(item=item, image=gallery_image)
 
         if discount_price is not None:
             # A reduced price is independent from a time-bound Offer.
@@ -584,7 +599,8 @@ class ItemSerializers(serializers.ModelSerializer):
         shipping_data = validated_data.pop("shipping_dimension_data", None)
         discount_price = validated_data.pop("discount_price", instance.discount_price)
         occasions_data = validated_data.pop("occasions", None)
-
+        gallery_images_data = validated_data.pop("gallery_images", [])
+        gallery_keep_ids = validated_data.pop("gallery_keep_ids", None)
 
         # Section is an independent classification from the organic/fresh-food
         # flags. Preserve the section explicitly selected by the form.
@@ -601,6 +617,16 @@ class ItemSerializers(serializers.ModelSerializer):
 
         if occasions_data is not None:
             instance.occasions.set(occasions_data)
+
+        if gallery_keep_ids is not None:
+            try:
+                keep_ids = {int(value) for value in gallery_keep_ids if str(value).strip()}
+            except (TypeError, ValueError):
+                raise serializers.ValidationError({"gallery_keep_ids": "Gallery image IDs must be valid integers."})
+            instance.additional_images.exclude(id__in=keep_ids).delete()
+
+        for gallery_image in gallery_images_data:
+            ItemAdditionalImage.objects.create(item=instance, image=gallery_image)
 
 
         # ✅ Shipping dimension
