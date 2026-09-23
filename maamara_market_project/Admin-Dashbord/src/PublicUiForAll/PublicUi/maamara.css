@@ -220,6 +220,19 @@ h4{
     background-color: var(--dark-color);
 }
 
+/* Explicit width modifiers for modern marketplace actions. Keep the legacy
+ * primary-button fit-content behavior intact, while allowing checkout-style
+ * actions to opt into full width or centered content width. */
+.primary-button.mm-button-full{
+    width: 100% !important;
+}
+
+.primary-button.mm-button-fit{
+    width: fit-content !important;
+    margin-left: auto;
+    margin-right: auto;
+}
+
 .secondary-button{
     background-color: var(--primary-color);color: var(--white);z-index: 10;
 }
