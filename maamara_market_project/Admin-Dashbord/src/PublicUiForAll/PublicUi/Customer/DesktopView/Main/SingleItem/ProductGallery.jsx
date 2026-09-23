@@ -36,18 +36,6 @@ const ProductGallery = ({ item, selectedImage, selectedVariant, selectedSize, on
       }
     });
 
-    (Array.isArray(item?.variants) ? item.variants : []).forEach((variant) => {
-      if (variant?.image) {
-        entries.push({
-          type: "image",
-          value: variant.image,
-          key: `variant-${variant.id}`,
-          variantId: variant.id,
-          label: variant.color,
-        });
-      }
-    });
-
     return entries.filter((entry, index, all) => all.findIndex((candidate) => candidate.value === entry.value) === index);
   }, [item]);
 
