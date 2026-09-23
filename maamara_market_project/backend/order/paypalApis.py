@@ -1,190 +1,29 @@
 import json
-import logging
-import time
 import uuid
 from decimal import Decimal
 
-import requests
-from asgiref.sync import async_to_sync
-from channels.layers import get_channel_layer
-from django.conf import settings
-from django.contrib.auth.models import User
 from django.db import models, transaction
-from django.forms.models import model_to_dict
-from django.template.loader import render_to_string
-from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
-from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 
 from ReactSerializers.models import AgeVariant, ColorVariant, Item, Length, Shoe, SizeStock, Weight
-from core.models import ActivityLog, Notification
-from vendorDashboard.models import SoldItem, Vendor
-
-from .capture_order import get_paypal_access_token
-from .shipping import get_rates_for_destination
-from .Payment import create_paypal_order
-from .services.refunds import reconcile_paypal_refund
 from .Base import get_usd_to_kes_rate
-from .models import BillingAddress, Customer, Order, Payment, Transaction
-from .paymentserializer import CheckoutSerializer, OrderResponseSerializer
+from .Payment import create_paypal_order
+from .checkout_sessions import session_owner_matches
+from .models import CheckoutSession
+from .paymentserializer import CheckoutSerializer
+from .shipping import _ShippingItemsProxy, _dimensions_for_items, get_rates_for_destination
 from .views import IsAuthenticatedOrVisitor
 
 
-logger = logging.getLogger(__name__)
-
-
-def verify_paypal_signature(raw_body, request):
-    """Verify a PayPal webhook through PayPal's verification endpoint."""
-    webhook_id = getattr(settings, "PAYPAL_WEBHOOK_ID", "")
-    if not webhook_id:
-        logger.error("PayPal webhook verification is not configured.")
-        return False
-
-    header = request.headers.get
-    transmission_id = header("PAYPAL-TRANSMISSION-ID")
-    transmission_time = header("PAYPAL-TRANSMISSION-TIME")
-    transmission_sig = header("PAYPAL-TRANSMISSION-SIG")
-    cert_url = header("PAYPAL-CERT-URL")
-    auth_algo = header("PAYPAL-AUTH-ALGO")
-
-    if not all((transmission_id, transmission_time, transmission_sig, cert_url, auth_algo)):
-        logger.warning("PayPal webhook is missing signature headers.")
-        return False
-
-    try:
-        event = json.loads(raw_body)
-    except (TypeError, ValueError):
-        return False
-
-    verify_payload = {
-        "auth_algo": auth_algo,
-        "cert_url": cert_url,
-        "transmission_id": transmission_id,
-        "transmission_sig": transmission_sig,
-        "transmission_time": transmission_time,
-        "webhook_id": webhook_id,
-        "webhook_event": event,
-    }
-
-    paypal = settings.PAYMENT_GATEWAYS["paypal"]
-    token = get_paypal_access_token()
-    response = requests.post(
-        f"{paypal['base_url'].rstrip('/')}/v1/notifications/verify-webhook-signature",
-        json=verify_payload,
-        headers={
-            "Content-Type": "application/json",
-            "Authorization": f"Bearer {token}",
-        },
-        timeout=10,
-    )
-    if response.status_code != 200:
-        logger.warning(
-            "PayPal webhook verification failed with HTTP %s.",
-            response.status_code,
-        )
-        return False
-
-    try:
-        return response.json().get("verification_status") == "SUCCESS"
-    except ValueError:
-        return False
-
-
-
-# CREATE PAYMENT ORDER AND BILLING ADDRESS
-
-
-@api_view(["POST"])
-@permission_classes([IsAuthenticatedOrVisitor])
-@transaction.atomic
-def checkout_view(request):
-    """
-    Checkout API: creates or updates order, billing, payment, and items.
-    """
-    serializer = CheckoutSerializer(data=request.data)
-    if not serializer.is_valid():
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-    data = serializer.validated_data
-    user = request.user if request.user.is_authenticated else None
-    visitor_id = request.COOKIES.get("visitorId")
-    if not visitor_id and not user:
-        visitor_id = str(uuid.uuid4())  # fallback visitorId
-
-    # ----------------------------
-    # 1️⃣ Retrieve or create pending order
-    # ----------------------------
-    order, created_order = Order.objects.get_or_create(
-        user=user,
-        visitor_id=None if user else visitor_id,
-        status="pending",
-        defaults={"ordered_date": timezone.now()}
-    )
-
-    # ----------------------------
-    # 2️⃣ Create or update billing address
-    # ----------------------------
-    billing_data = {
-        "first_name": data["first_name"],
-        "last_name": data["last_name"],
-        "phone": data["phone"],
-        "email": data["email"],
-        "street_address": data["street_address"],
-        "appartment_address": data.get("appartment_address", ""),
-        "city": data["city"],
-        "state": data.get("state", ""),
-        "country": data["country"],
-        "zip": data["zip"],
-    }
-
-    if not order.billing_address:
-        billing = BillingAddress.objects.create(user=user, visitor_id=None if user else visitor_id, **billing_data)
-        order.billing_address = billing
-    else:
-        billing = order.billing_address
-        for key, value in billing_data.items():
-            setattr(billing, key, value)
-        billing.save()
-    order.save()
-
-    # ----------------------------
-    # 3️⃣ Create or update payment
-    # ----------------------------
-    payment_method = data.get("payment_method", "Mpesa")
-    if not order.payment:
-        payment = Payment.objects.create(
-            user=user,
-            visitor_id=None if user else visitor_id,
-            payment_method=payment_method,
-            amount=0,
-            status="pending"
-        )
-        order.payment = payment
-    else:
-        payment = order.payment
-        payment.payment_method = payment_method
-        payment.save()
-    order.save()
-
-    # Customer records are finalized only after the payment provider confirms
-    # successful payment. The pending order retains its billing address as
-    # payment-time staging data so the callback can finalize the customer
-    # safely without creating a customer for an abandoned checkout.
-
-    # ----------------------------
-    # 5️⃣ Sync order items
-    # ----------------------------
-    items_payload = data.get("items", [])
+def _validate_and_snapshot_items(items_payload):
     if not items_payload:
-        return Response({"success": False, "error": "Your cart is empty."}, status=400)
+        raise ValueError("Your cart is empty.")
 
-    # A cart can contain the same product more than once when the selected
-    # variant differs, so the sync key must include the selected options.
-    incoming_keys = set()
-    total_amount = Decimal("0.00")
+    snapshots = []
+    subtotal = Decimal("0.00")
 
     for item_data in items_payload:
         item_id = item_data.get("id")
@@ -197,243 +36,272 @@ def checkout_view(request):
         shoe_id = item_data.get("shoe_id")
         selected_shoe_size = item_data.get("selected_shoe_size", item_data.get("shoe_size"))
         custom_preferences = item_data.get("custom_preferences") or {}
+
+        if not item_id or quantity < 1:
+            raise ValueError("Each checkout item must include a valid id and quantity.")
         if not isinstance(custom_preferences, dict):
-            return Response({"success": False, "error": "Custom preferences must be an object."}, status=400)
+            raise ValueError("Custom preferences must be an object.")
 
-        if quantity < 1:
-            return Response({"success": False, "error": "Quantity must be at least 1."}, status=400)
-
-        # Lock stock-bearing rows for the entire checkout transaction.
-        item = Item.objects.select_for_update().filter(pk=item_id).first()
+        item = Item.objects.filter(pk=item_id).first()
         if not item:
-            return Response({"success": False, "error": "Product not found."}, status=404)
+            raise ValueError("Product not found.")
 
-        variant = ColorVariant.objects.select_for_update().filter(pk=variant_id).first() if variant_id else None
-        size_stock = SizeStock.objects.select_for_update().filter(pk=size_id).first() if size_id else None
-        age_variant = AgeVariant.objects.select_for_update().filter(pk=age_variant_id).first() if age_variant_id else None
+        variant = ColorVariant.objects.filter(pk=variant_id).first() if variant_id else None
+        size_stock = SizeStock.objects.filter(pk=size_id).first() if size_id else None
+        age_variant = AgeVariant.objects.filter(pk=age_variant_id).first() if age_variant_id else None
         length = Length.objects.filter(pk=length_id).first() if length_id else None
         weight = Weight.objects.filter(pk=weight_id).first() if weight_id else None
         shoe = Shoe.objects.filter(pk=shoe_id).first() if shoe_id else None
 
         if variant_id and not variant:
-            return Response({"success": False, "error": "Selected color was not found."}, status=404)
+            raise ValueError("Selected color was not found.")
         if size_id and not size_stock:
-            return Response({"success": False, "error": "Selected size was not found."}, status=404)
+            raise ValueError("Selected size was not found.")
         if age_variant_id and not age_variant:
-            return Response({"success": False, "error": "Selected age option was not found."}, status=404)
+            raise ValueError("Selected age option was not found.")
         if length_id and not length:
-            return Response({"success": False, "error": "Selected length was not found."}, status=404)
+            raise ValueError("Selected length was not found.")
         if weight_id and not weight:
-            return Response({"success": False, "error": "Selected weight was not found."}, status=404)
+            raise ValueError("Selected weight was not found.")
         if shoe_id and not shoe:
-            return Response({"success": False, "error": "Selected shoe option was not found."}, status=404)
+            raise ValueError("Selected shoe option was not found.")
 
         if variant and variant.item_id != item.id:
-            return Response({"success": False, "error": "Selected color is not available for this item."}, status=400)
+            raise ValueError("Selected color is not available for this item.")
 
         if size_stock:
             if size_stock.variant_id:
                 if not variant or size_stock.variant_id != variant.id:
-                    return Response({"success": False, "error": "Selected size does not match the selected color."}, status=400)
+                    raise ValueError("Selected size does not match the selected color.")
             elif size_stock.item_id != item.id:
-                return Response({"success": False, "error": "Selected size is not available for this item."}, status=400)
+                raise ValueError("Selected size is not available for this item.")
 
-        if age_variant and age_variant.item_id != item.id:
-            return Response({"success": False, "error": "Selected age group is not available for this item."}, status=400)
-        if length and length.item_id != item.id:
-            return Response({"success": False, "error": "Selected length is not available for this item."}, status=400)
-        if weight and weight.item_id != item.id:
-            return Response({"success": False, "error": "Selected weight is not available for this item."}, status=400)
-        if shoe and shoe.item_id != item.id:
-            return Response({"success": False, "error": "Selected shoe option is not available for this item."}, status=400)
+        for selected, name in (
+            (age_variant, "age group"),
+            (length, "length"),
+            (weight, "weight"),
+            (shoe, "shoe option"),
+        ):
+            if selected and selected.item_id != item.id:
+                raise ValueError(f"Selected {name} is not available for this item.")
 
         if shoe:
-            allowed_shoe_sizes = [str(value) for value in (shoe.shoe_size or [])]
+            allowed_shoe_sizes = {str(value) for value in (shoe.shoe_size or [])}
             if not selected_shoe_size or str(selected_shoe_size) not in allowed_shoe_sizes:
-                return Response({"success": False, "error": "Select a valid shoe size."}, status=400)
+                raise ValueError("Select a valid shoe size.")
 
         if size_stock:
-            available_stock = size_stock.quantity_in_stock
+            available_stock = size_stock.quantity_in_stock or 0
         elif age_variant:
-            available_stock = age_variant.quantity_in_stock
+            available_stock = age_variant.quantity_in_stock or 0
         elif variant:
-            available_stock = variant.sizes.aggregate(
-                total=models.Sum("quantity_in_stock")
-            )["total"] or 0
-        elif shoe:
-            available_stock = item.in_stock or 0
+            available_stock = (
+                variant.sizes.aggregate(total=models.Sum("quantity_in_stock"))["total"] or 0
+            )
         else:
             available_stock = item.in_stock or 0
 
         if quantity > available_stock:
-            return Response({
-                "success": False,
-                "error": f"Cannot add {quantity} of '{item.name}'. Only {available_stock} in stock."
-            }, status=400)
+            raise ValueError(
+                f"Cannot add {quantity} of '{item.name}'. Only {available_stock} in stock."
+            )
 
         selected_length = f"{length.value} {length.unit}" if length else None
         selected_weight = f"{weight.value} {weight.unit}" if weight else None
-        sync_key = (
-            item.id, variant_id, size_id, age_variant_id,
-            selected_length, selected_weight, str(selected_shoe_size) if selected_shoe_size is not None else None,
-            json.dumps(custom_preferences, sort_keys=True, default=str),
-        )
-        incoming_keys.add(sync_key)
+        price_at_purchase = Decimal(str(item.get_item_final_price()))
 
-        order_item = OrderItem.objects.filter(
-            order=order,
-            item=item,
-            color_variant=variant,
-            size_stock=size_stock,
-            age_variant=age_variant,
-            selected_length=selected_length,
-            selected_weight=selected_weight,
-            shoe_size=str(selected_shoe_size) if selected_shoe_size is not None else None,
-            custom_preferences=custom_preferences,
-        ).first()
+        snapshots.append({
+            "id": item.id,
+            "quantity": quantity,
+            "variant_id": variant.id if variant else None,
+            "size_id": size_stock.id if size_stock else None,
+            "age_variant_id": age_variant.id if age_variant else None,
+            "length_id": length.id if length else None,
+            "weight_id": weight.id if weight else None,
+            "shoe_id": shoe.id if shoe else None,
+            "selected_shoe_size": str(selected_shoe_size) if selected_shoe_size is not None else None,
+            "selected_length": selected_length,
+            "selected_weight": selected_weight,
+            "custom_preferences": custom_preferences,
+            "price_at_purchase": str(price_at_purchase),
+        })
+        subtotal += price_at_purchase * quantity
 
-        if order_item:
-            order_item.quantity = quantity
-            order_item.price_at_purchase = item.get_item_final_price()
-            order_item.save(update_fields=["quantity", "price_at_purchase"])
-        else:
-            order_item = OrderItem.objects.create(
-                order=order,
-                item=item,
-                user=user,
-                visitor_id=None if user else visitor_id,
-                quantity=quantity,
-                price_at_purchase=item.get_item_final_price(),
-                color_variant=variant,
-                size_stock=size_stock,
-                age_variant=age_variant,
-                selected_length=selected_length,
-                selected_weight=selected_weight,
-                shoe_size=str(selected_shoe_size) if selected_shoe_size is not None else None,
-                custom_preferences=custom_preferences,
-            )
+    return snapshots, subtotal
 
-        total_amount += order_item.get_final_price()
 
-    # Remove stale lines without touching other variants of the same product.
-    for existing in order.items.all():
-        key = (
-            existing.item_id,
-            existing.color_variant_id,
-            existing.size_stock_id,
-            existing.age_variant_id,
-            existing.selected_length,
-            existing.selected_weight,
-            existing.shoe_size,
-            json.dumps(existing.custom_preferences or {}, sort_keys=True, default=str),
-        )
-        if key not in incoming_keys:
-            existing.delete()
-
-    # ----------------------------
-    # 6️⃣ Validate and persist the selected shipping quote.
-    # The browser may select a displayed rate, but the server re-quotes it
-    # against the current order/address before charging anything.
-    # ----------------------------
-    shipping_selection = data.get("shipping")
-    shipping_kes = Decimal("0.00")
-    if shipping_selection:
-        destination = {
-            "postalCode": str(billing.zip).strip(),
-            "cityName": str(billing.city).strip(),
-            "countryCode": str(billing.country).strip().upper(),
+def _validate_shipping(shipping_selection, items_payload, billing):
+    if not shipping_selection:
+        return {
+            "amount_kes": "0.00",
+            "provider": None,
+            "service": None,
+            "price": None,
+            "currency": None,
         }
-        rates, _provider_errors = get_rates_for_destination(order, destination)
-        selected_provider = str(shipping_selection["provider"]).strip()
-        selected_service = str(shipping_selection["service"]).strip()
-        selected_currency = str(shipping_selection["currency"]).strip().upper()
-        selected_price = Decimal(str(shipping_selection["price"]))
 
-        matching_rate = next(
-            (
-                rate for rate in rates
-                if str(rate.get("provider", "")).strip().lower() == selected_provider.lower()
-                and str(rate.get("service", "")).strip().lower() == selected_service.lower()
-                and str(rate.get("currency", "")).strip().upper() == selected_currency
-                and Decimal(str(rate.get("price", "0.00"))) == selected_price
-            ),
-            None,
+    dimensions = _dimensions_for_items(items_payload)
+    proxy = _ShippingItemsProxy(dimensions)
+    destination = {
+        "postalCode": str(billing["zip"]).strip(),
+        "cityName": str(billing["city"]).strip(),
+        "countryCode": str(billing["country"]).strip().upper(),
+    }
+
+    rates, _ = get_rates_for_destination(proxy, destination)
+    selected_provider = str(shipping_selection["provider"]).strip()
+    selected_service = str(shipping_selection["service"]).strip()
+    selected_currency = str(shipping_selection["currency"]).strip().upper()
+    selected_price = Decimal(str(shipping_selection["price"]))
+
+    matching_rate = next(
+        (
+            rate for rate in rates
+            if str(rate.get("provider", "")).strip().lower() == selected_provider.lower()
+            and str(rate.get("service", "")).strip().lower() == selected_service.lower()
+            and str(rate.get("currency", "")).strip().upper() == selected_currency
+            and Decimal(str(rate.get("price", "0.00"))) == selected_price
+        ),
+        None,
+    )
+    if not matching_rate:
+        raise ValueError("The selected shipping rate has changed. Please request a new quote.")
+
+    if selected_price < 0:
+        raise ValueError("Shipping price cannot be negative.")
+
+    if selected_currency == "KES":
+        shipping_kes = selected_price
+    elif selected_currency == "USD":
+        rate = Decimal(str(get_usd_to_kes_rate()))
+        if rate <= 0:
+            raise ValueError("Invalid USD/KES exchange rate.")
+        shipping_kes = (selected_price * rate).quantize(Decimal("0.01"))
+    else:
+        raise ValueError(f"Unsupported shipping currency: {selected_currency}")
+
+    return {
+        "amount_kes": str(shipping_kes),
+        "provider": selected_provider,
+        "service": selected_service,
+        "price": str(selected_price),
+        "currency": selected_currency,
+    }
+
+
+@api_view(["POST"])
+@permission_classes([IsAuthenticatedOrVisitor])
+@transaction.atomic
+def checkout_view(request):
+    """
+    Validate checkout data and create only a short-lived CheckoutSession.
+
+    BillingAddress, Payment, Order, and OrderItem records are deliberately not
+    created here. They are materialized only after PayPal or M-Pesa confirms
+    successful payment.
+    """
+    serializer = CheckoutSerializer(data=request.data)
+    if not serializer.is_valid():
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    data = serializer.validated_data
+    user = request.user if request.user and request.user.is_authenticated else None
+    visitor_id = request.COOKIES.get("visitorId") if not user else None
+
+    if not user and not visitor_id:
+        return Response(
+            {"success": False, "error": "Checkout identity is required."},
+            status=status.HTTP_401_UNAUTHORIZED,
         )
-        if not matching_rate:
-            return Response(
-                {"success": False, "error": "The selected shipping rate has changed. Please request a new quote."},
-                status=409,
-            )
 
-        if selected_price < 0:
-            return Response({"success": False, "error": "Shipping price cannot be negative."}, status=400)
+    billing = {
+        "first_name": data["first_name"],
+        "last_name": data["last_name"],
+        "phone": data["phone"],
+        "email": data["email"],
+        "street_address": data["street_address"],
+        "appartment_address": data.get("appartment_address", ""),
+        "city": data["city"],
+        "state": data.get("state", ""),
+        "country": data["country"],
+        "zip": data["zip"],
+    }
 
-        if selected_currency == "KES":
-            shipping_kes = selected_price
-        elif selected_currency == "USD":
+    try:
+        item_snapshots, subtotal = _validate_and_snapshot_items(data.get("items", []))
+        shipping = _validate_shipping(data.get("shipping"), data.get("items", []), billing)
+        grand_total = (subtotal + Decimal(shipping["amount_kes"])).quantize(Decimal("0.01"))
+
+        if grand_total <= 0:
+            raise ValueError("Order amount must be greater than zero.")
+
+        payment_method = data["payment_method"]
+        CheckoutSession.objects.filter(
+            user=user,
+            visitor_id=None if user else visitor_id,
+            status="draft",
+        ).delete()
+
+        checkout_session = CheckoutSession.objects.create(
+            user=user,
+            visitor_id=visitor_id,
+            payload={
+                "billing": billing,
+                "items": item_snapshots,
+                "shipping": shipping,
+            },
+            payment_method=payment_method,
+            amount=grand_total,
+            currency="KES",
+            expires_at=timezone.now() + timezone.timedelta(minutes=30),
+            status="draft",
+        )
+
+        response_data = {
+            "checkout_id": str(checkout_session.id),
+            "payment": {
+                "payment_method": payment_method,
+                "amount": str(grand_total),
+                "provider_amount": None,
+                "provider_currency": None,
+            },
+        }
+
+        if payment_method == "PayPal":
             usd_to_kes_rate = Decimal(str(get_usd_to_kes_rate()))
             if usd_to_kes_rate <= 0:
                 raise ValueError("Invalid USD/KES exchange rate.")
-            shipping_kes = (selected_price * usd_to_kes_rate).quantize(Decimal("0.01"))
+
+            provider_amount = (grand_total / usd_to_kes_rate).quantize(Decimal("0.01"))
+            if provider_amount <= 0:
+                raise ValueError("PayPal amount must be greater than zero.")
+
+            paypal_data = create_paypal_order(
+                provider_amount,
+                "USD",
+                reference_id=str(checkout_session.id),
+            )
+            paypal_order_id = paypal_data.get("id")
+            if not paypal_order_id:
+                raise ValueError("PayPal did not return an order ID.")
+
+            checkout_session.paypal_order_id = paypal_order_id
+            checkout_session.status = "payment_pending"
+            checkout_session.save(update_fields=["paypal_order_id", "status", "updated_at"])
+
+            response_data["paypal_order_id"] = paypal_order_id
+            response_data["payment"]["provider_amount"] = str(provider_amount)
+            response_data["payment"]["provider_currency"] = "USD"
         else:
-            return Response({"success": False, "error": f"Unsupported shipping currency: {selected_currency}"}, status=400)
+            checkout_session.status = "payment_pending"
+            checkout_session.save(update_fields=["status", "updated_at"])
 
-        order.shipping_amount = shipping_kes
-        order.shipping_provider = selected_provider
-        order.shipping_service = selected_service
-        order.shipping_provider_amount = selected_price
-        order.shipping_currency = selected_currency
-    else:
-        order.shipping_amount = Decimal("0.00")
-        order.shipping_provider = None
-        order.shipping_service = None
-        order.shipping_provider_amount = None
-        order.shipping_currency = None
+        return Response(response_data, status=status.HTTP_201_CREATED)
 
-    grand_total = (total_amount + shipping_kes).quantize(Decimal("0.01"))
-    payment.amount = grand_total
-    payment.save(update_fields=["amount"])
-    order.save(update_fields=[
-        "shipping_amount", "shipping_provider", "shipping_service",
-        "shipping_provider_amount", "shipping_currency",
-    ])
+    except (ValueError, TypeError, ArithmeticError):
+        raise
 
-    # ----------------------------
-    # 7️⃣ Prepare provider payment
-    # ----------------------------
-    if payment_method == "PayPal":
-        # PayPal settles in USD. Create the provider order server-side so the
-        # PayPal ID is bound to this exact local order before the browser pays.
-        usd_to_kes_rate = Decimal(str(get_usd_to_kes_rate()))
-        if usd_to_kes_rate <= 0:
-            raise ValueError("Invalid USD/KES exchange rate.")
 
-        provider_amount = (grand_total / usd_to_kes_rate).quantize(Decimal("0.01"))
-        if provider_amount <= 0:
-            raise ValueError("PayPal amount must be greater than zero.")
-
-        paypal_data = create_paypal_order(
-            provider_amount,
-            "USD",
-            reference_id=order.id,
-        )
-        paypal_order_id = paypal_data.get("id")
-        if not paypal_order_id:
-            raise ValueError("PayPal did not return an order ID.")
-
-        order.paypal_order_id = paypal_order_id
-        payment.provider_amount = provider_amount
-        payment.provider_currency = "USD"
-        payment.save(update_fields=["provider_amount", "provider_currency"])
-        order.save(update_fields=["paypal_order_id"])
-
-    # ----------------------------
-    # 8️⃣ Response
-    # ----------------------------
-    response_data = OrderResponseSerializer(order).data
-    response_data["order_id"] = order.id
-
-    return Response(response_data, status=status.HTTP_201_CREATED)
 
 
 # ==============================
