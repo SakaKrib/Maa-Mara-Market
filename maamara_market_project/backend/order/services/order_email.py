@@ -109,8 +109,9 @@ def send_paid_order_emails(order_id):
     This function is called only after the paid-order transaction commits.
     """
         try:
+        from order.models import Order
         order = (
-            order.__class__.objects
+            Order.objects
             .select_related("billing_address", "payment", "user")
             .prefetch_related(
                 "order_items__item__vendor__user",
