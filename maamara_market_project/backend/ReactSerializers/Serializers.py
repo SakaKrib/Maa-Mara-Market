@@ -772,7 +772,11 @@ class ItemSerializer(serializers.ModelSerializer):
     image = serializers.ImageField(use_url=True, allow_null=True)
     video = serializers.FileField(use_url=True, allow_null=True)
     additional_images = ItemAdditionalImageSerializer(many=True, read_only=True)
+    # Customer-facing pricing: final_price is the single effective selling price.
+    # original_price is only the undiscounted reference price used for display.
+    original_price = serializers.SerializerMethodField()
     final_price = serializers.SerializerMethodField()
+    # Kept as a compatibility alias for older clients; storefront UI must use final_price.
     final_discounted_price = serializers.SerializerMethodField()
     save_upto = serializers.SerializerMethodField()
     variants = ColorVariantSerializer(many=True, read_only=True)
@@ -822,6 +826,7 @@ class ItemSerializer(serializers.ModelSerializer):
             'views',
             'created_at',
             'updated',
+            'original_price',
             'final_price',
             'final_discounted_price',
             'save_upto',
@@ -837,11 +842,17 @@ class ItemSerializer(serializers.ModelSerializer):
             'vendor',   # ✅ now part of response
         ]
 
-    def get_final_price(self, obj):
+    def get_original_price(self, obj):
+        """Return the normal customer-facing price before any discount/offer."""
         return round(obj.get_item_final_price(), 2)
 
+    def get_final_price(self, obj):
+        """Return the one authoritative customer-facing selling price."""
+        return round(obj.get_current_price() * Decimal("1.7"), 2)
+
     def get_final_discounted_price(self, obj):
-        return round(obj.get_item_final_discounted_price(), 2)
+        """Backward-compatible alias; new storefront code must use final_price."""
+        return self.get_final_price(obj)
 
     def get_save_upto(self, obj):
         try:
