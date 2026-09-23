@@ -160,6 +160,7 @@ class VendorItemViewSet(viewsets.ModelViewSet):
             decoded = {}
             for key, value in data.items():
                 if key in [
+                    "gallery_keep_ids",
                     "variants",
                     "size_only_icon",
                     "kids_sizes",
