@@ -2,6 +2,8 @@ import { PayPalScriptProvider, PayPalButtons, FUNDING } from "@paypal/react-payp
 import { useCartContext } from "../../CartHook/cart";
 import { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
+import Snackbar from "@mui/material/Snackbar";
+import Alert from "@mui/material/Alert";
 
 export default function CheckoutPaypalPayment() {
   const clientId = import.meta.env.VITE_PAYPAL_CLIENT_ID;
@@ -15,6 +17,8 @@ export default function CheckoutPaypalPayment() {
   const kesAmount = Number(checkoutResult?.payment?.amount ?? order?.order?.final_total ?? order?.order?.total ?? 0);
   const [usdAmount, setUsdAmount] = useState(String(checkoutResult?.payment?.provider_amount ?? "0.01"));
   const [loading, setLoading] = useState(false);
+  const [snackbar, setSnackbar] = useState({ open: false, severity: "info", text: "" });
+  const showSnackbar = (text, severity = "info") => setSnackbar({ open: true, severity, text });
   const navigate = useNavigate();
 
   // --- WebSocket for real-time payment status ---
@@ -34,132 +38,83 @@ export default function CheckoutPaypalPayment() {
         console.error("❌ WebSocket message error:", err);
       }
     };
-    return () => socket.close();
-  }, [localOrderId, navigate]);
+    return (
+    <main className="mm-payment-page min-h-screen px-4 py-8 md:px-6 md:py-12">
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={4000}
+        onClose={() => setSnackbar((current) => ({ ...current, open: false }))}
+        anchorOrigin={{ vertical: "top", horizontal: "right" }}
+      >
+        <Alert
+          severity={snackbar.severity}
+          variant="filled"
+          onClose={() => setSnackbar((current) => ({ ...current, open: false }))}
+        >
+          {snackbar.text}
+        </Alert>
+      </Snackbar>
 
-  // --- Convert KES to USD ---
-  useEffect(() => {
-    async function convertKES() {
-      try {
-        const res = await fetch(
-          `https://api.exchangerate.host/convert?from=KES&to=USD&amount=${kesAmount}`
-        );
-        const data = await res.json();
-        setUsdAmount(data?.result ? Number(data.result).toFixed(2) : (kesAmount / 150).toFixed(2));
-      } catch {
-        setUsdAmount((kesAmount / 150).toFixed(2));
-      }
-    }
-    if (kesAmount > 0 && !checkoutResult?.payment?.provider_amount) convertKES();
-  }, [kesAmount, checkoutResult?.payment?.provider_amount]);
+      <div className="mm-container">
+        <div className="mx-auto mb-6 max-w-xl">
+          <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Secure checkout</p>
+          <h1 className="mt-2 text-2xl font-semibold tracking-tight text-card-foreground sm:text-3xl">Pay with PayPal</h1>
+          <p className="mt-2 text-sm leading-6 text-muted-foreground">
+            Choose PayPal or card to complete your order.
+          </p>
+        </div>
 
-  const handlePaymentApproval = async (details) => {
-    setLoading(true);
-    try {
-      console.log("💳 PayPal payment approved:", details);
+        <section className="mm-payment-card">
+          <div className="mb-6 flex items-center justify-between border-b border-border pb-5">
+            <span className="text-sm font-semibold text-muted-foreground">Order total</span>
+            <span className="text-xl font-bold text-card-foreground">
+              KES {kesAmount.toLocaleString()} <span className="text-sm font-medium text-muted-foreground">≈ USD {usdAmount}</span>
+            </span>
+          </div>
 
-      const providerOrderId = details.id || paypalOrderId;
-      if (!providerOrderId || !localOrderId) throw new Error("Missing PayPal or local order reference.");
-      const response = await fetch(
-        `/api/paypal/capture/${providerOrderId}/`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            ref_order_id: localOrderId,
-           
-          }),
-          credentials: "include",
-        }
-      );
-
-      const data = await response.json();
-      console.log("✅ Payment verified by backend:", data);
-
-      // Treat "already captured" as successful
-      if (data.status === "ok" && (data.message === "Capture attempted" || data.message === "Order already captured")) {
-      setLoading(false);
-
-        navigate(`/payment-success`, { state: { order: checkoutResult || order?.order } });
-      } else {
-        console.error("❌ Backend capture failed:", data);
-      setLoading(false);
-
-        alert("Payment failed. Please contact support.");
-      }
-    } catch (error) {
-      console.error("❌ Failed to capture payment:", error);
-      setLoading(false);
-      alert("Payment failed. Please try again.");
-
-    }
-  };
-
-  
-
-
-  return (
-    <div className="flex flex-col py-2 px-0 bg-white min-h-screen">
-      {/* --- Header --- */}
-      <div className="logo flex items-center justify-between border-b border-gray-300 pb-4 mb-6 fixed w-full px-4 bg-white z-10">
-        <a href="#" className="flex items-center space-x-2 text-2xl font-bold text-gray-800">
-          <span className="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center text-white text-xs">
-            MMM
-          </span>
-          <span>
-            Maa <span className="it-name">Mara</span>{" "}
-            <span className="mkrt">Market</span>
-          </span>
-        </a>
-        <span className="font-semibold hover:underline cursor-pointer">
-          go to shop
-        </span>
-      </div>
-
-      {/* --- Main content --- */}
-      <div className="mt-64 w-full text-center">
-        <h2 className="text-lg font-semibold text-gray-700 mb-4">
-          Choose a payment option (KES {kesAmount} ≈ USD {usdAmount})
-        </h2>
-
-        <div className="w-full max-w-xs mx-auto mt-10">
           <PayPalScriptProvider options={{ "client-id": clientId, currency: "USD" }}>
-            {/* --- PayPal Wallet Button --- */}
-            <PayPalButtons
-              fundingSource={FUNDING.PAYPAL}
-              style={{ layout: "vertical", color: "blue", shape: "pill", label: "paypal", height: 45 }}
-              createOrder={() => {
-                if (!paypalOrderId) throw new Error("Missing PayPal order ID from checkout.");
-                return paypalOrderId;
-              }}
-              onApprove={async (data) => {
-                if (!loading) await handlePaymentApproval({ id: data.orderID });
-              }}
-              onError={(err) => console.error("PayPal wallet error:", err)}
-            />
+            <div className="space-y-3">
+              <PayPalButtons
+                fundingSource={FUNDING.PAYPAL}
+                style={{ layout: "vertical", color: "blue", shape: "pill", label: "paypal", height: 45 }}
+                createOrder={() => {
+                  if (!paypalOrderId) throw new Error("Missing PayPal order ID from checkout.");
+                  return paypalOrderId;
+                }}
+                onApprove={async (data) => {
+                  if (!loading) await handlePaymentApproval({ id: data.orderID });
+                }}
+                onError={(err) => {
+                  console.error("PayPal wallet error:", err);
+                  showSnackbar("PayPal payment could not be started. Please try again.", "error");
+                }}
+              />
 
-            {/* --- Debit or Credit Card Button --- */}
-            <PayPalButtons
-              fundingSource={FUNDING.CARD}
-              style={{ layout: "vertical", color: "black", shape: "pill", label: "pay", height: 45 }}
-              createOrder={() => {
-                if (!paypalOrderId) throw new Error("Missing PayPal order ID from checkout.");
-                return paypalOrderId;
-              }}
-              onApprove={async (data) => {
-                if (!loading) await handlePaymentApproval({ id: data.orderID });
-              }}
-              onError={(err) => console.error("Card payment error:", err)}
-            />
+              <PayPalButtons
+                fundingSource={FUNDING.CARD}
+                style={{ layout: "vertical", color: "black", shape: "pill", label: "pay", height: 45 }}
+                createOrder={() => {
+                  if (!paypalOrderId) throw new Error("Missing PayPal order ID from checkout.");
+                  return paypalOrderId;
+                }}
+                onApprove={async (data) => {
+                  if (!loading) await handlePaymentApproval({ id: data.orderID });
+                }}
+                onError={(err) => {
+                  console.error("Card payment error:", err);
+                  showSnackbar("Card payment could not be started. Please try again.", "error");
+                }}
+              />
+            </div>
           </PayPalScriptProvider>
 
           {loading && (
-            <div className="mt-4 text-blue-600 font-semibold">
+            <div className="mt-5 border-t border-border pt-4 text-center text-sm font-semibold text-muted-foreground">
               Processing payment, please wait...
             </div>
           )}
-        </div>
+        </section>
       </div>
-    </div>
+    </main>
   );
 }
