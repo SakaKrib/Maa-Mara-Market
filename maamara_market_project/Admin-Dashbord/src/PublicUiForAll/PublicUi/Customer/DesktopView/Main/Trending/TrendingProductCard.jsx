@@ -10,13 +10,14 @@ const TrendingProductCard = ({ item, isWishlisted: controlledWishlist, onToggleW
   const { wishlist, addToWishlist, removeFromWishlist } = useWishlistContext();
 
   const image = item.image || "";
-  const hasDiscount = Number(item.discount_price || 0) > 0 || Number(item.discount || 0) > 0;
-  const currentPrice = hasDiscount
-    ? (item.final_discounted_price ?? item.discount_price ?? item.final_price ?? item.price ?? 0)
-    : (item.final_price ?? item.price ?? 0);
-  const originalPrice = item.original_price ?? item.price ?? item.final_price ?? 0;
-  const savings = Math.max(0, Number(originalPrice) - Number(currentPrice));
-  const discountPercent = Number(item.discount || item.percentage_discount || 0);
+  // final_price is the only customer-facing selling-price source.
+  const currentPrice = Number(item.final_price ?? 0);
+  const originalPrice = Number(item.original_price ?? 0);
+  const savings = Math.max(0, originalPrice - currentPrice);
+  const hasDiscount = originalPrice > currentPrice;
+  const discountPercent = hasDiscount && originalPrice > 0
+    ? Math.round(((originalPrice - currentPrice) / originalPrice) * 100)
+    : 0;
   const rating = item.rating ?? item.average_rating ?? 0;
   const reviewCount = item.review_count ?? item.reviews_count ?? item.reviews ?? 0;
   const stock = Number(item.in_stock ?? 0);
@@ -81,9 +82,9 @@ const TrendingProductCard = ({ item, isWishlisted: controlledWishlist, onToggleW
               Best seller
             </span>
           )}
-          {Number(item.discount || item.percentage_discount || 0) > 0 && (
+          {discountPercent > 0 && (
             <span className="mm-product-discount">
-              {Number(item.discount || item.percentage_discount)}% OFF
+              {discountPercent}% OFF
             </span>
           )}
         </div>
