@@ -27,15 +27,13 @@ const QuantityAndCart = ({
 
   // A vendor-provided size is preferred, but custom measurements may be used
   // when none of the predefined sizes fit the customer.
-  const needsSize = hasPredefinedSizes && !selectedSize && !hasCustomSize;
-  const needsAge =
-    Array.isArray(item?.kids_sizes) && item.kids_sizes.length > 0 && !selectedAgeVariant;
-  const needsShoeSize =
-    Array.isArray(item?.shoe_input) &&
-    item.shoe_input.length > 0 &&
-    (!selectedShoe || !selectedShoeSize);
+  // Options are optional at the base-item level. Once the customer explicitly
+  // selects a variant/size/shoe/age, stock and checkout use that selection.
+  const needsSize = false;
+  const needsAge = false;
+  const needsShoeSize = false;
 
-  const configurationReady = !needsSize && !needsAge && !needsShoeSize;
+  const configurationReady = true;
   const stock = Math.max(Number(availableStock || 0), 0);
   const hasExplicitConfiguration =
     Boolean(selectedVariant || selectedSize || selectedAgeVariant || selectedShoe || selectedShoeSize || selectedWeight || selectedLength);
