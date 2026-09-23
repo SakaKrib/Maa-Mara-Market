@@ -1,0 +1,40 @@
+{% extends "emails/_base.html" %}
+{% block title %}Order Received — Vendor Dispatch{% endblock %}
+{% block heading %}New Paid Order{% endblock %}
+{% block preheader %}Order #{{ order_id }} has been paid. Review the exact item selections before dispatch.{% endblock %}
+{% block content %}
+<table class="meta" cellpadding="0" cellspacing="0">
+<tr><td class="meta-label">Order ID</td><td class="meta-value">#{{ order_id }}</td></tr>
+<tr><td class="meta-label">Date</td><td class="meta-value">{{ order_date|date:"M d, Y • H:i" }}</td></tr>
+<tr><td class="meta-label">Payment</td><td class="meta-value">{{ payment_method }}</td></tr>
+<tr><td class="meta-label">Dispatch Service</td><td class="meta-value">{{ shipping_service|default:"—" }}</td></tr>
+</table>
+
+<h2>Items to Prepare</h2>
+{% for item in items %}
+<div class="item">
+<div class="item-name">{{ item.name }}</div>
+<div class="item-id">Item ID: {{ item.id }}</div>
+<div class="item-variants">{{ item.variants }}</div>
+<div class="quantity">Quantity: {{ item.quantity }}</div>
+<div style="margin-top:8px;font-size:14px;font-weight:bold;">Unit price: KES {{ item.unit_price|floatformat:2 }} &nbsp; | &nbsp; Line total: KES {{ item.line_total|floatformat:2 }}</div>
+</div>
+{% endfor %}
+
+<h2>Dispatch Details</h2>
+<div class="card">
+<strong>Customer:</strong> {{ customer_name }}<br>
+<strong>Phone:</strong> {{ customer_phone }}<br>
+<strong>Address:</strong> {{ shipping_address }}<br>
+<strong>City:</strong> {{ shipping_city }}<br>
+<strong>Country:</strong> {{ shipping_country }}<br>
+<strong>Postal code:</strong> {{ shipping_zip }}
+</div>
+
+<div class="notice">
+<strong>Dispatch instruction</strong><br><br>
+Please verify every listed variant, size, age option, length, weight, shoe size and custom preference before handing the item to the dispatch point.
+</div>
+
+<div class="button-wrap"><a href="{{ vendor_orders_url }}" class="button">Open Vendor Orders</a></div>
+{% endblock %}
