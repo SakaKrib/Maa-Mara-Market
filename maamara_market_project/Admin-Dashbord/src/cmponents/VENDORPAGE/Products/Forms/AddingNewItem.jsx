@@ -115,6 +115,8 @@ const ItemAddNew = ({ initialItem, vendorId, itemId, onSave = () => {}, vendor, 
   const [draftMessage, setDraftMessage] = useState("");
   const [draftError, setDraftError] = useState("");
   const [submissionStatus, setSubmissionStatus] = useState({ type: "", message: "" });
+  const [customSizeInput, setCustomSizeInput] = useState("");
+  const [customKidsSizeInput, setCustomKidsSizeInput] = useState("");
 
   const normalizeRelationId = (value) => {
       if (value && typeof value === "object") {
@@ -299,6 +301,43 @@ const ItemAddNew = ({ initialItem, vendorId, itemId, onSave = () => {}, vendor, 
   const selectedSizes = watch("size") || [];
   const selectedSubcategory = form.watch("subcategory") || "";
   const draftValues = watch();
+
+  const normalizedCategory = String(selectedCatSizes || "").trim().toLowerCase();
+  const normalizedSubcategory = String(selectedSubcategory || "").trim().toLowerCase();
+  const normalizedDepartment = String(form.watch("department") || selectedDepartment || "").trim().toLowerCase();
+
+  const isGenderRelevantCategory =
+    normalizedCategory.includes("men") ||
+    normalizedCategory.includes("women") ||
+    normalizedCategory.includes("kid") ||
+    normalizedCategory.includes("baby") ||
+    normalizedCategory.includes("clothing") ||
+    normalizedCategory.includes("apparel") ||
+    normalizedCategory.includes("accessor") ||
+    normalizedCategory.includes("sportswear") ||
+    normalizedSubcategory.includes("men") ||
+    normalizedSubcategory.includes("women") ||
+    normalizedSubcategory.includes("kid") ||
+    normalizedSubcategory.includes("baby") ||
+    normalizedSubcategory.includes("clothing") ||
+    normalizedSubcategory.includes("apparel") ||
+    normalizedSubcategory.includes("accessor") ||
+    normalizedSubcategory.includes("sportswear") ||
+    normalizedDepartment.includes("fashion") ||
+    normalizedDepartment.includes("sports");
+
+  const isChildrenCategory =
+    normalizedDepartment.includes("baby") ||
+    normalizedDepartment.includes("kid") ||
+    normalizedCategory.includes("kid") ||
+    normalizedCategory.includes("baby") ||
+    normalizedCategory.includes("children") ||
+    normalizedSubcategory.includes("kid") ||
+    normalizedSubcategory.includes("baby") ||
+    normalizedSubcategory.includes("children");
+
+  const showGenericGenderField =
+    isGenderRelevantCategory && normalizedCategory !== "shoes";
 
   const handleDraftRestore = useCallback(
     (draft) => {
@@ -590,6 +629,8 @@ const ItemAddNew = ({ initialItem, vendorId, itemId, onSave = () => {}, vendor, 
     shoe_type: "",
     shoe_gender: "",
     shoe_size: [],
+    gender_based: "none",
+    children_size_based_age: "none",
 
     length: { value: null, unit: "cm" },
     weight: { value: null, unit: "kg" },
@@ -1905,6 +1946,58 @@ const ItemAddNew = ({ initialItem, vendorId, itemId, onSave = () => {}, vendor, 
 
         {activeData === departmentMap && (
           <>
+                  {showGenericGenderField && (
+                    <FormField
+                      control={form.control}
+                      name="gender_based"
+                      render={({ field }) => (
+                        <FormItem className="rounded-[20px] border border-gray-300 bg-transparent p-4">
+                          <FormLabel className="text-sm leading-6 font-semibold text-foreground">Gender</FormLabel>
+                          <FormControl>
+                            <select
+                              {...field}
+                              value={field.value ?? "none"}
+                              className="w-full rounded-full border border-border bg-card px-4 py-2 text-sm text-foreground outline-none transition focus:border-[#2563eb] focus:ring-2 focus:ring-[#2563eb]/20"
+                            >
+                              <option value="none">Not specified</option>
+                              <option value="men">Men</option>
+                              <option value="women">Women</option>
+                              <option value="unisex">Unisex</option>
+                            </select>
+                          </FormControl>
+                          <FormDescription>Choose the intended gender for this person-oriented product.</FormDescription>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  )}
+
+                  {isChildrenCategory && (
+                    <FormField
+                      control={form.control}
+                      name="children_size_based_age"
+                      render={({ field }) => (
+                        <FormItem className="rounded-[20px] border border-gray-300 bg-transparent p-4">
+                          <FormLabel className="text-sm leading-6 font-semibold text-foreground">Children Sizing Basis</FormLabel>
+                          <FormControl>
+                            <select
+                              {...field}
+                              value={field.value ?? "none"}
+                              className="w-full rounded-full border border-border bg-card px-4 py-2 text-sm text-foreground outline-none transition focus:border-[#2563eb] focus:ring-2 focus:ring-[#2563eb]/20"
+                            >
+                              <option value="none">Not specified</option>
+                              <option value="age">Age based</option>
+                              <option value="size">Size based</option>
+                              <option value="age_and_size">Age &amp; size based</option>
+                            </select>
+                          </FormControl>
+                          <FormDescription>Tell customers whether the children's sizing is based on age, size, or both.</FormDescription>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  )}
+
                   {/* Size selection for clothing categories */}
                   {["Men's Clothing", "Women's Clothing"].includes(selectedCatSizes) && (
       <>
@@ -1980,6 +2073,50 @@ const ItemAddNew = ({ initialItem, vendorId, itemId, onSave = () => {}, vendor, 
                         </div>
                       );
                     })}
+
+                    {(value || [])
+                      .filter((entry) => entry?.size && !sizeOptions.includes(entry.size))
+                      .map((entry) => (
+                        <div key={`custom-size-${entry.size}`} className="flex flex-col gap-1">
+                          <div className="flex min-w-0 items-center gap-2">
+                            <Checkbox
+                              id={`custom-size-${entry.size}`}
+                              checked
+                              onCheckedChange={() => onChange(value.filter((v) => v.size !== entry.size))}
+                            />
+                            <label className="text-xs" htmlFor={`custom-size-${entry.size}`}>Custom: {entry.size}</label>
+                          </div>
+                          <Input
+                            type="number"
+                            min="1"
+                            value={entry.stock?.toString() || "1"}
+                            onChange={(e) => handleStockChange(entry.size, e.target.value)}
+                            placeholder="Stock"
+                            className="w-24 rounded-[20px] border border-border bg-card px-2 py-2 text-sm leading-6 text-foreground"
+                          />
+                        </div>
+                      ))}
+
+                    <div className="col-span-full flex flex-col gap-2 rounded-xl border border-dashed border-gray-300 p-3 sm:flex-row sm:items-center">
+                      <Input
+                        value={customSizeInput}
+                        onChange={(e) => setCustomSizeInput(e.target.value)}
+                        placeholder="Enter a custom size (e.g. 34W, XXL Tall)"
+                        className="rounded-[20px] border border-border bg-card"
+                      />
+                      <Button
+                        type="button"
+                        className="rounded-full bg-[#2563eb] text-white hover:bg-[#1d4ed8]"
+                        onClick={() => {
+                          const customSize = customSizeInput.trim();
+                          if (!customSize || selectedSizes.includes(customSize)) return;
+                          onChange([...value, { size: customSize, stock: 1 }]);
+                          setCustomSizeInput("");
+                        }}
+                      >
+                        Add custom size
+                      </Button>
+                    </div>
                   </div>
                 </FormControl>
                 <FormDescription>
@@ -2273,6 +2410,50 @@ const ItemAddNew = ({ initialItem, vendorId, itemId, onSave = () => {}, vendor, 
                         </div>
                       );
                     })}
+
+                    {(value || [])
+                      .filter((entry) => entry?.size && !kidsSizeOptions.includes(entry.size))
+                      .map((entry) => (
+                        <div key={`custom-kids-size-${entry.size}`} className="flex flex-col gap-1">
+                          <div className="flex min-w-0 items-center gap-2">
+                            <Checkbox
+                              id={`custom-kids-size-${entry.size}`}
+                              checked
+                              onCheckedChange={() => onChange(value.filter((v) => v.size !== entry.size))}
+                            />
+                            <label className="text-xs" htmlFor={`custom-kids-size-${entry.size}`}>Custom: {entry.size}</label>
+                          </div>
+                          <Input
+                            type="number"
+                            min="1"
+                            value={entry.stock?.toString() || "1"}
+                            onChange={(e) => handleStockChange(entry.size, e.target.value)}
+                            placeholder="Stock"
+                            className="w-24 rounded-[20px] border border-border bg-card px-2 py-2 text-sm leading-6 text-foreground"
+                          />
+                        </div>
+                      ))}
+
+                    <div className="col-span-full flex flex-col gap-2 rounded-xl border border-dashed border-gray-300 p-3 sm:flex-row sm:items-center">
+                      <Input
+                        value={customKidsSizeInput}
+                        onChange={(e) => setCustomKidsSizeInput(e.target.value)}
+                        placeholder="Enter a custom child size or age (e.g. 6-7Y, 130cm)"
+                        className="rounded-[20px] border border-border bg-card"
+                      />
+                      <Button
+                        type="button"
+                        className="rounded-full bg-[#2563eb] text-white hover:bg-[#1d4ed8]"
+                        onClick={() => {
+                          const customSize = customKidsSizeInput.trim();
+                          if (!customSize || selectedSizes.includes(customSize)) return;
+                          onChange([...value, { size: customSize, stock: 1 }]);
+                          setCustomKidsSizeInput("");
+                        }}
+                      >
+                        Add custom child size
+                      </Button>
+                    </div>
                   </div>
                 </FormControl>
                 <FormDescription>
