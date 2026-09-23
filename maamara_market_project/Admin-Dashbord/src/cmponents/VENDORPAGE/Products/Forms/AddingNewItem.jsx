@@ -1039,19 +1039,15 @@ const ItemAddNew = ({ initialItem, vendorId, itemId, onSave = () => {}, vendor, 
       <Form {...form}>
         <form onSubmit={handleSubmit(onSubmit)} className="px-2 py-2 text-foreground">
       {draftEnabled && (
-        <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-[#e6e6e4] bg-white px-4 py-3 text-xs">
+        <div className="mb-4 flex min-h-[92px] flex-wrap items-center justify-between gap-3 rounded-2xl border border-[#e6e6e4] bg-white px-4 py-3 text-xs">
           <div>
             <p className="font-semibold text-gray-900">
               {draftRestoring ? "Restoring saved draft…" : draftSaving ? "Saving draft…" : draftMessage || "Draft autosave is on"}
             </p>
-            {lastSavedAt && !draftSaving && (
-              <p className="mt-1 text-gray-500">
-                Last saved {new Date(lastSavedAt).toLocaleString()}
-              </p>
-            )}
-            {draftId && (
-              <p className="mt-1 text-gray-400">Draft is private to the posting account.</p>
-            )}
+            <p className="mt-1 min-h-[1rem] text-gray-500">
+              {lastSavedAt ? `Last saved ${new Date(lastSavedAt).toLocaleString()}` : "\u00A0"}
+            </p>
+            <p className="mt-1 text-gray-400">Draft is private to the posting account.</p>
           </div>
           {draftError && (
             <p className="rounded-full border border-red-200 bg-red-50 px-3 py-1.5 font-semibold text-red-700">
