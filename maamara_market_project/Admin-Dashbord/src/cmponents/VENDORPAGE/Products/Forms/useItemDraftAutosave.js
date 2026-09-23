@@ -18,6 +18,35 @@ const stripFiles = (value) => {
 const makeUploadKey = (slotKey) =>
   "draft_" + slotKey.replace(/[^a-zA-Z0-9_-]/g, "_");
 
+const mediaValueSignature = (value) => {
+  if (isFile(value)) {
+    return {
+      type: "file",
+      name: value.name,
+      size: value.size,
+      mime: value.type,
+      lastModified: value.lastModified,
+    };
+  }
+
+  return {
+    type: "stored",
+    value: value || null,
+  };
+};
+
+const makeDraftFingerprint = (values, media = []) =>
+  JSON.stringify({
+    data: stripFiles(values),
+    media: media.map((asset, index) => ({
+      slotKey: asset?.slotKey || "",
+      kind: asset?.kind || "",
+      variantKey: asset?.variantKey || "",
+      sortOrder: asset?.sortOrder ?? index,
+      value: mediaValueSignature(asset?.value),
+    })),
+  });
+
 export default function useItemDraftAutosave({
   enabled = true,
   values,
@@ -36,6 +65,8 @@ export default function useItemDraftAutosave({
   const timerRef = useRef(null);
   const savingRef = useRef(false);
   const knownSlotsRef = useRef(new Set());
+  const lastSavedFingerprintRef = useRef(null);
+  const lastSavedDraftRef = useRef(null);
   const valuesRef = useRef(values);
   const mediaRef = useRef(media);
   valuesRef.current = values;
@@ -87,6 +118,11 @@ export default function useItemDraftAutosave({
   const save = useCallback(
     async (nextValues = valuesRef.current, nextMedia = mediaRef.current) => {
       if (!enabled || !restoredRef.current) return null;
+
+      const fingerprint = makeDraftFingerprint(nextValues, nextMedia);
+      if (fingerprint === lastSavedFingerprintRef.current) {
+        return lastSavedDraftRef.current;
+      }
 
       if (savingRef.current) {
         await new Promise((resolve) => {
@@ -153,6 +189,8 @@ export default function useItemDraftAutosave({
         knownSlotsRef.current = new Set(
           (saved?.media || []).map((asset) => asset.slot_key)
         );
+        lastSavedFingerprintRef.current = fingerprint;
+        lastSavedDraftRef.current = saved;
         setLastSavedAt(saved?.updated_at || new Date().toISOString());
         setError(null);
         onSaved?.(saved);
@@ -175,6 +213,12 @@ export default function useItemDraftAutosave({
   useEffect(() => {
     if (!enabled || !restoredRef.current) return undefined;
 
+    const fingerprint = makeDraftFingerprint(values, media);
+    if (fingerprint === lastSavedFingerprintRef.current) {
+      window.clearTimeout(timerRef.current);
+      return undefined;
+    }
+
     window.clearTimeout(timerRef.current);
     timerRef.current = window.setTimeout(() => {
       save(values, media);
@@ -191,6 +235,8 @@ export default function useItemDraftAutosave({
     });
     setCurrentDraftId(null);
     knownSlotsRef.current.clear();
+    lastSavedFingerprintRef.current = null;
+    lastSavedDraftRef.current = null;
   }, [currentDraftId]);
 
   return {
