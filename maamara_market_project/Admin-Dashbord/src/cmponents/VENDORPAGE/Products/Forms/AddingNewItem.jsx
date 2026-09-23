@@ -1150,8 +1150,8 @@ const ItemAddNew = ({ initialItem, vendorId, itemId, onSave = () => {}, vendor, 
               onClick={() => setSelectedSection("organic")}
               className={`rounded-[20px] border px-4 py-2 text-sm font-medium transition
                 ${selectedSection === "organic"
-                  ? "border-green-800 bg-green-800 text-white"
-                  : "border-border bg-card text-muted-foreground hover:border-green-800 hover:text-foreground"}
+                  ? "border-green-600 bg-green-800 text-white"
+                  : "border-border bg-card text-muted-foreground hover:border-green-600 hover:text-foreground"}
               `}
             >
               Organic
@@ -1997,3 +1997,842 @@ const ItemAddNew = ({ initialItem, vendorId, itemId, onSave = () => {}, vendor, 
           render={({ field }) => {
             const { value = [], onChange } = field;
             const gender = form.watch("shoe_gender");
+
+            const sizeOptions =
+              gender === "Children" ? kidsSizeOptions : adultSizes;
+
+            const handleCheckboxChange = (checked, size) => {
+              if (checked) {
+                onChange([...value, size]);
+              } else {
+                onChange(value.filter((v) => v !== size));
+              }
+            };
+
+            return (
+              <FormItem>
+                <FormLabel className="text-sm leading-6 font-semibold text-foreground">Select Sizes</FormLabel>
+                <FormControl>
+                  <div className="grid grid-cols-3 gap-4 my-2">
+                    {sizeOptions.map((size) => (
+                      <div key={size} className="flex items-center gap-2">
+                        <Checkbox
+                          id={`size-${size}`}
+                          checked={value.includes(size)}
+                          onCheckedChange={(checked) =>
+                            handleCheckboxChange(!!checked, size)
+                          }
+                        />
+                        <label htmlFor={`size-${size}`}>{size}</label>
+                      </div>
+                    ))}
+                  </div>
+                </FormControl>
+                <FormDescription>
+                  Select all sizes this shoe is available in.
+                </FormDescription>
+                <FormMessage />
+              </FormItem>
+            );
+          }}
+        />
+      </>
+    )}
+
+            {/* Kids sizing */}
+            {["Kids & Baby Wear"].includes(selectedCatChildSize) && (
+      <>
+        {/* Kids Sizes & Stock */}
+        <FormField
+          control={form.control}
+          name="kids_sizes"
+          render={({ field }) => {
+            const { value = [], onChange } = field;
+
+            const handleCheckboxChange = (checked, size) => {
+              if (checked) {
+                onChange([...value, { size, stock: 1 }]); // default stock = 1
+              } else {
+                onChange(value.filter((v) => v.size !== size));
+              }
+            };
+
+            const handleStockChange = (size, stock) => {
+              onChange(
+                value.map((v) =>
+                  v.size === size ? { ...v, stock: parseInt(stock) || 1 } : v
+                )
+              );
+            };
+
+            const selectedSizes = value.map((v) => v.size);
+
+            return (
+              <FormItem>
+                <FormLabel className="text-sm leading-6 font-semibold text-foreground">Kids Sizes & Stock</FormLabel>
+                <FormControl>
+                  <div
+                    className="grid grid-cols-[repeat(auto-fit,minmax(140px,1fr))] gap-3 my-2"
+                  >
+                    {kidsSizeOptions.map((size) => {
+                      const selected = selectedSizes.includes(size);
+                      const stockValue =
+                        value.find((v) => v.size === size)?.stock?.toString() || "1";
+
+                      return (
+                        <div key={size} className="flex flex-col gap-1">
+                          <div className="flex min-w-0 items-center gap-2">
+                            <Checkbox
+                              id={`size-${size}`}
+                              checked={selected}
+                              onCheckedChange={(checked) =>
+                                handleCheckboxChange(checked, size)
+                              }
+                            />
+                            <label className="text-xs" htmlFor={`size-${size}`}>
+                              {size}
+                            </label>
+                          </div>
+                          {selected && (
+                            <Input
+                              type="number"
+                              min="1"
+                              value={stockValue ?? "0"}
+                              onChange={(e) =>
+                                handleStockChange(size, e.target.value)
+                              }
+                              placeholder="Stock"
+                              className="w-24 rounded-[20px] border border-border bg-card px-2 py-2 text-sm leading-6 text-foreground outline-none transition focus:border-[#2563eb] focus:ring-2 focus:ring-[#2563eb]/20"
+                            />
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </FormControl>
+                <FormDescription>
+                  Select each age or size group you carry and enter its available stock quantity.
+                </FormDescription>
+                <FormMessage />
+              </FormItem>
+            );
+          }}
+        />
+
+        {/* Length field (optional) */}
+        <FormField
+          control={form.control}
+          name="length"
+          render={({ field }) => {
+            const { value = {}, onChange } = field;
+
+            const handleValueChange = (val) => {
+              onChange({ ...value, value: parseFloat(val) || 0 });
+            };
+
+            const handleUnitChange = (unit) => {
+              onChange({ ...value, unit });
+            };
+
+            return (
+              <FormItem>
+                <FormLabel className="text-sm leading-6 font-semibold text-foreground">Length (Optional)</FormLabel>
+                <FormControl>
+                  <div className="flex gap-3 items-center my-2">
+                    <Input
+                      type="number"
+                      min="0"
+                      step="1"
+                      value={value?.value ?? ""}
+                      onChange={(e) => handleValueChange(e.target.value)}
+                      placeholder="Enter length"
+                      className="w-full rounded-[20px] border border-border bg-card px-2 py-2 text-sm leading-6 text-foreground outline-none transition focus:border-[#2563eb] focus:ring-2 focus:ring-[#2563eb]/20 md:w-32"
+                    />
+                    <select
+                      className="w-full rounded-[20px] border border-border bg-card px-2 py-2 text-sm leading-6 text-foreground outline-none transition focus:border-[#2563eb] focus:ring-2 focus:ring-[#2563eb]/20"
+                      value={value?.unit ?? "cm"}
+                      onChange={(e) => handleUnitChange(e.target.value)}
+                    >
+                      <option value="cm">Centimeters</option>
+                      <option value="m">Meters</option>
+                      <option value="in">Inches</option>
+                    </select>
+                  </div>
+                </FormControl>
+                <FormDescription>
+                  Optional. Enter the product's length and choose a unit of measurement.
+                </FormDescription>
+                <FormMessage />
+              </FormItem>
+            );
+          }}
+        />
+      </>
+    )}
+    </>
+    )}
+
+            {/* Organic-only extra fields: manufactured/expiry dates, roast, weight */}
+    {activeData === organicDepartmentMap && showExtraFields && (
+      <>
+
+      <FormField
+      control={form.control}
+      name="is_organic"
+      render={({ field }) => (
+        <FormItem className="flex flex-row items-center space-x-3 rounded p-2 border">
+          <FormControl>
+            <input
+              type="checkbox"
+              checked={field.value ?? false}
+              onChange={(e) => field.onChange(e.target.checked)}
+              className="h-4 w-4 border-0 shadow-none focus-visible:outline-none focus-visible:ring-0"
+            />
+          </FormControl>
+          <FormLabel className="text-sm leading-6 font-semibold text-foreground">Is Organic?</FormLabel>
+          <FormDescription>
+            Check if is organic food.
+          </FormDescription>
+        </FormItem>
+      )}
+    />
+
+    <FormField
+      control={form.control}
+      name="is_fresh_food"
+      render={({ field }) => (
+        <FormItem className="flex flex-row items-center space-x-3 rounded p-2 border">
+          <FormControl>
+            <input
+              type="checkbox"
+              checked={field.value ?? false}
+              onChange={(e) => field.onChange(e.target.checked)}
+              className="h-4 w-4 border-0 shadow-none focus-visible:outline-none focus-visible:ring-0"
+            />
+          </FormControl>
+          <FormLabel className="text-sm leading-6 font-semibold text-foreground">Is Fresh Food?</FormLabel>
+          <FormDescription>
+            Check if is fresh food.
+          </FormDescription>
+        </FormItem>
+      )}
+    />
+
+      {/* Coffee-specific fields */}
+      {selectedSubcategory === "Coffee" && (
+      <>
+        {/* Roast Type */}
+        <FormField
+          control={form.control}
+          name="roast_type"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel className="text-sm leading-6 font-semibold text-foreground">Roast Type</FormLabel>
+              <FormControl>
+                <select
+                  {...field}
+                  value={field.value ?? ""}
+                  onChange={(e) => field.onChange(e.target.value)}
+                  className="border rounded-full p-2 w-full"
+                >
+                  <option value="">Select Roast Type</option>
+                  <option value="light">Light Roast</option>
+                  <option value="medium">Medium Roast</option>
+                  <option value="dark">Dark Roast</option>
+                  <option value="espresso">Espresso Roast</option>
+                  <option value="decaf">Decaf</option>
+                </select>
+              </FormControl>
+              <FormDescription>
+                Choose the roast type for coffee products.
+              </FormDescription>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        {/* Coffee State */}
+        <FormField
+          control={form.control}
+          name="coffee_state"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel className="text-lg">Coffee State</FormLabel>
+              <FormControl>
+                <select
+                  {...field}
+                  value={field.value ?? ""}
+                  onChange={(e) => field.onChange(e.target.value)}
+                  className="border rounded-full p-2 w-full"
+                >
+                  <option value="">Select Coffee State</option>
+                  <option value="whole_beans">Whole Beans</option>
+                  <option value="ground_coarse">Ground – Coarse</option>
+                  <option value="ground_medium">Ground – Medium</option>
+                  <option value="ground_fine">Ground – Fine</option>
+                  <option value="instant">Instant Coffee</option>
+                  <option value="capsules">Capsules/Pods</option>
+                </select>
+              </FormControl>
+              <FormDescription>
+                Choose whether it's whole beans or ground, and what grind size.
+              </FormDescription>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+      </>
+    )}
+
+      <FormField
+        control={form.control}
+        name="weight"
+        render={({ field }) => {
+          const { value = {}, onChange } = field;
+
+          const handleValueChange = (val) => {
+            onChange({ ...value, value: parseFloat(val) || 0 });
+          };
+
+          const handleUnitChange = (unit) => {
+            onChange({ ...value, unit });
+          };
+
+          return (
+            <FormItem>
+              <FormLabel className="text-lg">Weight</FormLabel>
+              <FormControl>
+                <div className="flex gap-3 items-center my-2">
+                  <Input
+                  type="number"
+                  min={1}
+                  step={1}
+                  value={value?.value ?? ""}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    handleValueChange(val === "" ? null : parseInt(val, 10));
+                  }}
+                  placeholder="Enter weight"
+                  className="w-32"
+                />
+
+                  <select
+                    className="border rounded-full p-2"
+                    value={value?.unit ?? "g"}
+                    onChange={(e) => handleUnitChange(e.target.value)}
+                  >
+                    <option value="g">Grams</option>
+                    <option value="kg">Kilograms</option>
+                    <option value="ml">Milliliters</option>
+                    <option value="l">Liters</option>
+                    <option value="oz">Ounces</option>
+                  </select>
+                </div>
+              </FormControl>
+              <FormDescription>
+                Enter the weight of the product.
+              </FormDescription>
+              <FormMessage />
+            </FormItem>
+          );
+        }}
+      />
+
+        {/* Manufactured Date */}
+        <FormField
+          control={form.control}
+          name="manufactured_date"
+          rules={{
+            required: "Manufactured date is required",
+          }}
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel className="text-lg">Manufactured Date</FormLabel>
+              <FormControl>
+              <Input
+              type="date"
+              {...field}
+              value={field.value ?? ""}
+              className="border rounded p-2"
+            />
+
+              </FormControl>
+              <FormDescription>
+                Select the date this product was manufactured or produced.
+              </FormDescription>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        {/* Expiry Date */}
+        <FormField
+          control={form.control}
+          name="expiry_date"
+          rules={{
+            required: "Expiry date is required",
+            validate: (value) => {
+              const manufactured = form.getValues("manufactured_date");
+              if (!manufactured) return true; // manufactured not set yet → skip
+              return (
+                new Date(value) > new Date(manufactured) ||
+                "Expiry date must be later than manufactured date"
+              );
+            },
+          }}
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel className="text-lg" >Expiry Date</FormLabel>
+              <FormControl>
+                <Input
+                  type="date"
+                  {...field}
+                  className="border rounded p-2"
+                />
+              </FormControl>
+              <FormDescription>
+                Select the date this product expires. Must be later than the manufactured date.
+              </FormDescription>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+      </>
+    )}
+
+            {/* In-offer checkbox */}
+            <FormField
+              control={form.control}
+              name="in_offer"
+              render={({ field }) => (
+                <FormItem className="rounded-[20px] border border-border p-4 w-full" >
+                  <div className="flex items-center gap-2">
+                    <FormControl className="space-x-2">
+                    <Checkbox
+                      checked={field.value}
+                      onCheckedChange={field.onChange}
+                      className="border-gray-300 bg-transparent data-[state=checked]:!border-gray-500 data-[state=checked]:!bg-gray-500"
+                    />
+                  </FormControl>
+                  <FormLabel className="text-base mt-2">Mark item as on Offer</FormLabel>
+                  </div>
+                  <FormDescription>
+                Enable this to run a limited-time discount on this item.
+              </FormDescription>
+                </FormItem>
+              )}
+            />
+
+            {/* Offer fields (conditionally shown if in_offer is true) */}
+            {form.watch("in_offer") && (
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-3 mt-4">
+                {/* Discount percentage */}
+                <FormField
+                  control={form.control}
+                  name="offer.discount_percentage"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Discount Percentage (%)</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="number"
+                          min="1"
+                          max="100"
+                          placeholder="e.g. 20"
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormDescription>
+                        Enter the percentage off the regular price while the offer runs.
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                {/* Start date */}
+                <FormField
+                  control={form.control}
+                  name="offer.start_date"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Start Date</FormLabel>
+                      <FormControl>
+                        <Input type="date" {...field} />
+                      </FormControl>
+                      <FormDescription>
+                        Select the date the offer begins.
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                {/* End date */}
+                <FormField
+                  control={form.control}
+                  name="offer.end_date"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>End Date</FormLabel>
+                      <FormControl>
+                        <Input type="date" {...field} />
+                      </FormControl>
+                      <FormDescription>
+                        Select the date the offer ends.
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+            )}
+
+            {/* Color variants (inorganic items only) */}
+        {activeData === departmentMap && (
+            <FormField
+          control={form.control}
+          name="color_variants"
+          render={({ field }) => {
+            const { value = [], onChange } = field;
+
+            const handleColorToggle = (color) => {
+              const exists = value.find((v) => v.color === color);
+              if (exists) {
+                onChange(value.filter((v) => v.color !== color));
+              } else {
+                onChange([...value, { color, color_image: null, sizes: [] }]);
+              }
+            };
+
+            const handleImageUpload = (color, file) => {
+              if (!validateImageFile(file)) return;
+
+              const currentVariant = value.find((variant) => variant.color === color);
+              const replacingExisting = Boolean(currentVariant?.color_image);
+              if (!replacingExisting && currentImageCount >= MAX_ITEM_IMAGES) {
+                setDraftError("You can add up to 10 product images in total.");
+                return;
+              }
+
+              onChange(
+                value.map((v) =>
+                  v.color === color ? { ...v, color_image: file } : v
+                )
+              );
+              setDraftError("");
+            };
+
+            const handleSizeToggle = (color, size) => {
+              onChange(
+                value.map((v) =>
+                  v.color === color
+                    ? {
+                        ...v,
+                        sizes: v.sizes.some((s) => s.size === size)
+                          ? v.sizes.filter((s) => s.size !== size)
+                          : [...v.sizes, { size, quantity_in_stock: 0 }],
+                      }
+                    : v
+                )
+              );
+            };
+
+            const handleStockChange = (color, size, stock) => {
+              onChange(
+                value.map((v) =>
+                  v.color === color
+                    ? {
+                        ...v,
+                        sizes: v.sizes.map((s) =>
+                          s.size === size
+                            ? { ...s, quantity_in_stock: parseInt(stock) || 0 }
+                            : s
+                        ),
+                      }
+                    : v
+                )
+              );
+            };
+
+            const selectedColors = value.map((v) => v.color);
+
+            return (
+              <FormItem className='rounded-[20px] p-4 border border-gray-300 bg-transparent'>
+                <FormLabel className="text-lg">Color Variants</FormLabel>
+                <FormControl>
+                  <div className="space-y-6">
+                    {/* Color selection */}
+                    <div
+                      className="grid grid-cols-3 xxs:grid-cols-2 gap-5 my-2"
+                      style={{
+                        borderRadius: "10px",
+                        padding: ".5em .5em",
+                      }}
+                    >
+                      {colorOptions.map((color) => {
+                        const checkboxId = `color-${color}`;
+                        return (
+                          <div key={color} className="flex items-center gap-2">
+                            <div>
+                              <Checkbox
+                                id={checkboxId}
+                                checked={selectedColors.includes(color)}
+                                onCheckedChange={() => handleColorToggle(color)}
+                              />
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <div>
+                                <span
+                                  className="inline-block w-3 h-3 rounded-full border"
+                                  style={{ backgroundColor: colorMap[color] || "#ccc" }}
+                                />
+                              </div>
+                            <div className='-mt-1'>
+                              <label htmlFor={checkboxId} className="text-xs cursor-pointer">
+                              {color}
+                            </label>
+                            </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+
+                    {/* Color details */}
+                    {value.map((variant) => (
+                      <div key={variant.color} className="space-y-4">
+                        <div className="flex items-center gap-2">
+                          <span
+                            className="inline-block w-3 h-3 rounded-full border border-gray-300"
+                            style={{ backgroundColor: colorMap[variant.color] || "#ccc" }}
+                          />
+                          <span className="text-sm font-medium">{variant.color}</span>
+                          <input
+                            type="file"
+                            accept="image/*"
+                            onChange={(e) =>
+                              handleImageUpload(variant.color, e.target.files[0])
+                            }
+                            style={{
+                              width: "200px",
+                              padding: ".5em 1em",
+                              borderRadius: "20px",
+                            }}
+                          />
+                        </div>
+
+                        {/* Sizes + Stock */}
+                        <div className="grid grid-cols-2 gap-4">
+                          {sizeOptions.map((size) => {
+                            const selected = variant.sizes.find((s) => s.size === size);
+                            const sizeId = `size-${variant.color}-${size}`;
+                            return (
+                              <div key={size} className="flex items-center gap-2">
+                                <Checkbox
+                                  id={sizeId}
+                                  checked={!!selected}
+                                  onCheckedChange={() =>
+                                    handleSizeToggle(variant.color, size)
+                                  }
+                                />
+                                <label htmlFor={sizeId} className="text-xs ">
+                                  {size}
+                                </label>
+                                {selected && (
+                                  <Input
+                                    type="number"
+                                    min="1"
+                                    placeholder="Stock"
+                                    className="w-20"
+                                    value={selected?.quantity_in_stock ?? ""}
+                                    onChange={(e) =>
+                                      handleStockChange(
+                                        variant.color,
+                                        size,
+                                        e.target.value
+                                      )
+                                    }
+                                  />
+                                )}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </FormControl>
+                <FormDescription>
+                Select each color you carry, upload an image for it, and set stock per size.
+              </FormDescription>
+
+                {/* Optional error display */}
+                {form.formState.errors.color_variants?.message && (
+                  <p className="text-red-500 text-sm">
+                    {form.formState.errors.color_variants.message}
+                  </p>
+                )}
+
+                <FormMessage />
+              </FormItem>
+            );
+          }}
+        />
+        )}
+
+ {/* Shipping dimensions */}
+ <Controller
+   name="shipping_dimension_data.length"
+   control={form.control}
+   render={({ field }) => (
+     <FormItem>
+       <FormLabel>Length</FormLabel>
+       <FormControl>
+         <Input type="number" min="0" step="0.01" placeholder="Length" {...field} />
+       </FormControl>
+       <FormDescription>Enter the packaged item's length for shipping calculations.</FormDescription>
+       <FormMessage />
+     </FormItem>
+   )}
+ />
+
+ <Controller
+   name="shipping_dimension_data.width"
+   control={form.control}
+   render={({ field }) => (
+     <FormItem>
+       <FormLabel>Width</FormLabel>
+       <FormControl>
+         <Input type="number" min="0" step="0.01" placeholder="Width" {...field} />
+       </FormControl>
+       <FormDescription>Enter the packaged item's width for shipping calculations.</FormDescription>
+       <FormMessage />
+     </FormItem>
+   )}
+ />
+
+ <Controller
+   name="shipping_dimension_data.height"
+   control={form.control}
+   render={({ field }) => (
+     <FormItem>
+       <FormLabel>Height</FormLabel>
+       <FormControl>
+         <Input type="number" min="0" step="0.01" placeholder="Height" {...field} />
+       </FormControl>
+       <FormDescription>Enter the packaged item's height for shipping calculations.</FormDescription>
+       <FormMessage />
+     </FormItem>
+   )}
+ />
+
+ <Controller
+   name="shipping_dimension_data.unit"
+   control={form.control}
+   render={({ field }) => (
+     <FormItem>
+       <FormLabel>Dimension Unit</FormLabel>
+       <FormControl>
+         <select
+           {...field}
+           className="w-full appearance-none rounded-full border border-border bg-transparent px-4 py-2 text-sm text-card-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
+         >
+           <option value="cm">Centimeters</option>
+           <option value="m">Meters</option>
+           <option value="in">Inches</option>
+           <option value="ft">Feet</option>
+         </select>
+       </FormControl>
+       <FormDescription>Choose the unit used for the length, width, and height above.</FormDescription>
+       <FormMessage />
+     </FormItem>
+   )}
+ />
+
+ <Controller
+   name="shipping_dimension_data.weight"
+   control={form.control}
+   render={({ field }) => (
+     <FormItem>
+       <FormLabel>Weight</FormLabel>
+       <FormControl>
+         <Input type="number" min="0" step="0.01" placeholder="Weight" {...field} />
+       </FormControl>
+       <FormDescription>Enter the packaged item's weight for shipping calculations.</FormDescription>
+       <FormMessage />
+     </FormItem>
+   )}
+ />
+
+ <Controller
+   name="shipping_dimension_data.weight_unit"
+   control={form.control}
+   render={({ field }) => (
+     <FormItem>
+       <FormLabel>Weight Unit</FormLabel>
+       <FormControl>
+         <select
+           {...field}
+           className="w-full appearance-none rounded-full border border-border bg-transparent px-4 py-2 text-sm text-card-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
+         >
+           <option value="g">Grams</option>
+           <option value="kg">Kilograms</option>
+           <option value="oz">Ounces</option>
+           <option value="lb">Pounds</option>
+         </select>
+       </FormControl>
+       <FormDescription>Choose the unit used for the shipping weight above.</FormDescription>
+       <FormMessage />
+     </FormItem>
+   )}
+ />
+
+ <Controller
+     name="returnable"
+     control={form.control}
+     defaultValue={true}
+     render={({ field }) => (
+       <FormControlLabel
+         control={
+           <Switch
+             checked={!!field.value}
+             onChange={(e) => field.onChange(e.target.checked)}
+             sx={{
+               "& .MuiSwitch-switchBase": {
+                 color: "#9ca3af",
+               },
+               "& .MuiSwitch-switchBase.Mui-checked": {
+                 color: "#d1d5db",
+               },
+               "& .MuiSwitch-track": {
+                 backgroundColor: "#d1d5db",
+                 opacity: 1,
+               },
+               "& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track": {
+                 backgroundColor: "#2563eb",
+                 opacity: 1,
+               },
+             }}
+           />
+         }
+         label="Returnable"
+       />
+     )}
+   />
+
+            <div className="mt-10 mb-10 w-full">
+              <Button
+                type="submit"
+                className="w-full rounded-full bg-[#2563eb] px-4 py-3 text-center text-white hover:bg-[#1d4ed8]"
+              >
+                {isApprovalMode ? "Save & Approve" : "Save Changes"}
+              </Button>
+            </div>
+            </div>
+          </form>
+        </Form>
+      );
+    };
+
+    export default ItemAddNew;
