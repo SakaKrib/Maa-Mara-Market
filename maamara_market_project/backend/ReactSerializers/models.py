@@ -525,7 +525,11 @@ class Offer(models.Model):
 
     def clean(self):
         if self.start_date > self.end_date:
-            raise ValidationError("start_date must be before or equal to end_date")
+            raise ValidationError("start_date must be before or equal to end date")
+        if self.discount_percentage is None or self.discount_percentage <= 0:
+            raise ValidationError({
+                "discount_percentage": "An offer must have a discount greater than 0%."
+            })
 
     def calculate_final_price(self):
         """Calculate the offer price from the item's normal price and percentage discount."""
