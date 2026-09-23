@@ -9,7 +9,8 @@ import re
 
 from ReactSerializers.models import (
     AgeVariant, Brand, Category, ColorVariant, Department, Item, Length,
-    Offer, Section, ShippingDimension, Shoe, SizeStock, SubCategory, Weight,
+    Offer, Occasion, Section, ShippingDimension, Shoe, SizeStock, SubCategory, Weight,
+    ItemAdditionalImage,
 )
 from shop.models import Reaction, Review
 from .models import ActivityLog, CalendarEvent, Notification, Profile
@@ -199,6 +200,8 @@ class SizeStockSerializer(serializers.ModelSerializer):
 
 class ColorVariantSerializer(serializers.ModelSerializer):
     image = serializers.ImageField(use_url=True)
+    additional_images = ItemAdditionalImageSerializer(many=True, read_only=True)
+    occasions = serializers.SerializerMethodField()
     sizes = SizeStockSerializer(many=True, read_only=True)
 
     class Meta:
@@ -246,6 +249,21 @@ class ReviewSerializer(serializers.ModelSerializer):
         model = Review
         fields = ['id', 'user', 'visitor_id', 'rating', 'review_text', 'created_at', 'reactions']        
 
+class ItemAdditionalImageSerializer(serializers.ModelSerializer):
+    image = serializers.ImageField(use_url=True)
+
+    class Meta:
+        model = ItemAdditionalImage
+        fields = ["id", "image", "created_at"]
+        read_only_fields = ["id", "created_at"]
+
+
+class OccasionSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Occasion
+        fields = ["key", "name", "description"]
+
+
 class ItemSerializer(serializers.ModelSerializer):
     section = serializers.StringRelatedField()
     department = serializers.StringRelatedField()
@@ -270,6 +288,10 @@ class ItemSerializer(serializers.ModelSerializer):
     weight = WeightSerializer(read_only=True)
     length = LengthSerializer(read_only=True)
     shoe_inputs = ShoeSerializer(source="shoe_input", many=True, read_only=True)
+    # Preserve the relation names consumed by the customer product page while
+    # retaining the existing age_variants/shoe_inputs response aliases.
+    kids_sizes = AgeVariantSerializer(source="kids_sizes", many=True, read_only=True)
+    shoe_input = ShoeSerializer(source="shoe_input", many=True, read_only=True)
 
     class Meta:
         model = Item
@@ -278,6 +300,7 @@ class ItemSerializer(serializers.ModelSerializer):
             "name",
             "description",
             "image",
+            "additional_images",
             "price",
             "discount_price",
             "in_stock",
@@ -290,6 +313,7 @@ class ItemSerializer(serializers.ModelSerializer):
             "category",
             "subcategory",
             "brand",
+            "occasions",
             "vendor",
             "item_attribute",
             "gender_based",
@@ -319,11 +343,16 @@ class ItemSerializer(serializers.ModelSerializer):
             "weight",
             "length",
             "shoe_inputs",
+            "kids_sizes",
+            "shoe_input",
             "offer",
             "average_rating",
             "reviews",
             "review_count",
         ]
+
+    def get_occasions(self, obj):
+        return [occasion.name for occasion in obj.occasions.all()]
 
     def get_size_only_icon(self, obj):
         return SizeStockSerializer(obj.size_only_icon.all(), many=True).data
