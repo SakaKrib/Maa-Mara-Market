@@ -1138,7 +1138,11 @@ const ItemAddNew = ({ initialItem, vendorId, itemId, onSave = () => {}, vendor, 
           appendValue("coffee_state", formattedItem.coffee_state);
           appendValue("item_attribute", formattedItem.item_attribute);
           appendValue("brand", formattedItem.brand);
-          appendValue("occasions", formattedItem.occasions);
+          (Array.isArray(formattedItem.occasions) ? formattedItem.occasions : []).forEach((occasion) => {
+            if (occasion !== null && occasion !== undefined && occasion !== "") {
+              editFormData.append("occasions", String(occasion));
+            }
+          });
           appendValue("gender_based", formattedItem.gender_based);
           appendValue("children_size_based_age", formattedItem.children_size_based_age);
           appendValue("shoe_input", formattedItem.shoe_input);
@@ -1187,7 +1191,7 @@ const ItemAddNew = ({ initialItem, vendorId, itemId, onSave = () => {}, vendor, 
           const response = await api.put(
             `/api/item-post/update/${itemId}/`,
             editFormData,
-            { withCredentials: true, headers: { "Content-Type": "multipart/form-data" } }
+            { withCredentials: true }
           );
 
           if (response.status === 200 || response.status === 201) {
