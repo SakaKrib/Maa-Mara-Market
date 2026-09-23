@@ -654,19 +654,39 @@ def update_cart_quantity(request, pk):
     if action not in ["increase", "decrease"]:
         return Response({"success": False, "message": sanitize("Invalid action")}, status=400)
 
-    # 🔹 Determine available stock
-    available_stock = 0
-    if selected_size:
-        size_stock_obj = get_object_or_404(SizeStock.objects.select_for_update(), pk=selected_size)
+    # 🔹 Determine available stock from the exact cart line.
+    # The cart-item ID is authoritative when supplied; this prevents a
+    # variant/size line from falling back to the base item's stock.
+    if cart_item.size_stock_id:
+        size_stock_obj = get_object_or_404(
+            SizeStock.objects.select_for_update(),
+            pk=cart_item.size_stock_id,
+        )
         available_stock = size_stock_obj.quantity_in_stock
-    elif selected_color:
-        variant_obj = get_object_or_404(ColorVariant.objects.select_for_update(), pk=selected_color)
-        available_stock = variant_obj.sizes.select_for_update().aggregate(total=models.Sum('quantity_in_stock'))['total'] or 0
+    elif cart_item.age_variant_id:
+        age_variant_obj = get_object_or_404(
+            AgeVariant.objects.select_for_update(),
+            pk=cart_item.age_variant_id,
+        )
+        available_stock = age_variant_obj.quantity_in_stock
+    elif cart_item.color_variant_id:
+        variant_obj = get_object_or_404(
+            ColorVariant.objects.select_for_update(),
+            pk=cart_item.color_variant_id,
+        )
+        available_stock = (
+            variant_obj.sizes.select_for_update()
+            .aggregate(total=models.Sum("quantity_in_stock"))["total"]
+            or 0
+        )
     else:
         # Base item without variations
-        available_stock = SizeStock.objects.filter(item=item, variant__isnull=True).aggregate(
-            total=models.Sum('quantity_in_stock')
-        )['total'] or item.in_stock or 0
+        available_stock = (
+            SizeStock.objects.filter(item=item, variant__isnull=True)
+            .aggregate(total=models.Sum("quantity_in_stock"))["total"]
+            or item.in_stock
+            or 0
+        )
 
     # 🔹 Perform quantity update
     if action == "increase":
