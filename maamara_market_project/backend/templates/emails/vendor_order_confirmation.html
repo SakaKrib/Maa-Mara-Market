@@ -7,6 +7,7 @@
 <tr><td class="meta-label">Order ID</td><td class="meta-value">#{{ order_id }}</td></tr>
 <tr><td class="meta-label">Date</td><td class="meta-value">{{ order_date|date:"M d, Y • H:i" }}</td></tr>
 <tr><td class="meta-label">Payment</td><td class="meta-value">{{ payment_method }}</td></tr>
+<tr><td class="meta-label">Dispatch Provider</td><td class="meta-value">{{ shipping_provider|default:"—" }}</td></tr>
 <tr><td class="meta-label">Dispatch Service</td><td class="meta-value">{{ shipping_service|default:"—" }}</td></tr>
 </table>
 
@@ -20,6 +21,7 @@
 <div style="margin-top:8px;font-size:14px;font-weight:bold;">Unit price: KES {{ item.unit_price|floatformat:2 }} &nbsp; | &nbsp; Line total: KES {{ item.line_total|floatformat:2 }}</div>
 </div>
 {% endfor %}
+<div class="summary"><div class="summary-row total"><span>Your Items Total</span><span>KES {{ vendor_total|floatformat:2 }}</span></div></div>
 
 <h2>Dispatch Details</h2>
 <div class="card">
