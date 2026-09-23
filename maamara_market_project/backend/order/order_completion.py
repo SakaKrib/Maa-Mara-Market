@@ -154,6 +154,13 @@ def complete_paid_order(order, payment, *, transaction_id=None):
     locked_order.payment = locked_payment
     locked_order.save(update_fields=["status", "payment"])
 
+    # Customer-facing persistence happens only after payment has been
+    # positively reconciled. The checkout endpoint may stage a pending
+    # billing address/order, but this is the point at which the Customer
+    # record is finalized/updated.
+    from .paypalApis import create_or_update_customer_from_order
+    create_or_update_customer_from_order(locked_order)
+
     create_customer_invoice(
         locked_order,
         locked_payment,
