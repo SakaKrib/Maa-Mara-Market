@@ -355,9 +355,21 @@ class VendorItemViewSet(viewsets.ModelViewSet):
         # using the existing price-change request/approval workflow; admins
         # are explicitly allowed to change it from the admin item editor.
         if "price" in self.request.data and not self.request.user.is_staff:
-            raise ValidationError({
-                "price": "Direct price changes require administrator approval."
-            })
+            # Vendors may submit the existing price while editing an item.
+            # Only an actual price change requires the administrator approval flow.
+            current_item = self.get_object()
+            submitted_price = self.request.data.get("price")
+            try:
+                submitted_price_decimal = Decimal(str(submitted_price))
+            except (InvalidOperation, TypeError, ValueError):
+                raise ValidationError({
+                    "price": "The item price must be a valid number."
+                })
+
+            if submitted_price_decimal != current_item.price:
+                raise ValidationError({
+                    "price": "Direct price changes require administrator approval."
+                })
 
         if self.request.user.is_staff:
             self.get_object()._allow_price_update = True
