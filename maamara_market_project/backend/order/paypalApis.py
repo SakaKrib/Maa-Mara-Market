@@ -690,6 +690,9 @@ def paypal_webhook(request):
                 return Response({"status": "ok", "message": "Unknown order"})
             return Response({"status": "ok", "message": "Order already reconciled"})
 
+        if checkout_session.status == "completed":
+            return Response({"status": "ok", "message": "Order already reconciled"})
+
         if event_type != "PAYMENT.CAPTURE.COMPLETED":
             checkout_session.status = "failed"
             checkout_session.save(update_fields=["status", "updated_at"])
