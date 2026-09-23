@@ -80,7 +80,7 @@ export default function CheckoutPaypalPayment() {
       if (data.status === "ok" && (data.message === "Capture attempted" || data.message === "Order already captured")) {
       setLoading(false);
 
-        navigate(`/payment-success`, { state: { order: order.order } });
+        navigate(`/payment-success`, { state: { order: checkoutResult || order?.order } });
       } else {
         console.error("❌ Backend capture failed:", data);
       setLoading(false);
