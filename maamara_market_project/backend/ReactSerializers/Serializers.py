@@ -759,7 +759,18 @@ class ItemSerializers(serializers.ModelSerializer):
                 obj_id = item_data.get("id")
 
                 if obj_id:
-                    obj = existing_qs.get(id=obj_id)
+                    obj = existing_qs.filter(id=obj_id).first()
+                    if obj is None:
+                        # A stale nested ID can remain in an edit form after the
+                        # related row was removed or replaced. Never modify a
+                        # nested row outside this item; recreate it as new.
+                        item_data = {k: v for k, v in item_data.items() if k != "id"}
+                        kwargs = {parent_field: instance} if parent_field else {"item": instance}
+                        new_obj = model.objects.create(**item_data, **kwargs)
+                        if nested_field and nested_data:
+                            for nested_item in nested_data:
+                                SizeStock.objects.create(variant=new_obj, **nested_item)
+                        continue
                     for attr, val in item_data.items():
                         # 🚫 prevent clearing image when payload has "image": null
                         if attr == "image" and val is None:
