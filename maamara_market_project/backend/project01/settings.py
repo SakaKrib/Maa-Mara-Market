@@ -278,6 +278,10 @@ CELERY_BEAT_SCHEDULE = {
         "task": "order.task.cleanup_old_visitor_orders",
         "schedule": crontab(hour=2, minute=0),
     },
+    "cleanup_expired_checkout_sessions": {
+        "task": "order.task.cleanup_expired_checkout_sessions",
+        "schedule": crontab(minute=30),
+    },
 }
 
 # =========================================================
