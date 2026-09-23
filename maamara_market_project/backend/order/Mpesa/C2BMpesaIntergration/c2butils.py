@@ -73,6 +73,8 @@ def stk_push(request):
 
     if not checkout_session:
         return Response({"error": "Checkout session not found"}, status=404)
+    if checkout_session.payment_method != "Mpesa":
+        return Response({"error": "Checkout payment method mismatch"}, status=400)
     if checkout_session.status == "completed" and checkout_session.order_id:
         return Response(
             {
@@ -199,6 +201,9 @@ def stk_callback(request):
             )
 
             if not checkout_session:
+                return Response({"ResultCode": 0, "ResultDesc": "Accepted"})
+
+            if checkout_session.payment_method != "Mpesa":
                 return Response({"ResultCode": 0, "ResultDesc": "Accepted"})
 
             if checkout_session.status == "completed" and checkout_session.order_id:
