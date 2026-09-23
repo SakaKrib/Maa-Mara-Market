@@ -240,7 +240,7 @@ const fetchShippingQuote = async () => {
         open={snackbar.open}
         autoHideDuration={4000}
         onClose={() => setSnackbar((current) => ({ ...current, open: false }))}
-        anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
+        anchorOrigin={{ vertical: "top", horizontal: "right" }}
       >
         <Alert
           onClose={() => setSnackbar((current) => ({ ...current, open: false }))}
@@ -251,10 +251,10 @@ const fetchShippingQuote = async () => {
           {snackbar.message}
         </Alert>
       </Snackbar>
-      <main className="mm-page min-h-screen py-6 md:py-10">
+      <main className="mm-page mm-checkout min-h-screen py-6 md:py-10">
       <div className="mm-container">
         <div className="mb-6 border-b border-border pb-4">
-          <h1 className="text-2xl md:text-3xl font-bold">Checkout</h1>
+          <h1 className="text-2xl font-semibold tracking-tight text-card-foreground md:text-3xl">Checkout</h1>
           <p className="mt-1 text-sm text-muted-foreground">
             Complete your delivery details and choose your payment method.
           </p>
@@ -264,7 +264,7 @@ const fetchShippingQuote = async () => {
           <section className="mm-card p-5 sm:p-6 md:p-8">
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-7">
               <div>
-                <h2 className="text-lg font-semibold">Contact information</h2>
+                <h2 className="text-base font-semibold text-card-foreground sm:text-lg">Contact information</h2>
                 <p className="mt-1 text-sm text-muted-foreground">How we can reach you about this order.</p>
 
                 <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2">
@@ -293,7 +293,7 @@ const fetchShippingQuote = async () => {
                         value={field.value}
                         onChange={field.onChange}
                         enableSearch
-                        inputClass="!w-full !h-10 !rounded-md !border-gray-200"
+                        inputClass="!w-full !h-10 !rounded-xl !border-border !bg-background !text-card-foreground"
                         containerClass="!w-full"
                       />
                       {errors.phone && <p className="mt-1 text-sm text-red-500">{errors.phone.message}</p>}
@@ -330,11 +330,11 @@ const fetchShippingQuote = async () => {
                   </div>
 
                   <div>
-                    <label htmlFor="country" className="mb-1.5 block text-sm font-medium">Country</label>
+                    <label htmlFor="country" className="mb-1.5 block text-sm font-medium text-card-foreground">Country</label>
                     <select
                       id="country"
                       {...register("country")}
-                      className="w-full rounded-full border border-gray-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-gray-400"
+                      className="w-full rounded-xl border border-border bg-background px-4 py-3 text-sm text-card-foreground outline-none transition focus:border-gray-900"
                     >
                       <option value="">Select country</option>
                       {countries.map((country, idx) => (
@@ -359,7 +359,7 @@ const fetchShippingQuote = async () => {
                     {shippingOptions.map((option, idx) => (
                       <label
                         key={idx}
-                        className="flex cursor-pointer items-center justify-between gap-4 rounded-xl border border-border bg-white px-4 py-3 text-sm transition hover:bg-muted/30"
+                        className="flex cursor-pointer items-center justify-between gap-4 rounded-xl border border-border bg-background p-3order border-border bg-white px-4 py-3 text-sm transition hover:bg-muted/30"
                       >
                         <span className="flex items-center gap-3">
                           <input
@@ -420,7 +420,7 @@ const fetchShippingQuote = async () => {
                 checkoutItems.map((item, idx) => (
                   <div key={idx} className="flex items-start justify-between gap-4">
                     <div className="min-w-0">
-                      <p className="text-sm font-semibold">{item.name}</p>
+                      <p className="text-sm font-semibold text-card-foreground">{item.name}</p>
                       <p className="mt-1 text-xs text-muted-foreground">Qty: {item.quantity}</p>
                       {item.variant_color && <p className="text-xs text-muted-foreground">Color: {item.variant_color}</p>}
                       {item.size !== null && item.size !== undefined && (
@@ -441,7 +441,7 @@ const fetchShippingQuote = async () => {
                         </p>
                       )}
                       {item.custom_preferences && (
-                        <p className="mt-2 rounded-lg border border-border bg-muted/30 px-3 py-2 text-xs leading-5 text-muted-foreground">
+                        <p className="mt-2 rounded-xl border border-border bg-muted/30 px-3 py-2 text-xs leading-5 text-muted-foreground">
                           <span className="font-semibold text-card-foreground">Custom request:</span>{" "}
                           {typeof item.custom_preferences === "object"
                             ? JSON.stringify(item.custom_preferences)
