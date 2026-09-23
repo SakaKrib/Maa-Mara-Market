@@ -11,6 +11,7 @@ import { useCartContext } from "../CartHook/cart";
 import { getData } from "country-list";
 import PhoneInput from "react-phone-input-2";
 import { useNavigate } from "react-router-dom";
+import api from "../../../../../../../Services/Api";
 import "react-phone-input-2/lib/style.css";
 
 // Zod validation schema
@@ -56,6 +57,13 @@ export default function CheckoutPage() {
   };
 
   const shippingCost = selectedShipping ? Number(selectedShipping.price_kes ?? selectedShipping.price ?? 0) : 0;
+
+  // Protected checkout/shipping endpoints accept either a logged-in user or a
+  // server-issued visitor identity. Ensure a guest has that identity before
+  // making either request. Authenticated users are left unchanged by this API.
+  const ensureCheckoutIdentity = async () => {
+    await api.get("/api/vistor-token/");
+  };
 
   useEffect(() => {
     try {
@@ -123,6 +131,8 @@ const fetchShippingQuote = async () => {
   }
 
   try {
+    await ensureCheckoutIdentity();
+
     const payload = {
       order_id: order?.order?.id || null,
       address: addressData.address,
@@ -194,12 +204,10 @@ const fetchShippingQuote = async () => {
     };
 
     try {
-      const res = await fetch("/api/checkout/", {
-        method: "POST",
-        credentials: "include",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
+      await ensureCheckoutIdentity();
+      const responseData = res.data;
+
+      console.log("✅ Checkout successful:", responseData);
 
       if (!res.ok) throw new Error("Checkout failed");
       const responseData = await res.json();
