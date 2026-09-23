@@ -19,6 +19,7 @@ import { Controller } from "react-hook-form";
 import { useDepartments } from "./useDepartments";
 import { FormControlLabel, Switch } from "@mui/material";
 import useItemDraftAutosave from "./useItemDraftAutosave";
+import VideoTrimmer from "./VideoTrimmer";
 
 // Sizes
 const MAX_ITEM_IMAGES = 10;
@@ -104,6 +105,7 @@ const ItemAddNew = ({ initialItem, vendorId, itemId, onSave = () => {}, vendor, 
   const [colorVariants, setColorVariants] = useState([]);
   const [galleryImages, setGalleryImages] = useState([]);
   const [productVideo, setProductVideo] = useState(null);
+  const [videoTrimSource, setVideoTrimSource] = useState(null);
   const [draftMessage, setDraftMessage] = useState("");
   const [draftError, setDraftError] = useState("");
 
@@ -625,40 +627,97 @@ const ItemAddNew = ({ initialItem, vendorId, itemId, onSave = () => {}, vendor, 
       setDraftError("");
     };
 
-    const handleVideoChange = (file) => {
+    const applyVideoFile = (file) => {
       if (!file) return;
+
       const extension = "." + (file.name.split(".").pop() || "").toLowerCase();
       if (!VIDEO_TYPES.includes(file.type) && !VIDEO_EXTENSIONS.includes(extension)) {
         setDraftError("Video must be MP4, MOV, or WEBM.");
         return;
       }
+
       if (file.size > MAX_VIDEO_BYTES) {
         setDraftError("The product video must be 100 MB or smaller.");
         return;
       }
 
+      if (productVideo?.url && productVideo.value instanceof File) {
+        window.URL.revokeObjectURL(productVideo.url);
+      }
+
+      setProductVideo({
+        slotKey: "video",
+        value: file,
+        url: URL.createObjectURL(file),
+        name: file.name,
+      });
+      form.setValue("video", file, { shouldDirty: true });
+      setVideoTrimSource(null);
+      setDraftError("");
+    };
+
+    const handleVideoChange = (file) => {
+      if (!file) return;
+
+      const extension = "." + (file.name.split(".").pop() || "").toLowerCase();
+      if (!VIDEO_TYPES.includes(file.type) && !VIDEO_EXTENSIONS.includes(extension)) {
+        setDraftError("Video must be MP4, MOV, or WEBM.");
+        return;
+      }
+
+      if (file.size > MAX_VIDEO_BYTES) {
+        setDraftError("The product video must be 100 MB or smaller.");
+        return;
+      }
+
+      // Vendor-side trimming is isolated from the existing upload/draft
+      // pipeline. The selected file is only committed to productVideo after
+      // it is valid as-is or the user applies a valid trim.
+      if (isAdmin) {
+        const videoElement = document.createElement("video");
+        videoElement.preload = "metadata";
+        const sourceUrl = URL.createObjectURL(file);
+        videoElement.onloadedmetadata = () => {
+          URL.revokeObjectURL(sourceUrl);
+          if (videoElement.duration < 3 || videoElement.duration > 15) {
+            setDraftError("Product videos must be between 3 and 15 seconds.");
+            return;
+          }
+          applyVideoFile(file);
+        };
+        videoElement.onerror = () => {
+          URL.revokeObjectURL(sourceUrl);
+          setDraftError("The selected video could not be read.");
+        };
+        videoElement.src = sourceUrl;
+        return;
+      }
+
       const videoElement = document.createElement("video");
       videoElement.preload = "metadata";
+      const sourceUrl = URL.createObjectURL(file);
+
       videoElement.onloadedmetadata = () => {
-        window.URL.revokeObjectURL(videoElement.src);
-        if (videoElement.duration < 3 || videoElement.duration > 15) {
-          setDraftError("Product videos must be between 3 and 15 seconds.");
+        URL.revokeObjectURL(sourceUrl);
+
+        if (videoElement.duration < 3) {
+          setDraftError("Product videos must be at least 3 seconds long.");
           return;
         }
-        setProductVideo({
-          slotKey: "video",
-          value: file,
-          url: URL.createObjectURL(file),
-          name: file.name,
+
+        setVideoTrimSource({
+          file,
+          duration: videoElement.duration,
         });
-        form.setValue("video", file, { shouldDirty: true });
         setDraftError("");
       };
+
       videoElement.onerror = () => {
-        window.URL.revokeObjectURL(videoElement.src);
+        URL.revokeObjectURL(sourceUrl);
         setDraftError("The selected video could not be read.");
       };
-      videoElement.src = URL.createObjectURL(file);
+
+      videoElement.src = sourceUrl;
     };
 
     const onSubmit = async (data) => {
@@ -1450,6 +1509,16 @@ const ItemAddNew = ({ initialItem, vendorId, itemId, onSave = () => {}, vendor, 
       accept="video/mp4,video/quicktime,video/webm,.mp4,.mov,.webm"
       onChange={(event) => handleVideoChange(event.target.files?.[0])}
     />
+
+    {!isAdmin && videoTrimSource && (
+      <VideoTrimmer
+        file={videoTrimSource.file}
+        duration={videoTrimSource.duration}
+        onApply={applyVideoFile}
+        onCancel={() => setVideoTrimSource(null)}
+      />
+    )}
+
     {productVideo?.value && (
       <div className="max-w-xl overflow-hidden rounded-2xl border border-gray-300 bg-black">
         <video
@@ -1466,7 +1535,11 @@ const ItemAddNew = ({ initialItem, vendorId, itemId, onSave = () => {}, vendor, 
         <button
           type="button"
           onClick={() => {
+            if (productVideo?.url && productVideo.value instanceof File) {
+              window.URL.revokeObjectURL(productVideo.url);
+            }
             setProductVideo(null);
+            setVideoTrimSource(null);
             form.setValue("video", "", { shouldDirty: true });
           }}
           className="m-3 rounded-full border border-white/30 bg-white px-4 py-2 text-xs font-semibold text-gray-900 hover:bg-gray-100"
