@@ -169,24 +169,10 @@ def checkout_view(request):
         payment.save()
     order.save()
 
-    # ----------------------------
-    # 4️⃣ Create or update customer
-    # ----------------------------
-    customer_data = {
-        "full_name": f"{data['first_name']} {data['last_name']}",
-        "first_name": data['first_name'],
-        "last_name": data['last_name'],
-        "email": data['email'],
-        "phone_number": data['phone'],
-        "billing_address": billing,
-        "vendor": None,  # optional
-    }
-    if user:
-        customer, _ = Customer.objects.update_or_create(user=user, defaults=customer_data)
-    else:
-        customer, _ = Customer.objects.update_or_create(visitor_id=visitor_id, defaults=customer_data)
-    order.customer = customer
-    order.save()
+    # Customer records are finalized only after the payment provider confirms
+    # successful payment. The pending order retains its billing address as
+    # payment-time staging data so the callback can finalize the customer
+    # safely without creating a customer for an abandoned checkout.
 
     # ----------------------------
     # 5️⃣ Sync order items
