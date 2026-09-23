@@ -504,21 +504,24 @@ class ItemSerializers(serializers.ModelSerializer):
             item.occasions.set(occasions_data)
 
         if discount_price is not None:
+            # A reduced price is independent from a time-bound Offer.
+            # Never infer offer state from the price difference.
             item.discount_price = discount_price
-            # Optional: mark in_offer if discount < price
-            item.in_offer = discount_price < item.price
-            item.save()
+            item.in_offer = False
+            item.save(update_fields=["discount_price", "in_offer"])
 
         if shipping_data:
             ShippingDimension.objects.create(item=item, **shipping_data)
          
 
-        #offer create
-        if in_offer and offer_data:
-            offer = Offer.objects.create(item=item, **offer_data)
-            item.discount_price = offer.final_price
-            item.in_offer = True
-            item.save()
+        # An Offer exists only when the form explicitly enables it and
+        # supplies its percentage/date configuration.
+        if in_offer:
+            if not offer_data:
+                raise serializers.ValidationError({
+                    "offer": "Offer details are required when the item is marked on offer."
+                })
+            Offer.objects.create(item=item, **offer_data)
 
 
         # ✅ Handle weight
@@ -568,7 +571,16 @@ class ItemSerializers(serializers.ModelSerializer):
         weight_data = validated_data.pop("weight", None)
         length_data = validated_data.pop("length", None)
         offer_data = validated_data.pop("offer", None)
-        in_offer = validated_data.pop("in_offer", instance.in_offer)
+
+        # Distinguish an ordinary edit (offer control omitted) from an explicit
+        # request to turn an offer on or off.
+        in_offer_supplied = "in_offer" in self.initial_data
+        raw_in_offer = self.initial_data.get("in_offer")
+        if isinstance(raw_in_offer, str):
+            requested_in_offer = raw_in_offer.strip().lower() in {"true", "1", "yes", "on"}
+        else:
+            requested_in_offer = bool(raw_in_offer)
+
         shipping_data = validated_data.pop("shipping_dimension_data", None)
         discount_price = validated_data.pop("discount_price", instance.discount_price)
         occasions_data = validated_data.pop("occasions", None)
@@ -583,8 +595,8 @@ class ItemSerializers(serializers.ModelSerializer):
         # ✅ Update primitive fields
         for attr, value in validated_data.items():
             setattr(instance, attr, value)
+        # Do not derive offer state from discount_price.
         instance.discount_price = discount_price
-        instance.in_offer = discount_price is not None and discount_price < instance.price
         instance.save()
 
         if occasions_data is not None:
@@ -639,25 +651,32 @@ class ItemSerializers(serializers.ModelSerializer):
         except Offer.DoesNotExist:
             offer_instance = None
 
-        # Handle offers
-        if in_offer:
-            if offer_data:
-                if offer_instance:
-                    for attr, value in offer_data.items():
-                        setattr(offer_instance, attr, value)
-                    offer_instance.save()
-                else:
-                    offer_instance = Offer.objects.create(item=instance, **offer_data)
-            
-            # If offer exists, its final_price sets discount
+        # Handle offers explicitly. A discount_price by itself never creates
+        # an Offer, and an ordinary edit preserves an existing offer.
+        if offer_data:
             if offer_instance:
-                instance.discount_price = offer_instance.final_price
-        else:
-            # Turning an offer off must also remove its persisted Offer record;
-            # otherwise stale offer dates/metadata remain attached to the item.
+                for attr, value in offer_data.items():
+                    setattr(offer_instance, attr, value)
+                offer_instance.save()
+            else:
+                offer_instance = Offer.objects.create(item=instance, **offer_data)
+            instance.in_offer = True
+            instance.discount_price = offer_instance.final_price
+        elif in_offer_supplied and not requested_in_offer:
             if offer_instance:
                 offer_instance.delete()
-            instance.discount_price = discount_price if discount_price is not None else None
+            instance.in_offer = False
+            instance.discount_price = discount_price
+        elif in_offer_supplied and requested_in_offer and not offer_instance:
+            raise serializers.ValidationError({
+                "offer": "Offer details are required when the item is marked on offer."
+            })
+        elif offer_instance:
+            # No offer instruction: preserve the existing configured offer.
+            instance.in_offer = True
+            instance.discount_price = offer_instance.calculate_final_price()
+        else:
+            instance.in_offer = False
 
 
         # ✅ Handle nested lists (variants, size_only, kids_sizes)
