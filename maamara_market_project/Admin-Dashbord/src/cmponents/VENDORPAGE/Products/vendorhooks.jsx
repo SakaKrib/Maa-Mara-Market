@@ -8,7 +8,7 @@ export function useVendor() {
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    api.get(`${baseUrl}/api/vendor/profile/`, { withCredentials: true })
+    api.get(`${baseUrl}/api/vendor-profile/single-page/`, { withCredentials: true })
       .then(res => {
         // Normalize the authenticated vendor profile so the item form always
         // receives product_type as a direct, canonical value.
