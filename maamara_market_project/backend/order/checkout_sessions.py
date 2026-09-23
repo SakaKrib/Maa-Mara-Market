@@ -42,7 +42,7 @@ def materialize_paid_checkout(checkout_session, *, transaction_id=None, provider
     session = CheckoutSession.objects.select_for_update().get(pk=checkout_session.pk)
 
     if session.status == "completed":
-        order = Order.objects.filter(paypal_order_id=session.paypal_order_id).select_related("payment").first()
+        order = session.order
         if order:
             return order, False
 
@@ -141,6 +141,7 @@ def materialize_paid_checkout(checkout_session, *, transaction_id=None, provider
     order.updated_total_price = int(expected_total)
     order.save(update_fields=["updated_total_price"])
 
+    session.order = order
     session.status = "completed"
-    session.save(update_fields=["status", "updated_at"])
+    session.save(update_fields=["order", "status", "updated_at"])
     return order, True
