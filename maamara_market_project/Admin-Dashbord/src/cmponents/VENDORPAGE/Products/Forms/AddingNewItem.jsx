@@ -116,7 +116,14 @@ const ItemAddNew = ({ initialItem, vendorId, itemId, onSave = () => {}, vendor, 
   const [draftError, setDraftError] = useState("");
   const [submissionStatus, setSubmissionStatus] = useState({ type: "", message: "" });
 
-  const normalizeSection = (value) => {
+  const normalizeRelationId = (value) => {
+      if (value && typeof value === "object") {
+        return value.id ?? value.value ?? value.pk ?? null;
+      }
+      return value ?? null;
+    };
+
+    const normalizeSection = (value) => {
     const section = String(value || "").trim().toLowerCase();
     if (section === "departmental") return "inorganic";
     return section;
@@ -214,6 +221,9 @@ const ItemAddNew = ({ initialItem, vendorId, itemId, onSave = () => {}, vendor, 
         subcategory,
         image: initialItem.image || "",
         video: initialItem.video || "",
+        brand: normalizeRelationId(initialItem.brand),
+        gender_based: initialItem.gender_based ?? "none",
+        children_size_based_age: initialItem.children_size_based_age ?? "none",
         ...(shipping
           ? {
               shipping_dimension_data: {
@@ -866,7 +876,9 @@ const ItemAddNew = ({ initialItem, vendorId, itemId, onSave = () => {}, vendor, 
           returnable: data.returnable ?? true,
           image,
           video: typeof data.video === "string" ? data.video : null,
-          brand: data.brand || null,
+          brand: normalizeRelationId(data.brand),
+          gender_based: data.gender_based ?? "none",
+          children_size_based_age: data.children_size_based_age ?? "none",
           is_organic,
           is_fresh_food,
           occasions,
@@ -1084,6 +1096,10 @@ const ItemAddNew = ({ initialItem, vendorId, itemId, onSave = () => {}, vendor, 
           appendValue("roast_type", formattedItem.roast_type);
           appendValue("coffee_state", formattedItem.coffee_state);
           appendValue("item_attribute", formattedItem.item_attribute);
+          appendValue("brand", formattedItem.brand);
+          appendValue("occasions", formattedItem.occasions);
+          appendValue("gender_based", formattedItem.gender_based);
+          appendValue("children_size_based_age", formattedItem.children_size_based_age);
           appendValue("shoe_input", formattedItem.shoe_input);
           appendValue("size_only_icon", formattedItem.size_only_icon);
           appendValue("kids_sizes", formattedItem.kids_sizes);
@@ -1104,6 +1120,22 @@ const ItemAddNew = ({ initialItem, vendorId, itemId, onSave = () => {}, vendor, 
           if (data.image instanceof File) {
             editFormData.append("image", data.image);
           }
+
+          if (data.video instanceof File) {
+            editFormData.append("video", data.video);
+          }
+
+          const existingGalleryIds = (galleryImages || [])
+            .map((asset) => String(asset?.slotKey || "").match(/^additional:(\d+)$/)?.[1])
+            .filter(Boolean);
+
+          editFormData.append("gallery_keep_ids", JSON.stringify(existingGalleryIds));
+
+          (galleryImages || []).forEach((asset) => {
+            if (asset?.value instanceof File) {
+              editFormData.append("gallery_images", asset.value);
+            }
+          });
 
           (data.color_variants || []).forEach((variant, index) => {
             if (variant.color_image instanceof File) {
@@ -1153,6 +1185,16 @@ const ItemAddNew = ({ initialItem, vendorId, itemId, onSave = () => {}, vendor, 
           if (data.image instanceof File) {
             adminFormData.append("image", data.image);
           }
+
+          if (data.video instanceof File) {
+            adminFormData.append("video", data.video);
+          }
+
+          (galleryImages || []).forEach((asset) => {
+            if (asset?.value instanceof File) {
+              adminFormData.append("gallery_images", asset.value);
+            }
+          });
 
           (data.color_variants || []).forEach((variant, index) => {
             if (variant.color_image instanceof File) {
