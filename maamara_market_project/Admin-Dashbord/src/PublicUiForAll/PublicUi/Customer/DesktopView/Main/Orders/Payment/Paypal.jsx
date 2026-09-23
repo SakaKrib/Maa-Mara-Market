@@ -1,6 +1,6 @@
 import { PayPalScriptProvider, PayPalButtons, FUNDING } from "@paypal/react-paypal-js";
 import { useCartContext } from "../../CartHook/cart";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import Snackbar from "@mui/material/Snackbar";
 import Alert from "@mui/material/Alert";
@@ -13,7 +13,7 @@ export default function CheckoutPaypalPayment() {
   const { order } = useCartContext();
   const location = useLocation();
   const checkoutResult = location.state || null;
-  const localOrderId = checkoutResult?.order_id || order?.order?.id || null;
+  const checkoutId = checkoutResult?.checkout_id || null;
   const paypalOrderId = checkoutResult?.paypal_order_id || null;
   const kesAmount = Number(
     checkoutResult?.payment?.amount ??
@@ -35,7 +35,7 @@ export default function CheckoutPaypalPayment() {
   const navigate = useNavigate();
 
   const handlePaymentApproval = async ({ id }) => {
-    if (!id || !localOrderId) {
+    if (!id || !checkoutId) {
       showSnackbar("PayPal order information is missing. Please return to checkout.", "error");
       return;
     }
@@ -43,7 +43,7 @@ export default function CheckoutPaypalPayment() {
     setLoading(true);
     try {
       const response = await api.post(`/api/paypal/capture/${id}/`, {
-        order_id: localOrderId,
+        checkout_id: checkoutId,
       });
 
       if (response.data?.status === "ok") {
@@ -71,37 +71,7 @@ export default function CheckoutPaypalPayment() {
     }
   };
 
-  // --- WebSocket for real-time payment status ---
-  useEffect(() => {
-    if (!localOrderId) return undefined;
 
-    const orderId = localOrderId;
-    const wsScheme = window.location.protocol === "https:" ? "wss" : "ws";
-    const socket = new WebSocket(
-      `${wsScheme}://127.0.0.1:8000/ws/orders/${orderId}/`
-    );
-
-    socket.onmessage = (event) => {
-      try {
-        const data = JSON.parse(event.data);
-        if (data.type === "payment_status" && data.status === "completed") {
-          navigate("/payment-success", {
-            state: { order: checkoutResult || order?.order },
-          });
-        }
-      } catch (err) {
-        console.error("❌ WebSocket message error:", err);
-      }
-    };
-
-    socket.onerror = (err) => {
-      console.error("PayPal payment WebSocket error:", err);
-    };
-
-    return () => {
-      socket.close();
-    };
-  }, [localOrderId, navigate, checkoutResult, order?.order]);
 
   return (
     <main className="mm-payment-page min-h-screen px-4 py-8 md:px-6 md:py-12">
