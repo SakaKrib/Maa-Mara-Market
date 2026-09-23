@@ -28,7 +28,7 @@ export default function CheckoutPaypalPayment() {
       try {
         const data = JSON.parse(event.data);
         if (data.type === "payment_status" && data.status === "completed") {
-          navigate("/payment-success", { state: { order: order.order } });
+          navigate("/payment-success", { state: { order: checkoutResult || order?.order } });
         }
       } catch (err) {
         console.error("❌ WebSocket message error:", err);
