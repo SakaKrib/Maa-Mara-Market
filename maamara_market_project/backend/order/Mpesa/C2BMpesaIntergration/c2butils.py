@@ -1,53 +1,49 @@
-import requests
 import base64
-from datetime import datetime
-from django.conf import settings
-from django.db import transaction as db_transaction, IntegrityError
-from rest_framework.decorators import api_view, permission_classes
-from rest_framework.response import Response
-from rest_framework.permissions import AllowAny
 import logging
+from datetime import datetime
 from decimal import Decimal
-from django.contrib.auth import get_user_model
-from order.models import Transaction, Order, Customer, BillingAddress
-from order.views import IsAuthenticatedOrVisitor
-from channels.layers import get_channel_layer
-from asgiref.sync import async_to_sync
-from order.models import Payment
-from vendorDashboard.models import SoldItem
-from core.models import ActivityLog, Notification
 
-import uuid
-User = get_user_model()
+import requests
+from django.conf import settings
+from django.db import transaction as db_transaction
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import AllowAny
+from rest_framework.response import Response
+
+from . import __name__ as _module_name
+from order.checkout_sessions import get_owned_checkout_session, materialize_paid_checkout, session_owner_matches
+from order.models import CheckoutSession, Payment, Transaction
+from order.order_completion import complete_paid_order
+from order.views import IsAuthenticatedOrVisitor
+
 
 logger = logging.getLogger(__name__)
 
 
-
-# ----------------------
-# Helper Functions
-# ----------------------
 def get_mpesa_token():
-    """Get OAuth token from Safaricom sandbox or production"""
-    consumer_key = settings.PAYMENT_GATEWAYS["mpesa"]["consumer_key"].strip()
-    consumer_secret = settings.PAYMENT_GATEWAYS["mpesa"]["consumer_secret"].strip()
-    auth_url = settings.PAYMENT_GATEWAYS["mpesa"]["auth_url"].strip()
-
-    response = requests.get(auth_url, auth=(consumer_key, consumer_secret), timeout=10)
+    config = settings.PAYMENT_GATEWAYS["mpesa"]
+    response = requests.get(
+        config["auth_url"].strip(),
+        auth=(
+            config["consumer_key"].strip(),
+            config["consumer_secret"].strip(),
+        ),
+        timeout=10,
+    )
     response.raise_for_status()
     token = response.json().get("access_token")
+    if not token:
+        raise ValueError("M-Pesa OAuth response did not contain an access token.")
     return token
 
 
 def generate_stk_password(shortcode: str, passkey: str, timestamp: str) -> str:
-    """Generate base64 encoded STK password"""
     raw = shortcode + passkey + timestamp
     return base64.b64encode(raw.encode()).decode()
 
 
 def sanitize_phone(phone: str) -> str:
-    """Convert phone into Safaricom format (2547XXXXXXXX)"""
-    digits = "".join(filter(str.isdigit, phone))
+    digits = "".join(filter(str.isdigit, str(phone)))
     if digits.startswith("0"):
         digits = "254" + digits[1:]
     elif digits.startswith("7") and len(digits) == 9:
@@ -55,210 +51,161 @@ def sanitize_phone(phone: str) -> str:
     return digits
 
 
-# ----------------------
-# STK Push Endpoint
-# ----------------------
 @api_view(["POST"])
 @permission_classes([IsAuthenticatedOrVisitor])
 def stk_push(request):
-    """Initiate an STK payment for the caller's own pending order."""
+    """Initiate STK Push against a transient checkout session."""
+    checkout_id = request.data.get("checkout_id")
+    phone = request.data.get("phone")
+
+    if not checkout_id or not phone:
+        return Response({"error": "Phone number and checkout_id are required"}, status=400)
+
     try:
-        order_id = request.data.get("order_id")
-        phone = request.data.get("phone")
+        checkout_session = get_owned_checkout_session(
+            request,
+            checkout_id,
+            for_update=True,
+        )
+    except (ValueError, TypeError):
+        checkout_session = None
 
-        if not order_id or not phone:
-            return Response({"error": "Phone number and order_id are required"}, status=400)
+    if not checkout_session:
+        return Response({"error": "Checkout session not found"}, status=404)
+    if checkout_session.status == "completed" and checkout_session.order_id:
+        return Response(
+            {
+                "message": "Payment already completed.",
+                "order_id": checkout_session.order_id,
+            },
+            status=409,
+        )
+    if checkout_session.status not in {"draft", "payment_pending"}:
+        return Response({"error": "Checkout session is no longer payable"}, status=409)
 
-        phone = sanitize_phone(phone)
-        if len(phone) != 12 or not phone.startswith("2547"):
-            return Response({"error": "Invalid Kenyan phone number"}, status=400)
+    phone = sanitize_phone(phone)
+    if len(phone) != 12 or not phone.startswith("2547"):
+        return Response({"error": "Invalid Kenyan phone number"}, status=400)
 
-        user = request.user if request.user and request.user.is_authenticated else None
-        visitor_id = request.COOKIES.get("visitorId") if not user else None
+    payload = checkout_session.payload or {}
+    mpesa = settings.PAYMENT_GATEWAYS["mpesa"]
+    stk_config = mpesa["stk_push"]
 
-        order_qs = Order.objects.filter(id=order_id, status="pending")
-        if user:
-            order_qs = order_qs.filter(user=user, visitor_id__isnull=True)
-        else:
-            if not visitor_id:
-                return Response({"error": "Visitor identity is required"}, status=401)
-            order_qs = order_qs.filter(user__isnull=True, visitor_id=visitor_id)
+    reference = payload.get("mpesa_reference")
+    if not reference:
+        reference = checkout_session.id.hex[:12]
+        payload["mpesa_reference"] = reference
+        checkout_session.payload = payload
 
-        with db_transaction.atomic():
-            order = (
-                order_qs.select_for_update()
-                .select_related("billing_address", "payment")
-                .first()
-            )
-            if not order:
-                return Response({"error": "Order not found"}, status=404)
+    if checkout_session.mpesa_checkout_request_id:
+        return Response(
+            {
+                "message": "An M-Pesa payment request is already pending.",
+                "checkout_request_id": checkout_session.mpesa_checkout_request_id,
+                "checkout_id": str(checkout_session.id),
+                "amount": str(checkout_session.amount),
+            },
+            status=409,
+        )
 
-            # Do not create a second provider request while an existing STK
-            # request is still pending. The payment row is locked so two
-            # concurrent browser requests cannot race and overwrite its
-            # CheckoutRequestID.
-            if (
-                order.payment_id
-                and order.payment
-                and order.payment.payment_method == "Mpesa"
-                and order.payment.status == "pending"
-                and order.payment.transaction_id
-            ):
-                return Response(
-                    {
-                        "message": "An M-Pesa payment request is already pending.",
-                        "checkout_request_id": order.payment.transaction_id,
-                        "order_id": order.id,
-                        "amount": str(order.payment.amount),
-                    },
-                    status=409,
-                )
+    timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
+    password = generate_stk_password(
+        str(stk_config["shortcode"]).strip(),
+        str(stk_config["passkey"]).strip(),
+        timestamp,
+    )
 
-            if not order.billing_address:
-                return Response({"error": "Billing address is required before payment"}, status=400)
+    provider_payload = {
+        "BusinessShortCode": str(stk_config["shortcode"]).strip(),
+        "Password": password,
+        "Timestamp": timestamp,
+        "TransactionType": "CustomerPayBillOnline",
+        "Amount": int(checkout_session.amount),
+        "PartyA": phone,
+        "PartyB": str(stk_config["shortcode"]).strip(),
+        "PhoneNumber": phone,
+        "CallBackURL": stk_config["callback_url"].strip(),
+        "AccountReference": reference,
+        "TransactionDesc": f"Payment for checkout {reference}",
+    }
 
-            amount = Decimal(str(order.final_total_of_cart()))
-            if amount <= 0:
-                return Response({"error": "Order amount must be greater than zero"}, status=400)
+    try:
+        token = get_mpesa_token()
+        response = requests.post(
+            stk_config["stk_url"].strip(),
+            json=provider_payload,
+            headers={
+                "Authorization": f"Bearer {token}",
+                "Content-Type": "application/json",
+            },
+            timeout=30,
+        )
+        response.raise_for_status()
+        provider_data = response.json()
+    except requests.exceptions.RequestException:
+        logger.exception("M-Pesa STK Push provider request failed.")
+        return Response({"error": "Payment provider request failed"}, status=502)
+    except (ValueError, TypeError, KeyError):
+        return Response({"error": "Unable to initiate M-Pesa payment"}, status=502)
 
-            shortcode = str(settings.PAYMENT_GATEWAYS["mpesa"]["stk_push"]["shortcode"]).strip()
-            passkey = str(settings.PAYMENT_GATEWAYS["mpesa"]["stk_push"]["passkey"]).strip()
-            callback_url = settings.PAYMENT_GATEWAYS["mpesa"]["stk_push"]["callback_url"].strip()
-            stk_url = settings.PAYMENT_GATEWAYS["mpesa"]["stk_push"]["stk_url"].strip()
+    checkout_request_id = provider_data.get("CheckoutRequestID")
+    if not checkout_request_id:
+        return Response(
+            {"error": "Payment provider did not return a checkout reference"},
+            status=502,
+        )
 
-            timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
-            password = generate_stk_password(shortcode, passkey, timestamp)
+    checkout_session.mpesa_checkout_request_id = checkout_request_id
+    checkout_session.status = "payment_pending"
+    checkout_session.save(
+        update_fields=[
+            "mpesa_checkout_request_id",
+            "payload",
+            "status",
+            "updated_at",
+        ]
+    )
 
-            payload = {
-                "BusinessShortCode": shortcode,
-                "Password": password,
-                "Timestamp": timestamp,
-                "TransactionType": "CustomerPayBillOnline",
-                "Amount": int(amount),
-                "PartyA": phone,
-                "PartyB": shortcode,
-                "PhoneNumber": phone,
-                "CallBackURL": callback_url,
-                "AccountReference": str(order.id),
-                "TransactionDesc": f"Payment for order {order.id}",
-            }
-
-            token = get_mpesa_token()
-            response = requests.post(
-                stk_url,
-                json=payload,
-                headers={"Authorization": f"Bearer {token}", "Content-Type": "application/json"},
-                timeout=30,
-            )
-            response.raise_for_status()
-            data = response.json()
-
-        checkout_request_id = data.get("CheckoutRequestID")
-        if not checkout_request_id:
-            logger.error("M-Pesa STK response did not contain CheckoutRequestID")
-            return Response({"error": "Payment provider did not return a checkout reference"}, status=502)
-
-        payment = order.payment
-        if payment and payment.status == "pending":
-            payment.transaction_id = checkout_request_id
-            payment.amount = amount
-            payment.payment_method = "Mpesa"
-            payment.save(update_fields=["transaction_id", "amount", "payment_method"])
-        else:
-            payment = Payment.objects.create(
-                user=user,
-                visitor_id=visitor_id,
-                payment_method="Mpesa",
-                amount=amount,
-                transaction_id=checkout_request_id,
-                status="pending",
-            )
-            order.payment = payment
-            order.save(update_fields=["payment"])
-
-        return Response({
+    return Response(
+        {
             "message": "STK Push initiated",
             "checkout_request_id": checkout_request_id,
-            "order_id": order.id,
-            "amount": str(amount),
-        })
-
-    except requests.exceptions.RequestException:
-        logger.exception("M-Pesa STK Push provider request failed")
-        return Response({"error": "Payment provider request failed"}, status=502)
-    except (KeyError, ValueError, TypeError, ArithmeticError):
-        logger.exception("Invalid M-Pesa STK configuration or order amount")
-        return Response({"error": "Unable to initiate payment"}, status=400)
-    except Exception:
-        logger.exception("Unexpected STK Push error")
-        return Response({"error": "Unable to initiate payment"}, status=500)
-
-
-# ----------------------
-# STK Callback Endpoint
-# ----------------------
-
-logger = logging.getLogger(__name__)
-from django.core.mail import EmailMultiAlternatives
-from django.template.loader import render_to_string
-from django.utils import timezone
+            "checkout_id": str(checkout_session.id),
+            "amount": str(checkout_session.amount),
+        }
+    )
 
 
 @api_view(["POST"])
 @permission_classes([AllowAny])
 def stk_callback(request):
-    """Reconcile a Safaricom STK result exactly once."""
+    """Reconcile Safaricom STK results and materialize the paid checkout."""
     data = request.data
     callback = data.get("Body", {}).get("stkCallback", {})
     checkout_request_id = callback.get("CheckoutRequestID")
     result_code = callback.get("ResultCode")
-    result_desc = callback.get("ResultDesc", "")
 
     if not checkout_request_id:
-        logger.warning("STK callback missing CheckoutRequestID")
         return Response({"ResultCode": 0, "ResultDesc": "Accepted"})
 
     try:
         with db_transaction.atomic():
-            payment = (
-                Payment.objects.select_for_update()
-                .filter(transaction_id=checkout_request_id)
+            checkout_session = (
+                CheckoutSession.objects
+                .select_for_update()
+                .filter(mpesa_checkout_request_id=checkout_request_id)
                 .first()
             )
-            if not payment:
-                # A completed/replayed callback may have replaced the payment
-                # reference with the final receipt number. Recover it through
-                # the immutable provider account reference.
-                transaction_record = (
-                    Transaction.objects.select_related("payment")
-                    .filter(account_reference=checkout_request_id, payment__isnull=False)
-                    .order_by("-id")
-                    .first()
-                )
-                payment = transaction_record.payment if transaction_record else None
 
-            if not payment:
-                logger.info("Ignoring unknown/replayed STK callback.")
+            if not checkout_session:
                 return Response({"ResultCode": 0, "ResultDesc": "Accepted"})
 
-            order = (
-                Order.objects.select_for_update()
-                .filter(payment=payment)
-                .first()
-            )
-            if not order:
-                logger.warning("STK payment %s has no linked order.", payment.id)
-                return Response({"ResultCode": 0, "ResultDesc": "Accepted"})
-
-            # A provider can retry callbacks out of order. Once local
-            # reconciliation has completed, a later failure callback must never
-            # roll a successful payment back to failed.
-            if payment.status == "completed":
+            if checkout_session.status == "completed" and checkout_session.order_id:
                 return Response({"ResultCode": 0, "ResultDesc": "Accepted"})
 
             if result_code != 0:
-                payment.status = "failed"
-                payment.save(update_fields=["status"])
+                checkout_session.status = "failed"
+                checkout_session.save(update_fields=["status", "updated_at"])
                 return Response({"ResultCode": 0, "ResultDesc": "Accepted"})
 
             callback_items = callback.get("CallbackMetadata", {}).get("Item", [])
@@ -267,59 +214,50 @@ def stk_callback(request):
                 for entry in callback_items
                 if entry.get("Name")
             }
+
             receipt = metadata.get("MpesaReceiptNumber")
             callback_amount = metadata.get("Amount")
-
-            if not receipt:
-                logger.error("Successful STK callback missing M-Pesa receipt.")
+            if not receipt or callback_amount is None:
+                checkout_session.status = "failed"
+                checkout_session.save(update_fields=["status", "updated_at"])
                 return Response({"ResultCode": 0, "ResultDesc": "Accepted"})
 
-            if callback_amount is None or Decimal(str(callback_amount)) != payment.amount:
-                logger.error(
-                    "STK amount mismatch for order %s: provider=%s expected=%s",
-                    order.id,
-                    callback_amount,
-                    payment.amount,
-                )
-                payment.status = "failed"
-                payment.save(update_fields=["status"])
+            if Decimal(str(callback_amount)) != checkout_session.amount:
+                checkout_session.status = "failed"
+                checkout_session.save(update_fields=["status", "updated_at"])
                 return Response({"ResultCode": 0, "ResultDesc": "Accepted"})
 
-            # Record the provider receipt while the payment still retains
-            # CheckoutRequestID. This makes a retried callback recoverable if
-            # processing fails before order completion.
+            order, _created = materialize_paid_checkout(
+                checkout_session,
+                transaction_id=receipt,
+                provider_amount=checkout_session.amount,
+                provider_currency="KES",
+            )
+
+            locked_order, _completed = complete_paid_order(
+                order,
+                order.payment,
+                transaction_id=receipt,
+            )
+
             Transaction.objects.update_or_create(
-                payment=payment,
+                payment=locked_order.payment,
                 transaction_type="C2B",
                 defaults={
                     "payment_method": "mpesa",
                     "mpesa_receipt_number": receipt,
                     "phone_number": str(metadata.get("PhoneNumber") or ""),
                     "amount": Decimal(str(callback_amount)),
-                    "account_reference": checkout_request_id,
+                    "account_reference": checkout_session.payload.get("mpesa_reference"),
                     "status": "Completed",
                     "raw_data": data,
-                    "order": order,
+                    "order": locked_order,
+                    "visitor_id": locked_order.visitor_id,
                 },
-            )
-
-            from order.order_completion import complete_paid_order
-            locked_order, completed = complete_paid_order(
-                order,
-                payment,
-                transaction_id=receipt,
-            )
-
-        if completed:
-            channel_layer = get_channel_layer()
-            async_to_sync(channel_layer.group_send)(
-                f"order_{locked_order.id}",
-                {"type": "payment_status", "status": "completed"},
             )
 
         return Response({"ResultCode": 0, "ResultDesc": "Accepted"})
 
     except Exception:
-        logger.exception("Error processing STK callback")
-        # Safaricom should not be given internal exception details.
+        logger.exception("Error processing M-Pesa STK callback.")
         return Response({"ResultCode": 0, "ResultDesc": "Accepted"})
