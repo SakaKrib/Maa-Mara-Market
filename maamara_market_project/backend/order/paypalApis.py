@@ -725,19 +725,56 @@ def paypal_webhook(request):
                 transaction_id=transaction_id,
             )
 
-            Transaction.objects.update_or_create(
-                payment=locked_order.payment,
-                paypal_transaction_id=transaction_id,
-                defaults={
-                    "transaction_type": "PayPal",
-                    "payment_method": "paypal",
-                    "order": locked_order,
-                    "amount": Decimal(str(amount)),
-                    "status": "completed",
-                    "payer_email": resource.get("payer", {}).get("email_address"),
-                    "raw_data": data,
-                },
+            vendor_ids = list(
+                locked_order.order_items.values_list("item__vendor", flat=True).distinct()
             )
+            if vendor_ids:
+                for vendor_id in vendor_ids:
+                    Transaction.objects.update_or_create(
+                        payment=locked_order.payment,
+                        paypal_transaction_id=transaction_id,
+                        vendor_id=vendor_id,
+                        defaults={
+                            "transaction_type": "PayPal",
+                            "payment_method": "paypal",
+                            "order": locked_order,
+                            "amount": Decimal(str(amount)),
+                            "status": "completed",
+                            "payer_email": resource.get("payer", {}).get("email_address"),
+                            "raw_data": data,
+                        },
+                    )
+            else:
+                Transaction.objects.update_or_create(
+                    payment=locked_order.payment,
+                    paypal_transaction_id=transaction_id,
+                    vendor=None,
+                    defaults={
+                        "transaction_type": "PayPal",
+                        "payment_method": "paypal",
+                        "order": locked_order,
+                        "amount": Decimal(str(amount)),
+                        "status": "completed",
+                        "payer_email": resource.get("payer", {}).get("email_address"),
+                        "raw_data": data,
+                    },
+                )
+
+            if completed:
+                ActivityLog.objects.create(
+                    user=locked_order.user,
+                    actor_type="user" if locked_order.user else "guest",
+                    action="paypal_payment",
+                    description=f"PayPal order {paypal_order_id} completed.",
+                    related_url=f"/orders/{locked_order.id}/",
+                )
+                if locked_order.user:
+                    Notification.objects.create(
+                        user=locked_order.user,
+                        title="PayPal Payment Successful",
+                        message=f"Your order #{locked_order.id} has been successfully paid.",
+                        url=f"/orders/{locked_order.id}/",
+                    )
 
         return Response({"status": "ok", "message": "Payment processed"})
 
