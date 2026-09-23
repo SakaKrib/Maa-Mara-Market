@@ -473,6 +473,15 @@ const ItemAddNew = ({ initialItem, vendorId, itemId, onSave = () => {}, vendor, 
     if (draftAutosaveError) setDraftError(String(draftAutosaveError));
   }, [draftAutosaveError]);
 
+  // Keep submission feedback as a lightweight, non-blocking snackbar.
+  useEffect(() => {
+    if (!submissionStatus.message) return;
+    const timer = window.setTimeout(() => {
+      setSubmissionStatus({ type: "", message: "" });
+    }, 5000);
+    return () => window.clearTimeout(timer);
+  }, [submissionStatus.message]);
+
 
   // Organic section automatically starts with both organic flags enabled.
   // The vendor can explicitly uncheck them; changing to Handmade/Inorganic
@@ -1163,7 +1172,7 @@ const ItemAddNew = ({ initialItem, vendorId, itemId, onSave = () => {}, vendor, 
           if (response.status === 201 || response.status === 200) {
             onSave(response.data);
           } else {
-            alert("Failed to create item.");
+            setSubmissionStatus({ type: "error", message: "Failed to create item." });
           }
           return;
         }
@@ -1191,11 +1200,18 @@ const ItemAddNew = ({ initialItem, vendorId, itemId, onSave = () => {}, vendor, 
         if (response.status === 201 || response.status === 200) {
           onSave(response.data);
         } else {
-          alert("Failed to submit item request.");
+          setSubmissionStatus({ type: "error", message: "Failed to submit item request." });
         }
       } catch (error) {
         console.error("Item draft save failed:", error);
-        alert("Item update failed. Check console for details.");
+        const backendMessage =
+          typeof error?.response?.data?.detail === "string"
+            ? error.response.data.detail
+            : error?.response?.data?.price?.[0] || error?.message;
+        setSubmissionStatus({
+          type: "error",
+          message: backendMessage || "Unable to save the item. Please try again.",
+        });
       }
     };
 
@@ -2932,20 +2948,29 @@ const ItemAddNew = ({ initialItem, vendorId, itemId, onSave = () => {}, vendor, 
               <div
                 role="status"
                 aria-live="polite"
-                className={`mb-4 flex items-start gap-3 rounded-2xl border px-4 py-3 text-sm shadow-sm ${
+                className={`fixed bottom-5 right-5 z-[100] flex max-w-sm items-start gap-3 rounded-2xl border px-4 py-3 text-sm shadow-xl backdrop-blur-sm ${
                   submissionStatus.type === "success"
-                    ? "border-green-200 bg-green-50 text-green-800"
-                    : "border-red-200 bg-red-50 text-red-800"
+                    ? "border-green-200 bg-green-50/95 text-green-800"
+                    : "border-red-200 bg-red-50/95 text-red-800"
                 }`}
               >
                 <span className="mt-0.5 text-base font-semibold">
                   {submissionStatus.type === "success" ? "✓" : "!"}
                 </span>
-                <div>
+                <div className="pr-1">
                   <p className="font-semibold">
-                    {submissionStatus.type === "success" ? "Saved successfully" : "Unable to save"}</p>
+                    {submissionStatus.type === "success" ? "Saved successfully" : "Unable to save"}
+                  </p>
                   <p className="mt-0.5 text-sm">{submissionStatus.message}</p>
                 </div>
+                <button
+                  type="button"
+                  aria-label="Dismiss notification"
+                  onClick={() => setSubmissionStatus({ type: "", message: "" })}
+                  className="ml-auto rounded-full px-2 text-lg leading-none opacity-60 transition hover:opacity-100"
+                >
+                  ×
+                </button>
               </div>
             )}
 
