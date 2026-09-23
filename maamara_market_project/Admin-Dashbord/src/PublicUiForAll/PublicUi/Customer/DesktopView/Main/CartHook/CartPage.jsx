@@ -1,19 +1,36 @@
 import React, { useState } from "react";
+import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
 import { useCartContext } from "./cart";
 import { useCartActions } from "../CartActionButtons/UpdateQty";
 import RemoveFromCartButton from "../CartActionButtons/RemoveFromBtn";
 import { Link } from "react-router-dom";
 import FormattedCurrency from "../Currency/FormattedCurrency";
 import { useCurrency } from "../Currency/CurrencyContext";
+import api from "../../../../../../Services/Api";
 
 const imageUrl = (image) => image || "";
 
 const CartPage = () => {
-  const { order, loading, error } = useCartContext();
+  const { order, loading, error, refreshCart } = useCartContext();
   const { currency, rates } = useCurrency();
   const { updateQuantity, loading: actionLoading, error: actionError } = useCartActions();
   const [selectedVoucher, setSelectedVoucher] = useState("");
   const [useWallet, setUseWallet] = useState(false);
+  const [removingAll, setRemovingAll] = useState(false);
+
+  const handleRemoveAll = async () => {
+    if (removingAll || items.length === 0) return;
+    if (!window.confirm("Remove all items from your cart?")) return;
+    try {
+      setRemovingAll(true);
+      await api.delete("/api/cart/remove-all/", { withCredentials: true });
+      await refreshCart();
+    } catch (err) {
+      console.error("Remove all cart error:", err);
+    } finally {
+      setRemovingAll(false);
+    }
+  };
 
   if (loading) return <div className="mm-page min-h-screen py-16 text-center text-gray-500">Loading your cart…</div>;
 
@@ -42,12 +59,12 @@ const CartPage = () => {
   return (
     <main className="mm-page min-h-screen py-6 md:py-10">
       <div className="mm-container">
-        <div className="mm-section-heading">
+        <div className="mb-6 flex items-start justify-between gap-4 border-b border-border pb-4">
           <div>
-            <h1 className="text-2xl md:text-3xl font-bold">Shopping cart</h1>
+            <h1 className="text-2xl md:text-3xl font-bold">Your cart</h1>
             <p>{totalQty} {totalQty === 1 ? "item" : "items"} selected</p>
           </div>
-          <Link to="/" className="text-sm font-semibold hover:underline">Continue shopping</Link>
+          <div className="flex items-center gap-3"><button type="button" onClick={handleRemoveAll} disabled={removingAll || items.length === 0} aria-label="Delete all items from cart" className="inline-flex items-center gap-1.5 rounded-full border border-red-200 px-3 py-2 text-sm font-semibold text-red-600 hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50"><DeleteOutlineIcon fontSize="small" /><span className="hidden sm:inline">{removingAll ? "Deleting..." : "Delete all"}</span></button><Link to="/" className="hidden sm:inline text-sm font-semibold hover:underline">Continue shopping</Link></div>
         </div>
 
         {(error || actionError) && (
@@ -170,7 +187,7 @@ const CartPage = () => {
               <strong className="text-xl"><FormattedCurrency value={Number(subtotal)} /></strong>
             </div>
             <p className="text-xs text-gray-500 mt-2">Shipping and final payment details are confirmed at checkout.</p>
-            <Link to="/checkout-page" className="primary-button mt-5 flex w-full justify-center rounded-md px-5 py-3 text-white font-semibold">Proceed to checkout</Link>
+            <Link to="/checkout-page" onClick={() => sessionStorage.removeItem("maaMaraBuyNow")} className="primary-button mt-5 hidden w-full justify-center rounded-md px-5 py-3 text-white font-semibold sm:flex">Proceed to checkout</Link>
           </aside>
         </div>
       </div>
