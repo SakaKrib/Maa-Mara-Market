@@ -3,6 +3,7 @@ import logging
 import time
 import uuid
 from decimal import Decimal
+from datetime import timedelta
 
 import requests
 from asgiref.sync import async_to_sync
@@ -30,7 +31,7 @@ from .services.refunds import reconcile_paypal_refund
 from .Base import get_usd_to_kes_rate
 from .models import BillingAddress, CheckoutSession, Customer, Order, Payment, Transaction
 from .paymentserializer import CheckoutSerializer, OrderResponseSerializer
-from .checkout_sessions import get_owned_checkout_session, materialize_paid_checkout
+from .checkout_sessions import get_owned_checkout_session, materialize_paid_checkout, validate_checkout_items, validate_shipping
 from .views import IsAuthenticatedOrVisitor
 
 
@@ -137,8 +138,8 @@ def checkout_view(request):
     }
 
     try:
-        item_snapshots, subtotal = _validate_and_snapshot_items(data.get("items", []))
-        shipping = _validate_shipping(data.get("shipping"), data.get("items", []), billing)
+        item_snapshots, subtotal = validate_checkout_items(data.get("items", []))
+        shipping = validate_shipping(data.get("shipping"), data.get("items", []), billing)
         grand_total = (subtotal + Decimal(shipping["amount_kes"])).quantize(Decimal("0.01"))
 
         if grand_total <= 0:
