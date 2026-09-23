@@ -13,7 +13,7 @@ export default function CheckoutPaypalPayment() {
   const localOrderId = checkoutResult?.order_id || order?.order?.id || null;
   const paypalOrderId = checkoutResult?.paypal_order_id || null;
   const kesAmount = Number(checkoutResult?.payment?.amount ?? order?.order?.final_total ?? order?.order?.total ?? 0);
-  const [usdAmount, setUsdAmount] = useState("0.01");
+  const [usdAmount, setUsdAmount] = useState(String(checkoutResult?.payment?.provider_amount ?? "0.01"));
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
@@ -50,8 +50,8 @@ export default function CheckoutPaypalPayment() {
         setUsdAmount((kesAmount / 150).toFixed(2));
       }
     }
-    if (kesAmount > 0) convertKES();
-  }, [kesAmount]);
+    if (kesAmount > 0 && !checkoutResult?.payment?.provider_amount) convertKES();
+  }, [kesAmount, checkoutResult?.payment?.provider_amount]);
 
   const handlePaymentApproval = async (details) => {
     setLoading(true);
