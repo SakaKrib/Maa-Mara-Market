@@ -270,6 +270,8 @@ class ItemSerializer(serializers.ModelSerializer):
     category = serializers.StringRelatedField()
     subcategory = serializers.StringRelatedField()
     image = serializers.ImageField(use_url=True)
+    additional_images = ItemAdditionalImageSerializer(many=True, read_only=True)
+    occasions = serializers.SerializerMethodField()
     final_price = serializers.SerializerMethodField()
     final_discounted_price = serializers.SerializerMethodField()
     save_upto = serializers.SerializerMethodField()
