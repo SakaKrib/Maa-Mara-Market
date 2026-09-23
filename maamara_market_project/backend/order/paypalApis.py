@@ -1,7 +1,6 @@
 import json
 import logging
 import time
-import uuid
 from decimal import Decimal
 from datetime import timedelta
 
