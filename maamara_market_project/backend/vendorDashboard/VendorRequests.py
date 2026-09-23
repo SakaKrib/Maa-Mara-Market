@@ -1096,6 +1096,7 @@ class ApprovePriceChangeRequestView(APIView):
                 "item": item,
                 "price_request": price_request,
                 "current_year": current_year,
+                "frontend_url": settings.FRONTEND_URL.rstrip("/"),
             }
         )
 
