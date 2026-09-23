@@ -1132,7 +1132,7 @@ const ItemAddNew = ({ initialItem, vendorId, itemId, onSave = () => {}, vendor, 
                 <input
                   type="text"
                   {...field}
-                  value={field.value}
+                  value={field.value ?? ""}
                   disabled
                   className="w-full rounded-[20px] border border-border bg-card px-2 py-2 text-sm leading-6 text-foreground outline-none transition focus:border-[#2563eb] focus:ring-2 focus:ring-[#2563eb]/20 text-center"
                 />
