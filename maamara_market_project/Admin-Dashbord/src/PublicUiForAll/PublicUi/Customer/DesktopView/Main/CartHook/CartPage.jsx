@@ -65,6 +65,22 @@ const CartPage = () => {
               const remaining = Math.max(availableStock - quantity, 0);
               const color = item.variant_color || item.color_variant?.color || item.selected_color || item.color || item.variant?.color;
               const size = item.size || item.size_stock?.size || item.selected_size?.size;
+              const ageGroup = item.age_group || item.age_variant?.age_group;
+              const shoeSize = item.shoe_size;
+              const selectedWeight = item.selected_weight;
+              const selectedLength = item.selected_length;
+              const customPreferences =
+                item.custom_preferences && typeof item.custom_preferences === "object"
+                  ? item.custom_preferences.instructions || ""
+                  : "";
+              const selectionDetails = [
+                color && `Color: ${color}`,
+                size && `Size: ${size}`,
+                ageGroup && `Age/size: ${ageGroup}`,
+                shoeSize && `Shoe size: ${shoeSize}`,
+                selectedWeight && `Weight: ${selectedWeight}`,
+                selectedLength && `Length: ${selectedLength}`,
+              ].filter(Boolean);
               const lineId = item.ordered_item_id || item.cart_item_id || item.id;
               const productId = item.item?.id || item.item_id || item.id;
 
@@ -81,8 +97,14 @@ const CartPage = () => {
                             {item.name || item.item?.name || "Product"}
                           </Link>
                           <p className="text-xs sm:text-sm text-gray-500 mt-1">
-                            {[color && `Color: ${color}`, size && `Size: ${size}`].filter(Boolean).join(" · ") || "Standard selection"}
+                            {selectionDetails.join(" · ") || "Standard selection"}
                           </p>
+                          {customPreferences && (
+                            <p className="mt-2 rounded-lg border border-border bg-muted/30 px-3 py-2 text-xs leading-5 text-muted-foreground">
+                              <span className="font-semibold text-card-foreground">Custom request:</span>{" "}
+                              {customPreferences}
+                            </p>
+                          )}
                         </div>
                         <strong className="text-base sm:text-lg"><FormattedCurrency value={Number(item.final_price)} /></strong>
                       </div>
