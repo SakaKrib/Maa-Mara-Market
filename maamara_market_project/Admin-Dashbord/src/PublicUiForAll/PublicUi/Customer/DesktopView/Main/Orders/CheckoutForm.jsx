@@ -4,6 +4,8 @@ import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Input } from "../../../../../../../components/ui/input";
 import { Button } from "../../../../../../../components/ui/button";
+import Snackbar from "@mui/material/Snackbar";
+import Alert from "@mui/material/Alert";
 import { Card, CardContent, CardHeader, CardTitle } from "../../../../../../../components/ui/card";
 import { useCartContext } from "../CartHook/cart";
 import { getData } from "country-list";
@@ -47,6 +49,11 @@ export default function CheckoutPage() {
   const countries = getData();
   const navigate = useNavigate();
   const [totalOrder, setTotalOrder] = useState(0);
+  const [snackbar, setSnackbar] = useState({ open: false, message: "", severity: "info" });
+
+  const showSnackbar = (message, severity = "info") => {
+    setSnackbar({ open: true, message, severity });
+  };
 
   const shippingCost = selectedShipping ? Number(selectedShipping.price_kes ?? selectedShipping.price ?? 0) : 0;
 
@@ -82,11 +89,12 @@ export default function CheckoutPage() {
 
   
 
-  // Watch errors and show first error as alert (replace with toast if needed)
+  // Validation feedback is handled through the shared Snackbar pattern,
+  // rather than native browser alert dialogs.
   useEffect(() => {
     if (Object.keys(errors).length > 0) {
       const firstError = Object.values(errors)[0]?.message;
-      if (firstError) alert(firstError);
+      if (firstError) showSnackbar(firstError, "error");
     }
   }, [errors]);
 
@@ -110,7 +118,7 @@ const fetchShippingQuote = async () => {
   const addressData = watch(); // get current form values
 
   if (!addressData.country || !addressData.city || !addressData.zip) {
-    alert("Please fill country, city, and ZIP code to get a shipping quote");
+    showSnackbar("Please fill country, city, and ZIP code to get a shipping quote", "warning");
     return;
   }
 
@@ -144,10 +152,14 @@ const fetchShippingQuote = async () => {
     if (!res.ok) throw new Error("Failed to get shipping rates");
     const data = await res.json();
     setShippingOptions(data.rates || []);
-    alert("✅ Shipping quote fetched successfully!");
+    if (data.rates?.length) {
+      showSnackbar("Shipping quote fetched successfully.", "success");
+    } else {
+      showSnackbar("Shipping quotes are temporarily unavailable while DHL/FedEx integration is muted.", "info");
+    }
   } catch (err) {
     console.error("Error fetching shipping quote:", err);
-    alert("Failed to get shipping quote. Try again.");
+    showSnackbar("Failed to get shipping quote. Try again.", "error");
   }
 };
   
@@ -210,7 +222,7 @@ const fetchShippingQuote = async () => {
       }
     } catch (error) {
       console.error("❌ Checkout error:", error);
-      alert("Checkout failed. Please try again.");
+      showSnackbar("Checkout failed. Please try again.", "error");
     }
   };
 
@@ -219,7 +231,23 @@ const fetchShippingQuote = async () => {
   
 
   return (
-    <main className="mm-page min-h-screen py-6 md:py-10">
+    <>
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={4000}
+        onClose={() => setSnackbar((current) => ({ ...current, open: false }))}
+        anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
+      >
+        <Alert
+          onClose={() => setSnackbar((current) => ({ ...current, open: false }))}
+          severity={snackbar.severity}
+          variant="filled"
+          sx={{ width: "100%" }}
+        >
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
+      <main className="mm-page min-h-screen py-6 md:py-10">
       <div className="mm-container">
         <div className="mb-6 border-b border-border pb-4">
           <h1 className="text-2xl md:text-3xl font-bold">Checkout</h1>
@@ -456,5 +484,6 @@ const fetchShippingQuote = async () => {
         </div>
       </div>
     </main>
+    </>
   );
 }
