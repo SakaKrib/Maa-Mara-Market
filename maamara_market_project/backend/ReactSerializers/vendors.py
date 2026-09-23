@@ -437,6 +437,11 @@ class VendorItemViewSet(viewsets.ModelViewSet):
 
         validated = serializer.validated_data
 
+        # Only mutate nested records when the client actually supplied that field.
+        variants_supplied = "variants" in validated
+        size_only_supplied = "size_only_icon" in validated
+        kids_sizes_supplied = "kids_sizes" in validated
+
         variants_data = validated.pop("variants", [])
         size_only_data = validated.pop("size_only_icon", [])
         kids_sizes_data = validated.pop("kids_sizes", [])
