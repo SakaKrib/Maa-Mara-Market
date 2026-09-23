@@ -681,6 +681,9 @@ def paypal_webhook(request):
             paypal_order_id=paypal_order_id
         ).first()
 
+        if checkout_session and checkout_session.payment_method != "PayPal":
+            return Response({"status": "ok", "message": "Payment method mismatch"})
+
         if not checkout_session:
             # A webhook can arrive after the browser has already finalized the
             # order. In that case the permanent order is the authoritative record.
