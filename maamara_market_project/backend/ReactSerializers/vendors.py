@@ -117,6 +117,19 @@ class VendorItemViewSet(viewsets.ModelViewSet):
             # arrive at the serializer as lists instead of a single value.
             decoded = {}
             list_fields = {"gallery_images", "occasions"}
+            json_list_fields = {
+                "gallery_keep_ids",
+                "variants",
+                "size_only_icon",
+                "kids_sizes",
+                "colors",
+                "sizes",
+                "weight",
+                "length",
+                "shoe_input",
+                "shipping_dimension_data",
+                "offer",
+            }
 
             for key in data.keys():
                 values = data.getlist(key)
@@ -134,18 +147,7 @@ class VendorItemViewSet(viewsets.ModelViewSet):
 
                 value = values[-1] if values else None
 
-                if key in [
-                    "variants",
-                    "size_only_icon",
-                    "kids_sizes",
-                    "colors",
-                    "sizes",
-                    "weight",
-                    "length",
-                    "shoe_input",
-                    "shipping_dimension_data",
-                    "offer",
-                ] and isinstance(value, str):
+                if key in json_list_fields and isinstance(value, str):
                     try:
                         decoded[key] = json.loads(value)
                     except json.JSONDecodeError:
