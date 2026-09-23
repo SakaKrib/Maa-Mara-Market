@@ -27,6 +27,7 @@ from .views import (
     add_to_cart_api,
     get_cart_view,
     remove_from_cart_api,
+    remove_all_from_cart_api,
     update_cart_quantity,
     vendor_transactions,
     dashboard_stats,
@@ -47,6 +48,7 @@ from .invoice_views import invoice_list
 urlpatterns = [
     path('api/cart/add/<int:pk>/', add_to_cart_api, name='api_add_to_cart'),
     path("api/cart/remove/<int:pk>/", remove_from_cart_api, name="remove_from_cart"),
+    path("api/cart/remove-all/", remove_all_from_cart_api, name="remove_all_from_cart"),
     path("api/cart/", get_cart_view, name="cart_view"),
     path("api/cart/<int:pk>/update-quantity/", update_cart_quantity, name="update-cart-quantity"),
 
