@@ -10,6 +10,7 @@ from .views import IsAuthenticatedOrVisitor
 from .models import Order
 from .Base import get_usd_to_kes_rate
 from decimal import Decimal
+from ReactSerializers.models import Item
 
 logger = logging.getLogger(__name__)
 
@@ -23,6 +24,52 @@ def _order_for_request(request, order_id):
     if not visitor_id:
         return None
     return qs.filter(user__isnull=True, visitor_id=visitor_id).first()
+
+
+class _ShippingItemsProxy:
+    """Minimal order-like object used to quote shipping before checkout creates an Order."""
+
+    def __init__(self, dimensions):
+        self._dimensions = dimensions
+
+    def get_total_shipping_dimensions(self):
+        return self._dimensions
+
+
+def _dimensions_for_items(items_payload):
+    total_weight = Decimal("0.00")
+    total_volume = Decimal("0.00")
+    has_dimensions = False
+
+    for item_data in items_payload:
+        item_id = item_data.get("id")
+        quantity = int(item_data.get("quantity", 1))
+        if not item_id or quantity < 1:
+            raise ValueError("Each shipping item must include a valid id and quantity.")
+
+        item = Item.objects.filter(pk=item_id).first()
+        if not item:
+            raise ValueError("Shipping item was not found.")
+
+        dimension = getattr(item, "shipping_dimension", None)
+        if not dimension:
+            continue
+
+        has_dimensions = True
+        total_volume += dimension.length * dimension.width * dimension.height * quantity
+        total_weight += dimension.weight * quantity
+
+    if not has_dimensions or total_weight <= 0:
+        raise ValueError("Shipping weight and dimensions are required.")
+
+    import math
+    cubic_side = Decimal(math.pow(float(total_volume), 1 / 3)) if total_volume > 0 else Decimal("0")
+    return {
+        "length": float(round(cubic_side, 2)),
+        "width": float(round(cubic_side, 2)),
+        "height": float(round(cubic_side, 2)),
+        "weight": float(round(total_weight, 2)),
+    }
 
 
 def _dimensions(order):
@@ -209,12 +256,19 @@ def get_rates_for_destination(order, destination):
 @permission_classes([IsAuthenticatedOrVisitor])
 def get_shipping_rates(request):
     order_id = request.data.get("order_id")
-    if not order_id:
-        return Response({"error": "order_id is required"}, status=400)
+    items_payload = request.data.get("items") or []
 
-    order = _order_for_request(request, order_id)
-    if not order:
-        return Response({"error": "Order not found"}, status=404)
+    if order_id:
+        order = _order_for_request(request, order_id)
+        if not order:
+            return Response({"error": "Order not found"}, status=404)
+    elif items_payload:
+        try:
+            order = _ShippingItemsProxy(_dimensions_for_items(items_payload))
+        except (ValueError, TypeError):
+            return Response({"error": "Valid shipping item dimensions are required."}, status=400)
+    else:
+        return Response({"error": "order_id or items is required"}, status=400)
 
     address = request.data
     if not address.get("zip") or not address.get("city") or not address.get("country"):
