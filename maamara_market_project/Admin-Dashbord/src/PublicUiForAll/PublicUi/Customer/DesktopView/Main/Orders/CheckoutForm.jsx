@@ -42,13 +42,32 @@ export default function CheckoutPage() {
   });
 
   const { order } = useCartContext(); // may be null
+  const [buyNowItem, setBuyNowItem] = useState(null);
   const [shippingOptions, setShippingOptions] = useState([]);
   const [selectedShipping, setSelectedShipping] = useState(null);
   const countries = getData();
   const navigate = useNavigate();
   const [totalOrder, setTotalOrder] = useState(0);
 
-  const shippingCost = selectedShipping ? Number(selectedShipping.rate) : 0;
+  const shippingCost = selectedShipping ? Number(selectedShipping.rate) : 0;\n\n  useEffect(() => {\n    try {\n      const raw = sessionStorage.getItem("maaMaraBuyNow");\n      if (raw) {\n        const parsed = JSON.parse(raw);\n        if (parsed?.itemId) setBuyNowItem(parsed);\n      }\n    } catch (error) {\n      console.error("Unable to restore Buy Now selection:", error);\n    }\n  }, []);
+  const checkoutItems = buyNowItem ? [{
+    id: buyNowItem.itemId,
+    name: buyNowItem.itemName,
+    quantity: buyNowItem.quantity,
+    final_price: buyNowItem.unitPrice,
+    price: buyNowItem.unitPrice,
+    variant_id: buyNowItem.variantId,
+    variant_color: buyNowItem.color,
+    size_id: buyNowItem.sizeId,
+    size: buyNowItem.size,
+    age_variant_id: buyNowItem.ageVariantId,
+    age_group: buyNowItem.ageGroup,
+    shoe_id: buyNowItem.shoeId,
+    shoe_size: buyNowItem.selectedShoeSize,
+    selected_weight: buyNowItem.weight,
+    selected_length: buyNowItem.length,
+    custom_preferences: buyNowItem.customPreferences,
+  }] : (order?.items || []);
 
   
 
@@ -71,7 +90,7 @@ export default function CheckoutPage() {
     } else {
       setTotalOrder(0);
     }
-  }, [order]);
+  }, [checkoutItems]);
   
 
   // shipping rstes
@@ -86,7 +105,7 @@ const fetchShippingQuote = async () => {
 
   try {
     const payload = {
-      order_id: order.order.id,
+      order_id: order?.order?.id || null,
       address: addressData.address,
       apartment: addressData.apartment || "",
       city: addressData.city,
@@ -94,7 +113,7 @@ const fetchShippingQuote = async () => {
       zip: addressData.zip,
       country: addressData.country,
       phone: addressData.phone,
-      items: order.items.map(item => ({
+      items: checkoutItems.map(item => ({
         id: item.id,
         quantity: item.quantity,
         weight: item.weight || 0.5,
@@ -138,7 +157,7 @@ const fetchShippingQuote = async () => {
       payment_method: data.payment || "",
       shipping: selectedShipping || "",
       items:
-        order?.items?.map((item) => ({
+        checkoutItems.map((item) => ({
           id: item?.id ?? null,
           quantity: item?.quantity ?? 1,
           variant_id: item?.variant_id ?? null,
@@ -164,7 +183,7 @@ const fetchShippingQuote = async () => {
 
       console.log("✅ Checkout successful:", responseData);
 
-      // call the shipping api
+      if (buyNowItem) sessionStorage.removeItem("maaMaraBuyNow");\n\n      // call the shipping api
       // fetchShippingQuote();
 
       // Route based on payment method
@@ -341,6 +360,13 @@ const fetchShippingQuote = async () => {
                       <div>
                         <p className="text-sm font-medium">{item.name}</p>
                         <p className="text-xs text-gray-600">Qty: {item.quantity}</p>
+                        {item.variant_color && <p className="text-xs text-gray-600">Color: {item.variant_color}</p>}
+                        {item.size !== null && item.size !== undefined && <p className="text-xs text-gray-600">Size: {typeof item.size === "object" ? JSON.stringify(item.size) : item.size}</p>}
+                        {item.age_group && <p className="text-xs text-gray-600">Age: {item.age_group}</p>}
+                        {item.shoe_size && <p className="text-xs text-gray-600">Shoe size: {item.shoe_size}</p>}
+                        {item.selected_weight && <p className="text-xs text-gray-600">Weight: {typeof item.selected_weight === "object" ? JSON.stringify(item.selected_weight) : item.selected_weight}</p>}
+                        {item.selected_length && <p className="text-xs text-gray-600">Length: {typeof item.selected_length === "object" ? JSON.stringify(item.selected_length) : item.selected_length}</p>}
+                        {item.custom_preferences && <p className="text-xs text-gray-600">Custom: {typeof item.custom_preferences === "object" ? JSON.stringify(item.custom_preferences) : item.custom_preferences}</p>}
                       </div>
                     </div>
                     <span className="font-medium">${((item.final_price || item.price) * item.quantity).toFixed(2)}</span>
