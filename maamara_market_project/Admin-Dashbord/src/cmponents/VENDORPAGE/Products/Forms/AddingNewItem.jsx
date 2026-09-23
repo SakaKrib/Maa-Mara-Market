@@ -114,6 +114,7 @@ const ItemAddNew = ({ initialItem, vendorId, itemId, onSave = () => {}, vendor, 
   const [videoTrimSource, setVideoTrimSource] = useState(null);
   const [draftMessage, setDraftMessage] = useState("");
   const [draftError, setDraftError] = useState("");
+  const [submissionStatus, setSubmissionStatus] = useState({ type: "", message: "" });
 
   const normalizeSection = (value) => {
     const section = String(value || "").trim().toLowerCase();
@@ -789,6 +790,31 @@ const ItemAddNew = ({ initialItem, vendorId, itemId, onSave = () => {}, vendor, 
       videoElement.src = sourceUrl;
     };
 
+    const completeSave = useCallback((message, responseData) => {
+      setSubmissionStatus({ type: "success", message });
+      window.setTimeout(() => onSave(responseData), 1200);
+    }, [onSave]);
+
+    const getSubmissionErrorMessage = (error, fallback) => {
+      const responseData = error?.response?.data;
+      if (typeof responseData === "string" && responseData.trim()) return responseData.trim();
+      if (responseData?.detail) return String(responseData.detail);
+      if (responseData?.message) return String(responseData.message);
+
+      if (responseData && typeof responseData === "object") {
+        const firstError = Object.values(responseData).flat(Infinity).find(
+          (value) => typeof value === "string" && value.trim()
+        );
+        if (firstError) return firstError.trim();
+      }
+
+      if (error?.code === "ERR_NETWORK") {
+        return "We could not reach the server. Please check your connection and try again.";
+      }
+
+      return fallback;
+    };
+
     const onSubmit = async (data) => {
       try {
         // Vendor creation goes through the same request endpoint used by the
@@ -1009,7 +1035,7 @@ const ItemAddNew = ({ initialItem, vendorId, itemId, onSave = () => {}, vendor, 
           );
 
           if (approvalResponse.status === 200) {
-            onSave(approvalResponse.data);
+            completeSave("Item approved successfully. Your changes have been saved.", approvalResponse.data);
           } else {
             throw new Error("Failed to approve the vendor item request.");
           }
@@ -2901,6 +2927,27 @@ const ItemAddNew = ({ initialItem, vendorId, itemId, onSave = () => {}, vendor, 
        />
      )}
    />
+
+            {submissionStatus.message && (
+              <div
+                role="status"
+                aria-live="polite"
+                className={`mb-4 flex items-start gap-3 rounded-2xl border px-4 py-3 text-sm shadow-sm ${
+                  submissionStatus.type === "success"
+                    ? "border-green-200 bg-green-50 text-green-800"
+                    : "border-red-200 bg-red-50 text-red-800"
+                }`}
+              >
+                <span className="mt-0.5 text-base font-semibold">
+                  {submissionStatus.type === "success" ? "✓" : "!"}
+                </span>
+                <div>
+                  <p className="font-semibold">
+                    {submissionStatus.type === "success" ? "Saved successfully" : "Unable to save"}</p>
+                  <p className="mt-0.5 text-sm">{submissionStatus.message}</p>
+                </div>
+              </div>
+            )}
 
             <div className="mt-10 mb-10 w-full">
               <Button
