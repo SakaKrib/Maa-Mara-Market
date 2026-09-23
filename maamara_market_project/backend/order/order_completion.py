@@ -166,4 +166,13 @@ def complete_paid_order(order, payment, *, transaction_id=None):
         locked_payment,
     )
 
+    # Email notifications are post-commit side effects. They must never cause
+    # a successful payment/order transaction to roll back, and they should be
+    # registered only for the first successful completion.
+    from .services.order_email import send_paid_order_emails
+    transaction.on_commit(
+        lambda order_id=locked_order.id: send_paid_order_emails(order_id),
+        robust=True,
+    )
+
     return locked_order, True
