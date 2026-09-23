@@ -220,15 +220,20 @@ def get_rates_for_destination(order, destination):
     """Return live DHL/FedEx rates for an owned order and destination."""
     rates = []
     provider_errors = []
-    for provider_name, provider in (("DHL", _dhl_rates), ("FedEx", _fedex_rates)):
-        try:
-            rates.extend(provider(order, destination))
-        except requests.exceptions.RequestException:
-            logger.exception("%s shipping provider request failed", provider_name)
-            provider_errors.append(provider_name)
-        except (ValueError, KeyError, TypeError):
-            logger.exception("%s returned an invalid shipping response", provider_name)
-            provider_errors.append(provider_name)
+
+    # Shipping-provider APIs are intentionally muted while the business is
+    # waiting for its DHL/FedEx credentials. Keep the provider implementations
+    # above intact so they can be re-enabled when API access is available.
+    #
+    # for provider_name, provider in (("DHL", _dhl_rates), ("FedEx", _fedex_rates)):
+    #     try:
+    #         rates.extend(provider(order, destination))
+    #     except requests.exceptions.RequestException:
+    #         logger.exception("%s shipping provider request failed", provider_name)
+    #         provider_errors.append(provider_name)
+    #     except (ValueError, KeyError, TypeError):
+    #         logger.exception("%s returned an invalid shipping response", provider_name)
+    #         provider_errors.append(provider_name)
     normalized_rates = []
     usd_to_kes_rate = None
     for rate in rates:
