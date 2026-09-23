@@ -108,7 +108,7 @@ def send_paid_order_emails(order_id):
     Send the customer confirmation and one vendor fulfillment email per vendor.
     This function is called only after the paid-order transaction commits.
     """
-        try:
+    try:
         from order.models import Order
         order = (
             Order.objects
