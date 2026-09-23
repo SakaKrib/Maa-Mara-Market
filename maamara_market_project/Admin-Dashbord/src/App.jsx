@@ -85,6 +85,7 @@ import SingleBlogPage from "./cmponents/VENDORPAGE/Blogs/SinglePageBlogPost";
 import { WishlistProvider } from "./cmponents/Hooks/WishListHook/Wishlist";
 import api from "./Services/Api";
 import ItemsOnsite from "./cmponents/VENDORPAGE/Products/VendorItems/ItemOnSite";
+import EditItemPage from "./cmponents/VENDORPAGE/Products/Forms/EditItemPage";
 import TransactionTable from "./cmponents/VENDORPAGE/Home/Transaction";
 import AdminAccounts from "./cmponents/Admin/AccountMain/Accountmain";
 import Settings from "./cmponents/Settings/Settings";
@@ -352,6 +353,7 @@ function AppContent() {
 
                 {/* Item on site */}
                 <Route path="item-onsite" element={<ItemsOnsite />} />
+                <Route path="edit-item/:itemId" element={<EditItemPage />} />
 
                 {/* transactions */}
                 <Route path="transactions" element={<TransactionTable />} />
