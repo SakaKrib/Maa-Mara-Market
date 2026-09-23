@@ -21,12 +21,13 @@ class RequestPasswordReset(APIView):
         uid = urlsafe_base64_encode(force_bytes(user.pk))
         token = default_token_generator.make_token(user)
 
-        reset_link = f"http://127.0.0.1:5173/reset-password/{uid}/{token}/"
+        reset_link = f"{settings.FRONTEND_URL.rstrip('/')}/reset-password/{uid}/{token}/"
 
         # 🔥 Render HTML template
         html_content = render_to_string("emails/reset_password.html", {
             "user": user,
-            "reset_link": reset_link
+            "reset_link": reset_link,
+            "frontend_url": settings.FRONTEND_URL.rstrip("/"),
         })
 
         text_content = strip_tags(html_content)
