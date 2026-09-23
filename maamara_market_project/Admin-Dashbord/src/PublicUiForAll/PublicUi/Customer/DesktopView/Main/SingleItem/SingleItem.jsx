@@ -148,6 +148,8 @@ const SingleItem = () => {
                   selectedAgeVariant={selectedAgeVariant}
                   selectedShoe={selectedShoe}
                   selectedShoeSize={selectedShoeSize}
+                  selectedWeight={selectedWeight}
+                  selectedLength={selectedLength}
                   customPreferences={customPreferences}
                   onAdded={refreshItem}
                 />
