@@ -60,7 +60,25 @@ def broadcast_activity_log(sender, instance, created, **kwargs):
 
     print("🔥 Activity log signal fired:", instance.id)
 
-    # IMPORTANT: ensure safe JSON types
+    # ActivityLogSerializer includes the nested ItemSerializer. Decimal model
+    # fields (for example price/discount values) are valid DRF response values
+    # but channels-redis/msgpack cannot serialize Decimal instances directly.
+    def make_channel_safe(value):
+        if isinstance(value, dict):
+            return {key: make_channel_safe(item) for key, item in value.items()}
+        if isinstance(value, (list, tuple)):
+            return [make_channel_safe(item) for item in value]
+        if hasattr(value, "isoformat"):
+            return value.isoformat()
+        # Keep numeric semantics for the frontend while making the payload
+        # compatible with msgpack used by channels-redis.
+        from decimal import Decimal
+        if isinstance(value, Decimal):
+            return float(value)
+        return value
+
+    data = make_channel_safe(data)
+
     async_to_sync(channel_layer.group_send)(
         "activity_logs",
         {
