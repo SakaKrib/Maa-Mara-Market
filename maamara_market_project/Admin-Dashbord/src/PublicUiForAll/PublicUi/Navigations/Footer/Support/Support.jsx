@@ -78,6 +78,8 @@ const Support = () => {
   const [sending, setSending] = useState(false);
   const [sent, setSent] = useState(false);
   const [error, setError] = useState("");
+  const [snackbar, setSnackbar] = useState({ open: false, message: "" });
+  const showSnackbar = (message) => setSnackbar({ open: true, message });
   const [tickets, setTickets] = useState([]);
   const [ticketsLoading, setTicketsLoading] = useState(true);
 
@@ -112,7 +114,7 @@ const Support = () => {
     setError("");
 
     if (!form.email.trim() || !form.subject.trim() || !form.message.trim()) {
-      setError("Email, subject, and message are required.");
+      setError("Email, subject, and message are required."); showSnackbar("Email, subject, and message are required.");
       return;
     }
 
@@ -146,6 +148,8 @@ const Support = () => {
 
   if (sent) {
     return (
+    <>
+      {snackbar.open && (<div className="fixed right-4 top-20 z-[1400] max-w-sm rounded-[20px] border border-gray-300 bg-card px-4 py-3 text-sm font-semibold text-card-foreground shadow-lg">{snackbar.message}<button type="button" onClick={() => setSnackbar((prev) => ({ ...prev, open: false }))} className="ml-3 text-xs text-muted-foreground hover:text-card-foreground" aria-label="Dismiss notification">×</button></div>)}
       <main className="min-h-[60vh] bg-background px-4 py-10 text-foreground sm:px-6 lg:px-8">
         <div className="mx-auto max-w-2xl rounded-2xl border border-border bg-card p-8 text-center shadow-sm sm:p-12">
           <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-primary/10 text-primary">
@@ -251,6 +255,7 @@ const Support = () => {
         <SupportHistory tickets={tickets} loading={ticketsLoading} />
       </div>
     </main>
+    </>
   );
 };
 
