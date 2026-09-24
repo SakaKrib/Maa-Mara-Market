@@ -7,24 +7,41 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        migrations.RemoveField(
-            model_name="transaction",
-            name="card",
+        migrations.RunSQL(
+            sql="""
+            DO $$
+            BEGIN
+                IF EXISTS (
+                    SELECT 1
+                    FROM pg_constraint
+                    WHERE conname = 'oder_transaction_card_id_fk'
+                ) THEN
+                    ALTER TABLE oder_transaction
+                    DROP CONSTRAINT oder_transaction_card_id_fk;
+                END IF;
+            END $$;
+            """,
+            reverse_sql=migrations.RunSQL.noop,
         ),
-        migrations.RemoveField(
-            model_name="transaction",
-            name="card_brand",
+        migrations.RunSQL(
+            sql="""
+            DROP INDEX IF EXISTS oder_transaction_card_id_idx;
+            ALTER TABLE oder_transaction
+            DROP COLUMN IF EXISTS card_id;
+            ALTER TABLE oder_transaction
+            DROP COLUMN IF EXISTS card_brand;
+            ALTER TABLE oder_transaction
+            DROP COLUMN IF EXISTS card_type;
+            ALTER TABLE oder_transaction
+            DROP COLUMN IF EXISTS last_4_digits;
+            """,
+            reverse_sql=migrations.RunSQL.noop,
         ),
-        migrations.RemoveField(
-            model_name="transaction",
-            name="card_type",
-        ),
-        migrations.RemoveField(
-            model_name="transaction",
-            name="last_4_digits",
-        ),
-        migrations.DeleteModel(
-            name="Card",
+        migrations.RunSQL(
+            sql="""
+            DROP TABLE IF EXISTS oder_card;
+            """,
+            reverse_sql=migrations.RunSQL.noop,
         ),
         migrations.AlterField(
             model_name="payment",
