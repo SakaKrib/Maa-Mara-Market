@@ -817,7 +817,7 @@ class PopularBlogPostsViewSet(viewsets.ViewSet):
         qs = BlogPost.objects.filter(approved=True).annotate(
             total_comments=Count('comments_blog'),
             total_reactions=Count('reactions_blog'),
-        ).order_by('-total_comments', '-total_reactions')[:1]
+        ).order_by('-total_comments', '-total_reactions')[:3]
 
         serializer = BlogPostSerializer(qs, many=True)
         return Response(serializer.data)
