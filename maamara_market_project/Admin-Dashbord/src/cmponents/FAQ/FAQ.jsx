@@ -13,7 +13,7 @@ const FAQ = () => {
   const [editedAnswer, setEditedAnswer] = useState("");
   const [newFaq, setNewFaq] = useState({ question: "", answer: "", category: "" });
   const [saving, setSaving] = useState(false);
-  const [faqCandidates, setFaqCandidates] = useState([]);
+  const [faqCandidates, setFaqCandidates] = useState([]);\n  const [snackbar, setSnackbar] = useState({ open: false, message: "" });\n  const showSnackbar = (message) => setSnackbar({ open: true, message });
 
   const fetchFaqs = async (silent = false) => {
     if (!silent) setLoading(true);
@@ -62,7 +62,7 @@ const FAQ = () => {
     };
 
     connect();
-    return () => {
+    return (\n    <>\n      {snackbar.open && (\n        <div className="fixed right-4 top-20 z-[1400] max-w-sm rounded-[20px] border border-gray-300 bg-card px-4 py-3 text-sm font-semibold text-card-foreground shadow-lg">\n          {snackbar.message}\n          <button type="button" onClick={() => setSnackbar((prev) => ({ ...prev, open: false }))} className="ml-3 text-xs text-muted-foreground hover:text-card-foreground" aria-label="Dismiss notification">×</button>\n        </div>\n      )) => {
       closed = true;
       if (timer) window.clearTimeout(timer);
       if (socket) socket.close();
@@ -70,14 +70,14 @@ const FAQ = () => {
   }, []);
 
   const handleCreate = async () => {
-    if (!newFaq.question.trim()) return;
+    if (!newFaq.question.trim()) { showSnackbar("Please enter a question."); return; }
     setSaving(true);
     try {
       const response = await api.post("/api/faqs/", newFaq, { withCredentials: true });
       setFaqs((current) => [response.data, ...current]);
-      setNewFaq({ question: "", answer: "", category: "" });
+      setNewFaq({ question: "", answer: "", category: "" });\n      showSnackbar("FAQ created successfully.");
     } catch (error) {
-      console.error("Failed to create FAQ:", error);
+      console.error("Failed to create FAQ:", error);\n      showSnackbar(error?.response?.data?.detail || "Could not create FAQ.");
     } finally {
       setSaving(false);
     }
@@ -93,9 +93,9 @@ const FAQ = () => {
       );
       setFaqs((current) => current.map((faq) => faq.id === id ? response.data : faq));
       setEditingId(null);
-      setEditedAnswer("");
+      setEditedAnswer("");\n      showSnackbar("FAQ updated successfully.");
     } catch (error) {
-      console.error("Failed to update FAQ:", error);
+      console.error("Failed to update FAQ:", error);\n      showSnackbar(error?.response?.data?.detail || "Could not update FAQ.");
     } finally {
       setSaving(false);
     }
