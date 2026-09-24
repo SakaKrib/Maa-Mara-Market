@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import api from "../../../../../../Services/Api";
+import api from "../../../../../Services/Api";
 import CategoryWithItems from "./Trending/Category/CategoryWithItemList";
 import Banners from "./Trending/Banner";
 import AdvertBlogs from "../../../../../cmponents/Hooks/BlogHooksNew/BlogAdvert";

@@ -311,6 +311,7 @@ const CustomerOrdersDashboard = ({ wallet: walletProp, vouchers: vouchersProp, o
                               size="sm"
                               variant="outline"
                               onClick={() => setSelectedItem(itemObj)}
+                              className='rounded-full text-red-500'
                             >
                               <Undo2 className="mr-2 h-4 w-4" aria-hidden="true" />
                               Return
