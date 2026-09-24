@@ -158,13 +158,19 @@ const EditBlogModal = ({ open, onClose, blog, onUpdated }) => {
       </Modal>
 
       {/* SNACKBAR */}
-      <Snackbar
-        open={snack.open}
-        autoHideDuration={3000}
-        onClose={() => setSnack((p) => ({ ...p, open: false }))}
-      >
-        <Alert severity={snack.severity}>{snack.message}</Alert>
-      </Snackbar>
+      {snack.open && (
+        <div className="fixed right-4 top-20 z-[1400] max-w-sm rounded-[20px] border border-gray-300 bg-card px-4 py-3 text-sm font-semibold text-card-foreground shadow-lg">
+          {snack.message}
+          <button
+            type="button"
+            onClick={() => setSnack((p) => ({ ...p, open: false }))}
+            className="ml-3 text-xs text-muted-foreground hover:text-card-foreground"
+            aria-label="Dismiss notification"
+          >
+            ×
+          </button>
+        </div>
+      )}
     </>
   );
 };
