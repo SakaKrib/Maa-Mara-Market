@@ -20,7 +20,6 @@ const SUPPORT_ISSUES = [
   ["other", "Other / something else"],
 ];
 
-
 const SupportHistory = ({ tickets, loading }) => (
   <section className="rounded-2xl border border-border bg-card p-6 shadow-sm sm:p-8">
     <div className="flex items-center justify-between gap-3">
@@ -148,30 +147,31 @@ const Support = () => {
 
   if (sent) {
     return (
-    <>
-      {snackbar.open && (<div className="fixed right-4 top-20 z-[1400] max-w-sm rounded-[20px] border border-gray-300 bg-card px-4 py-3 text-sm font-semibold text-card-foreground shadow-lg">{snackbar.message}<button type="button" onClick={() => setSnackbar((prev) => ({ ...prev, open: false }))} className="ml-3 text-xs text-muted-foreground hover:text-card-foreground" aria-label="Dismiss notification">×</button></div>)}
-      <main className="min-h-[60vh] bg-background px-4 py-10 text-foreground sm:px-6 lg:px-8">
-        <div className="mx-auto max-w-2xl rounded-2xl border border-border bg-card p-8 text-center shadow-sm sm:p-12">
-          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-primary/10 text-primary">
-            <IonIcon icon={checkmarkCircleOutline} className="text-3xl" />
+      <>
+        {snackbar.open && (<div className="fixed right-4 top-20 z-[1400] max-w-sm rounded-[20px] border border-gray-300 bg-card px-4 py-3 text-sm font-semibold text-card-foreground shadow-lg">{snackbar.message}<button type="button" onClick={() => setSnackbar((prev) => ({ ...prev, open: false }))} className="ml-3 text-xs text-muted-foreground hover:text-card-foreground" aria-label="Dismiss notification">×</button></div>)}
+        <main className="min-h-[60vh] bg-background px-4 py-10 text-foreground sm:px-6 lg:px-8">
+          <div className="mx-auto max-w-2xl rounded-2xl border border-border bg-card p-8 text-center shadow-sm sm:p-12">
+            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-primary/10 text-primary">
+              <IonIcon icon={checkmarkCircleOutline} className="text-3xl" />
+            </div>
+            <h1 className="mt-5 text-2xl font-semibold tracking-tight text-card-foreground">Support request received</h1>
+            <p className="mx-auto mt-3 max-w-xl text-sm leading-6 text-muted-foreground">
+              Thanks for contacting Maa Mara Market. Our support team will review your message and reply to the email address you provided.
+            </p>
+            <div className="mt-6 flex flex-wrap justify-center gap-3">
+              <button type="button" onClick={() => setSent(false)} className="rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground">
+                Send another request
+              </button>
+              <Link to="/faq" className="rounded-xl border border-border px-5 py-2.5 text-sm font-semibold text-card-foreground">
+                Browse FAQs
+              </Link>
+            </div>
           </div>
-          <h1 className="mt-5 text-2xl font-semibold tracking-tight text-card-foreground">Support request received</h1>
-          <p className="mx-auto mt-3 max-w-xl text-sm leading-6 text-muted-foreground">
-            Thanks for contacting Maa Mara Market. Our support team will review your message and reply to the email address you provided.
-          </p>
-          <div className="mt-6 flex flex-wrap justify-center gap-3">
-            <button type="button" onClick={() => setSent(false)} className="rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground">
-              Send another request
-            </button>
-            <Link to="/faq" className="rounded-xl border border-border px-5 py-2.5 text-sm font-semibold text-card-foreground">
-              Browse FAQs
-            </Link>
+          <div className="mx-auto mt-6 max-w-2xl">
+            <SupportHistory tickets={tickets} loading={ticketsLoading} />
           </div>
-        </div>
-        <div className="mx-auto mt-6 max-w-2xl">
-          <SupportHistory tickets={tickets} loading={ticketsLoading} />
-        </div>
-      </main>
+        </main>
+      </>
     );
   }
 
@@ -255,7 +255,6 @@ const Support = () => {
         <SupportHistory tickets={tickets} loading={ticketsLoading} />
       </div>
     </main>
-    </>
   );
 };
 
