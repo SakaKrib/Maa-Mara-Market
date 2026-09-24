@@ -844,7 +844,7 @@ class UserAccountView(APIView):
         wallet, _ = Wallet.objects.get_or_create(user=user)
         referral, _ = Referral.objects.get_or_create(referrer=user)
         if (
-            user.order_set.filter(status="completed").count() >= 5
+            user.order_set.filter(status__iexact="completed").count() >= 5
             and not Voucher.objects.filter(user=user, active=True).exists()
         ):
             Voucher.objects.create(
@@ -857,7 +857,7 @@ class UserAccountView(APIView):
 
          # ✅ Only get completed orders
         completed_orders = (
-            Order.objects.filter(user=user, status="completed")
+            Order.objects.filter(user=user, status__iexact="completed")
             .order_by("-created_at")
         )
 
@@ -955,13 +955,21 @@ def user_account_view(request):
         wallet = Wallet.objects.filter(user=user).first()
         vouchers = Voucher.objects.filter(user=user, active=True)
         referral = Referral.objects.filter(referrer=user).first()
-        orders = Order.objects.filter(user=user, status__in=["pending", "completed"]).order_by("-created_at")
+        orders = Order.objects.filter(
+            user=user
+        ).filter(
+            models.Q(status__iexact="pending") | models.Q(status__iexact="completed")
+        ).order_by("-created_at")
     else:
         profile = None
         wallet = None
         vouchers = []
         referral = None
-        orders = Order.objects.filter(visitor_id=visitor_id, status__in=["pending", "completed"]).order_by("-created_at")
+        orders = Order.objects.filter(
+            visitor_id=visitor_id
+        ).filter(
+            models.Q(status__iexact="pending") | models.Q(status__iexact="completed")
+        ).order_by("-created_at")
 
 
     # 4️⃣ Build order data (including items)
