@@ -14,7 +14,9 @@ const SupportAdminPanel = ({ open = true, onClose }) => {
   const [reply, setReply] = useState("");
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
-  const [error, setError] = useState("");\n  const [snackbar, setSnackbar] = useState({ open: false, message: "" });\n  const showSnackbar = (message) => setSnackbar({ open: true, message });
+  const [error, setError] = useState("");
+  const [snackbar, setSnackbar] = useState({ open: false, message: "" });
+  const showSnackbar = (message) => setSnackbar({ open: true, message });
 
   const fetchTickets = async () => {
     try {
@@ -25,7 +27,9 @@ const SupportAdminPanel = ({ open = true, onClose }) => {
       setTickets(data);
       setSelectedTicket((current) => current ? data.find((ticket) => ticket.id === current.id) || current : null);
     } catch (requestError) {
-      const message = requestError?.response?.data?.detail || "Could not load support requests.";\n      setError(message);\n      showSnackbar(message);
+      const message = requestError?.response?.data?.detail || "Could not load support requests.";
+      setError(message);
+      showSnackbar(message);
     } finally {
       setLoading(false);
     }
@@ -56,10 +60,16 @@ const SupportAdminPanel = ({ open = true, onClose }) => {
       setSelectedTicket(updated);
       setReply(updated.support_reply || "");
       if (updated.email_sent === false) {
-        const message = "Reply was saved to the support ticket, but the customer email could not be delivered. Check the backend email configuration/logs.";\n        setError(message);\n        showSnackbar(message);\n      } else {\n        showSnackbar("Support reply sent successfully.");
+        const message = "Reply was saved to the support ticket, but the customer email could not be delivered. Check the backend email configuration/logs.";
+        setError(message);
+        showSnackbar(message);
+      } else {
+        showSnackbar("Support reply sent successfully.");
       }
     } catch (requestError) {
-      const message = requestError?.response?.data?.detail || "Could not send the reply.";\n      setError(message);\n      showSnackbar(message);
+      const message = requestError?.response?.data?.detail || "Could not send the reply.";
+      setError(message);
+      showSnackbar(message);
     } finally {
       setSending(false);
     }
@@ -67,8 +77,8 @@ const SupportAdminPanel = ({ open = true, onClose }) => {
 
   if (!open) return null;
 
-  return (\n    <>\n      {snackbar.open && (\n        <div className="fixed right-4 top-20 z-[1400] max-w-sm rounded-[20px] border border-gray-300 bg-card px-4 py-3 text-sm font-semibold text-card-foreground shadow-lg">{snackbar.message}<button type="button" onClick={() => setSnackbar((prev) => ({ ...prev, open: false }))} className="ml-3 text-xs text-muted-foreground hover:text-card-foreground" aria-label="Dismiss notification">×</button></div>\n      )
-    <div className="min-h-[calc(100vh-72px)] w-full bg-background p-2 text-foreground sm:p-4 lg:p-6">
+  return (\n    <div className="min-h-[calc(100vh-72px)] w-full bg-background p-2 text-foreground sm:p-4 lg:p-6">
+      {snackbar.open && (<div className="fixed right-4 top-20 z-[1400] max-w-sm rounded-[20px] border border-gray-300 bg-card px-4 py-3 text-sm font-semibold text-card-foreground shadow-lg">{snackbar.message}<button type="button" onClick={() => setSnackbar((prev) => ({ ...prev, open: false }))} className="ml-3 text-xs text-muted-foreground hover:text-card-foreground" aria-label="Dismiss notification">×</button></div>)}
       <div className="relative mx-auto max-w-7xl rounded-2xl border border-border bg-background p-2 shadow-2xl sm:p-4">
         <button type="button" onClick={onClose} aria-label="Close support" className="absolute right-3 top-3 z-10 rounded-xl p-2 text-muted-foreground hover:bg-muted">
           <IonIcon icon={closeOutline} />
