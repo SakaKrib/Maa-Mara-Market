@@ -94,7 +94,7 @@ def return_request_handler_api(request, item_id):
             }, status=status.HTTP_409_CONFLICT)
 
         # Returns/refunds are only valid for paid, completed orders.
-        if order.status != "completed" or not order.payment or order.payment.status != "completed":
+        if order.status not in {"COMPLETED", "completed"} or not order.payment or order.payment.status != "completed":
             return Response({
                 "success": False,
                 "error": "Only completed, paid orders can be returned.",
