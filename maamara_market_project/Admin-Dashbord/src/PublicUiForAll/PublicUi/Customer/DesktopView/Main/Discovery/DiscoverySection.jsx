@@ -16,7 +16,7 @@ const DiscoverySection = ({ title, description, items = [] }) => {
             {description && <p>{description}</p>}
           </div>
         </div>
-        <div className="product-card-grid grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4 lg:gap-6">
+        <div className="product-card-grid grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4 lg:gap-6 mm-mobile-horizontal-scroll mm-mobile-discovery-rail">
           {items.map((item) => {
             const wishlisted = wishlist.some((entry) => entry.item?.id === item.id || entry.id === item.id);
             return (
