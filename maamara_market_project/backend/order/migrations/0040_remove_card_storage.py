@@ -11,11 +11,13 @@ class Migration(migrations.Migration):
             sql="""
             DO $$
             BEGIN
-                IF EXISTS (
-                    SELECT 1
-                    FROM pg_constraint
-                    WHERE conname = 'oder_transaction_card_id_fk'
-                ) THEN
+                IF to_regclass('oder_transaction') IS NOT NULL
+                   AND EXISTS (
+                       SELECT 1
+                       FROM pg_constraint
+                       WHERE conrelid = 'oder_transaction'::regclass
+                         AND conname = 'oder_transaction_card_id_fk'
+                   ) THEN
                     ALTER TABLE oder_transaction
                     DROP CONSTRAINT oder_transaction_card_id_fk;
                 END IF;
@@ -25,15 +27,20 @@ class Migration(migrations.Migration):
         ),
         migrations.RunSQL(
             sql="""
-            DROP INDEX IF EXISTS oder_transaction_card_id_idx;
-            ALTER TABLE oder_transaction
-            DROP COLUMN IF EXISTS card_id;
-            ALTER TABLE oder_transaction
-            DROP COLUMN IF EXISTS card_brand;
-            ALTER TABLE oder_transaction
-            DROP COLUMN IF EXISTS card_type;
-            ALTER TABLE oder_transaction
-            DROP COLUMN IF EXISTS last_4_digits;
+            DO $$
+            BEGIN
+                IF to_regclass('oder_transaction') IS NOT NULL THEN
+                    DROP INDEX IF EXISTS oder_transaction_card_id_idx;
+                    ALTER TABLE oder_transaction
+                    DROP COLUMN IF EXISTS card_id;
+                    ALTER TABLE oder_transaction
+                    DROP COLUMN IF EXISTS card_brand;
+                    ALTER TABLE oder_transaction
+                    DROP COLUMN IF EXISTS card_type;
+                    ALTER TABLE oder_transaction
+                    DROP COLUMN IF EXISTS last_4_digits;
+                END IF;
+            END $$;
             """,
             reverse_sql=migrations.RunSQL.noop,
         ),
@@ -43,28 +50,33 @@ class Migration(migrations.Migration):
             """,
             reverse_sql=migrations.RunSQL.noop,
         ),
-        migrations.AlterField(
-            model_name="payment",
-            name="payment_method",
-            field=models.CharField(
-                choices=[
-                    ("UNKNOWN", "Unknown"),
-                    ("MPESA", "M-Pesa"),
-                ],
-                default="UNKNOWN",
-                max_length=20,
-            ),
-        ),
-        migrations.AlterField(
-            model_name="transaction",
-            name="payment_method",
-            field=models.CharField(
-                choices=[
-                    ("paypal", "PayPal"),
-                    ("mpesa", "M-Pesa"),
-                ],
-                default="paypal",
-                max_length=50,
-            ),
+        migrations.SeparateDatabaseAndState(
+            database_operations=[],
+            state_operations=[
+                migrations.AlterField(
+                    model_name="payment",
+                    name="payment_method",
+                    field=models.CharField(
+                        choices=[
+                            ("UNKNOWN", "Unknown"),
+                            ("MPESA", "M-Pesa"),
+                        ],
+                        default="UNKNOWN",
+                        max_length=20,
+                    ),
+                ),
+                migrations.AlterField(
+                    model_name="transaction",
+                    name="payment_method",
+                    field=models.CharField(
+                        choices=[
+                            ("paypal", "PayPal"),
+                            ("mpesa", "M-Pesa"),
+                        ],
+                        default="paypal",
+                        max_length=50,
+                    ),
+                ),
+            ],
         ),
     ]
