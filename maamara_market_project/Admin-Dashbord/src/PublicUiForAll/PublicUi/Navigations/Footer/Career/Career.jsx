@@ -16,6 +16,8 @@ const CareerPage = () => {
   const [form, setForm] = useState(initialForm);
   const [submitting, setSubmitting] = useState(false);
   const [message, setMessage] = useState("");
+  const [snackbar, setSnackbar] = useState({ open: false, message: "" });
+  const showSnackbar = (message) => setSnackbar({ open: true, message });
   const fileInputRef = useRef(null);
 
   useEffect(() => {
@@ -29,7 +31,7 @@ const CareerPage = () => {
       })
       .catch((error) => {
         console.error("Failed to load careers:", error);
-        setMessage("Unable to load career opportunities.");
+        setMessage("Unable to load career opportunities."); showSnackbar("Unable to load career opportunities.");
       })
       .finally(() => setLoading(false));
   }, []);
@@ -55,7 +57,7 @@ const CareerPage = () => {
     if (!selectedJob) return;
 
     if (!form.full_name.trim() || !form.email.trim() || !form.phone.trim() || !form.cv) {
-      setMessage("Please complete your name, email, phone number and CV.");
+      setMessage("Please complete your name, email, phone number and CV."); showSnackbar("Please complete your name, email, phone number and CV.");
       return;
     }
 
@@ -72,12 +74,12 @@ const CareerPage = () => {
       await api.post("/api/careers/apply/", payload, {
         headers: { "Content-Type": "multipart/form-data" },
       });
-      setMessage("Application submitted successfully.");
+      setMessage("Application submitted successfully."); showSnackbar("Application submitted successfully.");
       setForm(initialForm);
       setTimeout(() => setSelectedJob(null), 900);
     } catch (error) {
       console.error("Application submission failed:", error);
-      setMessage(error.response?.data?.detail || "Application could not be submitted. Please try again.");
+      setMessage(error.response?.data?.detail || "Application could not be submitted. Please try again."); showSnackbar(error.response?.data?.detail || "Application could not be submitted. Please try again.");
     } finally {
       setSubmitting(false);
     }
@@ -85,6 +87,7 @@ const CareerPage = () => {
 
   return (
     <main className="mm-careers-page">
+      {snackbar.open && (<div className="fixed right-4 top-20 z-[1400] max-w-sm rounded-[20px] border border-gray-300 bg-card px-4 py-3 text-sm font-semibold text-card-foreground shadow-lg">{snackbar.message}<button type="button" onClick={() => setSnackbar((prev) => ({ ...prev, open: false }))} className="ml-3 text-xs text-muted-foreground hover:text-card-foreground" aria-label="Dismiss notification">×</button></div>)}
       <section className="mm-careers-hero">
         <div className="mm-careers-container">
           <div className="mm-careers-hero-copy">
@@ -218,7 +221,7 @@ const CareerPage = () => {
                     const file = event.target.files?.[0];
                     if (!file) return;
                     if (file.size > 5 * 1024 * 1024) {
-                      setMessage("CV must be smaller than 5 MB.");
+                      setMessage("CV must be smaller than 5 MB."); showSnackbar("CV must be smaller than 5 MB.");
                       return;
                     }
                     setForm({ ...form, cv: file });
