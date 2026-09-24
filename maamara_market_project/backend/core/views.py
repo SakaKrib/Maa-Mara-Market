@@ -853,16 +853,24 @@ class UserAccountView(APIView):
                 active=True
             )
 
-        voucher = Voucher.objects.filter(user=user, active=True).first()    
+        voucher = Voucher.objects.filter(user=user, active=True).first()
 
-         # ✅ Only get completed orders
-        completed_orders = (
-            Order.objects.filter(user=user, status__iexact="completed")
+        # Return the customer's current order lifecycle so the customer
+        # orders page can distinguish unpaid, in-process, and completed orders.
+        customer_order_statuses = (
+            "PENDING_PAYMENT",
+            *Order.PAID_STATUSES,
+        )
+        customer_orders = (
+            Order.objects.filter(
+                user=user,
+                status__in=customer_order_statuses,
+            )
             .order_by("-created_at")
         )
 
         order_serializer = OrderSerializer(
-            completed_orders, many=True, context={"request": request}
+            customer_orders, many=True, context={"request": request}
         )
 
         # Serialize everything
