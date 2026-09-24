@@ -236,6 +236,7 @@ def checkout_status(request, checkout_id):
         "order_id": checkout_session.order_id,
         "amount": str(checkout_session.amount),
         "payment_method": checkout_session.payment_method,
+        "paypal_order_id": checkout_session.paypal_order_id,
     })
 
 
