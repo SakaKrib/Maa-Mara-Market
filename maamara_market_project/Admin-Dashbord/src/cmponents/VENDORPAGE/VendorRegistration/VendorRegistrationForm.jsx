@@ -1553,23 +1553,19 @@ const onSubmit = async (data) => {
     </Form>
 
  {/* Snackbar Alert */}
- <Snackbar
-  open={snackbarOpen}
-  autoHideDuration={4000}
-  onClose={handleCloseSnackbar}
-  anchorOrigin={{ vertical: "top", horizontal: "right" }}
-  style={{ zIndex: 9999 }}
->
-  <MuiAlert
-    onClose={handleCloseSnackbar}
-    severity={snackbarSeverity}
-    elevation={6}
-    variant="filled"
-    sx={{ width: "100%" }}
-  >
+ {snackbarOpen && (
+  <div className="fixed right-4 top-20 z-[1400] max-w-sm rounded-[20px] border border-gray-300 bg-card px-4 py-3 text-sm font-semibold text-card-foreground shadow-lg">
     {snackbarMessage}
-  </MuiAlert>
-</Snackbar>
+    <button
+      type="button"
+      onClick={handleCloseSnackbar}
+      className="ml-3 text-xs text-muted-foreground hover:text-card-foreground"
+      aria-label="Dismiss notification"
+    >
+      ×
+    </button>
+  </div>
+ )}
 
 
  {/* 🔥 DEBUG PANEL (PUT IT HERE) */}
