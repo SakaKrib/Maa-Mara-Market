@@ -2,7 +2,6 @@ import React, { useEffect, useMemo, useState } from "react";
 import api from "../../../../../../Services/Api";
 import { Button } from "../../../../../../../components/ui/button";
 import { Loader2, PackageCheck, UploadCloud, Undo2 } from "lucide-react";
-import Snackbar from "@mui/material/Snackbar";
 import MuiAlert from "@mui/material/Alert";
 import { Link, useLocation } from "react-router-dom";
 
@@ -31,7 +30,7 @@ const RequestReturnForm = ({ selectedItem = null }) => {
   const [image, setImage] = useState(null);
   const [loadingOrders, setLoadingOrders] = useState(true);
   const [loading, setLoading] = useState(false);
-  const [snackbar, setSnackbar] = useState({ open: false, message: "", severity: "success" });
+  const [snackbar, setSnackbar] = useState({ open: false, message: "" });
 
   useEffect(() => {
     let active = true;
@@ -73,8 +72,8 @@ const RequestReturnForm = ({ selectedItem = null }) => {
 
   const availableItems = selectedOrder?.items || [];
 
-  const showMessage = (message, severity = "error") =>
-    setSnackbar({ open: true, message, severity });
+  const showMessage = (message) =>
+    setSnackbar({ open: true, message });
 
   const resetForm = () => {
     setReason("");
@@ -135,9 +134,7 @@ const RequestReturnForm = ({ selectedItem = null }) => {
 
       if (response.data?.success) {
         showMessage(
-          response.data.message || "Your return request has been submitted.",
-          "success"
-        );
+          response.data.message || "Your return request has been submitted.");
         resetForm();
       } else {
         showMessage(response.data?.error || "The return request could not be submitted.");
