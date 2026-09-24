@@ -200,7 +200,7 @@ def vendor_analytics_stats(request):
     views_qs = ItemView.objects.filter(item__in=items, viewed_at__gte=start_dt, viewed_at__lt=end_dt)
     pending_qs = OrderItem.objects.filter(
         item__in=items,
-        order__status="pending",
+        order__status__in=["PENDING_PAYMENT", "pending"],
         order__ordered_date__gte=start_dt,
         order__ordered_date__lt=end_dt,
     )
