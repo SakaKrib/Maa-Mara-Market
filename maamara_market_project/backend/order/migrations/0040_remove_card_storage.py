@@ -1,4 +1,4 @@
-from django.db import migrations
+from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
@@ -25,5 +25,29 @@ class Migration(migrations.Migration):
         ),
         migrations.DeleteModel(
             name="Card",
+        ),
+        migrations.AlterField(
+            model_name="payment",
+            name="payment_method",
+            field=models.CharField(
+                choices=[
+                    ("UNKNOWN", "Unknown"),
+                    ("MPESA", "M-Pesa"),
+                ],
+                default="UNKNOWN",
+                max_length=20,
+            ),
+        ),
+        migrations.AlterField(
+            model_name="transaction",
+            name="payment_method",
+            field=models.CharField(
+                choices=[
+                    ("paypal", "PayPal"),
+                    ("mpesa", "M-Pesa"),
+                ],
+                default="paypal",
+                max_length=50,
+            ),
         ),
     ]
