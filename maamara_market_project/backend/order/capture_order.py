@@ -1,7 +1,5 @@
 import logging
 
-import logging
-
 import requests
 from decimal import Decimal
 
@@ -150,9 +148,10 @@ def capture_paypal_order(request, order_id):
             capture.get("amount", {}).get("currency_code", "USD")
         ).upper()
 
-        expected_provider_amount = Decimal(str(
-            checkout_session.payload.get("paypal", {}).get("provider_amount", provider_amount)
-        ))
+        expected_provider_amount_raw = checkout_session.payload.get("paypal", {}).get("provider_amount")
+        if expected_provider_amount_raw is None:
+            raise ValueError("PayPal checkout is missing its provider amount.")
+        expected_provider_amount = Decimal(str(expected_provider_amount_raw))
 
         if (
             not capture_id
