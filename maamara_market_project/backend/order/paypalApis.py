@@ -374,9 +374,9 @@ def create_or_update_customer_from_order(order):
         order.customer = customer
         order.save(update_fields=["customer"])
 
-    # Mark order completed
-    if order.status != "completed":
-        order.status = "completed"
+    # Keep persisted order status aligned with Order.ORDER_STATUS_CHOICES.
+    if order.status != "COMPLETED":
+        order.status = "COMPLETED"
         order.save(update_fields=["status"])
 
     logger.info(
