@@ -832,9 +832,60 @@ def generate_voucher_code(prefix="VOUCH", length=8, max_attempts=10):
     raise Exception("Failed to generate unique voucher code after multiple attempts.")
 
 class UserAccountView(APIView):
-    permission_classes = [IsAuthenticated]
+    # The account endpoint is also used by the customer dashboard while a
+    # visitor checkout is still anonymous. Keep authenticated-user behavior
+    # unchanged, but allow the same endpoint to return visitor-scoped orders.
+    permission_classes = [IsAuthenticatedOrVisitor]
 
     def get(self, request):
+        customer_order_statuses = (
+            "PENDING_PAYMENT",
+            "pending",
+            "completed",
+            *Order.PAID_STATUSES,
+        )
+
+        # Visitor account: never attempt to create Profile/Wallet/Referral
+        # rows against AnonymousUser. Scope the response strictly to the
+        # visitor cookie that was validated by IsAuthenticatedOrVisitor.
+        if not request.user or not request.user.is_authenticated:
+            visitor_id = request.COOKIES.get("visitorId")
+            if not visitor_id:
+                return Response(
+                    {"success": True, "authType": "visitor", "orders": []},
+                    status=status.HTTP_200_OK,
+                )
+
+            visitor_orders = (
+                Order.objects.filter(
+                    visitor_id=visitor_id,
+                    status__in=customer_order_statuses,
+                )
+                .distinct()
+                .order_by("-created_at")
+            )
+
+            order_serializer = OrderSerializer(
+                visitor_orders, many=True, context={"request": request}
+            )
+
+            return Response({
+                "success": True,
+                "authType": "visitor",
+                "is_authenticated": False,
+                "user": {
+                    "id": None,
+                    "first_name": None,
+                    "last_name": None,
+                    "email": None,
+                },
+                "profile": None,
+                "wallet": None,
+                "vouchers": [],
+                "referral": None,
+                "orders": order_serializer.data,
+            })
+
         user = request.user
 
         # Ensure the profile exists
@@ -855,19 +906,9 @@ class UserAccountView(APIView):
 
         voucher = Voucher.objects.filter(user=user, active=True).first()
 
-        # Return the customer's current order lifecycle so the customer
-        # orders page can distinguish unpaid, in-process, and completed orders.
-        customer_order_statuses = (
-            "PENDING_PAYMENT",
-            "pending",
-            "completed",
-            *Order.PAID_STATUSES,
-        )
-        # Orders can legitimately have no Order.user when they originated
-        # from a visitor checkout. Once that checkout is associated with a
-        # Customer record, the authenticated customer must still be able to
-        # see those orders. Preserve direct user-owned orders and include
-        # Customer records that belong to this user's account email.
+        # Preserve direct user-owned orders and include Customer records that
+        # belong to this user's account email so visitor-originated checkouts
+        # associated with that customer remain visible after authentication.
         customer_ids = Customer.objects.filter(
             models.Q(user=user) | models.Q(email__iexact=user.email)
         ).values_list("id", flat=True)
@@ -892,7 +933,6 @@ class UserAccountView(APIView):
         referral_serializer = ReferralSerializer(referral)
         voucher_serializer = VoucherSerializer(voucher)
 
-        # Combine into single response
         return Response({
             "success": True,
             "user": user_serializer.data,
@@ -902,6 +942,7 @@ class UserAccountView(APIView):
             "voucher": voucher_serializer.data,
             "orders": order_serializer.data,
         })
+
 
 class UpdateProfileView(APIView):
     permission_classes = [IsAuthenticatedOrVisitor]
