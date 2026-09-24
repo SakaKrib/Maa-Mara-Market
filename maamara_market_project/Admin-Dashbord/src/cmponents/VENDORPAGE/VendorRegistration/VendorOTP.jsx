@@ -179,7 +179,7 @@ const OTPVerification = () => {
               ×
             </button>
           </div>
-        )}
+        </Snackbar>
       </div>
     </div>
   );
