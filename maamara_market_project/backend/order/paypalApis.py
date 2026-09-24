@@ -375,9 +375,9 @@ def create_or_update_customer_from_order(order):
         order.customer = customer
         order.save(update_fields=["customer"])
 
-    # Keep persisted order status aligned with Order.ORDER_STATUS_CHOICES.
-    if order.status != "COMPLETED":
-        order.status = "COMPLETED"
+    # Keep persisted order status aligned with the paid-order lifecycle.
+    if order.status != "PAID":
+        order.status = "PAID"
         order.save(update_fields=["status"])
 
     logger.info(
