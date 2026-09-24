@@ -124,19 +124,22 @@ export default function PaypalBulkPayment({ onSuccess }) {
       const { vendor_name, email, amount } = payments[i];
 
       if (!vendor_name || !email || !amount) {
-        showSnackbar(`⚠️ Missing fields in row ${i + 1}`);\n        setError(`⚠️ Missing fields in row ${i + 1}`);
+        showSnackbar(`⚠️ Missing fields in row ${i + 1}`);
+        setError(`⚠️ Missing fields in row ${i + 1}`);
         return false;
       }
 
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
       if (!emailRegex.test(email)) {
-        showSnackbar(`⚠️ Invalid email format at row ${i + 1}`);\n        setError(`⚠️ Invalid email format at row ${i + 1}`);
+        showSnackbar(`⚠️ Invalid email format at row ${i + 1}`);
+        setError(`⚠️ Invalid email format at row ${i + 1}`);
         return false;
       }
 
       if (isNaN(amount) || Number(amount) <= 0) {
-        showSnackbar(`⚠️ Invalid amount at row ${i + 1}`);\n        setError(`⚠️ Invalid amount at row ${i + 1}`);
+        showSnackbar(`⚠️ Invalid amount at row ${i + 1}`);
+        setError(`⚠️ Invalid amount at row ${i + 1}`);
         return false;
       }
     }
