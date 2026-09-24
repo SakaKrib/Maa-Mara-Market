@@ -17,11 +17,6 @@ class Migration(migrations.Migration):
     operations = [
         migrations.RenameField(
             model_name="payment",
-            old_name="method",
-            new_name="payment_method",
-        ),
-        migrations.RenameField(
-            model_name="payment",
             old_name="timestamp",
             new_name="created_at",
         ),
