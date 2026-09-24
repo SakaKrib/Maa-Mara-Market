@@ -455,7 +455,9 @@ const CreateItemFromRequest = ({  vendorId, itemId, onSave, vendor, item }) => {
         }
       } catch (error) {
         console.error("❌ Error saving draft:", error);
-        alert("Draft save failed. Check console for details.");
+        setToastMessage("Draft save failed. Check console for details.");
+        setToastSeverity("error");
+        setToastOpen(true);
       }
     };
     
@@ -1988,16 +1990,19 @@ y
         </form>
       </Form>
 
-<Snackbar
-open={toastOpen}
-autoHideDuration={4000}
-onClose={handleToastClose}
-anchorOrigin={{ vertical: "top", horizontal: "right" }}
->
-<Alert onClose={handleToastClose} severity={toastSeverity} sx={{ width: "100%" }}>
-  {toastMessage}
-</Alert>
-</Snackbar>
+{toastOpen && (
+  <div className="fixed right-4 top-20 z-[1400] max-w-sm rounded-[20px] border border-gray-300 bg-card px-4 py-3 text-sm font-semibold text-card-foreground shadow-lg">
+    {toastMessage}
+    <button
+      type="button"
+      onClick={handleToastClose}
+      className="ml-3 text-xs text-muted-foreground hover:text-card-foreground"
+      aria-label="Dismiss notification"
+    >
+      ×
+    </button>
+  </div>
+)}
 </Box>
     );
   };
