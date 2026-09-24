@@ -666,7 +666,7 @@ def paypal_webhook(request):
             )
 
             from .order_completion import complete_paid_order
-            locked_order, _completed = complete_paid_order(
+            locked_order, completed = complete_paid_order(
                 order,
                 order.payment,
                 transaction_id=transaction_id,
@@ -688,6 +688,7 @@ def paypal_webhook(request):
                             "amount": Decimal(str(amount)),
                             "status": "completed",
                             "payer_email": resource.get("payer", {}).get("email_address"),
+                            "visitor_id": None,
                             "raw_data": data,
                         },
                     )
