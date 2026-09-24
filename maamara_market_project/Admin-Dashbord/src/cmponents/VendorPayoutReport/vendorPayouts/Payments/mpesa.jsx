@@ -122,6 +122,21 @@ export default function MpesaB2CPayment({ onSuccess }) {
   };
 
   return (
+    <>
+      {snackbar.open && (
+        <div className="fixed right-4 top-20 z-[1400] max-w-sm rounded-[20px] border border-gray-300 bg-card px-4 py-3 text-sm font-semibold text-card-foreground shadow-lg">
+          {snackbar.message}
+          <button
+            type="button"
+            onClick={() => setSnackbar((prev) => ({ ...prev, open: false }))}
+            className="ml-3 text-xs text-muted-foreground hover:text-card-foreground"
+            aria-label="Dismiss notification"
+          >
+            ×
+          </button>
+        </div>
+      )}
+
     <Box sx={{ p: 2, mt: -3 }}>
       <Box
         sx={{
@@ -176,11 +191,9 @@ export default function MpesaB2CPayment({ onSuccess }) {
           }}
         >
           {loading ? <CircularProgress size={24} /> : "Send Payment"}
-        </Button>
-
-        {message && snackbar.open === false ? null : null}
-        
+        </Button>        
       </Box>
     </Box>
+    </>
   );
 }
