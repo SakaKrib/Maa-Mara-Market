@@ -78,7 +78,7 @@ class VendorAdminViewSet(viewsets.ModelViewSet):
         vendor = self.get_object()
         completed_items = OrderItem.objects.filter(
             item__vendor=vendor,
-            order__status__iexact="completed",
+            order__status__in=["COMPLETED", "completed"],
         )
 
         sales = completed_items.aggregate(
@@ -144,7 +144,7 @@ def admin_item_performance(request, item_id):
 
     completed_sales = OrderItem.objects.filter(
         item=item,
-        order__status__iexact="completed",
+        order__status__in=["COMPLETED", "completed"],
     ).aggregate(
         units=Sum("quantity"),
         amount=Sum(
@@ -166,7 +166,7 @@ def admin_item_performance(request, item_id):
     # completed orders.
     cart_row = OrderItem.objects.filter(
         item=item,
-        order__status__iexact="pending",
+        order__status__in=["PENDING_PAYMENT", "pending"],
     ).aggregate(quantity=Sum("quantity"), customers=Count("order__id", distinct=True))
 
     return Response({
