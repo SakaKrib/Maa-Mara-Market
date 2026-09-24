@@ -9,7 +9,7 @@ def cleanup_old_visitor_orders():
     old_orders = Order.objects.filter(
         user__isnull=True,
         visitor_id__isnull=False,
-        status="pending",
+        status__in=["PENDING_PAYMENT", "pending"],
         ordered_date__lte=cutoff_date
     )
 
