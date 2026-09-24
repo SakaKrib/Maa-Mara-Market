@@ -4,7 +4,6 @@ import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Input } from "../../../../../../../components/ui/input";
 import { Button } from "../../../../../../../components/ui/button";
-import Snackbar from "@mui/material/Snackbar";
 import Alert from "@mui/material/Alert";
 import { Card, CardContent, CardHeader, CardTitle } from "../../../../../../../components/ui/card";
 import { useCartContext } from "../CartHook/cart";
@@ -309,21 +308,12 @@ const fetchShippingQuote = async () => {
 
   return (
     <>
-      <Snackbar
-        open={snackbar.open}
-        autoHideDuration={4000}
-        onClose={() => setSnackbar((current) => ({ ...current, open: false }))}
-        anchorOrigin={{ vertical: "top", horizontal: "right" }}
-      >
-        <Alert
-          onClose={() => setSnackbar((current) => ({ ...current, open: false }))}
-          severity={snackbar.severity}
-          variant="filled"
-          sx={{ width: "100%" }}
-        >
+      {snackbar.open && (
+        <div className="fixed right-4 top-20 z-[1400] max-w-sm rounded-[20px] border border-gray-300 bg-card px-4 py-3 text-sm font-semibold text-card-foreground shadow-lg">
           {snackbar.message}
-        </Alert>
-      </Snackbar>
+          <button type="button" onClick={() => setSnackbar((current) => ({ ...current, open: false }))} className="ml-3 text-xs text-muted-foreground hover:text-card-foreground" aria-label="Dismiss notification">×</button>
+        </div>
+      )}
         {showPreviousDetails && previousDetails && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
             <div className="w-full max-w-lg rounded-2xl border border-border bg-background p-6 shadow-xl">
