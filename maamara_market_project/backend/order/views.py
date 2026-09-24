@@ -25,7 +25,7 @@ from core.models import ActivityLog, Voucher, Wallet
 from vendorDashboard.models import ReturnRequest, VendorPayout
 
 from .Serializers import TransactionSerializer
-from .models import OrderItem, Order, Transaction
+from .models import OrderItem, Order, Refund, Transaction
 
 User = get_user_model()
 logger = logging.getLogger(__name__)
@@ -920,6 +920,14 @@ def admin_transaction_history(request):
         .filter(paid=True)
         .order_by("-paid_at", "-created_at")
     )
+    refund_qs = (
+        Refund.objects
+        .select_related(
+            "payment",
+            "return_request__item__item",
+        )
+        .order_by("-completed_at", "-created_at")
+    )
 
 
     if period_start:
@@ -1004,6 +1012,35 @@ def admin_transaction_history(request):
             "payout_reference": payout.reference,
             "payout_period_start": payout.payout_period_start,
             "payout_period_end": payout.payout_period_end,
+        })
+
+
+    for refund in refund_qs[:50]:
+        order = getattr(refund.return_request.item, "order", None)
+        product = getattr(refund.return_request.item, "item", None)
+        results.append({
+            "id": f"refund-{refund.id}",
+            "record_id": refund.id,
+            "txid": refund.provider_reference or f"REFUND-{refund.id}",
+            "category": "Refund",
+            "category_key": "refund",
+            "payment_method": refund.provider,
+            "transaction_type": "REFUND",
+            "amount": float(refund.amount or 0),
+            "currency": refund.currency,
+            "status": refund.status,
+            "vendor_name": (
+                getattr(getattr(product, "vendor", None), "company_name", None)
+                if product else None
+            ),
+            "order_id": getattr(order, "id", None),
+            "item_name": getattr(product, "name", None),
+            "created_at": refund.completed_at or refund.created_at,
+            "source": "refund",
+            "source_label": "Customer refund",
+            "editable": False,
+            "deletable": False,
+            "failure_reason": refund.failure_reason,
         })
 
     results.sort(
