@@ -5728,3 +5728,196 @@ h1,h2,h3,h4{font-family:'regular','Poppins',Arial,sans-serif}
   .mm-checkout .mm-card,.mm-payment-page .mm-payment-card{border-radius:14px}
   .mm-payment-page .mm-payment-card{padding:18px}
 }
+
+
+/* PAYMENT SUCCESS — scoped Maa Mara customer styling */
+.mm-success-page{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+}
+
+.mm-success-container{
+  width:100%;
+  max-width:760px;
+  margin-inline:auto;
+}
+
+.mm-success-card{
+  width:100%;
+  padding:42px 34px 32px;
+  background:var(--mm-surface,#fff);
+  border:1px solid var(--mm-border,#e6e3de);
+  border-radius:20px;
+  box-shadow:0 14px 40px rgba(10,2,28,.07);
+  text-align:center;
+}
+
+.mm-success-icon{
+  width:76px;
+  height:76px;
+  margin:0 auto 20px;
+  display:grid;
+  place-items:center;
+  border-radius:50%;
+  background:rgba(42,33,133,.08);
+  border:1px solid rgba(42,33,133,.16);
+  color:var(--blue,#2a2185);
+}
+
+.mm-success-icon span{
+  display:grid;
+  place-items:center;
+  width:46px;
+  height:46px;
+  border-radius:50%;
+  background:var(--blue,#2a2185);
+  color:#fff;
+  font-size:26px;
+  font-weight:700;
+  line-height:1;
+}
+
+.mm-success-eyebrow{
+  margin:0 0 8px!important;
+  color:var(--blue,#2a2185)!important;
+  font-size:11px!important;
+  font-weight:700;
+  letter-spacing:.1em;
+  text-transform:uppercase;
+}
+
+.mm-success-title{
+  margin:0!important;
+  font-family:'regular','Poppins',Arial,sans-serif!important;
+  color:var(--mm-text,#222)!important;
+  font-size:clamp(26px,4vw,38px)!important;
+  line-height:1.15!important;
+  font-weight:700!important;
+}
+
+.mm-success-message{
+  max-width:560px;
+  margin:12px auto 0!important;
+  color:var(--mm-text-muted,#6f6a63)!important;
+  font-size:13px!important;
+  line-height:1.7!important;
+}
+
+.mm-success-order{
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  gap:10px;
+  margin:28px 0 24px;
+  padding:16px;
+  background:var(--mm-surface-muted,#f5f4f1);
+  border:1px solid var(--mm-border,#e6e3de);
+  border-radius:14px;
+}
+
+.mm-success-order div{
+  min-width:0;
+  padding:4px 10px;
+}
+
+.mm-success-order div + div{
+  border-left:1px solid var(--mm-border,#e6e3de);
+}
+
+.mm-success-order span{
+  display:block;
+  margin-bottom:5px;
+  color:var(--mm-text-muted,#6f6a63);
+  font-size:10px;
+  font-weight:600;
+  text-transform:uppercase;
+  letter-spacing:.05em;
+}
+
+.mm-success-order strong{
+  display:block;
+  color:var(--mm-text,#222);
+  font-size:13px;
+  font-weight:700;
+  overflow-wrap:anywhere;
+}
+
+.mm-success-actions{
+  display:flex;
+  justify-content:center;
+  gap:10px;
+  flex-wrap:wrap;
+}
+
+.mm-success-actions button{
+  min-height:44px;
+  padding:0 20px;
+  border-radius:999px;
+  font-family:'regular','Poppins',Arial,sans-serif;
+  font-size:12px;
+  font-weight:700;
+  cursor:pointer;
+  transition:transform .18s ease,background-color .18s ease,border-color .18s ease,color .18s ease,box-shadow .18s ease;
+}
+
+.mm-success-actions button:hover{
+  transform:translateY(-1px);
+}
+
+.mm-success-primary{
+  border:1px solid var(--blue,#2a2185);
+  background:var(--blue,#2a2185);
+  color:#fff;
+  box-shadow:0 8px 18px rgba(42,33,133,.16);
+}
+
+.mm-success-primary:hover{
+  background:var(--dark-color,#0a021c);
+  border-color:var(--dark-color,#0a021c);
+}
+
+.mm-success-secondary{
+  border:1px solid var(--mm-border-strong,#d6d1c9);
+  background:var(--mm-surface,#fff);
+  color:var(--mm-text,#222);
+}
+
+.mm-success-secondary:hover{
+  border-color:var(--blue,#2a2185);
+  color:var(--blue,#2a2185);
+  background:rgba(42,33,133,.04);
+}
+
+.mm-success-note{
+  margin:18px 0 0!important;
+  color:var(--mm-text-muted,#6f6a63)!important;
+  font-size:11px!important;
+  line-height:1.6!important;
+}
+
+@media(max-width:639px){
+  .mm-success-card{
+    padding:32px 18px 24px;
+    border-radius:16px;
+  }
+
+  .mm-success-order{
+    grid-template-columns:1fr;
+    gap:0;
+  }
+
+  .mm-success-order div + div{
+    border-left:0;
+    border-top:1px solid var(--mm-border,#e6e3de);
+    margin-top:8px;
+    padding-top:12px;
+  }
+
+  .mm-success-actions{
+    flex-direction:column;
+  }
+
+  .mm-success-actions button{
+    width:100%;
+  }
+}
