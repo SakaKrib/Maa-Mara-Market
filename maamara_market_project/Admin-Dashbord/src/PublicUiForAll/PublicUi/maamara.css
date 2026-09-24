@@ -5950,11 +5950,14 @@ h1,h2,h3,h4{font-family:'regular','Poppins',Arial,sans-serif}
         scroll-snap-type: x mandatory;
         overscroll-behavior-x: contain;
         -webkit-overflow-scrolling: touch;
+        touch-action: pan-x;
         padding-bottom: 2px;
     }
 
     .mm-mobile-category-rail {
         gap: 0.75rem;
+        margin-right: -1rem;
+        padding-right: 1rem;
     }
 
     .mm-mobile-category-card {
@@ -5983,12 +5986,7 @@ h1,h2,h3,h4{font-family:'regular','Poppins',Arial,sans-serif}
         padding-right: 1rem;
     }
 
-    .mm-mobile-banner-card {
-        flex: 0 0 min(88vw, 360px);
-        width: min(88vw, 360px);
-        scroll-snap-align: start;
-    }
-
+    .mm-mobile-banner-card,
     .mm-mobile-blog-card {
         flex: 0 0 min(88vw, 360px);
         width: min(88vw, 360px);
@@ -6000,5 +5998,18 @@ h1,h2,h3,h4{font-family:'regular','Poppins',Arial,sans-serif}
         flex: 0 0 170px;
         width: 170px;
         scroll-snap-align: start;
+    }
+
+    .mm-mobile-home-collections .mm-section {
+        padding-top: 0.25rem;
+        padding-bottom: 0.25rem;
+    }
+
+    .mm-mobile-home-collections .mm-section-heading {
+        align-items: flex-start;
+    }
+
+    .mm-mobile-home-collections .mm-section-heading h2 {
+        line-height: 1.25;
     }
 }
