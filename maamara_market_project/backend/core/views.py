@@ -859,6 +859,8 @@ class UserAccountView(APIView):
         # orders page can distinguish unpaid, in-process, and completed orders.
         customer_order_statuses = (
             "PENDING_PAYMENT",
+            "pending",
+            "completed",
             *Order.PAID_STATUSES,
         )
         customer_orders = (
