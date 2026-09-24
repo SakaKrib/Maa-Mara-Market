@@ -34,6 +34,7 @@ export default function MpesaSTKPayment() {
       const data = response.data;
       if (data.status === "completed" && data.order_id) {
         stopPolling();
+        sessionStorage.removeItem("maaMaraBuyNow");
         navigate("/payment-success", {
           state: { order: { id: data.order_id, status: "completed", payment_method: data.payment_method, amount: data.amount } },
         });
