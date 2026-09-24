@@ -5,7 +5,6 @@ import {
   CircularProgress,
   TextField,
   Typography,
-  Alert,
   Grid,
   useTheme,
 } from "@mui/material";
@@ -210,17 +209,6 @@ export default function BankTransferBulkPayment({ onSuccess }) {
         >
           {loading ? <CircularProgress size={24} /> : "Send All Bank Transfers"}
         </Button>
-
-        {message && (
-          <Alert severity="success" sx={{ mt: 2 }}>
-            {message}
-          </Alert>
-        )}
-        {error && (
-          <Alert severity="error" sx={{ mt: 2 }}>
-            {error}
-          </Alert>
-        )}
       </Box>
     </Box>
   );
