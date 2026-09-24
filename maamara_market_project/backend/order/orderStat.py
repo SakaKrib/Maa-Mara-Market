@@ -230,7 +230,7 @@ def vendor_completed_order_items(request):
     # Get completed orders containing vendor's items
     completed_orders = Order.objects.filter(
         order_items__item__in=vendor_items,
-        status="completed"
+        status__in=["COMPLETED", "completed"]
     ).distinct()
 
     # Get OderItems from these completed orders for this vendor's items
