@@ -264,13 +264,24 @@ class Item(models.Model):
         return self.get_item_final_price()
     
     def get_current_price(self):
-        """Return the effective selling price, honoring an active offer first."""
+        """Return the effective base price before the customer markup."""
         offer = getattr(self, "offer", None)
         if self.in_offer and offer and offer.is_active():
             return offer.calculate_final_price()
         if self.discount_price is not None:
             return self.discount_price
         return self.price
+
+    def get_checkout_price(self):
+        """
+        Return the effective customer selling price used by checkout and
+        payment providers.
+
+        Active offers take precedence over a stored discount price. When no
+        offer or discount exists, the normal item price is used. The existing
+        customer markup is applied exactly once.
+        """
+        return self.get_current_price() * Decimal("1.7")
 
     def save(self, *args, **kwargs):
         if self.pk:
