@@ -63,7 +63,6 @@ urlpatterns = [
     # Careers
     path("api/careers/", career_vacancies_api, name="career-vacancies"),
     path("api/careers/<int:pk>/", career_vacancy_detail_api, name="career-vacancies"),
-    path("api/careers/<int:pk>/", career_vacancy_detail_api, name="career-vacancy-detail"),
     path("api/opening/<int:pk>/", job_vacancy_detail_api, name="job-vacancy-detail"),
     path("api/careers/stats/", career_stats_api, name="career-stats"),
     path("api/careers/apply/", apply_for_job_api, name="career-apply"),
