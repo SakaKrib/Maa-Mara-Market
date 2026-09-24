@@ -192,7 +192,7 @@ class PaymentSerializer(serializers.ModelSerializer):
             "amount",
             "transaction_id",
             "status",
-            "timestamp",
+            "created_at",
         ]
 
 
