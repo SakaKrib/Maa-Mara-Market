@@ -24,7 +24,7 @@ const Banners = () => {
             </p>
           </div>
 
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 mm-mobile-horizontal-scroll mm-mobile-banner-rail">
             {banners.slice(0, 3).map((banner) => {
               const bannerImage = banner.image?.startsWith("http")
                 ? banner.image
@@ -35,7 +35,7 @@ const Banners = () => {
               return (
                 <article
                   key={banner.id}
-                  className="overflow-hidden rounded-2xl border border-border bg-background"
+                  className="overflow-hidden rounded-2xl border border-border bg-background mm-mobile-banner-card"
                 >
                   {bannerImage ? (
                     <div className="overflow-hidden rounded-xl m-2">
