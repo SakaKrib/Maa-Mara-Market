@@ -129,17 +129,20 @@ export default function MpesaB2CMultiPayment({ onSuccess }) {
       const normalizedPhone = normalizePhone(phone);
 
       if (!normalizedPhone || !amount) {
-        showSnackbar(`⚠️ Please enter phone and amount for row ${i + 1}.`);\n        setError(`⚠️ Please enter phone and amount for row ${i + 1}.`);
+        showSnackbar(`⚠️ Please enter phone and amount for row ${i + 1}.`);
+        setError(`⚠️ Please enter phone and amount for row ${i + 1}.`);
         return false;
       }
 
       if (!/^2547\d{8}$/.test(normalizedPhone)) {
-        showSnackbar(`⚠️ Invalid phone format at row ${i + 1}. Use 2547XXXXXXXX.`);\n        setError(`⚠️ Invalid phone format at row ${i + 1}. Use 2547XXXXXXXX.`);
+        showSnackbar(`⚠️ Invalid phone format at row ${i + 1}. Use 2547XXXXXXXX.`);
+        setError(`⚠️ Invalid phone format at row ${i + 1}. Use 2547XXXXXXXX.`);
         return false;
       }
 
       if (isNaN(amount) || Number(amount) <= 0) {
-        showSnackbar(`⚠️ Invalid amount at row ${i + 1}.`);\n        setError(`⚠️ Invalid amount at row ${i + 1}.`);
+        showSnackbar(`⚠️ Invalid amount at row ${i + 1}.`);
+        setError(`⚠️ Invalid amount at row ${i + 1}.`);
         return false;
       }
     }
