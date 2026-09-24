@@ -18,6 +18,12 @@ export default function MpesaSTKPayment() {
   const [snackbar, setSnackbar] = useState({ open: false, severity: "info", text: "" });
   const pollingRef = useRef(null);
 
+  useEffect(() => {
+    if (checkoutResult?.checkout_id) {
+      sessionStorage.setItem("maaMaraCheckout", JSON.stringify(checkoutResult));
+    }
+  }, [checkoutResult]);
+
   const showSnackbar = (text, severity = "info") => setSnackbar({ open: true, severity, text });
 
   const stopPolling = () => {
@@ -35,6 +41,7 @@ export default function MpesaSTKPayment() {
       if (data.status === "completed" && data.order_id) {
         stopPolling();
         sessionStorage.removeItem("maaMaraBuyNow");
+        sessionStorage.removeItem("maaMaraCheckout");
         navigate("/payment-success", {
           state: { order: { id: data.order_id, status: "completed", payment_method: data.payment_method, amount: data.amount } },
         });
