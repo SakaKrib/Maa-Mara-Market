@@ -97,7 +97,10 @@ def validate_checkout_items(items_payload):
 
         selected_length = f"{length.value} {length.unit}" if length else None
         selected_weight = f"{weight.value} {weight.unit}" if weight else None
-        price_at_purchase = Decimal(str(item.get_item_final_price()))
+        # Resolve the effective customer price on the server. Active offers
+        # take precedence over a stored discount; otherwise the normal price
+        # is used. This single snapshot is then used by both M-Pesa and PayPal.
+        price_at_purchase = Decimal(str(item.get_checkout_price())).quantize(Decimal("0.01"))
 
         snapshots.append({
             "id": item.id,
