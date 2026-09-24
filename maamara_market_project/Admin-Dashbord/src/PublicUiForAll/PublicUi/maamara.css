@@ -5950,7 +5950,7 @@ h1,h2,h3,h4{font-family:'regular','Poppins',Arial,sans-serif}
         scroll-snap-type: x mandatory;
         overscroll-behavior-x: contain;
         -webkit-overflow-scrolling: touch;
-        touch-action: pan-x;
+        touch-action: auto;
         padding-bottom: 2px;
     }
 
