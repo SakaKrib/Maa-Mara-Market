@@ -9,6 +9,12 @@ export default function AdminBannerApprovalPage({ onCountChange }) {
   const [banners, setBanners] = useState([]);
   const [loading, setLoading] = useState(true);
   const [processingId, setProcessingId] = useState(null);
+  const [snackbar, setSnackbar] = useState({ open: false, message: "" });
+
+  const showSnackbar = (message) => {
+    setSnackbar({ open: true, message });
+    window.setTimeout(() => setSnackbar((prev) => ({ ...prev, open: false })), 3000);
+  };
 
   const fetchBanners = async (silent = false) => {
     if (!silent) setLoading(true);
@@ -27,13 +33,14 @@ export default function AdminBannerApprovalPage({ onCountChange }) {
   useEffect(() => {
     fetchBanners(false);
     const interval = setInterval(() => fetchBanners(true), POLL_INTERVAL);
-    return () => clearInterval(interval);
+    return (\n    <>\n      {snackbar.open && (\n        <div className="fixed right-4 top-20 z-[1400] max-w-sm rounded-[20px] border border-gray-300 bg-card px-4 py-3 text-sm font-semibold text-card-foreground shadow-lg">\n          {snackbar.message}\n          <button type="button" onClick={() => setSnackbar((prev) => ({ ...prev, open: false }))} className="ml-3 text-xs text-muted-foreground hover:text-card-foreground" aria-label="Dismiss notification">×</button>\n        </div>\n      )}) => clearInterval(interval);
   }, []);
 
   const handleAction = async (id, action) => {
     setProcessingId(id);
     try {
       await api.post(`/api/moderation/banners/${id}/${action}/`);
+      showSnackbar(`Banner ${action === "approve" ? "approved" : "rejected"} successfully.`);
       setBanners((prev) => {
         const updated = prev.filter((b) => b.id !== id);
         onCountChange?.(updated.length);
@@ -41,6 +48,7 @@ export default function AdminBannerApprovalPage({ onCountChange }) {
       });
     } catch (err) {
       console.error(`${action} banner failed:`, err);
+      showSnackbar(err?.response?.data?.detail || `Unable to ${action} banner.`);
     } finally {
       setProcessingId(null);
     }
@@ -113,6 +121,4 @@ export default function AdminBannerApprovalPage({ onCountChange }) {
           )}
         </div>
       </div>
-    </div>
-  );
-}
+    </div>\n    </>\n  );\n}
