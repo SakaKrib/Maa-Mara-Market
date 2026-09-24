@@ -19,7 +19,7 @@ const AdminPostCareer = ({ open = true, onClose }) => {
   const [tab, setTab] = useState("jobs");
   const [selectedApplication, setSelectedApplication] = useState(null);
   const [message, setMessage] = useState("");
-  const [saving, setSaving] = useState(false);
+  const [saving, setSaving] = useState(false);\n  const [snackbar, setSnackbar] = useState({ open: false, message: "" });\n  const showSnackbar = (message) => setSnackbar({ open: true, message });
 
   const loadJobs = () => api.get("/api/careers/").then((r) => setJobs(r.data || []));
   const loadApplications = () => api.get("/api/applications/").then((r) => setApplications(r.data || []));
@@ -40,12 +40,12 @@ const AdminPostCareer = ({ open = true, onClose }) => {
       else await api.post("/api/careers/", payload);
       setForm(emptyForm);
       setEditingId(null);
-      setMessage("Job saved successfully.");
+      setMessage("Job saved successfully.");\n      showSnackbar("Job saved successfully.");
       await loadJobs();
       setTab("jobs");
     } catch (error) {
       console.error(error);
-      setMessage(error.response?.data?.detail || "Could not save the job.");
+      setMessage(error.response?.data?.detail || "Could not save the job.");\n      showSnackbar(error.response?.data?.detail || "Could not save the job.");
     } finally {
       setSaving(false);
     }
@@ -66,10 +66,10 @@ const AdminPostCareer = ({ open = true, onClose }) => {
     try {
       await api.delete(`/api/careers/${id}/`);
       await loadJobs();
-      setMessage("Job deleted.");
+      setMessage("Job deleted.");\n      showSnackbar("Job deleted.");
     } catch (error) {
       console.error(error);
-      setMessage("Could not delete the job.");
+      setMessage("Could not delete the job.");\n      showSnackbar("Could not delete the job.");
     }
   };
 
@@ -114,7 +114,7 @@ const AdminPostCareer = ({ open = true, onClose }) => {
         <button className={tab === "editor" ? "active" : ""} onClick={() => setTab("editor")}><Edit3 size={16}/> {editingId ? "Edit position" : "Create position"}</button>
       </div>
 
-      {message && <div className="mm-careers-alert">{message}</div>}
+      {snackbar.open && <div className="fixed right-4 top-20 z-[1400] max-w-sm rounded-[20px] border border-gray-300 bg-card px-4 py-3 text-sm font-semibold text-card-foreground shadow-lg">{snackbar.message}<button type="button" onClick={() => setSnackbar((prev) => ({ ...prev, open: false }))} className="ml-3 text-xs text-muted-foreground hover:text-card-foreground" aria-label="Dismiss notification">×</button></div>}
 
       {tab === "jobs" && (
         <div className="mm-admin-career-list">
