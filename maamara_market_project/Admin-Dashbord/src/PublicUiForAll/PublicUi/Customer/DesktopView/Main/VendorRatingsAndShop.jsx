@@ -1,12 +1,5 @@
 import React, { useState } from "react";
 import api from "../../../../../Services/Api";
-import Snackbar from "@mui/material/Snackbar";
-import MuiAlert from "@mui/material/Alert";
-
-const Alert = React.forwardRef(function Alert(props, ref) {
-  return <MuiAlert elevation={6} ref={ref} variant="filled" {...props} />;
-});
-
 const VendorRatingForm = ({ vendorId, onRated, hasReviews = false }) => {
   const [vendorRatingForm, setVendorRatingForm] = useState({
     quality: 0,
@@ -84,20 +77,12 @@ const VendorRatingForm = ({ vendorId, onRated, hasReviews = false }) => {
 
   return (
     <div className="mt-5 border-t border-border pt-5">
-      <Snackbar
-        open={snackbar.open}
-        autoHideDuration={4000}
-        onClose={handleSnackbarClose}
-        anchorOrigin={{ vertical: "top", horizontal: "right" }}
-      >
-        <Alert
-          onClose={handleSnackbarClose}
-          severity={snackbar.severity}
-          sx={{ width: "100%" }}
-        >
+      {snackbar.open && (
+        <div className="fixed right-4 top-20 z-[1400] max-w-sm rounded-[20px] border border-gray-300 bg-card px-4 py-3 text-sm font-semibold text-card-foreground shadow-lg">
           {snackbar.message}
-        </Alert>
-      </Snackbar>
+          <button type="button" onClick={handleSnackbarClose} className="ml-3 text-xs text-muted-foreground hover:text-card-foreground" aria-label="Dismiss notification">×</button>
+        </div>
+      )}
 
       <div className="rounded-2xl border border-border bg-background p-4 sm:p-5">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
