@@ -5,7 +5,6 @@ import {
   CircularProgress,
   TextField,
   Typography,
-  Alert,
   Grid,
   useTheme,
 } from "@mui/material";
@@ -92,6 +91,11 @@ export default function MpesaB2CMultiPayment({ onSuccess }) {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState(null);
   const [error, setError] = useState(null);
+  const [snackbar, setSnackbar] = useState({ open: false, message: "" });
+  const showSnackbar = (message) => {
+    setSnackbar({ open: true, message });
+    window.setTimeout(() => setSnackbar((prev) => ({ ...prev, open: false })), 3000);
+  };
 
   // ✅ Normalize Kenyan phone numbers into standard format: 2547XXXXXXXX
   const normalizePhone = (phone) => {
@@ -125,17 +129,17 @@ export default function MpesaB2CMultiPayment({ onSuccess }) {
       const normalizedPhone = normalizePhone(phone);
 
       if (!normalizedPhone || !amount) {
-        setError(`⚠️ Please enter phone and amount for row ${i + 1}.`);
+        showSnackbar(`⚠️ Please enter phone and amount for row ${i + 1}.`);\n        setError(`⚠️ Please enter phone and amount for row ${i + 1}.`);
         return false;
       }
 
       if (!/^2547\d{8}$/.test(normalizedPhone)) {
-        setError(`⚠️ Invalid phone format at row ${i + 1}. Use 2547XXXXXXXX.`);
+        showSnackbar(`⚠️ Invalid phone format at row ${i + 1}. Use 2547XXXXXXXX.`);\n        setError(`⚠️ Invalid phone format at row ${i + 1}. Use 2547XXXXXXXX.`);
         return false;
       }
 
       if (isNaN(amount) || Number(amount) <= 0) {
-        setError(`⚠️ Invalid amount at row ${i + 1}.`);
+        showSnackbar(`⚠️ Invalid amount at row ${i + 1}.`);\n        setError(`⚠️ Invalid amount at row ${i + 1}.`);
         return false;
       }
     }
@@ -160,13 +164,14 @@ export default function MpesaB2CMultiPayment({ onSuccess }) {
       });
 
       setMessage("✅ All vendor M-Pesa payouts processed successfully.");
+      showSnackbar("✅ All vendor M-Pesa payouts processed successfully.");
       console.log("Payment Response:", res.data);
       if (onSuccess) onSuccess();
     } catch (err) {
       console.error(err);
-      setError(
-        err.response?.data?.error || "Something went wrong during payment."
-      );
+      const errorMessage = err.response?.data?.error || "Something went wrong during payment.";
+      setError(errorMessage);
+      showSnackbar(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -266,14 +271,14 @@ export default function MpesaB2CMultiPayment({ onSuccess }) {
         </Button>
 
         {message && (
-          <Alert severity="success" sx={{ mt: 2 }}>
+          <div className="fixed right-4 top-20 z-[1400] max-w-sm rounded-[20px] border border-gray-300 bg-card px-4 py-3 text-sm font-semibold text-card-foreground shadow-lg">
             {message}
-          </Alert>
+          </div>
         )}
         {error && (
-          <Alert severity="error" sx={{ mt: 2 }}>
+          <div className="fixed right-4 top-20 z-[1400] max-w-sm rounded-[20px] border border-gray-300 bg-card px-4 py-3 text-sm font-semibold text-card-foreground shadow-lg">
             {error}
-          </Alert>
+          </div>
         )}
       </Box>
     </Box>
