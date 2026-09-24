@@ -47,7 +47,8 @@ export default function CheckoutPaypalPayment() {
       });
 
       if (response.data?.status === "ok") {
-        navigate("/payment-success", {
+        sessionStorage.removeItem("maaMaraBuyNow");
+        navigate("/payment-success",
           state: {
             order: response.data?.order || checkoutResult || order?.order,
           },
