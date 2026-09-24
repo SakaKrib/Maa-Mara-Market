@@ -1,5 +1,7 @@
 import logging
 
+import logging
+
 import requests
 from decimal import Decimal
 
