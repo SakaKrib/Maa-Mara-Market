@@ -968,7 +968,21 @@ def user_account_view(request):
         orders = Order.objects.filter(
             user=user
         ).filter(
-            models.Q(status__iexact="pending") | models.Q(status__iexact="completed")
+            models.Q(status__in=[
+                "PENDING_PAYMENT",
+                "PAID",
+                "PROCESSING",
+                "PACKING",
+                "READY_TO_SHIP",
+                "SHIPPED",
+                "IN_TRANSIT",
+                "OUT_FOR_DELIVERY",
+                "DELIVERED",
+                "AWAITING_CONFIRMATION",
+                "COMPLETED",
+                "pending",
+                "completed",
+            ])
         ).order_by("-created_at")
     else:
         profile = None
@@ -978,7 +992,21 @@ def user_account_view(request):
         orders = Order.objects.filter(
             visitor_id=visitor_id
         ).filter(
-            models.Q(status__iexact="pending") | models.Q(status__iexact="completed")
+            models.Q(status__in=[
+                "PENDING_PAYMENT",
+                "PAID",
+                "PROCESSING",
+                "PACKING",
+                "READY_TO_SHIP",
+                "SHIPPED",
+                "IN_TRANSIT",
+                "OUT_FOR_DELIVERY",
+                "DELIVERED",
+                "AWAITING_CONFIRMATION",
+                "COMPLETED",
+                "pending",
+                "completed",
+            ])
         ).order_by("-created_at")
 
 
