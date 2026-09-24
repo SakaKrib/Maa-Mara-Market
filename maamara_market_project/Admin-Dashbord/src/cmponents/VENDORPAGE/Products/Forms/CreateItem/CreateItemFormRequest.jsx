@@ -1990,19 +1990,17 @@ y
         </form>
       </Form>
 
-{toastOpen && (
-  <div className="fixed right-4 top-20 z-[1400] max-w-sm rounded-[20px] border border-gray-300 bg-card px-4 py-3 text-sm font-semibold text-card-foreground shadow-lg">
+<Snackbar
+  open={toastOpen}
+  autoHideDuration={4000}
+  onClose={handleToastClose}
+  anchorOrigin={{ vertical: "top", horizontal: "right" }}
+>
+  <div className="rounded-[20px] border border-gray-300 bg-card px-4 py-3 text-sm font-semibold text-card-foreground shadow-lg">
     {toastMessage}
-    <button
-      type="button"
-      onClick={handleToastClose}
-      className="ml-3 text-xs text-muted-foreground hover:text-card-foreground"
-      aria-label="Dismiss notification"
-    >
-      ×
-    </button>
+    <button type="button" onClick={handleToastClose} className="ml-3 text-xs text-muted-foreground hover:text-card-foreground" aria-label="Dismiss notification">×</button>
   </div>
-)}
+</Snackbar>
 </Box>
     );
   };
