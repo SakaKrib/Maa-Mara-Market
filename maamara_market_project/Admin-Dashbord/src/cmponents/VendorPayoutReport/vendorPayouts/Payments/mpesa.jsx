@@ -178,8 +178,8 @@ export default function MpesaB2CPayment({ onSuccess }) {
           {loading ? <CircularProgress size={24} /> : "Send Payment"}
         </Button>
 
-        {message && <Alert severity="success" sx={{ mt: 2 }}>{message}</Alert>}
-        {error && <Alert severity="error" sx={{ mt: 2 }}>{error}</Alert>}
+        {message && snackbar.open === false ? null : null}
+        
       </Box>
     </Box>
   );
