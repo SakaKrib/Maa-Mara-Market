@@ -3292,7 +3292,7 @@ RESPONSIVE MENU -OFF CANVAS
 /* Maa Mara marketplace refinement — Etsy-inspired structure, not a brand copy. */
 :root{
   --mm-content-max:1280px;
-  --mm-page-bg:#faf9f7;
+  --mm-page-bg: transparent;
   --mm-surface:#fff;
   --mm-border:#e6e3de;
   --mm-border-strong:#cfc9c0;
