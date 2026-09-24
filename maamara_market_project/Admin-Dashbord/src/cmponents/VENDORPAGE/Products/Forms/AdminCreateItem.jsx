@@ -233,6 +233,9 @@ export const organicDepartmentMap = {
   
 
 const ItemUpdateForm = ({ form, vendorId, itemId }) => {
+  const [snackbar, setSnackbar] = useState({ open: false, message: "" });
+  const handleCloseSnackbar = () => setSnackbar((prev) => ({ ...prev, open: false }));
+
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
 
@@ -573,16 +576,16 @@ useEffect(() => {
 
 
   return (
+    <>
+      {snackbar.open && (
+        <div className="fixed right-4 top-20 z-[1400] max-w-sm rounded-[20px] border border-gray-300 bg-card px-4 py-3 text-sm font-semibold text-card-foreground shadow-lg">
+          {snackbar.message}
+          <button type="button" onClick={handleCloseSnackbar} className="ml-3 text-xs text-muted-foreground hover:text-card-foreground" aria-label="Dismiss notification">×</button>
+        </div>
+      )}
 
-    {snackbar.open && (
-      <div className="fixed right-4 top-20 z-[1400] max-w-sm rounded-[20px] border border-gray-300 bg-card px-4 py-3 text-sm font-semibold text-card-foreground shadow-lg">
-        {snackbar.message}
-        <button type="button" onClick={handleCloseSnackbar} className="ml-3 text-xs text-muted-foreground hover:text-card-foreground" aria-label="Dismiss notification">×</button>
-      </div>
-    )}
-
-    // separate
-    <Form {...form}>
+      {/* separate */}
+      <Form {...form}>
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 px-2 py-6">
     <div >
 
@@ -2190,7 +2193,8 @@ render={({ field }) => (
         </Button>
         </div>
       </form>
-    </Form>
+      </Form>
+    </>
   );
 };
 
