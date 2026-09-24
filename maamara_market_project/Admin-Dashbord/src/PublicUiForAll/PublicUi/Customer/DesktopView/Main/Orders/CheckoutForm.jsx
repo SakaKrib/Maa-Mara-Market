@@ -11,7 +11,7 @@ import { useCartContext } from "../CartHook/cart";
 import { getData } from "country-list";
 import PhoneInput from "react-phone-input-2";
 import { useNavigate } from "react-router-dom";
-import api from "../../../../../../../Services/Api";
+import api from "../../../../../../Services/Api";
 import "react-phone-input-2/lib/style.css";
 
 // Zod validation schema
