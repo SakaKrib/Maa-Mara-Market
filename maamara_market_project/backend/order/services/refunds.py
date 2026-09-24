@@ -87,6 +87,33 @@ def _validate_refund_total(payment, refund):
         raise RefundProcessingError("Refund amount exceeds the remaining captured payment.")
 
 
+
+def _sync_payment_refund_status(payment):
+    """Keep the payment ledger aligned with successfully settled refunds."""
+    provider_amount = payment.provider_amount or payment.amount
+    if provider_amount is None:
+        return
+
+    completed_total = (
+        Refund.objects
+        .filter(payment=payment, status="completed")
+        .aggregate(total=Sum("amount"))
+        .get("total")
+        or Decimal("0.00")
+    )
+    captured_amount = Decimal(str(provider_amount))
+    if completed_total >= captured_amount:
+        new_status = "REFUNDED"
+    elif completed_total > Decimal("0.00"):
+        new_status = "PARTIALLY_REFUNDED"
+    else:
+        return
+
+    if payment.status != new_status:
+        payment.status = new_status
+        payment.save(update_fields=["status", "updated_at"])
+
+
 def _mark_refund_failed(refund_id, reason):
     with transaction.atomic():
         refund = Refund.objects.select_for_update().get(pk=refund_id)
