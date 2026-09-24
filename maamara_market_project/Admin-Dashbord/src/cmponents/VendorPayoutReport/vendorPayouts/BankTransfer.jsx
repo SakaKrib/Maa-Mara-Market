@@ -44,7 +44,7 @@ export default function BankTransferBulkPayment({ onSuccess }) {
 
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState(null);
-  const [error, setError] = useState(null);
+  const [error, setError] = useState(null);\n  const [snackbar, setSnackbar] = useState({ open: false, message: "" });\n  const showSnackbar = (message) => setSnackbar({ open: true, message });
 
   // Handle input changes
   const handleChange = (index, field, value) => {
@@ -63,12 +63,12 @@ export default function BankTransferBulkPayment({ onSuccess }) {
       const { bankAccount, amount } = payments[i];
 
       if (!bankAccount || bankAccount.trim().length < 6) {
-        setError(`⚠️ Invalid bank account at row ${i + 1}.`);
+        showSnackbar(`⚠️ Invalid bank account at row ${i + 1}.`);\n        setError(`⚠️ Invalid bank account at row ${i + 1}.`);
         return false;
       }
 
       if (isNaN(amount) || Number(amount) <= 0) {
-        setError(`⚠️ Invalid amount at row ${i + 1}.`);
+        showSnackbar(`⚠️ Invalid amount at row ${i + 1}.`);\n        setError(`⚠️ Invalid amount at row ${i + 1}.`);
         return false;
       }
     }
@@ -101,7 +101,7 @@ export default function BankTransferBulkPayment({ onSuccess }) {
         payments: payloadPayments,
       });
 
-      setMessage("✅ All vendor bank transfers processed successfully.");
+      setMessage("✅ All vendor bank transfers processed successfully.");\n      showSnackbar("✅ All vendor bank transfers processed successfully.");
       if (onSuccess) onSuccess();
     } catch (err) {
       setError(
@@ -112,7 +112,7 @@ export default function BankTransferBulkPayment({ onSuccess }) {
     }
   };
 
-  return (
+  return (\n    <>\n      {snackbar.open && <div className="fixed right-4 top-20 z-[1400] max-w-sm rounded-[20px] border border-gray-300 bg-card px-4 py-3 text-sm font-semibold text-card-foreground shadow-lg">{snackbar.message}<button type="button" onClick={() => setSnackbar((prev) => ({ ...prev, open: false }))} className="ml-3 text-xs text-muted-foreground hover:text-card-foreground" aria-label="Dismiss notification">×</button></div>}
     <Box sx={{ p: 6 }}>
       <Box
         sx={{
