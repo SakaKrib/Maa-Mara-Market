@@ -26,6 +26,12 @@ const AdminPriceApproval = ({ onCountChange }) => {
   const [historyLoading, setHistoryLoading] = useState(true);
 
   const [approvingId, setApprovingId] = useState(null);
+  const [snackbar, setSnackbar] = useState({ open: false, message: "" });
+
+  const showSnackbar = (message) => {
+    setSnackbar({ open: true, message });
+    window.setTimeout(() => setSnackbar((prev) => ({ ...prev, open: false })), 3000);
+  };
 
   // =========================
   // FETCH PENDING REQUESTS
@@ -95,6 +101,7 @@ const AdminPriceApproval = ({ onCountChange }) => {
         { withCredentials: true }
       );
 
+      showSnackbar("Price change approved successfully.");
       setRequests((prev) => {
         const updated = prev.filter((r) => r.id !== requestId);
 
@@ -107,13 +114,13 @@ const AdminPriceApproval = ({ onCountChange }) => {
       fetchHistory();
     } catch (err) {
       console.error("Error approving request:", err);
+      showSnackbar(err?.response?.data?.detail || err?.response?.data?.error || "Unable to approve price change.");
     } finally {
       setApprovingId(null);
     }
   };
 
-  return (
-    <div className="min-w-0 space-y-4">
+  return (\n    <>\n      {snackbar.open && (\n        <div className="fixed right-4 top-20 z-[1400] max-w-sm rounded-[20px] border border-gray-300 bg-card px-4 py-3 text-sm font-semibold text-card-foreground shadow-lg">\n          {snackbar.message}\n          <button type="button" onClick={() => setSnackbar((prev) => ({ ...prev, open: false }))} className="ml-3 text-xs text-muted-foreground hover:text-card-foreground" aria-label="Dismiss notification">×</button>\n        </div>\n      )}\n      <div className="min-w-0 space-y-4">
       <section className="rounded-2xl border border-border bg-card p-4 shadow-sm sm:p-5">
         <div className="flex items-start gap-3">
           <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
@@ -252,8 +259,6 @@ const AdminPriceApproval = ({ onCountChange }) => {
           )}
         </div>
       </section>
-    </div>
-  );
-};
+    </div>\n    </>\n  );\n};
 
 export default AdminPriceApproval;
