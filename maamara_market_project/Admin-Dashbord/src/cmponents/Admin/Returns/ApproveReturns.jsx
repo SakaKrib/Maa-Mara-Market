@@ -7,6 +7,12 @@ const PendingReturnsList = () => {
   const [loadingId, setLoadingId] = useState(null);
   const [message, setMessage] = useState("");
   const [actionError, setActionError] = useState("");
+  const [snackbar, setSnackbar] = useState({ open: false, message: "" });
+
+  const showSnackbar = (message) => {
+    setSnackbar({ open: true, message });
+    window.setTimeout(() => setSnackbar((prev) => ({ ...prev, open: false })), 3000);
+  };
 
   const handleAction = async (id, action) => {
     setLoadingId(id);
@@ -24,11 +30,15 @@ const PendingReturnsList = () => {
         },
         { withCredentials: true }
       );
-      setMessage(response.data?.message || "Action completed successfully.");
+      const successMessage = response.data?.message || "Action completed successfully.";
+      setMessage(successMessage);
+      showSnackbar(successMessage);
       await refetch(true);
     } catch (err) {
       console.error("Return action failed:", err);
-      setActionError(err?.response?.data?.error || "Something went wrong.");
+      const errorMessage = err?.response?.data?.error || "Something went wrong.";
+      setActionError(errorMessage);
+      showSnackbar(errorMessage);
     } finally {
       setLoadingId(null);
     }
@@ -36,7 +46,7 @@ const PendingReturnsList = () => {
 
   if (isLoading) {
     return (
-      <div className="grid gap-3">
+      <div className="grid gap-3">\n      {snackbar.open && (\n        <div className="fixed right-4 top-20 z-[1400] max-w-sm rounded-[20px] border border-gray-300 bg-card px-4 py-3 text-sm font-semibold text-card-foreground shadow-lg">\n          {snackbar.message}\n          <button type="button" onClick={() => setSnackbar((prev) => ({ ...prev, open: false }))} className="ml-3 text-xs text-muted-foreground hover:text-card-foreground" aria-label="Dismiss notification">×</button>\n        </div>\n      )}
         {[1, 2, 3, 4].map((item) => (
           <div key={item} className="animate-pulse rounded-2xl border border-border bg-card p-5">
             <div className="h-4 w-2/5 rounded bg-muted" />
