@@ -25,7 +25,7 @@ def vendor_pending_orders(request):
     # ✅ All pending orders that include vendor’s items
     pending_orders = Order.objects.filter(
         order_items__item__in=vendor_items,
-        status="pending"
+        status__in=["PENDING_PAYMENT", "pending"]
     ).distinct()
 
     # 🗓️ Monthly grouping (based on created_at)
@@ -97,7 +97,7 @@ def vendor_pending_order_items(request):
     # ✅ Find all pending orders containing vendor's items (via ManyToMany)
     pending_orders = Order.objects.filter(
         order_items__item__in=vendor_items,
-        status="pending"
+        status__in=["PENDING_PAYMENT", "pending"]
     ).distinct()
 
     # ✅ Collect all order items from those orders (works only if reverse relation exists)
