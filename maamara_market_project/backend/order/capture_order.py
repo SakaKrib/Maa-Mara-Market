@@ -1,3 +1,5 @@
+import logging
+
 import requests
 from decimal import Decimal
 
@@ -11,6 +13,9 @@ from .Payment import get_paypal_access_token
 from .checkout_sessions import materialize_paid_checkout, session_owner_matches
 from .models import CheckoutSession, Transaction
 from .views import IsAuthenticatedOrVisitor
+
+
+logger = logging.getLogger(__name__)
 
 
 def get_capture_details(capture_id):
@@ -143,13 +148,6 @@ def capture_paypal_order(request, order_id):
             capture.get("amount", {}).get("currency_code", "USD")
         ).upper()
 
-        expected_amount = None
-        if checkout_session.payment_method == "PayPal":
-            expected_amount = (
-                Decimal(str(capture_response.get("purchase_units", [{}])[0]
-                    .get("amount", {})
-                    .get("value", provider_amount)))
-            )
         expected_provider_amount = Decimal(str(
             checkout_session.payload.get("paypal", {}).get("provider_amount", provider_amount)
         ))
@@ -208,7 +206,9 @@ def capture_paypal_order(request, order_id):
                         "amount": provider_amount,
                         "status": "completed",
                         "payment": locked_order.payment,
-                        "visitor_id": locked_order.visitor_id,
+                        # Transaction.visitor_id is legacy-unique, so it cannot
+                        # be copied to every vendor transaction in a multi-vendor order.
+                        "visitor_id": None,
                         "raw_data": capture_response,
                     },
                 )
@@ -234,6 +234,7 @@ def capture_paypal_order(request, order_id):
             status=502,
         )
     except Exception:
+        logger.exception("PayPal capture processing failed for order %s.", order_id)
         return Response(
             {"status": "error", "message": "Payment capture failed."},
             status=500,
