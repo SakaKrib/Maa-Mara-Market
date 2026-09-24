@@ -6,6 +6,7 @@ export function useVendorOrdersCombined() {
   const reconnectTimeout = useRef(null);
 
   const [pending, setPending] = useState([]);
+  const [inProcess, setInProcess] = useState([]);
   const [completed, setCompleted] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -25,6 +26,7 @@ export function useVendorOrdersCombined() {
 
         if (data?.type === "orders_update") {
           setPending(Array.isArray(data.pending) ? data.pending : []);
+          setInProcess(Array.isArray(data.in_process) ? data.in_process : []);
           setCompleted(Array.isArray(data.completed) ? data.completed : []);
           setLoading(false);
         }
@@ -68,6 +70,7 @@ export function useVendorOrdersCombined() {
 
   return {
     pending,
+    inProcess,
     completed,
     loading,
   };
