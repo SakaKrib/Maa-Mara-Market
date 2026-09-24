@@ -573,19 +573,6 @@ class Order(models.Model):
     
 
 
-# card
-class Card(models.Model):
-    visitor_id = models.CharField(max_length=64, blank=True, null=True, unique=True) 
-    brand = models.CharField(max_length=32, null=True, blank=True)
-    last_digits = models.CharField(max_length=4, null=True, blank=True)
-    type = models.CharField(max_length=16, null=True, blank=True)
-    capture_id = models.CharField(max_length=64, null=True, blank=True, db_index=True)
-    created_at = models.DateTimeField(auto_now_add=True)
-
-    def __str__(self):
-        return f"{self.brand or 'CARD'} ****{self.last_digits or '----'}"
-
-
 # payments/models.py
 
 from django.db import models
@@ -647,9 +634,6 @@ class Transaction(models.Model):
         blank=True,
         related_name="transactions",
     )
-
-
-    card = models.ForeignKey(Card, on_delete=models.SET_NULL, null=True, blank=True)
     order = models.ForeignKey(Order, on_delete=models.SET_NULL, null=True, blank=True)
 
     # ✅ Common fields
@@ -666,9 +650,6 @@ class Transaction(models.Model):
     # ✅ PayPal fields
     paypal_transaction_id = models.CharField(max_length=100, null=True, blank=True)
     payer_email = models.EmailField(null=True, blank=True)
-    card_brand = models.CharField(max_length=20, null=True, blank=True)
-    card_type = models.CharField(max_length=10, null=True, blank=True)
-    last_4_digits = models.CharField(max_length=4, null=True, blank=True)
 
     class Meta:
         unique_together = ('paypal_transaction_id', 'vendor')
