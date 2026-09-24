@@ -90,8 +90,10 @@ export default function CheckoutPage() {
     age_group: buyNowItem.ageGroup,
     shoe_id: buyNowItem.shoeId,
     shoe_size: buyNowItem.selectedShoeSize,
-    selected_weight: buyNowItem.weight,
-    selected_length: buyNowItem.length,
+    weight_id: buyNowItem.weightId,
+    weight: buyNowItem.weight,
+    length_id: buyNowItem.lengthId,
+    length: buyNowItem.length,
     custom_preferences: buyNowItem.customPreferences,
   }] : (order?.items || []);
 
@@ -208,7 +210,9 @@ const fetchShippingQuote = async () => {
       const res = await api.post("/api/checkout/", payload);
       const responseData = res.data;
 
-      if (buyNowItem) sessionStorage.removeItem("maaMaraBuyNow");
+      // Keep the Buy Now selection in sessionStorage until payment succeeds.
+      // This allows the payment screen to recover the exact selection if the
+      // customer returns from a failed/cancelled payment.
 
       // call the shipping api
       // fetchShippingQuote();
