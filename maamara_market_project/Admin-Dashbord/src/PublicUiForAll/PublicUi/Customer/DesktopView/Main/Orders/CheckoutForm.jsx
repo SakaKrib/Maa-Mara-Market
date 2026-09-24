@@ -58,11 +58,23 @@ export default function CheckoutPage() {
 
   const shippingCost = selectedShipping ? Number(selectedShipping.price_kes ?? selectedShipping.price ?? 0) : 0;
 
-  // Protected checkout/shipping endpoints accept either a logged-in user or a
-  // server-issued visitor identity. Ensure a guest has that identity before
-  // making either request. Authenticated users are left unchanged by this API.
+  // Resolve the browser's current identity before protected checkout/shipping
+  // requests. check-auth can refresh an authenticated user's access token from
+  // the refresh cookie; only fall back to the visitor identity when no user is
+  // authenticated. This prevents an authenticated customer from being silently
+  // recorded as a visitor when the short-lived access token has expired.
   const ensureCheckoutIdentity = async () => {
+    try {
+      const authResponse = await api.get("/api/check-auth/");
+      if (authResponse.data?.isAuthenticated) {
+        return { type: "user", user: authResponse.data.user };
+      }
+    } catch (error) {
+      // Fall through to visitor identity for legitimate guest checkout.
+    }
+
     await api.get("/api/vistor-token/");
+    return { type: "visitor" };
   };
 
   useEffect(() => {
