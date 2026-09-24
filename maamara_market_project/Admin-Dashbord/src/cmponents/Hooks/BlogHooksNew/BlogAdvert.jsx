@@ -26,11 +26,11 @@ export default function AdvertBlogs() {
             </p>
           </div>
 
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 mm-mobile-horizontal-scroll mm-mobile-blog-rail">
             {blogs.slice(0, 3).map((blog) => (
               <article
                 key={blog.id}
-                className="overflow-hidden rounded-2xl border border-border bg-background"
+                className="overflow-hidden rounded-2xl border border-border bg-background mm-mobile-blog-card"
               >
                 {blog.image && (
                   <div className="m-2 overflow-hidden rounded-xl">
