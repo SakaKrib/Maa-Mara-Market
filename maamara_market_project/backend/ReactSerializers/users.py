@@ -505,7 +505,7 @@ class HybridCheckAuthView(APIView):
 
 logger = logging.getLogger("ReactSerializers.users")
 
-@csrf_protect
+@csrf_exempt
 @permission_classes([AllowAny])
 @require_http_methods(["POST"])
 def login_view(request):
