@@ -75,9 +75,6 @@ class Payment(models.Model):
     PAYMENT_METHOD_CHOICES = [
         ("UNKNOWN", "Unknown"),
         ("MPESA", "M-Pesa"),
-        ("CARD", "Card"),
-        ("BANK", "Bank Transfer"),
-        ("AIRTEL", "Airtel Money"),
     ]
 
     STATUS_CHOICES = [
@@ -614,7 +611,7 @@ class Transaction(models.Model):
     # payment method
     payment_method = models.CharField(
         max_length=50,
-        choices=[("paypal", "PayPal"), ("mpesa", "M-Pesa"), ("card", "Card")],
+        choices=[("paypal", "PayPal"), ("mpesa", "M-Pesa")],
         default="paypal",
     )
 
