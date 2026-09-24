@@ -278,6 +278,7 @@ def process_paypal_refund(refund_id):
             if adjustment and not adjustment.applied:
                 adjustment.applied = True
                 adjustment.save(update_fields=["applied"])
+                _sync_payment_refund_status(locked_refund.payment)
 
         return locked_refund
 
@@ -481,6 +482,7 @@ def reconcile_mpesa_refund_callback(payload, *, timeout=False):
             if adjustment and not adjustment.applied:
                 adjustment.applied = True
                 adjustment.save(update_fields=["applied"])
+                _sync_payment_refund_status(locked_refund.payment)
         elif timeout:
             # A Daraja timeout is ambiguous: the reversal request may have
             # reached the provider even though no result was delivered.
@@ -556,6 +558,7 @@ def reconcile_paypal_refund(provider_reference, provider_status, provider_amount
             if adjustment and not adjustment.applied:
                 adjustment.applied = True
                 adjustment.save(update_fields=["applied"])
+                _sync_payment_refund_status(locked_refund.payment)
 
         elif normalized_status in {"FAILED", "CANCELLED"}:
             if refund.status != "completed":
