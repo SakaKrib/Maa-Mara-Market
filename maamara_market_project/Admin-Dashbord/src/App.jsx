@@ -95,6 +95,7 @@ import "./admin.css"
 import InviteFriends from "./PublicUiForAll/PublicUi/Customer/DesktopView/Main/Referals/Referals";
 import UserAccount from "./PublicUiForAll/PublicUi/Customer/DesktopView/Main/Accounts/Account";
 import CustomerOrdersDashboard from "./PublicUiForAll/PublicUi/Customer/DesktopView/Main/Accounts/CustomerOrder";
+import OrderTracking from "./PublicUiForAll/PublicUi/Customer/DesktopView/Main/Accounts/OrderTracking";
 import BrandPage from "./PublicUiForAll/PublicUi/Customer/DesktopView/Main/Trending/BrandPage";
 import Brands from "./PublicUiForAll/PublicUi/Customer/DesktopView/Main/Trending/Brands";
 import PublicProfile from "./PublicUiForAll/PublicUi/Customer/DesktopView/Main/Accounts/Profile-User-Visitor";
@@ -204,6 +205,7 @@ function AppContent() {
                 <Route path="send-invitation" element={<InviteFriends />} />
                 <Route path="user-account" element={<UserAccount />} />
                 <Route path="customer-order" element={<CustomerOrdersDashboard />} />
+                <Route path="customer-order/track/:orderId" element={<OrderTracking />} />
                 <Route path="brands" element={<Brands />} />
                 <Route path="brands/:id" element={<BrandPage />} />
                 {/* profile */}
