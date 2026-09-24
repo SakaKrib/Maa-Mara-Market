@@ -179,6 +179,18 @@ def user_account_view(request):
             "ordered_date": order.ordered_date,
             "created_at": order.created_at,
             "final_total": order.final_total_of_cart(),
+            "billing_address": ({
+                "first_name": order.billing_address.first_name,
+                "last_name": order.billing_address.last_name,
+                "email": order.billing_address.email,
+                "phone": order.billing_address.phone,
+                "street_address": order.billing_address.street_address,
+                "appartment_address": order.billing_address.appartment_address,
+                "city": order.billing_address.city,
+                "state": order.billing_address.state,
+                "country": order.billing_address.country,
+                "zip": order.billing_address.zip,
+            } if order.billing_address else None),
             "items": [{
                 "id": item.id,
                 "quantity": item.quantity,
