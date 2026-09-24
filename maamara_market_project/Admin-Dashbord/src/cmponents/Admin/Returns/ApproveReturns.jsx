@@ -46,7 +46,21 @@ const PendingReturnsList = () => {
 
   if (isLoading) {
     return (
-      <div className="grid gap-3">\n      {snackbar.open && (\n        <div className="fixed right-4 top-20 z-[1400] max-w-sm rounded-[20px] border border-gray-300 bg-card px-4 py-3 text-sm font-semibold text-card-foreground shadow-lg">\n          {snackbar.message}\n          <button type="button" onClick={() => setSnackbar((prev) => ({ ...prev, open: false }))} className="ml-3 text-xs text-muted-foreground hover:text-card-foreground" aria-label="Dismiss notification">×</button>\n        </div>\n      )}
+      <>
+        {snackbar.open && (
+          <div className="fixed right-4 top-20 z-[1400] max-w-sm rounded-[20px] border border-gray-300 bg-card px-4 py-3 text-sm font-semibold text-card-foreground shadow-lg">
+            {snackbar.message}
+            <button
+              type="button"
+              onClick={() => setSnackbar((prev) => ({ ...prev, open: false }))}
+              className="ml-3 text-xs text-muted-foreground hover:text-card-foreground"
+              aria-label="Dismiss notification"
+            >
+              ×
+            </button>
+          </div>
+        )}
+        <div className="grid gap-3">
         {[1, 2, 3, 4].map((item) => (
           <div key={item} className="animate-pulse rounded-2xl border border-border bg-card p-5">
             <div className="h-4 w-2/5 rounded bg-muted" />
@@ -55,7 +69,8 @@ const PendingReturnsList = () => {
             <div className="mt-5 h-9 w-full rounded-xl bg-muted sm:w-48" />
           </div>
         ))}
-      </div>
+        </div>
+      </>
     );
   }
 
