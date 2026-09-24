@@ -13,7 +13,9 @@ const FAQ = () => {
   const [editedAnswer, setEditedAnswer] = useState("");
   const [newFaq, setNewFaq] = useState({ question: "", answer: "", category: "" });
   const [saving, setSaving] = useState(false);
-  const [faqCandidates, setFaqCandidates] = useState([]);\n  const [snackbar, setSnackbar] = useState({ open: false, message: "" });\n  const showSnackbar = (message) => setSnackbar({ open: true, message });
+  const [faqCandidates, setFaqCandidates] = useState([]);
+  const [snackbar, setSnackbar] = useState({ open: false, message: "" });
+  const showSnackbar = (message) => setSnackbar({ open: true, message });
 
   const fetchFaqs = async (silent = false) => {
     if (!silent) setLoading(true);
@@ -62,8 +64,7 @@ const FAQ = () => {
     };
 
     connect();
-    return (\n    <>\n      {snackbar.open && (\n        <div className="fixed right-4 top-20 z-[1400] max-w-sm rounded-[20px] border border-gray-300 bg-card px-4 py-3 text-sm font-semibold text-card-foreground shadow-lg">\n          {snackbar.message}\n          <button type="button" onClick={() => setSnackbar((prev) => ({ ...prev, open: false }))} className="ml-3 text-xs text-muted-foreground hover:text-card-foreground" aria-label="Dismiss notification">×</button>\n        </div>\n      )) => {
-      closed = true;
+    return (\n    <div className="min-h-full bg-background p-2 text-foreground sm:p-4 lg:p-6">\n      {snackbar.open && (<div className="fixed right-4 top-20 z-[1400] max-w-sm rounded-[20px] border border-gray-300 bg-card px-4 py-3 text-sm font-semibold text-card-foreground shadow-lg">{snackbar.message}<button type="button" onClick={() => setSnackbar((prev) => ({ ...prev, open: false }))} className="ml-3 text-xs text-muted-foreground hover:text-card-foreground" aria-label="Dismiss notification">×</button></div>)}\n      <div className="mx-auto max-w-6xl">
       if (timer) window.clearTimeout(timer);
       if (socket) socket.close();
     };
@@ -75,9 +76,11 @@ const FAQ = () => {
     try {
       const response = await api.post("/api/faqs/", newFaq, { withCredentials: true });
       setFaqs((current) => [response.data, ...current]);
-      setNewFaq({ question: "", answer: "", category: "" });\n      showSnackbar("FAQ created successfully.");
+      setNewFaq({ question: "", answer: "", category: "" });
+      showSnackbar("FAQ created successfully.");
     } catch (error) {
-      console.error("Failed to create FAQ:", error);\n      showSnackbar(error?.response?.data?.detail || "Could not create FAQ.");
+      console.error("Failed to create FAQ:", error);
+      showSnackbar(error?.response?.data?.detail || "Could not create FAQ.");
     } finally {
       setSaving(false);
     }
@@ -93,9 +96,11 @@ const FAQ = () => {
       );
       setFaqs((current) => current.map((faq) => faq.id === id ? response.data : faq));
       setEditingId(null);
-      setEditedAnswer("");\n      showSnackbar("FAQ updated successfully.");
+      setEditedAnswer("");
+      showSnackbar("FAQ updated successfully.");
     } catch (error) {
-      console.error("Failed to update FAQ:", error);\n      showSnackbar(error?.response?.data?.detail || "Could not update FAQ.");
+      console.error("Failed to update FAQ:", error);
+      showSnackbar(error?.response?.data?.detail || "Could not update FAQ.");
     } finally {
       setSaving(false);
     }
@@ -117,8 +122,7 @@ const FAQ = () => {
   }, {}), [filteredFaqs]);
 
   return (
-    <div className="min-h-full bg-background p-2 text-foreground sm:p-4 lg:p-6">
-      <div className="mx-auto max-w-6xl">
+    <div className="min-h-full bg-background p-2 text-foreground sm:p-4 lg:p-6">\n      {snackbar.open && (<div className="fixed right-4 top-20 z-[1400] max-w-sm rounded-[20px] border border-gray-300 bg-card px-4 py-3 text-sm font-semibold text-card-foreground shadow-lg">{snackbar.message}<button type="button" onClick={() => setSnackbar((prev) => ({ ...prev, open: false }))} className="ml-3 text-xs text-muted-foreground hover:text-card-foreground" aria-label="Dismiss notification">×</button></div>)}\n      <div className="mx-auto max-w-6xl">
         <header className="mb-5 rounded-2xl border border-border bg-card p-5 shadow-custom sm:p-6">
           <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">Content</p>
           <h1 className="mt-1 text-xl font-bold text-card-foreground sm:text-2xl">Frequently Asked Questions</h1>
