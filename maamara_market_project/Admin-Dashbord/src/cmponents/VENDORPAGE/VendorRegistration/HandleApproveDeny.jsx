@@ -23,6 +23,9 @@ export default function VendorApprovalPanel() {
 
   const showSnackbar = ({ title = "", description = "" }) => {
     setSnackbar({ open: true, title, description });
+    setTimeout(() => {
+      setSnackbar((prev) => ({ ...prev, open: false }));
+    }, 3000);
   };
 
   const handleCloseSnackbar = () => {
