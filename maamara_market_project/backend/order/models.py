@@ -297,9 +297,12 @@ class OrderItem(models.Model):
     
         
     def get_final_price(self):
-        if self.item.discount_price:
-            return self.get_total_discount()
-        return self.get_total_item_price()
+        """
+        Return the immutable customer price captured when this order item
+        was created. Checkout pricing is snapshotted in price_at_purchase so
+        later offer/discount changes cannot alter a paid order total.
+        """
+        return self.quantity * self.price_at_purchase
     
     #-----------------------
     # get payout for vendor
