@@ -88,7 +88,13 @@ def complete_paid_order(order, payment, *, transaction_id=None):
     if locked_payment.amount is None or locked_payment.amount <= Decimal("0.00"):
         raise ValueError("Paid order has an invalid payment amount.")
 
-    if locked_order.status == "completed":
+    # Order status is canonicalized to the model's uppercase choice values.
+    # The iexact check keeps legacy lowercase rows idempotent.
+    if str(locked_order.status).lower() == "completed":
+        if locked_order.status != "COMPLETED":
+            locked_order.status = "COMPLETED"
+            locked_order.save(update_fields=["status"])
+
         if locked_payment.status != "completed":
             locked_payment.status = "completed"
             if transaction_id:
@@ -150,7 +156,7 @@ def complete_paid_order(order, payment, *, transaction_id=None):
         sold_item._stock_already_deducted = True
         sold_item.save()
 
-    locked_order.status = "completed"
+    locked_order.status = "COMPLETED"
     locked_order.payment = locked_payment
     locked_order.save(update_fields=["status", "payment"])
 
