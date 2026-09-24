@@ -194,7 +194,7 @@ def capture_paypal_order(request, order_id):
                             "payment": locked_order.payment,
                             "amount": provider_amount,
                             "status": "completed",
-                            "visitor_id": locked_order.visitor_id,
+                            "visitor_id": None,
                             "raw_data": capture_response,
                         },
                     )
@@ -208,9 +208,7 @@ def capture_paypal_order(request, order_id):
                         "amount": provider_amount,
                         "status": "completed",
                         "payment": locked_order.payment,
-                        # Transaction.visitor_id is legacy-unique, so it cannot
-                        # be copied to every vendor transaction in a multi-vendor order.
-                        "visitor_id": None,
+                        "visitor_id": locked_order.visitor_id,
                         "raw_data": capture_response,
                     },
                 )
