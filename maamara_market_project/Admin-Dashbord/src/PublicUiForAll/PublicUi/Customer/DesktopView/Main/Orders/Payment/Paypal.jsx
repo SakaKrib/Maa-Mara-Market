@@ -1,6 +1,6 @@
 import { PayPalScriptProvider, PayPalButtons, FUNDING } from "@paypal/react-paypal-js";
 import { useCartContext } from "../../CartHook/cart";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import Snackbar from "@mui/material/Snackbar";
 import Alert from "@mui/material/Alert";
@@ -36,11 +36,11 @@ export default function CheckoutPaypalPayment() {
 
   // Keep the existing CheckoutSession recoverable while the customer is on
   // the provider page or returns here after cancellation/failure.
-  useState(() => {
+  useEffect(() => {
     if (checkoutResult?.checkout_id) {
       sessionStorage.setItem("maaMaraCheckout", JSON.stringify(checkoutResult));
     }
-  });
+  }, [checkoutResult]);
 
   const handlePaymentApproval = async ({ id }) => {
     if (!id || !checkoutId) {
