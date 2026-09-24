@@ -118,7 +118,7 @@ def get_cart_view(request):
         # ---------------------------------------------------
         # 3️⃣ Get active order (pending)
         # ---------------------------------------------------
-        filters = {"status__iexact": "pending"}
+        filters = {"status__in": ["PENDING_PAYMENT", "pending"]}
 
         if user:
             filters["user"] = user
@@ -338,7 +338,7 @@ def add_to_cart_api(request, pk):
 
     # --- Fetch existing cart item ---
     # Get active pending order first
-    order = Order.objects.filter(user=user, visitor_id=visitor_id, status="pending").first()
+    order = Order.objects.filter(user=user, visitor_id=visitor_id, status__in=["PENDING_PAYMENT", "pending"]).first()
 
     cart_item_qs = OrderItem.objects.filter(
         item=item,
@@ -396,7 +396,7 @@ def add_to_cart_api(request, pk):
     order, order_created = Order.objects.select_for_update().get_or_create(
         user=user,
         visitor_id=visitor_id,
-        status="pending",
+        status="PENDING_PAYMENT",
         defaults={"ordered_date": timezone.now()},
     )
 
@@ -491,7 +491,7 @@ def remove_from_cart_api(request, pk):
     order_qs = Order.objects.select_for_update().filter(
         user=user,
         visitor_id=visitor_id,
-        status="pending"
+        status__in=["PENDING_PAYMENT", "pending"]
     )
     if not order_qs.exists():
         return Response({"success": False, "message": sanitize("You do not have an active order")})
@@ -600,7 +600,7 @@ def remove_all_from_cart_api(request):
     order_qs = Order.objects.select_for_update().filter(
         user=user,
         visitor_id=visitor_id,
-        status="pending",
+        status__in=["PENDING_PAYMENT", "pending"],
     )
     order = order_qs.first()
     if not order:
@@ -1301,7 +1301,7 @@ def revenue_growth(request):
 @api_view(['GET'])
 @permission_classes([IsAuthenticated, IsAdminUser])
 def dashboard_stats(request):
-    completed_orders = Order.objects.filter(status='completed')
+    completed_orders = Order.objects.filter(status__in=["COMPLETED", "completed"])
 
     total_sales = sum(order.get_total() for order in completed_orders)
 
@@ -1362,7 +1362,7 @@ def revenue_area_chart(request):
     queryset = Order.objects.all()
 
     # 🔥 FIX 1: safe status matching
-    queryset = queryset.filter(status__iexact="completed")
+    queryset = queryset.filter(status__in=["COMPLETED", "completed"])
 
     # 🔥 FIX 2: remove bad data
     queryset = queryset.exclude(
@@ -1396,7 +1396,7 @@ def revenue_area_chart(request):
 @permission_classes([IsAuthenticated, IsAdminUser])
 def dashboard_chart_data(request):
     """Real sales/category datasets for admin dashboard charts."""
-    completed = Order.objects.filter(status__iexact="completed", ordered_date__isnull=False)
+    completed = Order.objects.filter(status__in=["COMPLETED", "completed"], ordered_date__isnull=False)
 
     sales_rows = (
         completed.annotate(day=TruncDate("ordered_date"))
@@ -1417,7 +1417,7 @@ def dashboard_chart_data(request):
     ]
 
     category_rows = (
-        OrderItem.objects.filter(order__status__iexact="completed", item__category__isnull=False)
+        OrderItem.objects.filter(order__status__in=["COMPLETED", "completed"], item__category__isnull=False)
         .values("item__category__name")
         .annotate(value=Sum("quantity"))
         .order_by("-value")[:10]
