@@ -2,7 +2,6 @@ import React, { useEffect, useMemo, useState } from "react";
 import api from "../../../../../../Services/Api";
 import { Button } from "../../../../../../../components/ui/button";
 import { Loader2, PackageCheck, UploadCloud, Undo2 } from "lucide-react";
-import MuiAlert from "@mui/material/Alert";
 import { Link, useLocation } from "react-router-dom";
 
 const reasonOptions = [
@@ -366,21 +365,7 @@ const RequestReturnForm = ({ selectedItem = null }) => {
         </section>
       </div>
 
-      <Snackbar
-        open={snackbar.open}
-        autoHideDuration={4500}
-        onClose={() => setSnackbar((previous) => ({ ...previous, open: false }))}
-        anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
-      >
-        <MuiAlert
-          severity={snackbar.severity}
-          elevation={6}
-          variant="filled"
-          onClose={() => setSnackbar((previous) => ({ ...previous, open: false }))}
-        >
-          {snackbar.message}
-        </MuiAlert>
-      </Snackbar>
+      {snackbar.open && (<div className="fixed right-4 top-20 z-[1400] max-w-sm rounded-[20px] border border-gray-300 bg-card px-4 py-3 text-sm font-semibold text-card-foreground shadow-lg">{snackbar.message}<button type="button" onClick={() => setSnackbar((previous) => ({ ...previous, open: false }))} className="ml-3 text-xs text-muted-foreground hover:text-card-foreground" aria-label="Dismiss notification">×</button></div>)}
     </main>
   );
 };
