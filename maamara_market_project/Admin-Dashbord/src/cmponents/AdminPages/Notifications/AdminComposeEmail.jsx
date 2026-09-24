@@ -107,7 +107,8 @@ const ComposeEmail = ({ open, onClose, user }) => {
     window.setTimeout(onClose, 300);
   };
 
-  return (\n    <Dialog
+  return (
+    <Dialog
       open={open}
       onClose={onClose}
       fullWidth
