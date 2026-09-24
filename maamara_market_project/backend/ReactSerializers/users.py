@@ -11,6 +11,7 @@ from django.conf import settings
 from django.http import JsonResponse
 from django.utils.text import slugify
 from django.views.decorators.csrf import ensure_csrf_cookie, csrf_protect
+from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_http_methods
 from django.middleware.csrf import get_token
 from django.utils.decorators import method_decorator
