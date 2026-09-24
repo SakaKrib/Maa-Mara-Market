@@ -715,6 +715,90 @@ class Transaction(models.Model):
 
 
 
+class Refund(models.Model):
+    """
+    Immutable financial ledger entry for an approved customer refund.
+
+    The refund is created only after an admin approves a return request.
+    Provider calls are performed asynchronously and this row is the source
+    of truth for idempotency, reconciliation, and audit history.
+    """
+
+    STATUS_CHOICES = [
+        ("approved", "Approved"),
+        ("processing", "Processing"),
+        ("completed", "Completed"),
+        ("failed", "Failed"),
+        ("cancelled", "Cancelled"),
+    ]
+
+    PROVIDER_CHOICES = [
+        ("PayPal", "PayPal"),
+        ("Mpesa", "M-Pesa"),
+    ]
+
+    return_request = models.OneToOneField(
+        "vendorDashboard.ReturnRequest",
+        on_delete=models.PROTECT,
+        related_name="refund",
+    )
+    payment = models.ForeignKey(
+        Payment,
+        on_delete=models.PROTECT,
+        related_name="refunds",
+    )
+    amount = models.DecimalField(max_digits=12, decimal_places=2)
+    currency = models.CharField(max_length=10)
+    provider = models.CharField(max_length=20, choices=PROVIDER_CHOICES)
+    status = models.CharField(
+        max_length=20,
+        choices=STATUS_CHOICES,
+        default="approved",
+        db_index=True,
+    )
+
+    # Provider-side idempotency/correlation.
+    provider_reference = models.CharField(
+        max_length=255,
+        blank=True,
+        null=True,
+        unique=True,
+    )
+    mpesa_originator_conversation_id = models.CharField(
+        max_length=100,
+        blank=True,
+        null=True,
+        unique=True,
+    )
+    mpesa_conversation_id = models.CharField(
+        max_length=100,
+        blank=True,
+        null=True,
+        unique=True,
+    )
+    mpesa_result_code = models.IntegerField(blank=True, null=True)
+
+    failure_reason = models.TextField(blank=True, null=True)
+    completed_at = models.DateTimeField(blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        indexes = [
+            models.Index(fields=["payment", "status"]),
+            models.Index(fields=["provider", "status"]),
+            models.Index(fields=["return_request"]),
+        ]
+
+    def __str__(self):
+        return (
+            f"Refund {self.pk} | {self.provider} | "
+            f"{self.amount} {self.currency} | {self.status}"
+        )
+
+
+
 class CheckoutSession(models.Model):
     """Short-lived checkout state used until a payment provider confirms payment."""
     STATUS_CHOICES = [
