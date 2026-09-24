@@ -1,13 +1,7 @@
 import React, { useState } from "react";
 import api from "../../../../../../Services/Api";
 import CartIcon from "@mui/icons-material/ShoppingCartOutlined";
-import Snackbar from "@mui/material/Snackbar";
-import MuiAlert from "@mui/material/Alert";
 import { useCartContext } from "../CartHook/cart";
-
-const Alert = React.forwardRef(function Alert(props, ref) {
-  return <MuiAlert elevation={6} ref={ref} variant="filled" {...props} />;
-});
 
 const AddToCartButton = ({
   itemId,
@@ -102,16 +96,12 @@ const AddToCartButton = ({
         <CartIcon fontSize="small" /> {buttonText}
       </button>
 
-      <Snackbar
-        open={toast.open}
-        autoHideDuration={4000}
-        onClose={handleClose}
-        anchorOrigin={{ vertical: "top", horizontal: "right" }}
-      >
-        <Alert onClose={handleClose} severity={toast.severity} sx={{ width: "100%" }}>
+      {toast.open && (
+        <div className="fixed right-4 top-20 z-[1400] max-w-sm rounded-[20px] border border-gray-300 bg-card px-4 py-3 text-sm font-semibold text-card-foreground shadow-lg">
           {toast.message}
-        </Alert>
-      </Snackbar>
+          <button type="button" onClick={handleClose} className="ml-3 text-xs text-muted-foreground hover:text-card-foreground" aria-label="Dismiss notification">×</button>
+        </div>
+      )}
     </>
   );
 };
