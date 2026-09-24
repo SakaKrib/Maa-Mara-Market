@@ -251,6 +251,11 @@ def materialize_paid_checkout(checkout_session, *, transaction_id=None, provider
         payment_method=session.payment_method,
         amount=session.amount,
         status="pending",
+        # Payment.merchant_reference is a legacy unique field that remains
+        # required by the current database schema. Use the checkout UUID as a
+        # stable, provider-independent reference so materialization cannot
+        # fail before the payment is marked complete.
+        merchant_reference=f"CHECKOUT-{session.id}",
     )
 
     if provider_amount is not None and hasattr(payment, "provider_amount"):
