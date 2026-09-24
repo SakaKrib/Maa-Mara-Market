@@ -25,7 +25,7 @@ from core.models import ActivityLog, Voucher, Wallet
 from vendorDashboard.models import ReturnRequest, VendorPayout
 
 from .Serializers import TransactionSerializer
-from .models import OrderItem, Order, Refund, Transaction
+from .models import OrderItem, Order, Transaction
 
 User = get_user_model()
 logger = logging.getLogger(__name__)
@@ -920,12 +920,7 @@ def admin_transaction_history(request):
         .filter(paid=True)
         .order_by("-paid_at", "-created_at")
     )
-    refund_qs = (
-        Refund.objects
-        .select_related("payment", "return_request")
-        .filter(status__iexact="completed")
-        .order_by("-completed_at", "-created_at")
-    )
+
 
     if period_start:
         transaction_qs = transaction_qs.filter(
@@ -972,31 +967,7 @@ def admin_transaction_history(request):
             "deletable": is_manual,
         })
 
-    for refund in refund_qs[:50]:
-        provider_reference = (
-            refund.provider_reference
-            or refund.payment.transaction_id
-            or f"REFUND-{refund.id}"
-        )
-        results.append({
-            "id": f"refund-{refund.id}",
-            "record_id": refund.id,
-            "txid": provider_reference,
-            "category": "Refund",
-            "category_key": "refund",
-            "payment_method": refund.provider,
-            "transaction_type": "B2C",
-            "amount": float(refund.amount or 0),
-            "status": refund.status,
-            "vendor_name": None,
-            "created_at": refund.completed_at or refund.updated_at,
-            "source": "refund",
-            "source_label": "Customer refund",
-            "editable": False,
-            "deletable": False,
-            "refund_reference": refund.provider_reference,
-            "refund_provider": refund.provider,
-        })
+
 
     for payout in payout_qs[:50]:
         vendor_name = (
