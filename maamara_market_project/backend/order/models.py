@@ -740,7 +740,7 @@ class Refund(models.Model):
     return_request = models.OneToOneField(
         "vendorDashboard.ReturnRequest",
         on_delete=models.PROTECT,
-        related_name="refund",
+        related_name="refund_record",
     )
     payment = models.ForeignKey(
         Payment,
@@ -748,7 +748,7 @@ class Refund(models.Model):
         related_name="refunds",
     )
     amount = models.DecimalField(max_digits=12, decimal_places=2)
-    currency = models.CharField(max_length=10)
+    currency = models.CharField(max_length=3)
     provider = models.CharField(max_length=20, choices=PROVIDER_CHOICES)
     status = models.CharField(
         max_length=20,
@@ -762,19 +762,19 @@ class Refund(models.Model):
         max_length=255,
         blank=True,
         null=True,
-        unique=True,
+        db_index=True,
     )
     mpesa_originator_conversation_id = models.CharField(
         max_length=100,
         blank=True,
         null=True,
-        unique=True,
+        db_index=True,
     )
     mpesa_conversation_id = models.CharField(
         max_length=100,
         blank=True,
         null=True,
-        unique=True,
+        db_index=True,
     )
     mpesa_result_code = models.IntegerField(blank=True, null=True)
 
@@ -788,7 +788,16 @@ class Refund(models.Model):
         indexes = [
             models.Index(fields=["payment", "status"]),
             models.Index(fields=["provider", "status"]),
-            models.Index(fields=["return_request"]),
+        ]
+        constraints = [
+            models.UniqueConstraint(
+                condition=models.Q(
+                    provider_reference__isnull=False,
+                    provider_reference__gt="",
+                ),
+                fields=["provider", "provider_reference"],
+                name="uniq_refund_provider_reference",
+            ),
         ]
 
     def __str__(self):
