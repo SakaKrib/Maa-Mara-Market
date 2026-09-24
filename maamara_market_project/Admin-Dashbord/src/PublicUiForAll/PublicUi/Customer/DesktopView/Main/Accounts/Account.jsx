@@ -20,8 +20,6 @@ import {
   Undo2,
 } from "lucide-react";
 import api from "../../../../../../Services/Api";
-import Snackbar from "@mui/material/Snackbar";
-import MuiAlert from "@mui/material/Alert";
 import { Avatar } from "@mui/material";
 
 export default function UserAccount() {
@@ -524,21 +522,12 @@ export default function UserAccount() {
       </div>
 
       {/* ✅ Snackbar Toast */}
-      <Snackbar
-        open={toast.open}
-        autoHideDuration={4000}
-        onClose={() => setToast({ ...toast, open: false })}
-        anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
-      >
-        <MuiAlert
-          onClose={() => setToast({ ...toast, open: false })}
-          severity={toast.severity}
-          variant="filled"
-          sx={{ width: "100%" }}
-        >
+      {toast.open && (
+        <div className="fixed right-4 top-20 z-[1400] max-w-sm rounded-[20px] border border-gray-300 bg-card px-4 py-3 text-sm font-semibold text-card-foreground shadow-lg">
           {toast.message}
-        </MuiAlert>
-      </Snackbar>
+          <button type="button" onClick={() => setToast({ ...toast, open: false })} className="ml-3 text-xs text-muted-foreground hover:text-card-foreground" aria-label="Dismiss notification">×</button>
+        </div>
+      )}
     </>
   );
 }
