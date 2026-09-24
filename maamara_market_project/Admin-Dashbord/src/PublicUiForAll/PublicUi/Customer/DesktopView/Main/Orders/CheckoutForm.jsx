@@ -38,6 +38,7 @@ export default function CheckoutPage() {
     handleSubmit,
     control,
     watch,
+    reset,
     formState: { errors },
   } = useForm({
     resolver: zodResolver(checkoutSchema),
@@ -51,6 +52,9 @@ export default function CheckoutPage() {
   const navigate = useNavigate();
   const [totalOrder, setTotalOrder] = useState(0);
   const [snackbar, setSnackbar] = useState({ open: false, message: "", severity: "info" });
+  const [previousDetails, setPreviousDetails] = useState(null);
+  const [showPreviousDetails, setShowPreviousDetails] = useState(false);
+  const [activeCheckout, setActiveCheckout] = useState(null);
 
   const showSnackbar = (message, severity = "info") => {
     setSnackbar({ open: true, message, severity });
@@ -72,15 +76,78 @@ export default function CheckoutPage() {
   };
 
   useEffect(() => {
-    try {
-      const raw = sessionStorage.getItem("maaMaraBuyNow");
-      if (raw) {
-        const parsed = JSON.parse(raw);
-        if (parsed?.itemId) setBuyNowItem(parsed);
+    let cancelled = false;
+
+    const loadCheckoutContext = async () => {
+      try {
+        const raw = sessionStorage.getItem("maaMaraBuyNow");
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          if (!cancelled && parsed?.itemId) setBuyNowItem(parsed);
+        }
+      } catch (error) {
+        // Keep checkout recovery silent; no customer form data is written to logs.
       }
-    } catch (error) {
-      // Keep checkout recovery silent; no customer form data is written to logs.
-    }
+
+      try {
+        const savedCheckout = sessionStorage.getItem("maaMaraCheckout");
+        if (savedCheckout) {
+          const parsed = JSON.parse(savedCheckout);
+          if (parsed?.checkout_id) {
+            const statusResponse = await api.get(
+              `/api/checkout/${parsed.checkout_id}/status/`
+            );
+            const statusData = statusResponse.data;
+            if (
+              !cancelled &&
+              statusData?.status === "payment_pending" &&
+              parsed?.payment?.payment_method
+            ) {
+              setActiveCheckout({
+                ...parsed,
+                paypal_order_id:
+                  parsed.paypal_order_id || statusData.paypal_order_id || null,
+              });
+            } else if (
+              statusData?.status === "completed" ||
+              statusData?.status === "failed" ||
+              statusData?.status === "expired"
+            ) {
+              sessionStorage.removeItem("maaMaraCheckout");
+            }
+          }
+        }
+      } catch (error) {
+        // A stale checkout must never prevent a fresh checkout.
+      }
+
+      try {
+        const authResponse = await api.get("/api/check-auth/");
+        if (!authResponse.data?.isAuthenticated) return;
+
+        const accountResponse = await api.get("/api/user/account/");
+        const completedOrder = (accountResponse.data?.orders || []).find(
+          (item) =>
+            ["PAID", "PROCESSING", "PACKING", "READY_TO_SHIP", "SHIPPED",
+              "IN_TRANSIT", "OUT_FOR_DELIVERY", "DELIVERED",
+              "AWAITING_CONFIRMATION", "COMPLETED", "completed"].includes(
+              String(item.status || "").toUpperCase()
+            ) && item.billing_address
+        );
+
+        if (!cancelled && completedOrder?.billing_address) {
+          setPreviousDetails(completedOrder.billing_address);
+          setShowPreviousDetails(true);
+        }
+      } catch (error) {
+        // Returning customers can always fill the checkout form manually.
+      }
+    };
+
+    loadCheckoutContext();
+    return () => {
+      cancelled = true;
+    };
   }, []);
   const checkoutItems = buyNowItem ? [{
     id: buyNowItem.itemId,
@@ -216,12 +283,10 @@ const fetchShippingQuote = async () => {
       const res = await api.post("/api/checkout/", payload);
       const responseData = res.data;
 
-      // Keep the Buy Now selection in sessionStorage until payment succeeds.
-      // This allows the payment screen to recover the exact selection if the
-      // customer returns from a failed/cancelled payment.
-
-      // call the shipping api
-      // fetchShippingQuote();
+      // Once a CheckoutSession exists, keep it as the recovery point until
+      // payment succeeds. Buy Now is cleared only by the success flow.
+      sessionStorage.setItem("maaMaraCheckout", JSON.stringify(responseData));
+      setActiveCheckout(responseData);
 
       // Route based on payment method
       const method = (responseData.payment.payment_method || "").toLowerCase();
@@ -259,8 +324,115 @@ const fetchShippingQuote = async () => {
           {snackbar.message}
         </Alert>
       </Snackbar>
+        {showPreviousDetails && previousDetails && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+            <div className="w-full max-w-lg rounded-2xl border border-border bg-background p-6 shadow-xl">
+              <h2 className="text-xl font-semibold text-card-foreground">
+                Continue with your previous details?
+              </h2>
+              <p className="mt-1 text-sm text-muted-foreground">
+                We found details from your most recent successful purchase.
+              </p>
+
+              <div className="mt-5 space-y-2 rounded-xl border border-border bg-card p-4 text-sm">
+                <p><span className="font-semibold">Name:</span> {previousDetails.first_name} {previousDetails.last_name}</p>
+                <p><span className="font-semibold">Email:</span> {previousDetails.email}</p>
+                <p><span className="font-semibold">Phone:</span> {previousDetails.phone}</p>
+                <p><span className="font-semibold">Address:</span> {previousDetails.street_address}</p>
+                {previousDetails.appartment_address && (
+                  <p><span className="font-semibold">Apartment:</span> {previousDetails.appartment_address}</p>
+                )}
+                <p><span className="font-semibold">City:</span> {previousDetails.city}</p>
+                {previousDetails.state && <p><span className="font-semibold">State:</span> {previousDetails.state}</p>}
+                <p><span className="font-semibold">ZIP:</span> {previousDetails.zip}</p>
+                <p><span className="font-semibold">Country:</span> {previousDetails.country}</p>
+              </div>
+
+              <div className="mt-6 flex flex-col gap-2 sm:flex-row sm:justify-end">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => {
+                    reset();
+                    setShowPreviousDetails(false);
+                  }}
+                >
+                  Use a different address
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => {
+                    reset({
+                      firstName: previousDetails.first_name || "",
+                      lastName: previousDetails.last_name || "",
+                      email: previousDetails.email || "",
+                      phone: previousDetails.phone || "",
+                      address: previousDetails.street_address || "",
+                      apartment: previousDetails.appartment_address || "",
+                      city: previousDetails.city || "",
+                      state: previousDetails.state || "",
+                      zip: previousDetails.zip || "",
+                      country: previousDetails.country || "",
+                    });
+                    setShowPreviousDetails(false);
+                  }}
+                >
+                  Edit
+                </Button>
+                <Button
+                  type="button"
+                  onClick={() => {
+                    reset({
+                      firstName: previousDetails.first_name || "",
+                      lastName: previousDetails.last_name || "",
+                      email: previousDetails.email || "",
+                      phone: previousDetails.phone || "",
+                      address: previousDetails.street_address || "",
+                      apartment: previousDetails.appartment_address || "",
+                      city: previousDetails.city || "",
+                      state: previousDetails.state || "",
+                      zip: previousDetails.zip || "",
+                      country: previousDetails.country || "",
+                    });
+                    setShowPreviousDetails(false);
+                  }}
+                  className="primary-button text-white"
+                >
+                  Use these details
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
+
       <main className="mm-page mm-checkout min-h-screen py-6 md:py-10">
       <div className="mm-container">
+        {activeCheckout?.checkout_id && (
+          <div className="mb-6 rounded-2xl border border-border bg-card p-4 shadow-sm">
+            <p className="text-sm font-semibold text-card-foreground">
+              You have a payment in progress.
+            </p>
+            <p className="mt-1 text-sm text-muted-foreground">
+              You can continue the checkout you already started instead of selecting Buy Now again.
+            </p>
+            <Button
+              type="button"
+              onClick={() =>
+                navigate(
+                  activeCheckout.payment?.payment_method?.toLowerCase() === "paypal"
+                    ? "/paypal-make-payment"
+                    : "/mpesa-make-payment",
+                  { state: activeCheckout }
+                )
+              }
+              className="primary-button mt-3 rounded-full px-5 text-white font-semibold"
+            >
+              Continue payment
+            </Button>
+          </div>
+        )}
+
         <div className="mb-6 border-b border-border pb-4">
           <h1 className="text-2xl font-semibold tracking-tight text-card-foreground md:text-3xl">Checkout</h1>
           <p className="mt-1 text-sm text-muted-foreground">
