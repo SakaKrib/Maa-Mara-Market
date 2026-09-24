@@ -6,20 +6,25 @@ import MarketplaceDiscovery from "./Discovery/MarketplaceDiscovery";
 import AccountHighlights from "./AccountHighlights";
 import Banners from "./Trending/Banner";
 import AdvertBlogs from "../../../../../cmponents/Hooks/BlogHooksNew/BlogAdvert";
+import MobileHomepageFlow from "./MobileHomepageFlow";
 
 const Main = () => (
   <main className="mm-page">
     <HomepageHero />
     <AccountHighlights />
 
-    <section className="category-collections mm-section">
+    <MobileHomepageFlow />
+
+    <section className="category-collections mm-section hidden md:block">
       <div className="mm-container">
         <CategoryWithItems />
       </div>
     </section>
 
-    <Banners />
-    <AdvertBlogs />
+    <div className="hidden md:block">
+      <Banners />
+      <AdvertBlogs />
+    </div>
     <MarketplaceDiscovery />
   </main>
 );
