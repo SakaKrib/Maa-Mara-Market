@@ -34,6 +34,9 @@ const mediaUrl = (value) => {
 };
 
 const SingleVendorProfile = () => {
+  const [snackbar, setSnackbar] = useState({ open: false, message: "" });
+  const handleCloseSnackbar = () => setSnackbar((prev) => ({ ...prev, open: false }));
+
   const [vendor, setVendor] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -212,13 +215,13 @@ const SingleVendorProfile = () => {
       );
 
       setVendor(response.data);
-      alert("Profile updated successfully!");
+      setSnackbar({ open: true, message: "Profile updated successfully!" });
     } catch (saveError) {
       console.error(
         "Error updating profile:",
         saveError.response?.data || saveError.message
       );
-      alert("Failed to update profile");
+      setSnackbar({ open: true, message: "Failed to update profile" });
     }
   };
 
@@ -351,7 +354,14 @@ const SingleVendorProfile = () => {
   );
 
   return (
-    <div className="mx-auto w-full max-w-[1500px] space-y-6">
+    <>
+      {snackbar.open && (
+        <div className="fixed right-4 top-20 z-[1400] max-w-sm rounded-[20px] border border-gray-300 bg-card px-4 py-3 text-sm font-semibold text-card-foreground shadow-lg">
+          {snackbar.message}
+          <button type="button" onClick={handleCloseSnackbar} className="ml-3 text-xs text-muted-foreground hover:text-card-foreground" aria-label="Dismiss notification">×</button>
+        </div>
+      )}
+      <div className="mx-auto w-full max-w-[1500px] space-y-6">
       <section className="flex flex-col gap-4 rounded-xl border border-gray-200 bg-white p-5 shadow-sm sm:p-6 lg:flex-row lg:items-center lg:justify-between">
         <div>
           <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#2563eb]">
@@ -607,7 +617,8 @@ const SingleVendorProfile = () => {
           </div>
         </aside>
       </section>
-    </div>
+      </div>
+    </>
   );
 };
 
