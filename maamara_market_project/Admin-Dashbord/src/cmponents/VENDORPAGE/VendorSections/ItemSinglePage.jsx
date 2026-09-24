@@ -30,6 +30,9 @@ const Metric = ({ icon, label, value }) => (
 );
 
 const SingleItemProfile = () => {
+  const [snackbar, setSnackbar] = useState({ open: false, message: "" });
+  const handleCloseSnackbar = () => setSnackbar((prev) => ({ ...prev, open: false }));
+
   const { id } = useParams();
   const navigate = useNavigate();
   const { authType, user } = useAuth();
@@ -93,7 +96,7 @@ const SingleItemProfile = () => {
       navigate("/admin-dashboard/vendors");
     } catch (requestError) {
       console.error("Failed to delete item:", requestError);
-      window.alert(requestError.response?.data?.detail || "Unable to delete item.");
+      setSnackbar({ open: true, message: requestError.response?.data?.detail || "Unable to delete item." });
     } finally {
       setDeleting(false);
     }
@@ -106,6 +109,13 @@ const SingleItemProfile = () => {
   };
 
   return (
+    <>
+      {snackbar.open && (
+        <div className="fixed right-4 top-20 z-[1400] max-w-sm rounded-[20px] border border-gray-300 bg-card px-4 py-3 text-sm font-semibold text-card-foreground shadow-lg">
+          {snackbar.message}
+          <button type="button" onClick={handleCloseSnackbar} className="ml-3 text-xs text-muted-foreground hover:text-card-foreground" aria-label="Dismiss notification">×</button>
+        </div>
+      )}
     <section className="mx-auto w-full max-w-[1500px] space-y-6 p-2 sm:p-4">
       <div className="flex flex-col gap-4 rounded-2xl border border-gray-200 bg-white p-5 shadow-sm sm:flex-row sm:items-center sm:justify-between">
         <div>
@@ -223,6 +233,7 @@ const SingleItemProfile = () => {
         </aside>
       </div>
     </section>
+    </>
   );
 };
 
