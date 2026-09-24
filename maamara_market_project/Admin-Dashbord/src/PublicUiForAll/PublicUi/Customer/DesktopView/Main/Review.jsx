@@ -1,14 +1,8 @@
 import React, { useEffect, useState } from "react";
 import api from "../../../../../Services/Api";
-import Snackbar from "@mui/material/Snackbar";
-import MuiAlert from "@mui/material/Alert";
 import Avatar from "@mui/material/Avatar";
 
 // MUI Alert wrapper
-const Alert = React.forwardRef(function Alert(props, ref) {
-  return <MuiAlert elevation={6} ref={ref} variant="filled" {...props} />;
-});
-
 const ReviewSection = ({ item }) => {
   const [reviewText, setReviewText] = useState("");
   const [rating, setRating] = useState(5);
@@ -76,12 +70,12 @@ const ReviewSection = ({ item }) => {
 
   return (
     <div className="mt-12 space-y-6">
-      <Snackbar open={snackbar.open} autoHideDuration={4000} onClose={handleSnackbarClose}
-        anchorOrigin={{ vertical: "top", horizontal: "right" }}>
-        <Alert onClose={handleSnackbarClose} severity={snackbar.severity} sx={{ width: "100%" }}>
+      {snackbar.open && (
+        <div className="fixed right-4 top-20 z-[1400] max-w-sm rounded-[20px] border border-gray-300 bg-card px-4 py-3 text-sm font-semibold text-card-foreground shadow-lg">
           {snackbar.message}
-        </Alert>
-      </Snackbar>
+          <button type="button" onClick={handleSnackbarClose} className="ml-3 text-xs text-muted-foreground hover:text-card-foreground" aria-label="Dismiss notification">×</button>
+        </div>
+      )}
 
       <section className="rounded-2xl border border-border bg-card p-4 shadow-custom sm:p-5">
         <div className="flex flex-wrap items-center justify-between gap-3">
