@@ -271,6 +271,7 @@ class VendorOrdersConsumer(AsyncJsonWebsocketConsumer):
         await self.send_json({
             "type": "orders_update",
             "pending": data["pending"],
+            "in_process": data["in_process"],
             "completed": data["completed"],
         })
 
@@ -291,14 +292,33 @@ class VendorOrdersConsumer(AsyncJsonWebsocketConsumer):
             .order_by("-id")
         )
 
+        # Keep unpaid/pending orders separate from paid fulfillment orders.
+        # The order status itself remains the source of truth for progress.
+        in_process_statuses = [
+            "PAID",
+            "PROCESSING",
+            "PACKING",
+            "READY_TO_SHIP",
+            "SHIPPED",
+            "IN_TRANSIT",
+            "OUT_FOR_DELIVERY",
+            "DELIVERED",
+            "AWAITING_CONFIRMATION",
+        ]
+
         return {
             "pending": OrderSerializer(
-                orders.filter(status="pending"),
+                orders.filter(status__in=["PENDING_PAYMENT", "pending"]),
+                many=True,
+                context={"vendor": self.vendor},
+            ).data,
+            "in_process": OrderSerializer(
+                orders.filter(status__in=in_process_statuses),
                 many=True,
                 context={"vendor": self.vendor},
             ).data,
             "completed": OrderSerializer(
-                orders.filter(status="completed"),
+                orders.filter(status__in=["COMPLETED", "completed"]),
                 many=True,
                 context={"vendor": self.vendor},
             ).data,
