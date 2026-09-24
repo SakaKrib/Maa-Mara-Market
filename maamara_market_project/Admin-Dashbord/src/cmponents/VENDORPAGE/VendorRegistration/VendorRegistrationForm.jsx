@@ -1559,7 +1559,7 @@ const onSubmit = async (data) => {
   onClose={handleCloseSnackbar}
   anchorOrigin={{ vertical: "top", horizontal: "right" }}
 >
-  <div className="rounded-[20px] border border-gray-300 bg-card px-4 py-3 text-sm font-semibold text-card-foreground shadow-lg">
+  <div className="fixed right-4 top-20 z-[1400] max-w-sm rounded-[20px] border border-gray-300 bg-card px-4 py-3 text-sm font-semibold text-card-foreground shadow-lg">
     {snackbarMessage}
     <button
       type="button"
