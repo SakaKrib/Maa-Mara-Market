@@ -5,7 +5,6 @@ import {
   Box,
   TextField,
   Typography,
-  Alert,
   useTheme,
 } from "@mui/material";
 import { useLocation, useNavigate } from "react-router-dom";
@@ -27,6 +26,11 @@ export default function MpesaB2CPayment({ onSuccess }) {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState(null);
   const [error, setError] = useState(null);
+  const [snackbar, setSnackbar] = useState({ open: false, message: "" });
+  const showSnackbar = (message) => {
+    setSnackbar({ open: true, message });
+    window.setTimeout(() => setSnackbar((prev) => ({ ...prev, open: false })), 3000);
+  };
 
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
@@ -80,6 +84,7 @@ export default function MpesaB2CPayment({ onSuccess }) {
       });
 
       setMessage(res.data.message || "✅ Payment initiated successfully.");
+      showSnackbar(res.data.message || "✅ Payment initiated successfully.");
       if (onSuccess) onSuccess(res.data);
 
       // ✅ Connect to Django backend WebSocket
@@ -108,7 +113,9 @@ export default function MpesaB2CPayment({ onSuccess }) {
       ws.onclose = () => console.log("WebSocket closed");
     } catch (err) {
       console.error(err);
-      setError(err.response?.data?.error || "Something went wrong.");
+      const errorMessage = err.response?.data?.error || "Something went wrong.";
+      setError(errorMessage);
+      showSnackbar(errorMessage);
     } finally {
       setLoading(false);
     }
