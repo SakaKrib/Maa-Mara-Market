@@ -863,11 +863,21 @@ class UserAccountView(APIView):
             "completed",
             *Order.PAID_STATUSES,
         )
+        # Orders can legitimately have no Order.user when they originated
+        # from a visitor checkout. Once that checkout is associated with a
+        # Customer record, the authenticated customer must still be able to
+        # see those orders. Preserve direct user-owned orders and include
+        # Customer records that belong to this user's account email.
+        customer_ids = Customer.objects.filter(
+            models.Q(user=user) | models.Q(email__iexact=user.email)
+        ).values_list("id", flat=True)
+
         customer_orders = (
             Order.objects.filter(
-                user=user,
+                models.Q(user=user) | models.Q(customer_id__in=customer_ids),
                 status__in=customer_order_statuses,
             )
+            .distinct()
             .order_by("-created_at")
         )
 
