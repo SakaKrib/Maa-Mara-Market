@@ -44,7 +44,10 @@ export default function CheckoutPaypalPayment() {
 
   const handlePaymentApproval = async ({ id }) => {
     if (!id || !checkoutId) {
-      showSnackbar("PayPal order information is missing. Please return to checkout.", "error");
+      showSnackbar(
+        "PayPal order information is missing. Please return to checkout.",
+        "error"
+      );
       return;
     }
 
@@ -56,7 +59,9 @@ export default function CheckoutPaypalPayment() {
 
       if (response.data?.status === "ok") {
         sessionStorage.removeItem("maaMaraBuyNow");
-        navigate("/payment-success",
+        sessionStorage.removeItem("maaMaraCheckout");
+
+        navigate("/payment-success", {
           state: {
             order: response.data?.order || checkoutResult || order?.order,
           },
@@ -78,8 +83,6 @@ export default function CheckoutPaypalPayment() {
       setLoading(false);
     }
   };
-
-
 
   return (
     <main className="mm-payment-page min-h-screen px-4 py-8 md:px-6 md:py-12">
