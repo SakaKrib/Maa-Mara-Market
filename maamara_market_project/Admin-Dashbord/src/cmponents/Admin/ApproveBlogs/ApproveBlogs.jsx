@@ -6,6 +6,12 @@ export default function AdminBlogApprovalPage({ onCountChange }) {
   const [blogs, setBlogs] = useState([]);
   const [loading, setLoading] = useState(true);
   const isFirstLoad = useRef(true);
+  const [snackbar, setSnackbar] = useState({ open: false, message: "" });
+
+  const showSnackbar = (message) => {
+    setSnackbar({ open: true, message });
+    window.setTimeout(() => setSnackbar((prev) => ({ ...prev, open: false })), 3000);
+  };
 
   const fetchBlogs = async (silent = false) => {
     if (!silent) setLoading(true);
@@ -38,6 +44,7 @@ export default function AdminBlogApprovalPage({ onCountChange }) {
     try {
       await api.post(`api/admin-approve/blogs/${blogId}/approve/`);
 
+      showSnackbar("Blog approved successfully.");
       setBlogs((prev) => {
         const updated = prev.filter((b) => b.id !== blogId);
 
@@ -48,14 +55,15 @@ export default function AdminBlogApprovalPage({ onCountChange }) {
       });
     } catch (err) {
       console.error("Failed to approve blog:", err);
+      showSnackbar(err?.response?.data?.detail || "Unable to approve blog.");
     }
   };
 
-  if (loading)
+  return (\n    <>\n      {snackbar.open && (\n        <div className="fixed right-4 top-20 z-[1400] max-w-sm rounded-[20px] border border-gray-300 bg-card px-4 py-3 text-sm font-semibold text-card-foreground shadow-lg">\n          {snackbar.message}\n          <button type="button" onClick={() => setSnackbar((prev) => ({ ...prev, open: false }))} className="ml-3 text-xs text-muted-foreground hover:text-card-foreground" aria-label="Dismiss notification">×</button>\n        </div>\n      )}\n\n      {loading)
     return <div className="p-6 text-center">Loading blogs...</div>;
 
   if (blogs.length === 0)
-    return <div className="p-6 text-center">No pending blogs.</div>;
+    return <><div className="p-6 text-center">No pending blogs.</div></>;
 
   return (
     <div className="max-w-4xl mx-auto p-4">
@@ -88,6 +96,4 @@ export default function AdminBlogApprovalPage({ onCountChange }) {
           </div>
         ))}
       </div>
-    </div>
-  );
-}
+    </div>\n    </>\n  );\n}
