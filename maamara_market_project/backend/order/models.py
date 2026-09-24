@@ -7,7 +7,6 @@ from django_countries.fields import CountryField
 from core.models import Wallet, Voucher, Referral
 from django.utils import timezone
 from django.db.models import Sum
-from vendorDashboard.models import Vendor
 from decimal import Decimal, InvalidOperation
 import math
 import uuid
@@ -639,7 +638,7 @@ class Transaction(models.Model):
 
     # link vendor
     vendor = models.ForeignKey(
-        Vendor,  
+        "vendorDashboard.Vendor",  
         on_delete=models.SET_NULL,
         null=True,
         blank=True,
