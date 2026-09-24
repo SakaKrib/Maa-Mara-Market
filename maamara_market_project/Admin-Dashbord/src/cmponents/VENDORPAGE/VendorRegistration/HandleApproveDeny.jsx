@@ -2,7 +2,6 @@ import React, { useEffect, useState } from "react";
 import api from "../../../Services/Api";
 import { Button } from "../../../../components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "../../../../components/ui/card";
-import { useToast } from "../../../../components/ui/toast";
 import VendorRequestDetails from "./VendorRequestDetails";
 import VendorEditForm from "./VendorEditForm";
 import VendorItemList from "./VendorItemList";
@@ -16,7 +15,19 @@ export default function VendorApprovalPanel() {
   const [editVendorInfo, setEditVendorInfo] = useState({});
   const [editItemList, setEditItemList] = useState([]);
   const [editingItemIndex, setEditingItemIndex] = useState(null);
-  const { toast } = useToast();
+  const [snackbar, setSnackbar] = useState({
+    open: false,
+    title: "",
+    description: "",
+  });
+
+  const showSnackbar = ({ title = "", description = "" }) => {
+    setSnackbar({ open: true, title, description });
+  };
+
+  const handleCloseSnackbar = () => {
+    setSnackbar((prev) => ({ ...prev, open: false }));
+  };
 
   useEffect(() => {
     fetchVendorRequests();
@@ -27,7 +38,7 @@ export default function VendorApprovalPanel() {
       const response = await api.get("/api/vendor/requests?status=verified");
       setVendorRequests(response.data);
     } catch (error) {
-      toast({
+      showSnackbar({
         title: "Error",
         description: "Failed to load vendor requests.",
         variant: "destructive",
@@ -43,14 +54,14 @@ export default function VendorApprovalPanel() {
 
     try {
       await api.post(`/api/vendor-requests/${id}/approve/`, cleanedData);
-      toast({
+      showSnackbar({
         title: "Vendor Approved",
         description: "Vendor and item list saved successfully.",
       });
       await fetchVendorRequests();
       resetWorkspace();
     } catch (error) {
-      toast({
+      showSnackbar({
         title: "Error",
         description: error.response?.data?.error || "Approval failed.",
         variant: "destructive",
@@ -64,14 +75,14 @@ export default function VendorApprovalPanel() {
     setLoading(true);
     try {
       await api.post(`/api/vendor/deny/${id}/`);
-      toast({
+      showSnackbar({
         title: "Vendor Denied",
         description: "Vendor request has been denied.",
       });
       await fetchVendorRequests();
       resetWorkspace();
     } catch (error) {
-      toast({
+      showSnackbar({
         title: "Error",
         description: error.response?.data?.error || "Denial failed.",
         variant: "destructive",
@@ -124,10 +135,10 @@ export default function VendorApprovalPanel() {
           vendor.user === selectedVendor.user ? updatedVendor : vendor
         )
       );
-      toast({ title: "Vendor info updated successfully." });
+      showSnackbar({ title: "Vendor info updated successfully." });
       setView("details");
     } catch (error) {
-      toast({
+      showSnackbar({
         title: "Error",
         description: "Something went wrong while updating vendor.",
         variant: "destructive",
@@ -156,7 +167,27 @@ export default function VendorApprovalPanel() {
   };
 
   return (
-    <div className="min-w-0 space-y-4">
+    <>
+      {snackbar.open && (
+        <div className="fixed right-4 top-20 z-[1400] max-w-sm rounded-[20px] border border-gray-300 bg-card px-4 py-3 text-sm font-semibold text-card-foreground shadow-lg">
+          {snackbar.title && <div>{snackbar.title}</div>}
+          {snackbar.description && (
+            <div className="mt-1 text-sm font-normal text-card-foreground">
+              {snackbar.description}
+            </div>
+          )}
+          <button
+            type="button"
+            onClick={handleCloseSnackbar}
+            className="ml-3 text-xs text-muted-foreground hover:text-card-foreground"
+            aria-label="Dismiss notification"
+          >
+            ×
+          </button>
+        </div>
+      )}
+
+      <div className="min-w-0 space-y-4">
       {view === "requests" && (
         <>
           {vendorRequests.length === 0 ? (
@@ -313,6 +344,7 @@ export default function VendorApprovalPanel() {
           </div>
         </section>
       )}
-    </div>
+      </div>
+    </>
   );
 }
