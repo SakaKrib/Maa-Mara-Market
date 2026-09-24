@@ -82,7 +82,7 @@ const CustomerOrdersDashboard = ({ wallet: walletProp, vouchers: vouchersProp, o
   const pendingOrders = useMemo(
     () =>
       safeOrders.filter(
-        (order) => normalizeStatus(order.status) === "PENDING_PAYMENT"
+        (order) => ["PENDING_PAYMENT", "PENDING"].includes(normalizeStatus(order.status))
       ),
     [safeOrders]
   );
