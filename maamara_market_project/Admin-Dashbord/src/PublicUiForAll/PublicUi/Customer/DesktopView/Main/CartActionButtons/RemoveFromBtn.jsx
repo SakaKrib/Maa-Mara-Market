@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import api from "../../../../../../Services/Api";
-import { Snackbar, Alert, Button } from "@mui/material";
+import { Button } from "@mui/material";
 import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
 import { useCartContext } from "../CartHook/cart";
 
@@ -82,20 +82,12 @@ const RemoveFromCartButton = ({ itemId, cartItemId, variantId, sizeId, ageVarian
         <><DeleteOutlineIcon fontSize="small" /><span className="hidden sm:inline">{loading ? "Removing..." : "Remove"}</span></>
       </Button>
 
-      <Snackbar
-        open={snackbar.open}
-        autoHideDuration={3000}
-        onClose={handleClose}
-        anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
-      >
-        <Alert
-          onClose={handleClose}
-          severity={snackbar.severity}
-          sx={{ width: "100%" }}
-        >
-          {snackbar.message}
-        </Alert>
-      </Snackbar>
+      {toast.open && (
+        <div className="fixed right-4 top-20 z-[1400] max-w-sm rounded-[20px] border border-gray-300 bg-card px-4 py-3 text-sm font-semibold text-card-foreground shadow-lg">
+          {toast.message}
+          <button type="button" onClick={handleClose} className="ml-3 text-xs text-muted-foreground hover:text-card-foreground" aria-label="Dismiss notification">×</button>
+        </div>
+      )}
     </>
   );
 };
