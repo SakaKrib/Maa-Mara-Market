@@ -199,7 +199,7 @@ def user_account(request):
 
     # GET: Return user info
     vouchers = Voucher.objects.filter(user=user, redeemed=False, expiry_date__gte=now())
-    orders = Order.objects.filter(user=user, status="completed").order_by("-ordered_date")
+    orders = Order.objects.filter(status__in=["COMPLETED", "completed"], user=user).order_by("-ordered_date")
 
     data = {
         "user": {
