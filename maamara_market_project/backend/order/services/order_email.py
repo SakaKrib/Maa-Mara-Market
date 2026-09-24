@@ -200,7 +200,7 @@ def send_paid_order_emails(order_id):
 
         try:
             _send(
-                "emails/vendor_order_confirmation.html",
+                "emails/vendor_order_confirmation_v2.html",
                 f"📦 Paid Order #{order.id} — Prepare Items for Dispatch",
                 vendor_context,
                 [vendor_email],
