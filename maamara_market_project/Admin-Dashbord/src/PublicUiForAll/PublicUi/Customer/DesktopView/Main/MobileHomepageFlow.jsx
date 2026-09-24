@@ -3,6 +3,7 @@ import api from "../../../../../../Services/Api";
 import CategoryWithItems from "./Trending/Category/CategoryWithItemList";
 import Banners from "./Trending/Banner";
 import AdvertBlogs from "../../../../../cmponents/Hooks/BlogHooksNew/BlogAdvert";
+import TrendingProductCard from "./Trending/TrendingProductCard";
 
 const MobileHomepageCollections = () => {
   const [collections, setCollections] = useState([]);
@@ -80,7 +81,6 @@ const MobileHomepageCollections = () => {
   );
 };
 
-const TrendingProductCard = React.lazy(() => import("./Trending/TrendingProductCard"));
 
 const MobileHomepageFlow = () => (
   <div className="md:hidden">
