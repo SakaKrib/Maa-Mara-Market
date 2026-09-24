@@ -158,6 +158,18 @@ const Vendor_list = () => {
   const [vendors, setVendors] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [snackbar, setSnackbar] = useState({ open: false, message: "" });
+
+  const showSnackbar = (message) => {
+    setSnackbar({ open: true, message });
+    window.setTimeout(() => {
+      setSnackbar((prev) => ({ ...prev, open: false }));
+    }, 3000);
+  };
+
+  const handleCloseSnackbar = () => {
+    setSnackbar((prev) => ({ ...prev, open: false }));
+  };
   const [lastUpdated, setLastUpdated] = useState(null);
   const wsRef = useRef(null);
   const reconnectTimerRef = useRef(null);
@@ -398,9 +410,10 @@ const Vendor_list = () => {
                         try {
                           await api.patch("/api/vendors/" + vendor.id + "/", { is_active: nextActive }, { withCredentials: true });
                           await fetchVendors();
+                          showSnackbar("Vendor status updated successfully.");
                         } catch (actionError) {
                           console.error("Vendor status update failed:", actionError);
-                          window.alert(actionError.response?.data?.detail || "Unable to update vendor status.");
+                          showSnackbar(actionError.response?.data?.detail || "Unable to update vendor status.");
                         }
                       }}
                       className="inline-flex flex-1 items-center justify-center rounded-xl border border-amber-200 px-4 py-2.5 text-sm font-semibold text-amber-700 transition hover:bg-amber-50 sm:flex-none"
@@ -414,9 +427,10 @@ const Vendor_list = () => {
                         try {
                           await api.delete("/api/vendors/" + vendor.id + "/", { withCredentials: true });
                           await fetchVendors();
+                          showSnackbar("Vendor deleted successfully.");
                         } catch (actionError) {
                           console.error("Vendor deletion failed:", actionError);
-                          window.alert(actionError.response?.data?.detail || "Unable to delete vendor.");
+                          showSnackbar(actionError.response?.data?.detail || "Unable to delete vendor.");
                         }
                       }}
                       className="inline-flex flex-1 items-center justify-center rounded-xl border border-red-200 px-4 py-2.5 text-sm font-semibold text-red-700 transition hover:bg-red-50 sm:flex-none"
@@ -493,6 +507,20 @@ const Vendor_list = () => {
           })}
         </div>
       )}
+      {snackbar.open && (
+        <div className="fixed right-4 top-20 z-[1400] max-w-sm rounded-[20px] border border-gray-300 bg-card px-4 py-3 text-sm font-semibold text-card-foreground shadow-lg">
+          {snackbar.message}
+          <button
+            type="button"
+            onClick={handleCloseSnackbar}
+            className="ml-3 text-xs text-muted-foreground hover:text-card-foreground"
+            aria-label="Dismiss notification"
+          >
+            ×
+          </button>
+        </div>
+      )}
+
     </section>
   );
 };
