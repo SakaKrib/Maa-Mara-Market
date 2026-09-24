@@ -19,7 +19,7 @@ export default function BankTransferBulkPayment({ onSuccess }) {
 
   // Prefilled payments passed via navigation state or empty array
   const prefilledPayments = location.state?.payments || [];
-  console.log(prefilledPayments)
+  console.log(prefilledPayments);
 
   const [payments, setPayments] = useState(
     prefilledPayments.map((p) => {
@@ -29,7 +29,7 @@ export default function BankTransferBulkPayment({ onSuccess }) {
       const bankAccount = vendor.BankAccountNo || "";
       const bankName = vendor.BankAccountName || "";
       const vendorName = vendor.company_name || "Unknown Vendor";
-  
+
       return {
         vendor: vendorName,
         bankAccount,
@@ -39,7 +39,6 @@ export default function BankTransferBulkPayment({ onSuccess }) {
       };
     })
   );
-  
 
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState(null);
@@ -118,105 +117,119 @@ export default function BankTransferBulkPayment({ onSuccess }) {
 
   return (
     <>
-      {snackbar.open && <div className="fixed right-4 top-20 z-[1400] max-w-sm rounded-[20px] border border-gray-300 bg-card px-4 py-3 text-sm font-semibold text-card-foreground shadow-lg">{snackbar.message}<button type="button" onClick={() => setSnackbar((prev) => ({ ...prev, open: false }))} className="ml-3 text-xs text-muted-foreground hover:text-card-foreground" aria-label="Dismiss notification">×</button></div>}
-    <Box sx={{ p: 6 }}>
-      <Box
-        sx={{
-          borderRadius: 3,
-          p: 4,
-          mt: 2,
-          backgroundColor: colors.primary[800],
-          color: colors.gray[100],
-          boxShadow: 3,
-        }}
-        className="shadow"
-      >
-        <Typography variant="h6" fontWeight="bold" gutterBottom>
-          Bank Transfer Bulk Payment
-        </Typography>
+      {snackbar.open && (
+        <div className="fixed right-4 top-20 z-[1400] max-w-sm rounded-[20px] border border-gray-300 bg-card px-4 py-3 text-sm font-semibold text-card-foreground shadow-lg">
+          {snackbar.message}
+          <button
+            type="button"
+            onClick={() => setSnackbar((prev) => ({ ...prev, open: false }))}
+            className="ml-3 text-xs text-muted-foreground hover:text-card-foreground"
+            aria-label="Dismiss notification"
+          >
+            ×
+          </button>
+        </div>
+      )}
 
-        {/* <Grid container spacing={20} sx={{ fontWeight: "bold", mb: 1 }}>
-          <Grid item xs={3}>
-            Vendor
-          </Grid>
-          <Grid item xs={3}>
-            Bank Account Number
-          </Grid>
-          <Grid item xs={3}>
-            Bank Name
-          </Grid>
-          <Grid item xs={3}>
-            Amount (KES)
-          </Grid>
-        </Grid> */}
-
-        {payments.map((payment, index) => (
-          <Grid container spacing={2} alignItems="center" key={index} sx={{ mb: 1 }}>
-            <Grid item xs={3}>
-              <TextField
-                value={payment.vendor}
-                fullWidth
-                disabled
-                variant="outlined"
-                size="small"
-              />
-            </Grid>
-
-            <Grid item xs={3}>
-              <TextField
-                value={payment.bankAccount}
-                onChange={(e) => handleChange(index, "bankAccount", e.target.value)}
-                fullWidth
-                variant="outlined"
-                size="small"
-                disabled={loading}
-                placeholder="Enter bank account number"
-              />
-            </Grid>
-
-            <Grid item xs={3}>
-              <TextField
-                value={payment.bankName}
-                onChange={(e) => handleChange(index, "bankName", e.target.value)}
-                fullWidth
-                variant="outlined"
-                size="small"
-                disabled={loading}
-                placeholder="Enter bank name"
-              />
-            </Grid>
-
-            <Grid item xs={3}>
-              <TextField
-                type="number"
-                value={payment.amount}
-                onChange={(e) => handleChange(index, "amount", e.target.value)}
-                fullWidth
-                variant="outlined"
-                size="small"
-                disabled={loading}
-              />
-            </Grid>
-          </Grid>
-        ))}
-
-        <Button
-          variant="contained"
-          onClick={handlePayment}
-          disabled={loading}
-          fullWidth
+      <Box sx={{ p: 6 }}>
+        <Box
           sx={{
-            "&:hover": { backgroundColor: colors.greenAccent[600], border:'none' },
-            py: 1.2,
-            mt: 3,
-            borderRadius:'50px',
-            border:'1px solid'
+            borderRadius: 3,
+            p: 4,
+            mt: 2,
+            backgroundColor: colors.primary[800],
+            color: colors.gray[100],
+            boxShadow: 3,
           }}
-          className="ring rounded-full"
+          className="shadow"
         >
-          {loading ? <CircularProgress size={24} /> : "Send All Bank Transfers"}
-        </Button>
+          <Typography variant="h6" fontWeight="bold" gutterBottom>
+            Bank Transfer Bulk Payment
+          </Typography>
+
+          {/* <Grid container spacing={20} sx={{ fontWeight: "bold", mb: 1 }}>
+            <Grid item xs={3}>
+              Vendor
+            </Grid>
+            <Grid item xs={3}>
+              Bank Account Number
+            </Grid>
+            <Grid item xs={3}>
+              Bank Name
+            </Grid>
+            <Grid item xs={3}>
+              Amount (KES)
+            </Grid>
+          </Grid> */}
+
+          {payments.map((payment, index) => (
+            <Grid container spacing={2} alignItems="center" key={index} sx={{ mb: 1 }}>
+              <Grid item xs={3}>
+                <TextField
+                  value={payment.vendor}
+                  fullWidth
+                  disabled
+                  variant="outlined"
+                  size="small"
+                />
+              </Grid>
+
+              <Grid item xs={3}>
+                <TextField
+                  value={payment.bankAccount}
+                  onChange={(e) => handleChange(index, "bankAccount", e.target.value)}
+                  fullWidth
+                  variant="outlined"
+                  size="small"
+                  disabled={loading}
+                  placeholder="Enter bank account number"
+                />
+              </Grid>
+
+              <Grid item xs={3}>
+                <TextField
+                  value={payment.bankName}
+                  onChange={(e) => handleChange(index, "bankName", e.target.value)}
+                  fullWidth
+                  variant="outlined"
+                  size="small"
+                  disabled={loading}
+                  placeholder="Enter bank name"
+                />
+              </Grid>
+
+              <Grid item xs={3}>
+                <TextField
+                  type="number"
+                  value={payment.amount}
+                  onChange={(e) => handleChange(index, "amount", e.target.value)}
+                  fullWidth
+                  variant="outlined"
+                  size="small"
+                  disabled={loading}
+                />
+              </Grid>
+            </Grid>
+          ))}
+
+          <Button
+            variant="contained"
+            onClick={handlePayment}
+            disabled={loading}
+            fullWidth
+            sx={{
+              "&:hover": { backgroundColor: colors.greenAccent[600], border: "none" },
+              py: 1.2,
+              mt: 3,
+              borderRadius: "50px",
+              border: "1px solid",
+            }}
+            className="ring rounded-full"
+          >
+            {loading ? <CircularProgress size={24} /> : "Send All Bank Transfers"}
+          </Button>
+        </Box>
       </Box>
-    </Box>
+    </>
   );
 }
