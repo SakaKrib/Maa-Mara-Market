@@ -304,7 +304,7 @@ def process_mpesa_refund(refund_id):
 
         Payment = refund.payment.__class__
         payment = Payment.objects.select_for_update().get(pk=refund.payment_id)
-        if payment.payment_method != "Mpesa" or payment.status != "completed":
+        if payment.payment_method != "Mpesa" or str(payment.status).lower() not in {"completed", "partially_refunded"}:
             raise RefundProcessingError("The original M-Pesa payment is not eligible for reversal.")
 
         original = (
