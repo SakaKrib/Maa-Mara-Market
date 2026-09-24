@@ -162,8 +162,13 @@ const OTPVerification = () => {
         </Button>
 
         {/* Snackbar for notifications */}
-        {snackbar.open && (
-          <div className="fixed right-4 top-20 z-[1400] max-w-sm rounded-[20px] border border-gray-300 bg-card px-4 py-3 text-sm font-semibold text-card-foreground shadow-lg">
+        <Snackbar
+          open={snackbar.open}
+          autoHideDuration={6000}
+          onClose={handleSnackbarClose}
+          anchorOrigin={{ vertical: "top", horizontal: "right" }}
+        >
+          <div className="rounded-[20px] border border-gray-300 bg-card px-4 py-3 text-sm font-semibold text-card-foreground shadow-lg">
             {snackbar.message}
             <button
               type="button"
