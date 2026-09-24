@@ -16,6 +16,7 @@ vendor_blog_list = VendorBlogViewSet.as_view({"get": "list", "post": "create"})
 vendor_blog_detail = VendorBlogViewSet.as_view({
     "get": "retrieve", "put": "update", "patch": "partial_update", "delete": "destroy"
 })
+vendor_banner_list = VendorBannerViewSet.as_view({"get": "list", "post": "create"})
 blog_list = BlogPostViewSet.as_view({"get": "list", "post": "create"})
 blog_detail = BlogPostViewSet.as_view({
     "get": "retrieve", "put": "update", "patch": "partial_update", "delete": "destroy"
@@ -30,6 +31,7 @@ urlpatterns = [
     path("", include(router.urls)),
     path("api/vendor/blogs/", vendor_blog_list, name="vendor-blog-list"),
     path("api/vendor/blogs/<int:pk>/", vendor_blog_detail, name="vendor-blog-detail"),
+    path("api/vendor/banners/", vendor_banner_list, name="vendor-banner-list"),
     path("api/vendor/banners/<int:pk>/", banner_detail, name="banner-detail"),
     path("api/vendor/history/timeline/", VendorHistoryTimelineView.as_view(), name="vendor-history-timeline"),
     path("filters/", filters_view, name="filters"),
@@ -60,6 +62,7 @@ urlpatterns = [
 
     # Careers
     path("api/careers/", career_vacancies_api, name="career-vacancies"),
+    path("api/careers/<int:pk>/", career_vacancy_detail_api, name="career-vacancies"),
     path("api/careers/<int:pk>/", career_vacancy_detail_api, name="career-vacancy-detail"),
     path("api/opening/<int:pk>/", job_vacancy_detail_api, name="job-vacancy-detail"),
     path("api/careers/stats/", career_stats_api, name="career-stats"),
