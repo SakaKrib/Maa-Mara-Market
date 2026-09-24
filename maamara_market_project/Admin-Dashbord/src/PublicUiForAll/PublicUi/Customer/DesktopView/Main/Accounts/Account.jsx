@@ -334,7 +334,7 @@ export default function UserAccount() {
               {orders.length ? (
                 <div className="space-y-3 max-h-[30vh] overflow-y-auto pr-2">
                   {orders
-                    .filter((o) => o.status === "completed")
+                     .filter((o) => String(o.status || "").toUpperCase() === "COMPLETED")
                     .map((o) => (
                       <div
                         key={o.id}
