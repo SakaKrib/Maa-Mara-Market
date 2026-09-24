@@ -844,7 +844,7 @@ class UserAccountView(APIView):
         wallet, _ = Wallet.objects.get_or_create(user=user)
         referral, _ = Referral.objects.get_or_create(referrer=user)
         if (
-            user.order_set.filter(status__iexact="completed").count() >= 5
+            user.order_set.filter(status__in=["COMPLETED", "completed"]).count() >= 5
             and not Voucher.objects.filter(user=user, active=True).exists()
         ):
             Voucher.objects.create(
