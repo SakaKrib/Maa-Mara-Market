@@ -34,6 +34,14 @@ export default function CheckoutPaypalPayment() {
     setSnackbar({ open: true, severity, text });
   const navigate = useNavigate();
 
+  // Keep the existing CheckoutSession recoverable while the customer is on
+  // the provider page or returns here after cancellation/failure.
+  useState(() => {
+    if (checkoutResult?.checkout_id) {
+      sessionStorage.setItem("maaMaraCheckout", JSON.stringify(checkoutResult));
+    }
+  });
+
   const handlePaymentApproval = async ({ id }) => {
     if (!id || !checkoutId) {
       showSnackbar("PayPal order information is missing. Please return to checkout.", "error");
@@ -141,9 +149,12 @@ export default function CheckoutPaypalPayment() {
                 onApprove={async (data) => {
                   if (!loading) await handlePaymentApproval({ id: data.orderID });
                 }}
-                onError={(err) => {
+                onCancel={() => {
+                  navigate("/checkout-page");
+                }}
+                onError={() => {
                   showSnackbar(
-                    "PayPal payment could not be started. Please try again.",
+                    "PayPal payment could not be completed. You can retry or return to checkout.",
                     "error"
                   );
                 }}
@@ -166,9 +177,12 @@ export default function CheckoutPaypalPayment() {
                 onApprove={async (data) => {
                   if (!loading) await handlePaymentApproval({ id: data.orderID });
                 }}
-                onError={(err) => {
+                onCancel={() => {
+                  navigate("/checkout-page");
+                }}
+                onError={() => {
                   showSnackbar(
-                    "Card payment could not be started. Please try again.",
+                    "Card payment could not be completed. You can retry or return to checkout.",
                     "error"
                   );
                 }}
