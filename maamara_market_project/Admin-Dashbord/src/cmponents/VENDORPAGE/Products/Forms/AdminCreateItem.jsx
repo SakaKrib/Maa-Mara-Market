@@ -556,14 +556,14 @@ useEffect(() => {
       );
   
       console.log("✅ Item update successful:", response.data);
-      alert("Item updated successfully!");
+      setSnackbar({ open: true, message: "Item updated successfully!" });
     } catch (error) {
       console.error("❌ Error updating item:", error);
       if (error.response) {
         console.error("📛 Server responded with:", error.response.data);
-        alert("Update failed: " + JSON.stringify(error.response.data));
+        setSnackbar({ open: true, message: "Update failed: " + JSON.stringify(error.response.data) });
       } else {
-        alert("Update failed: Network error or invalid response.");
+        setSnackbar({ open: true, message: "Update failed: Network error or invalid response." });
       }
     }
   };
@@ -573,6 +573,13 @@ useEffect(() => {
 
 
   return (
+
+    {snackbar.open && (
+      <div className="fixed right-4 top-20 z-[1400] max-w-sm rounded-[20px] border border-gray-300 bg-card px-4 py-3 text-sm font-semibold text-card-foreground shadow-lg">
+        {snackbar.message}
+        <button type="button" onClick={handleCloseSnackbar} className="ml-3 text-xs text-muted-foreground hover:text-card-foreground" aria-label="Dismiss notification">×</button>
+      </div>
+    )}
 
     // separate
     <Form {...form}>
