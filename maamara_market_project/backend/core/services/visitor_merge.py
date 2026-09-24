@@ -13,7 +13,7 @@ from typing import Any
 from django.db import transaction
 
 from core.models import ActivityLog, Notification, Profile, Referral, SearchEvent, Voucher, Wallet
-from order.models import BillingAddress, Customer, Order, OrderItem, Payment, Transaction, Card
+from order.models import BillingAddress, Customer, Order, OrderItem, Payment, Transaction
 from order.invoice_models import Invoice
 from ReactSerializers.models import ItemView
 from shop.models import CommentBlog, ReactionBlog, VendorRating, Wishlist, Review, Reaction
