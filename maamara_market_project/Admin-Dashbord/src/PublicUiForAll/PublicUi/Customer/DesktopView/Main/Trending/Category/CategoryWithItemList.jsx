@@ -73,7 +73,7 @@ const CategoryWithItems = ({ onSelectItem }) => {
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6 mm-mobile-horizontal-scroll mm-mobile-category-rail">
         {visibleCategories.map((category) => {
           const firstItem = category.firstItem;
           const imageUrl = firstItem.image
@@ -89,7 +89,7 @@ const CategoryWithItems = ({ onSelectItem }) => {
           return (
             <article
               key={category.id}
-              className="min-w-0 rounded-2xl border border-border bg-background p-2.5 transition-shadow hover:shadow-custom"
+              className="min-w-0 rounded-2xl border border-border bg-background p-2.5 transition-shadow hover:shadow-custom mm-mobile-category-card"
             >
               <div className="overflow-hidden rounded-xl bg-muted">
                 <img
