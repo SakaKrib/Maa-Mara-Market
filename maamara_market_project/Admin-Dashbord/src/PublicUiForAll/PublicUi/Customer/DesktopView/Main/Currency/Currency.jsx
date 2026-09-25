@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { getWebSocketUrl } from "../../../../../Services/Api";
+import { getWebSocketUrl } from "../../../../../../Services/Api";
 
 const getCurrencyWebSocketUrl = () => getWebSocketUrl("/ws/currency/");
 
