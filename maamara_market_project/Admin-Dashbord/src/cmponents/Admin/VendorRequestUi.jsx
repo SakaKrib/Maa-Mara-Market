@@ -12,7 +12,7 @@ import VendorItemCreateRequests from "../VENDORPAGE/Products/VendorItems/AdminAp
 import AdminPriceApproval from "./ApproveItemPrice";
 import AdminBlogApprovalPage from "./ApproveBlogs/ApproveBlogs";
 import AdminBannerApprovalPage from "./ApproveBanner/ApproveBanner";
-import { getWebSocketUrl } from "../../Services/Api";
+import api, { getWebSocketUrl } from "../../Services/Api";
 
 const sections = [
   { key: "vendors", label: "Vendor Requests", icon: shieldCheckmarkOutline },
@@ -48,6 +48,11 @@ const sectionTitles = {
 const UiForVendorRequest = () => {
   const [activeSection, setActiveSection] = useState("vendors");
   const [refreshToken, setRefreshToken] = useState(0);
+  const manuallyClosedRef = useRef(false);
+  const wsRef = useRef(null);
+  const reconnectAttemptRef = useRef(0);
+  const reconnectTimerRef = useRef(null);
+
   const [requestCounts, setRequestCounts] = useState({
     vendors: 0,
     items: 0,
