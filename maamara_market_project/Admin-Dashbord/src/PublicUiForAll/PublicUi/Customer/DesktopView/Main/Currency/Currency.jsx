@@ -1,17 +1,14 @@
 import { useEffect, useState } from "react";
+import { getWebSocketUrl } from "../../../../../Services/Api";
 
-const getWebSocketUrl = () => {
-  if (typeof window === "undefined") return null;
-  const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-  return `${protocol}//${window.location.host}/ws/currency/`;
-};
+const getCurrencyWebSocketUrl = () => getWebSocketUrl("/ws/currency/");
 
 export const useCurrencyRates = () => {
   const [rates, setRates] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const url = getWebSocketUrl();
+    const url = getCurrencyWebSocketUrl();
     if (!url) {
       setRates({});
       setLoading(false);
