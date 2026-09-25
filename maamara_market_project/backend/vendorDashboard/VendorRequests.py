@@ -352,6 +352,9 @@ def approve_request(request, pk):
         if isinstance(approval_data.get("image"), str):
             approval_data.pop("image", None)
 
+        if isinstance(approval_data.get("video"), str):
+            approval_data.pop("video", None)
+
         variant_image_paths = {}
         normalized_variants = []
         for variant in approval_data.get("variants") or []:
