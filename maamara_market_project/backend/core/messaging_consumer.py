@@ -54,4 +54,3 @@ class MessagingConsumer(AsyncJsonWebsocketConsumer):
             conversation.participant_id == self.user.id
             or (self.user.is_staff and conversation.admin_id == self.user.id)
         )
-}
