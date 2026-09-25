@@ -7,6 +7,7 @@ from rest_framework.routers import DefaultRouter
 from .Referal import *
 from .SearchEngine import search_items
 from .Open_Ai import AIChatAPIView
+from .item_ai import GenerateItemAIAPIView
 from core.PasswordRecovery import *
 from django.views.generic.base import TemplateView
 
@@ -97,6 +98,7 @@ urlpatterns = [
 
     # open api url
     path('api/ai-chat/', AIChatAPIView.as_view(), name='ai-chat'),
+    path('api/ai/generate-item/', GenerateItemAIAPIView.as_view(), name='ai-generate-item'),
 
     #organic products page
     path('api/organic-items/', OrganicItemsView.as_view(), name='organic-items'),
