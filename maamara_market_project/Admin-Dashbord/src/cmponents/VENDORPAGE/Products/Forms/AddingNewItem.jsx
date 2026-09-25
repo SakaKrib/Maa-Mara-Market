@@ -1115,9 +1115,29 @@ const ItemAddNew = ({ initialItem, vendorId, itemId, onSave = () => {}, vendor, 
           // Keep the JSON snapshot and uploaded media synchronized. Browser
           // File objects stay in multipart media; they are never serialized
           // into draft_item.
-          const approvalMedia = draftMedia.filter(
-            (asset) => asset?.slotKey && asset?.kind
-          );
+          // Prefer the live react-hook-form File for the video when one
+          // exists. The form field can still contain the persisted URL after
+          // draft/media hydration, but approval must upload the actual File
+          // whenever the video slot is new or has been replaced.
+          const approvalMedia = draftMedia
+            .filter((asset) => asset?.slotKey && asset?.kind)
+            .map((asset) => {
+              if (asset.kind !== "video") return asset;
+              const liveVideoFile =
+                data.video instanceof File
+                  ? data.video
+                  : productVideo?.value instanceof File
+                    ? productVideo.value
+                    : null;
+
+              return liveVideoFile
+                ? {
+                    ...asset,
+                    value: liveVideoFile,
+                    name: liveVideoFile.name,
+                  }
+                : asset;
+            });
           const persistedSlots = new Set(
             (initialItem?.draft_media || [])
               .map((asset) => asset?.slot_key)
