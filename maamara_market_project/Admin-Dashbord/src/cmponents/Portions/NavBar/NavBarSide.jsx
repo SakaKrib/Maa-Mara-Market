@@ -96,7 +96,7 @@ const NavBar = ({ open = false, onClose }) => {
             />
             <span className="leading-tight">
               <div className="logo xxs:-mt-20 xxs:relative xxs:-top-10 lg:mt-0 lg:top-0">
-                <a href="/admin-dashboard">Maa <span className="it-name">Mara</span> <span className="mkrt">Market</span></a>
+                <span>Maa <span className="it-name">Mara</span> <span className="mkrt">Market</span></span>
               </div>
               <span className="block text-xs text-slate-500 dark:text-slate-400">Admin Shop Manager</span>
             </span>
