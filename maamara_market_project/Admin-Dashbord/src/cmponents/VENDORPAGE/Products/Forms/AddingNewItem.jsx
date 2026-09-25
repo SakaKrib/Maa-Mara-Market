@@ -29,6 +29,11 @@ const MAX_VIDEO_BYTES = 100 * 1024 * 1024;
 const VIDEO_TYPES = ["video/mp4", "video/quicktime", "video/webm"];
 const VIDEO_EXTENSIONS = [".mp4", ".mov", ".webm"];
 
+const isUploadFile = (value) =>
+  typeof Blob !== "undefined" &&
+  value instanceof Blob &&
+  typeof value.name === "string";
+
 const sizeOptions = [
   "XS", "S", "M", "L", "XL", "2XL", "3XL", "2XS", "3XS", "Oversize"
 ];
@@ -1173,10 +1178,11 @@ const ItemAddNew = ({ initialItem, vendorId, itemId, onSave = () => {}, vendor, 
           );
 
           approvalMedia.forEach((asset) => {
-            if (asset.value instanceof File) {
+            if (isUploadFile(asset.value)) {
               approvalFormData.append(
                 makeApprovalUploadKey(asset.slotKey),
-                asset.value
+                asset.value,
+                asset.value.name
               );
             }
           });
@@ -1197,8 +1203,7 @@ const ItemAddNew = ({ initialItem, vendorId, itemId, onSave = () => {}, vendor, 
           const approvalResponse = await api.post(
             `/api/vendor/requests/${approvalRequestId}/approve/`,
             { action: "approve" },
-            { withCredentials: true }
-          );
+            { withCredentials: true }          );
 
           if (approvalResponse.status === 200) {
             completeSave("Item approved successfully. Your changes have been saved.", approvalResponse.data);
@@ -2397,8 +2402,7 @@ const ItemAddNew = ({ initialItem, vendorId, itemId, onSave = () => {}, vendor, 
     )}
 
     {/* Shoe-specific fields */}
-    {(selectedCategory === "Shoes" || selectedSubcategory === "Shoes") && (
-      <>
+    {(selectedCategory === "Shoes" || selectedSubcategory === "Shoes") && (      <>
         {/* Shoe Type Selection */}
         <FormField
           control={form.control}
