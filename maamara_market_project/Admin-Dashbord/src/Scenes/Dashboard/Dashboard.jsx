@@ -69,6 +69,7 @@ const Dashboard = () => {
     total_revenue: 0,
   });
   const [unseenVendorRequests, setUnseenVendorRequests] = useState(0);
+  const [approvalRequestTotal, setApprovalRequestTotal] = useState(0);
   const [vendorProgress, setVendorProgress] = useState(0);
   const [vendorIncrease, setVendorIncrease] = useState("+0%");
   const [jobsCount, setJobsCount] = useState(0);
@@ -95,17 +96,23 @@ const Dashboard = () => {
   useEffect(() => {
     const loadDashboard = async () => {
       try {
-        const [revenue, vendorRequests, transactionsResponse, activity, notificationList] =
+        const [revenue, vendorRequests, itemRequests, blogs, prices, banners, transactionsResponse, activity, notificationList] =
           await Promise.all([
             api.get("/api/revenue-analytics/"),
             api.get("/api/vendor/requests?status=verified"),
+            api.get("/api/vendor/requests/?status=pending"),
+            api.get("/api/admin/blogs/"),
+            api.get("/api/price-change-requests/?status=pending"),
+            api.get("/api/moderation/banners/"),
             api.get("/api/admin-transactions/"),
             api.get("/api/activity-logs/"),
             api.get("/api/notifications/"),
           ]);
 
         setAnalytics(revenue.data || { total_revenue: 0, monthly_revenue: [] });
-        setUnseenVendorRequests(Array.isArray(vendorRequests.data) ? vendorRequests.data.length : Number(vendorRequests.data?.count ?? vendorRequests.data?.results?.length ?? 0));
+        const requestCount = (response) => Array.isArray(response.data) ? response.data.length : Number(response.data?.count ?? response.data?.results?.length ?? 0);
+        setUnseenVendorRequests(requestCount(vendorRequests));
+        setApprovalRequestTotal([vendorRequests, itemRequests, blogs, prices, banners].reduce((total, response) => total + requestCount(response), 0));
         setVendorProgress(vendorRequests.data?.progress ?? 0);
         setVendorIncrease(vendorRequests.data?.increase ?? "+0%");
         setTransactions(transactionsResponse.data?.results || []);
@@ -284,8 +291,8 @@ const Dashboard = () => {
         <StatCard
           icon={personAddOutline}
           label="Vendor approvals"
-          value={unseenVendorRequests.toLocaleString()}
-          detail={`${vendorIncrease} • ${Math.round(Number(vendorProgress) * 100)}% progress`}
+          value={approvalRequestTotal.toLocaleString()}
+          detail={`${unseenVendorRequests.toLocaleString()} vendor requests • ${Math.round(Number(vendorProgress) * 100)}% progress`}
           to="/admin-dashboard/vendor-requests"
         />
         <StatCard
