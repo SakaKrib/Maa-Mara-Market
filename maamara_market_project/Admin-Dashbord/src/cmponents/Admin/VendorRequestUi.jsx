@@ -59,45 +59,27 @@ const UiForVendorRequest = () => {
   const loadRequestCounts = async () => {
     try {
       const [vendors, items, blogs, prices, banners] = await Promise.all([
-        fetch("/api/vendor/requests?status=verified", { credentials: "include" }),
-        fetch("/api/vendor/requests/?status=pending", { credentials: "include" }),
-        fetch("/api/admin/blogs/", { credentials: "include" }),
-        fetch("/api/price-change-requests/?status=pending", { credentials: "include" }),
-        fetch("/api/moderation/banners/", { credentials: "include" }),
-      ]);
-
-      const [
-        vendorsData,
-        itemsData,
-        blogsData,
-        pricesData,
-        bannersData,
-      ] = await Promise.all([
-        vendors.json(),
-        items.json(),
-        blogs.json(),
-        prices.json(),
-        banners.json(),
+        api.get("/api/vendor/requests?status=verified"),
+        api.get("/api/vendor/requests/?status=pending"),
+        api.get("/api/admin/blogs/"),
+        api.get("/api/price-change-requests/?status=pending"),
+        api.get("/api/moderation/banners/"),
       ]);
 
       const listLength = (data) =>
         Array.isArray(data) ? data.length : Number(data?.count ?? data?.results?.length ?? 0);
 
       setRequestCounts({
-        vendors: listLength(vendorsData),
-        items: listLength(itemsData),
-        blogs: listLength(blogsData),
-        prices: listLength(pricesData),
-        banners: listLength(bannersData),
+        vendors: listLength(vendors.data),
+        items: listLength(items.data),
+        blogs: listLength(blogs.data),
+        prices: listLength(prices.data),
+        banners: listLength(banners.data),
       });
     } catch (error) {
       console.error("Failed to load vendor request counts:", error);
     }
   };
-  const wsRef = useRef(null);
-  const reconnectTimerRef = useRef(null);
-  const reconnectAttemptRef = useRef(0);
-  const manuallyClosedRef = useRef(false);
 
   useEffect(() => {
     manuallyClosedRef.current = false;
