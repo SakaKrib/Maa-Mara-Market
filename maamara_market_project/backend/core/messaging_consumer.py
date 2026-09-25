@@ -5,18 +5,22 @@ from channels.db import database_sync_to_async
 class MessagingConsumer(AsyncJsonWebsocketConsumer):
     async def connect(self):
         self.user = self.scope.get("user")
+        self.user_group = None
+        self.conversation_groups = set()
+
         if not self.user or not self.user.is_authenticated:
             await self.close(code=4401)
             return
 
         self.user_group = f"chat_user_{self.user.id}"
         await self.channel_layer.group_add(self.user_group, self.channel_name)
-        self.conversation_groups = set()
         await self.accept()
         await self.send_json({"type": "messaging.connected"})
 
     async def disconnect(self, close_code):
-        await self.channel_layer.group_discard(self.user_group, self.channel_name)
+        if self.user_group:
+            await self.channel_layer.group_discard(self.user_group, self.channel_name)
+
         for group in self.conversation_groups:
             await self.channel_layer.group_discard(group, self.channel_name)
 
@@ -50,3 +54,4 @@ class MessagingConsumer(AsyncJsonWebsocketConsumer):
             conversation.participant_id == self.user.id
             or (self.user.is_staff and conversation.admin_id == self.user.id)
         )
+}
