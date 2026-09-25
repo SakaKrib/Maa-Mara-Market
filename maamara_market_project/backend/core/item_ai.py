@@ -121,10 +121,13 @@ def _validate_classification(result, taxonomy):
         "category": category_value,
         "subcategory": subcategory_value,
         "category_is_custom": not bool(category_name),
-        "subcategory_is_custom": bool(category_name and not _matching_name(
-            subcategory_value,
-            categories[category_name]["subcategories"],
-        )),
+        "subcategory_is_custom": (
+            not bool(category_name)
+            or not bool(_matching_name(
+                subcategory_value,
+                categories[category_name]["subcategories"],
+            ))
+        ),
     }
 
 
