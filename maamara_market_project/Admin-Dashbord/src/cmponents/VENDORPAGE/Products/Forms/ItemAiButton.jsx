@@ -1,11 +1,16 @@
 import React, { useState } from "react";
 import { generateItemWithAI } from "../../../../Services/AI/itemAiService";
 
+const hasMainImage = (image) =>
+  image instanceof File ||
+  image instanceof Blob ||
+  (typeof image === "string" && image.trim().length > 0);
+
 const ItemAiButton = ({ field, image, context, onGenerated, onError, label = "Generate with AI" }) => {
   const [loading, setLoading] = useState(false);
 
   const handleGenerate = async () => {
-    if (loading) return;
+    if (loading || !hasMainImage(image)) return;
 
     setLoading(true);
     try {
@@ -21,7 +26,7 @@ const ItemAiButton = ({ field, image, context, onGenerated, onError, label = "Ge
   return (
     <button
       type="button"
-      disabled={loading || !(image instanceof File)}
+      disabled={loading || !hasMainImage(image)}
       onClick={handleGenerate}
       className="w-fit rounded-full border border-border bg-card px-3 py-1.5 text-sm font-medium text-foreground transition hover:bg-muted disabled:cursor-not-allowed disabled:opacity-50"
     >
