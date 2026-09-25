@@ -1129,9 +1129,9 @@ const ItemAddNew = ({ initialItem, vendorId, itemId, onSave = () => {}, vendor, 
             .map((asset) => {
               if (asset.kind !== "video") return asset;
               const liveVideoFile =
-                data.video instanceof File
+                isUploadFile(data.video)
                   ? data.video
-                  : productVideo?.value instanceof File
+                  : isUploadFile(productVideo?.value)
                     ? productVideo.value
                     : null;
 
@@ -1197,8 +1197,7 @@ const ItemAddNew = ({ initialItem, vendorId, itemId, onSave = () => {}, vendor, 
           );
 
           if (draftResponse.status !== 200) {
-            throw new Error("Failed to save the edited vendor request.");
-          }
+            throw new Error("Failed to save the edited vendor request.");          }
 
           const approvalResponse = await api.post(
             `/api/vendor/requests/${approvalRequestId}/approve/`,
@@ -2397,8 +2396,7 @@ const ItemAddNew = ({ initialItem, vendorId, itemId, onSave = () => {}, vendor, 
               <FormMessage />
             </FormItem>
           );
-        }}
-      />
+        }}      />
     )}
 
     {/* Shoe-specific fields */}
