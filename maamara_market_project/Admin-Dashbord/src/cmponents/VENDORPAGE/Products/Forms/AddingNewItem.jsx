@@ -445,13 +445,28 @@ const ItemAddNew = ({ initialItem, vendorId, itemId, onSave = () => {}, vendor, 
 
       if (videoMedia?.url) {
         form.setValue("video", videoMedia.url, { shouldDirty: false });
-        setProductVideo((current) => ({
-          ...(current || {}),
-          slotKey: "video",
-          value: videoMedia.url,
-          url: videoMedia.url,
-          name: videoMedia.name,
-        }));
+        setProductVideo((current) => {
+          // Keep a newly selected File alive after autosave. Save & Approve
+          // still needs that File when the draft media record is not yet
+          // persisted; replacing it with the returned URL would make the
+          // approval request reference a file that is not in the upload.
+          if (current?.value instanceof File) {
+            return {
+              ...current,
+              slotKey: "video",
+              url: videoMedia.url,
+              name: videoMedia.name || current.name,
+            };
+          }
+
+          return {
+            ...(current || {}),
+            slotKey: "video",
+            value: videoMedia.url,
+            url: videoMedia.url,
+            name: videoMedia.name,
+          };
+        });
       }
 
       setGalleryImages(
