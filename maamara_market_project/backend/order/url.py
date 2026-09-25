@@ -55,6 +55,7 @@ urlpatterns = [
     # account summary
     path("api/dashboard/summary/", DashboardSummaryView.as_view()),
     path("api/admin/dashboard-chart-data/", dashboard_chart_data, name="admin-dashboard-chart-data"),
+    path("api/admin-transactions/", admin_transactions, name="admin-transactions"),
 
     path("api/transactions/", create_admin_transaction, name="create-admin-transaction"),
     path("api/transactions/history/", admin_transaction_history, name="admin-transaction-history"),
