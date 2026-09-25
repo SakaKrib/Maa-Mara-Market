@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { generateItemWithAI } from "../../../Services/AI/itemAiService";
+import { generateItemWithAI } from "../../../../Services/AI/itemAiService";
 
 const ItemAiButton = ({ field, image, context, onGenerated, onError, label = "Generate with AI" }) => {
   const [loading, setLoading] = useState(false);
