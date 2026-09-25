@@ -728,15 +728,24 @@ class VendorItemRequestDraftUpdateView(APIView):
                 continue
 
             uploaded = request.FILES.get(upload_key) if upload_key else None
-            if uploaded:
-                try:
-                    self._validate_media_upload(uploaded, kind)
-                except ValueError as exc:
-                    return Response(
-                        {"error": str(exc)},
-                        status=status.HTTP_400_BAD_REQUEST,
-                    )
-                upload_entries.append((entry, uploaded))
+            if not uploaded:
+                return Response(
+                    {
+                        "error": (
+                            f"Missing uploaded file for media slot "
+                            f"'{slot_key}'."
+                        )
+                    },
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            try:
+                self._validate_media_upload(uploaded, kind)
+            except ValueError as exc:
+                return Response(
+                    {"error": str(exc)},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            upload_entries.append((entry, uploaded))
 
         existing = {
             asset.slot_key: asset
