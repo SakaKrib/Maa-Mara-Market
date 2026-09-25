@@ -15,7 +15,7 @@ from ReactSerializers.models import Category, Department, SubCategory
 logger = logging.getLogger(__name__)
 
 GEMINI_ENDPOINT = "https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
-DEFAULT_GEMINI_MODEL = "gemini-2.5-flash-lite"
+DEFAULT_GEMINI_MODEL = "gemini-3.5-flash-lite"
 
 FIELD_SCHEMAS = {
     "name": {
