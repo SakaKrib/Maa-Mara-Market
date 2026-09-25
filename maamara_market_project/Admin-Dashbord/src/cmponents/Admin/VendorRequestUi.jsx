@@ -48,6 +48,52 @@ const sectionTitles = {
 const UiForVendorRequest = () => {
   const [activeSection, setActiveSection] = useState("vendors");
   const [refreshToken, setRefreshToken] = useState(0);
+  const [requestCounts, setRequestCounts] = useState({
+    vendors: 0,
+    items: 0,
+    blogs: 0,
+    prices: 0,
+    banners: 0,
+  });
+
+  const loadRequestCounts = async () => {
+    try {
+      const [vendors, items, blogs, prices, banners] = await Promise.all([
+        fetch("/api/vendor/requests?status=verified", { credentials: "include" }),
+        fetch("/api/vendor/requests/?status=pending", { credentials: "include" }),
+        fetch("/api/admin/blogs/", { credentials: "include" }),
+        fetch("/api/price-change-requests/?status=pending", { credentials: "include" }),
+        fetch("/api/moderation/banners/", { credentials: "include" }),
+      ]);
+
+      const [
+        vendorsData,
+        itemsData,
+        blogsData,
+        pricesData,
+        bannersData,
+      ] = await Promise.all([
+        vendors.json(),
+        items.json(),
+        blogs.json(),
+        prices.json(),
+        banners.json(),
+      ]);
+
+      const listLength = (data) =>
+        Array.isArray(data) ? data.length : Number(data?.count ?? data?.results?.length ?? 0);
+
+      setRequestCounts({
+        vendors: listLength(vendorsData),
+        items: listLength(itemsData),
+        blogs: listLength(blogsData),
+        prices: listLength(pricesData),
+        banners: listLength(bannersData),
+      });
+    } catch (error) {
+      console.error("Failed to load vendor request counts:", error);
+    }
+  };
   const wsRef = useRef(null);
   const reconnectTimerRef = useRef(null);
   const reconnectAttemptRef = useRef(0);
@@ -106,6 +152,15 @@ const UiForVendorRequest = () => {
     };
   }, []);
 
+  useEffect(() => {
+    loadRequestCounts();
+  }, [refreshToken]);
+
+  const totalRequests = Object.values(requestCounts).reduce(
+    (total, count) => total + Number(count || 0),
+    0
+  );
+
   const active = sectionTitles[activeSection];
 
   return (
@@ -122,6 +177,10 @@ const UiForVendorRequest = () => {
             <p className="mt-1 text-xs text-muted-foreground sm:text-sm">
               Manage vendor, item, content, pricing and banner approvals.
             </p>
+          </div>
+          <div className="mt-4 rounded-xl border border-primary/20 bg-primary/10 px-4 py-3 text-center">
+            <p className="text-xs font-semibold uppercase tracking-wider text-primary">Total pending requests</p>
+            <p className="mt-1 text-2xl font-bold text-card-foreground">{totalRequests.toLocaleString()}</p>
           </div>
         </div>
       </header>
@@ -143,6 +202,9 @@ const UiForVendorRequest = () => {
             >
               <IonIcon icon={section.icon} className="shrink-0 text-base" />
               <span className="truncate">{section.label}</span>
+              <span className="inline-flex min-w-5 items-center justify-center rounded-full bg-muted px-1.5 py-0.5 text-[10px] font-bold text-card-foreground">
+                {Number(requestCounts[section.key] || 0).toLocaleString()}
+              </span>
             </button>
           );
         })}
