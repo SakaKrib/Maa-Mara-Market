@@ -44,7 +44,7 @@ const HeaderTop = ({ onMenuToggle }) => {
   useEffect(() => {
     const fetchProfile = async () => {
       try {
-        const response = await api.get("/api/user/account/", {
+        const response = await api.get("/api/profile/", {
           withCredentials: true,
           headers: csrfToken ? { "X-CSRFToken": csrfToken } : undefined,
         });
