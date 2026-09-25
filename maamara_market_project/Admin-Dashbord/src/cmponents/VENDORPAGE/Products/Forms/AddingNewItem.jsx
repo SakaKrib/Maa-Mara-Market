@@ -1814,12 +1814,12 @@ const ItemAddNew = ({ initialItem, vendorId, itemId, onSave = () => {}, vendor, 
       <div className="max-w-xl overflow-hidden rounded-2xl border border-gray-300 bg-black">
         <video
           controls
+          playsInline
           preload="metadata"
           src={
-            productVideo.url ||
-            (productVideo.value instanceof File
-              ? URL.createObjectURL(productVideo.value)
-              : resolveApiAssetUrl(productVideo.value))
+            productVideo.value instanceof File
+              ? productVideo.url || URL.createObjectURL(productVideo.value)
+              : resolveApiAssetUrl(productVideo.url || productVideo.value)
           }
           className="max-h-[360px] w-full bg-black"
         />
