@@ -53,7 +53,6 @@ export function LoginForm({ className, ...props }) {
         setCsrfToken(token)
         setCsrfReady(Boolean(token))
       })
-      .then(() => {
       .catch(err => {
         console.error("CSRF fetch error:", err)
         setCsrfReady(false)
