@@ -8,16 +8,22 @@ import { baseUrl } from "../src/cmponents/Constant/Constant"
 import { useNavigate, useLocation, Link } from "react-router-dom"
 import { useAuth } from "../src/cmponents/Auth/AuthContext/Context"
 import Maamara from "../src/assets/Logo/Maamara.jpg"
-import Snackbar from '@mui/material/Snackbar'
-import Alert from '@mui/material/Alert'
 import { Eye, EyeOff } from "lucide-react"
 
-// Helper: Get CSRF token from cookie
-const getCookie = (name) => {
-  const value = `; ${document.cookie}`
-  const parts = value.split(`; ${name}=`)
-  if (parts.length === 2) return parts.pop().split(";").shift()
-  return ""
+// Fetch the CSRF token returned by Django. The frontend origin cannot reliably
+// read a backend-origin csrftoken cookie with document.cookie.
+const getCsrfToken = async () => {
+  const response = await fetch(`${baseUrl}/api/get-csrf-token/`, {
+    method: "GET",
+    credentials: "include"
+  })
+
+  if (!response.ok) {
+    throw new Error(`CSRF token request failed with status ${response.status}`)
+  }
+
+  const data = await response.json()
+  return data.csrfToken || ""
 }
 
 export function LoginForm({ className, ...props }) {
@@ -36,21 +42,18 @@ export function LoginForm({ className, ...props }) {
   const { refreshAuth } = useAuth()
   
   // Snackbar state
-  const [snackbar, setSnackbar] = useState({ open: false, severity: "error", message: "" })
+  const [snackbar, setSnackbar] = useState({ open: false, message: "" })
 
   // Get redirect path after login (fallback to home page)
   const from = location.state?.from || "/"
 
   useEffect(() => {
-    fetch(`${baseUrl}/api/get-csrf-token/`, {
-      method: "GET",
-      credentials: "include"
-    })
-      .then(() => {
-        const token = getCookie("csrftoken")
+    getCsrfToken()
+      .then(token => {
         setCsrfToken(token)
         setCsrfReady(Boolean(token))
       })
+      .then(() => {
       .catch(err => {
         console.error("CSRF fetch error:", err)
         setCsrfReady(false)
@@ -64,19 +67,19 @@ export function LoginForm({ className, ...props }) {
   const handleSubmit = async (e) => {
     e.preventDefault()
     setError("")
-    setSnackbar({ open: false, severity: "error", message: "" })
+    setSnackbar({ open: false, message: "" })
 
     if (!username || !password) {
       const msg = "Both username and password are required."
       setError(msg)
-      setSnackbar({ open: true, severity: "error", message: msg })
+      setSnackbar({ open: true, message: msg })
       return
     }
 
     if (!csrfReady || !csrfToken) {
       const msg = "Security token is still loading. Please try again."
       setError(msg)
-      setSnackbar({ open: true, severity: "error", message: msg })
+      setSnackbar({ open: true, message: msg })
       return
     }
 
@@ -126,7 +129,7 @@ export function LoginForm({ className, ...props }) {
         }
 
         setError(msg)
-        setSnackbar({ open: true, severity: "error", message: msg })
+        setSnackbar({ open: true, message: msg })
         return
       }
 
@@ -145,20 +148,20 @@ export function LoginForm({ className, ...props }) {
         } else {
           const msg = data.error || "Login failed. Please try again."
           setError(msg)
-          setSnackbar({ open: true, severity: "error", message: msg })
+          setSnackbar({ open: true, message: msg })
         }
       } else {
         const text = await response.text()
         console.error("Unexpected response format:", text)
         const msg = "Unexpected server response. Please contact support."
         setError(msg)
-        setSnackbar({ open: true, severity: "error", message: msg })
+        setSnackbar({ open: true, message: msg })
       }
     } catch (err) {
       console.error("Fetch error:", err)
       const msg = "Something went wrong. Please try again later."
       setError(msg)
-      setSnackbar({ open: true, severity: "error", message: msg })
+      setSnackbar({ open: true, message: msg })
     } finally {
       setLoading(false)
     }
@@ -310,23 +313,19 @@ export function LoginForm({ className, ...props }) {
         </div>
       </div>
 
-      {/* Snackbar */}
-      <Snackbar
-        open={snackbar.open}
-        autoHideDuration={6000}
-        onClose={handleSnackbarClose}
-        anchorOrigin={{ vertical: "top", horizontal: "right" }}
-      >
-        <Alert
-          onClose={handleSnackbarClose}
-          severity={snackbar.severity}
-          sx={{ width: "100%" }}
-          elevation={6}
-          variant="filled"
-        >
+      {snackbar.open && (
+        <div className="fixed right-4 top-20 z-[1400] max-w-sm rounded-[20px] border border-gray-300 bg-card px-4 py-3 text-sm font-semibold text-card-foreground shadow-lg">
           {snackbar.message}
-        </Alert>
-      </Snackbar>
+          <button
+            type="button"
+            onClick={handleSnackbarClose}
+            className="ml-3 text-xs text-muted-foreground hover:text-card-foreground"
+            aria-label="Dismiss notification"
+          >
+            ×
+          </button>
+        </div>
+      )}
     </>
   )
 }
