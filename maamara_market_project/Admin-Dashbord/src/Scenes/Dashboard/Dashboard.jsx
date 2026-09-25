@@ -98,14 +98,14 @@ const Dashboard = () => {
         const [revenue, vendorRequests, transactionsResponse, activity, notificationList] =
           await Promise.all([
             api.get("/api/revenue-analytics/"),
-            api.get("/api/vendor/requests/unseen-count/"),
+            api.get("/api/vendor/requests?status=verified"),
             api.get("/api/admin-transactions/"),
             api.get("/api/activity-logs/"),
             api.get("/api/notifications/"),
           ]);
 
         setAnalytics(revenue.data || { total_revenue: 0, monthly_revenue: [] });
-        setUnseenVendorRequests(vendorRequests.data?.unseen_count ?? 0);
+        setUnseenVendorRequests(Array.isArray(vendorRequests.data) ? vendorRequests.data.length : Number(vendorRequests.data?.count ?? vendorRequests.data?.results?.length ?? 0));
         setVendorProgress(vendorRequests.data?.progress ?? 0);
         setVendorIncrease(vendorRequests.data?.increase ?? "+0%");
         setTransactions(transactionsResponse.data?.results || []);
