@@ -2,7 +2,9 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import api from "../../../../Services/Api/";
 
 const isFile = (value) =>
-  typeof File !== "undefined" && value instanceof File;
+  typeof Blob !== "undefined" &&
+  value instanceof Blob &&
+  typeof value.name === "string";
 
 const stripFiles = (value) => {
   if (isFile(value)) return null;
