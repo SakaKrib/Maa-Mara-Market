@@ -153,12 +153,8 @@ def _gemini_request(image_bytes, mime_type, prompt, schema):
         }],
         "generationConfig": {
             "temperature": 0.2,
-            "responseFormat": {
-                "text": {
-                    "mimeType": "application/json",
-                    "schema": schema,
-                }
-            },
+            "responseMimeType": "application/json",
+            "responseSchema": schema,
         },
     }
 
