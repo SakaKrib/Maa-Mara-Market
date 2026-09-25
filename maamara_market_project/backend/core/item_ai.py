@@ -51,12 +51,17 @@ FIELD_SCHEMAS = {
 }
 
 
-def _taxonomy_payload():
+def _taxonomy_payload(section=None):
     payload = []
 
-    departments = Department.objects.prefetch_related(
+    departments = Department.objects.select_related("section").prefetch_related(
         "categories__subcategories"
     ).order_by("name")
+
+    if section == "organic":
+        departments = departments.filter(section__name="organic")
+    elif section == "inorganic":
+        departments = departments.exclude(section__name="organic")
 
     for department in departments:
         categories = []
@@ -92,22 +97,34 @@ def _validate_classification(result, taxonomy):
 
     department = departments[department_name]
     categories = {item["name"]: item for item in department["categories"]}
-    category_name = _matching_name(result.get("category"), list(categories))
-    if not category_name:
-        raise ValueError("Gemini returned a category outside the selected department.")
+    requested_category = str(result.get("category") or "").strip()
+    category_name = _matching_name(requested_category, list(categories))
 
-    category = categories[category_name]
-    subcategory_name = _matching_name(
-        result.get("subcategory"),
-        category["subcategories"],
-    )
-    if not subcategory_name:
-        raise ValueError("Gemini returned a subcategory outside the selected category.")
+    if category_name:
+        category_value = category_name
+        category = categories[category_name]
+        requested_subcategory = str(result.get("subcategory") or "").strip()
+        subcategory_name = _matching_name(
+            requested_subcategory,
+            category["subcategories"],
+        )
+        subcategory_value = subcategory_name or requested_subcategory
+    else:
+        category_value = requested_category
+        subcategory_value = str(result.get("subcategory") or "").strip()
+
+    if not category_value or not subcategory_value:
+        raise ValueError("Gemini returned an incomplete category hierarchy.")
 
     return {
         "department": department_name,
-        "category": category_name,
-        "subcategory": subcategory_name,
+        "category": category_value,
+        "subcategory": subcategory_value,
+        "category_is_custom": not bool(category_name),
+        "subcategory_is_custom": bool(category_name and not _matching_name(
+            subcategory_value,
+            categories[category_name]["subcategories"],
+        )),
     }
 
 
@@ -212,7 +229,7 @@ class GenerateItemAIAPIView(APIView):
         except json.JSONDecodeError:
             context = {}
 
-        taxonomy = _taxonomy_payload()
+        taxonomy = _taxonomy_payload(str(context.get("section") or "").strip().lower())
         context_text = json.dumps(context, ensure_ascii=False)
 
         if field == "classification":
@@ -220,7 +237,7 @@ class GenerateItemAIAPIView(APIView):
                 "Analyze the supplied product image and classify the product for an "
                 "e-commerce listing. Select the department, category, and subcategory "
                 "ONLY from the supplied taxonomy. Do not invent taxonomy values. "
-                "Return the closest valid hierarchy.\n\n"
+                "Return the closest valid hierarchy. If no suitable category or subcategory exists in the supplied taxonomy, provide a concise custom value for that level instead of inventing a different existing taxonomy value.\n\n"
                 f"Available taxonomy:\n{json.dumps(taxonomy, ensure_ascii=False)}\n\n"
                 f"Current form context:\n{context_text}"
             )
