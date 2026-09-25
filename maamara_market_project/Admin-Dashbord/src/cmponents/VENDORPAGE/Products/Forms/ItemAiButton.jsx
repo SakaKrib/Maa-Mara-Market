@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { generateItemWithAI } from "../../../Services/AI/itemAiService";
 
-const ItemAiButton = ({ field, image, context, onGenerated, label = "Generate with AI" }) => {
+const ItemAiButton = ({ field, image, context, onGenerated, onError, label = "Generate with AI" }) => {
   const [loading, setLoading] = useState(false);
 
   const handleGenerate = async () => {
@@ -11,6 +11,8 @@ const ItemAiButton = ({ field, image, context, onGenerated, label = "Generate wi
     try {
       const result = await generateItemWithAI({ field, image, context });
       onGenerated(result);
+    } catch (error) {
+      onError?.(error);
     } finally {
       setLoading(false);
     }
