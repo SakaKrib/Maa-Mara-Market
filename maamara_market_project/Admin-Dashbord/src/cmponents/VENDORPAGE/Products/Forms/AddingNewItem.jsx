@@ -20,6 +20,7 @@ import { useDepartments } from "./useDepartments";
 import { FormControlLabel, Switch } from "@mui/material";
 import useItemDraftAutosave from "./useItemDraftAutosave";
 import VideoTrimmer from "./VideoTrimmer";
+import ItemAiButton from "./ItemAiButton";
 
 // Sizes
 const MAX_ITEM_IMAGES = 10;
@@ -305,6 +306,38 @@ const ItemAddNew = ({ initialItem, vendorId, itemId, onSave = () => {}, vendor, 
   const normalizedCategory = String(selectedCatSizes || "").trim().toLowerCase();
   const normalizedSubcategory = String(selectedSubcategory || "").trim().toLowerCase();
   const normalizedDepartment = String(form.watch("department") || selectedDepartment || "").trim().toLowerCase();
+
+  const aiAttributeOptions =
+    selectedSection === "organic" && productType !== "inorganic"
+      ? organicAttributes
+      : selectedSection === "inorganic" && productType !== "organic"
+        ? inorganicAttributes
+        : [];
+
+  const getAiContext = () => {
+    const values = form.getValues();
+    return {
+      section: selectedSection,
+      department: values.department || "",
+      category: values.category || "",
+      subcategory: values.subcategory || "",
+      name: values.name || "",
+      description: values.description || "",
+      item_attribute: values.item_attribute || "",
+      allowed_attributes: aiAttributeOptions.map((attribute) => ({
+        value: attribute.value,
+        label: attribute.label,
+      })),
+    };
+  };
+
+  const handleAiError = (error) => {
+    const message =
+      error?.response?.data?.detail ||
+      error?.message ||
+      "Unable to generate the requested item information.";
+    setSubmissionStatus({ type: "error", message });
+  };
 
   const isGenderRelevantCategory =
     normalizedCategory.includes("men") ||
@@ -721,6 +754,42 @@ const ItemAddNew = ({ initialItem, vendorId, itemId, onSave = () => {}, vendor, 
         return;
       }
       form.setValue("image", file, { shouldDirty: true, shouldValidate: true });
+    };
+
+    const handleAiNameGenerated = (result) => {
+      setValue("name", result.name || "", { shouldDirty: true, shouldValidate: true });
+    };
+
+    const handleAiClassificationGenerated = (result) => {
+      const department = result.department || "";
+      const category = result.category || "";
+      const subcategory = result.subcategory || "";
+
+      setSelectedDepartment(department);
+      setSelectedCategory(category);
+      setIsCustomCategory(Boolean(result.category_is_custom));
+      setIsCustomSubcategory(Boolean(result.subcategory_is_custom));
+
+      setValue("department", department, { shouldDirty: true, shouldValidate: true });
+      setValue("category", category, { shouldDirty: true, shouldValidate: true });
+      setValue("subcategory", subcategory, { shouldDirty: true, shouldValidate: true });
+    };
+
+    const handleAiAttributeGenerated = (result) => {
+      setIsCustomAttribute(
+        !aiAttributeOptions.some((attribute) => attribute.value === result.attribute)
+      );
+      setValue("item_attribute", result.attribute || "", {
+        shouldDirty: true,
+        shouldValidate: true,
+      });
+    };
+
+    const handleAiDescriptionGenerated = (result) => {
+      setValue("description", result.description || "", {
+        shouldDirty: true,
+        shouldValidate: true,
+      });
     };
 
     const handleGalleryImagesChange = (files) => {
@@ -1529,6 +1598,15 @@ const ItemAddNew = ({ initialItem, vendorId, itemId, onSave = () => {}, vendor, 
         )}
       </div>
 
+      <ItemAiButton
+        field="classification"
+        image={form.getValues("image")}
+        context={getAiContext()}
+        onGenerated={handleAiClassificationGenerated}
+        onError={handleAiError}
+        label="Generate category details with AI"
+      />
+
           <FormField
           control={form.control}
           name="name"
@@ -1545,6 +1623,13 @@ const ItemAddNew = ({ initialItem, vendorId, itemId, onSave = () => {}, vendor, 
               <FormDescription>
                 Enter a clear, descriptive name for the product as it will appear to shoppers.
               </FormDescription>
+              <ItemAiButton
+                field="name"
+                image={form.getValues("image")}
+                context={getAiContext()}
+                onGenerated={handleAiNameGenerated}
+                onError={handleAiError}
+              />
               <FormMessage />
             </FormItem>
           )}
@@ -1801,6 +1886,13 @@ const ItemAddNew = ({ initialItem, vendorId, itemId, onSave = () => {}, vendor, 
                   <FormDescription>
                 Enter the description of the product.
               </FormDescription>
+                  <ItemAiButton
+                    field="description"
+                    image={form.getValues("image")}
+                    context={getAiContext()}
+                    onGenerated={handleAiDescriptionGenerated}
+                    onError={handleAiError}
+                  />
                   <FormMessage />
                 </FormItem>
               )}
@@ -1841,6 +1933,13 @@ const ItemAddNew = ({ initialItem, vendorId, itemId, onSave = () => {}, vendor, 
                       {isCustomAttribute ? "Use predefined attribute" : "Can't find the attribute? Enter a custom attribute"}
                     </button>
                     <FormDescription>Choose a predefined attribute or enter a custom one.</FormDescription>
+                    <ItemAiButton
+                      field="attribute"
+                      image={form.getValues("image")}
+                      context={getAiContext()}
+                      onGenerated={handleAiAttributeGenerated}
+                      onError={handleAiError}
+                    />
                     <FormMessage />
                   </FormItem>
                 );
