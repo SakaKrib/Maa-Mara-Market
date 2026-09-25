@@ -178,7 +178,7 @@ const Dashboard = () => {
     const loadCounts = async () => {
       try {
         const [jobs, support] = await Promise.all([
-          api.get("/api/applications/unseen-count/"),
+          api.get("/api/applications/unseen/"),
           api.get("/api/support/status-counts/"),
         ]);
         setJobsCount(jobs.data?.unseen ?? 0);
