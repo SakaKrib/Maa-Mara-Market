@@ -14,12 +14,12 @@ class PesapalTransaction(models.Model):
     ]
 
     checkout_session = models.OneToOneField(
-        "order.CheckoutSession",
+        "oder.CheckoutSession",
         on_delete=models.CASCADE,
         related_name="pesapal_transaction",
     )
     order = models.OneToOneField(
-        "order.Order",
+        "oder.Order",
         on_delete=models.SET_NULL,
         null=True,
         blank=True,
