@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { baseUrl } from "../../Constant/Constant";
+import api from "../../../Services/Api";
 
 const ForgotPassword = () => {
   const [email, setEmail] = useState("");
@@ -13,11 +13,7 @@ const ForgotPassword = () => {
     setMessage("");
 
     try {
-      await fetch(`${baseUrl}/api/password-reset/`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email }),
-      });
+      await api.post("/api/password-reset/", { email });
       setMessage("If that email exists, a reset link has been sent.");
     } catch (err) {
       setMessage("Something went wrong. Try again.");
