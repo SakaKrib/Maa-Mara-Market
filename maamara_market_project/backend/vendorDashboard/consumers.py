@@ -68,6 +68,8 @@ class VendorPayoutConsumer(AsyncWebsocketConsumer):
             return
 
         data = payload.get("data") or {}
+        if data.get("reference") != self.reference:
+            return
         status = str(data.get("status") or "").lower()
         await self.send(
             text_data=json.dumps(
