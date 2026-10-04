@@ -25,7 +25,7 @@ const checkoutSchema = z.object({
   zip: z.string().min(1, "ZIP Code is required"),
   country: z.string().min(1, "Country is required"),
   phone: z.string().min(1, "Phone number is required"),
-  payment: z.enum(["Pesapal", "M-Pesa"], {
+  payment: z.enum(["Pesapal", "PayPal", "M-Pesa"], {
     errorMap: () => ({ message: "Select a payment method" }),
   }),
   shippingMethod: z.string().optional(),
@@ -282,6 +282,11 @@ const fetchShippingQuote = async () => {
 
       if (responseData.payment?.payment_method === "M-Pesa") {
         navigate("/payment-mpesa", { state: responseData });
+        return;
+      }
+
+      if (responseData.payment?.payment_method === "PayPal") {
+        navigate("/payment-paypal", { state: responseData });
         return;
       }
 
@@ -549,7 +554,7 @@ const fetchShippingQuote = async () => {
                 <p className="mt-1 text-sm text-muted-foreground">Choose how you would like to pay.</p>
 
                 <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
-                  {["Pesapal", "M-Pesa"].map((method) => (
+                  {["Pesapal", "PayPal", "M-Pesa"].map((method) => (
                     <label
                       key={method}
                       className="flex cursor-pointer items-center gap-3 rounded-xl border border-border bg-background px-4 py-3 text-sm font-medium text-card-foreground transition hover:bg-muted/30"
