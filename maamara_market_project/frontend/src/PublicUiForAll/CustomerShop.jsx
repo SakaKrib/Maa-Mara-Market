@@ -1,3 +1,4 @@
+import React from "react";
 import { Outlet } from "react-router-dom";
 import Header from "../PublicUiForAll/PublicUi/Customer/DesktopView/Header/Header";
 import Footer from "./PublicUi/Navigations/Footer/Footer";
