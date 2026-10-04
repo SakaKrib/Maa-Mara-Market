@@ -9,7 +9,7 @@ import {
   Grid,
   useTheme,
 } from "@mui/material";
-import api from "../../../../Services/Api";
+import api, { getWebSocketUrl } from "../../../../Services/Api";
 import { tokens } from "../../../../theme";
 import { useNavigate } from "react-router-dom";
 
@@ -21,7 +21,15 @@ export default function PaypalBulkPayment({ onSuccess }) {
 
   const location = useLocation(); // <-- Add this
 
-  const vendorPayouts = location.state?.payments || [];
+  const singlePayout = location.state?.reference
+    ? {
+        vendor: location.state?.vendor || {},
+        amount: location.state?.amount || 0,
+        reference: location.state.reference,
+      }
+    : null;
+
+  const vendorPayouts = location.state?.payments || (singlePayout ? [singlePayout] : []);
 
   const [payments, setPayments] = useState(() => {
     if (vendorPayouts.length > 0) {
@@ -42,14 +50,12 @@ export default function PaypalBulkPayment({ onSuccess }) {
     // vendorPayouts come from location.state.payments
     if (!vendorPayouts || vendorPayouts.length === 0) return;
   
-    const wsScheme = window.location.protocol === "https:" ? "wss" : "ws";
-  
     // open 1 socket per payout reference
     const sockets = vendorPayouts.map((p) => {
       if (!p.reference) return null;
   
       const socket = new WebSocket(
-        `${wsScheme}://127.0.0.1:8000/ws/payout/${p.reference}/`
+        getWebSocketUrl(`/ws/payout/${p.reference}/`)
       );
   
       socket.onopen = () => {
@@ -61,12 +67,22 @@ export default function PaypalBulkPayment({ onSuccess }) {
           const data = JSON.parse(event.data);
           console.log("💸 Payout WebSocket:", data);
   
-          if (data.status === "success" || data.status === "completed") {
-            navigate(`/payout-success`, { state: { payout: data } });
+          const status = String(
+            data?.status || data?.data?.status || ""
+          ).toLowerCase();
+
+          if (status === "success" || status === "completed") {
+            navigate(
+              "/admin-dashboard/vendor-payout/payment-trigger",
+              { state: { payout: data } }
+            );
           }
-  
-          if (data.status === "failed") {
-            navigate(`/payout-failed`, { state: { payout: data } });
+
+          if (status === "failed") {
+            navigate(
+              "/admin-dashboard/vendor-payout/payment-trigger",
+              { state: { payout: data } }
+            );
           }
         } catch (err) {
           console.error("❌ WebSocket parse error:", err);
@@ -156,6 +172,22 @@ export default function PaypalBulkPayment({ onSuccess }) {
     setError(null);
 
     try {
+      if (singlePayout?.reference) {
+        const response = await api.post(
+          `/api/vendor/payout/${encodeURIComponent(singlePayout.reference)}/pay/`
+        );
+        setMessage(
+          response.data?.message ||
+            "PayPal payout submitted; awaiting provider confirmation."
+        );
+        showSnackbar(
+          response.data?.message ||
+            "PayPal payout submitted; awaiting provider confirmation."
+        );
+        if (onSuccess) onSuccess(response.data);
+        return;
+      }
+
       await api.post("/api/payout/process-payouts-by-group/", {
         payment_method: "PAYPAL",
         payments,
@@ -212,7 +244,7 @@ export default function PaypalBulkPayment({ onSuccess }) {
             Email
           </Grid>
           <Grid item xs={3}>
-            Amount (USD)
+            Amount (KES → USD)
           </Grid>
           <Grid item xs={3}>
             Actions
