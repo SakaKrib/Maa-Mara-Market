@@ -1,3 +1,4 @@
+import React from "react";
 import { Link } from "react-router-dom";
 import TopBox from "../Home/TopBox/TopBox";
 import ChartBox from "../ChartBox/CharBox";
