@@ -232,7 +232,7 @@ export default function GPSLocationInput({
             placeholder={placeholder}
             required={required}
             autoComplete="off"
-            className="input-field w-full border border-brand-200 bg-brand-50 p-4 pl-12 pr-12 text-left dark:border-brand-700 dark:bg-brand-900/20"
+            className="input-field w-full border border-brand-200 bg-brand-50 p-4 pl-14 pr-12 text-left dark:border-brand-700 dark:bg-brand-900/20"
           />
 
           {searching && (
