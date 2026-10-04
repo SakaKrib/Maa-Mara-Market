@@ -248,9 +248,9 @@ def materialize_paid_checkout(checkout_session, *, transaction_id=None, provider
     payment = Payment.objects.create(
         user=session.user,
         visitor_id=None if session.user_id else session.visitor_id,
-        payment_method=session.payment_method,
+        payment_method="UNKNOWN",
         amount=session.amount,
-        status="pending",
+        status="PENDING",
         # Payment.merchant_reference is a legacy unique field that remains
         # required by the current database schema. Use the checkout UUID as a
         # stable, provider-independent reference so materialization cannot
