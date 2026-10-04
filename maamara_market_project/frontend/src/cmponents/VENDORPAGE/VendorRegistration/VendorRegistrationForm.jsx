@@ -1496,9 +1496,9 @@ const onSubmit = async (data) => {
 
         {/* PDF or Item List Toggle */}
         <section className="mm-vendor-section">
-        <h2 className="text-xl font-semibold text-center">Create Item List</h2>
+        <h2 className="text-xl font-semibold text-center">Create Your Samples</h2>
 
-        <div className="space-y-2">
+        <div className="mm-vendor-sample-method">
           <FormLabel>Submit Items As</FormLabel>
           <div className="flex gap-4">
             <Button type="button" variant={usePdf ? "default" : "outline"} onClick={() => setUsePdf(true)}>PDF</Button>
@@ -1518,8 +1518,8 @@ const onSubmit = async (data) => {
           )} />
         ) : (
           <>
-            <div>
-              <h1 className="text-xl">Create Your Sample List</h1>
+            <div className="mm-vendor-sample-builder">
+              <h3 className="mm-vendor-sample-builder-title">Create Your Sample List</h3>
               <div className="grid grid-cols-1 gap-4 mt-4">
                 <div>
                   <FormLabel>Item Image</FormLabel>
@@ -1611,6 +1611,7 @@ const onSubmit = async (data) => {
             </Button>
           </div>
         )}
+            </div>
           </>
         )}
         </section>
