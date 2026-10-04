@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import api from "../../../Services/Api";
+import api, { resolveApiAssetUrl } from "../../../Services/Api";
 import ReactionButton from "./Reaction";
 import CommentBox from "./Comment";
 import dayjs from "dayjs";
@@ -47,7 +47,7 @@ export default function SingleBlogPage() {
         <div className="flex items-center gap-4 mb-6 border-b pb-4">
           {vendor.profile_picture && (
             <img
-              src={vendor.profile_picture}
+              src={resolveApiAssetUrl(vendor.profile_picture)}
               alt={vendor.company_name || "Vendor"}
               className="w-14 h-14 rounded-full object-cover"
             />
@@ -67,7 +67,7 @@ export default function SingleBlogPage() {
         {/* 🖼️ Image */}
         {post.image && (
           <img
-            src={post.image}
+            src={resolveApiAssetUrl(post.image)}
             alt={post.title}
             className="w-full rounded-md mb-6 object-cover max-h-[400px]"
           />
@@ -90,7 +90,7 @@ export default function SingleBlogPage() {
         {post.video && (
           <video
             controls
-            src={post.video}
+            src={resolveApiAssetUrl(post.video)}
             className="w-full rounded-md mb-6 max-h-[500px]"
           />
         )}
@@ -132,7 +132,7 @@ export default function SingleBlogPage() {
               return (
                 <div key={c.id} className="flex items-start gap-3">
                   <img
-                    src={commenterImage}
+                    src={resolveApiAssetUrl(commenterImage)}
                     alt={commenterName}
                     className="w-10 h-10 rounded-full object-cover ring-1"
                   />
