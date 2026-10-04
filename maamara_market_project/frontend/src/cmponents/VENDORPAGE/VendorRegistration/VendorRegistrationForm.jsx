@@ -700,7 +700,7 @@ useEffect(() => {
     }
   };
 
-  const handleAddItem = () => {
+  const handleAddItem = async () => {
   if (
     !itemFields.name ||
     !itemFields.description ||
@@ -710,10 +710,17 @@ useEffect(() => {
     return;
   }
 
+  const preview = await new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = reject;
+    reader.readAsDataURL(itemFields.image);
+  });
+
   const newItem = {
     ...itemFields,
     price: parseFloat(itemFields.price),
-    preview: URL.createObjectURL(itemFields.image),
+    preview,
   };
 
   const updatedItems = [...items, newItem];
@@ -1559,23 +1566,26 @@ const onSubmit = async (data) => {
               <div
                 key={index}
                 className="
-                  border rounded-md p-3
+                  w-full rounded-[20px] border border-[#d8d4cc] bg-white p-5
                   flex flex-col md:flex-row
                   md:justify-between
-                  gap-4
+                  gap-5
+                  shadow-[0_4px_16px_rgba(34,34,34,0.04)]
                 "
               >
                 {/* Item details */}
-                <div className="flex flex-col md:flex-row md:gap-10 gap-2 flex-1">
-                  <p className="text-sm"><strong>Name:</strong> {item.name}</p>
-                  <p className="text-sm"><strong>Price:</strong> {item.price}</p>
-                  <p className="break-words text-sm">
-                    <strong>Description:</strong> {item.description}
-                  </p>
+                <div className="flex min-w-0 flex-col gap-4 md:flex-row md:gap-8 flex-1">
+                  <div className="min-w-0 flex-1 space-y-2">
+                    <p className="text-sm font-medium text-[#45413c]"><span className="font-semibold text-[#222]">Name:</span> {item.name}</p>
+                    <p className="text-sm font-medium text-[#45413c]"><span className="font-semibold text-[#222]">Price:</span> {item.price}</p>
+                    <p className="break-words text-sm leading-6 text-[#45413c]">
+                      <span className="font-semibold text-[#222]">Description:</span> {item.description}
+                    </p>
+                  </div>
 
                 {/* Image */}
                {item.image && (
-                <div className="flex flex-col items-start md:items-center">
+                <div className="flex shrink-0 flex-col items-start md:items-center">
                   <p className="text-sm">
                     <strong>Image:</strong>{" "}
                     {item.image instanceof File
@@ -1590,7 +1600,7 @@ const onSubmit = async (data) => {
                         : item.image
                     }
                     alt={item.name || "Item image"}
-                    className="w-32 h-32 object-cover rounded-md mt-2"
+                    className="mt-2 h-32 w-32 rounded-[16px] border border-[#d8d4cc] bg-[#f5f4f1] object-cover shadow-sm"
                     />
                 </div>
               )}
