@@ -29,7 +29,7 @@ const Banners = () => {
               const bannerImage = banner.image?.startsWith("http")
                 ? banner.image
                 : banner.image
-                  ? `${baseUrl || ""}${banner.image}`
+                  ? (baseUrl || "") + banner.image
                   : null;
 
               return (
@@ -70,15 +70,16 @@ const Banners = () => {
                       <p className="mt-1 line-clamp-2 text-[11px] leading-5 text-muted-foreground">
                         {banner.subtitle || banner.item?.name || banner.product_name || "Discover this marketplace highlight."}
                       </p>
-                    {banner.call_to_action_url && (
-                      <a
-                        href={banner.call_to_action_url}
-                        className="mt-3 inline-flex rounded-full border border-border bg-background px-3 py-1.5 text-[11px] font-semibold text-card-foreground transition-colors hover:bg-muted"
-                      >
-                        Shop now
-                      </a>
-                    )}
-                  </div>
+                      {banner.call_to_action_url && (
+                        <a
+                          href={banner.call_to_action_url}
+                          className="mt-3 inline-flex rounded-full border border-border bg-background px-3 py-1.5 text-[11px] font-semibold text-card-foreground transition-colors hover:bg-muted"
+                        >
+                          Shop now
+                        </a>
+                      )}
+                    </div>
+                  )}
                 </article>
               );
             })}
