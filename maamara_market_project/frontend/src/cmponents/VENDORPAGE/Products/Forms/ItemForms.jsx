@@ -4,7 +4,6 @@ import {
   useTheme
 } from '@mui/material';
 import axios from 'axios';
-import { baseUrl } from '../../../Constant/Constant';
 import { useCsrfToken } from '../../../Hooks/AccessCRF/UseCSRFToken';
 import api from '../../../../Services/Api';
 import NavigateNextIcon from '@mui/icons-material/NavigateNext';
@@ -50,7 +49,7 @@ const VendorItemForm = () => {
     });
 
     try {
-      const res = await api.post(`${baseUrl}api/item-post/update/`, data, {
+      const res = await api.post("/api/item-post/update/", data, {
         withCredentials: true,
         headers: {
           'Content-Type': 'multipart/form-data',
