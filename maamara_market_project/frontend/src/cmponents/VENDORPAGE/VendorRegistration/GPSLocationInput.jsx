@@ -235,7 +235,7 @@ export default function GPSLocationInput({
             <Loader2 className="absolute right-3 top-1/2 h-5 w-5 -translate-y-1/2 animate-spin text-brand-500" />
           )}
 
-          {!searching && !value?.locationSearch && (
+          {!searching && (
             <button type="button" onClick={handleSearch} disabled={(value?.locationSearch || "").trim().length < 3} className="absolute right-2 top-1/2 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full text-muted-foreground hover:bg-muted disabled:cursor-not-allowed disabled:opacity-50" aria-label="Search location"><Search className="h-4 w-4" /></button>
           )}
         </div>
