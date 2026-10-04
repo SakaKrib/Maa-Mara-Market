@@ -1,3 +1,4 @@
+import React from "react";
 import { Box } from "@mui/material";
 import Header from "../../Header/Header";
 import CustomAreaChart from "../../cmponents/LineGraph/LineGraph";
