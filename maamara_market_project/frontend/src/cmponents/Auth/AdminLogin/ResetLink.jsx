@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { baseUrl } from "../../../cmponents/Constant/Constant";
+import api from "../../../Services/Api";
 import { Eye, EyeOff } from "lucide-react";
 
 
@@ -31,18 +31,12 @@ const ResetPassword = () => {
     setMessage("")
 
     try {
-      const response = await fetch(
-        `${baseUrl}/api/password-reset-confirm/${uid}/${token}/`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ password }),
-        }
+      const response = await api.post(
+        `/api/password-reset-confirm/${uid}/${token}/`,
+        { password }
       )
 
-      const data = await response.json()
+      const data = response.data
 
       if (data.success) {
         setMessage("Password reset successful. Redirecting to login...")
