@@ -10,7 +10,7 @@ import { useMode } from "./theme";
 import BridgeToHTML from "./globalHtml";
 import LoginForm from "./cmponents/Auth/AdminLogin/AdminLogin";
 import { AuthProvider, useAuth } from "./cmponents/Auth/AuthContext/Context";
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import "./main.css";
 import "../src/PublicUiForAll/PublicUi/maamara.css";
 
