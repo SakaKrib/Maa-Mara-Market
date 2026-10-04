@@ -681,6 +681,15 @@ class Transaction(models.Model):
         return float(total or 0)
     
 
+    @staticmethod
+    def get_pesapal_total():
+        total = (
+            Transaction.objects.filter(payment_method__iexact="pesapal")
+            .aggregate(total=Sum("amount"))
+            .get("total")
+        )
+        return float(total or 0)
+
     @property
     def amount_in_kes(self):
         if self.payment_method.lower() == "paypal":
