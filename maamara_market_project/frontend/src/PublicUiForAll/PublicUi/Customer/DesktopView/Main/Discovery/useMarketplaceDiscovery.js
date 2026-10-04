@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import api from "../../../../../../Services/Api";
-import { baseUrl } from "../../../../../../cmponents/Constant/Constant";
+import { getWebSocketUrl } from "../../../../../../Services/Api";
 
 const useMarketplaceDiscovery = () => {
   const [feed, setFeed] = useState({ popular: [], trending: [], most_wanted: [], best_selling: [], featured: [], occasion_collections: [] });
@@ -34,10 +34,7 @@ const useMarketplaceDiscovery = () => {
   }, [fetchFeed]);
 
   useEffect(() => {
-    const backendUrl = baseUrl || window.location.origin;
-    const parsed = new URL(backendUrl, window.location.origin);
-    const protocol = parsed.protocol === "https:" ? "wss" : "ws";
-    const socket = new WebSocket(protocol + "://" + parsed.host + "/ws/realtime/");
+    const socket = new WebSocket(getWebSocketUrl("/ws/realtime/"));
 
     socket.onmessage = (event) => {
       try {
