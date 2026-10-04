@@ -77,6 +77,57 @@ class OrderConsumer(AsyncWebsocketConsumer):
         }))
 
 
+class CheckoutPaymentConsumer(AsyncWebsocketConsumer):
+    """Realtime payment channel for a short-lived customer checkout session."""
+
+    async def connect(self):
+        self.checkout_id = self.scope["url_route"]["kwargs"]["checkout_id"]
+        self.group_name = f"checkout_payment_{self.checkout_id}"
+
+        session = await self.get_checkout()
+        if not session:
+            await self.close(code=4004)
+            return
+
+        await self.channel_layer.group_add(self.group_name, self.channel_name)
+        await self.accept()
+
+        if session.status == "completed" and session.order_id:
+            await self.send_payment_status(session, "PAID")
+
+    async def disconnect(self, close_code):
+        if getattr(self, "group_name", None):
+            await self.channel_layer.group_discard(self.group_name, self.channel_name)
+
+    @database_sync_to_async
+    def get_checkout(self):
+        from .checkout_sessions import session_owner_matches
+        from .models import CheckoutSession
+
+        session = CheckoutSession.objects.filter(pk=self.checkout_id).first()
+        if not session or not session_owner_matches(session, self.scope):
+            return None
+        return session
+
+    async def payment_status_update(self, event):
+        await self.send_payment_status(
+            None,
+            event.get("status", "PAID"),
+            event=event,
+        )
+
+    async def send_payment_status(self, session, status, event=None):
+        payload = {
+            "type": "payment_status",
+            "status": status,
+            "checkout_id": str(self.checkout_id),
+            "order_id": event.get("order_id") if event else session.order_id,
+            "payment_method": event.get("payment_method") if event else session.payment_method,
+            "amount": event.get("amount") if event else str(session.amount),
+        }
+        await self.send(text_data=json.dumps(payload, cls=SafeJSONEncoder))
+
+
 # send customer to the frontend page
 # consumers.py
 
