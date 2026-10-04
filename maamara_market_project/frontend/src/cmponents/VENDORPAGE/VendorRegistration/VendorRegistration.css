@@ -192,3 +192,13 @@
     border-radius:20px;
   }
 }
+
+
+.mm-vendor-registration-form .mm-vendor-section{
+  position:relative;
+  overflow:visible;
+}
+
+.mm-vendor-registration-form .mm-vendor-section:has(.z-50){
+  z-index:50;
+}
