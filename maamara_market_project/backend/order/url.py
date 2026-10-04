@@ -1,6 +1,5 @@
 from django.urls import path
 
-from .Mpesa.C2BMpesaIntergration.c2butils import stk_callback, stk_push
 from .Mpesa.mpesaUtils import (
     mpesa_b2c_payment,
     mpesa_result,
@@ -8,7 +7,6 @@ from .Mpesa.mpesaUtils import (
     mpesa_refund_result,
     mpesa_refund_timeout,
 )
-from .capture_order import capture_paypal_order
 from .dashboardSummery import DashboardSummaryView
 from .orderStat import (
     vendor_completed_order_items,
@@ -70,7 +68,6 @@ urlpatterns = [
     path("api/checkout/", checkout_view, name="checkout"),
     path("api/checkout/<uuid:checkout_id>/status/", checkout_status, name="checkout-status"),
     path("api/customers/", get_customers, name="api-customers"),
-    path("api/paypal/capture/<str:order_id>/", capture_paypal_order, name="paypal-capture"),
 
     # invoices
     path("api/invoices/", invoice_list, name="invoice-list"),
@@ -100,7 +97,4 @@ urlpatterns = [
     path("mpesa/result/", mpesa_result, name="mpesa_result"),
     path("mpesa/timeout/", mpesa_timeout, name="mpesa_timeout"),
 
-    # mpesa payment gateways (B2C)
-    path("api/mpesa/stk-push/", stk_push, name="mpesa-stk-push"),
-    path("api/mpesa/stk-callback/", stk_callback, name="mpesa-stk-callback"),
 ]
