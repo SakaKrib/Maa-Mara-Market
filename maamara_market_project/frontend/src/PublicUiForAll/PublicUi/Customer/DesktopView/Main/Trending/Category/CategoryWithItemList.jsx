@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import api from "../../../../../../../Services/Api";
-import { baseUrl } from "../../../../../../../cmponents/Constant/Constant";
+import { resolveApiAssetUrl } from "../../../../../../../Services/Api";
 
 const CategoryWithItems = ({ onSelectItem }) => {
   const [categories, setCategories] = useState([]);
@@ -76,11 +76,9 @@ const CategoryWithItems = ({ onSelectItem }) => {
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6 mm-mobile-horizontal-scroll mm-mobile-category-rail">
         {visibleCategories.map((category) => {
           const firstItem = category.firstItem;
-          const imageUrl = firstItem.image
-            ? firstItem.image.startsWith?.("http")
-              ? firstItem.image
-              : `${baseUrl}${firstItem.image}`
-            : "/placeholder.jpg";
+          const imageUrl = resolveApiAssetUrl(
+            firstItem.image?.url || firstItem.image || firstItem.image_url || firstItem.imageUrl
+          );
 
           const description =
             category.description ||
