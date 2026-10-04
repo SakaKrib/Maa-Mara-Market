@@ -1200,7 +1200,7 @@ const onSubmit = async (data) => {
           <FormItem>
             <FormLabel>Brand Name</FormLabel>
             <FormControl><Input type="text" placeholder="Enter brand name" {...field} value={field.value ?? ""} /></FormControl>
-            <button type="button" disabled={!companyName?.trim() || aiLoadingField !== null} onClick={() => handleGenerateAI("brand_name")} className="mt-2 inline-flex items-center gap-2 rounded-full border border-border bg-background px-3 py-2 text-sm font-medium text-foreground hover:bg-muted disabled:cursor-not-allowed disabled:opacity-50">
+            <button type="button" disabled={!companyName?.trim() || !workshopLocationValue?.trim() || aiLoadingField !== null} onClick={() => handleGenerateAI("brand_name")} className="mt-2 inline-flex items-center gap-2 rounded-full border border-border bg-background px-3 py-2 text-sm font-medium text-foreground hover:bg-muted disabled:cursor-not-allowed disabled:opacity-50">
               <Sparkles className="h-4 w-4" />
               {aiLoadingField === "brand_name" ? "Generating..." : "Generate with AI"}
             </button>
