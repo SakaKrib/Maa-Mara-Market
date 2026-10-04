@@ -70,12 +70,13 @@ export default function GPSLocationInput({
 
   const handleInputChange = (searchValue) => {
     setGpsError(null);
-    updateLocation({
-      locationSearch: searchValue,
-      latitude: null,
-      longitude: null,
-    });
-    searchLocations(searchValue);
+    updateLocation({ locationSearch: searchValue, latitude: null, longitude: null });
+    setSuggestions([]);
+  };
+
+  const handleSearch = () => {
+    setGpsError(null);
+    searchLocations(value?.locationSearch || "");
   };
 
   const handleSelectLocation = (location) => {
@@ -235,7 +236,7 @@ export default function GPSLocationInput({
           )}
 
           {!searching && !value?.locationSearch && (
-            <Search className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+            <button type="button" onClick={handleSearch} disabled={(value?.locationSearch || "").trim().length < 3} className="absolute right-2 top-1/2 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full text-muted-foreground hover:bg-muted disabled:cursor-not-allowed disabled:opacity-50" aria-label="Search location"><Search className="h-4 w-4" /></button>
           )}
         </div>
 
@@ -276,6 +277,8 @@ export default function GPSLocationInput({
           </>
         )}
       </button>
+
+      <p className="mt-2 text-xs text-muted-foreground">Location search provided by OpenStreetMap Nominatim.</p>
 
       {gpsError && (
         <p className="mt-2 text-sm text-error-600 dark:text-error-400" role="alert">
