@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
-import { baseUrl } from "../../../../cmponents/Constant/Constant";
 import {
     Form,
     FormField,
@@ -545,7 +544,7 @@ useEffect(() => {
   
       // ✅ API call
       const response = await api.put(
-        `${baseUrl}/api/item-post/update/${itemId}/`,
+        `/api/item-post/update/${itemId}/`,
         formData,
         { headers: { "Content-Type": "multipart/form-data" } }
       );
