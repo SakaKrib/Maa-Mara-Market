@@ -945,7 +945,7 @@ const onSubmit = async (data) => {
 
   return (
   <div className="mm-vendor-registration w-full h-full overflow-y-hidden">
-<div className="flex justify-center px-4 md:px-8 lg:px-16 xl:px-32 2xl:px-64 relative">
+<div className="flex justify-center px-2 relative">
     <Form {...form}>
     <form
       onSubmit={(e) => {
@@ -953,7 +953,7 @@ const onSubmit = async (data) => {
         e.stopPropagation();
         form.handleSubmit(onSubmit)(e);
       }}
-      className="mm-vendor-registration-form space-y-6 w-100% relative lg:border md:border lg:p-10 w-full"
+      className="mm-vendor-registration-form space-y-6 w-100% relative border w-full p-2"
     >
         <section className="mm-vendor-section">
         {/* Personal Info */}
