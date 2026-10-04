@@ -4,7 +4,6 @@ import { useTheme } from "@mui/material";
 import { tokens } from "../../../../theme";
 import Header from "../../../../Header/Header";
 import api from "../../../../Services/Api";
-import { baseUrl } from "../../../Constant/Constant";
 
 const VendorOrderDetail = () => {
   const { id } = useParams();
@@ -19,7 +18,7 @@ const VendorOrderDetail = () => {
 
     const fetchOrder = async () => {
       try {
-        const res = await api.get(`${baseUrl}/api/orders-vendor/${id}/`, {
+        const res = await api.get(`/api/orders-vendor/${id}/`, {
           withCredentials: true,
         });
         setOrder(res.data);
