@@ -9,10 +9,6 @@ const resolveApiOrigin = () => {
     return configured.replace(/\/$/, "");
   }
 
-  if (typeof window !== "undefined" && window.location.host) {
-    return window.location.origin.replace(/\/$/, "");
-  }
-
   return FALLBACK_API_ORIGIN;
 };
 
