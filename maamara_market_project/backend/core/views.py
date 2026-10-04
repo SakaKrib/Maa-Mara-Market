@@ -931,15 +931,17 @@ class UserAccountView(APIView):
         profile_serializer = ProfileSerializer(profile, context={'request': request})
         wallet_serializer = WalletSerializer(wallet)
         referral_serializer = ReferralSerializer(referral)
-        voucher_serializer = VoucherSerializer(voucher)
+        vouchers = Voucher.objects.filter(user=user, active=True)
+        voucher_data = VoucherSerializer(vouchers, many=True).data
+        referral_data = ReferralSerializer(referral).data if referral else None
 
         return Response({
             "success": True,
             "user": user_serializer.data,
             "profile": profile_serializer.data,
             "wallet": wallet_serializer.data,
-            "referrals": referral_serializer.data,
-            "voucher": voucher_serializer.data,
+            "vouchers": voucher_data,
+            "referral": referral_data,
             "orders": order_serializer.data,
         })
 
