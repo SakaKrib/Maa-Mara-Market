@@ -1,6 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import usePopularBlogs from "./PopularBlog";
-import { baseUrl } from "../../Constant/Constant";
+import { resolveApiAssetUrl } from "../../../Services/Api";
 
 export default function AdvertBlogs() {
   const { blogs, loading, error } = usePopularBlogs();
@@ -35,7 +35,7 @@ export default function AdvertBlogs() {
                 {blog.image && (
                   <div className="m-2 overflow-hidden rounded-xl">
                     <img
-                      src={`${baseUrl}${blog.image}`}
+                      src={resolveApiAssetUrl(blog.image)}
                       alt={blog.title || "Blog post"}
                       loading="lazy"
                       className="aspect-[16/9] w-full rounded-xl object-cover"
