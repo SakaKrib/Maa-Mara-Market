@@ -13,9 +13,16 @@ class PesapalTransaction(models.Model):
         ("refunded", "Refunded"),
     ]
 
+    checkout_session = models.OneToOneField(
+        "order.CheckoutSession",
+        on_delete=models.CASCADE,
+        related_name="pesapal_transaction",
+    )
     order = models.OneToOneField(
         "order.Order",
-        on_delete=models.CASCADE,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
         related_name="pesapal_transaction",
     )
     customer = models.ForeignKey(
