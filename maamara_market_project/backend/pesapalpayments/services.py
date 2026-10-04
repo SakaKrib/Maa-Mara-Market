@@ -246,6 +246,7 @@ class PesaPalService:
             payment = order.payment
             payment.payment_gateway = "PESAPAL"
             payment.payment_method = payment_method
+            payment.merchant_reference = record.merchant_reference
             payment.status = "PAID"
             payment.order_tracking_id = order_tracking_id
             payment.paid_at = timezone.now()
@@ -257,6 +258,7 @@ class PesaPalService:
                 update_fields=[
                     "payment_gateway",
                     "payment_method",
+                    "merchant_reference",
                     "status",
                     "order_tracking_id",
                     "paid_at",
