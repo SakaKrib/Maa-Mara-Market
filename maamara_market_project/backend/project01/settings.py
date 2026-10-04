@@ -44,7 +44,7 @@ PESAPAL_CONSUMER_SECRET = env("PESAPAL_CONSUMER_SECRET", default="")
 PESAPAL_NOTIFICATION_ID = env("PESAPAL_NOTIFICATION_ID", default="")
 PESAPAL_CALLBACK_URL = env(
     "PESAPAL_CALLBACK_URL",
-    default=f"{FRONTEND_URL.rstrip('/')}/payment-pesapal-callback",
+    default=f"{FRONTEND_URL.rstrip('/')}/api/pesapal/callback/",
 )
 
 # The domains this Django site is allowed to serve. It is specified as a string
