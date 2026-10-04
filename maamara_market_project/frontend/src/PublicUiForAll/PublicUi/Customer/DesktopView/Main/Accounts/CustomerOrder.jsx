@@ -43,8 +43,8 @@ const CustomerOrdersDashboard = ({ wallet: walletProp, vouchers: vouchersProp, o
       : [];
   const safeVouchers = Array.isArray(vouchersProp)
     ? vouchersProp
-    : accountData?.voucher
-      ? [accountData.voucher]
+    : Array.isArray(accountData?.vouchers)
+      ? accountData.vouchers
       : [];
   const wallet = walletProp ?? accountData?.wallet;
 
