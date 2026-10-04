@@ -398,11 +398,10 @@ const fetchShippingQuote = async () => {
             <Button
               type="button"
               onClick={() =>
-                navigate(
-                  activeCheckout.payment?.payment_method?.toLowerCase() === "paypal"
-                    ? "/paypal-make-payment"
-                    : "/mpesa-make-payment",
-                  { state: activeCheckout }
+                window.location.assign(
+                  activeCheckout.redirect_url ||
+                  activeCheckout.pesapal?.redirect_url ||
+                  "/checkout-page"
                 )
               }
               className="primary-button mt-3 rounded-full px-5 text-white font-semibold"
