@@ -502,12 +502,14 @@ useEffect(() => {
 
                 }
 
+                const resolvedImage = resolveApiAssetUrl(image);
+
                 return {
                     name: item.name || "",
                     description: item.description || "",
                     price: Number(item.price) || 0,
                     image,
-                    preview: resolveApiAssetUrl(image),
+                    preview: resolvedImage,
                     image_asset_id: item.image_asset_id ?? null,
                 };
             });
@@ -545,6 +547,67 @@ useEffect(() => {
 
 }, []);
 
+// Persist the complete registration state, including item images, before
+// autosave waits or final submission.
+const persistVendorDraft = async () => {
+  const draftFormData = new FormData();
+
+  const draftData = {
+    ...form.getValues(),
+    item_list: items.map((item, index) => ({
+      name: item.name || "",
+      description: item.description || "",
+      price: Number(item.price) || 0,
+      image_index: item.image instanceof File ? index : null,
+      image_asset_id:
+        item.image instanceof File
+          ? null
+          : item.image_asset_id ?? null,
+      image:
+        typeof item.image === "string"
+          ? item.image
+          : null,
+    })),
+    usePdf,
+  };
+
+  // File objects cannot be JSON serialized; they are uploaded separately.
+  draftFormData.append("data", JSON.stringify(draftData));
+
+  items.forEach((item, index) => {
+    if (item.image instanceof File) {
+      draftFormData.append(`item_image_${index}`, item.image);
+    }
+  });
+
+  const saved = await saveVendorDraft(draftFormData);
+
+  if (saved?.draft_id) {
+    form.setValue("draft_id", saved.draft_id, {
+      shouldDirty: false,
+      shouldValidate: false,
+    });
+  }
+
+  // The backend is now the source of truth for the stored item image.
+  if (saved?.draft?.item_list) {
+    const savedItems = saved.draft.item_list;
+    setItems((current) =>
+      current.map((item, index) => ({
+        ...item,
+        image_asset_id:
+          savedItems[index]?.image_asset_id ?? item.image_asset_id ?? null,
+        preview:
+          item.image instanceof File
+            ? item.preview
+            : resolveApiAssetUrl(savedItems[index]?.image || item.image),
+      }))
+    );
+  }
+
+  return saved;
+};
+
 // Autosave draft
 useEffect(() => {
 
@@ -563,85 +626,12 @@ useEffect(() => {
 
 
   saveTimeout.current = setTimeout(async () => {
-
     try {
-
-      const draftFormData = new FormData();
-
-
-      const draftData = {
-        ...watchedValues,
-
-        item_list: items.map((item, index) => ({
-          name: item.name || "",
-          description: item.description || "",
-          price: Number(item.price) || 0,
-
-          // helps backend map images
-          image_index:
-            item.image instanceof File
-              ? index
-              : null,
-
-          // Keep the authoritative backend asset reference for unchanged images.
-          image_asset_id:
-            item.image instanceof File
-              ? null
-              : item.image_asset_id ?? null,
-
-          image:
-            typeof item.image === "string"
-              ? item.image
-              : null,
-        })),
-
-        usePdf
-      };
-
-
-      draftFormData.append(
-        "data",
-        JSON.stringify(draftData)
-      );
-
-
-
-      // append only real files
-      items.forEach((item, index) => {
-
-        if (item.image instanceof File) {
-
-          draftFormData.append(
-            `item_image_${index}`,
-            item.image
-          );
-
-        }
-
-      });
-
-
-
-     
-
-      await saveVendorDraft(
-        draftFormData
-      );
-
-
+      await persistVendorDraft();
     } catch (error) {
-
-      console.error(
-        "Draft save error:",
-        error
-      );
-
+      console.error("Draft save error:", error);
     }
-
-
   }, 2000);
-
-
 
   return () => {
 
@@ -802,10 +792,11 @@ const onSubmit = async (data) => {
       };
     }
 
-    // Preserve the draft identity so approval can resolve unchanged
-    // backend-stored assets instead of requiring another upload.
-    if (watchedValues.draft_id) {
-      vendorData.draft_id = watchedValues.draft_id;
+    // Persist the current form state and item image before submission.
+    // This guarantees the approval workflow can resolve the same stored draft media.
+    const savedDraft = await persistVendorDraft();
+    if (savedDraft?.draft_id) {
+      vendorData.draft_id = savedDraft.draft_id;
     }
 
     // Append vendor_data JSON
@@ -1569,9 +1560,9 @@ const onSubmit = async (data) => {
               {items.map((item, index) => {
                 const imageSrc =
                   item.preview ||
-                  (typeof item.image === "string"
-                    ? resolveApiAssetUrl(item.image)
-                    : "");
+                  (item.image instanceof File
+                    ? item.preview
+                    : resolveApiAssetUrl(item.image));
 
                 return (
                   <div
@@ -1601,7 +1592,7 @@ const onSubmit = async (data) => {
                               alt={item.name || "Item image"}
                               className="mt-2 block h-32 w-32 shrink-0 rounded-[16px] border border-[#d8d4cc] bg-[#f5f4f1] object-cover shadow-sm"
                               onError={(event) => {
-                                event.currentTarget.style.display = "none";
+                                event.currentTarget.style.opacity = "0";
                               }}
                             />
                           </div>
