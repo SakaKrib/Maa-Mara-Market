@@ -3,12 +3,17 @@ import axios from "axios";
 const FALLBACK_API_ORIGIN = "http://100.109.224.0:8000";
 
 const resolveApiOrigin = () => {
-  const configured =
-    import.meta.env.VITE_API_URL ||
-    import.meta.env.VITE_BASE_URL ||
-    FALLBACK_API_ORIGIN;
+  const configured = import.meta.env.VITE_API_URL || import.meta.env.VITE_BASE_URL;
 
-  return configured.replace(/\/$/, "");
+  if (configured) {
+    return configured.replace(/\/$/, "");
+  }
+
+  if (typeof window !== "undefined" && window.location.host) {
+    return window.location.origin.replace(/\/$/, "");
+  }
+
+  return FALLBACK_API_ORIGIN;
 };
 
 export const baseURL = resolveApiOrigin();
@@ -54,7 +59,11 @@ api.interceptors.response.use(
 
     const requestUrl = originalRequest.url || "";
 
-    if (requestUrl.includes("/api/token/refresh/")) {
+    if (
+      requestUrl.includes("/api/token/refresh/") ||
+      requestUrl.includes("/api/login/") ||
+      requestUrl.includes("/api/get-csrf-token/")
+    ) {
       return Promise.reject(error);
     }
 
