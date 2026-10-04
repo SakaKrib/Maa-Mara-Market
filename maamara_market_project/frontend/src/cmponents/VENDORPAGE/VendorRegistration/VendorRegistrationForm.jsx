@@ -24,7 +24,7 @@ import {
   SelectContent,
   SelectItem,
 } from "../../../../components/ui/select";
-import api from "../../../Services/Api";
+import api, { resolveApiAssetUrl } from "../../../Services/Api";
 import "./VendorRegistration.css";
 import { getNames, getCodeList } from "country-list";
 // import { useCustomerAccessGuard } from "../../Hooks/AccessCRF/CustomerAccess";
@@ -507,6 +507,7 @@ useEffect(() => {
                     description: item.description || "",
                     price: Number(item.price) || 0,
                     image,
+                    preview: resolveApiAssetUrl(image),
                     image_asset_id: item.image_asset_id ?? null,
                 };
             });
@@ -1557,69 +1558,64 @@ const onSubmit = async (data) => {
             </div>
 
             {items.length > 0 && (
-          <div className="space-y-4">
-            <h4 className="font-medium text-xl md:text-2xl">
+          <div className="mm-vendor-items-added">
+            <h4 className="mm-vendor-items-added-title">
               🧺 Items Added
             </h4>
 
-            {items.map((item, index) => (
-              <div
-                key={index}
-                className="
-                  w-full rounded-[20px] border border-[#d8d4cc] bg-white p-5
-                  flex flex-col md:flex-row
-                  md:justify-between
-                  gap-5
-                  shadow-[0_4px_16px_rgba(34,34,34,0.04)]
-                "
-              >
-                {/* Item details */}
-                <div className="flex min-w-0 flex-col gap-4 md:flex-row md:gap-8 flex-1">
-                  <div className="min-w-0 flex-1 space-y-2">
-                    <p className="text-sm font-medium text-[#45413c]"><span className="font-semibold text-[#222]">Name:</span> {item.name}</p>
-                    <p className="text-sm font-medium text-[#45413c]"><span className="font-semibold text-[#222]">Price:</span> {item.price}</p>
-                    <p className="break-words text-sm leading-6 text-[#45413c]">
-                      <span className="font-semibold text-[#222]">Description:</span> {item.description}
-                    </p>
+            <div className="mm-vendor-items-added-list">
+              {items.map((item, index) => (
+                <div
+                  key={index}
+                  className="
+                    w-full rounded-[20px] border border-[#d8d4cc] bg-white p-5
+                    flex flex-col md:flex-row
+                    md:justify-between
+                    gap-5
+                    shadow-[0_4px_16px_rgba(34,34,34,0.04)]
+                  "
+                >
+                  <div className="flex min-w-0 flex-1 flex-col gap-4 md:flex-row md:gap-8">
+                    <div className="min-w-0 flex-1 space-y-2">
+                      <p className="text-sm font-medium text-[#45413c]"><span className="font-semibold text-[#222]">Name:</span> {item.name}</p>
+                      <p className="text-sm font-medium text-[#45413c]"><span className="font-semibold text-[#222]">Price:</span> {item.price}</p>
+                      <p className="break-words text-sm leading-6 text-[#45413c]">
+                        <span className="font-semibold text-[#222]">Description:</span> {item.description}
+                      </p>
+                    </div>
+
+                    {item.image && (
+                      <div className="flex shrink-0 flex-col items-start md:items-center">
+                        <p className="text-sm">
+                          <strong>Image:</strong>{" "}
+                          {item.image instanceof File
+                            ? item.image.name
+                            : item.image.split("/").pop()}
+                        </p>
+
+                        <img
+                          src={item.preview || resolveApiAssetUrl(item.image)}
+                          alt={item.name || "Item image"}
+                          className="mt-2 block h-32 w-32 max-w-none shrink-0 rounded-[16px] border border-[#d8d4cc] bg-[#f5f4f1] object-cover shadow-sm"
+                        />
+                      </div>
+                    )}
                   </div>
 
-                {/* Image */}
-               {item.image && (
-                <div className="flex shrink-0 flex-col items-start md:items-center">
-                  <p className="text-sm">
-                    <strong>Image:</strong>{" "}
-                    {item.image instanceof File
-                      ? item.image.name
-                      : item.image.split("/").pop()}
-                  </p>
-
-                  <img
-                    src={
-                      item.image instanceof File
-                        ? item.preview
-                        : item.image
-                    }
-                    alt={item.name || "Item image"}
-                    className="mt-2 h-32 w-32 rounded-[16px] border border-[#d8d4cc] bg-[#f5f4f1] object-cover shadow-sm"
-                    />
+                  <div className="flex md:justify-end xxs:justify-center">
+                    <Button
+                      variant="destructive"
+                      onClick={() => handleRemoveItem(index)}
+                      className="w-full md:w-auto rounded-full"
+                    >
+                      Remove
+                    </Button>
+                  </div>
                 </div>
-              )}
-                </div>
+              ))}
+            </div>
 
-                {/* Button */}
-                <div className="flex md:justify-end xxs:justify-center">
-                  <Button
-                    variant="destructive"
-                    onClick={() => handleRemoveItem(index)}
-                    className="w-full md:w-auto rounded-full"
-                  >
-                    Remove
-                  </Button>
-                </div>
-              </div>
-            ))}
-
-            <Button variant="outline" className='light-button text-red-500' onClick={handleClearItems}>
+            <Button variant="outline" className="light-button text-red-500" onClick={handleClearItems}>
               🗑️ Clear All
             </Button>
           </div>
