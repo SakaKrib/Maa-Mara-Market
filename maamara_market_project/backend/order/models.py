@@ -75,6 +75,7 @@ class Payment(models.Model):
     PAYMENT_METHOD_CHOICES = [
         ("UNKNOWN", "Unknown"),
         ("MPESA", "M-Pesa"),
+        ("CARD", "Card"),
     ]
 
     STATUS_CHOICES = [
