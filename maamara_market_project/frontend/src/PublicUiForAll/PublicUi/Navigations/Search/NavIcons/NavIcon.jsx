@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { IonIcon } from "@ionic/react";
 import { cartOutline, heartOutline, notificationsOutline, chatbubbleEllipsesOutline } from "ionicons/icons";
 import { Link, useNavigate } from "react-router-dom";
