@@ -49,23 +49,8 @@ import {
       first_name: z.string().min(1),
       phone_number: z.string().min(10).max(15),
   
-      // Username with strong requirements
-      username: z
-        .string()
-        .min(8, "Must be at least 8 characters")
-        .max(16, "Must be at most 16 characters")
-        .refine((val) => /[a-z]/.test(val), {
-          message: "Must include at least one lowercase letter",
-        })
-        .refine((val) => /[A-Z]/.test(val), {
-          message: "Must include at least one uppercase letter",
-        })
-        .refine((val) => /[0-9]/.test(val), {
-          message: "Must include at least one number",
-        })
-        .refine((val) => /[!@#$%^&*()\-_=+\[\]{};:'",.<>/?\\|`~]/.test(val), {
-          message: "Must include at least one symbol",
-        }),
+      // Username comes from the authenticated user and is read-only.
+      username: z.string().min(1, "Username is required"),
   
       email: z.string().email(),
   
