@@ -162,8 +162,8 @@ def complete_paid_order(order, payment, *, transaction_id=None):
         )
         return locked_order, False
 
-    if locked_payment.status != "completed":
-        locked_payment.status = "completed"
+    if locked_payment.status != "PAID":
+        locked_payment.status = "PAID"
         if transaction_id:
             locked_payment.transaction_id = transaction_id
         locked_payment.save(
