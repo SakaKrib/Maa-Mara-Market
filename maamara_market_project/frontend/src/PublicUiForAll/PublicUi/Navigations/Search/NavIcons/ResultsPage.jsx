@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import api from "../../../../../Services/Api";
-import { baseUrl } from "../../../../../cmponents/Constant/Constant";
+import { resolveApiAssetUrl } from "../../../../../Services/Api";
 import TrendingProductCard from "../../../Customer/DesktopView/Main/Trending/TrendingProductCard";
 import "../../../maamara.css";
 
@@ -90,7 +90,7 @@ if (vendorId) params.set("vendor_id", vendorId);
 
   const normalizeImage = (item) => {
     if (!item?.image) return "";
-    return item.image.startsWith("http") ? item.image : `${baseUrl || ""}${item.image}`;
+    return resolveApiAssetUrl(item.image);
   };
 
   return (
