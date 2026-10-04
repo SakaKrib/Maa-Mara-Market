@@ -1,79 +1,189 @@
-import React, { useMemo } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { resolveApiAssetUrl } from "../../../../../../Services/Api";
 
-const resolveImage = (value) => resolveApiAssetUrl(value);
+const resolveImage = (value) => {
+  if (!value) return null;
+  return resolveApiAssetUrl(value);
+};
 
-const ProductGallery = ({
-  item,
-  selectedImage,
-  selectedVariant,
-  onSelectImage,
-}) => {
-  const images = useMemo(() => {
-    const candidates = [];
+const ProductGallery = ({ item, selectedImage, selectedVariant, selectedSize, onSelectImage, onSelectColor }) => {
+  const [isImageFullscreen, setIsImageFullscreen] = useState(false);
+  const media = useMemo(() => {
+    const entries = [];
 
-    const add = (value, key) => {
-      const url = resolveImage(value);
-      if (!url || candidates.some((entry) => entry.url === url)) return;
-      candidates.push({ key: key || url, url });
+    if (item?.image) entries.push({ type: "image", value: item.image, key: "main" });
+
+    const galleryEntries = Array.isArray(item?.additional_images)
+      ? item.additional_images
+      : Array.isArray(item?.gallery_images)
+        ? item.gallery_images
+        : Array.isArray(item?.gallery)
+          ? item.gallery
+          : [];
+
+    galleryEntries.forEach((entry, index) => {
+      const value =
+        typeof entry === "string"
+          ? entry
+          : entry?.image || entry?.image_url || entry?.url;
+
+      if (value) {
+        entries.push({
+          type: "image",
+          value,
+          key: `additional-${entry?.id || index}`,
+        });
+      }
+    });
+
+    return entries.filter((entry, index, all) => all.findIndex((candidate) => candidate.value === entry.value) === index);
+  }, [item]);
+
+  const activeImage = selectedImage || selectedSize?.image || selectedVariant?.image || item?.image;
+  const activeUrl = resolveImage(activeImage);
+
+  useEffect(() => {
+    if (!isImageFullscreen) return undefined;
+
+    const handleKeyDown = (event) => {
+      if (event.key === "Escape") setIsImageFullscreen(false);
     };
 
-    // The selected color variant image takes priority when a variant is active.
-    add(selectedVariant?.image?.url || selectedVariant?.image, "variant");
+    document.addEventListener("keydown", handleKeyDown);
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
 
-    add(item?.image?.url || item?.image || item?.image_url || item?.imageUrl, "main");
-
-    (Array.isArray(item?.additional_images) ? item.additional_images : []).forEach(
-      (entry, index) => {
-        add(entry?.image?.url || entry?.image, `additional-${entry?.id || index}`);
-      }
-    );
-
-    return candidates;
-  }, [item, selectedVariant]);
-
-  const activeImage = resolveImage(selectedImage) || images[0]?.url || null;
+    return () => {
+      document.removeEventListener("keydown", handleKeyDown);
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [isImageFullscreen]);
 
   return (
-    <section className="rounded-2xl border border-border bg-card p-4 shadow-custom sm:p-5">
-      <div className="relative aspect-square w-full overflow-hidden rounded-2xl bg-muted">
-        {activeImage ? (
+    <section className="w-full min-w-0">
+      <div className="relative w-full overflow-hidden rounded-2xl border border-border bg-muted/20 aspect-[4/5] max-h-[760px]">
+        {activeUrl ? (
+          <button
+            type="button"
+            className="block h-full w-full cursor-zoom-in"
+            onClick={() => setIsImageFullscreen(true)}
+            aria-label="View product image full screen"
+          >
+            <img
+              src={activeUrl}
+              className="block h-full w-full object-cover"
+              alt={item.name}
+            />
+          </button>
+        ) : (
+          <div className="flex h-full w-full items-center justify-center text-sm text-muted-foreground">
+            No product image
+          </div>
+        )}
+      </div>
+
+      {isImageFullscreen && activeUrl && (
+        <div
+          className="fixed inset-0 z-[100] flex h-screen w-screen items-center justify-center bg-black/90 p-4 sm:p-8"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Full screen product image"
+          onClick={() => setIsImageFullscreen(false)}
+        >
+          <button
+            type="button"
+            className="absolute right-4 top-4 z-10 flex h-11 w-11 items-center justify-center rounded-full bg-white/10 text-2xl text-white backdrop-blur transition-colors hover:bg-white/20"
+            onClick={() => setIsImageFullscreen(false)}
+            aria-label="Close full screen image"
+          >
+            ×
+          </button>
+
           <img
-            src={activeImage}
-            alt={item?.name || "Product image"}
-            className="h-full w-full object-contain"
-            onError={(event) => {
-              event.currentTarget.style.display = "none";
-              event.currentTarget.nextElementSibling?.classList.remove("hidden");
-            }}
+            src={activeUrl}
+            className="max-h-full max-w-full object-contain"
+            alt={item.name}
+            onClick={(event) => event.stopPropagation()}
           />
-        ) : null}
-        <div className={`flex h-full w-full items-center justify-center bg-muted ${activeImage ? "hidden" : ""}`}>
-          <span className="text-xs text-muted-foreground">Product image unavailable</span>
+        </div>
+      )}
+
+      <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <div className="min-w-0 rounded-xl border border-border bg-background p-3">
+          <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+            Product gallery
+          </p>
+          <div className="flex gap-3 overflow-x-auto pb-1">
+            {media.map((entry, index) => {
+              const url = resolveImage(entry.value);
+              const selected = activeImage === entry.value;
+              return (
+                <button
+                  type="button"
+                  key={entry.key}
+                  onClick={() => onSelectImage(entry.value)}
+                  className={`h-20 w-20 shrink-0 overflow-hidden rounded-xl border bg-background ${selected ? "border-gray-900 ring-2 ring-gray-900/10" : "border-border"}`}
+                  aria-label={`Product gallery image ${index + 1}`}
+                >
+                  <img
+                    src={url}
+                    className="h-full w-full object-cover"
+                    alt={entry.label || `Gallery preview ${index + 1}`}
+                  />
+                </button>
+              );
+            })}
+          </div>
+          {media.length === 0 && (
+            <p className="text-xs text-muted-foreground">No additional gallery images.</p>
+          )}
+        </div>
+
+        <div className="min-w-0 rounded-xl border border-border bg-background p-3">
+          <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+            Color variants
+          </p>
+          {Array.isArray(item?.variants) && item.variants.length > 0 ? (
+            <div className="flex gap-3 overflow-x-auto pb-1">
+              {item.variants.map((variant) => {
+                const selected = selectedVariant?.id === variant.id;
+                const variantImage = resolveImage(variant.image);
+                return (
+                  <button
+                    type="button"
+                    key={variant.id}
+                    onClick={() => onSelectColor(variant)}
+                    className={`h-16 w-16 shrink-0 overflow-hidden rounded-xl border bg-background ${selected ? "border-gray-900 bg-gray-900 ring-2 ring-gray-900/10" : "border-border"}`}
+                    title={variant.color}
+                    aria-label={variant.color}
+                  >
+                    {variantImage ? (
+                      <img
+                        src={variantImage}
+                        className="h-full w-full object-cover"
+                        alt={variant.color}
+                      />
+                    ) : (
+                      <span className="flex h-full w-full items-center justify-center bg-muted px-1 text-center text-[10px] font-medium text-muted-foreground">
+                        {variant.color || "Color"}
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          ) : (
+            <p className="text-xs text-muted-foreground">No color variants.</p>
+          )}
         </div>
       </div>
 
-      {images.length > 1 && (
-        <div className="mt-4 flex gap-3 overflow-x-auto pb-1">
-          {images.map((image) => (
-            <button
-              key={image.key}
-              type="button"
-              onClick={() => onSelectImage?.(image.url)}
-              className={`h-16 w-16 shrink-0 overflow-hidden rounded-xl border bg-background ${activeImage === image.url ? "border-gray-900" : "border-border"}`}
-              aria-label={`View ${item?.name || "product"} image`}
-              aria-pressed={activeImage === image.url}
-            >
-              <img
-                src={image.url}
-                alt=""
-                className="h-full w-full object-cover"
-                onError={(event) => {
-                  event.currentTarget.style.opacity = "0";
-                }}
-              />
-            </button>
-          ))}
+      {item?.video && (
+        <div className="mt-5 overflow-hidden rounded-2xl border border-border bg-black">
+          <video controls preload="metadata" className="max-h-[420px] w-full">
+            <source src={resolveImage(item.video)} />
+            Your browser does not support product video.
+          </video>
         </div>
       )}
     </section>
