@@ -13,6 +13,8 @@ from .services import PesaPalService
 def pesapal_ipn(request):
     payload = request.data if request.method == "POST" else request.query_params
     tracking_id = payload.get("OrderTrackingId") or payload.get("order_tracking_id")
+    merchant_reference = payload.get("OrderMerchantReference") or payload.get("merchant_reference")
+    notification_type = payload.get("OrderNotificationType") or payload.get("notification_type") or "IPNCHANGE"
 
     if not tracking_id:
         return Response({"detail": "Missing Pesapal order tracking ID."}, status=400)
@@ -22,7 +24,12 @@ def pesapal_ipn(request):
     except Exception:
         return Response({"detail": "Payment verification failed."}, status=502)
 
-    return Response({"detail": "IPN received."}, status=200)
+    return Response({
+        "orderNotificationType": notification_type,
+        "orderTrackingId": tracking_id,
+        "orderMerchantReference": merchant_reference,
+        "status": 200,
+    }, status=200)
 
 
 @api_view(["GET"])
