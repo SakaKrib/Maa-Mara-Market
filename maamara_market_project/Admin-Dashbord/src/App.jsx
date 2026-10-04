@@ -310,6 +310,7 @@ function AppContent() {
 
               {/* paypal */}
               <Route path="vendor-payout/payment-trigger/paypal-payment-group" element={<PaypalBulkPayment />} />
+              <Route path="vendor-payout/payment-trigger/paypal-payment/single-vendor" element={<PaypalBulkPayment />} />
 
               {/* bank transfer */}
               <Route path="vendor-payout/payment-trigger/bank-transfer-payment-group" element={<BankTransferBulkPayment />} />
