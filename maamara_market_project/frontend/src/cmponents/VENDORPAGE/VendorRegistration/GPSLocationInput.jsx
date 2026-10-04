@@ -5,7 +5,7 @@ export default function GPSLocationInput({
   value,
   onChange,
   label = "Workshop Location",
-  placeholder = "Search for your workshop location...",
+  placeholder = "Search your workshop location...",
   required = false,
   error = null,
 }) {
@@ -232,7 +232,7 @@ export default function GPSLocationInput({
             placeholder={placeholder}
             required={required}
             autoComplete="off"
-            className="input-field w-full border border-brand-200 bg-brand-50 p-4 pl-11 text-left dark:border-brand-700 dark:bg-brand-900/20"
+            className="input-field w-full border border-brand-200 bg-brand-50 p-4 pl-12 pr-12 text-left dark:border-brand-700 dark:bg-brand-900/20"
           />
 
           {searching && (
@@ -267,7 +267,7 @@ export default function GPSLocationInput({
         type="button"
         onClick={handleUseCurrentLocation}
         disabled={usingGPS}
-        className="btn-secondary mt-3 flex w-full items-center justify-center gap-2"
+        className="mt-3 flex w-full items-center justify-center gap-2 rounded-[20px] border border-brand-500 bg-transparent px-4 py-2.5 font-medium text-brand-600 transition hover:bg-brand-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-brand-400 dark:text-brand-300 dark:hover:bg-brand-900/30"
       >
         {usingGPS ? (
           <>
