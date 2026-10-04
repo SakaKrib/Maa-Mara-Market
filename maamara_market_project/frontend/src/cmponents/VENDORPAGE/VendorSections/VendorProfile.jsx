@@ -9,7 +9,7 @@ import {
   ResponsiveContainer,
   Legend,
 } from "recharts";
-import { baseUrl } from "../../Constant/Constant";
+import { resolveApiAssetUrl } from "../../../Services/Api";
 import api from "../../../Services/Api";
 import { IonIcon } from "@ionic/react";
 import { createPortal } from "react-dom";
@@ -29,8 +29,7 @@ const infoValue = (value) =>
 const mediaUrl = (value) => {
   if (!value) return "";
   if (/^(https?:)?\/\//i.test(value) || value.startsWith("data:")) return value;
-  const normalized = value.startsWith("/") ? value : `/${value}`;
-  return `${baseUrl}${normalized}`;
+  return resolveApiAssetUrl(value);
 };
 
 const SingleVendorProfile = () => {
@@ -85,7 +84,7 @@ const SingleVendorProfile = () => {
 
   const fetchActivityLogs = async () => {
     try {
-      const response = await api.get(`${baseUrl}/api/activity-logs/`, {
+      const response = await api.get("/api/activity-logs/", {
         withCredentials: true,
       });
 
@@ -103,7 +102,7 @@ const SingleVendorProfile = () => {
     try {
       setError(null);
       const response = await api.get(
-        `${baseUrl}/api/vendor-profile/single-page/`,
+        "/api/vendor-profile/single-page/",
         { withCredentials: true }
       );
       setVendor(response.data);
