@@ -58,6 +58,10 @@ def checkout_view(request):
         if grand_total <= 0:
             raise ValueError("Order amount must be greater than zero.")
 
+        payment_method = str(data.get("payment_method") or "").strip()
+        if payment_method not in {"Pesapal", "M-Pesa"}:
+            raise ValueError("Unsupported payment method.")
+
         CheckoutSession.objects.filter(
             user=user,
             visitor_id=None if user else visitor_id,
@@ -72,33 +76,51 @@ def checkout_view(request):
                 "items": item_snapshots,
                 "shipping": shipping,
             },
-            payment_method="Pesapal",
+            payment_method=payment_method,
             amount=grand_total,
             currency="KES",
             expires_at=timezone.now() + timedelta(minutes=30),
             status="draft",
         )
 
-        pesapal_response = PesaPalService.initialize_payment(checkout_session)
+        if payment_method == "Pesapal":
+            pesapal_response = PesaPalService.initialize_payment(checkout_session)
 
-        checkout_session.payload["pesapal"] = {
-            "merchant_reference": pesapal_response["merchant_reference"],
-            "order_tracking_id": pesapal_response["order_tracking_id"],
-        }
+            checkout_session.payload["pesapal"] = {
+                "merchant_reference": pesapal_response["merchant_reference"],
+                "order_tracking_id": pesapal_response["order_tracking_id"],
+            }
+            checkout_session.status = "payment_pending"
+            checkout_session.save(update_fields=["payload", "status", "updated_at"])
+
+            return Response(
+                {
+                    "checkout_id": str(checkout_session.id),
+                    "payment": {
+                        "payment_method": "Pesapal",
+                        "amount": str(grand_total),
+                        "provider_amount": str(grand_total),
+                        "provider_currency": "KES",
+                    },
+                    "pesapal": pesapal_response,
+                    "redirect_url": pesapal_response["redirect_url"],
+                },
+                status=status.HTTP_201_CREATED,
+            )
+
         checkout_session.status = "payment_pending"
-        checkout_session.save(update_fields=["payload", "status", "updated_at"])
+        checkout_session.save(update_fields=["status", "updated_at"])
 
         return Response(
             {
                 "checkout_id": str(checkout_session.id),
                 "payment": {
-                    "payment_method": "Pesapal",
+                    "payment_method": "M-Pesa",
                     "amount": str(grand_total),
                     "provider_amount": str(grand_total),
                     "provider_currency": "KES",
                 },
-                "pesapal": pesapal_response,
-                "redirect_url": pesapal_response["redirect_url"],
+                "mpesa": {"status": "ready"},
             },
             status=status.HTTP_201_CREATED,
         )
