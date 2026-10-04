@@ -76,6 +76,7 @@ import useMobileMenu from "./MobileInterractions";
 import SingleCategory from "./PublicUiForAll/PublicUi/Customer/DesktopView/Main/CategoryFilter";
 import ScrollTop from "./cmponents/Scroll/ScrollToTheTop";
 import CheckoutPaypalPayment from "./PublicUiForAll/PublicUi/Customer/DesktopView/Main/Orders/Payment/Paypal";
+import PesapalCallback from "./PublicUiForAll/PublicUi/Customer/DesktopView/Main/Orders/Payment/PesapalCallback";
 import MpesaC2BPayment from "./PublicUiForAll/PublicUi/Customer/DesktopView/Main/Orders/Payment/MpesaStkPayment";
 import SingleItemProfile from "./cmponents/VENDORPAGE/VendorSections/ItemSinglePage";
 import PaymentSuccess from "./PublicUiForAll/PublicUi/Customer/DesktopView/Main/Trending/SuccessPage";
@@ -231,6 +232,7 @@ function AppContent() {
                 <Route path="paypal-make-payment" element={<CheckoutPaypalPayment />} />
                 <Route path="mpesa-make-payment" element={<MpesaC2BPayment />} />
                 <Route path="payment-success" element={<PaymentSuccess />} />
+                <Route path="payment-pesapal-callback" element={<PesapalCallback />} />
                 <Route path="profile" element={<PublicProfile />} />
                 <Route path="otp-vendor-verification" element={<OTPVerification />} />
                 <Route path="shopping-cart" element={<CartPage />} />
