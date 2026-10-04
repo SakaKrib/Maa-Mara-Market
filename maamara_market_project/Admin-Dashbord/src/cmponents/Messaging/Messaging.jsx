@@ -201,7 +201,24 @@ export default function Messaging({ floating = false, onClose = null }) {
   const nameOf = (conversation) => other(conversation)?.name || other(conversation)?.username || "Maa Mara Admin";
 
   return (
-    <div className="min-h-screen bg-[#f8f8f6] p-2 text-[#222] sm:p-4 lg:p-6">
+    <div
+      className={
+        floating
+          ? "fixed inset-x-3 bottom-24 top-20 z-50 overflow-hidden rounded-2xl border border-[#e6e6e4] bg-[#f8f8f6] text-[#222] shadow-2xl sm:bottom-6 sm:right-6 sm:left-auto sm:top-24 sm:w-[720px]"
+          : "min-h-screen bg-[#f8f8f6] p-2 text-[#222] sm:p-4 lg:p-6"
+      }
+    >
+      {floating && onClose && (
+        <button
+          type="button"
+          onClick={onClose}
+          className="absolute right-3 top-3 z-20 flex h-9 w-9 items-center justify-center rounded-full border border-[#e6e6e4] bg-white text-[#595959] shadow-sm transition hover:bg-[#f8f8f6] hover:text-[#222] focus:outline-none focus:ring-2 focus:ring-[#2563eb] focus:ring-offset-1"
+          aria-label="Close messages"
+          title="Close"
+        >
+          <IonIcon icon={closeOutline} className="text-xl" />
+        </button>
+      )}
       <div
         className={
           floating
@@ -249,17 +266,6 @@ export default function Messaging({ floating = false, onClose = null }) {
           {selected ? (
             <>
               <header className="flex items-center gap-3 border-b border-[#e6e6e4] p-3">
-                {floating && onClose && (
-                  <button
-                    type="button"
-                    onClick={onClose}
-                    className="ml-auto order-last flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-[#595959] transition hover:bg-[#f8f8f6] hover:text-[#222] focus:outline-none focus:ring-2 focus:ring-[#2563eb] focus:ring-offset-1"
-                    aria-label="Close messages"
-                    title="Close"
-                  >
-                    <IonIcon icon={closeOutline} className="text-xl" />
-                  </button>
-                )}
                 <button type="button" onClick={() => setMobileThread(false)} className="rounded-lg p-2 hover:bg-[#f8f8f6] lg:hidden"><IonIcon icon={arrowBackOutline} /></button>
                 <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#eff6ff] text-[#2563eb]"><IonIcon icon={chatbubbleEllipsesOutline} /></div>
                 <div><h2 className="text-sm font-bold text-[#222]">{nameOf(selected)}</h2><p className="text-[11px] text-[#595959]">Live conversation</p></div>
