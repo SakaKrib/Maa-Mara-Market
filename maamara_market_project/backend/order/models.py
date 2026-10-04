@@ -811,7 +811,7 @@ class CheckoutSession(models.Model):
     payload = models.JSONField(default=dict, blank=True)
     payment_method = models.CharField(
         max_length=20,
-        choices=[("Mpesa", "M-Pesa"), ("PayPal", "PayPal")],
+        choices=[("Pesapal", "Pesapal")],
     )
     amount = models.DecimalField(max_digits=12, decimal_places=2)
     currency = models.CharField(max_length=10, default="KES")
