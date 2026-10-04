@@ -57,7 +57,6 @@ const VendorItemForm = () => {
           'X-CSRFToken': csrfToken,
         }
       });
-      console.log('Item posted:', res.data);
     } catch (err) {
       console.error('Error posting item:', err);
     }

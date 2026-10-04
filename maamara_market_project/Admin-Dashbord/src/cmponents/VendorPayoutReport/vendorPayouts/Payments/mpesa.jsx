@@ -89,14 +89,11 @@ export default function MpesaB2CPayment({ onSuccess }) {
 
       // ✅ Connect to Django backend WebSocket
       const wsUrl = getWebSocketUrl(`/ws/payout/${reference}/`);
-      console.log("Connecting to WS:", wsUrl);
 
       const ws = new WebSocket(wsUrl);
 
-      ws.onopen = () => console.log("WebSocket connected!");
       ws.onmessage = (event) => {
         const data = JSON.parse(event.data);
-        console.log("WS message received:", data);
 
         if (data.type === "payout_message") {
           // ✅ Pass payout data to success page
@@ -108,7 +105,6 @@ export default function MpesaB2CPayment({ onSuccess }) {
       };
 
       ws.onerror = (err) => console.error("WebSocket error:", err);
-      ws.onclose = () => console.log("WebSocket closed");
     } catch (err) {
       console.error(err);
       const errorMessage = err.response?.data?.error || "Something went wrong.";

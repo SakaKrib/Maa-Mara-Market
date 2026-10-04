@@ -85,7 +85,6 @@ const CreateItemModal = ({ open, onClose, item, onSave }) => {
         vendorId={currentItem?.vendor?.id ?? null}
         vendor={currentItem?.vendor ?? null}
         onSave={(data) => {
-            console.log("Saved:", data);
             onSave?.(currentItem?.id);   // unlock correct request
             if (routeMode) navigate(-1); else onClose?.();
         }}

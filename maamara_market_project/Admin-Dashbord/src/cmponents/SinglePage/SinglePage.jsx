@@ -54,7 +54,6 @@ const Single = () => {
   const hasMissingFields = !vendor?.brand?.name || !vendor?.company || !vendor?.address;
 
 
-  console.log(vendor)
 
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);

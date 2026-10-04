@@ -25,7 +25,6 @@ export default function AuthSuccess() {
 
         const role = data?.user?.role;
 
-        console.log('role',role)
 
         if (role === "admin") window.location.href = "/admin-dashboard";
         else if (role === "vendor") window.location.href = "/vendors-dashboard/";

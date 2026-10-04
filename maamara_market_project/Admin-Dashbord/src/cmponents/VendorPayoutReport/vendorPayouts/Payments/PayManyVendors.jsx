@@ -20,7 +20,6 @@ export default function MpesaB2CMultiPayment({ onSuccess }) {
   const navigate = useNavigate();
 
   const prefilledPayments = location.state?.payments || [];
-  console.log("Fetched Payments:", prefilledPayments);
 
   const [payments, setPayments] = useState(
     prefilledPayments.map((p) => ({
@@ -44,13 +43,11 @@ export default function MpesaB2CMultiPayment({ onSuccess }) {
       );
 
       socket.onopen = () => {
-        console.log(`🔗 WebSocket connected → payout ${p.reference}`);
       };
 
       socket.onmessage = (event) => {
         try {
           const data = JSON.parse(event.data);
-          console.log("💸 Payout WebSocket:", data);
 
           if (data.status === "success" || data.status === "completed") {
             navigate("/admin-dashboard/vendor-payout/payment-trigger", { state: { payout: data } });
@@ -69,7 +66,6 @@ export default function MpesaB2CMultiPayment({ onSuccess }) {
       };
 
       socket.onclose = () => {
-        console.log(`🔌 WebSocket closed → payout ${p.reference}`);
       };
 
       return socket;
@@ -158,7 +154,6 @@ export default function MpesaB2CMultiPayment({ onSuccess }) {
 
       setMessage("✅ All vendor M-Pesa payouts processed successfully.");
       showSnackbar("✅ All vendor M-Pesa payouts processed successfully.");
-      console.log("Payment Response:", res.data);
       if (onSuccess) onSuccess();
     } catch (err) {
       console.error(err);

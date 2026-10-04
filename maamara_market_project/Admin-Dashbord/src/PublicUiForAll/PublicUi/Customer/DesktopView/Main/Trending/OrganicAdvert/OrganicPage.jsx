@@ -19,8 +19,6 @@ const OrganicPage = () => {
         // Filter items: any product that is organic
         const filtered = data.filter((item) => item.is_organic === true);
 
-        console.log("All items:", data);
-        console.log("Filtered organic items:", filtered);
 
         setOrganicItems(filtered);
       } catch (err) {

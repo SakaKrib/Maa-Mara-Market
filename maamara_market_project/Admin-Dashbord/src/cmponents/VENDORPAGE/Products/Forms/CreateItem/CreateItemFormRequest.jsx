@@ -253,11 +253,8 @@ const CreateItemFromRequest = ({  vendorId, itemId, onSave, vendor, item }) => {
         ? organicDepartmentMap
         : departmentMap;
     }
-  console.log(activeData)
 
-  console.log("this is the selected vendor", vendor)
 
- console.log("this is initial item", item) 
     const form = useForm({
       defaultValues: item || {},
       mode: "onChange",
@@ -265,7 +262,6 @@ const CreateItemFromRequest = ({  vendorId, itemId, onSave, vendor, item }) => {
 
     //initialize the data
     useEffect(() => {
-      console.log("New initialItem received:", item);
       if (item) form.reset(item);
     }, [item]);
     
@@ -335,7 +331,6 @@ const CreateItemFromRequest = ({  vendorId, itemId, onSave, vendor, item }) => {
 
     const onSubmit = async (data, saveAsDraft = false) => {
       try {
-        console.log("🧠 Preparing vendor request item...");
     
         const vendorRequestId = item.id;
         if (!vendorRequestId) throw new Error("❌ Vendor request ID is missing.");
@@ -446,7 +441,6 @@ const CreateItemFromRequest = ({  vendorId, itemId, onSave, vendor, item }) => {
           setToastMessage("💾 Draft saved successfully!");
           setToastSeverity("success");
           setToastOpen(true);
-          console.log("💾 Draft saved successfully:", response.data);
           onSave(response.data);
         } else {
           setToastMessage("❌ Failed to save draft.");

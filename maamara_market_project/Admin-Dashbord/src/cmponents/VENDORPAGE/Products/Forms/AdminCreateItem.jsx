@@ -248,7 +248,6 @@ const [showExtraFields, setShowExtraFields] = useState(false);
 
 
   const vendor = useVendor();
-  console.log(vendor)
 
 
   // define department and category based on vendor product type
@@ -263,7 +262,6 @@ const [showExtraFields, setShowExtraFields] = useState(false);
       ? organicDepartmentMap
       : departmentMap;
   }
-console.log(activeData)
 
   const {
     control,
@@ -396,8 +394,6 @@ useEffect(() => {
   
   const onSubmit = async (data) => {
     try {
-      console.log("🔄 Submitting item update...");
-      console.log("💡 color_variants before submit:", data.color_variants);
   
       const formData = new FormData();
   
@@ -418,7 +414,6 @@ useEffect(() => {
        // ✅ Organic / food flags (always appended, default false if not set)
        formData.append("is_organic", data.is_organic ? "true" : "false");
        formData.append("is_fresh_food", data.is_fresh_food ? "true" : "false");
-       console.log("is fresh food", data.is_fresh_food)
   
   
       // ✅ Manufactured & Expiry Dates
@@ -542,12 +537,9 @@ useEffect(() => {
       }
   
       // 🔍 Debug log: check FormData contents
-      console.log("📤 Final FormData payload:");
       for (let [key, value] of formData.entries()) {
         if (value instanceof File) {
-          console.log(key, value.name, "File");
         } else {
-          console.log(key, value, typeof value);
         }
       }
   
@@ -558,7 +550,6 @@ useEffect(() => {
         { headers: { "Content-Type": "multipart/form-data" } }
       );
   
-      console.log("✅ Item update successful:", response.data);
       setSnackbar({ open: true, message: "Item updated successfully!" });
     } catch (error) {
       console.error("❌ Error updating item:", error);
@@ -572,7 +563,6 @@ useEffect(() => {
   };
   
     
-    console.log("this is vaiant", item.variants)
 
 
   return (

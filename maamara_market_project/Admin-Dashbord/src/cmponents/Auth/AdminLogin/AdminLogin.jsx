@@ -77,7 +77,6 @@ const LoginForm = () => {
         return;
       }
 
-      console.log(data)
   
       // ✅ SAME FLOW as Google
       navigate("auth-success");

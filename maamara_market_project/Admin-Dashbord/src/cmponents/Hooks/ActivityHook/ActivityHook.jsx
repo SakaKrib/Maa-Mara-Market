@@ -71,7 +71,6 @@ export const useVendorActivityLogs = ({ all = false } = {}) => {
     wsRef.current = ws;
 
     ws.onopen = () => {
-      console.log("✅ Activity WS connected");
     };
 
     ws.onmessage = (event) => {
@@ -120,11 +119,7 @@ export const useVendorActivityLogs = ({ all = false } = {}) => {
     };
 
     ws.onclose = () => {
-      console.log(
-        "❌ Activity WS disconnected"
-      );
-
-      reconnectRef.current =
+        reconnectRef.current =
         setTimeout(() => {
           connectWebSocket();
         }, 3000);

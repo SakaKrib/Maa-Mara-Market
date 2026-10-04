@@ -20,7 +20,6 @@ const useDashboardInteractions = () => {
     const themeBtn = document.querySelector('.dark');
     const lightBtn = document.querySelector('.light');
     const settings =  document.querySelector('.config');
-    console.log(settings)
     const toolkit = document.querySelector('.settings');
     // hovermenu stick
     const HoverMenu = document.querySelector('.has-child');

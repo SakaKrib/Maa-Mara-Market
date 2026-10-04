@@ -85,7 +85,6 @@ const AdminCreateItemForVendor = () => {
           vendor={vendor}
           item={request}
           onSave={(savedData) => {
-            console.log("Draft saved:", savedData);
             // optional: update your local state or show a toast here
           }}
         />

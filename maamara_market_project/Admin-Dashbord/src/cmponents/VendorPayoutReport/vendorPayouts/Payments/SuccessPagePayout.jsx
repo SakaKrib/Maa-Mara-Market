@@ -21,7 +21,6 @@ const SuccessPage = ({ reference }) => {
     const socket = new WebSocket(socketUrl);
 
     socket.onopen = () => {
-      console.log("🔌 Connected to WebSocket");
     };
 
     socket.onmessage = (event) => {
@@ -43,7 +42,6 @@ const SuccessPage = ({ reference }) => {
     };
 
     socket.onclose = () => {
-      console.log("🔌 WebSocket closed");
     };
 
     return () => socket.close();

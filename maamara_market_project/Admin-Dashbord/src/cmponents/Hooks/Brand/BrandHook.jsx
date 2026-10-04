@@ -6,7 +6,6 @@ const useBrands = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  console.log(brands)
 
   useEffect(() => {
     const fetchBrands = async () => {

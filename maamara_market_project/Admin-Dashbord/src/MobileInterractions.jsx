@@ -12,7 +12,6 @@ const useMobileMenu = () => {
     const dptPlace = document.querySelector('.departments');
     if (dptCategory && dptPlace) dptPlace.innerHTML = dptCategory.innerHTML;
 
-    console.log(dptCategory)
 
     const mainNav = document.querySelector('.header-nav nav');
     const navPlace = document.querySelector('.off-canvas nav');

@@ -229,7 +229,6 @@ import { Snackbar, Alert } from "@mui/material";
   
 
 const AdminCreateExistingVendorItems = ({ initialItem, vendorId, itemId, onSave, vendor }) => {
-  console.log('this is id', initialItem?.id)
 
   const [selectedDepartment, setSelectedDepartment] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("");
@@ -261,7 +260,6 @@ const AdminCreateExistingVendorItems = ({ initialItem, vendorId, itemId, onSave,
 
     //initialize the data
     // useEffect(() => {
-    //   console.log("New initialItem received:", initialItem);
     //   if (initialItem) form.reset(initialItem);
     // }, [initialItem]);
     
@@ -427,7 +425,6 @@ useEffect(() => {
     //   e?.target?.querySelector('button[type="submit"]')?.blur();
 
       try {
-        console.log("🧠 Preparing item data for vendor approval...", data);
     
         // Determine the correct vendor request ID
         const vendorRequestId = initialItem?.id || vendorId || itemId;
@@ -917,7 +914,6 @@ useEffect(() => {
                     attributes =
                       selectedSection === "organic" ? organicAttributes : inorganicAttributes;
 
-                      console.log("this are attributes", attributes)
                   }
     
                   return (

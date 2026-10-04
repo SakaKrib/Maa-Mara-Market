@@ -22,13 +22,11 @@ export function useCustomerSocket() {
     // different cookie hosts in the browser).
     const backendHost = `${window.location.hostname}:8000`;
     const socketUrl = `${wsScheme}://${backendHost}/ws/customers/${userId}/`;
-    console.log("Connecting WebSocket to:", socketUrl);
 
     function connect() {
       socketRef.current = new WebSocket(socketUrl);
 
       socketRef.current.onopen = () => {
-        console.log("✅ WebSocket connected");
         setConnected(true);
         reconnectInterval.current = 1000; // reset reconnect interval
       };
@@ -36,7 +34,6 @@ export function useCustomerSocket() {
       socketRef.current.onmessage = (event) => {
         try {
           const data = JSON.parse(event.data);
-          console.log("📩 Received:", data);
           if (data?.customers) {
             setCustomers(data.customers);
           }
@@ -50,7 +47,6 @@ export function useCustomerSocket() {
       };
 
       socketRef.current.onclose = () => {
-        console.log("🔌 WebSocket closed. Reconnecting...");
         setConnected(false);
         reconnectTimer.current = setTimeout(() => {
           connect();

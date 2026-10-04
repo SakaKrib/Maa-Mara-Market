@@ -66,13 +66,11 @@ export default function PaypalBulkPayment({ onSuccess }) {
       );
   
       socket.onopen = () => {
-        console.log(`🔗 WebSocket connected → payout ${p.reference}`);
       };
   
       socket.onmessage = (event) => {
         try {
           const data = JSON.parse(event.data);
-          console.log("💸 Payout WebSocket:", data);
   
           const status = String(
             data?.status || data?.data?.status || ""
@@ -101,7 +99,6 @@ export default function PaypalBulkPayment({ onSuccess }) {
       };
   
       socket.onclose = () => {
-        console.log(`🔌 WebSocket closed → payout ${p.reference}`);
       };
   
       return socket;

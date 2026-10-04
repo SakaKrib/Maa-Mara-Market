@@ -19,7 +19,6 @@ export default function BankTransferBulkPayment({ onSuccess }) {
 
   // Prefilled payments passed via navigation state or empty array
   const prefilledPayments = location.state?.payments || [];
-  console.log(prefilledPayments);
 
   const [payments, setPayments] = useState(
     prefilledPayments.map((p) => {

@@ -9,7 +9,6 @@ const Notifications = ({ isAuthenticated, user }) => {
       const socket = new WebSocket(`ws://127.0.0.1:8000/ws/notifications/`);
 
       socket.onopen = () => {
-        console.log("WebSocket connected");
 
         // Send the user id to join the specific user group
         socket.send(JSON.stringify({
@@ -20,7 +19,6 @@ const Notifications = ({ isAuthenticated, user }) => {
 
       socket.onmessage = (event) => {
         const data = JSON.parse(event.data);
-        console.log("Received message:", data);
 
         // Add the received message to state
         setMessages(prevMessages => [...prevMessages, data.message]);
@@ -31,7 +29,6 @@ const Notifications = ({ isAuthenticated, user }) => {
       };
 
       socket.onclose = () => {
-        console.log("WebSocket connection closed");
       };
 
       // Cleanup on component unmount
