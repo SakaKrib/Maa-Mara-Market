@@ -61,8 +61,8 @@ export default function UserAccount() {
         if (data.success) {
           setUserData(data.user);
           setWallet(data.wallet);
-          setVouchers(data.voucher);
-          setReferral(data.referrals);
+          setVouchers(data.vouchers || []);
+          setReferral(data.referral || null);
           setProfile(data.profile);
           setOrders(data.orders || []);
   
