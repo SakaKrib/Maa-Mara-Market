@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
-import { baseUrl } from "../../../../Constant/Constant";
+import { resolveApiAssetUrl } from "../../../../Services/Api";
 import {
     Form,
     FormField,
@@ -705,9 +705,7 @@ const CreateItemFromRequest = ({  vendorId, itemId, onSave, vendor, item }) => {
           {typeof field.value === "string" && (
             <img
               src={
-                field.value.startsWith("http")
-                  ? field.value
-                  : `${baseUrl}${field.value}`
+                resolveApiAssetUrl(field.value)
               }
               alt="Item preview"
               className="mt-2 w-32 h-32 object-cover border"
