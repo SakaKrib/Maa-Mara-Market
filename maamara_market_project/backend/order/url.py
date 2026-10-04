@@ -1,5 +1,6 @@
 from django.urls import path
 
+from .Mpesa.mpesaCheckout import mpesa_stk_push, mpesa_stk_callback, mpesa_stk_timeout
 from .Mpesa.mpesaUtils import (
     mpesa_b2c_payment,
     mpesa_result,
@@ -94,5 +95,8 @@ urlpatterns = [
     path("mpesa/b2c/", mpesa_b2c_payment, name="mpesa_b2c"),
     path("mpesa/result/", mpesa_result, name="mpesa_result"),
     path("mpesa/timeout/", mpesa_timeout, name="mpesa_timeout"),
+    path("api/mpesa/stk-push/", mpesa_stk_push, name="mpesa_stk_push"),
+    path("api/mpesa/stk-callback/", mpesa_stk_callback, name="mpesa_stk_callback"),
+    path("api/mpesa/stk-timeout/", mpesa_stk_timeout, name="mpesa_stk_timeout"),
 
 ]

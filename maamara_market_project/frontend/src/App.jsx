@@ -76,6 +76,7 @@ import useMobileMenu from "./MobileInterractions";
 import SingleCategory from "./PublicUiForAll/PublicUi/Customer/DesktopView/Main/CategoryFilter";
 import ScrollTop from "./cmponents/Scroll/ScrollToTheTop";
 import PesapalCallback from "./PublicUiForAll/PublicUi/Customer/DesktopView/Main/Orders/Payment/PesapalCallback";
+import MpesaSTKPayment from "./PublicUiForAll/PublicUi/Customer/DesktopView/Main/Orders/Payment/MpesaStkPayment";
 import SingleItemProfile from "./cmponents/VENDORPAGE/VendorSections/ItemSinglePage";
 import PaymentSuccess from "./PublicUiForAll/PublicUi/Customer/DesktopView/Main/Trending/SuccessPage";
 import BlogCard from "./cmponents/VENDORPAGE/Blogs/BlogCard";
@@ -229,6 +230,7 @@ function AppContent() {
                 <Route path="checkout-page" element={<CheckoutPage />} />
                 <Route path="payment-success" element={<PaymentSuccess />} />
                 <Route path="payment-pesapal-callback" element={<PesapalCallback />} />
+                <Route path="payment-mpesa" element={<MpesaSTKPayment />} />
                 <Route path="profile" element={<PublicProfile />} />
                 <Route path="otp-vendor-verification" element={<OTPVerification />} />
                 <Route path="shopping-cart" element={<CartPage />} />
