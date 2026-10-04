@@ -48,18 +48,28 @@ const Banners = () => {
                     </div>
                   ) : (
                     <div
-                      className="m-2 aspect-[16/9] rounded-xl"
+                      className="relative m-2 flex aspect-[16/9] items-center overflow-hidden rounded-xl px-5 py-4 sm:px-6"
                       style={{ backgroundColor: banner.background_color || "#f5f4f1" }}
-                    />
+                    >
+                      <div className="relative z-10 max-w-[85%]">
+                        <h3 className="text-base font-bold leading-tight text-card-foreground sm:text-lg">
+                          {banner.title || "Marketplace highlight"}
+                        </h3>
+                        <p className="mt-1 line-clamp-3 text-xs leading-5 text-muted-foreground sm:text-sm">
+                          {banner.subtitle || banner.item?.name || banner.product_name || "Discover this marketplace highlight."}
+                        </p>
+                      </div>
+                    </div>
                   )}
 
-                  <div className="px-4 pb-4 pt-2">
-                    <h3 className="truncate text-sm font-semibold text-card-foreground">
-                      {banner.title || "Marketplace highlight"}
-                    </h3>
-                    <p className="mt-1 line-clamp-2 text-[11px] leading-5 text-muted-foreground">
-                      {banner.subtitle || banner.item?.name || banner.product_name || "Discover this marketplace highlight."}
-                    </p>
+                  {bannerImage && (
+                    <div className="px-4 pb-4 pt-2">
+                      <h3 className="truncate text-sm font-semibold text-card-foreground">
+                        {banner.title || "Marketplace highlight"}
+                      </h3>
+                      <p className="mt-1 line-clamp-2 text-[11px] leading-5 text-muted-foreground">
+                        {banner.subtitle || banner.item?.name || banner.product_name || "Discover this marketplace highlight."}
+                      </p>
                     {banner.call_to_action_url && (
                       <a
                         href={banner.call_to_action_url}
