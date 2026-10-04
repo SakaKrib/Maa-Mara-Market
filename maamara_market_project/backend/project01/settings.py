@@ -423,7 +423,6 @@ PAYMENT_GATEWAYS = {
 
 EXCHANGE_RATE_API_URL = env("EXCHANGE_RATE_API_URL")
 
-OPENAI_API_KEY = env("OPENAI_API_KEY")
 
 GEMINI_API_KEY = env("GEMINI_API_KEY")
 # =========================================================
