@@ -1,11 +1,148 @@
-.mm-vendor-registration{font-family:'regular',sans-serif;background:#fff;color:#222}
-.mm-vendor-registration h1,.mm-vendor-registration h2,.mm-vendor-registration h3,.mm-vendor-registration h4{font-family:'regular',sans-serif;color:#222;letter-spacing:-.02em}
-.mm-vendor-registration-form{max-width:1040px;margin:0 auto;background:#fff;border-color:#e6e3de!important;border-radius:16px;box-shadow:0 10px 30px rgba(34,34,34,.05)}
-.mm-vendor-registration-form [data-slot="form-label"],.mm-vendor-registration-form label{font-family:'regular',sans-serif;color:#45413c;font-size:12px;font-weight:600}
-.mm-vendor-registration-form input,.mm-vendor-registration-form textarea{font-family:'regular',sans-serif;border-color:#d8d4cc;background:#fff;border-radius:8px;min-height:42px}
-.mm-vendor-registration-form input:focus,.mm-vendor-registration-form textarea:focus{border-color:#222;box-shadow:0 0 0 2px rgba(34,34,34,.06)}
-.mm-vendor-registration-form h2{font-size:20px;font-weight:700;padding-bottom:8px;border-bottom:1px solid #eee9e2}
-.mm-vendor-registration-form button{font-family:'regular',sans-serif}
-.mm-vendor-registration-form .primary-button{background:#222;color:#fff;border-radius:999px}
-.mm-vendor-registration-form .primary-button:hover{background:#45413c}
-@media(max-width:639px){.mm-vendor-registration{padding-top:12px}.mm-vendor-registration-form{border:0!important;border-radius:0;box-shadow:none;padding:18px 14px!important}.mm-vendor-registration-form h2{font-size:18px}.mm-vendor-registration-form input,.mm-vendor-registration-form textarea{font-size:14px}}
+.mm-vendor-registration{
+  font-family:'regular',sans-serif;
+  background:#fff;
+  color:#222;
+  padding-top:12px;
+}
+
+.mm-vendor-registration h1,
+.mm-vendor-registration h2,
+.mm-vendor-registration h3,
+.mm-vendor-registration h4{
+  font-family:'regular',sans-serif;
+  color:#222;
+  letter-spacing:-.02em;
+}
+
+.mm-vendor-registration-form{
+  max-width:1040px;
+  margin:0 auto;
+  background:#fff;
+  border-color:#e6e3de!important;
+  border-radius:16px;
+  box-shadow:0 10px 30px rgba(34,34,34,.05);
+}
+
+.mm-vendor-registration-form .mm-vendor-section{
+  width:100%;
+  margin-top:0.75rem!important;
+  padding:24px;
+  border:1px solid #d8d4cc;
+  border-radius:20px;
+  background:#fff;
+  box-sizing:border-box;
+}
+
+.mm-vendor-registration-form .mm-vendor-section:first-child{
+  margin-top:0!important;
+}
+
+.mm-vendor-registration-form .mm-vendor-section h2{
+  margin:0 0 20px;
+  padding:0 0 12px;
+  border-bottom:1px solid #eee9e2;
+  font-size:20px;
+  line-height:1.35;
+  font-weight:700;
+  text-align:left;
+}
+
+.mm-vendor-registration-form .mm-vendor-section > [data-slot="form-item"],
+.mm-vendor-registration-form .mm-vendor-section > .space-y-2,
+.mm-vendor-registration-form .mm-vendor-section > .grid{
+  margin-top:16px;
+}
+
+.mm-vendor-registration-form .mm-vendor-section > [data-slot="form-item"]:first-of-type{
+  margin-top:0;
+}
+
+.mm-vendor-registration-form [data-slot="form-label"],
+.mm-vendor-registration-form label{
+  font-family:'regular',sans-serif;
+  color:#45413c;
+  font-size:12px;
+  font-weight:600;
+  line-height:1.4;
+}
+
+.mm-vendor-registration-form input,
+.mm-vendor-registration-form textarea,
+.mm-vendor-registration-form [role="combobox"],
+.mm-vendor-registration-form button[role="combobox"]{
+  font-family:'regular',sans-serif;
+  border-color:#d8d4cc;
+  background:#fff;
+  border-radius:20px;
+  min-height:42px;
+}
+
+.mm-vendor-registration-form textarea{
+  min-height:90px;
+  padding-top:12px;
+  padding-bottom:12px;
+}
+
+.mm-vendor-registration-form input,
+.mm-vendor-registration-form [role="combobox"]{
+  padding-left:16px;
+  padding-right:16px;
+}
+
+.mm-vendor-registration-form input[type="file"]{
+  padding:8px 12px;
+}
+
+.mm-vendor-registration-form input:focus,
+.mm-vendor-registration-form textarea:focus,
+.mm-vendor-registration-form [role="combobox"]:focus,
+.mm-vendor-registration-form [role="combobox"][data-state="open"]{
+  border-color:#222;
+  box-shadow:0 0 0 2px rgba(34,34,34,.06);
+}
+
+.mm-vendor-registration-form button{
+  font-family:'regular',sans-serif;
+}
+
+.mm-vendor-registration-form .primary-button{
+  background:#222;
+  color:#fff;
+  border-radius:999px;
+}
+
+.mm-vendor-registration-form .primary-button:hover{
+  background:#45413c;
+}
+
+@media(max-width:639px){
+  .mm-vendor-registration{
+    padding-top:8px;
+  }
+
+  .mm-vendor-registration-form{
+    border:0!important;
+    border-radius:0;
+    box-shadow:none;
+    padding:18px 14px!important;
+  }
+
+  .mm-vendor-registration-form .mm-vendor-section{
+    margin-top:12px!important;
+    padding:18px 14px;
+    border-radius:20px;
+  }
+
+  .mm-vendor-registration-form .mm-vendor-section h2{
+    margin-bottom:16px;
+    font-size:18px;
+  }
+
+  .mm-vendor-registration-form input,
+  .mm-vendor-registration-form textarea,
+  .mm-vendor-registration-form [role="combobox"],
+  .mm-vendor-registration-form button[role="combobox"]{
+    font-size:14px;
+    border-radius:20px;
+  }
+}
