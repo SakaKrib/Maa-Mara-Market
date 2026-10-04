@@ -8,7 +8,7 @@ import {
   Grid,
   useTheme,
 } from "@mui/material";
-import api from "../../../../Services/Api";
+import api, { getWebSocketUrl } from "../../../../Services/Api";
 import { tokens } from "../../../../theme";
 import { useLocation, useNavigate } from "react-router-dom";
 import MpesaLogo from "../../../../assets/partnaship/mpesaLogo.png";
@@ -36,13 +36,11 @@ export default function MpesaB2CMultiPayment({ onSuccess }) {
 
     if (!vendorPayouts || vendorPayouts.length === 0) return;
 
-    const wsScheme = window.location.protocol === "https:" ? "wss" : "ws";
-
     const sockets = vendorPayouts.map((p) => {
       if (!p.reference) return null;
 
       const socket = new WebSocket(
-        `${wsScheme}://127.0.0.1:8000/ws/payout/${p.reference}/`
+        getWebSocketUrl(`/ws/payout/${p.reference}/`)
       );
 
       socket.onopen = () => {
@@ -55,11 +53,11 @@ export default function MpesaB2CMultiPayment({ onSuccess }) {
           console.log("💸 Payout WebSocket:", data);
 
           if (data.status === "success" || data.status === "completed") {
-            navigate(`/payout-success`, { state: { payout: data } });
+            navigate("/admin-dashboard/vendor-payout/payment-trigger", { state: { payout: data } });
           }
 
           if (data.status === "failed") {
-            navigate(`/payout-failed`, { state: { payout: data } });
+            navigate("/admin-dashboard/vendor-payout/payment-trigger", { state: { payout: data } });
           }
         } catch (err) {
           console.error("❌ WebSocket parse error:", err);
