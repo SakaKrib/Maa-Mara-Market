@@ -101,13 +101,18 @@ class CheckoutPaymentConsumer(AsyncWebsocketConsumer):
 
     @database_sync_to_async
     def get_checkout(self):
-        from .checkout_sessions import session_owner_matches
         from .models import CheckoutSession
 
         session = CheckoutSession.objects.filter(pk=self.checkout_id).first()
-        if not session or not session_owner_matches(session, self.scope):
+        if not session:
             return None
-        return session
+        user = self.scope.get("user")
+        if user and user.is_authenticated:
+            return session if session.user_id == user.id and session.visitor_id is None else None
+        visitor_id = self.scope.get("visitor_id")
+        if visitor_id and session.user_id is None and session.visitor_id == visitor_id:
+            return session
+        return None
 
     async def payment_status_update(self, event):
         await self.send_payment_status(
