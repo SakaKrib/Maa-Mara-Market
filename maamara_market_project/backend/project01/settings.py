@@ -191,7 +191,7 @@ SOCIALACCOUNT_PROVIDERS = {
         "FETCH_USERINFO": True,
     }
 }
-SOCIALACCOUNT_STORE_TOKENS = True
+SOCIALACCOUNT_STORE_TOKENS = False
 
 # =========================================================
 # REST FRAMEWORK + JWT
