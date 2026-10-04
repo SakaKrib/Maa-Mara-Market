@@ -7,8 +7,9 @@ import api, { getWebSocketUrl, resolveApiAssetUrl } from "../../Services/Api";
 const timeLabel = (value) => value ? new Date(value).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : "";
 
 export default function Messaging() {
-  const { user } = useAuth();
+  const { user, isVisitor } = useAuth();
   const isAdmin = Boolean(user?.is_admin || user?.role === "admin" || user?.is_staff);
+  const isGuest = !user && Boolean(isVisitor);
   const [contacts, setContacts] = useState({ admins: [], users: [], vendors: [] });
   const [conversations, setConversations] = useState([]);
   const [selected, setSelected] = useState(null);
@@ -140,7 +141,8 @@ export default function Messaging() {
   const startConversation = async (contact) => {
     try {
       setError("");
-      const response = await api.post("/api/messaging/conversations/", { participant_id: contact.id });
+      const payload = isAdmin ? { participant_id: contact.id } : {};
+      const response = await api.post("/api/messaging/conversations/", payload);
       await loadConversations();
       setSelected(response.data);
       setMobileThread(true);
@@ -247,7 +249,7 @@ export default function Messaging() {
               </header>
               <div className="flex-1 overflow-y-auto bg-[#f8f8f6] p-3 sm:p-5">
                 {messages.map((message) => {
-                  const mine = message.sender_id === user?.id;
+                  const mine = user ? message.sender_id === user.id : isGuest && message.sender_id === null;
                   return <div key={message.id} className={"mb-3 flex " + (mine ? "justify-end" : "justify-start")}><div className={"max-w-[82%] rounded-2xl px-3 py-2 " + (mine ? "rounded-br-md bg-[#2563eb] text-[#2563eb]-foreground" : "rounded-bl-md bg-[#f8f8f6] text-[#222]")}>{message.image && <img src={resolveApiAssetUrl(message.image)} alt="Attachment" className="mb-2 max-h-72 max-w-full rounded-xl object-contain" />}{message.body && <p className="whitespace-pre-wrap break-words text-sm">{message.body}</p>}<p className="mt-1 text-[9px] opacity-70">{timeLabel(message.created_at)}</p></div></div>;
                 })}
                 <div ref={endRef} />
