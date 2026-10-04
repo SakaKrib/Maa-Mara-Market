@@ -19,14 +19,15 @@
   margin:0 auto;
   background:#fff;
   border-color:#e6e3de!important;
-  border-radius:16px;
+  border-radius:20px;
+  padding:8px;
   box-shadow:0 10px 30px rgba(34,34,34,.05);
 }
 
 .mm-vendor-registration-form .mm-vendor-section{
   width:100%;
   margin-top:0.75rem!important;
-  padding:24px;
+  padding:20px;
   border:1px solid #d8d4cc;
   border-radius:20px;
   background:#fff;
@@ -143,6 +144,51 @@
   .mm-vendor-registration-form [role="combobox"],
   .mm-vendor-registration-form button[role="combobox"]{
     font-size:14px;
+    border-radius:20px;
+  }
+}
+
+
+.mm-vendor-registration-form .mm-vendor-sample-method,
+.mm-vendor-registration-form .mm-vendor-sample-builder{
+  margin-top:16px;
+  padding:20px;
+  border:1px solid #d8d4cc;
+  border-radius:20px;
+  background:#fff;
+  box-sizing:border-box;
+}
+
+.mm-vendor-registration-form .mm-vendor-sample-method{
+  margin-top:0;
+}
+
+.mm-vendor-registration-form .mm-vendor-sample-method > div{
+  margin-top:10px;
+}
+
+.mm-vendor-registration-form .mm-vendor-sample-builder-title{
+  margin:0;
+  padding:0 0 12px;
+  border-bottom:1px solid #eee9e2;
+  font-size:18px;
+  line-height:1.35;
+  font-weight:700;
+  color:#222;
+}
+
+@media(max-width:639px){
+  .mm-vendor-registration-form{
+    padding:8px!important;
+  }
+
+  .mm-vendor-registration-form .mm-vendor-section{
+    padding:20px;
+  }
+
+  .mm-vendor-registration-form .mm-vendor-sample-method,
+  .mm-vendor-registration-form .mm-vendor-sample-builder{
+    padding:20px;
     border-radius:20px;
   }
 }
