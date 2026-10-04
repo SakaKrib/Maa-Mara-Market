@@ -1,3 +1,4 @@
+import React from "react";
 import VendorReport from "../../cmponents/VendorPayoutReport/payout";
 
 const PaymentReport = () => {
