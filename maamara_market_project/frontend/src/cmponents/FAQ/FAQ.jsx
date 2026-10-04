@@ -1,3 +1,4 @@
+import React from "react";
 import { useEffect, useMemo, useState } from "react";
 import { sanitizeRichText } from "../../utils/sanitizeRichText";
 import RichTextEditor from "../RichTextEditor/RichTextEdit";
