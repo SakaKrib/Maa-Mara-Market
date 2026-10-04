@@ -944,8 +944,8 @@ const onSubmit = async (data) => {
   
 
   return (
-  <div className="mm-vendor-registration w-full h-full overflow-y-hidden pt-20">
-<div className="py-10 flex justify-center px-4 md:px-8 lg:px-16 xl:px-32 2xl:px-64 relative">
+  <div className="mm-vendor-registration w-full h-full overflow-y-hidden">
+<div className="flex justify-center px-4 md:px-8 lg:px-16 xl:px-32 2xl:px-64 relative">
     <Form {...form}>
     <form
       onSubmit={(e) => {
@@ -955,8 +955,9 @@ const onSubmit = async (data) => {
       }}
       className="mm-vendor-registration-form space-y-6 w-100% relative lg:border md:border lg:p-10 w-full"
     >
+        <section className="mm-vendor-section">
         {/* Personal Info */}
-        <h2 className="text-xl font-semibold mt-6 text-center">Personal Information</h2>
+        <h2 className="text-xl font-semibold text-center">Personal Information</h2>
 
         {[
   "surname_name","middle_name","first_name","phone_number","email","id_number"
@@ -1032,8 +1033,11 @@ const onSubmit = async (data) => {
         </FormItem>
       )} />
 
+         </section>
+
        {/* Product Type */}
-       <h2 className="text-xl font-semibold mt-6 text-center">Product Information</h2>
+       <section className="mm-vendor-section">
+       <h2 className="text-xl font-semibold text-center">Product Information</h2>
 
        <FormField
   name="product_type"
@@ -1137,8 +1141,11 @@ const onSubmit = async (data) => {
           </FormItem>
         )} />
 
+        </section>
+
         {/* Company Info */}
-        <h2 className="text-xl font-semibold mt-6 text-center">Company Information</h2>
+        <section className="mm-vendor-section">
+        <h2 className="text-xl font-semibold text-center">Company Information</h2>
 
         <FormField name="company_name" control={form.control} render={({ field }) => (
           <FormItem>
@@ -1178,8 +1185,11 @@ const onSubmit = async (data) => {
 
         {aiError && <p className="text-sm text-error-600 dark:text-error-400" role="alert">{aiError}</p>}
 
+        </section>
+
         {/* 🏷️ Brand Info */}
-        <h2 className="text-xl font-semibold mt-6 text-center">Brand Information</h2>
+        <section className="mm-vendor-section">
+        <h2 className="text-xl font-semibold text-center">Brand Information</h2>
 
         <FormField name="brand_name" control={form.control} render={({ field }) => (
           <FormItem>
@@ -1219,9 +1229,12 @@ const onSubmit = async (data) => {
         )} /> */}
 
 
+        </section>
+
         {/* Payment Info */}
         {/* Payment Method Select */}
-    <h2 className="text-xl font-semibold mt-6 text-center">Payment Information</h2>
+        <section className="mm-vendor-section">
+    <h2 className="text-xl font-semibold text-center">Payment Information</h2>
 
 <FormField name="payment_method" control={form.control} render={({ field }) => (
   <FormItem>
@@ -1446,8 +1459,11 @@ const onSubmit = async (data) => {
 )}
 
 
+        </section>
+
         {/* Optional */}
-        <h2 className="text-xl font-semibold mt-6 text-center">Other Information</h2>
+        <section className="mm-vendor-section">
+        <h2 className="text-xl font-semibold text-center">Other Information</h2>
 
         <FormField name="tax_number" control={form.control} render={({ field }) => (
           <FormItem>
@@ -1476,8 +1492,11 @@ const onSubmit = async (data) => {
           </FormItem>
         )} />
 
+        </section>
+
         {/* PDF or Item List Toggle */}
-        <h2 className="text-xl font-semibold mt-6 text-center">Create Item List</h2>
+        <section className="mm-vendor-section">
+        <h2 className="text-xl font-semibold text-center">Create Item List</h2>
 
         <div className="space-y-2">
           <FormLabel>Submit Items As</FormLabel>
@@ -1594,6 +1613,7 @@ const onSubmit = async (data) => {
         )}
           </>
         )}
+        </section>
 
       <div className="w-full flex justify-center">
         <Button
