@@ -73,7 +73,13 @@ const LoginForm = () => {
 
       navigate("auth-success")
     } catch (err) {
-      setError("Something went wrong");
+      if (err.response?.status === 401) {
+        setError("Invalid username or password. Please check your credentials and try again.");
+      } else if (err.response?.status === 403) {
+        setError("You are not authorized to log in with these credentials.");
+      } else {
+        setError("Something went wrong. Please try again later.");
+      }
     } finally {
       setLoading(false);
     }
