@@ -6,28 +6,27 @@ const BannerMedia = ({ banner, bannerImage }) => {
   const [imageLoaded, setImageLoaded] = React.useState(false);
   const [imageFailed, setImageFailed] = React.useState(false);
 
-  if (!bannerImage || imageFailed) {
-    return (
-      <div
-        className="m-2 aspect-[16/9] animate-pulse rounded-xl bg-gray-200"
-        aria-label="Banner image unavailable"
-      />
-    );
-  }
-
   return (
     <div className="relative m-2 aspect-[16/9] overflow-hidden rounded-xl bg-gray-200">
-      {!imageLoaded && (
-        <div className="absolute inset-0 animate-pulse bg-gray-200" aria-hidden="true" />
+      {(!bannerImage || !imageLoaded || imageFailed) && (
+        <div
+          className="absolute inset-0 animate-pulse bg-gray-200"
+          aria-label={imageFailed ? "Banner image unavailable" : "Loading banner image"}
+        />
       )}
-      <img
-        src={bannerImage}
-        alt={banner.title || "Marketplace banner"}
-        loading="lazy"
-        className={`relative z-[1] h-full w-full object-cover transition-opacity duration-200 ${imageLoaded ? "opacity-100" : "opacity-0"}`}
-        onLoad={() => setImageLoaded(true)}
-        onError={() => setImageFailed(true)}
-      />
+      {bannerImage && !imageFailed && (
+        <img
+          src={bannerImage}
+          alt={banner.title || "Marketplace banner"}
+          loading="lazy"
+          className={`relative z-[1] h-full w-full object-cover transition-opacity duration-200 ${imageLoaded ? "opacity-100" : "opacity-0"}`}
+          onLoad={() => setImageLoaded(true)}
+          onError={() => {
+            setImageLoaded(false);
+            setImageFailed(true);
+          }}
+        />
+      )}
     </div>
   );
 };
@@ -64,30 +63,7 @@ const Banners = () => {
                   key={banner.id}
                   className="overflow-hidden rounded-2xl border border-border bg-background mm-mobile-banner-card"
                 >
-                  {bannerImage ? (
-                    <div className="overflow-hidden rounded-xl m-2">
-                      <img
-                        src={bannerImage}
-                        alt={banner.title || "Marketplace banner"}
-                        loading="lazy"
-                        className="aspect-[16/9] w-full rounded-xl object-cover"
-                      />
-                    </div>
-                  ) : (
-                    <div
-                      className="relative m-2 flex aspect-[16/9] items-center overflow-hidden rounded-xl px-5 py-4 sm:px-6"
-                      style={{ backgroundColor: banner.background_color || "#f5f4f1" }}
-                    >
-                      <div className="relative z-10 max-w-[85%]">
-                        <h3 className="text-base font-bold leading-tight text-card-foreground sm:text-lg">
-                          {banner.title || "Marketplace highlight"}
-                        </h3>
-                        <p className="mt-1 line-clamp-3 text-xs leading-5 text-muted-foreground sm:text-sm">
-                          {banner.subtitle || banner.item?.name || banner.product_name || "Discover this marketplace highlight."}
-                        </p>
-                      </div>
-                    </div>
-                  )}
+                  <BannerMedia banner={banner} bannerImage={bannerImage} />
 
                   {bannerImage && (
                     <div className="px-4 pb-4 pt-2">
