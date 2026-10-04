@@ -13,7 +13,7 @@ from .orderStat import (
     vendor_pending_order_items,
     vendor_pending_orders,
 )
-from .paypalApis import checkout_view, checkout_status, get_customers
+from .paypalApis import get_customers
 from .returns import (
     approve_return_request_api,
     get_pending_returns_api,
@@ -65,8 +65,6 @@ urlpatterns = [
     path('api/shipping-rates', get_shipping_rates, name='shipping-rates'),
 
     # create order api
-    path("api/checkout/", checkout_view, name="checkout"),
-    path("api/checkout/<uuid:checkout_id>/status/", checkout_status, name="checkout-status"),
     path("api/customers/", get_customers, name="api-customers"),
 
     # invoices
