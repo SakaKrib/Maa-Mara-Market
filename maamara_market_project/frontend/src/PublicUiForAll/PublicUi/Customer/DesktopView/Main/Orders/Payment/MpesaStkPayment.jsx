@@ -57,6 +57,12 @@ export default function MpesaSTKPayment() {
             },
           });
         }
+        if (data.type === "payment_status" && ["FAILED", "EXPIRED"].includes(String(data.status).toUpperCase())) {
+          closeSocket();
+          setLoading(false);
+          setMessage("The M-Pesa payment was not completed. Please try again.");
+          showSnackbar("M-Pesa payment was not completed.", "error");
+        }
       } catch {
         // Ignore malformed realtime messages.
       }
