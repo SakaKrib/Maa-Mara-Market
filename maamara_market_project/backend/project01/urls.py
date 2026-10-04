@@ -38,5 +38,7 @@ urlpatterns = [
 ]
 
 
-if settings.DEBUG:
-    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+# The Docker backend runs Django's development server directly, including when
+# DEBUG is disabled by the compose environment. Uploaded media therefore needs
+# an explicit route so browser asset URLs remain reachable.
+urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
