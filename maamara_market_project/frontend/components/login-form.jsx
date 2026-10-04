@@ -100,7 +100,6 @@ export function LoginForm({ className, ...props }) {
 
       if (!response.ok) {
         const errorText = await response.text()
-        console.error(`Login request failed with status ${response.status}:`, errorText)
 
         let serverMessage = ""
         try {
@@ -142,7 +141,6 @@ export function LoginForm({ className, ...props }) {
           // Synchronize AuthContext with the server before navigating.
           await refreshAuth()
 
-          console.log("Redirecting to:", from)
           navigate(from, { replace: true })
         } else {
           const msg = data.error || "Login failed. Please try again."
@@ -157,7 +155,6 @@ export function LoginForm({ className, ...props }) {
         setSnackbar({ open: true, message: msg })
       }
     } catch (err) {
-      console.error("Fetch error:", err)
       const msg = "Something went wrong. Please try again later."
       setError(msg)
       setSnackbar({ open: true, message: msg })
