@@ -104,7 +104,7 @@ const Header = () => {
             <Menu size={21} strokeWidth={1.8} aria-hidden="true" />
           </button>
 
-          <div className="w-full flex flex-row gap-4 items-center">
+          <div className="flex-1 min-w-0 flex flex-row gap-4 items-center">
             <img src={Maamara} alt="maamara-logo" className="w-[50px] h-[50px] rounded-full ring p-1 ring-green-500 xxs:-mt-20 xxs:relative xxs:-top-10 lg:mt-0 lg:top-0 z-[10] mobile-hide" />
             <div>
               <div className="logo xxs:-mt-20 xxs:relative xxs:-top-10 lg:mt-0 lg:top-0">
@@ -115,7 +115,7 @@ const Header = () => {
             <div className="mm-header-actions items-center mobile-hide" aria-label="Account, wishlist and cart"><NavIcons /></div>
           </div>
 
-          <div className="flex flex-row w-full relative gap-3 items-center justify-end desktop-hide">
+          <div className="flex flex-row w-auto relative gap-3 items-center justify-end desktop-hide">
             <label className="mm-mobile-currency" aria-label="Select currency">
               <span aria-hidden="true">{currencies[currency]?.flag}</span>
               <select value={currency} onChange={e => setCurrency(e.target.value)} className="bg-transparent border-0 outline-none cursor-pointer" aria-label="Currency">
