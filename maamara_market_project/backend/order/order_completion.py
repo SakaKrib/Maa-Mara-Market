@@ -1,10 +1,54 @@
 from decimal import Decimal
+import logging
 
 from django.db import transaction
+from channels.layers import get_channel_layer
+from asgiref.sync import async_to_sync
 
 from vendorDashboard.models import SoldItem
 
 from .invoice_services import create_customer_invoice
+
+
+logger = logging.getLogger(__name__)
+
+
+def _broadcast_payment_success(order):
+    from .models import CheckoutSession
+    checkout_session = CheckoutSession.objects.filter(order_id=order.id).first()
+    if not checkout_session:
+        return
+    channel_layer = get_channel_layer()
+    if not channel_layer:
+        return
+
+    def send():
+        try:
+            async_to_sync(channel_layer.group_send)(
+                f"checkout_payment_{checkout_session.id}",
+                {
+                    "type": "payment_status_update",
+                    "status": "PAID",
+                    "checkout_id": str(checkout_session.id),
+                    "order_id": order.id,
+                    "payment_method": getattr(order.payment, "payment_method", None),
+                    "amount": str(order.payment.amount),
+                },
+            )
+            async_to_sync(channel_layer.group_send)(
+                f"order_{order.id}",
+                {
+                    "type": "payment_status",
+                    "status": "PAID",
+                    "order_id": order.id,
+                    "payment_method": getattr(order.payment, "payment_method", None),
+                    "amount": str(order.payment.amount),
+                },
+            )
+        except Exception:
+            logger.exception("Payment WebSocket broadcast failed for order %s.", order.id)
+
+    transaction.on_commit(send)
 
 
 def _deduct_stock(order_item):
@@ -95,8 +139,8 @@ def complete_paid_order(order, payment, *, transaction_id=None):
             locked_order.status = "PAID"
             locked_order.save(update_fields=["status"])
 
-        if locked_payment.status != "completed":
-            locked_payment.status = "completed"
+        if locked_payment.status != "PAID":
+            locked_payment.status = "PAID"
             if transaction_id:
                 locked_payment.transaction_id = transaction_id
             fields = ["status"]
@@ -171,6 +215,8 @@ def complete_paid_order(order, payment, *, transaction_id=None):
         locked_order,
         locked_payment,
     )
+
+    _broadcast_payment_success(locked_order)
 
     # Email notifications are post-commit side effects. They must never cause
     # a successful payment/order transaction to roll back, and they should be
