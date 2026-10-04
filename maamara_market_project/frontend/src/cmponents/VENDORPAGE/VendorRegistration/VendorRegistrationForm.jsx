@@ -1579,24 +1579,31 @@ const onSubmit = async (data) => {
                           </p>
                         </div>
 
-                        {imageSrc && (
-                          <div className="order-1 flex w-full shrink-0 flex-col items-center md:order-2 md:w-36">
-                            <p className="w-full truncate text-center text-sm text-[#45413c]" title={item.image instanceof File ? item.image.name : item.image}>
-                              <strong>Image:</strong>{" "}
-                              {item.image instanceof File
-                                ? item.image.name
-                                : item.image?.split("/").pop()}
-                            </p>
-                            <img
-                              src={imageSrc}
-                              alt={item.name || "Item image"}
-                              className="mt-2 block h-32 w-32 shrink-0 rounded-[16px] border border-[#d8d4cc] bg-[#f5f4f1] object-cover shadow-sm"
-                              onError={(event) => {
-                                event.currentTarget.style.opacity = "0";
-                              }}
-                            />
+                        <div className="order-1 flex w-full shrink-0 flex-col items-center md:order-2 md:w-36">
+                          <p className="w-full truncate text-center text-sm text-[#45413c]" title={item.image instanceof File ? item.image.name : item.image}>
+                            <strong>Image:</strong>{" "}
+                            {item.image instanceof File
+                              ? item.image.name
+                              : item.image?.split("/").pop() || "Saved image"}
+                          </p>
+                          <div className="relative mt-2 h-32 w-32 shrink-0 overflow-hidden rounded-[16px] border border-[#d8d4cc] bg-[#f5f4f1] shadow-sm">
+                            <div className="absolute inset-0 animate-pulse bg-gray-200" aria-label="Loading item image" />
+                            {imageSrc && (
+                              <img
+                                src={imageSrc}
+                                alt={item.name || "Item image"}
+                                className="relative z-[1] block h-full w-full object-cover"
+                                onLoad={(event) => {
+                                  const skeleton = event.currentTarget.previousElementSibling;
+                                  if (skeleton) skeleton.style.display = "none";
+                                }}
+                                onError={(event) => {
+                                  event.currentTarget.style.display = "none";
+                                }}
+                              />
+                            )}
                           </div>
-                        )}
+                        </div>
                       </div>
 
                       <div className="w-full shrink-0 md:w-auto">
