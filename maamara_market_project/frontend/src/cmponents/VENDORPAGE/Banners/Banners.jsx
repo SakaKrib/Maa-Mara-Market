@@ -16,7 +16,7 @@ const BANNER_COLORS = [
 const BannerAdd = ({ items = [], onSave = () => {} }) => {
   const [title, setTitle] = useState("");
   const [subtitle, setSubtitle] = useState("");
-  const [backgroundColor, setBackgroundColor] = useState(BANNER_COLORS[0].value);
+  const [backgroundColor, setBackgroundColor] = useState("");
   const [image, setImage] = useState(null);
 
   const [ctaType, setCtaType] = useState("item");
@@ -91,7 +91,7 @@ const BannerAdd = ({ items = [], onSave = () => {} }) => {
 
         setTitle("");
         setSubtitle("");
-        setBackgroundColor(BANNER_COLORS[0].value);
+        setBackgroundColor("");
         setImage(null);
         setCtaType("item");
         setCtaItem(items.length > 0 ? String(items[0].id) : "");
@@ -152,6 +152,19 @@ const BannerAdd = ({ items = [], onSave = () => {} }) => {
           </p>
 
           <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+            <button
+              type="button"
+              onClick={() => setBackgroundColor("")}
+              aria-pressed={!backgroundColor}
+              className={`flex items-center gap-2 rounded-[20px] border px-3 py-2.5 text-left text-xs font-semibold transition ${
+                !backgroundColor
+                  ? "border-gray-900 ring-2 ring-gray-200"
+                  : "border-gray-300 hover:border-gray-400"
+              }`}
+            >
+              <span className="h-7 w-7 shrink-0 rounded-full border border-dashed border-gray-400 bg-white" />
+              <span className="truncate text-card-foreground">No background</span>
+            </button>
             {BANNER_COLORS.map((color) => {
               const selected = backgroundColor === color.value;
               return (
