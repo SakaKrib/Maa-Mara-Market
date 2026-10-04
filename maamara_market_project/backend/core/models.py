@@ -360,8 +360,11 @@ class Conversation(models.Model):
     participant = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
+        null=True,
+        blank=True,
         related_name="message_conversations",
     )
+    visitor_id = models.CharField(max_length=64, null=True, blank=True, db_index=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -370,12 +373,17 @@ class Conversation(models.Model):
             models.UniqueConstraint(
                 fields=["admin", "participant"],
                 name="unique_admin_participant_conversation",
-            )
+            ),
+            models.UniqueConstraint(
+                fields=["admin", "visitor_id"],
+                name="unique_admin_visitor_conversation",
+            ),
         ]
         ordering = ["-updated_at"]
 
     def __str__(self):
-        return f"Conversation {self.admin_id} ↔ {self.participant_id}"
+        identity = self.participant_id if self.participant_id else self.visitor_id
+        return f"Conversation {self.admin_id} ↔ {identity}"
 
 
 class DirectMessage(models.Model):
@@ -387,8 +395,11 @@ class DirectMessage(models.Model):
     sender = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
+        null=True,
+        blank=True,
         related_name="sent_direct_messages",
     )
+    sender_visitor_id = models.CharField(max_length=64, null=True, blank=True, db_index=True)
     body = models.TextField(blank=True)
     image = models.ImageField(
         upload_to="messages/%Y/%m/",
