@@ -7,7 +7,15 @@ const MessagingLauncher = () => {
   const [open, setOpen] = useState(false);
 
   if (open) {
-    return <Messaging floating onClose={() => setOpen(false)} />;
+    return (
+      <>
+        <div
+          className="fixed inset-0 z-40 bg-black/10 backdrop-blur-[2px]"
+          aria-hidden="true"
+        />
+        <Messaging floating onClose={() => setOpen(false)} />
+      </>
+    );
   }
 
   return (
