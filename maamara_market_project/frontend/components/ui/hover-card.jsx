@@ -2,7 +2,7 @@
 import * as React from "react"
 import * as HoverCardPrimitive from "@radix-ui/react-hover-card"
 import { useTheme } from "@mui/material"
-import { tokens } from "@/theme"   // ✅ import your tokens
+import { tokens } from "../../src/theme"
 import { cn } from "../../lib/utils"
 
 const HoverCard = HoverCardPrimitive.Root
