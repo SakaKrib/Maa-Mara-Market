@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Box, CircularProgress, Typography, useTheme } from "@mui/material";
-import { baseUrl } from "../../../cmponents/Constant/Constant";
+import api from "../../../Services/Api";
 import { tokens } from "../../../theme";
 
 export default function AuthSuccess() {
@@ -12,11 +12,9 @@ export default function AuthSuccess() {
   useEffect(() => {
     const checkAuth = async () => {
       try {
-        const res = await fetch(`${baseUrl}/api/check-auth/`, {
-          credentials: "include"
-        });
+        const res = await api.get("/api/check-auth/");
 
-        const data = await res.json();
+        const data = res.data;
 
         if (!data?.isAuthenticated) {
           navigate("/login");
