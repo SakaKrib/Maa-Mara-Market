@@ -116,7 +116,6 @@ export function LoginForm({ className, ...props }) {
 
       setError(msg)
       setSnackbar({ open: true, message: msg })
-    }
     } finally {
       setLoading(false)
     }
