@@ -1,7 +1,5 @@
 import base64
 import logging
-import uuid
-from datetime import datetime
 from decimal import Decimal
 
 import requests
@@ -292,7 +290,7 @@ def mpesa_stk_callback(request):
     )
 
     payment = order.payment
-    payment.payment_gateway = "PESAPAL" if payment.payment_gateway not in {"PESAPAL", "PAYPAL"} else payment.payment_gateway
+    payment.payment_gateway = "MPESA"
     payment.payment_method = "MPESA"
     payment.status = "PAID"
     payment.order_tracking_id = checkout_request_id
