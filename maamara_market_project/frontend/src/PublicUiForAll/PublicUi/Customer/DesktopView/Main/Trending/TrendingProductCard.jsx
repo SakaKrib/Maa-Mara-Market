@@ -10,7 +10,9 @@ const TrendingProductCard = ({ item, isWishlisted: controlledWishlist, onToggleW
   const navigate = useNavigate();
   const { wishlist, addToWishlist, removeFromWishlist } = useWishlistContext();
 
-  const image = resolveApiAssetUrl(item.image);
+  const image = resolveApiAssetUrl(
+    item.image?.url || item.image || item.image_url || item.imageUrl
+  );
 
   // The customer serializer already exposes the nested Offer. Use its
   // configured dates to distinguish an active offer from an ordinary discount.
@@ -85,7 +87,10 @@ const TrendingProductCard = ({ item, isWishlisted: controlledWishlist, onToggleW
       <div className="mm-product-media relative cursor-pointer" onClick={openProduct}>
         <div className="relative aspect-square w-full overflow-hidden bg-gray-100">
           {(!image || !imageLoaded || imageFailed) && (
-            <div className="absolute inset-0 animate-pulse bg-gray-200" aria-hidden="true" />
+            <div
+              className="absolute inset-0 animate-pulse bg-gray-200"
+              aria-label={imageFailed ? "Product image unavailable" : "Loading product image"}
+            />
           )}
           {image && !imageFailed && (
             <img
@@ -94,7 +99,10 @@ const TrendingProductCard = ({ item, isWishlisted: controlledWishlist, onToggleW
               className={`relative z-[1] h-full w-full object-cover transition-opacity duration-200 ${imageLoaded ? "opacity-100" : "opacity-0"}`}
               loading="lazy"
               onLoad={() => setImageLoaded(true)}
-              onError={() => setImageFailed(true)}
+              onError={() => {
+                setImageLoaded(false);
+                setImageFailed(true);
+              }}
             />
           )}
         </div>
