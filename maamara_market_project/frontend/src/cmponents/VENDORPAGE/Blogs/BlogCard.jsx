@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
 import { sanitizeRichText } from "../../../utils/sanitizeRichText";
+import { resolveApiAssetUrl } from "../../../Services/Api";
 
 dayjs.extend(relativeTime);
 
@@ -35,7 +36,7 @@ export default function BlogCard({ post }) {
         <div className="flex gap-4 items-center mb-4 p-2 border-b">
           {vendor.profile_picture && (
             <img
-              src={vendor.profile_picture}
+              src={resolveApiAssetUrl(vendor.profile_picture)}
               alt={vendor.company_name || "Vendor"}
               style={{
                 width: "50px",
@@ -66,7 +67,7 @@ export default function BlogCard({ post }) {
               className="cursor-pointer hover:opacity-90 transition"
             >
               <img
-                src={post.image}
+                src={resolveApiAssetUrl(post.image)}
                 alt={post.title || "blog image"}
                 className="w-full max-w-[200px] max-h-[200px] object-cover rounded-md"
               />
@@ -93,7 +94,7 @@ export default function BlogCard({ post }) {
           {post.video && (
             <video
               controls
-              src={post.video}
+              src={resolveApiAssetUrl(post.video)}
               className="w-full rounded-md mt-2"
             />
           )}
