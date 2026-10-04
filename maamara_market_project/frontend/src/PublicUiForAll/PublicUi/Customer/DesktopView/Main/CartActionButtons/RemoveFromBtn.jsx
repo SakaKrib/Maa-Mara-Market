@@ -82,9 +82,9 @@ const RemoveFromCartButton = ({ itemId, cartItemId, variantId, sizeId, ageVarian
         <><DeleteOutlineIcon fontSize="small" /><span className="hidden sm:inline">{loading ? "Removing..." : "Remove"}</span></>
       </Button>
 
-      {toast.open && (
+      {snackbar.open && (
         <div className="fixed right-4 top-20 z-[1400] max-w-sm rounded-[20px] border border-gray-300 bg-card px-4 py-3 text-sm font-semibold text-card-foreground shadow-lg">
-          {toast.message}
+          {snackbar.message}
           <button type="button" onClick={handleClose} className="ml-3 text-xs text-muted-foreground hover:text-card-foreground" aria-label="Dismiss notification">×</button>
         </div>
       )}
