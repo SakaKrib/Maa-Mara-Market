@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useMemo, useState, useEffect } from "react";
 import { useLocation } from "react-router-dom";
 import {
   Box,
@@ -21,15 +21,22 @@ export default function PaypalBulkPayment({ onSuccess }) {
 
   const location = useLocation(); // <-- Add this
 
-  const singlePayout = location.state?.reference
-    ? {
-        vendor: location.state?.vendor || {},
-        amount: location.state?.amount || 0,
-        reference: location.state.reference,
-      }
-    : null;
+  const singlePayout = useMemo(
+    () =>
+      location.state?.reference
+        ? {
+            vendor: location.state?.vendor || {},
+            amount: location.state?.amount || 0,
+            reference: location.state.reference,
+          }
+        : null,
+    [location.state?.reference, location.state?.vendor, location.state?.amount]
+  );
 
-  const vendorPayouts = location.state?.payments || (singlePayout ? [singlePayout] : []);
+  const vendorPayouts = useMemo(
+    () => location.state?.payments || (singlePayout ? [singlePayout] : []),
+    [location.state?.payments, singlePayout]
+  );
 
   const [payments, setPayments] = useState(() => {
     if (vendorPayouts.length > 0) {
