@@ -10,7 +10,7 @@ export default function usePopularBlogs() {
     setLoading(true);
     try {
       const res = await api.get("/api/blogs/popular/");
-      setBlogs(res.data);
+      setBlogs(Array.isArray(res.data) ? res.data : Array.isArray(res.data?.results) ? res.data.results : []);
     } catch (err) {
       console.error(err);
       setError(err);
