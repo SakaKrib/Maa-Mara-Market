@@ -338,7 +338,7 @@ def mpesa_stk_callback(request):
             ),
             "raw_data": request.data,
             "phone_number": str(phone) if phone else None,
-            "visitor_id": locked_order.visitor_id,
+            "visitor_id": None,
         },
     )
 
