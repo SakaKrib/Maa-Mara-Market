@@ -2,7 +2,7 @@ import React from "react";
 import MobileBottomSheet from "./MobileBottomSheet";
 import { useCartContext } from "../../../Customer/DesktopView/Main/CartHook/cart";
 import { useNavigate } from "react-router-dom";
-import { baseUrl } from "../../../../../cmponents/Constant/Constant";
+import { resolveApiAssetUrl } from "../../../../../Services/Api";
 
 const MobileCartModal = ({ open, onClose }) => {
   const { order } = useCartContext();
@@ -16,7 +16,7 @@ const MobileCartModal = ({ open, onClose }) => {
     onClose?.();
   };
 
-  const getImage = (image) => image?.startsWith("http") ? image : `${baseUrl}${image || ""}`;
+  const getImage = (image) => resolveApiAssetUrl(image);
 
   return (
     <MobileBottomSheet open={open} onClose={onClose} title="Your Cart">
