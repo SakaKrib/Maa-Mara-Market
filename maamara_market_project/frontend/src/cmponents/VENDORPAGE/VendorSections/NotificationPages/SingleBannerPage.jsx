@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from "react";
 import api from "../../../../Services/Api";
-import { baseUrl } from "../../../Constant/Constant";
 import { useTheme, MenuItem } from "@mui/material";
 import { tokens } from "../../../../theme";
 
@@ -51,7 +50,7 @@ const VendorBannerManager = () => {
   const fetchBanners = async () => {
     setLoading(true);
     try {
-      const res = await api.get(`${baseUrl}/api/banners-list/`, {
+      const res = await api.get("/api/banners-list/", {
         withCredentials: true,
       });
 
@@ -67,7 +66,7 @@ const VendorBannerManager = () => {
 
   const fetchItems = async () => {
     try {
-      const res = await api.get(`${baseUrl}/api/items/`, {
+      const res = await api.get("/api/items/", {
         withCredentials: true,
       });
 
@@ -143,7 +142,7 @@ const VendorBannerManager = () => {
       }
 
       await api.patch(
-        `${baseUrl}/api/vendor/banners/${selectedBanner.id}/`,
+        `/api/vendor/banners/${selectedBanner.id}/`,
         formData,
         { withCredentials: true }
       );
@@ -173,7 +172,7 @@ const VendorBannerManager = () => {
   // =========================
   const handleDelete = async (id) => {
     try {
-      await api.delete(`${baseUrl}/api/vendor/banners/${id}/`, {
+      await api.delete(`/api/vendor/banners/${id}/`, {
         withCredentials: true,
       });
 
