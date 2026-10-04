@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import api from "../../../../../../Services/Api";
+import api, { resolveApiAssetUrl } from "../../../../../../Services/Api";
 import FormattedCurrency from "../Currency/FormattedCurrency";
 
 const Stars = ({ value = 0 }) => {
@@ -91,7 +91,11 @@ const TrendingProduct = ({
             : "grid grid-cols-2 gap-4 sm:grid-cols-4"
         }
       >
-        {products.map((product) => (
+        {products.map((product) => {
+          const imageUrl = resolveApiAssetUrl(
+            product.image?.url || product.image || product.image_url || product.imageUrl
+          );
+          return (
           <Link
             key={product.id}
             to={"/item/" + product.id}
@@ -102,18 +106,21 @@ const TrendingProduct = ({
             }
           >
             <div className="aspect-square overflow-hidden rounded-2xl border border-border bg-background">
-              {product.image ? (
+              {imageUrl ? (
                 <img
-                  src={product.image}
+                  src={imageUrl}
                   alt={product.name}
                   loading="lazy"
                   className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.03]"
+                  onError={(event) => {
+                    event.currentTarget.style.display = "none";
+                    event.currentTarget.nextElementSibling?.classList.remove("hidden");
+                  }}
                 />
-              ) : (
-                <div className="flex h-full w-full items-center justify-center text-xs text-muted-foreground">
-                  No image
-                </div>
-              )}
+              ) : null}
+              <div className={`flex h-full w-full items-center justify-center animate-pulse bg-muted ${imageUrl ? "hidden" : ""}`}>
+                <span className="sr-only">Product image unavailable</span>
+              </div>
             </div>
             <h3 className="mt-2 truncate text-sm font-semibold text-card-foreground">
               {product.name}
@@ -135,7 +142,8 @@ const TrendingProduct = ({
               />
             </p>
           </Link>
-        ))}
+          );
+        })}
       </div>
     </section>
   );
