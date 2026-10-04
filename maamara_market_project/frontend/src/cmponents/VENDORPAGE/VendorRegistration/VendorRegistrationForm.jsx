@@ -714,11 +714,12 @@ useEffect(() => {
     const preview = URL.createObjectURL(itemFields.image);
 
     const newItem = {
-      ...itemFields,
       name: itemFields.name.trim(),
       description: itemFields.description.trim(),
       price: parseFloat(itemFields.price),
+      image: itemFields.image,
       preview,
+      image_asset_id: null,
     };
 
     const updatedItems = [...items, newItem];
@@ -845,8 +846,9 @@ const onSubmit = async (data) => {
         }
 
         return {
-          ...item,
-          price: Number(item.price),
+          name: item.name || "",
+          description: item.description || "",
+          price: Number(item.price) || 0,
           image: imageKey,
           image_asset_id:
             item.image instanceof File
@@ -1564,60 +1566,74 @@ const onSubmit = async (data) => {
             </h4>
 
             <div className="mm-vendor-items-added-list">
-              {items.map((item, index) => (
-                <div
-                  key={index}
-                  className="
-                    w-full rounded-[20px] border border-[#d8d4cc] bg-white p-5
-                    flex flex-col md:flex-row
-                    md:justify-between
-                    gap-5
-                    shadow-[0_4px_16px_rgba(34,34,34,0.04)]
-                  "
-                >
-                  <div className="flex min-w-0 flex-1 flex-col gap-4 md:flex-row md:gap-8">
-                    <div className="min-w-0 flex-1 space-y-2">
-                      <p className="text-sm font-medium text-[#45413c]"><span className="font-semibold text-[#222]">Name:</span> {item.name}</p>
-                      <p className="text-sm font-medium text-[#45413c]"><span className="font-semibold text-[#222]">Price:</span> {item.price}</p>
-                      <p className="break-words text-sm leading-6 text-[#45413c]">
-                        <span className="font-semibold text-[#222]">Description:</span> {item.description}
-                      </p>
-                    </div>
+              {items.map((item, index) => {
+                const imageSrc =
+                  item.preview ||
+                  (typeof item.image === "string"
+                    ? resolveApiAssetUrl(item.image)
+                    : "");
 
-                    {item.image && (
-                      <div className="flex shrink-0 flex-col items-start md:items-center">
-                        <p className="text-sm">
-                          <strong>Image:</strong>{" "}
-                          {item.image instanceof File
-                            ? item.image.name
-                            : item.image.split("/").pop()}
-                        </p>
+                return (
+                  <div
+                    key={index}
+                    className="mm-vendor-item-card w-full rounded-[20px] border border-[#d8d4cc] bg-white p-5 shadow-[0_4px_16px_rgba(34,34,34,0.04)]"
+                  >
+                    <div className="flex min-w-0 flex-col gap-5 md:flex-row md:items-start md:justify-between">
+                      <div className="flex min-w-0 flex-1 flex-col gap-5 md:flex-row md:gap-8">
+                        <div className="order-2 min-w-0 flex-1 space-y-2 md:order-1">
+                          <p className="text-sm font-medium text-[#45413c]"><span className="font-semibold text-[#222]">Name:</span> {item.name}</p>
+                          <p className="text-sm font-medium text-[#45413c]"><span className="font-semibold text-[#222]">Price:</span> {item.price}</p>
+                          <p className="break-words text-sm leading-6 text-[#45413c]">
+                            <span className="font-semibold text-[#222]">Description:</span> {item.description}
+                          </p>
+                        </div>
 
-                        <img
-                          src={item.preview || resolveApiAssetUrl(item.image)}
-                          alt={item.name || "Item image"}
-                          className="mt-2 block h-32 w-32 max-w-none shrink-0 rounded-[16px] border border-[#d8d4cc] bg-[#f5f4f1] object-cover shadow-sm"
-                        />
+                        {imageSrc && (
+                          <div className="order-1 flex w-full shrink-0 flex-col items-center md:order-2 md:w-36">
+                            <p className="w-full truncate text-center text-sm text-[#45413c]" title={item.image instanceof File ? item.image.name : item.image}>
+                              <strong>Image:</strong>{" "}
+                              {item.image instanceof File
+                                ? item.image.name
+                                : item.image?.split("/").pop()}
+                            </p>
+                            <img
+                              src={imageSrc}
+                              alt={item.name || "Item image"}
+                              className="mt-2 block h-32 w-32 shrink-0 rounded-[16px] border border-[#d8d4cc] bg-[#f5f4f1] object-cover shadow-sm"
+                              onError={(event) => {
+                                event.currentTarget.style.display = "none";
+                              }}
+                            />
+                          </div>
+                        )}
                       </div>
-                    )}
-                  </div>
 
-                  <div className="flex md:justify-end xxs:justify-center">
-                    <Button
-                      variant="destructive"
-                      onClick={() => handleRemoveItem(index)}
-                      className="w-full md:w-auto rounded-full"
-                    >
-                      Remove
-                    </Button>
+                      <div className="w-full shrink-0 md:w-auto">
+                        <Button
+                          type="button"
+                          variant="destructive"
+                          onClick={() => handleRemoveItem(index)}
+                          className="w-full rounded-full md:w-auto"
+                        >
+                          Remove
+                        </Button>
+                      </div>
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
 
-            <Button variant="outline" className="light-button text-red-500" onClick={handleClearItems}>
-              🗑️ Clear All
-            </Button>
+            <div className="mm-vendor-items-added-actions">
+              <Button
+                type="button"
+                variant="outline"
+                className="light-button text-red-500"
+                onClick={handleClearItems}
+              >
+                🗑️ Clear All
+              </Button>
+            </div>
           </div>
         )}
           </>
