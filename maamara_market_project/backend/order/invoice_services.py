@@ -15,7 +15,7 @@ def create_customer_invoice(order, payment, *, transaction_record=None):
             "visitor_id": order.visitor_id,
             "order": order,
             "amount": payment.amount,
-            "currency": (payment.provider_currency or "KES").upper(),
+            "currency": (payment.currency or "KES").upper(),
             "provider": payment.payment_method,
             "provider_reference": payment.transaction_id,
             "paid_at": timezone.now(),
