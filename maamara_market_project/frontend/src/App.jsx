@@ -75,9 +75,7 @@ import CheckoutPage from "./PublicUiForAll/PublicUi/Customer/DesktopView/Main/Or
 import useMobileMenu from "./MobileInterractions";
 import SingleCategory from "./PublicUiForAll/PublicUi/Customer/DesktopView/Main/CategoryFilter";
 import ScrollTop from "./cmponents/Scroll/ScrollToTheTop";
-import CheckoutPaypalPayment from "./PublicUiForAll/PublicUi/Customer/DesktopView/Main/Orders/Payment/Paypal";
 import PesapalCallback from "./PublicUiForAll/PublicUi/Customer/DesktopView/Main/Orders/Payment/PesapalCallback";
-import MpesaC2BPayment from "./PublicUiForAll/PublicUi/Customer/DesktopView/Main/Orders/Payment/MpesaStkPayment";
 import SingleItemProfile from "./cmponents/VENDORPAGE/VendorSections/ItemSinglePage";
 import PaymentSuccess from "./PublicUiForAll/PublicUi/Customer/DesktopView/Main/Trending/SuccessPage";
 import BlogCard from "./cmponents/VENDORPAGE/Blogs/BlogCard";
@@ -229,8 +227,6 @@ function AppContent() {
                 <Route path="register" element={<RegisterPage />} />
                 <Route path="verify-otp" element={<VerifyRegistrationNewUser />} />
                 <Route path="checkout-page" element={<CheckoutPage />} />
-                <Route path="paypal-make-payment" element={<CheckoutPaypalPayment />} />
-                <Route path="mpesa-make-payment" element={<MpesaC2BPayment />} />
                 <Route path="payment-success" element={<PaymentSuccess />} />
                 <Route path="payment-pesapal-callback" element={<PesapalCallback />} />
                 <Route path="profile" element={<PublicProfile />} />
