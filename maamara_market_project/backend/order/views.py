@@ -367,7 +367,7 @@ def add_to_cart_api(request, pk):
             visitor_id=visitor_id,
             status="pending",
             quantity=requested_qty,
-            price_at_purchase=item.get_current_price(),
+            price_at_purchase=item.get_checkout_price(),
             color_variant=variant if variant else None,
             size_stock=size_stock if size_stock else None,
             age_variant=age_variant if age_variant else None,
@@ -777,7 +777,7 @@ def update_cart_quantity(request, pk):
             })
 
     # 🔹 Update price_at_purchase
-    cart_item.price_at_purchase = item.discount_price or item.get_item_final_price()
+    cart_item.price_at_purchase = item.get_checkout_price()
     cart_item.save()
 
     # Log one canonical quantity-change event. The serializer renders
