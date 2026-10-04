@@ -17,6 +17,8 @@ from order.paymentserializer import CheckoutSerializer
 from order.views import IsAuthenticatedOrVisitor
 
 from .services import PesaPalService
+from order.Payment import create_paypal_order
+from order.Base import get_usd_to_kes_rate
 
 
 @api_view(["POST"])
@@ -59,7 +61,7 @@ def checkout_view(request):
             raise ValueError("Order amount must be greater than zero.")
 
         payment_method = str(data.get("payment_method") or "").strip()
-        if payment_method not in {"Pesapal", "M-Pesa"}:
+        if payment_method not in {"Pesapal", "PayPal", "M-Pesa"}:
             raise ValueError("Unsupported payment method.")
 
         CheckoutSession.objects.filter(
@@ -104,6 +106,38 @@ def checkout_view(request):
                     },
                     "pesapal": pesapal_response,
                     "redirect_url": pesapal_response["redirect_url"],
+                },
+                status=status.HTTP_201_CREATED,
+            )
+
+        if payment_method == "PayPal":
+            usd_to_kes_rate = Decimal(str(get_usd_to_kes_rate()))
+            if usd_to_kes_rate <= 0:
+                raise ValueError("Invalid USD/KES exchange rate.")
+            provider_amount = (grand_total / usd_to_kes_rate).quantize(Decimal("0.01"))
+            if provider_amount <= 0:
+                raise ValueError("PayPal amount must be greater than zero.")
+            paypal_data = create_paypal_order(provider_amount, "USD", reference_id=str(checkout_session.id))
+            paypal_order_id = paypal_data.get("id")
+            if not paypal_order_id:
+                raise ValueError("PayPal did not return an order ID.")
+            checkout_session.paypal_order_id = paypal_order_id
+            checkout_session.payload["paypal"] = {
+                "provider_amount": str(provider_amount),
+                "provider_currency": "USD",
+            }
+            checkout_session.status = "payment_pending"
+            checkout_session.save(update_fields=["paypal_order_id", "payload", "status", "updated_at"])
+            return Response(
+                {
+                    "checkout_id": str(checkout_session.id),
+                    "payment": {
+                        "payment_method": "PayPal",
+                        "amount": str(grand_total),
+                        "provider_amount": str(provider_amount),
+                        "provider_currency": "USD",
+                    },
+                    "paypal_order_id": paypal_order_id,
                 },
                 status=status.HTTP_201_CREATED,
             )
