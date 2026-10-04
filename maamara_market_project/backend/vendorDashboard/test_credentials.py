@@ -18,7 +18,6 @@ def main():
     try:
         security_credential = generate_security_credential(initiator_password, cert_path)
         logger.info("Generated SecurityCredential:")
-        print(security_credential)
     except Exception as e:
         logger.error(f"Error generating SecurityCredential: {e}")
 
