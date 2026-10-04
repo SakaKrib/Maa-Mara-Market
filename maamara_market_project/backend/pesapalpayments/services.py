@@ -270,11 +270,17 @@ class PesaPalService:
                 ]
             )
 
-            order.status = "PAID"
-            order.save(update_fields=["status", "updated_at"])
-            record.order = order
+            from order.order_completion import complete_paid_order
+
+            locked_order, _ = complete_paid_order(
+                order,
+                payment,
+                transaction_id=data.get("confirmation_code") or order_tracking_id,
+            )
+
+            record.order = locked_order
             record.save(update_fields=["order", "updated_at"])
-            return order
+            return locked_order
 
         if status_text in {"cancelled", "failed", "invalid"}:
             record.status = "cancelled" if status_text == "cancelled" else "failed"
