@@ -6,7 +6,7 @@ import api, { getWebSocketUrl, resolveApiAssetUrl } from "../../Services/Api";
 
 const timeLabel = (value) => value ? new Date(value).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : "";
 
-export default function Messaging() {
+export default function Messaging({ floating = false, onClose = null }) {
   const { user, isVisitor } = useAuth();
   const isAdmin = Boolean(user?.is_admin || user?.role === "admin" || user?.is_staff);
   const isGuest = !user && Boolean(isVisitor);
@@ -202,7 +202,13 @@ export default function Messaging() {
 
   return (
     <div className="min-h-screen bg-[#f8f8f6] p-2 text-[#222] sm:p-4 lg:p-6">
-      <div className="mx-auto flex min-h-[calc(100vh-110px)] max-w-7xl overflow-hidden rounded-2xl border border-[#e6e6e4] bg-white shadow-sm">
+      <div
+        className={
+          floating
+            ? "flex h-full w-full overflow-hidden rounded-2xl bg-white"
+            : "mx-auto flex min-h-[calc(100vh-110px)] max-w-7xl overflow-hidden rounded-2xl border border-[#e6e6e4] bg-white shadow-sm"
+        }
+      >
         <aside className={(mobileThread ? "hidden lg:flex" : "flex") + " w-full shrink-0 flex-col border-r border-[#e6e6e4] lg:w-[340px]"}>
           <div className="border-b border-[#e6e6e4] p-4 text-center">
             <div className="flex flex-col items-center gap-3">
@@ -243,6 +249,17 @@ export default function Messaging() {
           {selected ? (
             <>
               <header className="flex items-center gap-3 border-b border-[#e6e6e4] p-3">
+                {floating && onClose && (
+                  <button
+                    type="button"
+                    onClick={onClose}
+                    className="ml-auto order-last flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-[#595959] transition hover:bg-[#f8f8f6] hover:text-[#222] focus:outline-none focus:ring-2 focus:ring-[#2563eb] focus:ring-offset-1"
+                    aria-label="Close messages"
+                    title="Close"
+                  >
+                    <IonIcon icon={closeOutline} className="text-xl" />
+                  </button>
+                )}
                 <button type="button" onClick={() => setMobileThread(false)} className="rounded-lg p-2 hover:bg-[#f8f8f6] lg:hidden"><IonIcon icon={arrowBackOutline} /></button>
                 <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#eff6ff] text-[#2563eb]"><IonIcon icon={chatbubbleEllipsesOutline} /></div>
                 <div><h2 className="text-sm font-bold text-[#222]">{nameOf(selected)}</h2><p className="text-[11px] text-[#595959]">Live conversation</p></div>
