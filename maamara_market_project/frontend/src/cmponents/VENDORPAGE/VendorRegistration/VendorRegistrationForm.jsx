@@ -1614,7 +1614,6 @@ const onSubmit = async (data) => {
             </Button>
           </div>
         )}
-            </div>
           </>
         )}
         </section>
