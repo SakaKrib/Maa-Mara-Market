@@ -10,7 +10,7 @@ import {
 import { useLocation, useNavigate } from "react-router-dom";
 import { tokens } from "../../../../theme";
 import MpesaLogo from "../../../../assets/partnaship/mpesaLogo.png";
-import api from "../../../../Services/Api";
+import api, { getWebSocketUrl } from "../../../../Services/Api";
 
 export default function MpesaB2CPayment({ onSuccess }) {
   const location = useLocation();
@@ -88,9 +88,7 @@ export default function MpesaB2CPayment({ onSuccess }) {
       if (onSuccess) onSuccess(res.data);
 
       // ✅ Connect to Django backend WebSocket
-      const wsProtocol = window.location.protocol === "https:" ? "wss" : "ws";
-      const wsHost = "127.0.0.1:8000";
-      const wsUrl = `${wsProtocol}://${wsHost}/ws/payout/${reference}/`;
+      const wsUrl = getWebSocketUrl(`/ws/payout/${reference}/`);
       console.log("Connecting to WS:", wsUrl);
 
       const ws = new WebSocket(wsUrl);
