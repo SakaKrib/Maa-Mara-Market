@@ -27,6 +27,7 @@ def index_view(request):
 
 urlpatterns = [
     path("admin/", admin.site.urls),
+    path("", include("pesapalpayments.urls")),
     path("", include("order.url")),
     path("", include("core.urls")),
     path("", include("shop.urls")),
