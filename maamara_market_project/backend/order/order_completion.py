@@ -156,10 +156,17 @@ def complete_paid_order(order, payment, *, transaction_id=None):
                 fields.append("transaction_id")
             locked_payment.save(update_fields=fields)
 
-        create_customer_invoice(
+        _, invoice_created = create_customer_invoice(
             locked_order,
             locked_payment,
         )
+        if invoice_created:
+            _broadcast_payment_success(locked_order)
+            from .services.order_email import send_paid_order_emails
+            transaction.on_commit(
+                lambda order_id=locked_order.id: send_paid_order_emails(order_id),
+                robust=True,
+            )
         return locked_order, False
 
     if locked_payment.status != "PAID":
