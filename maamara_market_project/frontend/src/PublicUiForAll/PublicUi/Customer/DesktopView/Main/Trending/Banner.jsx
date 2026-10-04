@@ -1,5 +1,36 @@
+import React from "react";
 import useBanners from "../../../../../../cmponents/Hooks/BannerHook/BannerHook";
 import { baseUrl } from "../../../../../../cmponents/Constant/Constant";
+
+const BannerMedia = ({ banner, bannerImage }) => {
+  const [imageLoaded, setImageLoaded] = React.useState(false);
+  const [imageFailed, setImageFailed] = React.useState(false);
+
+  if (!bannerImage || imageFailed) {
+    return (
+      <div
+        className="m-2 aspect-[16/9] animate-pulse rounded-xl bg-gray-200"
+        aria-label="Banner image unavailable"
+      />
+    );
+  }
+
+  return (
+    <div className="relative m-2 aspect-[16/9] overflow-hidden rounded-xl bg-gray-200">
+      {!imageLoaded && (
+        <div className="absolute inset-0 animate-pulse bg-gray-200" aria-hidden="true" />
+      )}
+      <img
+        src={bannerImage}
+        alt={banner.title || "Marketplace banner"}
+        loading="lazy"
+        className={`relative z-[1] h-full w-full object-cover transition-opacity duration-200 ${imageLoaded ? "opacity-100" : "opacity-0"}`}
+        onLoad={() => setImageLoaded(true)}
+        onError={() => setImageFailed(true)}
+      />
+    </div>
+  );
+};
 
 const Banners = () => {
   const { banners, loading, error } = useBanners();
