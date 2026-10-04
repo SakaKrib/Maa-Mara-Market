@@ -1,6 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import usePopularBlogs from "./PopularBlog";
-import { baseUrl } from "../../Constant/Constant";
+import { resolveApiAssetUrl } from "../../../Services/Api";
 
 export default function PopularBlogs({ posts }) {
   const { blogs, loading, error, refetch } = usePopularBlogs();
@@ -29,7 +29,7 @@ export default function PopularBlogs({ posts }) {
               className="cursor-pointer hover:opacity-90 transition w-full"
             >
               <img
-                src={`${baseUrl}${blog.image}`}
+                src={resolveApiAssetUrl(blog.image)}
                 alt={blog.title || "blog image"}
                 className="w-full h-[500px] object-cover rounded-md"
               />
