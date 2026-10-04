@@ -25,8 +25,32 @@ export const getWebSocketUrl = (path = "/") => {
 
 export const resolveApiAssetUrl = (value) => {
   if (!value) return null;
-  if (/^https?:\/\//i.test(value)) return value;
-  return new URL(value, `${baseURL}/`).toString();
+
+  const rawValue = String(value).trim();
+  if (!rawValue) return null;
+
+  // Local/blob/data URLs are already browser-resolvable.
+  if (/^(blob:|data:)/i.test(rawValue)) return rawValue;
+
+  try {
+    const apiOrigin = new URL(baseURL);
+    const assetUrl = new URL(rawValue, `${apiOrigin.origin}/`);
+
+    // Django can return absolute media URLs based on the request Host header.
+    // On mobile that host can be localhost or an HTTP origin, which makes the
+    // image unreachable or blocked as mixed content. Media owned by this API
+    // should always use the same API origin that served the request.
+    if (assetUrl.pathname.startsWith("/media/")) {
+      return new URL(
+        `${assetUrl.pathname}${assetUrl.search}${assetUrl.hash}`,
+        `${apiOrigin.origin}/`
+      ).toString();
+    }
+
+    return assetUrl.toString();
+  } catch {
+    return rawValue;
+  }
 };
 
 const api = axios.create({ baseURL, withCredentials: true });
