@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react"
-import { cn } from "@/lib/utils"
+import { cn } from "../lib/utils"
 import { Button } from "./ui/button"
 import { Card, CardContent } from "./ui/card"
 import { Input } from "./ui/input"
