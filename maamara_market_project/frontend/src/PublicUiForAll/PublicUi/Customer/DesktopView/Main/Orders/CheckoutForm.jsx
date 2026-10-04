@@ -226,15 +226,8 @@ const fetchShippingQuote = async () => {
       })),
     };
 
-    const res = await fetch("/api/shipping-rates", {
-      method: "POST",
-      credentials: "include",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    });
-
-    if (!res.ok) throw new Error("Failed to get shipping rates");
-    const data = await res.json();
+    const res = await api.post("/api/shipping-rates", payload);
+    const data = res.data;
     setShippingOptions(data.rates || []);
     if (data.rates?.length) {
       showSnackbar("Shipping quote fetched successfully.", "success");
