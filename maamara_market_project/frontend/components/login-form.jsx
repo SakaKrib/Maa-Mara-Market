@@ -90,68 +90,33 @@ export function LoginForm({ className, ...props }) {
         headers: { "X-CSRFToken": csrfToken }
       })
 
-      const contentType = response.headers["content-type"]
-
-      if (response.status >= 400) {
-        const errorText = JSON.stringify(response.data || {})
-
-        let serverMessage = ""
-        try {
-          const errorData = errorText ? JSON.parse(errorText) : null
-          serverMessage =
-            errorData?.error ||
-            errorData?.detail ||
-            errorData?.message ||
-            ""
-        } catch {
-          // The response was not JSON; use the status-specific message below.
-        }
-
-        let msg
-        if (response.status === 401) {
-          msg = "Invalid username or password. Please check your credentials and try again."
-        } else if (response.status === 403) {
-          msg = "You are not authorized to log in with these credentials."
-        } else if (response.status === 404) {
-          msg = "Login service was not found. Please try again later."
-        } else if (response.status >= 500) {
-          msg = "A server error occurred while logging you in. Please try again later."
-        } else {
-          msg = serverMessage || `Login failed (error ${response.status}). Please try again.`
-        }
-
+      const data = response.data
+      if (!data?.success) {
+        const msg = data?.error || data?.detail || "Login failed. Please try again."
         setError(msg)
         setSnackbar({ open: true, message: msg })
         return
       }
 
-      if (contentType && contentType.includes("application/json")) {
-        const data = await response.json()
-        if (data.success) {
-          setUsername("")
-          setPassword("")
-
-          // Django has established the authenticated HttpOnly cookies.
-          // Synchronize AuthContext with the server before navigating.
-          await refreshAuth()
-
-          navigate(from, { replace: true })
-        } else {
-          const msg = data.error || "Login failed. Please try again."
-          setError(msg)
-          setSnackbar({ open: true, message: msg })
-        }
-      } else {
-        const text = JSON.stringify(response.data || {})
-        console.error("Unexpected response format:", text)
-        const msg = "Unexpected server response. Please contact support."
-        setError(msg)
-        setSnackbar({ open: true, message: msg })
-      }
+      setUsername("")
+      setPassword("")
+      await refreshAuth()
+      navigate(from, { replace: true })
     } catch (err) {
-      const msg = "Something went wrong. Please try again later."
+      const status = err.response?.status
+      let msg = "Something went wrong. Please try again later."
+
+      if (status === 401) {
+        msg = "Invalid username or password. Please check your credentials and try again."
+      } else if (status === 403) {
+        msg = "You are not authorized to log in with these credentials."
+      } else if (status >= 500) {
+        msg = "A server error occurred while logging you in. Please try again later."
+      }
+
       setError(msg)
       setSnackbar({ open: true, message: msg })
+    }
     } finally {
       setLoading(false)
     }
