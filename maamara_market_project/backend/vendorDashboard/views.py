@@ -157,6 +157,18 @@ def get_vendor_earnings(vendor, start_date, end_date):
         },
     )
 
+    # A provider-confirmed payout is an immutable financial snapshot.
+    # Regenerating the same period must not rewrite a payout that has already
+    # been paid, even if the underlying order query changes later.
+    if not created and payout.paid:
+        difference = payout.difference
+        if difference:
+            difference["reference"] = payout.reference
+        return {
+            "payout": payout,
+            "difference": difference,
+        }
+
     # Update payout fields to latest calculated values
     payout.gross_sales = gross_sales
     payout.adjustment_amount = adjustment_total
