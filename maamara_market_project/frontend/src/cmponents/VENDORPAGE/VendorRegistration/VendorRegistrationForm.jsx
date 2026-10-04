@@ -340,6 +340,8 @@ const [isSubmitting, setIsSubmitting] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState("");
   const [formData, setFormData] = useState([])
   const [itemPreview, setItemPreview] = useState(null);
+  const [companyLogoPreview, setCompanyLogoPreview] = useState(null);
+  const [profilePicturePreview, setProfilePicturePreview] = useState(null);
 
   // Snackbar close handler
   const handleCloseSnackbar = (event, reason) => {
@@ -451,6 +453,30 @@ useEffect(() => {
     setWorkshopLocation((current) => ({ ...current, locationSearch: currentValue, latitude: null, longitude: null }));
   }
 }, [workshopLocationValue]);
+
+useEffect(() => {
+  const value = watchedValues.vendor_company_logo;
+
+  if (value instanceof File) {
+    const url = URL.createObjectURL(value);
+    setCompanyLogoPreview(url);
+    return () => URL.revokeObjectURL(url);
+  }
+
+  setCompanyLogoPreview(resolveApiAssetUrl(value));
+}, [watchedValues.vendor_company_logo]);
+
+useEffect(() => {
+  const value = watchedValues.profile_picture;
+
+  if (value instanceof File) {
+    const url = URL.createObjectURL(value);
+    setProfilePicturePreview(url);
+    return () => URL.revokeObjectURL(url);
+  }
+
+  setProfilePicturePreview(resolveApiAssetUrl(value));
+}, [watchedValues.profile_picture]);
 
 useEffect(() => {
   if (country?.toLowerCase() === "kenya") {
@@ -1180,6 +1206,17 @@ const onSubmit = async (data) => {
               field.onChange(file);
             }} />
             </FormControl>
+            {companyLogoPreview && (
+              <div className="mt-3 flex items-center gap-3">
+                <img
+                  src={companyLogoPreview}
+                  alt="Company logo preview"
+                  className="h-20 w-20 rounded-xl border border-border bg-muted object-contain"
+                  onError={() => setCompanyLogoPreview(null)}
+                />
+                <span className="text-xs text-muted-foreground">Logo preview</span>
+              </div>
+            )}
             <FormMessage />
           </FormItem>
         )} />
@@ -1489,6 +1526,17 @@ const onSubmit = async (data) => {
               field.onChange(file);
             }} />
             </FormControl>
+            {profilePicturePreview && (
+              <div className="mt-3 flex items-center gap-3">
+                <img
+                  src={profilePicturePreview}
+                  alt="Profile picture preview"
+                  className="h-20 w-20 rounded-full border border-border bg-muted object-cover"
+                  onError={() => setProfilePicturePreview(null)}
+                />
+                <span className="text-xs text-muted-foreground">Profile preview</span>
+              </div>
+            )}
             <FormMessage />
           </FormItem>
         )} />
@@ -1528,6 +1576,17 @@ const onSubmit = async (data) => {
                 <div>
                   <FormLabel>Item Image</FormLabel>
                   <Input type="file" ref={fileInputRef} accept="image/*" onChange={(e) => setItemFields({ ...itemFields, image: e.target.files?.[0] || null })} />
+                  {itemPreview && (
+                    <div className="mt-3 flex items-center gap-3">
+                      <img
+                        src={itemPreview}
+                        alt="Selected item preview"
+                        className="h-32 w-32 rounded-xl border border-border bg-muted object-cover"
+                        onError={() => setItemPreview(null)}
+                      />
+                      <span className="text-xs text-muted-foreground">Selected image preview</span>
+                    </div>
+                  )}
                 </div>
                 <div>
                   <Input placeholder="Item Name" value={itemFields.name} onChange={(e) => setItemFields({ ...itemFields, name: e.target.value })} />
