@@ -479,6 +479,20 @@ useEffect(() => {
 }, [watchedValues.profile_picture]);
 
 useEffect(() => {
+  const value = itemFields.image;
+
+  if (!(value instanceof File)) {
+    setItemPreview(null);
+    return;
+  }
+
+  const url = URL.createObjectURL(value);
+  setItemPreview(url);
+
+  return () => URL.revokeObjectURL(url);
+}, [itemFields.image]);
+
+useEffect(() => {
   if (country?.toLowerCase() === "kenya") {
     form.setValue("bank_swift_code", "");
     form.setValue("bank_iban", "");
