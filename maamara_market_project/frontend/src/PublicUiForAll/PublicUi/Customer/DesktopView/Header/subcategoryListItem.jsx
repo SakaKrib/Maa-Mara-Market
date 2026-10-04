@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import api from "../../../../../Services/Api";
-import { baseUrl } from "../../../../../cmponents/Constant/Constant";
+import { resolveApiAssetUrl } from "../../../../../Services/Api";
 import TrendingProductCard from "../Main/Trending/TrendingProductCard";
 import "../../../maamara.css";
 
@@ -40,7 +40,7 @@ const SubcategoryProducts = () => {
 
   const normalizeImage = (item) => {
     if (!item?.image) return "";
-    return item.image.startsWith("http") ? item.image : `${baseUrl || ""}${item.image}`;
+    return resolveApiAssetUrl(item.image);
   };
 
   return (
