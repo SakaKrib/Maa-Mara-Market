@@ -280,15 +280,11 @@ const fetchShippingQuote = async () => {
       sessionStorage.setItem("maaMaraCheckout", JSON.stringify(responseData));
       setActiveCheckout(responseData);
 
-      // Route based on payment method
-      const method = (responseData.payment.payment_method || "").toLowerCase();
-      if (method === "paypal") {
-        navigate("/paypal-make-payment", { state: responseData });
-      } else if (method === "mpesa") {
-        navigate("/mpesa-make-payment", { state: responseData });
-      } else {
-        navigate("/order-confirmation", { state: responseData });
+      if (!responseData.redirect_url) {
+        throw new Error("Pesapal did not return a payment redirect.");
       }
+
+      window.location.assign(responseData.redirect_url);
     } catch (error) {
 
       showSnackbar("Checkout failed. Please try again.", "error");
@@ -549,7 +545,7 @@ const fetchShippingQuote = async () => {
                 <p className="mt-1 text-sm text-muted-foreground">Choose how you would like to pay.</p>
 
                 <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
-                  {["Mpesa", "PayPal"].map((method) => (
+                  {["Pesapal"].map((method) => (
                     <label
                       key={method}
                       className="flex cursor-pointer items-center gap-3 rounded-xl border border-border bg-background px-4 py-3 text-sm font-medium text-card-foreground transition hover:bg-muted/30"
