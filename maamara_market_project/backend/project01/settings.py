@@ -37,6 +37,16 @@ FRONTEND_URL = env("FRONTEND_URL")
 # every PayPal webhook before any payment/refund state is changed.
 PAYPAL_WEBHOOK_ID = env("PAYPAL_WEBHOOK_ID", default="")
 
+# Pesapal API 3 configuration. Keep credentials server-side.
+PESAPAL_BASE_URL = env("PESAPAL_BASE_URL", default="https://pay.pesapal.com/v3")
+PESAPAL_CONSUMER_KEY = env("PESAPAL_CONSUMER_KEY", default="")
+PESAPAL_CONSUMER_SECRET = env("PESAPAL_CONSUMER_SECRET", default="")
+PESAPAL_NOTIFICATION_ID = env("PESAPAL_NOTIFICATION_ID", default="")
+PESAPAL_CALLBACK_URL = env(
+    "PESAPAL_CALLBACK_URL",
+    default=f"{FRONTEND_URL.rstrip('/')}/payment-pesapal-callback",
+)
+
 # The domains this Django site is allowed to serve. It is specified as a string
 # of comma-separated URLs in .env
 ALLOWED_HOSTS = [host.strip() for host in env("ALLOWED_HOSTS", default="127.0.0.1,localhost").split(",") if host.strip()]
@@ -56,6 +66,7 @@ INSTALLED_APPS = [
     "order.apps.OrderConfig",
     "vendorDashboard",
     "ReactSerializers",
+    "pesapalpayments",
 
     # Third-party apps
     "corsheaders",
