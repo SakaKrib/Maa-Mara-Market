@@ -1,7 +1,7 @@
 import { useCartContext } from "../../Customer/DesktopView/Main/CartHook/cart";
 import { useCartActions } from "../../Customer/DesktopView/Main/CartActionButtons/UpdateQty";
 import RemoveFromCartButton from "../../Customer/DesktopView/Main/CartActionButtons/RemoveFromBtn";
-import { baseUrl } from "../../../../cmponents/Constant/Constant";
+import { resolveApiAssetUrl } from "../../../../Services/Api";
 import { Link } from "react-router-dom";
 import { useNavigate } from "react-router-dom";
 
@@ -71,7 +71,7 @@ const CartModal = () => {
           return (
             <div key={item.id} className="flex gap-4">
               <img
-                src={item.image || `${baseUrl}${item.image}`}
+                src={item.image || resolveApiAssetUrl(item.image)}
                 alt={item.name || "Item"}
                 width={96}
                 height={96}
