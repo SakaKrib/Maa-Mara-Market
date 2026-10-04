@@ -949,8 +949,6 @@ class UpdateProfileView(APIView):
     parser_classes = [MultiPartParser, FormParser]  # ✅ handle files
 
     def post(self, request):
-        print("FILES:", request.FILES)  # 👈 Debug
-        print("DATA:", request.data)
 
         user = request.user
         profile, _ = Profile.objects.get_or_create(user=user)
