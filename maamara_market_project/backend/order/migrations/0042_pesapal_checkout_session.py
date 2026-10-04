@@ -3,7 +3,7 @@ from django.db import migrations, models
 
 class Migration(migrations.Migration):
     dependencies = [
-        ("order", "0041_remove_card_user_alter_checkoutsession_options_and_more"),
+        ("oder", "0041_remove_card_user_alter_checkoutsession_options_and_more"),
     ]
 
     operations = [
