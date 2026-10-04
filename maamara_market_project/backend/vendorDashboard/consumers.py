@@ -2,28 +2,103 @@
 import json
 from channels.generic.websocket import AsyncWebsocketConsumer
 import logging
+from django.db import models
 
 logger = logging.getLogger(__name__)
 
 class VendorPayoutConsumer(AsyncWebsocketConsumer):
+    """
+    Stream payout confirmation events to the admin/vendor that owns the payout.
+
+    The payout callbacks publish canonical realtime events to the vendor group;
+    this reference-specific socket converts those events to the legacy
+    payout_message shape expected by the existing payment screens.
+    """
+
     async def connect(self):
         self.reference = self.scope["url_route"]["kwargs"]["reference"]
-        self.group_name = f"payout_{self.reference}"
+        user = self.scope.get("user")
 
-        # Join group
+        if not user or not user.is_authenticated:
+            await self.close(code=4403)
+            return
+
+        payout = await self.get_payout()
+        if not payout:
+            await self.close(code=4404)
+            return
+
+        if not user.is_staff and payout["vendor_user_id"] != user.id:
+            await self.close(code=4403)
+            return
+
+        self.group_name = f"payout_{self.reference}"
+        self.vendor_group_name = f"realtime_vendor_{payout['vendor_id']}"
+
         await self.channel_layer.group_add(self.group_name, self.channel_name)
+        await self.channel_layer.group_add(
+            self.vendor_group_name, self.channel_name
+        )
         await self.accept()
-        logger.info(f"WebSocket connected: {self.channel_name} joined {self.group_name}")
+
+        logger.info(
+            "Payout WebSocket connected",
+            extra={"reference": self.reference, "user_id": user.id},
+        )
 
     async def disconnect(self, close_code):
-        # Leave group
-        await self.channel_layer.group_discard(self.group_name, self.channel_name)
-        logger.info(f"WebSocket disconnected: {self.channel_name} left {self.group_name}")
+        if getattr(self, "group_name", None):
+            await self.channel_layer.group_discard(
+                self.group_name, self.channel_name
+            )
+        if getattr(self, "vendor_group_name", None):
+            await self.channel_layer.group_discard(
+                self.vendor_group_name, self.channel_name
+            )
 
-    # Receive message from group
     async def payout_message(self, event):
-        # Send message to WebSocket
         await self.send(text_data=json.dumps(event))
+
+    async def realtime_event(self, event):
+        payload = event.get("payload") or {}
+        if payload.get("model") != "VendorPayout":
+            return
+        if payload.get("object_id") is None:
+            return
+
+        data = payload.get("data") or {}
+        status = str(data.get("status") or "").lower()
+        await self.send(
+            text_data=json.dumps(
+                {
+                    "type": "payout_message",
+                    "reference": data.get("reference") or self.reference,
+                    "status": status,
+                    "paid": bool(data.get("paid")),
+                    "paid_at": data.get("paid_at"),
+                    "transaction_id": data.get("transaction_id"),
+                    "payout_item_id": data.get("payout_item_id"),
+                    "batch_id": data.get("batch_id"),
+                    "amount": data.get("amount"),
+                    "currency": data.get("currency"),
+                    "provider_reference": data.get("provider_reference"),
+                }
+            )
+        )
+
+    @database_sync_to_async
+    def get_payout(self):
+        from .models import VendorPayout
+
+        return (
+            VendorPayout.objects
+            .filter(reference=self.reference)
+            .values("vendor_id", "vendor__user_id")
+            .annotate(vendor_user_id=models.F("vendor__user_id"))
+            .values("vendor_id", "vendor_user_id")
+            .first()
+        )
+
 
 class VendorDirectoryConsumer(AsyncWebsocketConsumer):
     """
