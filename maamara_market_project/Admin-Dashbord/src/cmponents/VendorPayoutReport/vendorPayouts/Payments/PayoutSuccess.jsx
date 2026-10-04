@@ -12,8 +12,9 @@ export default function PayoutSuccess() {
   const colors = tokens(theme.palette.mode);
 
   const payout = location.state?.payout || null;
+  const payoutStatus = String(payout?.status || "").toLowerCase();
 
-  const handleGoBack = () => navigate("/vendor/payouts");
+  const handleGoBack = () => navigate("/admin-dashboard/vendor-payout/payment-trigger");
 
   const maskTransaction = (id) => {
     if (!id || id.length <= 6) return id;
@@ -43,16 +44,16 @@ export default function PayoutSuccess() {
           boxShadow: 3,
         }}
       >
-        {payout?.status === "success" && (
+        {payoutStatus === "success" && (
           <CheckCircleIcon
             sx={{ fontSize: 80, color: colors.greenAccent[500], mb: 2 }}
           />
         )}
 
         <Typography variant="h5" sx={{ mb: 2 }}>
-          {payout?.status === "success"
+          {payoutStatus === "success"
             ? "Payment Successful!"
-            : payout?.status === "failed"
+            : payoutStatus === "failed"
             ? "Payment Failed"
             : "Processing Payment..."}
         </Typography>
@@ -93,12 +94,12 @@ export default function PayoutSuccess() {
               <Typography
                 sx={{
                   color:
-                    payout.status === "success"
+                    payoutStatus === "success"
                       ? colors.greenAccent[500]
                       : colors.redAccent[500],
                 }}
               >
-                {payout.status === "success" ? "Paid" : "Failed"}
+                {payoutStatus === "success" ? "Paid" : "Failed"}
               </Typography>
             </Box>
           </Box>
