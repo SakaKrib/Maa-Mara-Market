@@ -16,7 +16,6 @@ psycopg2-binary
 Pillow
 requests
 python-dotenv
-openai
 bleach
 bleach[css]
 cryptography
