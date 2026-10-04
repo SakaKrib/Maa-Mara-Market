@@ -4,7 +4,7 @@ import { Button } from "./ui/button"
 import { Card, CardContent } from "./ui/card"
 import { Input } from "./ui/input"
 import { Label } from "./ui/label"
-import { baseUrl } from "../src/cmponents/Constant/Constant"
+import api, { baseURL } from "../src/Services/Api"
 import { useNavigate, useLocation, Link } from "react-router-dom"
 import { useAuth } from "../src/cmponents/Auth/AuthContext/Context"
 import Maamara from "../src/assets/Logo/Maamara.jpg"
@@ -13,16 +13,13 @@ import { Eye, EyeOff } from "lucide-react"
 // Fetch the CSRF token returned by Django. The frontend origin cannot reliably
 // read a backend-origin csrftoken cookie with document.cookie.
 const getCsrfToken = async () => {
-  const response = await fetch(`${baseUrl}/api/get-csrf-token/`, {
-    method: "GET",
-    credentials: "include"
-  })
+  const response = await api.get("/api/get-csrf-token/")
 
-  if (!response.ok) {
-    throw new Error(`CSRF token request failed with status ${response.status}`)
+  if (!response.data) {
+    throw new Error("CSRF token request returned no data")
   }
 
-  const data = await response.json()
+  const data = response.data
   return data.csrfToken || ""
 }
 
@@ -89,17 +86,14 @@ export function LoginForm({ className, ...props }) {
     formData.append("password", password)
 
     try {
-      const response = await fetch(`${baseUrl}/api/login/`, {
-        method: "POST",
-        body: formData,
-        credentials: "include",
+      const response = await api.post("/api/login/", formData, {
         headers: { "X-CSRFToken": csrfToken }
       })
 
-      const contentType = response.headers.get("content-type")
+      const contentType = response.headers["content-type"]
 
-      if (!response.ok) {
-        const errorText = await response.text()
+      if (response.status >= 400) {
+        const errorText = JSON.stringify(response.data || {})
 
         let serverMessage = ""
         try {
@@ -148,7 +142,7 @@ export function LoginForm({ className, ...props }) {
           setSnackbar({ open: true, message: msg })
         }
       } else {
-        const text = await response.text()
+        const text = JSON.stringify(response.data || {})
         console.error("Unexpected response format:", text)
         const msg = "Unexpected server response. Please contact support."
         setError(msg)
@@ -237,7 +231,7 @@ export function LoginForm({ className, ...props }) {
                     className="mm-auth-google w-full flex items-center justify-center gap-2"
                     onClick={() => {
                       sessionStorage.setItem("postLoginRedirect", from)
-                      window.location.href = `${baseUrl}/accounts/google/login/`
+                      window.location.href = `${baseURL}/accounts/google/login/`
                     }}
                   >
                     <svg width="18" height="18" viewBox="0 0 48 48">
