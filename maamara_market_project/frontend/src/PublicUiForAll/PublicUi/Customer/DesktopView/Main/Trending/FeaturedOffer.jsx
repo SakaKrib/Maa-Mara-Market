@@ -1,12 +1,12 @@
 import React from "react";
-import { baseUrl } from "../../../../../../cmponents/Constant/Constant";
+import { resolveApiAssetUrl } from "../../../../../../Services/Api";
 import { IonIcon } from "@ionic/react";
 import { heartOutline, eyeOutline, shareOutline } from "ionicons/icons";
 import OfferCountdown from "./OfferCountdown";
 
 const FeaturedOffer = ({ item }) => {
   if (!item) return null;
-  const image = item.image?.startsWith("http") ? item.image : `${baseUrl || ""}${item.image || ""}`;
+  const image = resolveApiAssetUrl(item.image);
 
   return (
     <article className="bg-gray-100 p-4 rounded-lg mb-10">
