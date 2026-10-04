@@ -259,6 +259,18 @@ def mpesa_stk_callback(request):
     receipt = metadata.get("MpesaReceiptNumber")
     phone = metadata.get("PhoneNumber")
 
+    initiated_phone = str(((checkout_session.payload or {}).get("mpesa") or {}).get("phone") or "")
+    if phone and initiated_phone and str(phone) != initiated_phone:
+        checkout_session.status = "failed"
+        checkout_session.payload = {
+            **(checkout_session.payload or {}),
+            "mpesa_callback": request.data,
+            "mpesa_error": "Callback phone mismatch",
+        }
+        checkout_session.save(update_fields=["status", "payload", "updated_at"])
+        broadcast_checkout_payment_status(checkout_session, "FAILED")
+        logger.error("M-Pesa phone mismatch for checkout %s.", checkout_session.id)
+        return Response({"ResultCode": 0, "ResultDesc": "Accepted"})
     if not receipt or provider_amount is None:
         logger.error(
             "Successful M-Pesa callback missing receipt/amount for checkout %s",
@@ -266,6 +278,18 @@ def mpesa_stk_callback(request):
         )
         return Response({"ResultCode": 0, "ResultDesc": "Accepted"})
 
+    existing_receipt = Transaction.objects.filter(mpesa_receipt_number=str(receipt)).first()
+    if existing_receipt:
+        checkout_session.status = "failed"
+        checkout_session.payload = {
+            **(checkout_session.payload or {}),
+            "mpesa_callback": request.data,
+            "mpesa_error": "M-Pesa receipt already reconciled",
+        }
+        checkout_session.save(update_fields=["status", "payload", "updated_at"])
+        broadcast_checkout_payment_status(checkout_session, "FAILED")
+        logger.error("Duplicate M-Pesa receipt %s for checkout %s.", receipt, checkout_session.id)
+        return Response({"ResultCode": 0, "ResultDesc": "Accepted"})
     expected_amount = Decimal(str(checkout_session.amount)).quantize(Decimal("0.01"))
     received_amount = Decimal(str(provider_amount)).quantize(Decimal("0.01"))
 
