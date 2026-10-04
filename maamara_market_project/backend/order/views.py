@@ -1190,6 +1190,7 @@ def transaction_totals(request):
     data = {
         "paypal_total": Transaction.get_paypal_total(),
         "mpesa_total": Transaction.get_mpesa_total(),
+        "pesapal_total": Transaction.get_pesapal_total(),
     }
     return Response(data)
 
