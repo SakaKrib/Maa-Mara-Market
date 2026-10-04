@@ -1,7 +1,5 @@
 import { useEffect, useState } from "react";
-import axios from "axios";
 import api from "../../../Services/Api";
-import { baseUrl } from "../../Constant/Constant";
 
 
 
@@ -10,7 +8,7 @@ const VendorStatsBox = ({ vendorId }) => {
   const [stats, setStats] = useState(null);
 
   useEffect(() => {
-    api.get(`${baseUrl}/api/item-stats/`, {
+    api.get("/api/item-stats/", {
     withCredentials: true
   })
       .then(res => setStats(res.data))
