@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import api from "../../../../../../../Services/Api";
+import { getWebSocketUrl } from "../../../../../../../Services/Api";
 import { Input } from "../../../../../../../../components/ui/input";
 import { useLocation, useNavigate } from "react-router-dom";
 import MpesaLogo from "../../../../../../../assets/partnaship/mpesaLogo.png";
@@ -14,7 +15,7 @@ export default function MpesaSTKPayment() {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
   const [snackbar, setSnackbar] = useState({ open: false, severity: "info", text: "" });
-  const pollingRef = useRef(null);
+  const socketRef = useRef(null);
 
   useEffect(() => {
     if (checkoutResult?.checkout_id) {
@@ -24,43 +25,53 @@ export default function MpesaSTKPayment() {
 
   const showSnackbar = (text, severity = "info") => setSnackbar({ open: true, severity, text });
 
-  const stopPolling = () => {
-    if (pollingRef.current) {
-      window.clearInterval(pollingRef.current);
-      pollingRef.current = null;
+  const closeSocket = () => {
+    if (socketRef.current) {
+      socketRef.current.close();
+      socketRef.current = null;
     }
   };
 
-  const checkPaymentStatus = async () => {
+  const openPaymentSocket = () => {
     if (!checkoutId) return;
-    try {
-      const response = await api.get(`/api/checkout/${checkoutId}/status/`);
-      const data = response.data;
-      if (data.status === "completed" && data.order_id) {
-        stopPolling();
-        sessionStorage.removeItem("maaMaraBuyNow");
-        sessionStorage.removeItem("maaMaraCheckout");
-        navigate("/payment-success", {
-          state: { order: { id: data.order_id, status: "completed", payment_method: data.payment_method, amount: data.amount } },
-        });
-      } else if (data.status === "failed" || data.status === "expired") {
-        stopPolling();
-        setLoading(false);
-        setMessage("The payment was not completed. Please try again.");
-        showSnackbar("M-Pesa payment was not completed.", "error");
+    closeSocket();
+
+    const socket = new WebSocket(getWebSocketUrl(`/ws/checkout-payments/${checkoutId}/`));
+    socketRef.current = socket;
+
+    socket.onmessage = (event) => {
+      try {
+        const data = JSON.parse(event.data);
+        if (data.type === "payment_status" && ["PAID", "completed"].includes(String(data.status).toUpperCase())) {
+          closeSocket();
+          sessionStorage.removeItem("maaMaraBuyNow");
+          sessionStorage.removeItem("maaMaraCheckout");
+          navigate("/payment-success", {
+            state: {
+              order: {
+                id: data.order_id,
+                status: "PAID",
+                payment_method: data.payment_method,
+                amount: data.amount,
+              },
+            },
+          });
+        }
+      } catch {
+        // Ignore malformed realtime messages.
       }
-    } catch {
-      // Keep polling; a transient status request failure should not cancel payment.
-    }
+    };
+
+    socket.onclose = () => {
+      socketRef.current = null;
+    };
+
+    socket.onerror = () => {
+      setMessage("Waiting for M-Pesa confirmation…");
+    };
   };
 
-  const startPolling = () => {
-    stopPolling();
-    pollingRef.current = window.setInterval(checkPaymentStatus, 3000);
-  };
-
-  useEffect(() => () => stopPolling(), []);
-
+  useEffect(() => () => closeSocket(), []);
   const handlePayment = async (event) => {
     event.preventDefault();
     if (!checkoutId) {
@@ -75,7 +86,7 @@ export default function MpesaSTKPayment() {
       const response = await api.post("/api/mpesa/stk-push/", { checkout_id: checkoutId, phone });
       setMessage(response.data?.message || "STK Push sent. Complete the payment on your phone.");
       showSnackbar("STK Push sent. Complete the payment on your phone.", "success");
-      startPolling();
+      openPaymentSocket();
     } catch (error) {
       setLoading(false);
       showSnackbar(
