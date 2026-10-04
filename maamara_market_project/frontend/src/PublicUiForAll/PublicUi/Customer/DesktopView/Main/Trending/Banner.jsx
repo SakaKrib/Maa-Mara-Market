@@ -65,24 +65,22 @@ const Banners = () => {
                 >
                   <BannerMedia banner={banner} bannerImage={bannerImage} />
 
-                  {bannerImage && (
-                    <div className="px-4 pb-4 pt-2">
-                      <h3 className="truncate text-sm font-semibold text-card-foreground">
-                        {banner.title || "Marketplace highlight"}
-                      </h3>
-                      <p className="mt-1 line-clamp-2 text-[11px] leading-5 text-muted-foreground">
-                        {banner.subtitle || banner.item?.name || banner.product_name || "Discover this marketplace highlight."}
-                      </p>
-                      {banner.call_to_action_url && (
-                        <a
-                          href={banner.call_to_action_url}
-                          className="mt-3 inline-flex rounded-full border border-border bg-background px-3 py-1.5 text-[11px] font-semibold text-card-foreground transition-colors hover:bg-muted"
-                        >
-                          Shop now
-                        </a>
-                      )}
-                    </div>
-                  )}
+                  <div className="px-4 pb-4 pt-2">
+                    <h3 className="truncate text-sm font-semibold text-card-foreground">
+                      {banner.title || "Marketplace highlight"}
+                    </h3>
+                    <p className="mt-1 line-clamp-2 text-[11px] leading-5 text-muted-foreground">
+                      {banner.subtitle || banner.item?.name || banner.product_name || "Discover this marketplace highlight."}
+                    </p>
+                    {banner.call_to_action_url && (
+                      <a
+                        href={banner.call_to_action_url}
+                        className="mt-3 inline-flex rounded-full border border-border bg-background px-3 py-1.5 text-[11px] font-semibold text-card-foreground transition-colors hover:bg-muted"
+                      >
+                        Shop now
+                      </a>
+                    )}
+                  </div>
                 </article>
               );
             })}
