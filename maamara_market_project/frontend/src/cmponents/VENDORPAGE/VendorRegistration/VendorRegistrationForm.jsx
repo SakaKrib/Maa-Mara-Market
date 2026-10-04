@@ -1501,21 +1501,24 @@ const onSubmit = async (data) => {
         <div className="mm-vendor-sample-method">
           <FormLabel>Submit Items As</FormLabel>
           <div className="flex gap-4">
-            <Button type="button" variant={usePdf ? "default" : "outline"} onClick={() => setUsePdf(true)}>PDF</Button>
-            <Button type="button" variant={!usePdf ? "default" : "outline"} onClick={() => setUsePdf(false)}>Item List</Button>
+            <Button className="rounded-[20px] px-5 py-2.5" type="button" variant={usePdf ? "default" : "outline"} onClick={() => setUsePdf(true)}>PDF</Button>
+            <Button className="rounded-[20px] px-5 py-2.5" type="button" variant={!usePdf ? "default" : "outline"} onClick={() => setUsePdf(false)}>Item List</Button>
           </div>
         </div>
 
         {usePdf ? (
-          <FormField name="item_pdf" control={form.control} render={({ field }) => (
-            <FormItem>
-              <FormLabel>Upload Item PDF</FormLabel>
-              <FormControl>
-                <Input type="file" onChange={(e) => field.onChange(e.target.files?.[0])} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )} />
+          <div className="mm-vendor-sample-builder">
+            <h3 className="mm-vendor-sample-builder-title">Upload Your Sample PDF</h3>
+            <FormField name="item_pdf" control={form.control} render={({ field }) => (
+              <FormItem className="mt-4">
+                <FormLabel>Upload Item PDF</FormLabel>
+                <FormControl>
+                  <Input type="file" onChange={(e) => field.onChange(e.target.files?.[0])} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )} />
+          </div>
         ) : (
           <>
             <div className="mm-vendor-sample-builder">
