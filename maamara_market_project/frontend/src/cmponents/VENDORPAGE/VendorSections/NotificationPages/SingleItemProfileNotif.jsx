@@ -4,7 +4,6 @@ import { useTheme } from "@mui/material";
 import { tokens } from "../../../../theme";
 import Header from "../../../../Header/Header";
 import api from "../../../../Services/Api";
-import { baseUrl } from "../../../Constant/Constant";
 import {
   LineChart,
   Line,
@@ -40,7 +39,7 @@ const SingleItemProfileNotif = () => {
 
     const fetchItem = async () => {
       try {
-        const res = await api.get(`${baseUrl}/api/items-vendor/${id}/`, {
+        const res = await api.get(`/api/items-vendor/${id}/`, {
           withCredentials: true,
         });
         setItem(res.data);
