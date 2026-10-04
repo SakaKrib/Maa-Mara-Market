@@ -1,12 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import api from "../../../../../../Services/Api";
-import { baseUrl } from "../../../../../../cmponents/Constant/Constant";
-
-const endpoint = (path) => {
-  const prefix = baseUrl || "";
-  return `${prefix.replace(/\/$/, "")}${path}`;
-};
+const endpoint = (path) => path;
 
 const useCategoryFilters = () => {
   const [searchParams] = useSearchParams();
