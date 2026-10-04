@@ -62,19 +62,16 @@ const LoginForm = () => {
     try {
       const response = await api.post("/api/login/", formData, {
         headers: { "X-CSRFToken": csrfToken }
-      });
-  
-      const data = response.data;
-  
-      if (response.status >= 400 || !data.success) {
-        setError(data.error || "Login failed");
-        return;
+      })
+
+      const data = response.data
+
+      if (!data?.success) {
+        setError(data?.error || data?.detail || "Login failed")
+        return
       }
 
-  
-      // ✅ SAME FLOW as Google
-      navigate("auth-success");
-  
+      navigate("auth-success")
     } catch (err) {
       setError("Something went wrong");
     } finally {
