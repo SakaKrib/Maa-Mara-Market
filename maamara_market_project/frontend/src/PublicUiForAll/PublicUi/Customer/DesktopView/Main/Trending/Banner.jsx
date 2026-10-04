@@ -1,6 +1,6 @@
 import React from "react";
 import useBanners from "../../../../../../cmponents/Hooks/BannerHook/BannerHook";
-import { baseUrl } from "../../../../../../cmponents/Constant/Constant";
+import { resolveApiAssetUrl } from "../../../../../../Services/Api";
 
 const BannerMedia = ({ banner, bannerImage }) => {
   const [imageLoaded, setImageLoaded] = React.useState(false);
@@ -57,11 +57,7 @@ const Banners = () => {
 
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 mm-mobile-horizontal-scroll mm-mobile-banner-rail">
             {banners.slice(0, 3).map((banner) => {
-              const bannerImage = banner.image?.startsWith("http")
-                ? banner.image
-                : banner.image
-                  ? (baseUrl || "") + banner.image
-                  : null;
+              const bannerImage = resolveApiAssetUrl(banner.image);
 
               return (
                 <article
