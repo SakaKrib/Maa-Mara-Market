@@ -25,7 +25,7 @@ const checkoutSchema = z.object({
   zip: z.string().min(1, "ZIP Code is required"),
   country: z.string().min(1, "Country is required"),
   phone: z.string().min(1, "Phone number is required"),
-  payment: z.enum(["Mpesa", "PayPal"], {
+  payment: z.enum(["Pesapal"], {
     errorMap: () => ({ message: "Select a payment method" }),
   }),
   shippingMethod: z.string().optional(),
