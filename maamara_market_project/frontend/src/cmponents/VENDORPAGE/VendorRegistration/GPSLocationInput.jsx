@@ -213,7 +213,7 @@ export default function GPSLocationInput({
   };
 
   return (
-    <div>
+    <div className="relative z-50">
       {label && (
         <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
           {label}
@@ -245,13 +245,13 @@ export default function GPSLocationInput({
         </div>
 
         {suggestions.length > 0 && (
-          <div className="absolute z-20 mt-1 max-h-64 w-full overflow-y-auto rounded-lg border border-brand-200 bg-brand-50 shadow-lg dark:border-brand-700 dark:bg-brand-900">
+          <div className="absolute left-0 right-0 z-[100] mt-1 max-h-64 w-full overflow-y-auto rounded-[20px] border border-gray-300 bg-white shadow-xl dark:border-gray-600 dark:bg-gray-900">
             {suggestions.map((location, index) => (
               <button
                 key={`${location.display_name}-${index}`}
                 type="button"
                 onClick={() => handleSelectLocation(location)}
-                className="flex w-full items-start gap-3 border-b border-brand-100 px-3 py-3 text-left text-sm last:border-b-0 hover:bg-brand-100 dark:border-brand-800 dark:hover:bg-brand-800"
+                className="flex w-full items-start gap-3 border-b border-gray-100 px-3 py-3 text-left text-sm text-gray-800 last:border-b-0 hover:bg-gray-100 dark:border-gray-700 dark:text-gray-100 dark:hover:bg-gray-800"
               >
                 <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-brand-600 dark:text-brand-400" />
                 <span className="text-gray-700 dark:text-gray-200">
