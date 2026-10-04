@@ -1,15 +1,13 @@
 import axios from "axios";
 
-const FALLBACK_API_ORIGIN = "http://100.109.224.0:8000";
-
 const resolveApiOrigin = () => {
-  const configured = import.meta.env.VITE_API_URL || import.meta.env.VITE_BASE_URL;
-
-  if (configured) {
-    return configured.replace(/\/$/, "");
+  if (typeof window === "undefined") {
+    return "";
   }
 
-  return FALLBACK_API_ORIGIN;
+  // Keep all browser API/WebSocket URLs on the same host as the storefront.
+  // Vite proxies /api, /media and /ws to the Django backend during development.
+  return `${window.location.protocol}//${window.location.host}`;
 };
 
 export const baseURL = resolveApiOrigin();
