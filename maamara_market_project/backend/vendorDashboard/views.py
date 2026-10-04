@@ -567,6 +567,21 @@ class VendorDraftView(APIView):
     def _get_owner(self, request):
         return {"user": request.user}
 
+    def _serialize_vendor_registration_draft(self, request, draft):
+        data = dict(draft.data or {})
+        items = list(data.get("item_list") or [])
+        images_by_index = {image.item_index: image for image in draft.images.all()}
+
+        for index, item in enumerate(items):
+            image = images_by_index.get(index)
+            if image:
+                item["image"] = image.image.url
+                item["image_asset_id"] = image.id
+
+        data["item_list"] = items
+        data["draft_id"] = str(draft.id)
+        return data
+
     def get(self, request):
         draft = (
             VendorDraft.objects
@@ -692,7 +707,9 @@ class VendorDraftView(APIView):
         return Response({
             "message": "Draft saved successfully.",
             "created": created,
+            "draft_id": str(draft.id),
             "images_saved": draft.images.count(),
+            "draft": self._serialize_vendor_registration_draft(request, draft),
         })
 
     @transaction.atomic
