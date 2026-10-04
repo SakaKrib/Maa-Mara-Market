@@ -67,7 +67,7 @@ class PesaPalService:
         amount = Decimal(str(checkout_session.amount))
 
         transaction_record = PesapalTransaction.objects.create(
-            order=None,
+            checkout_session=checkout_session,
             customer=checkout_session.user,
             merchant_reference=merchant_reference,
             amount=amount,
@@ -224,22 +224,7 @@ class PesaPalService:
             if record.order_id:
                 return record.order
 
-            session = (
-                CheckoutSession.objects
-                .select_for_update()
-                .filter(
-                    payload__contains={},
-                )
-                .filter(status__in=["draft", "payment_pending"])
-                .order_by("-created_at")
-            )
-            session = next(
-                (
-                    candidate for candidate in session
-                    if (candidate.payload or {}).get("pesapal", {}).get("merchant_reference") == record.merchant_reference
-                ),
-                None,
-            )
+            session = CheckoutSession.objects.select_for_update().get(pk=record.checkout_session_id)
             if not session:
                 raise ValueError("Checkout session for Pesapal transaction was not found.")
 
