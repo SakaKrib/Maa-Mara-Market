@@ -7,7 +7,7 @@ export function useVendorCustomers(vendorUserId) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const {user} = useAuth();
-  const userId = user.id
+  const userId = user?.id
 
   useEffect(() => {
     if (!userId) return;
