@@ -278,6 +278,42 @@ class PesaPalService:
                 transaction_id=data.get("confirmation_code") or order_tracking_id,
             )
 
+            from order.models import Transaction
+
+            vendor_items = (
+                locked_order.order_items
+                .select_related("item__vendor")
+                .all()
+            )
+            vendor_totals = {}
+            for order_item in vendor_items:
+                vendor = getattr(order_item.item, "vendor", None)
+                if not vendor:
+                    continue
+                vendor_totals[vendor.id] = vendor_totals.get(vendor.id, Decimal("0.00")) + order_item.get_final_price_for_vendor()
+
+            for vendor_id, vendor_amount in vendor_totals.items():
+                Transaction.objects.update_or_create(
+                    account_reference=f"{record.merchant_reference}-{vendor_id}",
+                    vendor_id=vendor_id,
+                    defaults={
+                        "transaction_type": "C2B",
+                        "payment_method": "pesapal",
+                        "order": locked_order,
+                        "payment": payment,
+                        "amount": vendor_amount,
+                        "status": "completed",
+                        "visitor_id": locked_order.visitor_id,
+                        "raw_data": {
+                            "provider": "PESAPAL",
+                            "merchant_reference": record.merchant_reference,
+                            "order_tracking_id": order_tracking_id,
+                            "confirmation_code": data.get("confirmation_code"),
+                            "currency": provider_currency,
+                        },
+                    },
+                )
+
             record.order = locked_order
             record.save(update_fields=["order", "updated_at"])
             return locked_order
