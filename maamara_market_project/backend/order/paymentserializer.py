@@ -56,7 +56,7 @@ class CheckoutSerializer(serializers.Serializer):
     country = serializers.CharField()
     zip = serializers.CharField()
 
-    payment_method = serializers.ChoiceField(choices=["Pesapal", "M-Pesa"])
+    payment_method = serializers.ChoiceField(choices=["Pesapal", "PayPal", "M-Pesa"])
     items = serializers.ListField(child=serializers.DictField())  # list of cart items
     shipping = ShippingSelectionSerializer(required=False, allow_null=True)
     visitor_id = serializers.CharField(required=False, allow_blank=True)
