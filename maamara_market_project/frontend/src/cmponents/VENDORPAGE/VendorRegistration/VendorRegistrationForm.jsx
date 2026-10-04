@@ -29,6 +29,10 @@ import "./VendorRegistration.css";
 import { getNames, getCodeList } from "country-list";
 // import { useCustomerAccessGuard } from "../../Hooks/AccessCRF/CustomerAccess";
 import { useNavigate } from "react-router-dom";
+import { Sparkles } from "lucide-react";
+import { useAuth } from "../../Auth/AuthContext/Context";
+import GPSLocationInput from "./GPSLocationInput";
+import { generateVendorRegistrationAI } from "../../../Services/AI/vendorRegistrationAiService";
 import {
   getVendorDraft,
   saveVendorDraft,
@@ -359,7 +363,10 @@ const [isSubmitting, setIsSubmitting] = useState(false);
   };
 
   const navigate = useNavigate();
-  
+  const { user } = useAuth();
+  const [aiLoadingField, setAiLoadingField] = useState(null);
+  const [aiError, setAiError] = useState(null);
+  const [workshopLocation, setWorkshopLocation] = useState({ locationSearch: "", latitude: null, longitude: null });
 
 
   // useState for form data management
@@ -441,6 +448,22 @@ const [isSubmitting, setIsSubmitting] = useState(false);
 const paymentMethod = form.watch("payment_method")
 const mpesaType = form.watch("mpesa_type") // optional if you want sub-types
 const country = form.watch("country");
+const companyName = form.watch("company_name");
+const workshopLocationValue = form.watch("workshop_location");
+const productDescription = form.watch("product_description");
+const productType = form.watch("product_type");
+const websiteUrl = form.watch("website_url");
+
+useEffect(() => {
+  if (user?.username && form.getValues("username") !== user.username) form.setValue("username", user.username, { shouldDirty: false });
+}, [user?.username, form]);
+
+useEffect(() => {
+  const currentValue = workshopLocationValue || "";
+  if (currentValue && currentValue !== workshopLocation.locationSearch) {
+    setWorkshopLocation((current) => ({ ...current, locationSearch: currentValue, latitude: null, longitude: null }));
+  }
+}, [workshopLocationValue]);
 
 useEffect(() => {
   if (country?.toLowerCase() === "kenya") {
@@ -649,6 +672,46 @@ useEffect(() => {
 
 
   
+
+  const handleGenerateAI = async (field) => {
+    if (aiLoadingField) return;
+    const isBrandField = field === "brand_name" || field === "brand_description";
+    if (isBrandField && !companyName?.trim()) return;
+    if (!isBrandField && !itemFields.image) return;
+
+    setAiError(null);
+    setAiLoadingField(field);
+
+    try {
+      const result = await generateVendorRegistrationAI({
+        field,
+        companyName,
+        workshopLocation: workshopLocationValue || workshopLocation.locationSearch,
+        productDescription,
+        productType,
+        websiteUrl,
+        image: isBrandField ? null : itemFields.image,
+      });
+
+      const generatedValue = field === "brand_name" || field === "item_name" ? result?.name : result?.description;
+      if (!generatedValue) throw new Error("AI did not return a usable value.");
+
+      if (field === "brand_name") {
+        form.setValue("brand_name", generatedValue, { shouldDirty: true, shouldValidate: true });
+      } else if (field === "brand_description") {
+        form.setValue("brand_description", generatedValue, { shouldDirty: true, shouldValidate: true });
+      } else if (field === "item_name") {
+        setItemFields((current) => ({ ...current, name: generatedValue }));
+      } else {
+        setItemFields((current) => ({ ...current, description: generatedValue }));
+      }
+    } catch (error) {
+      console.error("Vendor registration AI generation failed:", error);
+      setAiError(error.response?.data?.detail || error.message || "Unable to generate content right now.");
+    } finally {
+      setAiLoadingField(null);
+    }
+  };
 
   const handleAddItem = () => {
   if (
@@ -909,27 +972,26 @@ const onSubmit = async (data) => {
         <h2 className="text-xl font-semibold mt-6 text-center">Personal Information</h2>
 
         {[
-  "surname_name","middle_name","first_name","phone_number","username","email","id_number"
+  "surname_name","middle_name","first_name","phone_number","email","id_number"
 ].map((fieldName) => (
-  <FormField
-    key={fieldName}
-    name={fieldName}
-    control={form.control}
-    render={({ field }) => (
-      <FormItem>
-        <FormLabel>{fieldName.replace(/_/g, " ")}</FormLabel>
-        <FormControl>
-          <Input
-            {...field}
-            id={fieldName}
-            type="text"
-          />
-        </FormControl>
-        <FormMessage />
-      </FormItem>
-    )}
-  />
+  <FormField key={fieldName} name={fieldName} control={form.control} render={({ field }) => (
+    <FormItem>
+      <FormLabel>{fieldName.replace(/_/g, " ")}</FormLabel>
+      <FormControl><Input {...field} id={fieldName} type="text" /></FormControl>
+      <FormMessage />
+    </FormItem>
+  )} />
 ))}
+
+        <FormField name="username" control={form.control} render={({ field }) => (
+          <FormItem>
+            <FormLabel>Username</FormLabel>
+            <FormControl>
+              <Input {...field} id="username" type="text" readOnly tabIndex={-1} className="bg-muted/50 text-muted-foreground" />
+            </FormControl>
+            <FormMessage />
+          </FormItem>
+        )} />
 
 
 
@@ -1100,8 +1162,17 @@ const onSubmit = async (data) => {
         )} />
         <FormField name="workshop_location" control={form.control} render={({ field }) => (
           <FormItem>
-            <FormLabel>Workshop Location</FormLabel>
-            <FormControl><Textarea {...field} /></FormControl>
+            <FormControl>
+              <GPSLocationInput
+                value={workshopLocation}
+                onChange={(nextLocation) => {
+                  setWorkshopLocation(nextLocation);
+                  field.onChange(nextLocation.locationSearch || "");
+                }}
+                required
+                error={form.formState.errors.workshop_location?.message}
+              />
+            </FormControl>
             <FormMessage />
           </FormItem>
         )} />
@@ -1118,21 +1189,19 @@ const onSubmit = async (data) => {
           </FormItem>
         )} />
 
+        {aiError && <p className="text-sm text-error-600 dark:text-error-400" role="alert">{aiError}</p>}
+
         {/* 🏷️ Brand Info */}
         <h2 className="text-xl font-semibold mt-6 text-center">Brand Information</h2>
 
         <FormField name="brand_name" control={form.control} render={({ field }) => (
           <FormItem>
             <FormLabel>Brand Name</FormLabel>
-            <FormControl>
-            <Input
-              type="text"
-              placeholder="Enter brand name"
-              {...field}
-              value={field.value ?? ""}
-            />
-            
-            </FormControl>
+            <FormControl><Input type="text" placeholder="Enter brand name" {...field} value={field.value ?? ""} /></FormControl>
+            <button type="button" disabled={!companyName?.trim() || aiLoadingField !== null} onClick={() => handleGenerateAI("brand_name")} className="mt-2 inline-flex items-center gap-2 rounded-full border border-border bg-background px-3 py-2 text-sm font-medium text-foreground hover:bg-muted disabled:cursor-not-allowed disabled:opacity-50">
+              <Sparkles className="h-4 w-4" />
+              {aiLoadingField === "brand_name" ? "Generating..." : "Generate with AI"}
+            </button>
             <FormMessage />
           </FormItem>
         )} />
@@ -1140,9 +1209,11 @@ const onSubmit = async (data) => {
         <FormField name="brand_description" control={form.control} render={({ field }) => (
           <FormItem>
             <FormLabel>Brand Description</FormLabel>
-            <FormControl>
-              <Textarea {...field} value={field.value ?? ""} placeholder="Describe your brand..." />
-            </FormControl>
+            <FormControl><Textarea {...field} value={field.value ?? ""} placeholder="Describe your brand..." /></FormControl>
+            <button type="button" disabled={!companyName?.trim() || aiLoadingField !== null} onClick={() => handleGenerateAI("brand_description")} className="mt-2 inline-flex items-center gap-2 rounded-full border border-border bg-background px-3 py-2 text-sm font-medium text-foreground hover:bg-muted disabled:cursor-not-allowed disabled:opacity-50">
+              <Sparkles className="h-4 w-4" />
+              {aiLoadingField === "brand_description" ? "Generating..." : "Generate with AI"}
+            </button>
             <FormMessage />
           </FormItem>
         )} />
@@ -1442,29 +1513,27 @@ const onSubmit = async (data) => {
         ) : (
           <>
             <div>
-              <h1 className="text-xl">Create Your Item List</h1>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-                <Input placeholder="Item Name" value={itemFields.name} onChange={(e) => setItemFields({ ...itemFields, name: e.target.value })} />
-                <Input
-                  placeholder="Price"
-                  type="text"            // use text, number still allows "e" etc.
-                  inputMode="numeric"    // mobile shows number keypad
-                  pattern="[0-9]*"       // browser-level validation (digits only)
-                  value={itemFields.price}
-                  onChange={(e) => {
-                    const value = e.target.value;
-
-                    if (/^\d*$/.test(value)) {
-                      setItemFields({
-                        ...itemFields,
-                        price: value,
-                      });
-                    }
-                  }}
-                />
-
-                <Textarea placeholder="Description" value={itemFields.description} onChange={(e) => setItemFields({ ...itemFields, description: e.target.value })} />
-                <Input type="file" ref={fileInputRef} accept='image/*' onChange={(e) => setItemFields({ ...itemFields, image: e.target.files?.[0] })} />
+              <h1 className="text-xl">Create Your Sample List</h1>
+              <div className="grid grid-cols-1 gap-4 mt-4">
+                <div>
+                  <FormLabel>Item Image</FormLabel>
+                  <Input type="file" ref={fileInputRef} accept="image/*" onChange={(e) => setItemFields({ ...itemFields, image: e.target.files?.[0] || null })} />
+                </div>
+                <div>
+                  <Input placeholder="Item Name" value={itemFields.name} onChange={(e) => setItemFields({ ...itemFields, name: e.target.value })} />
+                  <button type="button" disabled={!itemFields.image || aiLoadingField !== null} onClick={() => handleGenerateAI("item_name")} className="mt-2 inline-flex items-center gap-2 rounded-full border border-border bg-background px-3 py-2 text-sm font-medium text-foreground hover:bg-muted disabled:cursor-not-allowed disabled:opacity-50">
+                    <Sparkles className="h-4 w-4" />
+                    {aiLoadingField === "item_name" ? "Generating..." : "Generate with AI"}
+                  </button>
+                </div>
+                <div>
+                  <Textarea placeholder="Description" value={itemFields.description} onChange={(e) => setItemFields({ ...itemFields, description: e.target.value })} />
+                  <button type="button" disabled={!itemFields.image || aiLoadingField !== null} onClick={() => handleGenerateAI("item_description")} className="mt-2 inline-flex items-center gap-2 rounded-full border border-border bg-background px-3 py-2 text-sm font-medium text-foreground hover:bg-muted disabled:cursor-not-allowed disabled:opacity-50">
+                    <Sparkles className="h-4 w-4" />
+                    {aiLoadingField === "item_description" ? "Generating..." : "Generate with AI"}
+                  </button>
+                </div>
+                <Input placeholder="Price" type="text" inputMode="numeric" pattern="[0-9]*" value={itemFields.price} onChange={(e) => { const value = e.target.value; if (/^\d*$/.test(value)) setItemFields({ ...itemFields, price: value }); }} />
               </div>
              <div className="flex justify-center w-full">
                <Button className='mt-4 primary-button' type="button" onClick={handleAddItem}>+ Add Item</Button>
