@@ -7,7 +7,7 @@ class Migration(migrations.Migration):
     initial = True
 
     dependencies = [
-        ("order", "0041_remove_card_user_alter_checkoutsession_options_and_more"),
+        ("oder", "0041_remove_card_user_alter_checkoutsession_options_and_more"),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
     ]
 
@@ -41,7 +41,7 @@ class Migration(migrations.Migration):
                 ("updated_at", models.DateTimeField(auto_now=True)),
                 ("customer", models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, to=settings.AUTH_USER_MODEL)),
                 ("checkout_session", models.OneToOneField(on_delete=django.db.models.deletion.CASCADE, related_name="pesapal_transaction", to="order.checkoutsession")),
-                ("order", models.OneToOneField(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name="pesapal_transaction", to="order.order")),
+                ("oder", models.OneToOneField(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name="pesapal_transaction", to="order.order")),
             ],
             options={"ordering": ["-created_at"]},
         ),
