@@ -700,45 +700,45 @@ useEffect(() => {
     }
   };
 
-  const handleAddItem = async () => {
-  if (
-    !itemFields.name ||
-    !itemFields.description ||
-    !itemFields.price ||
-    !itemFields.image
-  ) {
-    return;
-  }
+  const handleAddItem = () => {
+    if (
+      !itemFields.name?.trim() ||
+      !itemFields.description?.trim() ||
+      !itemFields.price ||
+      !(itemFields.image instanceof File)
+    ) {
+      return;
+    }
 
-  const preview = await new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(reader.result);
-    reader.onerror = reject;
-    reader.readAsDataURL(itemFields.image);
-  });
+    const preview = URL.createObjectURL(itemFields.image);
 
-  const newItem = {
-    ...itemFields,
-    price: parseFloat(itemFields.price),
-    preview,
+    const newItem = {
+      ...itemFields,
+      name: itemFields.name.trim(),
+      description: itemFields.description.trim(),
+      price: parseFloat(itemFields.price),
+      preview,
+    };
+
+    const updatedItems = [...items, newItem];
+
+    setItems(updatedItems);
+    form.setValue("item_list", updatedItems, {
+      shouldDirty: true,
+      shouldValidate: false,
+    });
+
+    setItemFields({
+      name: "",
+      description: "",
+      price: "",
+      image: null,
+    });
+
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
   };
-
-  const updatedItems = [...items, newItem];
-
-  setItems(updatedItems);
-  form.setValue("item_list", updatedItems);
-
-  setItemFields({
-    name: "",
-    description: "",
-    price: "",
-    image: null,
-  });
-
-  if (fileInputRef.current) {
-    fileInputRef.current.value = "";
-  }
-};
   
 
   const handleRemoveItem = (index) => {
