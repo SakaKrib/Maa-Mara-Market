@@ -3,13 +3,14 @@ import { useWishlistContext } from "../../../../../../cmponents/Hooks/WishListHo
 import { IonIcon } from "@ionic/react";
 import { heart, heartOutline, eyeOutline, shareOutline } from "ionicons/icons";
 import { Link, useNavigate } from "react-router-dom";
+import { resolveApiAssetUrl } from "../../../../../../Services/Api";
 import FormattedCurrency from "../Currency/FormattedCurrency";
 
 const TrendingProductCard = ({ item, isWishlisted: controlledWishlist, onToggleWishlist, onOpen }) => {
   const navigate = useNavigate();
   const { wishlist, addToWishlist, removeFromWishlist } = useWishlistContext();
 
-  const image = item.image || "";
+  const image = resolveApiAssetUrl(item.image);
 
   // The customer serializer already exposes the nested Offer. Use its
   // configured dates to distinguish an active offer from an ordinary discount.
@@ -45,6 +46,9 @@ const TrendingProductCard = ({ item, isWishlisted: controlledWishlist, onToggleW
   const stock = Number(item.in_stock ?? 0);
   const derivedWishlist = wishlist.some((entry) => entry.item?.id === item.id || entry.id === item.id);
   const isWishlisted = controlledWishlist ?? derivedWishlist;
+  const [imageLoaded, setImageLoaded] = React.useState(false);
+  const [imageFailed, setImageFailed] = React.useState(false);
+
   const displayName = String(item.name || "Marketplace product");
   const truncatedName = displayName.length > 42
     ? `${displayName.slice(0, 42).trimEnd()}…`
@@ -79,12 +83,21 @@ const TrendingProductCard = ({ item, isWishlisted: controlledWishlist, onToggleW
   return (
     <article className="mm-product-card mm-card mm-card-interactive overflow-hidden bg-white">
       <div className="mm-product-media relative cursor-pointer" onClick={openProduct}>
-        <img
-          src={image || "/placeholder.png"}
-          alt={item.name || "Marketplace product"}
-          className="w-full aspect-square object-cover"
-          loading="lazy"
-        />
+        <div className="relative aspect-square w-full overflow-hidden bg-gray-100">
+          {(!image || !imageLoaded || imageFailed) && (
+            <div className="absolute inset-0 animate-pulse bg-gray-200" aria-hidden="true" />
+          )}
+          {image && !imageFailed && (
+            <img
+              src={image}
+              alt={item.name || "Marketplace product"}
+              className={`relative z-[1] h-full w-full object-cover transition-opacity duration-200 ${imageLoaded ? "opacity-100" : "opacity-0"}`}
+              loading="lazy"
+              onLoad={() => setImageLoaded(true)}
+              onError={() => setImageFailed(true)}
+            />
+          )}
+        </div>
 
         <div className="mm-product-actions absolute top-2 right-2 flex flex-col gap-1.5 z-10">
           <button type="button" onClick={toggleWishlist} aria-label={isWishlisted ? "Remove from wishlist" : "Add to wishlist"} className="mm-product-action">
