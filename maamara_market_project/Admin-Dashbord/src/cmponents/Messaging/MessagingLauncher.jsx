@@ -23,13 +23,13 @@ const MessagingLauncher = () => {
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="group flex h-14 w-14 items-center justify-center rounded-full bg-[#2563eb] text-white shadow-[0_8px_24px_rgba(37,99,235,0.28)] ring-4 ring-white transition duration-200 hover:scale-105 hover:bg-[#1d4ed8] hover:shadow-[0_10px_28px_rgba(37,99,235,0.35)] focus:outline-none focus:ring-2 focus:ring-[#2563eb] focus:ring-offset-2"
+        className="group flex h-11 w-11 items-center justify-center rounded-full bg-[#2563eb] text-white shadow-[0_6px_18px_rgba(37,99,235,0.25)] ring-2 ring-white transition duration-200 hover:scale-105 hover:bg-[#1d4ed8] hover:shadow-[0_8px_22px_rgba(37,99,235,0.32)] focus:outline-none focus:ring-2 focus:ring-[#2563eb] focus:ring-offset-2"
         aria-label="Open messages"
         title="Open messages"
       >
         <IonIcon
           icon={chatbubbleEllipsesOutline}
-          className="text-[26px] transition-transform duration-200 group-hover:scale-105"
+          className="text-[21px] transition-transform duration-200 group-hover:scale-105"
         />
       </button>
     </div>
