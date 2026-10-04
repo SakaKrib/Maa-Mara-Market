@@ -11,7 +11,6 @@ import {
   Snackbar
 } from '@mui/material';
 import { tokens } from '../../../theme';
-import { baseUrl } from '../../Constant/Constant';
 import api from '../../../Services/Api';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../AuthContext/Context';
@@ -38,7 +37,7 @@ const LoginForm = () => {
 
   // 🔐 Fetch CSRF token on mount
   useEffect(() => {
-    api.get(`${baseUrl}/api/get-csrf-token/`, { withCredentials: true })
+    api.get("/api/get-csrf-token/")
       .then(res => setCsrfToken(res.data.csrfToken))
       .catch(err => console.error('CSRF fetch error:', err));
   }, []);
@@ -61,18 +60,13 @@ const LoginForm = () => {
     formData.append("password", password);
   
     try {
-      const response = await fetch(`${baseUrl}/api/login/`, {
-        method: 'POST',
-        body: formData,
-        credentials: 'include',
-        headers: {
-          'X-CSRFToken': csrfToken
-        }
+      const response = await api.post("/api/login/", formData, {
+        headers: { "X-CSRFToken": csrfToken }
       });
   
-      const data = await response.json();
+      const data = response.data;
   
-      if (!response.ok || !data.success) {
+      if (response.status >= 400 || !data.success) {
         setError(data.error || "Login failed");
         return;
       }
@@ -159,7 +153,7 @@ const LoginForm = () => {
               }}
               onClick={() => {
                 sessionStorage.setItem("postLoginRedirect", window.location.pathname);
-                window.location.href = `${baseUrl}/accounts/google/login/`;
+                window.location.href = `${window.location.origin}/accounts/google/login/`;
               }}
             >
                 <svg width="18" height="18" viewBox="0 0 48 48">
