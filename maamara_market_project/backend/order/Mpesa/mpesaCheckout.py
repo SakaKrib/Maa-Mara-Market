@@ -292,7 +292,6 @@ def mpesa_stk_callback(request):
     payment = order.payment
     payment.payment_gateway = "MPESA"
     payment.payment_method = "MPESA"
-    payment.status = "PAID"
     payment.order_tracking_id = checkout_request_id
     payment.transaction_id = str(receipt)
     payment.paid_at = timezone.now()
@@ -303,7 +302,6 @@ def mpesa_stk_callback(request):
         update_fields=[
             "payment_gateway",
             "payment_method",
-            "status",
             "order_tracking_id",
             "transaction_id",
             "paid_at",
