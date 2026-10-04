@@ -96,7 +96,7 @@ export default function PublicProfile() {
         <CardHeader className="flex flex-col items-center text-center space-y-3 border-b border-[#eee8de] bg-white px-6 py-8">
           <Avatar className="h-24 w-24">
             <AvatarImage
-              src={profileDetails?.avatar || user?.profile_picture || "/default-avatar.png"}
+              src={profileDetails?.profile_picture || user?.profile_picture || "/default-avatar.png"}
               alt={user?.first_name || "User"}
             />
             <AvatarFallback>
