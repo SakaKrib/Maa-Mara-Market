@@ -202,3 +202,37 @@
 .mm-vendor-registration-form .mm-vendor-section:has(.z-50){
   z-index:50;
 }
+
+
+.mm-vendor-registration-form .mm-vendor-items-added{
+  margin-top:16px;
+  padding:20px;
+  border:1px solid #d8d4cc;
+  border-radius:20px;
+  background:#fff;
+  box-sizing:border-box;
+}
+
+.mm-vendor-registration-form .mm-vendor-items-added-title{
+  margin:0;
+  padding:0 0 12px;
+  border-bottom:1px solid #eee9e2;
+  font-size:18px;
+  line-height:1.35;
+  font-weight:700;
+  color:#222;
+}
+
+.mm-vendor-registration-form .mm-vendor-items-added-list{
+  display:flex;
+  flex-direction:column;
+  gap:16px;
+  margin-top:16px;
+}
+
+@media(max-width:639px){
+  .mm-vendor-registration-form .mm-vendor-items-added{
+    padding:20px;
+    border-radius:20px;
+  }
+}
