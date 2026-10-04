@@ -13,14 +13,15 @@ from .invoice_services import create_customer_invoice
 logger = logging.getLogger(__name__)
 
 
-def _broadcast_payment_success(order):
-    from .models import CheckoutSession
-    checkout_session = CheckoutSession.objects.filter(order_id=order.id).first()
-    if not checkout_session:
-        return
+def broadcast_checkout_payment_status(checkout_session, status, order=None):
+    """Broadcast a payment state to the customer checkout and order channels after commit."""
     channel_layer = get_channel_layer()
     if not channel_layer:
         return
+
+    order_id = order.id if order else getattr(checkout_session, "order_id", None)
+    payment_method = getattr(getattr(order, "payment", None), "payment_method", None)
+    amount = str(getattr(getattr(order, "payment", None), "amount", checkout_session.amount))
 
     def send():
         try:
@@ -28,28 +29,35 @@ def _broadcast_payment_success(order):
                 f"checkout_payment_{checkout_session.id}",
                 {
                     "type": "payment_status_update",
-                    "status": "PAID",
+                    "status": status,
                     "checkout_id": str(checkout_session.id),
-                    "order_id": order.id,
-                    "payment_method": getattr(order.payment, "payment_method", None),
-                    "amount": str(order.payment.amount),
+                    "order_id": order_id,
+                    "payment_method": payment_method or checkout_session.payment_method,
+                    "amount": amount,
                 },
             )
-            async_to_sync(channel_layer.group_send)(
-                f"order_{order.id}",
-                {
-                    "type": "payment_status",
-                    "status": "PAID",
-                    "order_id": order.id,
-                    "payment_method": getattr(order.payment, "payment_method", None),
-                    "amount": str(order.payment.amount),
-                },
-            )
+            if order_id:
+                async_to_sync(channel_layer.group_send)(
+                    f"order_{order_id}",
+                    {
+                        "type": "payment_status",
+                        "status": status,
+                        "order_id": order_id,
+                        "payment_method": payment_method,
+                        "amount": amount,
+                    },
+                )
         except Exception:
-            logger.exception("Payment WebSocket broadcast failed for order %s.", order.id)
+            logger.exception("Payment WebSocket broadcast failed for checkout %s.", checkout_session.id)
 
     transaction.on_commit(send)
 
+
+def _broadcast_payment_success(order):
+    from .models import CheckoutSession
+    checkout_session = CheckoutSession.objects.filter(order_id=order.id).first()
+    if checkout_session:
+        broadcast_checkout_payment_status(checkout_session, "PAID", order)
 
 def _deduct_stock(order_item):
     """Lock and deduct the exact stock represented by an order line."""
