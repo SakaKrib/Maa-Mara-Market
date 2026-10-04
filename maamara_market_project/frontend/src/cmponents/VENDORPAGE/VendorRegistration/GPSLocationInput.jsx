@@ -179,9 +179,13 @@ export default function GPSLocationInput({
         } catch (err) {
           console.error("GPS reverse geocoding failed:", err);
           setGpsError(
-            "Your GPS location was captured, but we could not determine the address. You can continue with the captured location."
+            "Your GPS coordinates were captured, but we could not determine the address. The coordinates will be used as the workshop location."
           );
-          updateLocation({ latitude, longitude });
+          updateLocation({
+            locationSearch: `GPS: ${latitude.toFixed(6)}, ${longitude.toFixed(6)}`,
+            latitude,
+            longitude,
+          });
         } finally {
           setUsingGPS(false);
         }
