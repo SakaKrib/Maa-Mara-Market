@@ -12,7 +12,7 @@ from rest_framework.response import Response
 
 from order.checkout_sessions import get_owned_checkout_session, materialize_paid_checkout
 from order.models import CheckoutSession, Transaction
-from order.order_completion import complete_paid_order
+from order.order_completion import complete_paid_order, broadcast_checkout_payment_status
 from order.views import IsAuthenticatedOrVisitor
 
 logger = logging.getLogger(__name__)
@@ -66,8 +66,10 @@ def initiate_stk_push(checkout_session, phone):
         raise RuntimeError("M-Pesa STK Push configuration is incomplete.")
 
     phone = _normalize_phone(phone)
-    amount = int(Decimal(str(checkout_session.amount)).quantize(Decimal("1")))
-
+    amount_decimal = Decimal(str(checkout_session.amount)).quantize(Decimal("0.01"))
+    if amount_decimal != amount_decimal.to_integral_value():
+        raise ValueError("M-Pesa checkout amounts must be whole Kenyan shillings.")
+    amount = int(amount_decimal)
     if amount <= 0:
         raise ValueError("M-Pesa payment amount must be greater than zero.")
 
@@ -249,6 +251,7 @@ def mpesa_stk_callback(request):
             "mpesa_callback": request.data,
         }
         checkout_session.save(update_fields=["status", "payload", "updated_at"])
+        broadcast_checkout_payment_status(checkout_session, "FAILED")
         return Response({"ResultCode": 0, "ResultDesc": "Accepted"})
 
     metadata = _metadata(callback)
@@ -368,11 +371,12 @@ def mpesa_stk_callback(request):
 def mpesa_stk_timeout(request):
     checkout_request_id = (request.data or {}).get("CheckoutRequestID")
     if checkout_request_id:
-        CheckoutSession.objects.filter(
+        session = CheckoutSession.objects.filter(
             mpesa_checkout_request_id=checkout_request_id,
             status="payment_pending",
-        ).update(
-            status="failed",
-            updated_at=timezone.now(),
-        )
+        ).first()
+        if session:
+            session.status = "failed"
+            session.save(update_fields=["status", "updated_at"])
+            broadcast_checkout_payment_status(session, "FAILED")
     return Response({"ResultCode": 0, "ResultDesc": "Accepted"})
