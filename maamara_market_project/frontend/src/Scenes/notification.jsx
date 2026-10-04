@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { getWebSocketUrl } from '../Services/Api';
 
 const Notifications = ({ isAuthenticated, user }) => {
   const [messages, setMessages] = useState([]);
@@ -6,7 +7,7 @@ const Notifications = ({ isAuthenticated, user }) => {
   useEffect(() => {
     if (isAuthenticated && user) {
       // Open WebSocket connection
-      const socket = new WebSocket(`ws://127.0.0.1:8000/ws/notifications/`);
+      const socket = new WebSocket(getWebSocketUrl("/ws/notifications/"));
 
       socket.onopen = () => {
 
