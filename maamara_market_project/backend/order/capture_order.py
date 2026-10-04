@@ -171,6 +171,10 @@ def capture_paypal_order(request, order_id):
                 provider_amount=provider_amount,
                 provider_currency=provider_currency,
             )
+            payment = order.payment
+            payment.payment_gateway = "PAYPAL"
+            payment.payment_method = "PAYPAL"
+            payment.save(update_fields=["payment_gateway", "payment_method", "updated_at"])
             from .order_completion import complete_paid_order
             locked_order, completed = complete_paid_order(
                 order,
