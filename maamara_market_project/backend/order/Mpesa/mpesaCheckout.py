@@ -277,6 +277,7 @@ def mpesa_stk_callback(request):
             "mpesa_error": "Payment amount mismatch",
         }
         checkout_session.save(update_fields=["status", "payload", "updated_at"])
+        broadcast_checkout_payment_status(checkout_session, "FAILED")
         logger.error(
             "M-Pesa amount mismatch for checkout %s: expected=%s received=%s",
             checkout_session.id,
