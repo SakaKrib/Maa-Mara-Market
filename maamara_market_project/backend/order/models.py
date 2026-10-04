@@ -612,7 +612,7 @@ class Transaction(models.Model):
     # payment method
     payment_method = models.CharField(
         max_length=50,
-        choices=[("paypal", "PayPal"), ("mpesa", "M-Pesa")],
+        choices=[("paypal", "PayPal"), ("mpesa", "M-Pesa"), ("pesapal", "Pesapal")],
         default="paypal",
     )
 
