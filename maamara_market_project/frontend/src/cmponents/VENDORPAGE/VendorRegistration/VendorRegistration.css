@@ -236,3 +236,35 @@
     border-radius:20px;
   }
 }
+.mm-vendor-registration-form .mm-vendor-items-added-actions{
+  display:flex;
+  justify-content:flex-start;
+  width:100%;
+  margin-top:20px;
+  padding-top:4px;
+}
+
+.mm-vendor-registration-form .mm-vendor-item-card img{
+  display:block;
+  visibility:visible;
+  opacity:1;
+}
+
+@media(max-width:639px){
+  .mm-vendor-registration-form .mm-vendor-items-added-actions{
+    margin-top:24px;
+    padding-top:4px;
+  }
+
+  .mm-vendor-registration-form .mm-vendor-item-card{
+    overflow:visible;
+  }
+
+  .mm-vendor-registration-form .mm-vendor-item-card img{
+    width:128px;
+    height:128px;
+    min-width:128px;
+    min-height:128px;
+  }
+}
+
