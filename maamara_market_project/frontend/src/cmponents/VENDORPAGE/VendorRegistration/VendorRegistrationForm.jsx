@@ -455,8 +455,10 @@ const productType = form.watch("product_type");
 const websiteUrl = form.watch("website_url");
 
 useEffect(() => {
-  if (user?.username && form.getValues("username") !== user.username) form.setValue("username", user.username, { shouldDirty: false });
-}, [user?.username, form]);
+  if (user?.username && watchedValues.username !== user.username) {
+    form.setValue("username", user.username, { shouldDirty: false });
+  }
+}, [user?.username, watchedValues.username, form]);
 
 useEffect(() => {
   const currentValue = workshopLocationValue || "";
