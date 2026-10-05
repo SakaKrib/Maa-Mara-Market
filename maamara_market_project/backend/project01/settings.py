@@ -260,7 +260,6 @@ SECURE_PROXY_SSL_HEADER = (
     if env.bool("SECURE_PROXY_SSL_HEADER", default=False)
     else None
 )
-CSRF_COOKIE_HTTPONLY = False
 
 SESSION_ENGINE = "django.contrib.sessions.backends.db"
 
