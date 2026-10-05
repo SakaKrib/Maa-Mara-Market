@@ -32,6 +32,7 @@ SECRET_KEY = env("SECRET_KEY")
 DEBUG = env.bool("DEBUG", default=False)
 
 FRONTEND_URL = env("FRONTEND_URL")
+BACKEND_URL = env("BACKEND_URL", default=FRONTEND_URL)
 
 # Registered PayPal webhook ID. Keep this server-side; it is required to verify
 # every PayPal webhook before any payment/refund state is changed.
@@ -249,9 +250,16 @@ SESSION_EXPIRE_AT_BROWSER_CLOSE = True
 SESSION_COOKIE_NAME = "user_sessionid"
 
 SESSION_COOKIE_SAMESITE = "Lax"
-SESSION_COOKIE_SECURE = not DEBUG
+SESSION_COOKIE_SECURE = env.bool("SESSION_COOKIE_SECURE", default=not DEBUG)
 CSRF_COOKIE_SAMESITE = "Lax"
 CSRF_COOKIE_SECURE = env.bool("CSRF_COOKIE_SECURE", default=FRONTEND_URL.startswith("https://"))
+CSRF_COOKIE_HTTPONLY = False
+SECURE_SSL_REDIRECT = env.bool("SECURE_SSL_REDIRECT", default=False)
+SECURE_PROXY_SSL_HEADER = (
+    ("HTTP_X_FORWARDED_PROTO", "https")
+    if env.bool("SECURE_PROXY_SSL_HEADER", default=False)
+    else None
+)
 CSRF_COOKIE_HTTPONLY = False
 
 SESSION_ENGINE = "django.contrib.sessions.backends.db"
