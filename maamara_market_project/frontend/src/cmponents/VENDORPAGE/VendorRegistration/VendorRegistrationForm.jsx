@@ -24,7 +24,7 @@ import {
   SelectContent,
   SelectItem,
 } from "../../../../components/ui/select";
-import api, { resolveApiAssetUrl } from "../../../Services/Api";
+import api, { getWebSocketUrl, resolveApiAssetUrl } from "../../../Services/Api";
 import "./VendorRegistration.css";
 import { getNames, getCodeList } from "country-list";
 // import { useCustomerAccessGuard } from "../../Hooks/AccessCRF/CustomerAccess";
@@ -509,82 +509,121 @@ const saveTimeout = useRef(null);
 const isFirstRender = useRef(true);
 const restoringDraft = useRef(false);
 
+// Apply the server's canonical draft shape to the existing form state.
+// WebSocket messages only invalidate the local copy; they never carry or
+// mutate form data themselves.
+const applyVendorDraftResponse = (response) => {
+  if (!response?.exists || !response?.draft) return;
+
+  restoringDraft.current = true;
+
+  const draft = response.draft;
+  form.reset(draft);
+
+  const restoredItems = (draft.item_list || []).map((item) => {
+    let image = null;
+
+    if (item.image) {
+      if (item.image.startsWith("/media/")) {
+        image = item.image;
+      } else if (item.image.startsWith("http")) {
+        image = item.image;
+      } else {
+        image = `/media/${item.image}`;
+      }
+    }
+
+    return {
+      name: item.name || "",
+      description: item.description || "",
+      price: Number(item.price) || 0,
+      image,
+      preview: resolveApiAssetUrl(image),
+      image_asset_id: item.image_asset_id ?? null,
+    };
+  });
+
+  setItems(restoredItems);
+  form.setValue("item_list", restoredItems);
+  setUsePdf(draft.usePdf ?? false);
+
+  setTimeout(() => {
+    restoringDraft.current = false;
+  }, 0);
+};
+
+// Initial hydration remains HTTP exactly as before.
 useEffect(() => {
-    const restoreDraft = async () => {
-        try {
-            const response = await getVendorDraft();
+  let cancelled = false;
 
-            if (!response.exists) return;
+  const restoreDraft = async () => {
+    try {
+      const response = await getVendorDraft();
+      if (!cancelled) applyVendorDraftResponse(response);
+    } catch (error) {
+      if (!cancelled) {
+        console.error("Failed to restore vendor draft:", error);
+        restoringDraft.current = false;
+      }
+    }
+  };
 
-            restoringDraft.current = true;
+  restoreDraft();
 
-            const draft = response.draft;
+  return () => {
+    cancelled = true;
+  };
+}, []);
 
-            form.reset(draft);
+// Realtime fetching only: the socket tells this page that its server-side
+// draft changed, then the page performs the same canonical GET used above.
+// Saving, validation, image uploads, and final submission remain HTTP and
+// unchanged.
+useEffect(() => {
+  let socket = null;
+  let reconnectTimer = null;
+  let cancelled = false;
 
+  const connect = () => {
+    if (cancelled) return;
 
-            const restoredItems = (draft.item_list || []).map((item) => {
+    socket = new WebSocket(getWebSocketUrl("/ws/realtime/"));
 
-                let image = null;
-
-
-                if (item.image) {
-
-                    if (item.image.startsWith("/media/")) {
-                        image = item.image;
-                    } 
-                    else if (item.image.startsWith("http")) {
-                        image = item.image;
-                    }
-                    else {
-                        image = `/media/${item.image}`;
-                    }
-
-                }
-
-                const resolvedImage = resolveApiAssetUrl(image);
-
-                return {
-                    name: item.name || "",
-                    description: item.description || "",
-                    price: Number(item.price) || 0,
-                    image,
-                    preview: resolvedImage,
-                    image_asset_id: item.image_asset_id ?? null,
-                };
-            });
-
-
-            setItems(restoredItems);
-
-            form.setValue(
-              "item_list",
-              restoredItems
-            );
-
-
-            setUsePdf(draft.usePdf ?? false);
-
-
-            setTimeout(() => {
-                restoringDraft.current = false;
-            }, 0);
-
-
-        } catch (error) {
-
-            console.error(
-                "Failed to restore vendor draft:",
-                error
-            );
-
-            restoringDraft.current = false;
+    socket.onmessage = async (event) => {
+      try {
+        const payload = JSON.parse(event.data || "{}");
+        if (
+          payload?.type !== "realtime.event" ||
+          payload?.model !== "VendorDraft"
+        ) {
+          return;
         }
+
+        const response = await getVendorDraft();
+        if (!cancelled) {
+          applyVendorDraftResponse(response);
+        }
+      } catch (error) {
+        if (!cancelled) {
+          console.error("Failed to fetch realtime vendor draft:", error);
+        }
+      }
     };
 
+    socket.onclose = () => {
+      if (!cancelled) {
+        reconnectTimer = setTimeout(connect, 3000);
+      }
+    };
+  };
 
-    restoreDraft();
+  connect();
 
+  return () => {
+    cancelled = true;
+    if (reconnectTimer) clearTimeout(reconnectTimer);
+    if (socket) socket.close();
+  };
 }, []);
 
 // Persist the complete registration state, including item images, before
