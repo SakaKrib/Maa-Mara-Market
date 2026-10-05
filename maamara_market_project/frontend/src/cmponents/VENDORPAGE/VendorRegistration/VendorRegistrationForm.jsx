@@ -354,6 +354,8 @@ const [isSubmitting, setIsSubmitting] = useState(false);
   const [aiLoadingField, setAiLoadingField] = useState(null);
   const [aiError, setAiError] = useState(null);
   const [workshopLocation, setWorkshopLocation] = useState({ locationSearch: "", latitude: null, longitude: null });
+  const [addressLocation, setAddressLocation] = useState({ locationSearch: "", latitude: null, longitude: null });
+  const [apartmentAddressLocation, setApartmentAddressLocation] = useState({ locationSearch: "", latitude: null, longitude: null });
 
 
   // useState for form data management
@@ -449,10 +451,24 @@ useEffect(() => {
 
 useEffect(() => {
   const currentValue = workshopLocationValue || "";
-  if (currentValue && currentValue !== workshopLocation.locationSearch) {
+  if (currentValue !== workshopLocation.locationSearch) {
     setWorkshopLocation((current) => ({ ...current, locationSearch: currentValue, latitude: null, longitude: null }));
   }
 }, [workshopLocationValue]);
+
+useEffect(() => {
+  const currentValue = watchedValues.address || "";
+  if (currentValue !== addressLocation.locationSearch) {
+    setAddressLocation((current) => ({ ...current, locationSearch: currentValue, latitude: null, longitude: null }));
+  }
+}, [watchedValues.address]);
+
+useEffect(() => {
+  const currentValue = watchedValues.address_2 || "";
+  if (currentValue !== apartmentAddressLocation.locationSearch) {
+    setApartmentAddressLocation((current) => ({ ...current, locationSearch: currentValue, latitude: null, longitude: null }));
+  }
+}, [watchedValues.address_2]);
 
 useEffect(() => {
   const value = watchedValues.vendor_company_logo;
@@ -1057,7 +1073,10 @@ const onSubmit = async (data) => {
 ].map((fieldName) => (
   <FormField key={fieldName} name={fieldName} control={form.control} render={({ field }) => (
     <FormItem>
-      <FormLabel>{fieldName.replace(/_/g, " ")}</FormLabel>
+      <FormLabel>
+        {fieldName.replace(/_/g, " ")}
+        {fieldName !== "middle_name" && <span className="ml-1 text-error-600">*</span>}
+      </FormLabel>
       <FormControl><Input {...field} id={fieldName} type="text" /></FormControl>
       <FormMessage />
     </FormItem>
@@ -1066,7 +1085,7 @@ const onSubmit = async (data) => {
 
         <FormField name="username" control={form.control} render={({ field }) => (
           <FormItem>
-            <FormLabel>Username</FormLabel>
+            <FormLabel>Username <span className="ml-1 text-error-600">*</span></FormLabel>
             <FormControl>
               <Input {...field} id="username" type="text" readOnly tabIndex={-1} className="bg-muted/50 text-muted-foreground" />
             </FormControl>
@@ -1079,7 +1098,7 @@ const onSubmit = async (data) => {
       {/* country */}
       <FormField name="country" control={form.control} render={({ field }) => (
         <FormItem>
-          <FormLabel>Country</FormLabel>
+          <FormLabel>Country <span className="ml-1 text-error-600">*</span></FormLabel>
           <Select
             onValueChange={field.onChange}
             value={field.value}
@@ -1102,7 +1121,7 @@ const onSubmit = async (data) => {
         {/* City */}
       <FormField name="city" control={form.control} render={({ field }) => (
         <FormItem>
-          <FormLabel>City</FormLabel>
+          <FormLabel>City <span className="ml-1 text-error-600">*</span></FormLabel>
           <FormControl><Input {...field} /></FormControl>
           <FormMessage />
         </FormItem>
@@ -1111,8 +1130,19 @@ const onSubmit = async (data) => {
       {/* Address */}
       <FormField name="address" control={form.control} render={({ field }) => (
         <FormItem>
-          <FormLabel>Address</FormLabel>
-          <FormControl><Textarea {...field} /></FormControl>
+          <FormControl>
+            <GPSLocationInput
+              value={addressLocation}
+              onChange={(nextLocation) => {
+                setAddressLocation(nextLocation);
+                field.onChange(nextLocation.locationSearch || "");
+              }}
+              label="Address"
+              placeholder="Search your address..."
+              required
+              error={form.formState.errors.address?.message}
+            />
+          </FormControl>
           <FormMessage />
         </FormItem>
       )} />
@@ -1120,8 +1150,19 @@ const onSubmit = async (data) => {
       {/* address two */}
       <FormField name="address_2" control={form.control} render={({ field }) => (
         <FormItem>
-          <FormLabel>Appartment Address(Optional)</FormLabel>
-          <FormControl><Textarea {...field} /></FormControl>
+          <FormControl>
+            <GPSLocationInput
+              value={apartmentAddressLocation}
+              onChange={(nextLocation) => {
+                setApartmentAddressLocation(nextLocation);
+                field.onChange(nextLocation.locationSearch || "");
+              }}
+              label="Appartment Address (Optional)"
+              placeholder="Search your apartment address..."
+              required={false}
+              error={form.formState.errors.address_2?.message}
+            />
+          </FormControl>
           <FormMessage />
         </FormItem>
       )} />
