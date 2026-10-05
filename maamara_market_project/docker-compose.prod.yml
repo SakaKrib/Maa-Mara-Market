@@ -1,0 +1,71 @@
+services:
+  backend:
+    restart: unless-stopped
+    env_file:
+      - ./backend/project01/.env
+    environment:
+      DEBUG: "False"
+      POSTGRES_HOST: db
+      POSTGRES_PORT: "5432"
+      REDIS_URL: redis://redis:6379/0
+      FRONTEND_URL: https://mamaramarket.com
+      BACKEND_URL: https://mamaramarket.com
+      ALLOWED_HOSTS: mamaramarket.com,www.mamaramarket.com
+      CORS_ALLOWED_ORIGINS: https://mamaramarket.com,https://www.mamaramarket.com
+      CSRF_TRUSTED_ORIGINS: https://mamaramarket.com,https://www.mamaramarket.com
+      SECURE_SSL_REDIRECT: "True"
+      SECURE_PROXY_SSL_HEADER: "True"
+      SESSION_COOKIE_SECURE: "True"
+      CSRF_COOKIE_SECURE: "True"
+    ports: []
+    volumes:
+      - backend_static:/app/static
+      - backend_media:/app/media
+    command: ["./entrypoint.production.sh"]
+
+  pending-registration-cleanup:
+    restart: unless-stopped
+    env_file:
+      - ./backend/project01/.env
+    environment:
+      DEBUG: "False"
+      POSTGRES_HOST: db
+      POSTGRES_PORT: "5432"
+      REDIS_URL: redis://redis:6379/0
+    volumes:
+      - /dev/null:/app/disable-dev-bind-mount
+    command: >
+      sh -c "until python manage.py cleanup_pending_registrations; do
+             echo 'Waiting for Django migrations before pending-registration cleanup...';
+             sleep 10;
+             done;
+             while true; do
+               sleep 60;
+               python manage.py cleanup_pending_registrations;
+             done"
+
+  frontend:
+    restart: unless-stopped
+    ports: []
+    volumes: []
+    command: ["nginx", "-g", "daemon off;"]
+
+  caddy:
+    image: caddy:2.10-alpine
+    restart: unless-stopped
+    environment:
+      ACME_EMAIL: ${ACME_EMAIL:?ACME_EMAIL must be set}
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - frontend
+      - backend
+
+volumes:
+  caddy_data:
+  caddy_config:
