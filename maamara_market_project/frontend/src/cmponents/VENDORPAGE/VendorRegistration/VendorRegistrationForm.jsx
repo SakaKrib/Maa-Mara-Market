@@ -520,31 +520,44 @@ const applyVendorDraftResponse = (response) => {
   const draft = response.draft;
   form.reset(draft);
 
-  const restoredItems = (draft.item_list || []).map((item) => {
-    let image = null;
+  setItems((currentItems) => {
+    const restoredItems = (draft.item_list || []).map((item, index) => {
+      let image = null;
 
-    if (item.image) {
-      if (item.image.startsWith("/media/")) {
-        image = item.image;
-      } else if (item.image.startsWith("http")) {
-        image = item.image;
-      } else {
-        image = `/media/${item.image}`;
+      if (item.image) {
+        if (item.image.startsWith("/media/")) {
+          image = item.image;
+        } else if (item.image.startsWith("http")) {
+          image = item.image;
+        } else {
+          image = `/media/${item.image}`;
+        }
       }
+
+      const currentItem = currentItems[index];
+      const hasLocalPreview =
+        currentItem?.image instanceof File && currentItem?.preview;
+
+      return {
+        name: item.name || currentItem?.name || "",
+        description: item.description || currentItem?.description || "",
+        price: Number(item.price) || currentItem?.price || 0,
+        image: hasLocalPreview ? currentItem.image : image,
+        preview: hasLocalPreview
+          ? currentItem.preview
+          : resolveApiAssetUrl(image),
+        image_asset_id:
+          item.image_asset_id ?? currentItem?.image_asset_id ?? null,
+      };
+    });
+
+    // Keep locally added items that the server has not returned yet.
+    if (currentItems.length > restoredItems.length) {
+      restoredItems.push(...currentItems.slice(restoredItems.length));
     }
 
-    return {
-      name: item.name || "",
-      description: item.description || "",
-      price: Number(item.price) || 0,
-      image,
-      preview: resolveApiAssetUrl(image),
-      image_asset_id: item.image_asset_id ?? null,
-    };
+    return restoredItems;
   });
-
-  setItems(restoredItems);
-  form.setValue("item_list", restoredItems);
   setUsePdf(draft.usePdf ?? false);
 
   setTimeout(() => {
