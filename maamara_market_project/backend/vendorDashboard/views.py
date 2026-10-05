@@ -21,6 +21,7 @@ from django.shortcuts import get_object_or_404
 from PIL import Image
 
 from ReactSerializers.Serializers import VendorPayoutSerializer
+from core.realtime import broadcast_event
 from ReactSerializers.models import Item
 from order.models import OrderItem, Order
 from .models import Vendor, SoldItem, VendorAdjustment, VendorPayout, VendorDraft, VendorDraftImage, VendorRequest, VendorItemRequest, ItemDraft, ItemDraftMedia
@@ -704,6 +705,20 @@ class VendorDraftView(APIView):
         draft.expires_at = timezone.now() + timezone.timedelta(days=30)
         draft.save(update_fields=["data", "expires_at", "updated_at"])
 
+        # Notify only this authenticated user's realtime channel after the
+        # transaction commits. The WebSocket is an invalidation signal only;
+        # the frontend still fetches the canonical draft through GET.
+        draft_id = str(draft.id)
+        transaction.on_commit(
+            lambda: broadcast_event(
+                "vendor_draft.updated",
+                model="VendorDraft",
+                object_id=draft_id,
+                action="updated",
+                user_ids=[request.user.id],
+            )
+        )
+
         return Response({
             "message": "Draft saved successfully.",
             "created": created,
@@ -719,4 +734,13 @@ class VendorDraftView(APIView):
             for image in draft.images.all():
                 image.image.delete(save=False)
             draft.delete()
+            transaction.on_commit(
+                lambda: broadcast_event(
+                    "vendor_draft.deleted",
+                    model="VendorDraft",
+                    object_id=str(draft.id),
+                    action="deleted",
+                    user_ids=[request.user.id],
+                )
+            )
         return Response(status=status.HTTP_204_NO_CONTENT)
