@@ -17,7 +17,7 @@ services:
       SECURE_PROXY_SSL_HEADER: "True"
       SESSION_COOKIE_SECURE: "True"
       CSRF_COOKIE_SECURE: "True"
-    ports: []
+    ports: !reset []
     volumes:
       - backend_static:/app/static
       - backend_media:/app/media
@@ -32,8 +32,6 @@ services:
       POSTGRES_HOST: db
       POSTGRES_PORT: "5432"
       REDIS_URL: redis://redis:6379/0
-    volumes:
-      - /dev/null:/app/disable-dev-bind-mount
     command: >
       sh -c "until python manage.py cleanup_pending_registrations; do
              echo 'Waiting for Django migrations before pending-registration cleanup...';
@@ -46,8 +44,8 @@ services:
 
   frontend:
     restart: unless-stopped
-    ports: []
-    volumes: []
+    ports: !reset []
+    volumes: !reset []
     command: ["nginx", "-g", "daemon off;"]
 
   caddy:
