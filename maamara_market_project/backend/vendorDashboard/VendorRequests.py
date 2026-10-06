@@ -6,7 +6,7 @@ from django.template.loader import render_to_string
 from django.conf import settings
 from django.contrib.auth import get_user_model
 
-from .models import Vendor, VendorItemRequest, Item, ItemDraft, ItemDraftMedia
+from .models import Vendor, VendorRequest, VendorItemRequest, Item, ItemDraft, ItemDraftMedia
 from .serializers import VendorItemRequestSerializer
 from core.models import ActivityLog, Notification  # adjust import to your app
 from rest_framework.views import APIView
@@ -1146,17 +1146,17 @@ class ApprovePriceChangeRequestView(APIView):
 
 
 class VendorItemRequestItemUpdateView(APIView):
-    """Persist one admin-edited item directly into VendorItemRequest.item_list."""
+    """Persist one admin-edited item into the VendorRequest approval snapshot."""
 
     permission_classes = [permissions.IsAdminUser, IsAuthenticated]
 
     @transaction.atomic
     def patch(self, request, pk, item_index):
         try:
-            vendor_request = VendorItemRequest.objects.select_for_update().get(pk=pk)
-        except VendorItemRequest.DoesNotExist:
+            vendor_request = VendorRequest.objects.select_for_update().get(pk=pk)
+        except VendorRequest.DoesNotExist:
             return Response(
-                {"error": "Vendor item request not found."},
+                {"error": "Vendor request not found."},
                 status=status.HTTP_404_NOT_FOUND,
             )
 
@@ -1189,15 +1189,28 @@ class VendorItemRequestItemUpdateView(APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        current_item = item_list[item_index] if isinstance(item_list[item_index], dict) else {}
-        merged_item = {**current_item, **updated_item, "admin_edited": True}
+        current_item = (
+            item_list[item_index]
+            if isinstance(item_list[item_index], dict)
+            else {}
+        )
+
+        # Merge rather than replace so existing persisted media and other
+        # request data are preserved when the editor did not replace them.
+        merged_item = {
+            **current_item,
+            **updated_item,
+            "admin_edited": True,
+        }
+
         item_list[item_index] = merged_item
+
         vendor_request.item_list = item_list
         vendor_request.save(update_fields=["item_list"])
 
         return Response(
             {
-                "message": "Item saved to vendor item request.",
+                "message": "Item saved to vendor request.",
                 "item": merged_item,
                 "item_index": item_index,
             },
