@@ -1,9 +1,17 @@
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import api from "../../../../../../Services/Api";
+import api, { resolveApiAssetUrl } from "../../../../../../Services/Api";
 import FormattedCurrency from "../Currency/FormattedCurrency";
 import VendorRatingForm from "../VendorRatingsAndShop";
 import TrendingProduct from "../Trending/TrendingProduct";
+
+const ProductImageSkeleton = () => (
+  <div className="absolute inset-0 animate-pulse bg-muted" aria-hidden="true">
+    <div className="absolute inset-x-5 top-5 h-2 rounded-full bg-background/50" />
+    <div className="absolute inset-x-5 top-9 h-2 w-1/2 rounded-full bg-background/40" />
+    <div className="absolute inset-x-5 bottom-5 h-2 w-2/3 rounded-full bg-background/40" />
+  </div>
+);
 
 const Stars = ({ value = 0 }) => {
   const rounded = Math.min(5, Math.max(0, Math.round(Number(value) || 0)));
@@ -22,6 +30,7 @@ const ProductRail = ({
   initialVisible = 4,
 }) => {
   const [showAll, setShowAll] = useState(false);
+  const [brokenImages, setBrokenImages] = useState({});
 
   if (!items?.length) return null;
 
@@ -54,7 +63,17 @@ const ProductRail = ({
             : "grid grid-cols-2 gap-4 sm:grid-cols-4"
         }
       >
-        {products.map((product) => (
+        {products.map((product) => {
+          const imageUrl = resolveApiAssetUrl(
+            product.image?.url ||
+              product.image?.image ||
+              product.image?.image_url ||
+              product.image ||
+              product.image_url ||
+              product.imageUrl
+          );
+          const imageBroken = brokenImages[product.id];
+          return (
           <Link
             key={product.id}
             to={"/item-client/" + product.id}
@@ -64,16 +83,24 @@ const ProductRail = ({
                 : "group min-w-0"
             }
           >
-            <div className="aspect-square overflow-hidden rounded-xl border border-border bg-background">
-              {product.image ? (
-                <img
-                  src={product.image}
-                  alt={product.name}
-                  className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.02]"
-                  loading="lazy"
-                />
+            <div className="relative aspect-square overflow-hidden rounded-xl border border-border bg-background">
+              {imageUrl && !imageBroken ? (
+                <>
+                  <div className="absolute inset-0 animate-pulse bg-muted" />
+                  <img
+                    src={imageUrl}
+                    alt={product.name}
+                    className="relative h-full w-full object-cover opacity-0 transition-opacity duration-300 group-hover:scale-[1.02]"
+                    loading="lazy"
+                    onLoad={(event) => {
+                      event.currentTarget.classList.remove("opacity-0");
+                      event.currentTarget.previousElementSibling?.classList.add("hidden");
+                    }}
+                    onError={() => setBrokenImages((current) => ({ ...current, [product.id]: true }))}
+                  />
+                </>
               ) : (
-                <div className="h-full w-full flex items-center justify-center text-xs text-muted-foreground">No image</div>
+                <ProductImageSkeleton />
               )}
             </div>
             <h3 className="mt-2 truncate text-sm font-bold text-card-foreground">{product.name}</h3>
