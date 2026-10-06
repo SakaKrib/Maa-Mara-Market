@@ -208,26 +208,49 @@ const ItemAddNew = ({
   const [showExtraFields, setShowExtraFields] = useState(false);
 
   const hasExplicitAdminWorkflow = Boolean(
-    resolvedApprovalRequestId || normalizedAdminCreateNew || explicitFlow
+    resolvedApprovalRequestId || normalizedAdminCreateNew || normalizedApprovalMode || explicitFlow
+  );
+
+  // Existing vendor data is the source of truth for admin workflows.
+  // A new vendor item is the only case where vendor data is absent.
+  const hasVendorBackedAdminWorkflow = Boolean(
+    effectiveIsAdmin && hasVendorPayload && !normalizedAdminCreateNew
+  );
+  const isExplicitEditMode = Boolean(
+    explicitFlow === "edit" || explicitFlow === "vendor-registration-edit"
   );
 
   const isEditing = Boolean(
-    initialItem?.id &&
-      !normalizedApprovalMode &&
-      !normalizedAdminCreateNew
+    initialItem?.id && !normalizedAdminCreateNew && !normalizedApprovalMode
   );
 
-  const isApprovalMode = normalizedApprovalMode;
-  const saveMode = explicitFlow === "admin-approve" || isApprovalMode
-    ? "admin-approve"
-    : normalizedAdminCreateNew
+  const isApprovalMode = Boolean(
+    effectiveIsAdmin &&
+      !isExplicitEditMode &&
+      (
+        normalizedApprovalMode ||
+        resolvedApprovalRequestId ||
+        hasVendorBackedAdminWorkflow
+      )
+  );
+
+  const saveMode =
+    normalizedAdminCreateNew
       ? "admin-create"
-      : explicitFlow === "edit" || isEditing
-        ? "edit"
-        : "vendor-create";
+      : explicitFlow === "admin-approve" || isApprovalMode
+        ? "admin-approve"
+        : isExplicitEditMode || isEditing
+          ? "edit"
+          : "vendor-create";
 
   const hasWorkflowConflict =
-    Boolean(resolvedApprovalRequestId || normalizedAdminCreateNew || normalizedApprovalMode || explicitFlow) &&
+    Boolean(
+      resolvedApprovalRequestId ||
+        normalizedAdminCreateNew ||
+        normalizedApprovalMode ||
+        explicitFlow ||
+        hasVendorBackedAdminWorkflow
+    ) &&
     !["admin-approve", "admin-create", "edit", "vendor-create"].includes(saveMode);
 
   if (process.env.NODE_ENV !== "production") {
