@@ -1068,102 +1068,228 @@ def approve_vendor(request, vendor_request_id):
             if not name:
                 continue
 
-            slug = slugify(name) + "-" + str(user.id)
-            image_hash = hashlib.sha256(slug.encode('utf-8')).hexdigest()
+            # Item.slug is a 50-character database field. Keep the full
+            # product name in Item.name, but generate a bounded unique slug.
+            slug_suffix = f"-{user.id}"
+            base_slug = slugify(name) or f"item-{user.id}"
+            max_base_length = 50 - len(slug_suffix)
+            base_slug = base_slug[:max_base_length].rstrip("-") or "item"
+            slug = f"{base_slug}{slug_suffix}"
+            counter = 1
+            while Item.objects.filter(slug=slug).exists():
+                counter_suffix = f"-{counter}"
+                available_base_length = 50 - len(slug_suffix) - len(counter_suffix)
+                slug = (
+                    f"{base_slug[:available_base_length].rstrip('-')}"
+                    f"{slug_suffix}{counter_suffix}"
+                )
+                counter += 1
 
+            image_hash = hashlib.sha256(slug.encode("utf-8")).hexdigest()
+
+            # Preserve the complete Item payload used by the registration form.
             created_item = Item.objects.create(
                 name=name,
                 section=section,
-                description=sanitize(normalized_item.get('description') or ""),
-                price=item.get('price', 0) or 0,
-                discount_price=item.get('discount_price', 0) or 0,
-                in_stock=item.get('in_stock', 0) or 0,
-                available=item.get('available', True),
-                returnable=item.get('returnable', True),
+                description=sanitize(normalized_item.get("description") or ""),
+                price=item.get("price", 0) or 0,
+                discount_price=item.get("discount_price"),
+                in_stock=item.get("in_stock", 0) or 0,
+                available=item.get("available", True),
+                returnable=item.get("returnable", True),
                 department=department,
                 category=category,
                 subcategory=subcategory,
                 brand=brand,
-                item_attribute=sanitize(item.get('item_attribute') or ""),
-                gender_based=sanitize(item.get('shoe_gender', 'none')),
-                children_size_based_age=sanitize(item.get('kids_sizes', 'none')),
-                manufactured_date=item.get('manufactured_date'),
-                expiry_date=item.get('expiry_date'),
-                is_organic=item.get('is_organic', False),
-                is_fresh_food=item.get('is_fresh_food', False),
-                created_by=user,
+                item_attribute=sanitize(item.get("item_attribute") or ""),
+                gender_based=sanitize(
+                    item.get("gender_based") or item.get("shoe_gender") or "none"
+                ),
+                children_size_based_age=sanitize(
+                    item.get("children_size_based_age")
+                    or item.get("kids_sizes_label")
+                    or "none"
+                ),
+                manufactured_date=item.get("manufactured_date") or None,
+                expiry_date=item.get("expiry_date") or None,
+                is_organic=item.get("is_organic", False),
+                is_fresh_food=item.get("is_fresh_food", False),
+                in_offer=item.get("in_offer", False),
                 vendor=vendor,
+                created_by=user,
                 slug=slug,
                 image_hash=image_hash,
                 image=relative_path,
                 video=video_relative_path,
-                percentage_discount=item.get('percentage_discount', 0)
+                percentage_discount=item.get("percentage_discount", 0) or 0,
+                roast_type=sanitize(item.get("roast_type") or "") or None,
+                coffee_state=sanitize(item.get("coffee_state") or "") or None,
             )
 
-            occasion_keys = item.get('occasions') or []
+            occasion_keys = item.get("occasions") or []
             if occasion_keys:
+                if not isinstance(occasion_keys, list):
+                    occasion_keys = [occasion_keys]
                 created_item.occasions.set(
-                    Occasion.objects.filter(key__in=occasion_keys, is_active=True)
+                    Occasion.objects.filter(
+                        key__in=[str(key) for key in occasion_keys],
+                        is_active=True,
+                    )
                 )
 
             for additional_image in item.get("additional_images", []) or []:
                 if not additional_image:
                     continue
-                additional_relative_path = str(additional_image).lstrip('/').removeprefix('media/')
+                additional_relative_path = (
+                    str(additional_image).lstrip("/").removeprefix("media/")
+                )
                 ItemAdditionalImage.objects.create(
                     item=created_item,
                     image=additional_relative_path,
                 )
 
-            shipping_data = item.get("shipping_dimension", {})
+            shipping_data = (
+                item.get("shipping_dimension_data")
+                or item.get("shipping_dimension")
+                or {}
+            )
             if shipping_data:
-                ShippingDimension.objects.create(
+                ShippingDimension.objects.update_or_create(
                     item=created_item,
-                    length=shipping_data.get("length", 0),
-                    width=shipping_data.get("width", 0),
-                    height=shipping_data.get("height", 0),
-                    weight=shipping_data.get("weight", 0),
-                    unit=shipping_data.get("unit", "cm"),
-                    weight_unit=shipping_data.get("weight_unit", "kg")
+                    defaults={
+                        "length": shipping_data.get("length", 0) or 0,
+                        "width": shipping_data.get("width", 0) or 0,
+                        "height": shipping_data.get("height", 0) or 0,
+                        "weight": shipping_data.get("weight", 0) or 0,
+                        "unit": shipping_data.get("unit", "cm") or "cm",
+                        "weight_unit": shipping_data.get("weight_unit", "kg") or "kg",
+                    },
                 )
 
-            for cv in item.get('color_variants', []):
-                color = sanitize(cv.get('color'))
-                if color:
-                    ColorVariant.objects.create(item=created_item, color=color)
+            variant_data = item.get("variants")
+            if variant_data is None:
+                variant_data = item.get("color_variants", [])
 
-            for sz in item.get('size_stock', []):
-                size = sanitize(sz.get('size'))
-                quantity = sz.get('quantity_in_stock', 0)
-                if size:
-                    SizeStock.objects.create(item=created_item, size=size, quantity_in_stock=quantity)
+            for cv in variant_data or []:
+                if not isinstance(cv, dict):
+                    continue
+                color = sanitize(cv.get("color"))
+                if not color:
+                    continue
+                raw_variant_image = cv.get("image") or cv.get("color_image")
+                variant_image_path = (
+                    str(raw_variant_image).lstrip("/").removeprefix("media/")
+                    if isinstance(raw_variant_image, str) and raw_variant_image
+                    else None
+                )
+                variant = ColorVariant.objects.create(
+                    item=created_item,
+                    color=color,
+                    image=variant_image_path,
+                )
+                for sz in cv.get("sizes", []) or []:
+                    if not isinstance(sz, dict):
+                        continue
+                    size = sz.get("size")
+                    quantity = sz.get("quantity_in_stock", sz.get("stock", 0)) or 0
+                    if size not in (None, ""):
+                        SizeStock.objects.create(
+                            variant=variant,
+                            size=size,
+                            quantity_in_stock=quantity,
+                        )
 
-            for av in item.get('age_variants', []):
-                age_group = sanitize(av.get('age_group'))
-                quantity = av.get('quantity_in_stock', 0)
+            size_data = item.get("size_only_icon")
+            if size_data is None:
+                size_data = item.get("size_stock", [])
+            for sz in size_data or []:
+                if not isinstance(sz, dict):
+                    continue
+                size = sz.get("size")
+                quantity = sz.get("quantity_in_stock", sz.get("stock", 0)) or 0
+                if size not in (None, ""):
+                    SizeStock.objects.create(
+                        item=created_item,
+                        size=size,
+                        quantity_in_stock=quantity,
+                    )
+
+            age_data = item.get("kids_sizes")
+            if age_data is None:
+                age_data = item.get("age_variants", [])
+            for av in age_data or []:
+                if not isinstance(av, dict):
+                    continue
+                age_group = sanitize(av.get("age_group") or av.get("size") or "")
+                quantity = av.get("quantity_in_stock", av.get("stock", 0)) or 0
                 if age_group:
-                    AgeVariant.objects.create(item=created_item, age_group=age_group, quantity_in_stock=quantity)
-
-            if item.get('weight'):
-                try:
-                    Weight.objects.create(
+                    AgeVariant.objects.create(
                         item=created_item,
-                        value=item['weight']['value'],
-                        unit=sanitize(item['weight'].get('unit', 'kg'))
+                        age_group=age_group,
+                        quantity_in_stock=quantity,
                     )
-                except Exception:
-                    pass
 
+            for shoe in item.get("shoe_input", []) or []:
+                if not isinstance(shoe, dict):
+                    continue
+                Shoe.objects.create(
+                    item=created_item,
+                    shoe_type=sanitize(shoe.get("shoe_type") or ""),
+                    shoe_gender=sanitize(shoe.get("shoe_gender") or ""),
+                    shoe_size=shoe.get("shoe_size") or [],
+                )
 
-            if item.get('length'):
-                try:
-                    Length.objects.create(
+            if item.get("weight"):
+                weight_data = item["weight"]
+                if isinstance(weight_data, dict):
+                    Weight.objects.update_or_create(
                         item=created_item,
-                        value=item['length']['value'],
-                        unit=sanitize(item['length'].get('unit', 'cm'))
+                        defaults={
+                            "value": weight_data.get("value", 0) or 0,
+                            "unit": sanitize(weight_data.get("unit", "kg")),
+                        },
                     )
-                except Exception:
-                    pass
+
+            if item.get("length"):
+                length_data = item["length"]
+                if isinstance(length_data, dict):
+                    Length.objects.update_or_create(
+                        item=created_item,
+                        defaults={
+                            "value": length_data.get("value", 0) or 0,
+                            "unit": sanitize(length_data.get("unit", "cm")),
+                        },
+                    )
+
+            offer_data = item.get("offer")
+            if item.get("in_offer") and isinstance(offer_data, dict):
+                offer_percentage = offer_data.get("discount_percentage")
+                start_date = offer_data.get("start_date")
+                end_date = offer_data.get("end_date")
+                if offer_percentage and start_date and end_date:
+                    from datetime import datetime as _datetime
+                    from django.utils import timezone as _timezone
+
+                    def _approval_datetime(value):
+                        if isinstance(value, _datetime):
+                            parsed = value
+                        else:
+                            parsed = _datetime.fromisoformat(
+                                str(value).replace("Z", "+00:00")
+                            )
+                        if parsed.tzinfo is None:
+                            parsed = _timezone.make_aware(
+                                parsed,
+                                _timezone.get_current_timezone(),
+                            )
+                        return parsed
+
+                    Offer.objects.create(
+                        item=created_item,
+                        discount_percentage=offer_percentage,
+                        start_date=_approval_datetime(start_date),
+                        end_date=_approval_datetime(end_date),
+                    )
 
 
             created_items.append(created_item.id)
