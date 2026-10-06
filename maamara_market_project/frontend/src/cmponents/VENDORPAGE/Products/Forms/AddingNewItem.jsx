@@ -154,18 +154,58 @@ const ItemAddNew = ({
     initialItem?.vendorData ??
     null;
 
-  // Existing vendor-backed items may receive their item identity inside vendor_data.
-  // Resolve the actual Item id from the common payload shapes before edit validation.
+  // vendor_data may be an object, array, or JSON string. Resolve only
+  // item-specific identifiers; never use vendor_data.id as the Item id.
+  const resolveVendorDataItemId = (value) => {
+    if (value == null) return null;
+
+    if (typeof value === "string") {
+      const trimmed = value.trim();
+      if (!trimmed) return null;
+      try {
+        return resolveVendorDataItemId(JSON.parse(trimmed));
+      } catch {
+        return null;
+      }
+    }
+
+    if (Array.isArray(value)) {
+      for (const entry of value) {
+        const found = resolveVendorDataItemId(entry);
+        if (found != null) return found;
+      }
+      return null;
+    }
+
+    if (typeof value !== "object") return null;
+
+    const explicitItemId =
+      value.item_id ??
+      value.itemId ??
+      value.item?.id ??
+      value.item?.item_id ??
+      value.item_data?.id ??
+      value.item_data?.item_id ??
+      null;
+
+    if (explicitItemId != null && explicitItemId !== "") return explicitItemId;
+
+    for (const key of ["item", "item_data", "item_list", "items"]) {
+      if (value[key] != null) {
+        const found = resolveVendorDataItemId(value[key]);
+        if (found != null) return found;
+      }
+    }
+
+    return null;
+  };
+
+  const vendorDataItemId = resolveVendorDataItemId(vendorData);
+
   const safeItemId =
     itemId ??
     initialItem?.id ??
-    vendorData?.item_id ??
-    vendorData?.itemId ??
-    vendorData?.item?.id ??
-    vendorData?.item?.item_id ??
-    vendorData?.item_data?.id ??
-    vendorData?.item_data?.item_id ??
-    vendorData?.id ??
+    vendorDataItemId ??
     null;
   const normalizedAdminCreateNew = Boolean(adminCreateNew) || explicitFlow === "admin-create";
   const normalizedApprovalMode = Boolean(
