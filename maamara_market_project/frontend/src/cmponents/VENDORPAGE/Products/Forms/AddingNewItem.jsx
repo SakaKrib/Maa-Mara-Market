@@ -122,8 +122,10 @@ const ItemAddNew = ({
   const hasVendorPayload = Boolean(
     vendor && typeof vendor === "object" && Object.keys(vendor).length > 0
   );
+  // An approval request id must come from the VendorItemRequest itself.
+  // Never fall back to vendor.id/vendor_id: those are different database models.
   const resolvedApprovalRequestId =
-    approvalRequestId ?? vendor?.request_id ?? vendor?.id ?? vendor?.vendor_id ?? null;
+    approvalRequestId ?? vendor?.request_id ?? null;
   const safeItemId = itemId ?? initialItem?.id ?? null;
   const explicitFlow = String(flow || "").trim().toLowerCase();
   const normalizedAdminCreateNew = Boolean(adminCreateNew) && !hasVendorPayload;
