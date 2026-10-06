@@ -997,6 +997,25 @@ def approve_vendor(request, vendor_request_id):
     # 🏪 Create Vendor
     vendor = Vendor.objects.create(user=user, brand=brand_instance, **vendor_data)
 
+    def normalize_media_path(value):
+        if isinstance(value, dict):
+            value = (
+                value.get("image")
+                or value.get("image_url")
+                or value.get("url")
+                or value.get("file")
+            )
+        if not value:
+            return None
+        path = str(value).strip()
+        # JSON draft data may contain an already-prefixed media URL. Store the
+        # path relative to MEDIA_ROOT so ImageField generates /media/... once.
+        while path.startswith("/"):
+            path = path[1:]
+        while path.startswith("media/"):
+            path = path[len("media/"):]
+        return path or None
+
     created_items = []
 
     for item in item_list:
@@ -1057,12 +1076,8 @@ def approve_vendor(request, vendor_request_id):
             if brand is None:
                 brand = brand_instance
 
-            relative_path = raw_path.lstrip('/').removeprefix('media/') if raw_path else None
-            video_path = item.get('video')
-            video_relative_path = (
-                str(video_path).lstrip('/').removeprefix('media/')
-                if video_path else None
-            )
+            relative_path = normalize_media_path(raw_path)
+            video_relative_path = normalize_media_path(item.get("video"))
 
             name = sanitize(item.get('name') or "")
             if not name:
@@ -1088,22 +1103,8 @@ def approve_vendor(request, vendor_request_id):
             image_hash = hashlib.sha256(slug.encode("utf-8")).hexdigest()
 
             # Preserve the complete Item payload used by the registration form.
-            created_item = Item.objects.create(
-                name=name,
-                section=section,
-                description=sanitize(normalized_item.get("description") or ""),
-                price=item.get("price", 0) or 0,
-                discount_price=item.get("discount_price"),
-                in_stock=item.get("in_stock", 0) or 0,
-                available=item.get("available", True),
-                returnable=item.get("returnable", True),
-                department=department,
-                category=category,
-                subcategory=subcategory,
-                brand=brand,
-                item_attribute=sanitize(item.get("item_attribute") or ""),
-                gender_based=sanitize(
-                    item.get("gender_based") or item.get("shoe_gender") or "none"
+            created_item = Item.objects.create                in_stock=item.get("in_stock", 0) or 0,
+                available=item.get("available", True),none"
                 ),
                 children_size_based_age=sanitize(
                     item.get("children_size_based_age")
@@ -1140,9 +1141,9 @@ def approve_vendor(request, vendor_request_id):
             for additional_image in item.get("additional_images", []) or []:
                 if not additional_image:
                     continue
-                additional_relative_path = (
-                    str(additional_image).lstrip("/").removeprefix("media/")
-                )
+                additional_relative_path = normalize_media_path(additional_image)
+                if not additional_relative_path:
+                    continue
                 ItemAdditionalImage.objects.create(
                     item=created_item,
                     image=additional_relative_path,
