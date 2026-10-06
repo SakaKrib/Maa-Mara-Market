@@ -48,6 +48,7 @@ const SingleItem = () => {
   } = useSingleItem();
 
   const { wishlist, addToWishlist, removeFromWishlist } = useWishlistContext();
+  const [descriptionOpen, setDescriptionOpen] = useState(false);
   const isWishlisted =
     Array.isArray(wishlist) &&
     wishlist.some((entry) => (entry.item?.id || entry.id) === item?.id);
@@ -56,7 +57,6 @@ const SingleItem = () => {
   if (error || !item) return <div className="p-10 text-center">Item not found.</div>;
 
   const hasDiscount = Number(item.discount_price || item.discount || 0) > 0;
-  const [descriptionOpen, setDescriptionOpen] = useState(false);
 
   return (
     <main className="mm-single-item mm-page pb-12 pt-6">
