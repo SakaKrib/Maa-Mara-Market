@@ -1028,10 +1028,30 @@ def approve_vendor(request, vendor_request_id):
                 subcategory, _ = SubCategory.objects.get_or_create(name=subcategory_name, defaults={'category': category})
 
             brand = None
-            brand_name = sanitize(item.get('brand')) if item.get('brand') else None
-            if brand_name:
-                brand, _ = Brand.objects.get_or_create(name=brand_name)
+            raw_brand = item.get('brand')
+
+            # The frontend may submit the selected Brand as an ID, while
+            # older vendor-request payloads may contain a brand name/object.
+            # Resolve all supported forms to an actual Brand instance before
+            # creating the Item.
+            if isinstance(raw_brand, dict):
+                brand_id = raw_brand.get('id') or raw_brand.get('pk')
+                brand_name = sanitize(raw_brand.get('name', '')).strip()
             else:
+                brand_id = raw_brand if isinstance(raw_brand, (int, str)) else None
+                brand_name = sanitize(raw_brand).strip() if raw_brand else None
+
+            if brand_id not in (None, ''):
+                try:
+                    brand = Brand.objects.filter(pk=int(brand_id)).first()
+                except (TypeError, ValueError):
+                    brand = None
+
+            if brand is None and brand_name:
+                if not brand_name.isdigit():
+                    brand, _ = Brand.objects.get_or_create(name=brand_name)
+
+            if brand is None:
                 brand = brand_instance
 
             relative_path = raw_path.lstrip('/').removeprefix('media/') if raw_path else None
