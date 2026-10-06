@@ -161,8 +161,14 @@ export default function VendorApprovalPanel() {
     setView("items");
   };
 
-  const handleSaveEditedItem = (updatedItem) => {
+  const handleSaveEditedItem = async (updatedItem) => {
     if (editingItemIndex === null) return;
+    if (updatedItem?.__backToItems) {
+      setEditingItemIndex(null);
+      setView("items");
+      return;
+    }
+
     const editedItem = { ...updatedItem, admin_edited: true };
     const updatedList = [...editItemList];
     updatedList[editingItemIndex] = editedItem;
@@ -170,6 +176,10 @@ export default function VendorApprovalPanel() {
     setSelectedVendor((current) =>
       current ? { ...current, item_list: updatedList } : current
     );
+    showSnackbar({
+      title: "Item saved",
+      description: "Item saved to vendor item request.",
+    });
     setEditingItemIndex(null);
     setView("items");
   };
@@ -346,7 +356,11 @@ export default function VendorApprovalPanel() {
             <ItemAddNew
               vendorId={selectedVendor.id}
               vendor={selectedVendor}
-              initialItem={editItemList[editingItemIndex]}
+              initialItem={{
+                ...editItemList[editingItemIndex],
+                item_index: editingItemIndex,
+              }}
+              approvalRequestId={selectedVendor.id}
               flow="vendor-registration-edit"
               onSave={handleSaveEditedItem}
             />
