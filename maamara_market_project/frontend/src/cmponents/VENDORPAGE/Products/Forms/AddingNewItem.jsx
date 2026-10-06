@@ -122,48 +122,30 @@ const ItemAddNew = ({
   const hasVendorPayload = Boolean(
     vendor && typeof vendor === "object" && Object.keys(vendor).length > 0
   );
-  const explicitFlow = String(flow || "").trim().toLowerCase();
-  const isExplicitAdminApproval = Boolean(
-    approvalMode || explicitFlow === "admin-approve"
+
+  // There are two different identities in this form:
+  // 1. initialItem.id = an already-created Item being edited.
+  // 2. vendor_data/request id = a pending vendor request whose draft_item JSON
+  //    is being completed. That workflow does not have an Item id yet.
+  const hasInitialItem = Boolean(
+    initialItem &&
+      typeof initialItem === "object" &&
+      initialItem.id != null
   );
 
-  const isPendingApprovalRequest = Boolean(
-    (approvalRequestId != null) ||
-      initialItem?.request_id != null ||
-      initialItem?.vendor_item_request_id != null ||
-      (initialItem?.status === "pending" && initialItem?.id != null)
-  );
-
-  // The vendor identifies ownership. It does not identify an approval request.
-  // Only an actual pending VendorItemRequest may enter admin-approve.
-  const resolvedApprovalRequestId = isPendingApprovalRequest
-    ? approvalRequestId ??
-      initialItem?.request_id ??
-      initialItem?.vendor_item_request_id ??
-      initialItem?.id ??
-      null
-    : null;
-
-  // In vendor-backed workflows, vendor_data carries the existing item identity.
-  // Prefer an explicitly supplied item id, then the authoritative item payload,
-  // then the item id nested in vendor_data.
   const vendorData =
     vendor?.vendor_data ??
     vendor?.vendorData ??
-    initialItem?.vendor_data ??
-    initialItem?.vendorData ??
     null;
 
-  // vendor_data may be an object, array, or JSON string. Resolve only
-  // item-specific identifiers; never use vendor_data.id as the Item id.
-  const resolveVendorDataItemId = (value) => {
+  const resolveVendorRequestId = (value) => {
     if (value == null) return null;
 
     if (typeof value === "string") {
       const trimmed = value.trim();
       if (!trimmed) return null;
       try {
-        return resolveVendorDataItemId(JSON.parse(trimmed));
+        return resolveVendorRequestId(JSON.parse(trimmed));
       } catch {
         return null;
       }
@@ -171,7 +153,7 @@ const ItemAddNew = ({
 
     if (Array.isArray(value)) {
       for (const entry of value) {
-        const found = resolveVendorDataItemId(entry);
+        const found = resolveVendorRequestId(entry);
         if (found != null) return found;
       }
       return null;
@@ -179,20 +161,32 @@ const ItemAddNew = ({
 
     if (typeof value !== "object") return null;
 
-    const explicitItemId =
-      value.item_id ??
-      value.itemId ??
-      value.item?.id ??
-      value.item?.item_id ??
-      value.item_data?.id ??
-      value.item_data?.item_id ??
+    const requestId =
+      value.vendor_item_request_id ??
+      value.vendorItemRequestId ??
+      value.vendor_request_id ??
+      value.vendorRequestId ??
+      value.request_id ??
+      value.requestId ??
+      value.vendor_item_request?.id ??
+      value.vendorItemRequest?.id ??
+      value.vendor_request?.id ??
+      value.vendorRequest?.id ??
+      value.id ??
       null;
 
-    if (explicitItemId != null && explicitItemId !== "") return explicitItemId;
+    if (requestId != null && requestId !== "") return requestId;
 
-    for (const key of ["item", "item_data", "item_list", "items"]) {
+    for (const key of [
+      "vendor_item_request",
+      "vendorItemRequest",
+      "vendor_request",
+      "vendorRequest",
+      "request",
+      "request_data",
+    ]) {
       if (value[key] != null) {
-        const found = resolveVendorDataItemId(value[key]);
+        const found = resolveVendorRequestId(value[key]);
         if (found != null) return found;
       }
     }
@@ -200,13 +194,27 @@ const ItemAddNew = ({
     return null;
   };
 
-  const vendorDataItemId = resolveVendorDataItemId(vendorData);
+  const vendorDataRequestId = resolveVendorRequestId(vendorData);
 
-  const safeItemId =
-    itemId ??
-    initialItem?.id ??
-    vendorDataItemId ??
-    null;
+  const explicitFlow = String(flow || "").trim().toLowerCase();
+  const isExplicitAdminApproval = Boolean(
+    approvalMode || explicitFlow === "admin-approve"
+  );
+
+  const resolvedApprovalRequestId =
+    approvalRequestId ??
+    vendorDataRequestId ??
+    (!hasInitialItem
+      ? initialItem?.request_id ?? initialItem?.vendor_item_request_id ?? null
+      : null);
+
+  // Item id is relevant only when the form actually received an existing Item.
+  // A vendor request draft must never fall back to a vendor/request id here.
+  const safeItemId = hasInitialItem
+    ? itemId ?? initialItem.id ?? null
+    : null;
+
+  const isPendingApprovalRequest = Boolean(resolvedApprovalRequestId);
   const normalizedAdminCreateNew = Boolean(adminCreateNew) || explicitFlow === "admin-create";
   const normalizedApprovalMode = Boolean(
     isExplicitAdminApproval && isPendingApprovalRequest
@@ -276,14 +284,25 @@ const ItemAddNew = ({
   // Existing vendor data is the source of truth for admin workflows.
   // A new vendor item is the only case where vendor data is absent.
   const hasVendorBackedAdminWorkflow = Boolean(
-    effectiveIsAdmin && hasVendorPayload && !normalizedAdminCreateNew
+    effectiveIsAdmin &&
+      hasVendorPayload &&
+      !normalizedAdminCreateNew &&
+      !hasInitialItem
   );
+
+  // "edit" means editing a real existing Item only. If there is no initialItem
+  // but vendor_data is present, this is a vendor-request draft workflow even if
+  // a caller supplied a generic edit flow string.
   const isExplicitEditMode = Boolean(
-    explicitFlow === "edit" || explicitFlow === "vendor-registration-edit"
+    hasInitialItem &&
+      (explicitFlow === "edit" || explicitFlow === "vendor-registration-edit")
   );
 
   const isEditing = Boolean(
-    initialItem?.id && !normalizedAdminCreateNew && !normalizedApprovalMode
+    hasInitialItem &&
+      !normalizedAdminCreateNew &&
+      !normalizedApprovalMode &&
+      !resolvedApprovalRequestId
   );
 
   const isApprovalMode = Boolean(
@@ -1171,8 +1190,20 @@ const ItemAddNew = ({
           throw new Error("Admin approval requires an approval request id.");
         }
 
+        if (saveMode === "edit" && !hasInitialItem) {
+          throw new Error("Item edit requires an initial item.");
+        }
+
         if (saveMode === "edit" && !safeItemId) {
           throw new Error("Item edit requires a valid item id.");
+        }
+
+        if (
+          saveMode === "admin-approve" &&
+          !hasInitialItem &&
+          !resolvedApprovalRequestId
+        ) {
+          throw new Error("Vendor request draft requires a valid request id.");
         }
 
         if (saveMode === "admin-create") {
