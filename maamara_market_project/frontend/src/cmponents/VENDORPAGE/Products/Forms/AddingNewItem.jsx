@@ -122,10 +122,19 @@ const ItemAddNew = ({
   const hasVendorPayload = Boolean(
     vendor && typeof vendor === "object" && Object.keys(vendor).length > 0
   );
-  // An approval request id must come from the VendorItemRequest itself.
-  // Never fall back to vendor.id/vendor_id: those are different database models.
+  // Admin approval must use the VendorItemRequest id, never the vendor id.
+  // Some admin entry points provide the request id as the item's id after
+  // loading the VendorItemRequest into initialItem. Use that only for the
+  // explicit admin-approval workflow.
   const resolvedApprovalRequestId =
-    approvalRequestId ?? vendor?.request_id ?? null;
+    approvalRequestId ??
+    vendor?.request_id ??
+    (String(flow || "").trim().toLowerCase() === "admin-approve"
+      ? initialItem?.request_id ??
+        initialItem?.vendor_item_request_id ??
+        initialItem?.id ??
+        null
+      : null);
   const safeItemId = itemId ?? initialItem?.id ?? null;
   const explicitFlow = String(flow || "").trim().toLowerCase();
   const normalizedAdminCreateNew = Boolean(adminCreateNew) && !hasVendorPayload;
