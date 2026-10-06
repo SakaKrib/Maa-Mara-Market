@@ -73,7 +73,7 @@ const ProductRail = ({
           );
           const imageBroken = brokenImages[product.id];
           return (
-          <Link
+            <Link
             key={product.id}
             to={"/item-client/" + product.id}
             className={
@@ -110,7 +110,7 @@ const ProductRail = ({
             <div className="mt-1 text-sm font-semibold">
               <FormattedCurrency value={Number(product.final_discounted_price ?? product.final_price ?? product.price ?? 0)} />
             </div>
-          </Link>
+            </Link>
           );
         })}
       </div>
