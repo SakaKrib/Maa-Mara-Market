@@ -1528,7 +1528,6 @@ const ItemAddNew = ({
             throw new Error("Failed to save the item to the vendor request.");
           }
 
-          await onSave(response.data?.item || formattedItem);
           completeSave(
             response.data?.message || "Item saved to vendor item request.",
             response.data?.item || formattedItem
