@@ -327,7 +327,7 @@ export default function VendorApprovalPanel() {
         <VendorItemList
           items={editItemList}
           onEdit={setEditingItemIndex}
-          onBack={() => setView("details")}
+          onBack={resetWorkspace}
         />
       )}
 
