@@ -1103,9 +1103,9 @@ def approve_vendor(request, vendor_request_id):
             image_hash = hashlib.sha256(slug.encode("utf-8")).hexdigest()
 
             # Preserve the complete Item payload used by the registration form.
-            created_item = Item.objects.create                in_stock=item.get("in_stock", 0) or 0,
-                available=item.get("available", True),none"
-                ),
+            created_item = Item.objects.create(
+                in_stock=item.get("in_stock", 0) or 0,
+                available=item.get("available", True),
                 children_size_based_age=sanitize(
                     item.get("children_size_based_age")
                     or item.get("kids_sizes_label")
