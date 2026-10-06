@@ -209,7 +209,7 @@ const UiForVendorRequest = () => {
 
         <div className="min-w-0 p-2 sm:p-4">
           {activeSection === "vendors" && (
-            <VendorApprovalPanel key={`vendors-${refreshToken}`} />
+            <VendorApprovalPanel />
           )}
           {activeSection === "items" && (
             <VendorItemCreateRequests key={`items-${refreshToken}`} />
