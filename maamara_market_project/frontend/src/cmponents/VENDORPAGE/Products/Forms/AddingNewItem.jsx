@@ -141,22 +141,39 @@ const ItemAddNew = ({
       null
     : null;
   const safeItemId = itemId ?? initialItem?.id ?? null;
-  const normalizedAdminCreateNew = Boolean(adminCreateNew) && !hasVendorPayload;
+  const isPendingApprovalRequest = Boolean(
+    (approvalRequestId != null) ||
+      initialItem?.request_id != null ||
+      initialItem?.vendor_item_request_id != null ||
+      (initialItem?.status === "pending" && initialItem?.id != null)
+  );
+
+  // The vendor identifies ownership. It does not identify an approval request.
+  // Only an actual pending VendorItemRequest may enter admin-approve.
+  const resolvedApprovalRequestId = isPendingApprovalRequest
+    ? approvalRequestId ??
+      initialItem?.request_id ??
+      initialItem?.vendor_item_request_id ??
+      initialItem?.id ??
+      null
+    : null;
+
+  const safeItemId = itemId ?? initialItem?.id ?? null;
+  const normalizedAdminCreateNew = Boolean(adminCreateNew) || explicitFlow === "admin-create";
   const normalizedApprovalMode = Boolean(
-    approvalMode ||
-    (hasVendorPayload && resolvedIsAdmin && !normalizedAdminCreateNew && !explicitFlow)
+    isExplicitAdminApproval && isPendingApprovalRequest
   );
 
   const effectiveIsAdmin = Boolean(
     resolvedIsAdmin ||
     normalizedApprovalMode ||
-    flow === "admin-create" ||
-    flow === "admin-approve"
+    normalizedAdminCreateNew ||
+    explicitFlow === "admin-approve" ||
+    explicitFlow === "edit"
   );
 
-  // Vendor data can come from the authenticated vendor profile, a parent
-  // vendor object, or a vendor-request payload. Normalize all supported
-  // shapes so "both" is not missed because of casing/nesting.
+  // Vendor data is used for ownership/product configuration only. A normal
+  // vendor object must never turn an admin create/edit screen into approval.
   const productType = String(
     vendor?.product_type ??
       vendor?.productType ??
@@ -200,60 +217,42 @@ const ItemAddNew = ({
       return existingSection;
     }
 
-    // For a new vendor item, the vendor's registered product type is the
-    // authority. "both" starts on organic and exposes the selector below.
     return productType === "inorganic" ? "inorganic" : "organic";
   });
   const [showExtraFields, setShowExtraFields] = useState(false);
 
   const hasExplicitAdminWorkflow = Boolean(
-    resolvedApprovalRequestId || normalizedAdminCreateNew || normalizedApprovalMode || explicitFlow
+    resolvedApprovalRequestId || normalizedAdminCreateNew || explicitFlow
   );
 
-  // Edit mode is inferred from either an existing item id or a vendor payload
-  // that is already present. A missing vendor payload means a fresh create flow.
-  const isEditing = Boolean(initialItem?.id || (!hasExplicitAdminWorkflow && hasVendorPayload));
-  const isApprovalMode = Boolean(
-    effectiveIsAdmin &&
-      (normalizedApprovalMode || resolvedApprovalRequestId || (hasVendorPayload && !normalizedAdminCreateNew && !explicitFlow))
+  const isEditing = Boolean(
+    initialItem?.id &&
+      !normalizedApprovalMode &&
+      !normalizedAdminCreateNew
   );
-  const saveMode = explicitFlow || (
-    isApprovalMode
-      ? "admin-approve"
-      : normalizedAdminCreateNew
-        ? "admin-create"
-        : isEditing
-          ? "edit"
-          : "vendor-create"
-  );
+
+  const isApprovalMode = normalizedApprovalMode;
+  const saveMode = explicitFlow === "admin-approve" || isApprovalMode
+    ? "admin-approve"
+    : normalizedAdminCreateNew
+      ? "admin-create"
+      : explicitFlow === "edit" || isEditing
+        ? "edit"
+        : "vendor-create";
+
   const hasWorkflowConflict =
     Boolean(resolvedApprovalRequestId || normalizedAdminCreateNew || normalizedApprovalMode || explicitFlow) &&
     !["admin-approve", "admin-create", "edit", "vendor-create"].includes(saveMode);
 
   if (process.env.NODE_ENV !== "production") {
-    const mixedAdminSignals = effectiveIsAdmin && normalizedAdminCreateNew && normalizedApprovalMode;
     const missingApprovalRequestId = saveMode === "admin-approve" && !resolvedApprovalRequestId;
     const missingVendorForAdminCreate = saveMode === "admin-create" && !vendor?.id && !vendorId;
-    const hasAdminWorkflow = Boolean(resolvedApprovalRequestId || normalizedAdminCreateNew || normalizedApprovalMode || explicitFlow);
 
-    if (mixedAdminSignals) {
-      console.warn("Admin form is mixing create and approval signals. Use dedicated admin workflow components instead.");
-    }
     if (missingApprovalRequestId) {
-      console.warn("Admin approval mode is active without an approvalRequestId.");
+      console.warn("Admin approval mode is active without a VendorItemRequest id.");
     }
     if (missingVendorForAdminCreate) {
       console.warn("Admin create mode is missing a vendor selection.");
-    }
-    if (hasAdminWorkflow && !["admin-approve", "admin-create"].includes(saveMode)) {
-      console.error("Unsafe admin workflow state: saveMode fell through to a non-admin branch.", {
-        explicitFlow,
-        approvalMode: normalizedApprovalMode,
-        approvalRequestId: resolvedApprovalRequestId,
-        adminCreateNew: normalizedAdminCreateNew,
-        isEditing,
-        vendorId: vendor?.id ?? vendorId,
-      });
     }
   }
   // Vendor edits keep protected fields muted; admin item creation/editing never does.
