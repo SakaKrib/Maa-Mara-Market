@@ -112,7 +112,8 @@ const ProductRail = ({
               <FormattedCurrency value={Number(product.final_discounted_price ?? product.final_price ?? product.price ?? 0)} />
             </div>
           </Link>
-        ))}
+          );
+        })}
       </div>
     </section>
   );
