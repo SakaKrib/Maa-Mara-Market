@@ -62,13 +62,13 @@ const VendorDashboardNav = ({ open = false, onClose }) => {
     <>
       <button
         type="button"
-        className={`fixed inset-0 z-[1590] bg-black/30 transition-opacity sm:hidden ${open ? "opacity-100" : "pointer-events-none opacity-0"}`}
+        className={`fixed inset-0 z-[9990] bg-black/30 transition-opacity sm:hidden ${open ? "opacity-100" : "pointer-events-none opacity-0"}`}
         onClick={onClose}
         aria-label="Close vendor navigation overlay"
       />
 
       <aside
-        className={`etsy-shop-sidebar !z-[1600] ${open ? "!w-[244px] shadow-2xl" : ""}`}
+        className={`etsy-shop-sidebar !z-[10000] ${open ? "!w-[244px] shadow-2xl" : ""}`}
         style={{
           ...(open ? { width: "244px" } : {}),
         }}
