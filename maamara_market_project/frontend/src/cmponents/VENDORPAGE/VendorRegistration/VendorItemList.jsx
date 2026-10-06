@@ -60,6 +60,16 @@ export default function VendorItemList({ items, onEdit, onBack }) {
           No items to edit.
         </div>
       )}
+
+      <div className="border-t border-border pt-3">
+        <Button
+          variant="outline"
+          onClick={onBack}
+          className="w-full rounded-[12px] border-border bg-transparent px-2 py-2 text-foreground hover:bg-muted"
+        >
+          Back to Approvals
+        </Button>
+      </div>
     </section>
   );
 }
