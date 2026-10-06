@@ -3,6 +3,14 @@ import { Link } from "react-router-dom";
 import api, { resolveApiAssetUrl } from "../../../../../../Services/Api";
 import FormattedCurrency from "../Currency/FormattedCurrency";
 
+const ProductImageSkeleton = () => (
+  <div className="absolute inset-0 animate-pulse bg-muted" aria-hidden="true">
+    <div className="absolute inset-x-5 top-5 h-2 rounded-full bg-background/50" />
+    <div className="absolute inset-x-5 top-9 h-2 w-1/2 rounded-full bg-background/40" />
+    <div className="absolute inset-x-5 bottom-5 h-2 w-2/3 rounded-full bg-background/40" />
+  </div>
+);
+
 const Stars = ({ value = 0 }) => {
   const rounded = Math.min(5, Math.max(0, Math.round(Number(value) || 0)));
   return (
@@ -93,7 +101,12 @@ const TrendingProduct = ({
       >
         {products.map((product) => {
           const imageUrl = resolveApiAssetUrl(
-            product.image?.url || product.image || product.image_url || product.imageUrl
+            product.image?.url ||
+              product.image ||
+              product.image_url ||
+              product.imageUrl ||
+              product.thumbnail ||
+              product.photo
           );
           return (
           <Link
@@ -105,22 +118,32 @@ const TrendingProduct = ({
                 : "group min-w-0"
             }
           >
-            <div className="aspect-square overflow-hidden rounded-2xl border border-border bg-background">
+            <div className="relative aspect-square overflow-hidden rounded-2xl border border-border bg-background">
               {imageUrl ? (
-                <img
-                  src={imageUrl}
-                  alt={product.name}
-                  loading="lazy"
-                  className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.03]"
-                  onError={(event) => {
-                    event.currentTarget.style.display = "none";
-                    event.currentTarget.nextElementSibling?.classList.remove("hidden");
-                  }}
-                />
-              ) : null}
-              <div className={`flex h-full w-full items-center justify-center animate-pulse bg-muted ${imageUrl ? "hidden" : ""}`}>
-                <span className="sr-only">Product image unavailable</span>
-              </div>
+                <>
+                  <div className="absolute inset-0 animate-pulse bg-muted" aria-hidden="true" />
+                  <img
+                    src={imageUrl}
+                    alt={product.name}
+                    loading="lazy"
+                    className="relative z-[1] h-full w-full object-cover opacity-0 transition-opacity duration-300 group-hover:scale-[1.03]"
+                    onLoad={(event) => {
+                      event.currentTarget.classList.remove("opacity-0");
+                      event.currentTarget.previousElementSibling?.classList.add("hidden");
+                    }}
+                    onError={(event) => {
+                      event.currentTarget.style.display = "none";
+                      event.currentTarget.previousElementSibling?.classList.add("hidden");
+                      event.currentTarget.nextElementSibling?.classList.remove("hidden");
+                    }}
+                  />
+                  <div className="hidden">
+                    <ProductImageSkeleton />
+                  </div>
+                </>
+              ) : (
+                <ProductImageSkeleton />
+              )}
             </div>
             <h3 className="mt-2 truncate text-sm font-semibold text-card-foreground">
               {product.name}
