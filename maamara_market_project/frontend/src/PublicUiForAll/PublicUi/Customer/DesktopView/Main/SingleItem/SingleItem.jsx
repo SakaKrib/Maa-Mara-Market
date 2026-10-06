@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import useSingleItem from "./useSingleItem";
 import ProductGallery from "./ProductGallery";
 import ProductOptions from "./ProductOptions";
@@ -56,6 +56,7 @@ const SingleItem = () => {
   if (error || !item) return <div className="p-10 text-center">Item not found.</div>;
 
   const hasDiscount = Number(item.discount_price || item.discount || 0) > 0;
+  const [descriptionOpen, setDescriptionOpen] = useState(false);
 
   return (
     <main className="mm-single-item mm-page pb-12 pt-6">
@@ -114,6 +115,34 @@ const SingleItem = () => {
                 </div>
               </div>
             </section>
+
+            {!!item.description && (
+              <section className="mt-6 rounded-2xl border border-border bg-card p-4 shadow-custom sm:p-5">
+                <button
+                  type="button"
+                  onClick={() => setDescriptionOpen((open) => !open)}
+                  className="flex w-full items-center justify-between gap-4 text-left"
+                  aria-expanded={descriptionOpen}
+                >
+                  <span>
+                    <span className="block text-base font-bold text-card-foreground sm:text-lg">Item description</span>
+                    <span className="mt-1 block text-xs text-muted-foreground">
+                      {descriptionOpen ? "Hide product details" : "View product details"}
+                    </span>
+                  </span>
+                  <span aria-hidden="true" className="flex h-9 w-9 flex-none items-center justify-center rounded-full border border-border bg-background text-sm font-semibold text-card-foreground">
+                    {descriptionOpen ? "−" : "+"}
+                  </span>
+                </button>
+                {descriptionOpen && (
+                  <div className="mt-4 border-t border-border pt-4">
+                    <div className="rounded-2xl border border-border bg-background p-4 text-sm leading-6 text-card-foreground">
+                      {item.description}
+                    </div>
+                  </div>
+                )}
+              </section>
+            )}
 
             <div className="mt-6">
               <ProductOptions
