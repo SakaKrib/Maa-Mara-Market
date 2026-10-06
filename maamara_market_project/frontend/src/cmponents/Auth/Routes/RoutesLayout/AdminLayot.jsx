@@ -18,6 +18,9 @@ const AdminLayout = () => {
             <Outlet />
           </div>
         </main>
+        <footer className="border-t border-slate-200 px-3 py-4 text-center text-xs text-slate-500 dark:border-slate-800 dark:text-slate-400 lg:pl-64">
+          © {new Date().getFullYear()} Maa Mara Market. All rights reserved.
+        </footer>
       </div>
     </ProtectedRoute>
   );
