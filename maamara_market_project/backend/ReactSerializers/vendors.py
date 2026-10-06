@@ -1018,32 +1018,37 @@ def approve_vendor(request, vendor_request_id):
             status=400,
         )
 
-    # Validate and resolve every persisted draft image before creating
-    # the vendor or any final item records.
+    # VendorRequest.item_list is the submitted approval snapshot and already
+    # contains the persisted image path for saved images. Approval must not
+    # depend on the temporary autosave draft still existing.
     resolved_draft_images = {}
     for index, item in enumerate(item_list):
         image_asset_id = item.get("image_asset_id")
         if not image_asset_id:
-            # No persisted draft asset: this is a fresh registration image.
-            # Its submitted image path is used directly when the Item is created.
             continue
-        if not source_draft:
+
+        stored_image_path = item.get("image")
+        if source_draft:
+            try:
+                draft_image = VendorDraftImage.objects.get(
+                    id=image_asset_id,
+                    draft=source_draft,
+                    item_index=index,
+                )
+                stored_image_path = draft_image.image.name
+            except VendorDraftImage.DoesNotExist:
+                # The request snapshot remains authoritative. If the draft
+                # record was cleaned up after submission, keep the image path
+                # already stored inside VendorRequest.item_list.
+                pass
+
+        if not stored_image_path:
             return Response(
-                {"error": "A saved item image requires a valid vendor draft."},
+                {"error": f"Saved item image {index + 1} has no stored image path in the vendor request."},
                 status=400,
             )
-        try:
-            draft_image = VendorDraftImage.objects.get(
-                id=image_asset_id,
-                draft=source_draft,
-                item_index=index,
-            )
-        except VendorDraftImage.DoesNotExist:
-            return Response(
-                {"error": f"Saved item image {index + 1} could not be resolved."},
-                status=400,
-            )
-        resolved_draft_images[image_asset_id] = draft_image.image.name
+
+        resolved_draft_images[image_asset_id] = stored_image_path
 
     # 🏪 Create Vendor
     vendor = Vendor.objects.create(user=user, brand=brand_instance, **vendor_data)
