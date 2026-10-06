@@ -484,7 +484,7 @@ class HybridCheckAuthView(APIView):
 
     @staticmethod
     def get_role(user):
-        if user.is_superuser:
+        if getattr(user, "is_superuser", False) or getattr(user, "is_staff", False):
             return "admin"
         if hasattr(user, "vendor"):
             return "vendor"
@@ -508,7 +508,11 @@ def login_view(request):
 
     if user is not None:
         auth_login(request, user)
-        role = "admin" if user.is_superuser else ("vendor" if hasattr(user, "vendor") else "customer")
+        role = (
+            "admin"
+            if getattr(user, "is_superuser", False) or getattr(user, "is_staff", False)
+            else ("vendor" if hasattr(user, "vendor") else "customer")
+        )
         Profile.objects.get_or_create(user=user)
 
         refresh = RefreshToken.for_user(user)

@@ -6,10 +6,13 @@ export const useCsrfToken = () => {
   const [csrfToken, setCsrfToken] = useState('');
 
   useEffect(() => {
-    api.get('/api/get-csrf-token/')
-      .then(res => res.json())
-      .then(data => setCsrfToken(data.csrfToken))
-      .catch(err => console.error('CSRF fetch error:', err));
+    api
+      .get('/api/get-csrf-token/')
+      .then(({ data }) => {
+        const token = data?.csrfToken || data?.csrftoken || data?.token || '';
+        setCsrfToken(token);
+      })
+      .catch((err) => console.error('CSRF fetch error:', err));
   }, []);
 
   return csrfToken;

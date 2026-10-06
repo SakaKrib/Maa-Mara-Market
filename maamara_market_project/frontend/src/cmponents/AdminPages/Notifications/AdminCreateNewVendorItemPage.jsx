@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Store, ArrowLeft, CheckCircle2 } from "lucide-react";
 import { Button } from "../../../../components/ui/button";
 import api from "../../../Services/Api";
-import AddingNewItem from "../../VENDORPAGE/Products/Forms/AddingNewItem";
+import AdminItemWorkflowForm from "./AdminItemWorkflowForm";
 
 const getVendorName = (vendor) =>
   [vendor?.first_name, vendor?.surname_name]
@@ -181,12 +181,10 @@ export default function AdminCreateNewVendorItemPage() {
         </div>
       ) : (
         <div className="rounded-2xl border border-border bg-card p-2 shadow-sm sm:p-4">
-          <AddingNewItem
-            initialItem={null}
+          <AdminItemWorkflowForm
+            workflow="create"
             vendorId={selectedVendor.id}
             vendor={selectedVendor}
-            isAdmin
-            adminCreateNew
             onSave={() => {
               setSaving(false);
               navigate(-1);

@@ -21,6 +21,7 @@ import { FormControlLabel, Switch } from "@mui/material";
 import useItemDraftAutosave from "./useItemDraftAutosave";
 import VideoTrimmer from "./VideoTrimmer";
 import ItemAiButton from "./ItemAiButton";
+import { useAuth } from "../../../Auth/AuthContext/Context";
 
 // Sizes
 const MAX_ITEM_IMAGES = 10;
@@ -95,8 +96,48 @@ const OCCASION_OPTIONS = [
 ];
 
 
-const ItemAddNew = ({ initialItem, vendorId, itemId, onSave = () => {}, vendor, isAdmin = false, adminCreateNew = false, approvalMode = false, approvalRequestId = null }) => {
+const ItemAddNew = ({
+  initialItem,
+  vendorId,
+  itemId,
+  onSave = () => {},
+  vendor,
+  isAdmin,
+  adminCreateNew,
+  approvalMode,
+  approvalRequestId = null,
+  flow = null,
+}) => {
   const { departmentMap, organicDepartmentMap } = useDepartments();
+  const authContext = useAuth() ?? {};
+  const { user: authUser } = authContext;
+
+  const backendIsAdmin = Boolean(
+    authUser?.is_admin ||
+    authUser?.is_staff ||
+    authUser?.is_superuser ||
+    authUser?.role === "admin"
+  );
+  const resolvedIsAdmin = typeof isAdmin === "boolean" ? isAdmin : backendIsAdmin;
+  const hasVendorPayload = Boolean(
+    vendor && typeof vendor === "object" && Object.keys(vendor).length > 0
+  );
+  const resolvedApprovalRequestId =
+    approvalRequestId ?? vendor?.request_id ?? vendor?.id ?? vendor?.vendor_id ?? null;
+  const safeItemId = itemId ?? initialItem?.id ?? null;
+  const explicitFlow = String(flow || "").trim().toLowerCase();
+  const normalizedAdminCreateNew = Boolean(adminCreateNew) && !hasVendorPayload;
+  const normalizedApprovalMode = Boolean(
+    approvalMode ||
+    (hasVendorPayload && resolvedIsAdmin && !normalizedAdminCreateNew && !explicitFlow)
+  );
+
+  const effectiveIsAdmin = Boolean(
+    resolvedIsAdmin ||
+    normalizedApprovalMode ||
+    flow === "admin-create" ||
+    flow === "admin-approve"
+  );
 
   // Vendor data can come from the authenticated vendor profile, a parent
   // vendor object, or a vendor-request payload. Normalize all supported
@@ -150,11 +191,58 @@ const ItemAddNew = ({ initialItem, vendorId, itemId, onSave = () => {}, vendor, 
   });
   const [showExtraFields, setShowExtraFields] = useState(false);
 
-  // An existing item prop means vendor edit mode. A missing item means create mode.
-  const isEditing = Boolean(initialItem?.id);
-  const isApprovalMode = Boolean(isAdmin && approvalMode && approvalRequestId);
+  const hasExplicitAdminWorkflow = Boolean(
+    resolvedApprovalRequestId || normalizedAdminCreateNew || normalizedApprovalMode || explicitFlow
+  );
+
+  // Edit mode is inferred from either an existing item id or a vendor payload
+  // that is already present. A missing vendor payload means a fresh create flow.
+  const isEditing = Boolean(initialItem?.id || (!hasExplicitAdminWorkflow && hasVendorPayload));
+  const isApprovalMode = Boolean(
+    effectiveIsAdmin &&
+      (normalizedApprovalMode || resolvedApprovalRequestId || (hasVendorPayload && !normalizedAdminCreateNew && !explicitFlow))
+  );
+  const saveMode = explicitFlow || (
+    isApprovalMode
+      ? "admin-approve"
+      : normalizedAdminCreateNew
+        ? "admin-create"
+        : isEditing
+          ? "edit"
+          : "vendor-create"
+  );
+  const hasWorkflowConflict =
+    Boolean(resolvedApprovalRequestId || normalizedAdminCreateNew || normalizedApprovalMode || explicitFlow) &&
+    !["admin-approve", "admin-create", "edit", "vendor-create"].includes(saveMode);
+
+  if (process.env.NODE_ENV !== "production") {
+    const mixedAdminSignals = effectiveIsAdmin && normalizedAdminCreateNew && normalizedApprovalMode;
+    const missingApprovalRequestId = saveMode === "admin-approve" && !resolvedApprovalRequestId;
+    const missingVendorForAdminCreate = saveMode === "admin-create" && !vendor?.id && !vendorId;
+    const hasAdminWorkflow = Boolean(resolvedApprovalRequestId || normalizedAdminCreateNew || normalizedApprovalMode || explicitFlow);
+
+    if (mixedAdminSignals) {
+      console.warn("Admin form is mixing create and approval signals. Use dedicated admin workflow components instead.");
+    }
+    if (missingApprovalRequestId) {
+      console.warn("Admin approval mode is active without an approvalRequestId.");
+    }
+    if (missingVendorForAdminCreate) {
+      console.warn("Admin create mode is missing a vendor selection.");
+    }
+    if (hasAdminWorkflow && !["admin-approve", "admin-create"].includes(saveMode)) {
+      console.error("Unsafe admin workflow state: saveMode fell through to a non-admin branch.", {
+        explicitFlow,
+        approvalMode: normalizedApprovalMode,
+        approvalRequestId: resolvedApprovalRequestId,
+        adminCreateNew: normalizedAdminCreateNew,
+        isEditing,
+        vendorId: vendor?.id ?? vendorId,
+      });
+    }
+  }
   // Vendor edits keep protected fields muted; admin item creation/editing never does.
-  const shouldMuteProtectedFields = isEditing && !isAdmin;
+  const shouldMuteProtectedFields = isEditing && !effectiveIsAdmin;
 
     const form = useForm({
       defaultValues: {
@@ -555,7 +643,10 @@ const ItemAddNew = ({ initialItem, vendorId, itemId, onSave = () => {}, vendor, 
     return assets;
   }, [draftValues, galleryImages, productVideo]);
 
-  const draftEnabled = !isEditing && !initialItem;
+  // Only vendor-created item requests should use the generic autosave draft
+  // pipeline. Admin create and approval flows use their dedicated APIs and must
+  // not silently save through the vendor item-draft endpoint.
+  const draftEnabled = !isEditing && !initialItem && !effectiveIsAdmin && !normalizedAdminCreateNew && !isApprovalMode;
   const {
     draftId,
     restoring: draftRestoring,
@@ -611,7 +702,7 @@ const ItemAddNew = ({ initialItem, vendorId, itemId, onSave = () => {}, vendor, 
     // In that case, the saved section is the source of truth for the
     // department/category dataset.
     const existingSection = normalizeSection(initialItem?.section);
-    const isVendorCreate = !isAdmin && !isEditing;
+    const isVendorCreate = !effectiveIsAdmin && !isEditing;
     const section =
       existingSection === "organic" || existingSection === "inorganic"
         ? existingSection
@@ -892,7 +983,7 @@ const ItemAddNew = ({ initialItem, vendorId, itemId, onSave = () => {}, vendor, 
       // Vendor-side trimming is isolated from the existing upload/draft
       // pipeline. The selected file is only committed to productVideo after
       // it is valid as-is or the user applies a valid trim.
-      if (isAdmin) {
+      if (effectiveIsAdmin) {
         const videoElement = document.createElement("video");
         videoElement.preload = "metadata";
         const sourceUrl = URL.createObjectURL(file);
@@ -966,6 +1057,62 @@ const ItemAddNew = ({ initialItem, vendorId, itemId, onSave = () => {}, vendor, 
 
     const onSubmit = async (data) => {
       try {
+        console.info("ITEM_FORM_ROUTE", {
+          saveMode,
+          explicitFlow,
+          flow,
+          isAdmin: resolvedIsAdmin,
+          approvalMode: normalizedApprovalMode,
+          approvalRequestId: resolvedApprovalRequestId,
+          adminCreateNew: normalizedAdminCreateNew,
+          isEditing,
+          itemId,
+          path: window.location.pathname,
+        });
+
+        if (
+          process.env.NODE_ENV !== "production" &&
+          saveMode === "vendor-create" &&
+          (effectiveIsAdmin || hasExplicitAdminWorkflow)
+        ) {
+          throw new Error(
+            `Blocked vendor-create fallback: admin workflow state was detected but the form still resolved to vendor-create. ` +
+            `saveMode=${saveMode}, explicitFlow=${explicitFlow}, flow=${flow}, isAdmin=${resolvedIsAdmin}, approvalMode=${normalizedApprovalMode}, ` +
+            `approvalRequestId=${resolvedApprovalRequestId}, adminCreateNew=${normalizedAdminCreateNew}, path=${window.location.pathname}`
+          );
+        }
+
+        if (saveMode === "admin-approve" && !resolvedApprovalRequestId) {
+          throw new Error("Admin approval requires an approval request id.");
+        }
+
+        if (saveMode === "edit" && !safeItemId) {
+          throw new Error("Item edit requires a valid item id.");
+        }
+
+        if (saveMode === "admin-create") {
+          const adminVendorId = vendor?.id ?? vendorId ?? null;
+          if (!adminVendorId) {
+            throw new Error("Select a vendor before saving the item.");
+          }
+        }
+
+        if (resolvedApprovalRequestId && saveMode !== "admin-approve") {
+          throw new Error("Approval workflow mismatch: this request must use the admin request save-draft flow.");
+        }
+
+        if (normalizedAdminCreateNew && saveMode !== "admin-create") {
+          throw new Error("Admin create workflow mismatch: this form is in an admin-create context but is not in admin-create mode.");
+        }
+
+        if (explicitFlow && !["admin-approve", "admin-create", "edit", "vendor-create"].includes(saveMode)) {
+          throw new Error("Workflow mismatch: unknown save mode for this form.");
+        }
+
+        if (hasWorkflowConflict) {
+          throw new Error("Workflow conflict: the form cannot determine a safe backend route.");
+        }
+
         // Vendor creation goes through the same request endpoint used by the
         // legacy VendorItemRequest form. The complete form is preserved in
         // draft_item so the admin approval flow can use all submitted fields.
@@ -1113,10 +1260,9 @@ const ItemAddNew = ({ initialItem, vendorId, itemId, onSave = () => {}, vendor, 
           ),
         };
 
-        // Vendor-request approval uses this same form. Save the complete edited
-        // product snapshot back to the request, then run the existing approval
-        // endpoint so the backend creates the final Item and finalizes draft media.
-        if (isApprovalMode) {
+        // Route selection is explicit so the same form can safely support
+        // vendor create, admin direct create, item edit, and admin approval.
+        if (saveMode === "admin-approve") {
           // Keep the JSON snapshot and uploaded media synchronized. Browser
           // File objects stay in multipart media; they are never serialized
           // into draft_item.
@@ -1188,7 +1334,7 @@ const ItemAddNew = ({ initialItem, vendorId, itemId, onSave = () => {}, vendor, 
           });
 
           const draftResponse = await api.put(
-            `/api/vendor-requests/${approvalRequestId}/save-draft/`,
+            `/api/vendor-requests/${resolvedApprovalRequestId}/save-draft/`,
             approvalFormData,
             {
               withCredentials: true,
@@ -1200,9 +1346,10 @@ const ItemAddNew = ({ initialItem, vendorId, itemId, onSave = () => {}, vendor, 
             throw new Error("Failed to save the edited vendor request.");          }
 
           const approvalResponse = await api.post(
-            `/api/vendor/requests/${approvalRequestId}/approve/`,
+            `/api/vendor/requests/${resolvedApprovalRequestId}/approve/`,
             { action: "approve" },
-            { withCredentials: true }          );
+            { withCredentials: true }
+          );
 
           if (approvalResponse.status === 200) {
             completeSave("Item approved successfully. Your changes have been saved.", approvalResponse.data);
@@ -1214,7 +1361,7 @@ const ItemAddNew = ({ initialItem, vendorId, itemId, onSave = () => {}, vendor, 
 
         // Existing items use the same form for direct vendor/admin edits.
         // This replaces the legacy EditItem/EditItemForm submission path.
-        if (isEditing && itemId && !adminCreateNew) {
+        if (saveMode === "edit") {
           const editFormData = new FormData();
           const appendValue = (key, value) => {
             if (value === null || value === undefined || value === "") return;
@@ -1297,7 +1444,7 @@ const ItemAddNew = ({ initialItem, vendorId, itemId, onSave = () => {}, vendor, 
           });
 
           const response = await api.put(
-            `/api/item-post/update/${itemId}/`,
+            `/api/item-post/update/${safeItemId}/`,
             editFormData,
             { withCredentials: true }
           );
@@ -1311,14 +1458,15 @@ const ItemAddNew = ({ initialItem, vendorId, itemId, onSave = () => {}, vendor, 
         }
 
         // Admin-created items are persisted directly against the selected vendor.
-        // Vendor create/edit continues through the existing vendor-request draft flow.
-        if (isAdmin && adminCreateNew) {
-          if (!vendor?.id) {
+        // This is intentionally a separate save mode from vendor-request creation.
+        if (saveMode === "admin-create") {
+          const adminVendorId = vendor?.id ?? vendorId ?? null;
+          if (!adminVendorId) {
             throw new Error("Select a vendor before saving the item.");
           }
 
           const adminFormData = new FormData();
-          adminFormData.append("vendor_id", String(vendor.id));
+          adminFormData.append("vendor_id", String(adminVendorId));
           if (submittedDraftId) adminFormData.append("draft_id", submittedDraftId);
 
           Object.entries(formattedItem).forEach(([key, value]) => {
@@ -1410,6 +1558,23 @@ const ItemAddNew = ({ initialItem, vendorId, itemId, onSave = () => {}, vendor, 
       }
     };
 
+  if (hasWorkflowConflict) {
+    return (
+      <div className="rounded-2xl border border-red-500/30 bg-red-500/5 p-6 text-sm text-red-700">
+        <p className="text-base font-bold">Workflow error</p>
+        <p className="mt-2">The item form is in an unknown workflow state and cannot continue safely.</p>
+        <p className="mt-2 font-medium">Debug values:</p>
+        <ul className="mt-2 list-disc space-y-1 pl-5">
+          <li>flow: {String(flow || "unset")}</li>
+          <li>approvalMode: {String(Boolean(normalizedApprovalMode))}</li>
+          <li>approvalRequestId: {String(resolvedApprovalRequestId || "unset")}</li>
+          <li>adminCreateNew: {String(Boolean(normalizedAdminCreateNew))}</li>
+          <li>saveMode: {String(saveMode)}</li>
+        </ul>
+      </div>
+    );
+  }
+
   return (
       <Form {...form}>
         <form onSubmit={handleSubmit(onSubmit)} className="px-2 py-2 text-foreground">
@@ -1436,7 +1601,7 @@ const ItemAddNew = ({ initialItem, vendorId, itemId, onSave = () => {}, vendor, 
          {/* Vendor-only selector: only a new item from a "both" vendor can
              choose between organic and inorganic. Existing items never show it. */}
       <div className='border rounded-[20px] border-gray-300 p-4'>
-       {!isAdmin && !adminCreateNew && !approvalMode && !isEditing && productType === "both" && (
+       {!effectiveIsAdmin && !normalizedAdminCreateNew && !isApprovalMode && !isEditing && productType === "both" && (
         <div className="my-4 space-y-2">
           <label className="block text-sm leading-6 font-semibold text-foreground">Select Section</label>
           <div className="flex flex-wrap gap-2">
@@ -1840,7 +2005,7 @@ const ItemAddNew = ({ initialItem, vendorId, itemId, onSave = () => {}, vendor, 
       onChange={(event) => handleVideoChange(event.target.files?.[0])}
     />
 
-    {!isAdmin && videoTrimSource && (
+    {!effectiveIsAdmin && videoTrimSource && (
       <VideoTrimmer
         file={videoTrimSource.file}
         duration={videoTrimSource.duration}

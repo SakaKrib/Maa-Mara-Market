@@ -38,7 +38,9 @@ export default function VendorApprovalPanel() {
 
   const fetchVendorRequests = async () => {
     try {
-      const response = await api.get("/api/vendor/requests?status=verified");
+      const response = await api.get("/api/vendor/requests?status=verified", {
+        withCredentials: true,
+      });
       setVendorRequests(response.data);
     } catch (error) {
       showSnackbar({
@@ -56,7 +58,9 @@ export default function VendorApprovalPanel() {
     delete cleanedData.confirm_password;
 
     try {
-      await api.post(`/api/vendor-requests/${id}/approve/`, cleanedData);
+      await api.post(`/api/vendor-requests/${id}/approve/`, cleanedData, {
+        withCredentials: true,
+      });
       showSnackbar({
         title: "Vendor Approved",
         description: "Vendor and item list saved successfully.",
@@ -77,7 +81,7 @@ export default function VendorApprovalPanel() {
   const handleDeny = async (id) => {
     setLoading(true);
     try {
-      await api.post(`/api/vendor/deny/${id}/`);
+      await api.post(`/api/vendor/deny/${id}/`, {}, { withCredentials: true });
       showSnackbar({
         title: "Vendor Denied",
         description: "Vendor request has been denied.",

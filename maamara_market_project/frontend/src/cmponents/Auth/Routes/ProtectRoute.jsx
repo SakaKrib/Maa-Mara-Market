@@ -5,6 +5,13 @@ import { CircularProgress, Box } from "@mui/material";
 
 const ProtectedRoute = ({ children, requiredRole }) => {
   const { isAuthenticated, user, loading } = useAuth();
+  const isAdminUser = Boolean(
+    user?.role === "admin" ||
+    user?.is_admin ||
+    user?.is_staff ||
+    user?.is_superuser ||
+    user?.account_type === "admin"
+  );
 
   // 🔹 Show loader while auth state is being determined
   if (loading) {
@@ -23,10 +30,10 @@ const ProtectedRoute = ({ children, requiredRole }) => {
   // 🔹 Role-based protection (supports single role or array of roles)
   if (requiredRole) {
     if (Array.isArray(requiredRole)) {
-      if (!requiredRole.includes(user?.role)) {
+      if (!requiredRole.includes(user?.role) && !isAdminUser) {
         return <Navigate to="/unauthorized" replace />;
       }
-    } else if (user?.role !== requiredRole) {
+    } else if (user?.role !== requiredRole && !isAdminUser) {
       return <Navigate to="/unauthorized" replace />;
     }
   }

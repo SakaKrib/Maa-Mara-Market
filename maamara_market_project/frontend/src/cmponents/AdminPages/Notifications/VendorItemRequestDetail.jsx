@@ -72,8 +72,8 @@ const VendorItemRequestDetail = () => {
   }, [fetchRequest, id]);
 
   const handleAction = async (action) => {
-    // Approval must always go through AddingNewItem so the admin reviews and
-    // approves the complete vendor submission, including persisted media.
+    // Approval must always go through the request-review workflow so the admin
+    // completes the pending draft and approves it as one vendor request.
     if (action === "approve") {
       navigate(`/admin-dashboard/vendor/create-item/${id}`, { state: request });
       return;
@@ -171,7 +171,7 @@ const VendorItemRequestDetail = () => {
               <div className="mt-5 grid gap-2">
                 <button type="button" disabled={status === "approved" || actionLoading !== ""} onClick={() => handleAction("approve")} className="rounded-[20px] bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50">{status === "approved" ? "Approved" : "Review & Approve"}</button>
                 <button type="button" disabled={status === "denied" || actionLoading !== ""} onClick={() => handleAction("deny")} className="rounded-[20px] bg-red-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-50">{actionLoading === "deny" ? "Denying..." : status === "denied" ? "Denied" : "Deny"}</button>
-                <button type="button" onClick={() => navigate(`/admin-dashboard/vendor/create-item/${id}`, { state: request })} className="rounded-[20px] border border-border bg-transparent px-4 py-2.5 text-sm font-semibold text-foreground hover:bg-muted">Create Item</button>
+                <button type="button" onClick={() => navigate(`/admin-dashboard/vendor/create-item/${id}`, { state: request })} className="rounded-[20px] border border-border bg-transparent px-4 py-2.5 text-sm font-semibold text-foreground hover:bg-muted">Complete &amp; Approve</button>
               </div>
             </aside>
           </div>
