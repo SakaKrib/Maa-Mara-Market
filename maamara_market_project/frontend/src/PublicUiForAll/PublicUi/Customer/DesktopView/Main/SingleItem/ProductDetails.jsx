@@ -31,7 +31,6 @@ const ProductDetails = ({ item }) => {
       <section className="rounded-2xl border border-border bg-card p-4 shadow-custom sm:p-5">
         <h2 className="text-base font-bold text-card-foreground sm:text-lg">Product information</h2>
         <dl className="mt-2">
-          <Detail label="Description" value={item?.description || "Product details are provided by the seller."} />
           <Detail label="Brand" value={item?.brand?.name} />
           <Detail label="Department" value={item?.department} />
           <Detail label="Category" value={item?.category} />
