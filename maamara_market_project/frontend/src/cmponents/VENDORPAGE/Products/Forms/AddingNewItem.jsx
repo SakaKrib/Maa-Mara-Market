@@ -107,6 +107,8 @@ const ItemAddNew = ({
   approvalMode,
   approvalRequestId = null,
   flow = null,
+  vendorData: vendorDataProp = null,
+  vendor_data: vendorDataLegacy = null,
 }) => {
   const { departmentMap, organicDepartmentMap } = useDepartments();
   const authContext = useAuth() ?? {};
@@ -124,19 +126,31 @@ const ItemAddNew = ({
   );
 
   // There are two different identities in this form:
-  // 1. initialItem.id = an already-created Item being edited.
-  // 2. vendor_data/request id = a pending vendor request whose draft_item JSON
-  //    is being completed. That workflow does not have an Item id yet.
+  // 1. initialItem with a real Item id = an existing Item being edited.
+  // 2. vendor_data/request data without an Item id = a pending vendor request
+  //    whose draft_item JSON is being completed. That workflow does not have
+  //    an Item id yet.
+  // IMPORTANT: an arbitrary non-empty initialItem object is NOT enough to make
+  // this an Item edit. Vendor request draft payloads can also be passed through
+  // initialItem by older callers, but they are not Items until they have an id.
+  const initialItemId =
+    initialItem?.id ??
+    initialItem?.item_id ??
+    initialItem?.itemId ??
+    null;
   const hasInitialItem = Boolean(
     initialItem &&
       typeof initialItem === "object" &&
-      Object.keys(initialItem).length > 0
+      initialItemId != null &&
+      initialItemId !== ""
   );
 
   const vendorData =
+    vendorDataProp ??
+    vendorDataLegacy ??
     vendor?.vendor_data ??
     vendor?.vendorData ??
-    null;
+    (!hasInitialItem ? initialItem?.vendor_data ?? initialItem?.vendorData ?? null : null);
 
   const resolveVendorRequestId = (value) => {
     if (value == null) return null;
@@ -211,7 +225,7 @@ const ItemAddNew = ({
   // Item id is relevant only when the form actually received an existing Item.
   // A vendor request draft must never fall back to a vendor/request id here.
   const safeItemId = hasInitialItem
-    ? itemId ?? initialItem.id ?? null
+    ? itemId ?? initialItemId ?? null
     : null;
 
   const isPendingApprovalRequest = Boolean(resolvedApprovalRequestId);
@@ -315,12 +329,14 @@ const ItemAddNew = ({
       )
   );
 
+  // Resolve the backend workflow from the actual record identity, not from
+  // a generic flow string. A vendor request draft must never become Item edit.
   const saveMode =
     normalizedAdminCreateNew
       ? "admin-create"
-      : explicitFlow === "admin-approve" || isApprovalMode
+      : resolvedApprovalRequestId || normalizedApprovalMode || explicitFlow === "admin-approve"
         ? "admin-approve"
-        : isExplicitEditMode || isEditing
+        : hasInitialItem && (isExplicitEditMode || isEditing)
           ? "edit"
           : "vendor-create";
 
