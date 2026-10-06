@@ -1509,7 +1509,30 @@ const ItemAddNew = ({
         // Existing items use the same form for direct vendor/admin edits.
         // This replaces the legacy EditItem/EditItemForm submission path.
         if (saveMode === "vendor-registration-edit") {
-          onSave(formattedItem);
+          if (!resolvedApprovalRequestId) {
+            throw new Error("Vendor item request id is required to save this item.");
+          }
+
+          const itemIndex = initialItem?.item_index ?? initialItem?.itemIndex;
+          if (itemIndex == null) {
+            throw new Error("Vendor request item index is required to save this item.");
+          }
+
+          const response = await api.patch(
+            `/api/vendor-requests/${resolvedApprovalRequestId}/items/${itemIndex}/`,
+            { item: formattedItem },
+            { withCredentials: true }
+          );
+
+          if (response.status !== 200) {
+            throw new Error("Failed to save the item to the vendor request.");
+          }
+
+          await onSave(response.data?.item || formattedItem);
+          completeSave(
+            response.data?.message || "Item saved to vendor item request.",
+            response.data?.item || formattedItem
+          );
           return;
         }
 
@@ -3710,13 +3733,23 @@ const ItemAddNew = ({
               </div>
             )}
 
-            <div className="mt-10 mb-10 w-full">
+            <div className="mt-10 mb-10 w-full space-y-3">
               <Button
                 type="submit"
                 className="w-full rounded-full bg-[#2563eb] px-4 py-3 text-center text-white hover:bg-[#1d4ed8]"
               >
                 {isApprovalMode ? "Save & Approve" : "Save Changes"}
               </Button>
+              {saveMode === "vendor-registration-edit" && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => onSave({ __backToItems: true })}
+                  className="w-full rounded-full border-border bg-transparent px-4 py-3 text-foreground hover:bg-muted"
+                >
+                  Back to Items
+                </Button>
+              )}
             </div>
             </div>
           </form>
