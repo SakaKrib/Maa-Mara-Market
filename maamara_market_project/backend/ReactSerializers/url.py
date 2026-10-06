@@ -12,7 +12,7 @@ from .vendors import *
 from .views import admin_item_performance
 from .items import vendor_item_growth_stats, vendor_item_stats, vendor_analytics_stats
 from .ItemInventory import *
-from .traffic import record_traffic_event, traffic_analytics, inbound_traffic_analytics
+from .traffic import record_traffic_event, traffic_analytics, inbound_traffic_analytics, inbound_traffic_session_detail
 
 router = DefaultRouter()
 # Legacy router registrations were removed: the referenced viewsets no longer
@@ -33,6 +33,7 @@ urlpatterns = [
     path('api/traffic/record/', record_traffic_event, name='record-traffic-event'),
     path('api/admin/traffic-analytics/', traffic_analytics, name='admin-traffic-analytics'),
     path('api/admin/inbound-traffic/', inbound_traffic_analytics, name='admin-inbound-traffic'),
+    path('api/admin/inbound-traffic/sessions/<str:session_id>/', inbound_traffic_session_detail, name='admin-inbound-traffic-session'),
 
 
 
