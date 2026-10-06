@@ -144,7 +144,16 @@ const ItemAddNew = ({
       null
     : null;
 
-  const safeItemId = itemId ?? initialItem?.id ?? null;
+  // In vendor-backed workflows, vendor_data carries the existing item identity.
+  // Prefer an explicitly supplied item id, then the authoritative item payload,
+  // then the item id nested in vendor_data.
+  const safeItemId =
+    itemId ??
+    initialItem?.id ??
+    vendor?.vendor_data?.item_id ??
+    vendor?.vendor_data?.itemId ??
+    vendor?.vendor_data?.id ??
+    null;
   const normalizedAdminCreateNew = Boolean(adminCreateNew) || explicitFlow === "admin-create";
   const normalizedApprovalMode = Boolean(
     isExplicitAdminApproval && isPendingApprovalRequest
