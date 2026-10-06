@@ -660,10 +660,19 @@ class VendorItemRequestDraftUpdateView(APIView):
         try:
             vendor_request = VendorItemRequest.objects.select_for_update().get(pk=pk)
         except VendorItemRequest.DoesNotExist:
-            return Response(
-                {"error": "Request not found."},
-                status=status.HTTP_404_NOT_FOUND,
+            # Compatibility fallback for older admin clients that may submit
+            # the linked ItemDraft id. Only resolve a pending request that
+            # explicitly owns that draft.
+            vendor_request = (
+                VendorItemRequest.objects.select_for_update()
+                .filter(draft_id=pk, status="pending")
+                .first()
             )
+            if vendor_request is None:
+                return Response(
+                    {"error": "Request not found."},
+                    status=status.HTTP_404_NOT_FOUND,
+                )
 
         if vendor_request.status != "pending":
             return Response(
