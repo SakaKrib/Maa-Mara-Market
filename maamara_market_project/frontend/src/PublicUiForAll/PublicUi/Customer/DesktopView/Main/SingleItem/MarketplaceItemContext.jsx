@@ -3,7 +3,6 @@ import { Link } from "react-router-dom";
 import api, { resolveApiAssetUrl } from "../../../../../../Services/Api";
 import FormattedCurrency from "../Currency/FormattedCurrency";
 import VendorRatingForm from "../VendorRatingsAndShop";
-import TrendingProduct from "../Trending/TrendingProduct";
 
 const ProductImageSkeleton = () => (
   <div className="absolute inset-0 animate-pulse bg-muted" aria-hidden="true">
@@ -193,31 +192,6 @@ const MarketplaceItemContext = ({ item, availableStock }) => {
         </div>
       </section>
 
-      {!!item.description && (
-        <section className="mt-6 rounded-2xl border border-border bg-card p-4 shadow-custom sm:p-5">
-          <button type="button" onClick={() => setDescriptionOpen((open) => !open)} className="flex w-full items-center justify-between gap-4 text-left" aria-expanded={descriptionOpen}>
-            <span>
-              <span className="block text-base font-bold text-card-foreground sm:text-lg">Item description</span>
-              <span className="mt-1 block text-xs text-muted-foreground">{descriptionOpen ? "Hide product details" : "View product details"}</span>
-            </span>
-            <span aria-hidden="true" className="flex h-9 w-9 flex-none items-center justify-center rounded-full border border-border bg-background text-sm font-semibold text-card-foreground">
-              {descriptionOpen ? "−" : "+"}
-            </span>
-          </button>
-          {descriptionOpen && (
-            <div className="mt-4 border-t border-border pt-4">
-              <div className="rounded-2xl border border-border bg-background p-4 text-sm leading-6 text-card-foreground">{item.description}</div>
-            </div>
-          )}
-        </section>
-      )}
-
-      <TrendingProduct
-        itemId={item.id}
-        title="Trending products related to this search"
-        items={data.explore_more}
-        limit={5}
-      />
 
       {!!searchLinks.length && (
         <section className="mt-6 rounded-2xl border border-border bg-card p-4 shadow-custom sm:p-5">
@@ -316,12 +290,6 @@ const MarketplaceItemContext = ({ item, availableStock }) => {
         </section>
       )}
 
-      <ProductRail
-        title="Related products"
-        items={data.explore_more}
-        scrollable={false}
-        initialVisible={4}
-      />
     </div>
   );
 };
