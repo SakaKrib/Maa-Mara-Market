@@ -127,20 +127,6 @@ const ItemAddNew = ({
     approvalMode || explicitFlow === "admin-approve"
   );
 
-  // Admin approval must use the VendorItemRequest id, never the vendor id.
-  // The request is authoritative when supplied; otherwise use the request
-  // id carried by the loaded VendorItemRequest payload. This is deliberately
-  // limited to the approval workflow so normal admin create/edit flows are
-  // unaffected.
-  const resolvedApprovalRequestId = isExplicitAdminApproval
-    ? approvalRequestId ??
-      vendor?.request_id ??
-      initialItem?.request_id ??
-      initialItem?.vendor_item_request_id ??
-      initialItem?.id ??
-      null
-    : null;
-  const safeItemId = itemId ?? initialItem?.id ?? null;
   const isPendingApprovalRequest = Boolean(
     (approvalRequestId != null) ||
       initialItem?.request_id != null ||
