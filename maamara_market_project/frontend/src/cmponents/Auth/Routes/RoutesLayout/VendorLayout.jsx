@@ -35,6 +35,9 @@ const VendorLayout = () => {
           )}
           <Outlet />
         </main>
+        <footer className="border-t border-gray-200 px-4 py-4 text-center text-xs text-gray-500 dark:border-gray-800 dark:text-gray-400">
+          © {new Date().getFullYear()} Maa Mara Market. All rights reserved.
+        </footer>
       </div>
     </ProtectedRoute>
   );
