@@ -1248,11 +1248,6 @@ const ItemAddNew = ({
           throw new Error("Approval workflow mismatch: this request must use the admin request save-draft flow.");
         }
 
-        if (saveMode === "vendor-registration-edit") {
-          onSave(formattedItem);
-          return;
-        }
-
         if (normalizedAdminCreateNew && saveMode !== "admin-create") {
           throw new Error("Admin create workflow mismatch: this form is in an admin-create context but is not in admin-create mode.");
         }
@@ -1513,6 +1508,11 @@ const ItemAddNew = ({
 
         // Existing items use the same form for direct vendor/admin edits.
         // This replaces the legacy EditItem/EditItemForm submission path.
+        if (saveMode === "vendor-registration-edit") {
+          onSave(formattedItem);
+          return;
+        }
+
         if (saveMode === "edit") {
           const editFormData = new FormData();
           const appendValue = (key, value) => {
