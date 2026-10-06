@@ -1090,12 +1090,7 @@ def item_marketplace_context(request, pk):
     related_searches = related_searches[:10]
 
     def compact_product(product):
-        image_url = None
-        if product.image:
-            try:
-                image_url = request.build_absolute_uri(product.image.url)
-            except Exception:
-                image_url = product.image.url
+        image_url = product.image.url if product.image else None
 
         review_stats = product.reviews.aggregate(
             average=Avg("rating"),
