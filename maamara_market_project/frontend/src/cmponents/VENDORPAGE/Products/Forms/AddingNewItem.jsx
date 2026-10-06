@@ -130,7 +130,7 @@ const ItemAddNew = ({
   const hasInitialItem = Boolean(
     initialItem &&
       typeof initialItem === "object" &&
-      initialItem.id != null
+      Object.keys(initialItem).length > 0
   );
 
   const vendorData =
