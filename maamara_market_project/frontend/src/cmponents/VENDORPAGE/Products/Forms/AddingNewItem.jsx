@@ -218,9 +218,10 @@ const ItemAddNew = ({
     resolveVendorRequestId(initialItem);
 
   const explicitFlow = String(flow || "").trim().toLowerCase();
+  const isVendorRegistrationEdit = explicitFlow === "vendor-registration-edit";
   const isExplicitAdminApproval = Boolean(
     approvalMode || explicitFlow === "admin-approve"
-  );
+  ) && !isVendorRegistrationEdit;
 
   const resolvedApprovalRequestId =
     approvalRequestId ??
@@ -343,11 +344,13 @@ const ItemAddNew = ({
   const saveMode =
     normalizedAdminCreateNew
       ? "admin-create"
-      : resolvedApprovalRequestId || normalizedApprovalMode || explicitFlow === "admin-approve"
-        ? "admin-approve"
-        : hasInitialItem && (isExplicitEditMode || isEditing)
-          ? "edit"
-          : "vendor-create";
+      : isVendorRegistrationEdit
+        ? "vendor-registration-edit"
+        : resolvedApprovalRequestId || normalizedApprovalMode || explicitFlow === "admin-approve"
+          ? "admin-approve"
+          : hasInitialItem && (isExplicitEditMode || isEditing)
+            ? "edit"
+            : "vendor-create";
 
   const hasWorkflowConflict =
     Boolean(
@@ -357,7 +360,7 @@ const ItemAddNew = ({
         explicitFlow ||
         hasVendorBackedAdminWorkflow
     ) &&
-    !["admin-approve", "admin-create", "edit", "vendor-create"].includes(saveMode);
+    !["admin-approve", "admin-create", "edit", "vendor-registration-edit", "vendor-create"].includes(saveMode);
 
   if (process.env.NODE_ENV !== "production") {
     const missingApprovalRequestId = saveMode === "admin-approve" && !resolvedApprovalRequestId;
@@ -1241,15 +1244,20 @@ const ItemAddNew = ({
           }
         }
 
-        if (resolvedApprovalRequestId && saveMode !== "admin-approve") {
+        if (resolvedApprovalRequestId && !["admin-approve", "vendor-registration-edit"].includes(saveMode)) {
           throw new Error("Approval workflow mismatch: this request must use the admin request save-draft flow.");
+        }
+
+        if (saveMode === "vendor-registration-edit") {
+          onSave(formattedItem);
+          return;
         }
 
         if (normalizedAdminCreateNew && saveMode !== "admin-create") {
           throw new Error("Admin create workflow mismatch: this form is in an admin-create context but is not in admin-create mode.");
         }
 
-        if (explicitFlow && !["admin-approve", "admin-create", "edit", "vendor-create"].includes(saveMode)) {
+        if (explicitFlow && !["admin-approve", "admin-create", "edit", "vendor-registration-edit", "vendor-create"].includes(saveMode)) {
           throw new Error("Workflow mismatch: unknown save mode for this form.");
         }
 
