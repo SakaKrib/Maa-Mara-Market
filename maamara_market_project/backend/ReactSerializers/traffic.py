@@ -244,7 +244,25 @@ def inbound_traffic_analytics(request):
         )
 
     pages = grouped("path", 50)
-    countries = grouped("country_code", 30)
+    countries = list(
+        page_views.exclude(country_code="")
+        .values("country_code", "country_name")
+        .annotate(count=Count("id"))
+        .order_by("-count")[:30]
+    )
+    # Keep the geography card useful even when the provider only gives a
+    # country code. The browser should never have to display a blank country.
+    country_names = {
+        "KE": "Kenya", "UG": "Uganda", "TZ": "Tanzania", "RW": "Rwanda",
+        "ET": "Ethiopia", "ZA": "South Africa", "NG": "Nigeria",
+        "GH": "Ghana", "US": "United States", "GB": "United Kingdom",
+        "IN": "India", "AE": "United Arab Emirates", "DE": "Germany",
+        "FR": "France", "CA": "Canada", "AU": "Australia",
+    }
+    for row in countries:
+        row["country_name"] = row["country_name"] or country_names.get(
+            row["country_code"], row["country_code"] or "Unknown"
+        )
     sources = grouped("source", 20)
     devices = grouped("device_type", 10)
     top_items = list(
@@ -282,17 +300,44 @@ def inbound_traffic_analytics(request):
     )[:40]
     for session_id in session_ids:
         rows = list(
-            page_views.filter(session_id=session_id)
+            events.filter(session_id=session_id)
             .order_by("created_at")
-            .values("path", "created_at")[:50]
+            .values(
+                "path", "created_at", "event_type", "source", "medium", "campaign",
+                "referrer", "country_code", "country_name", "device_type", "user_id",
+                "user__username", "user__email",
+            )[:100]
         )
         if rows:
+            first = rows[0]
+            last = rows[-1]
+            visitor_id = page_views.filter(session_id=session_id).values_list("visitor_id", flat=True).first() or ""
             recent_sessions.append({
                 "session_id": session_id,
-                "started_at": rows[0]["created_at"],
-                "last_seen": rows[-1]["created_at"],
-                "pages": [row["path"] for row in rows],
-                "page_count": len(rows),
+                "started_at": first["created_at"],
+                "last_seen": last["created_at"],
+                "page_count": sum(1 for row in rows if row["event_type"] == "page_view"),
+                "event_count": len(rows),
+                "country_code": first["country_code"] or "",
+                "country_name": first["country_name"] or first["country_code"] or "Unknown",
+                "source": first["source"] or "direct",
+                "device_type": first["device_type"] or "unknown",
+                "referrer": first["referrer"] or "",
+                "visitor_id": visitor_id,
+                "user": {
+                    "id": first["user_id"],
+                    "username": first["user__username"] or "",
+                    "email": first["user__email"] or "",
+                } if first["user_id"] else None,
+                "pages": [
+                    {
+                        "path": row["path"],
+                        "event_type": row["event_type"],
+                        "created_at": row["created_at"],
+                        "source": row["source"] or "direct",
+                    }
+                    for row in rows
+                ],
             })
 
     return Response({
@@ -301,7 +346,7 @@ def inbound_traffic_analytics(request):
             "page_views": page_views.count(),
             "unique_visitors": len(visitor_keys),
             "sessions": page_views.exclude(session_id__isnull=True).exclude(session_id="").values("session_id").distinct().count(),
-            "countries": countries.__len__(),
+            "countries": len(countries),
             "pages": pages.__len__(),
             "events": event_rows.count(),
         },
@@ -313,4 +358,53 @@ def inbound_traffic_analytics(request):
         "top_items": top_items,
         "goals": goals,
         "recent_sessions": recent_sessions,
+    })
+
+
+@api_view(["GET"])
+@permission_classes([IsAdminUser])
+def inbound_traffic_session_detail(request, session_id):
+    """Return the complete first-party activity timeline for one tracked session."""
+    events = (
+        TrafficEvent.objects.filter(session_id=session_id)
+        .select_related("user")
+        .order_by("created_at")
+    )
+    if not events.exists():
+        return Response({"error": "Session not found."}, status=status.HTTP_404_NOT_FOUND)
+
+    rows = list(
+        events.values(
+            "id", "event_type", "path", "created_at", "referrer", "source",
+            "medium", "campaign", "country_code", "country_name", "device_type",
+            "user_id", "user__username", "user__email",
+        )
+    )
+    first = rows[0]
+    return Response({
+        "session_id": session_id,
+        "visitor_id": events.values_list("visitor_id", flat=True).first() or "",
+        "country_code": first["country_code"] or "",
+        "country_name": first["country_name"] or first["country_code"] or "Unknown",
+        "device_type": first["device_type"] or "unknown",
+        "source": first["source"] or "direct",
+        "referrer": first["referrer"] or "",
+        "user": {
+            "id": first["user_id"],
+            "username": first["user__username"] or "",
+            "email": first["user__email"] or "",
+        } if first["user_id"] else None,
+        "activity": [
+            {
+                "id": row["id"],
+                "event_type": row["event_type"],
+                "path": row["path"],
+                "created_at": row["created_at"],
+                "referrer": row["referrer"] or "",
+                "source": row["source"] or "direct",
+                "medium": row["medium"] or "",
+                "campaign": row["campaign"] or "",
+            }
+            for row in rows
+        ],
     })
