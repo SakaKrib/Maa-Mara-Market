@@ -35,8 +35,11 @@ export const resolveApiAssetUrl = (value) => {
     // image unreachable or blocked as mixed content. Media owned by this API
     // should always use the same API origin that served the request.
     if (assetUrl.pathname.startsWith("/media/")) {
+      // Normalize legacy paths such as /media/media/items/... at the shared
+      // asset boundary so every product image resolves to /media/... once.
+      const normalizedPath = assetUrl.pathname.replace(/^\/(?:media\/)+/i, "/media/");
       return new URL(
-        `${assetUrl.pathname}${assetUrl.search}${assetUrl.hash}`,
+        `${normalizedPath}${assetUrl.search}${assetUrl.hash}`,
         `${apiOrigin.origin}/`
       ).toString();
     }
