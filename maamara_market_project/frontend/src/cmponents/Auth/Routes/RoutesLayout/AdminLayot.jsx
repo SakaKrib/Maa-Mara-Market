@@ -18,7 +18,7 @@ const AdminLayout = () => {
             <Outlet />
           </div>
         </main>
-        <footer className="fixed inset-x-0 bottom-0 z-[1500] border-t border-slate-200 bg-slate-50/95 px-3 py-4 text-center text-xs text-slate-500 shadow-[0_-4px_12px_rgba(0,0,0,0.04)] backdrop-blur-sm dark:border-slate-800 dark:bg-slate-950/95 dark:text-slate-400 lg:left-64">
+        <footer className="fixed inset-x-0 bottom-0 z-10 border-t border-slate-200 bg-slate-50/95 px-3 py-4 text-center text-xs text-slate-500 shadow-[0_-4px_12px_rgba(0,0,0,0.04)] backdrop-blur-sm dark:border-slate-800 dark:bg-slate-950/95 dark:text-slate-400 lg:left-64">
           © {new Date().getFullYear()} Maa Mara Market. All rights reserved.
         </footer>
       </div>
