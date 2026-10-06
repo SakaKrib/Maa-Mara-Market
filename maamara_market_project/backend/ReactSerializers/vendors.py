@@ -867,6 +867,9 @@ from django.core.files import File
 from django.core.files.base import ContentFile
 from django.conf import settings
 import os, requests
+import logging
+
+logger = logging.getLogger(__name__)
 
 @api_view(['POST'])
 @permission_classes([IsAuthenticated, IsAdminUser])
@@ -1165,9 +1168,22 @@ def approve_vendor(request, vendor_request_id):
 
             created_items.append(created_item.id)
 
-        except Exception:
+        except Exception as exc:
+            logger.exception(
+                "Vendor approval item creation failed: vendor_request_id=%s "
+                "item_index=%s item_name=%r",
+                vendor_request_id,
+                item_list.index(item) + 1,
+                item.get("name"),
+            )
             return Response(
-                {"error": "One or more vendor items could not be created."},
+                {
+                    "error": (
+                        f"Vendor item {item_list.index(item) + 1} "
+                        f"({item.get('name') or 'unnamed'}) could not be created: "
+                        f"{exc.__class__.__name__}: {exc}"
+                    )
+                },
                 status=400,
             )
 
