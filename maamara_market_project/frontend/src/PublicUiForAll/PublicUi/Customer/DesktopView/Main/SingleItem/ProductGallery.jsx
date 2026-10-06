@@ -8,6 +8,7 @@ const resolveImage = (value) => {
 
 const ProductGallery = ({ item, selectedImage, selectedVariant, selectedSize, onSelectImage, onSelectColor }) => {
   const [isImageFullscreen, setIsImageFullscreen] = useState(false);
+  const [imageError, setImageError] = useState(false);
   const media = useMemo(() => {
     const entries = [];
 
@@ -43,6 +44,10 @@ const ProductGallery = ({ item, selectedImage, selectedVariant, selectedSize, on
   const activeUrl = resolveImage(activeImage);
 
   useEffect(() => {
+    setImageError(false);
+  }, [activeUrl]);
+
+  useEffect(() => {
     if (!isImageFullscreen) return undefined;
 
     const handleKeyDown = (event) => {
@@ -62,7 +67,7 @@ const ProductGallery = ({ item, selectedImage, selectedVariant, selectedSize, on
   return (
     <section className="w-full min-w-0">
       <div className="relative w-full overflow-hidden rounded-2xl border border-border bg-muted/20 aspect-[4/5] max-h-[760px]">
-        {activeUrl ? (
+        {activeUrl && !imageError ? (
           <button
             type="button"
             className="block h-full w-full cursor-zoom-in"
@@ -73,11 +78,13 @@ const ProductGallery = ({ item, selectedImage, selectedVariant, selectedSize, on
               src={activeUrl}
               className="block h-full w-full object-cover"
               alt={item.name}
+              onError={() => setImageError(true)}
             />
           </button>
         ) : (
-          <div className="flex h-full w-full items-center justify-center text-sm text-muted-foreground">
-            No product image
+          <div className="relative flex h-full w-full items-center justify-center overflow-hidden bg-muted" aria-label="Product image unavailable">
+            <div className="absolute inset-0 animate-pulse bg-muted" aria-hidden="true" />
+            <span className="relative text-sm text-muted-foreground">Product image unavailable</span>
           </div>
         )}
       </div>
