@@ -1102,26 +1102,40 @@ def approve_vendor(request, vendor_request_id):
 
             image_hash = hashlib.sha256(slug.encode("utf-8")).hexdigest()
 
-            # Preserve the complete Item payload used by the registration form.
+            # Map every persistable Item model field from the vendor-request payload.
             created_item = Item.objects.create(
+                section=section,
+                name=name,
+                description=sanitize(item.get("description") or ""),
+                image=relative_path,
+                video=video_relative_path,
+                price=item.get("price", 0) or 0,
+                discount_price=item.get("discount_price") or None,
                 in_stock=item.get("in_stock", 0) or 0,
                 available=item.get("available", True),
+                returnable=item.get("returnable", True),
+                brand=brand,
+                department=department,
+                category=category,
+                subcategory=subcategory,
+                item_attribute=sanitize(item.get("item_attribute") or "") or None,
+                gender_based=sanitize(item.get("gender_based") or "none") or "none",
                 children_size_based_age=sanitize(
                     item.get("children_size_based_age")
                     or item.get("kids_sizes_label")
                     or "none"
                 ),
+                in_offer=item.get("in_offer", False),
+                is_organic=item.get("is_organic", False),
                 manufactured_date=item.get("manufactured_date") or None,
                 expiry_date=item.get("expiry_date") or None,
-                is_organic=item.get("is_organic", False),
                 is_fresh_food=item.get("is_fresh_food", False),
-                in_offer=item.get("in_offer", False),
                 vendor=vendor,
                 created_by=user,
                 slug=slug,
                 image_hash=image_hash,
-                image=relative_path,
-                video=video_relative_path,
+                likes=item.get("likes", 0) or 0,
+                views=item.get("views", 0) or 0,
                 percentage_discount=item.get("percentage_discount", 0) or 0,
                 roast_type=sanitize(item.get("roast_type") or "") or None,
                 coffee_state=sanitize(item.get("coffee_state") or "") or None,
