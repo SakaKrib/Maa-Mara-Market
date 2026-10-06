@@ -163,8 +163,9 @@ export default function VendorApprovalPanel() {
 
   const handleSaveEditedItem = (updatedItem) => {
     if (editingItemIndex === null) return;
+    const editedItem = { ...updatedItem, admin_edited: true };
     const updatedList = [...editItemList];
-    updatedList[editingItemIndex] = updatedItem;
+    updatedList[editingItemIndex] = editedItem;
     setEditItemList(updatedList);
     setSelectedVendor((current) =>
       current ? { ...current, item_list: updatedList } : current
