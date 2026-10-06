@@ -31,11 +31,18 @@ export default function VendorItemList({ items, onEdit, onBack }) {
                   <p className="text-muted-foreground">{item.description || "No description provided."}</p>
                   <p><strong>Price:</strong> KES {item.price != null ? Number(item.price).toLocaleString() : "N/A"}</p>
                   {item.image && (
-                    <img
-                      src={resolveApiAssetUrl(item.image)}
-                      alt={item.name || "Vendor item"}
-                      className="mt-2 h-24 w-36 rounded-[12px] border border-border bg-muted/40 object-contain p-1"
-                    />
+                    <div className="mt-2 flex items-center gap-2">
+                      <img
+                        src={resolveApiAssetUrl(item.image)}
+                        alt={item.name || "Vendor item"}
+                        className="h-24 w-36 rounded-[12px] border border-border bg-muted/40 object-contain p-1"
+                      />
+                      {item.admin_edited === true && (
+                        <span className="inline-flex items-center rounded-full bg-gray-100 px-2 py-0.5 text-[10px] font-medium text-gray-600 dark:bg-gray-800 dark:text-gray-300">
+                          Edited
+                        </span>
+                      )}
+                    </div>
                   )}
                 </div>
                 <Button
