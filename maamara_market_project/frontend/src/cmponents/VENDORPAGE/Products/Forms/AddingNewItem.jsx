@@ -208,7 +208,14 @@ const ItemAddNew = ({
     return null;
   };
 
-  const vendorDataRequestId = resolveVendorRequestId(vendorData);
+  // Vendor-registration/admin request callers have historically supplied the
+  // request payload in different props. Resolve the request identity from all
+  // of those payloads before deciding the workflow. This is a VendorItemRequest
+  // identity, not an Item identity.
+  const vendorDataRequestId =
+    resolveVendorRequestId(vendorData) ??
+    resolveVendorRequestId(vendor) ??
+    resolveVendorRequestId(initialItem);
 
   const explicitFlow = String(flow || "").trim().toLowerCase();
   const isExplicitAdminApproval = Boolean(
@@ -218,9 +225,11 @@ const ItemAddNew = ({
   const resolvedApprovalRequestId =
     approvalRequestId ??
     vendorDataRequestId ??
-    (!hasInitialItem
-      ? initialItem?.request_id ?? initialItem?.vendor_item_request_id ?? null
-      : null);
+    initialItem?.request_id ??
+    initialItem?.vendor_item_request_id ??
+    vendor?.request_id ??
+    vendor?.vendor_item_request_id ??
+    null;
 
   // Item id is relevant only when the form actually received an existing Item.
   // A vendor request draft must never fall back to a vendor/request id here.
@@ -1190,15 +1199,18 @@ const ItemAddNew = ({
           path: window.location.pathname,
         });
 
+        // Never let an admin vendor-request form silently fall through to
+        // the normal vendor-create endpoint. If the request identity is missing,
+        // fail with the real missing-identity error below instead.
         if (
-          process.env.NODE_ENV !== "production" &&
           saveMode === "vendor-create" &&
-          (effectiveIsAdmin || hasExplicitAdminWorkflow)
+          effectiveIsAdmin &&
+          (hasVendorBackedAdminWorkflow || explicitFlow === "vendor-registration-edit")
         ) {
           throw new Error(
-            `Blocked vendor-create fallback: admin workflow state was detected but the form still resolved to vendor-create. ` +
-            `saveMode=${saveMode}, explicitFlow=${explicitFlow}, flow=${flow}, isAdmin=${resolvedIsAdmin}, approvalMode=${normalizedApprovalMode}, ` +
-            `approvalRequestId=${resolvedApprovalRequestId}, adminCreateNew=${normalizedAdminCreateNew}, path=${window.location.pathname}`
+            resolvedApprovalRequestId
+              ? "Vendor request draft must use the admin request save-draft flow."
+              : "Vendor request draft requires a valid request id."
           );
         }
 
