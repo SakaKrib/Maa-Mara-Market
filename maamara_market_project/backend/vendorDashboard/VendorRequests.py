@@ -1145,6 +1145,66 @@ class ApprovePriceChangeRequestView(APIView):
     
 
 
+class VendorItemRequestItemUpdateView(APIView):
+    """Persist one admin-edited item directly into VendorItemRequest.item_list."""
+
+    permission_classes = [permissions.IsAdminUser, IsAuthenticated]
+
+    @transaction.atomic
+    def patch(self, request, pk, item_index):
+        try:
+            vendor_request = VendorItemRequest.objects.select_for_update().get(pk=pk)
+        except VendorItemRequest.DoesNotExist:
+            return Response(
+                {"error": "Vendor item request not found."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        if vendor_request.status != "pending":
+            return Response(
+                {"error": f"This vendor request is already {vendor_request.status}."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        item_list = list(vendor_request.item_list or [])
+        if item_index < 0 or item_index >= len(item_list):
+            return Response(
+                {"error": "Vendor request item index is out of range."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        updated_item = request.data.get("item")
+        if isinstance(updated_item, str):
+            try:
+                updated_item = json.loads(updated_item)
+            except (TypeError, ValueError, json.JSONDecodeError):
+                return Response(
+                    {"error": "item must contain valid JSON."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
+        if not isinstance(updated_item, dict):
+            return Response(
+                {"error": "item is required."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        current_item = item_list[item_index] if isinstance(item_list[item_index], dict) else {}
+        merged_item = {**current_item, **updated_item, "admin_edited": True}
+        item_list[item_index] = merged_item
+        vendor_request.item_list = item_list
+        vendor_request.save(update_fields=["item_list"])
+
+        return Response(
+            {
+                "message": "Item saved to vendor item request.",
+                "item": merged_item,
+                "item_index": item_index,
+            },
+            status=status.HTTP_200_OK,
+        )
+
+
 # save item to the draft before approval
 @api_view(["PATCH"])
 @permission_classes([IsAuthenticated, IsAdminUser])
