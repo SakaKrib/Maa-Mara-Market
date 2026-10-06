@@ -25,6 +25,11 @@ urlpatterns = [
     path("api/vendor/requests/<int:pk>/approve/", approve_request, name="VendorItemApproveRequest"),
     #save item in the draft
     path("api/vendor-requests/<int:pk>/save-draft/", VendorItemRequestDraftUpdateView.as_view(), name="vendor-request-save-draft"),
+    path(
+        "api/vendor-requests/<int:pk>/items/<int:item_index>/",
+        VendorItemRequestItemUpdateView.as_view(),
+        name="vendor-request-item-update",
+    ),
 
     #price change
     path(
