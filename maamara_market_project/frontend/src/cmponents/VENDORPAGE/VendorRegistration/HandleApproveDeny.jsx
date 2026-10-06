@@ -346,6 +346,7 @@ export default function VendorApprovalPanel() {
               vendorId={selectedVendor.id}
               vendor={selectedVendor}
               initialItem={editItemList[editingItemIndex]}
+              flow="vendor-registration-edit"
               onSave={handleSaveEditedItem}
             />
           </div>
