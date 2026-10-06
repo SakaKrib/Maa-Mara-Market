@@ -962,10 +962,61 @@ def approve_vendor(request, vendor_request_id):
                 expires_at__gt=timezone.now(),
             )
         except VendorDraft.DoesNotExist:
-            return Response(
-                {"error": "The saved vendor draft is no longer available."},
-                status=400,
+            # Older requests can contain a stale draft_id while their
+            # persisted image assets are still valid. Try resolving the draft
+            # from those assets below before rejecting the approval.
+            source_draft = None
+
+    # Older vendor requests may contain persisted item image_asset_id values
+    # but predate the draft_id linkage in vendor_data. Recover the exact draft
+    # from those asset IDs instead of rejecting an otherwise valid saved image.
+    if source_draft is None:
+        saved_asset_ids = []
+        for item in item_list:
+            asset_id = item.get("image_asset_id")
+            if asset_id not in (None, ""):
+                try:
+                    saved_asset_ids.append(int(asset_id))
+                except (TypeError, ValueError):
+                    pass
+
+        if saved_asset_ids:
+            required_ids = set(saved_asset_ids)
+            candidate_assets = (
+                VendorDraftImage.objects
+                .filter(
+                    id__in=required_ids,
+                    draft__user=user,
+                    draft__status__in=["DRAFT", "SUBMITTED"],
+                    draft__expires_at__gt=timezone.now(),
+                )
+                .select_related("draft")
             )
+            candidates = {}
+            for asset in candidate_assets:
+                candidates.setdefault(asset.draft_id, {})[asset.id] = asset
+
+            for assets in candidates.values():
+                if set(assets) != required_ids:
+                    continue
+                if all(
+                    assets[int(item["image_asset_id"])].item_index == index
+                    for index, item in enumerate(item_list)
+                    if item.get("image_asset_id") not in (None, "")
+                    and str(item.get("image_asset_id")).isdigit()
+                ):
+                    source_draft = assets[next(iter(assets))].draft
+                    draft_id = source_draft.id
+                    vendor_data["draft_id"] = str(source_draft.id)
+                    break
+
+    if draft_id and source_draft is None and not any(
+        item.get("image_asset_id") not in (None, "") for item in item_list
+    ):
+        return Response(
+            {"error": "The saved vendor draft is no longer available."},
+            status=400,
+        )
 
     # Validate and resolve every persisted draft image before creating
     # the vendor or any final item records.
