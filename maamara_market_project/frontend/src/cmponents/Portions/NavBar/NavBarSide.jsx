@@ -81,11 +81,11 @@ const NavBar = ({ open = false, onClose }) => {
         type="button"
         aria-label="Close admin navigation"
         onClick={onClose}
-        className={`fixed inset-0 z-40 bg-slate-950/45 transition-opacity lg:hidden ${open ? "opacity-100" : "pointer-events-none opacity-0"}`}
+        className={`fixed inset-0 z-[9990] bg-slate-950/45 transition-opacity lg:hidden ${open ? "opacity-100" : "pointer-events-none opacity-0"}`}
       />
 
       <aside
-        className={`fixed left-0 top-0 z-[1600] flex h-screen w-64 flex-col border-r border-slate-200 bg-white shadow-xl transition-transform duration-200 dark:border-slate-800 dark:bg-slate-900 lg:translate-x-0 lg:shadow-none ${open ? "translate-x-0" : "-translate-x-full"}`}
+        className={`fixed left-0 top-0 z-[10000] flex h-screen w-64 flex-col border-r border-slate-200 bg-white shadow-xl transition-transform duration-200 dark:border-slate-800 dark:bg-slate-900 lg:translate-x-0 lg:shadow-none ${open ? "translate-x-0" : "-translate-x-full"}`}
       >
         <div className="flex h-[72px] shrink-0 items-center justify-between border-b border-slate-200 px-5 dark:border-slate-800">
           <Link to="/admin-dashboard" onClick={onClose} className="flex items-center gap-3">
