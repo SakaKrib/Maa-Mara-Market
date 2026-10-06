@@ -674,7 +674,7 @@ class VendorItemRequestDraftUpdateView(APIView):
                     status=status.HTTP_404_NOT_FOUND,
                 )
 
-        if vendor_request.status not in {"pending", "verified"}:
+        if vendor_request.status != "verified":
             return Response(
                 {"error": f"This request is already {vendor_request.status}."},
                 status=status.HTTP_400_BAD_REQUEST,
