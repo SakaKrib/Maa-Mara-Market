@@ -1,9 +1,9 @@
 import React, { useEffect, useState, useMemo } from "react";
-import { useParams } from "react-router-dom";
+import { Link, useParams } from "react-router-dom";
 import { useTheme } from "@mui/material";
 import { tokens } from "../../../../theme";
 import Header from "../../../../Header/Header";
-import api from "../../../../Services/Api";
+import api, { resolveApiAssetUrl } from "../../../../Services/Api";
 import {
   LineChart,
   Line,
@@ -101,7 +101,7 @@ const SingleItemProfileNotif = () => {
         >
           <div className="flex flex-col sm:flex-row gap-4 items-start">
             <img
-              src={item.image || "/placeholder.png"}
+              src={resolveApiAssetUrl(item.image) || "/placeholder.png"}
               alt={item.name}
               className="w-64 h-64 rounded-md object-cover"
             />
@@ -113,6 +113,13 @@ const SingleItemProfileNotif = () => {
                 Stock: {item.in_stock} | Category: {item.category}
               </p>
               <p className="text-sm text-gray-400">Department: {item.department}</p>
+              <Link
+                to="/vendors-dashboard/add-item"
+                state={{ activeTab: "price", itemId: item.id }}
+                className="mt-2 inline-flex w-fit items-center justify-center rounded-full bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition hover:bg-primary/90"
+              >
+                Request Price Change
+              </Link>
             </div>
           </div>
         </div>
