@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo, useState, useEffect } from "react";
+import React, { useCallback, useMemo, useRef, useState, useEffect } from "react";
 import {
     Form,
     FormField,
@@ -21,6 +21,7 @@ import { FormControlLabel, Switch } from "@mui/material";
 import useItemDraftAutosave from "./useItemDraftAutosave";
 import VideoTrimmer from "./VideoTrimmer";
 import ItemAiButton from "./ItemAiButton";
+import { useAuth } from "../../../Auth/AuthContext/Context";
 
 // Sizes
 const MAX_ITEM_IMAGES = 10;
@@ -33,19 +34,6 @@ const isUploadFile = (value) =>
   typeof Blob !== "undefined" &&
   value instanceof Blob &&
   typeof value.name === "string";
-
-// Existing item serializers can expose media as a URL string or as a nested
-// media object. Normalize both shapes before putting them into form state so
-// edit previews do not disappear when the API returns a different serializer
-// representation.
-const normalizeMediaValue = (value) => {
-  if (!value) return "";
-  if (isUploadFile(value) || typeof value === "string") return value;
-  if (typeof value === "object") {
-    return value.url ?? value.image ?? value.file ?? value.path ?? value.src ?? "";
-  }
-  return "";
-};
 
 const sizeOptions = [
   "XS", "S", "M", "L", "XL", "2XL", "3XL", "2XS", "3XS", "Oversize"
@@ -108,12 +96,172 @@ const OCCASION_OPTIONS = [
 ];
 
 
-const ItemAddNew = ({ initialItem, vendorId, itemId, onSave = () => {}, vendor, isAdmin = false, adminCreateNew = false, approvalMode = false, approvalRequestId = null }) => {
+const ItemAddNew = ({
+  initialItem,
+  vendorId,
+  itemId,
+  onSave = () => {},
+  vendor,
+  isAdmin,
+  adminCreateNew,
+  approvalMode,
+  approvalRequestId = null,
+  vendorRequestItemIndex = null,
+  onBack = null,
+  flow = null,
+  vendorData: vendorDataProp = null,
+  vendor_data: vendorDataLegacy = null,
+}) => {
   const { departmentMap, organicDepartmentMap } = useDepartments();
+  const authContext = useAuth() ?? {};
+  const { user: authUser } = authContext;
 
-  // Vendor data can come from the authenticated vendor profile, a parent
-  // vendor object, or a vendor-request payload. Normalize all supported
-  // shapes so "both" is not missed because of casing/nesting.
+  const backendIsAdmin = Boolean(
+    authUser?.is_admin ||
+    authUser?.is_staff ||
+    authUser?.is_superuser ||
+    authUser?.role === "admin"
+  );
+  const resolvedIsAdmin = typeof isAdmin === "boolean" ? isAdmin : backendIsAdmin;
+  const hasVendorPayload = Boolean(
+    vendor && typeof vendor === "object" && Object.keys(vendor).length > 0
+  );
+
+  // There are two different identities in this form:
+  // 1. initialItem with a real Item id = an existing Item being edited.
+  // 2. vendor_data/request data without an Item id = a pending vendor request
+  //    whose draft_item JSON is being completed. That workflow does not have
+  //    an Item id yet.
+  // IMPORTANT: an arbitrary non-empty initialItem object is NOT enough to make
+  // this an Item edit. Vendor request draft payloads can also be passed through
+  // initialItem by older callers, but they are not Items until they have an id.
+  const initialItemId =
+    initialItem?.id ??
+    initialItem?.item_id ??
+    initialItem?.itemId ??
+    null;
+  const hasInitialItem = Boolean(
+    initialItem &&
+      typeof initialItem === "object" &&
+      initialItemId != null &&
+      initialItemId !== ""
+  );
+
+  const vendorData =
+    vendorDataProp ??
+    vendorDataLegacy ??
+    vendor?.vendor_data ??
+    vendor?.vendorData ??
+    (!hasInitialItem ? initialItem?.vendor_data ?? initialItem?.vendorData ?? null : null);
+
+  const resolveVendorRequestId = (value) => {
+    if (value == null) return null;
+
+    if (typeof value === "string") {
+      const trimmed = value.trim();
+      if (!trimmed) return null;
+      try {
+        return resolveVendorRequestId(JSON.parse(trimmed));
+      } catch {
+        return null;
+      }
+    }
+
+    if (Array.isArray(value)) {
+      for (const entry of value) {
+        const found = resolveVendorRequestId(entry);
+        if (found != null) return found;
+      }
+      return null;
+    }
+
+    if (typeof value !== "object") return null;
+
+    const requestId =
+      value.vendor_item_request_id ??
+      value.vendorItemRequestId ??
+      value.vendor_request_id ??
+      value.vendorRequestId ??
+      value.request_id ??
+      value.requestId ??
+      value.vendor_item_request?.id ??
+      value.vendorItemRequest?.id ??
+      value.vendor_request?.id ??
+      value.vendorRequest?.id ??
+      value.id ??
+      null;
+
+    if (requestId != null && requestId !== "") return requestId;
+
+    for (const key of [
+      "vendor_item_request",
+      "vendorItemRequest",
+      "vendor_request",
+      "vendorRequest",
+      "request",
+      "request_data",
+    ]) {
+      if (value[key] != null) {
+        const found = resolveVendorRequestId(value[key]);
+        if (found != null) return found;
+      }
+    }
+
+    return null;
+  };
+
+  // Vendor-registration/admin request callers have historically supplied the
+  // request payload in different props. Resolve the request identity from all
+  // of those payloads before deciding the workflow. This is a VendorItemRequest
+  // identity, not an Item identity.
+  const vendorDataRequestId =
+    resolveVendorRequestId(vendorData) ??
+    resolveVendorRequestId(vendor) ??
+    resolveVendorRequestId(initialItem);
+
+  const requestedFlow = String(flow || "").trim().toLowerCase();
+  const isVendorRegistrationEdit = requestedFlow === "vendor-registration-edit";
+  const explicitFlow =
+    hasInitialItem &&
+    !isVendorRegistrationEdit &&
+    requestedFlow !== "admin-approve" &&
+    requestedFlow !== "admin-create"
+      ? "edit"
+      : requestedFlow;
+  const isExplicitAdminApproval = Boolean(
+    approvalMode || explicitFlow === "admin-approve"
+  ) && !isVendorRegistrationEdit;
+
+  const resolvedApprovalRequestId =
+    approvalRequestId ??
+    vendorDataRequestId ??
+    initialItem?.request_id ??
+    initialItem?.vendor_item_request_id ??
+    vendor?.request_id ??
+    vendor?.vendor_item_request_id ??
+    null;
+
+  // Item id is relevant only when the form actually received an existing Item.
+  // A vendor request draft must never fall back to a vendor/request id here.
+  const safeItemId = hasInitialItem
+    ? itemId ?? initialItemId ?? null
+    : null;
+
+  const isPendingApprovalRequest = Boolean(resolvedApprovalRequestId);
+  const normalizedAdminCreateNew = Boolean(adminCreateNew) || explicitFlow === "admin-create";
+  const normalizedApprovalMode = Boolean(
+    isExplicitAdminApproval && isPendingApprovalRequest
+  );
+
+  const effectiveIsAdmin = Boolean(
+    resolvedIsAdmin ||
+    normalizedApprovalMode ||
+    normalizedAdminCreateNew ||
+    explicitFlow === "admin-approve"
+  );
+
+  // Vendor data is used for ownership/product configuration only. A normal
+  // vendor object must never turn an admin create/edit screen into approval.
   const productType = String(
     vendor?.product_type ??
       vendor?.productType ??
@@ -133,8 +281,6 @@ const ItemAddNew = ({ initialItem, vendorId, itemId, onSave = () => {}, vendor, 
   const [videoTrimSource, setVideoTrimSource] = useState(null);
   const [draftMessage, setDraftMessage] = useState("");
   const [draftError, setDraftError] = useState("");
-  const [draftHasControl, setDraftHasControl] = useState(false);
-  const [draftSection, setDraftSection] = useState("");
   const [submissionStatus, setSubmissionStatus] = useState({ type: "", message: "" });
   const [customSizeInput, setCustomSizeInput] = useState("");
   const [customKidsSizeInput, setCustomKidsSizeInput] = useState("");
@@ -144,6 +290,17 @@ const ItemAddNew = ({ initialItem, vendorId, itemId, onSave = () => {}, vendor, 
         return value.id ?? value.value ?? value.pk ?? null;
       }
       return value ?? null;
+    };
+
+    const normalizeMediaValue = (value) => {
+      if (!value) return "";
+      if (typeof value === "string") return resolveApiAssetUrl(value) || "";
+      if (typeof value === "object") {
+        return normalizeMediaValue(
+          value.url ?? value.image ?? value.file ?? value.src ?? value.path ?? value.value ?? ""
+        );
+      }
+      return "";
     };
 
     const normalizeSection = (value) => {
@@ -159,17 +316,87 @@ const ItemAddNew = ({ initialItem, vendorId, itemId, onSave = () => {}, vendor, 
       return existingSection;
     }
 
-    // For a new vendor item, the vendor's registered product type is the
-    // authority. "both" starts on organic and exposes the selector below.
     return productType === "inorganic" ? "inorganic" : "organic";
   });
   const [showExtraFields, setShowExtraFields] = useState(false);
 
-  // An existing item prop means vendor edit mode. A missing item means create mode.
-  const isEditing = Boolean(initialItem?.id);
-  const isApprovalMode = Boolean(isAdmin && approvalMode && approvalRequestId);
+  const hasExplicitAdminWorkflow = Boolean(
+    resolvedApprovalRequestId || normalizedAdminCreateNew || normalizedApprovalMode || explicitFlow
+  );
+
+  // Existing vendor data is the source of truth for admin workflows.
+  // A new vendor item is the only case where vendor data is absent.
+  const hasVendorBackedAdminWorkflow = Boolean(
+    effectiveIsAdmin &&
+      hasVendorPayload &&
+      !normalizedAdminCreateNew &&
+      !hasInitialItem
+  );
+
+  // "edit" means editing a real existing Item only. If there is no initialItem
+  // but vendor_data is present, this is a vendor-request draft workflow even if
+  // a caller supplied a generic edit flow string.
+  const isExplicitEditMode = Boolean(
+    hasInitialItem &&
+      (explicitFlow === "edit" || explicitFlow === "vendor-registration-edit")
+  );
+
+  // A real existing Item is the authoritative signal for vendor edit mode.
+  // Do not require the caller to pass flow="edit" for the draft pipeline to work.
+  const isEditing = Boolean(
+    hasInitialItem &&
+      !normalizedAdminCreateNew &&
+      !normalizedApprovalMode &&
+      !resolvedApprovalRequestId &&
+      !effectiveIsAdmin
+  );
+
+  const isApprovalMode = Boolean(
+    effectiveIsAdmin &&
+      !isExplicitEditMode &&
+      (
+        normalizedApprovalMode ||
+        resolvedApprovalRequestId ||
+        hasVendorBackedAdminWorkflow
+      )
+  );
+
+  // Resolve the backend workflow from the actual record identity, not from
+  // a generic flow string. A vendor request draft must never become Item edit.
+  const saveMode =
+    normalizedAdminCreateNew
+      ? "admin-create"
+      : isVendorRegistrationEdit
+        ? "vendor-registration-edit"
+        : isEditing
+        ? "edit"
+        : resolvedApprovalRequestId || normalizedApprovalMode || explicitFlow === "admin-approve"
+          ? "admin-approve"
+          : "vendor-create";
+
+  const hasWorkflowConflict =
+    Boolean(
+      resolvedApprovalRequestId ||
+        normalizedAdminCreateNew ||
+        normalizedApprovalMode ||
+        explicitFlow ||
+        hasVendorBackedAdminWorkflow
+    ) &&
+    !["admin-approve", "admin-create", "edit", "vendor-registration-edit", "vendor-create"].includes(saveMode);
+
+  if (process.env.NODE_ENV !== "production") {
+    const missingApprovalRequestId = saveMode === "admin-approve" && !resolvedApprovalRequestId;
+    const missingVendorForAdminCreate = saveMode === "admin-create" && !vendor?.id && !vendorId;
+
+    if (missingApprovalRequestId) {
+      console.warn("Admin approval mode is active without a VendorItemRequest id.");
+    }
+    if (missingVendorForAdminCreate) {
+      console.warn("Admin create mode is missing a vendor selection.");
+    }
+  }
   // Vendor edits keep protected fields muted; admin item creation/editing never does.
-  const shouldMuteProtectedFields = isEditing && !isAdmin;
+  const shouldMuteProtectedFields = isEditing && !effectiveIsAdmin;
 
     const form = useForm({
       defaultValues: {
@@ -185,7 +412,8 @@ const ItemAddNew = ({ initialItem, vendorId, itemId, onSave = () => {}, vendor, 
     useEffect(() => {
       if (!initialItem) return;
 
-      setDraftHasControl(false);
+      const itemKey = String(initialItem.id ?? safeItemId ?? "new");
+      if (draftRestoredItemRef.current === itemKey) return;
 
       const relationName = (value) => {
         if (value && typeof value === "object") {
@@ -211,8 +439,8 @@ const ItemAddNew = ({ initialItem, vendorId, itemId, onSave = () => {}, vendor, 
       const galleryMedia = requestMedia.filter((asset) => asset.kind === "gallery");
       const galleryFromItem = additionalImages.map((asset, index) => ({
         slotKey: asset.id ? `additional:${asset.id}` : `gallery:${index}`,
-        value: asset.image ?? asset.url ?? asset.file ?? asset,
-        url: asset.image ?? asset.url ?? asset.file ?? asset,
+        value: normalizeMediaValue(asset.image ?? asset.url ?? asset.file ?? asset),
+        url: normalizeMediaValue(asset.image ?? asset.url ?? asset.file ?? asset),
         name: asset.name ?? `Product image ${index + 1}`,
       }));
 
@@ -221,19 +449,18 @@ const ItemAddNew = ({ initialItem, vendorId, itemId, onSave = () => {}, vendor, 
         .sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0))
         .map((asset, index) => ({
           slotKey: asset.slot_key || `gallery:${index}`,
-          value: asset.value ?? asset.url,
-          url: asset.url ?? asset.value,
+          value: normalizeMediaValue(asset.value ?? asset.url),
+          url: normalizeMediaValue(asset.url ?? asset.value),
           name: asset.name,
         }));
 
       const requestVideo = requestMedia.find((asset) => asset.kind === "video");
-      const existingVideoValue = normalizeMediaValue(initialItem.video ?? initialItem.video_url);
       const existingVideo = requestVideo || (
-        existingVideoValue
+        initialItem.video
           ? {
               slotKey: "video",
-              value: existingVideoValue,
-              url: existingVideoValue,
+              value: normalizeMediaValue(initialItem.video),
+              url: normalizeMediaValue(initialItem.video),
               name: "Product video",
             }
           : null
@@ -245,8 +472,8 @@ const ItemAddNew = ({ initialItem, vendorId, itemId, onSave = () => {}, vendor, 
         department,
         category,
         subcategory,
-        image: normalizeMediaValue(initialItem.image ?? initialItem.image_url),
-        video: normalizeMediaValue(initialItem.video ?? initialItem.video_url),
+        image: normalizeMediaValue(initialItem.image),
+        video: normalizeMediaValue(initialItem.video),
         brand: normalizeRelationId(initialItem.brand),
         gender_based: initialItem.gender_based ?? "none",
         children_size_based_age: initialItem.children_size_based_age ?? "none",
@@ -266,7 +493,7 @@ const ItemAddNew = ({ initialItem, vendorId, itemId, onSave = () => {}, vendor, 
         color_variants: (initialItem.variants || initialItem.color_variants || []).map((variant) => ({
           id: variant.id,
           color: variant.color,
-          color_image: variant.image ?? variant.color_image ?? null,
+          color_image: normalizeMediaValue(variant.image ?? variant.color_image),
           sizes: (variant.sizes || []).map((size) => ({
             id: size.id,
             size: size.size,
@@ -309,7 +536,7 @@ const ItemAddNew = ({ initialItem, vendorId, itemId, onSave = () => {}, vendor, 
       if (section === "organic" || section === "inorganic") {
         setSelectedSection(section);
       }
-    }, [initialItem, form]);
+    }, [initialItem, form, safeItemId]);
 
     const {
       control,
@@ -325,6 +552,19 @@ const ItemAddNew = ({ initialItem, vendorId, itemId, onSave = () => {}, vendor, 
   const selectedSizes = watch("size") || [];
   const selectedSubcategory = form.watch("subcategory") || "";
   const draftValues = watch();
+  const draftValuesForAutosave = useMemo(
+    () => ({
+      ...draftValues,
+      gallery_images: galleryImages.map((asset) => ({
+        id: asset?.slotKey?.startsWith("additional:") ? asset.slotKey.split(":")[1] : undefined,
+        slot_key: asset?.slotKey || "",
+        image: asset?.value ?? asset?.url ?? "",
+        name: asset?.name || "",
+      })),
+      video: productVideo?.value ?? draftValues.video ?? "",
+    }),
+    [draftValues, galleryImages, productVideo]
+  );
 
   const normalizedCategory = String(selectedCatSizes || "").trim().toLowerCase();
   const normalizedSubcategory = String(selectedSubcategory || "").trim().toLowerCase();
@@ -395,15 +635,20 @@ const ItemAddNew = ({ initialItem, vendorId, itemId, onSave = () => {}, vendor, 
   const showGenericGenderField =
     isGenderRelevantCategory && normalizedCategory !== "shoes";
 
+  const draftRestoredItemRef = useRef(null);
+
   const handleDraftRestore = useCallback(
     (draft) => {
+      draftRestoredItemRef.current = isEditing ? String(safeItemId) : "new";
       const restoredData = { ...(draft?.data || {}) };
       delete restoredData.draft_id;
-
       const media = Array.isArray(draft?.media) ? draft.media : [];
       const mainMedia = media.find((asset) => asset.kind === "main");
       const videoMedia = media.find((asset) => asset.kind === "video");
 
+      // Once a draft exists, it is authoritative for the fields/media it
+      // contains. Never merge the original Item back into a restored draft:
+      // an empty draft media slot can be an intentional persisted removal.
       const restoredVariants = (restoredData.color_variants || []).map((variant) => {
         const variantMedia = media.find(
           (asset) =>
@@ -412,51 +657,78 @@ const ItemAddNew = ({ initialItem, vendorId, itemId, onSave = () => {}, vendor, 
         );
         return {
           ...variant,
-          color_image: variantMedia?.url || variant.color_image || null,
+          color_image:
+            normalizeMediaValue(variantMedia?.url || variantMedia?.value) ||
+            normalizeMediaValue(variant.color_image) ||
+            null,
         };
       });
 
       form.reset({
         ...restoredData,
-        image: mainMedia?.url || restoredData.image || "",
-        video: videoMedia?.url || restoredData.video || "",
+        image:
+          normalizeMediaValue(mainMedia?.url || mainMedia?.value) ||
+          normalizeMediaValue(restoredData.image),
+        video:
+          normalizeMediaValue(videoMedia?.url || videoMedia?.value) ||
+          normalizeMediaValue(restoredData.video),
         color_variants: restoredVariants,
       });
 
-      setDraftHasControl(true);
-      const restoredSection = normalizeSection(restoredData.section);
-      setDraftSection(restoredSection || "");
-      setSelectedSection(restoredSection || "");
+      setSelectedSection(restoredData.section || normalizeSection(initialItem?.section) || "");
       setSelectedDepartment(restoredData.department || "");
       setSelectedCategory(restoredData.category || "");
 
-      setGalleryImages(
-        media
-          .filter((asset) => asset.kind === "gallery")
-          .sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0))
-          .map((asset) => ({
-            slotKey: asset.slot_key,
-            value: asset.url,
-            url: asset.url,
-            name: asset.name,
-          }))
-      );
+      const restoredGallery = Array.isArray(restoredData.gallery_images)
+        ? restoredData.gallery_images
+            .map((asset, index) => ({
+              slotKey: asset.slot_key || (asset.id ? `additional:${asset.id}` : `gallery:${index}`),
+              value: normalizeMediaValue(asset.image || asset.url || asset.value),
+              url: normalizeMediaValue(asset.image || asset.url || asset.value),
+              name: asset.name || `Product image ${index + 1}`,
+            }))
+            .filter((asset) => asset.value)
+        : [];
 
-      if (videoMedia) {
-        setProductVideo({
-          slotKey: "video",
-          value: videoMedia.url,
-          url: videoMedia.url,
-          name: videoMedia.name,
-        });
-      } else {
-        setProductVideo(null);
-      }
+      const draftGallery = media
+        .filter((asset) => asset.kind === "gallery")
+        .sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0))
+        .map((asset) => ({
+          slotKey: asset.slot_key,
+          value: normalizeMediaValue(asset.url || asset.value),
+          url: normalizeMediaValue(asset.url || asset.value),
+          name: asset.name,
+        }))
+        .filter((asset) => asset.value);
+
+      // The draft owns the gallery after restoration. Prefer its persisted
+      // media records; otherwise use the gallery list stored in draft.data.
+      // The original Item gallery is only the baseline used before a draft
+      // exists and must never resurrect an explicitly removed image here.
+      const authoritativeGallery = draftGallery.length
+        ? draftGallery
+        : restoredGallery;
+      setGalleryImages(authoritativeGallery);
+
+      const restoredVideo =
+        normalizeMediaValue(videoMedia?.url || videoMedia?.value) ||
+        normalizeMediaValue(restoredData.video);
+
+      setProductVideo(
+        restoredVideo
+          ? {
+              slotKey: "video",
+              value: restoredVideo,
+              url: restoredVideo,
+              name: videoMedia?.name || "Product video",
+            }
+          : null
+      );
 
       setDraftMessage("Saved draft restored.");
       setDraftError("");
     },
-    [form]
+    [form, initialItem, isEditing, safeItemId]
   );
 
   const handleDraftSaved = useCallback(
@@ -465,12 +737,21 @@ const ItemAddNew = ({ initialItem, vendorId, itemId, onSave = () => {}, vendor, 
       const mainMedia = media.find((asset) => asset.kind === "main");
       const videoMedia = media.find((asset) => asset.kind === "video");
 
-      if (mainMedia?.url) {
-        form.setValue("image", mainMedia.url, { shouldDirty: false });
-      }
+      // The server response is the canonical persisted draft snapshot.
+      // If a slot is absent, that is also meaningful: it may have been
+      // explicitly removed and must be reflected in the form.
+      form.setValue(
+        "image",
+        normalizeMediaValue(mainMedia?.url || mainMedia?.value || draft?.data?.image),
+        { shouldDirty: false }
+      );
 
-      if (videoMedia?.url) {
-        form.setValue("video", videoMedia.url, { shouldDirty: false });
+      const savedVideoUrl = normalizeMediaValue(
+        videoMedia?.url || videoMedia?.value || draft?.data?.video
+      );
+
+      if (savedVideoUrl) {
+        form.setValue("video", savedVideoUrl, { shouldDirty: false });
         setProductVideo((current) => {
           // Keep a newly selected File alive after autosave. Save & Approve
           // still needs that File when the draft media record is not yet
@@ -480,7 +761,7 @@ const ItemAddNew = ({ initialItem, vendorId, itemId, onSave = () => {}, vendor, 
             return {
               ...current,
               slotKey: "video",
-              url: videoMedia.url,
+              url: normalizeMediaValue(videoMedia.url),
               name: videoMedia.name || current.name,
             };
           }
@@ -488,65 +769,41 @@ const ItemAddNew = ({ initialItem, vendorId, itemId, onSave = () => {}, vendor, 
           return {
             ...(current || {}),
             slotKey: "video",
-            value: videoMedia.url,
-            url: videoMedia.url,
-            name: videoMedia.name,
+            value: savedVideoUrl,
+            url: savedVideoUrl,
+            name: videoMedia.name || current?.name || "Product video",
           };
         });
+      } else {
+        if (productVideo?.value instanceof File && productVideo?.url) {
+          // A pending local upload remains untouched until its save request
+          // has acknowledged it.
+        } else {
+          setProductVideo(null);
+        }
+        form.setValue("video", "", { shouldDirty: false });
       }
 
-      setGalleryImages((current) => {
-        const savedGallery = media
+      setGalleryImages(
+        media
           .filter((asset) => asset.kind === "gallery")
-          .sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0));
-
-        const savedBySlot = new Map(
-          savedGallery.map((asset) => [asset.slot_key, asset])
-        );
-
-        // Never let an older/in-flight autosave response erase a newly
-        // selected local File. Once the server acknowledges that slot,
-        // replace the File with the persisted URL.
-        const currentFiles = new Map(
-          current
-            .filter((asset) => asset?.value instanceof File)
-            .map((asset) => [asset.slotKey, asset])
-        );
-
-        const merged = savedGallery.map((asset) => {
-          const local = currentFiles.get(asset.slot_key);
-          if (local) {
-            return {
-              ...local,
-              slotKey: asset.slot_key,
-              url: asset.url || local.url,
-              name: asset.name || local.name,
-            };
-          }
-
-          return {
+          .sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0))
+          .map((asset) => ({
             slotKey: asset.slot_key,
-            value: asset.url,
-            url: asset.url,
+            value: normalizeMediaValue(asset.url || asset.value),
+            url: normalizeMediaValue(asset.url || asset.value),
             name: asset.name,
-          };
-        });
-
-        // Keep files that are not present in this response. This protects
-        // newly selected images from stale autosave responses.
-        current.forEach((asset) => {
-          if (asset?.value instanceof File && !savedBySlot.has(asset.slotKey)) {
-            merged.push(asset);
-          }
-        });
-
-        return merged;
-      });
+          }))
+          .filter((asset) => asset.value)
+      );
 
       const savedVariantMedia = new Map(
         media
           .filter((asset) => asset.kind === "variant")
-          .map((asset) => [String(asset.variant_key).toLowerCase(), asset.url])
+          .map((asset) => [
+            String(asset.variant_key).toLowerCase(),
+            normalizeMediaValue(asset.url || asset.value),
+          ])
       );
 
       const currentVariants = form.getValues("color_variants") || [];
@@ -612,7 +869,15 @@ const ItemAddNew = ({ initialItem, vendorId, itemId, onSave = () => {}, vendor, 
     return assets;
   }, [draftValues, galleryImages, productVideo]);
 
-  const draftEnabled = true;
+  // Only vendor-created item requests should use the generic autosave draft
+  // pipeline. Admin create and approval flows use their dedicated APIs and must
+  // not silently save through the vendor item-draft endpoint.
+  const draftEnabled = Boolean(
+    !effectiveIsAdmin &&
+      !normalizedAdminCreateNew &&
+      !isApprovalMode &&
+      (isEditing || !initialItem)
+  );
   const {
     draftId,
     restoring: draftRestoring,
@@ -622,10 +887,9 @@ const ItemAddNew = ({ initialItem, vendorId, itemId, onSave = () => {}, vendor, 
     error: draftAutosaveError,
   } = useItemDraftAutosave({
     enabled: draftEnabled,
-    values: draftValues,
+    values: draftValuesForAutosave,
     media: draftMedia,
-    itemId: itemId || null,
-    vendorId: vendorId || null,
+    itemId: isEditing ? safeItemId : null,
     onRestore: handleDraftRestore,
     onSaved: handleDraftSaved,
   });
@@ -648,8 +912,6 @@ const ItemAddNew = ({ initialItem, vendorId, itemId, onSave = () => {}, vendor, 
   // The vendor can explicitly uncheck them; changing to Handmade/Inorganic
   // clears them and the organic-only fields.
   useEffect(() => {
-    if (draftHasControl || isEditing) return;
-
     if (selectedSection === "organic") {
       form.setValue("is_organic", true);
       form.setValue("is_fresh_food", true);
@@ -662,27 +924,17 @@ const ItemAddNew = ({ initialItem, vendorId, itemId, onSave = () => {}, vendor, 
     form.setValue("expiry_date", "");
     form.setValue("roast_type", "");
     form.setValue("coffee_state", "");
-  }, [selectedSection, form, draftHasControl, isEditing]);
+  }, [selectedSection, form]);
 
   // Define department and category based on the vendor product type.
   const [activeData, setActiveData] = useState(null);
-
-  useEffect(() => {
-    if (!draftHasControl || !draftSection) return;
-
-    if (draftSection === "organic") {
-      setActiveData(organicDepartmentMap);
-    } else if (draftSection === "inorganic") {
-      setActiveData(departmentMap);
-    }
-  }, [draftHasControl, draftSection, organicDepartmentMap, departmentMap]);
 
   useEffect(() => {
     // Existing items may be opened from inventory without a vendor object.
     // In that case, the saved section is the source of truth for the
     // department/category dataset.
     const existingSection = normalizeSection(initialItem?.section);
-    const isVendorCreate = !isAdmin && !isEditing;
+    const isVendorCreate = !effectiveIsAdmin && !isEditing;
     const section =
       existingSection === "organic" || existingSection === "inorganic"
         ? existingSection
@@ -695,8 +947,6 @@ const ItemAddNew = ({ initialItem, vendorId, itemId, onSave = () => {}, vendor, 
           : productType === "organic" || productType === "inorganic"
             ? productType
             : selectedSection;
-
-    if (draftHasControl) return;
 
     if (section === "organic") {
       setSelectedSection("organic");
@@ -717,13 +967,12 @@ const ItemAddNew = ({ initialItem, vendorId, itemId, onSave = () => {}, vendor, 
     setValue,
     organicDepartmentMap,
     departmentMap,
-    draftHasControl,
   ]);
 
   // Keep the saved department visible when the department dataset becomes
   // available after the edit form has already been initialized.
   useEffect(() => {
-    if (draftHasControl || !initialItem?.department || !activeData) return;
+    if (!initialItem?.department || !activeData) return;
 
     const savedDepartment = String(initialItem.department).trim();
     const matchingDepartment = Object.keys(activeData).find(
@@ -735,7 +984,7 @@ const ItemAddNew = ({ initialItem, vendorId, itemId, onSave = () => {}, vendor, 
       setSelectedDepartment(matchingDepartment);
       setValue("department", matchingDepartment);
     }
-  }, [initialItem?.department, activeData, setValue, draftHasControl]);
+  }, [initialItem?.department, activeData, setValue]);
 
   // Reset the entire form when activeData changes for a new item.
   const emptyValues = {
@@ -778,8 +1027,6 @@ const ItemAddNew = ({ initialItem, vendorId, itemId, onSave = () => {}, vendor, 
   // Organic-only fields must never remain active when the form is switched
   // to Handmade/Inorganic. This keeps vendor and admin approval flows aligned.
   useEffect(() => {
-    if (draftHasControl || isEditing) return;
-
     if (selectedSection !== "organic") {
       setValue("is_organic", false);
       setValue("is_fresh_food", false);
@@ -788,7 +1035,7 @@ const ItemAddNew = ({ initialItem, vendorId, itemId, onSave = () => {}, vendor, 
       setValue("roast_type", "");
       setValue("coffee_state", "");
     }
-  }, [selectedSection, setValue, draftHasControl, isEditing]);
+  }, [selectedSection, setValue]);
 
   // Reset manufactured/expiry dates when activeData changes
   useEffect(() => {
@@ -832,11 +1079,20 @@ const ItemAddNew = ({ initialItem, vendorId, itemId, onSave = () => {}, vendor, 
 
     const handleMainImageChange = (file) => {
       if (!validateImageFile(file)) return;
+
+      // An existing main image is persistent until the user explicitly
+      // removes it. Selecting another file must never silently replace it.
       const hasMain = Boolean(form.getValues("image"));
-      if (!hasMain && currentImageCount >= MAX_ITEM_IMAGES) {
+      if (hasMain) {
+        setDraftError("Remove the current main image before selecting a replacement.");
+        return;
+      }
+
+      if (currentImageCount >= MAX_ITEM_IMAGES) {
         setDraftError("You can add up to 10 product images in total.");
         return;
       }
+
       form.setValue("image", file, { shouldDirty: true, shouldValidate: true });
     };
 
@@ -924,8 +1180,11 @@ const ItemAddNew = ({ initialItem, vendorId, itemId, onSave = () => {}, vendor, 
         return;
       }
 
-      if (productVideo?.url && productVideo.value instanceof File) {
-        window.URL.revokeObjectURL(productVideo.url);
+      // An existing video is persistent until the user explicitly removes
+      // it. A new selection cannot silently replace the persisted video.
+      if (productVideo?.value) {
+        setDraftError("Remove the current product video before selecting a replacement.");
+        return;
       }
 
       setProductVideo({
@@ -956,7 +1215,7 @@ const ItemAddNew = ({ initialItem, vendorId, itemId, onSave = () => {}, vendor, 
       // Vendor-side trimming is isolated from the existing upload/draft
       // pipeline. The selected file is only committed to productVideo after
       // it is valid as-is or the user applies a valid trim.
-      if (isAdmin) {
+      if (effectiveIsAdmin) {
         const videoElement = document.createElement("video");
         videoElement.preload = "metadata";
         const sourceUrl = URL.createObjectURL(file);
@@ -1030,6 +1289,77 @@ const ItemAddNew = ({ initialItem, vendorId, itemId, onSave = () => {}, vendor, 
 
     const onSubmit = async (data) => {
       try {
+        console.info("ITEM_FORM_ROUTE", {
+          saveMode,
+          explicitFlow,
+          flow,
+          isAdmin: resolvedIsAdmin,
+          approvalMode: normalizedApprovalMode,
+          approvalRequestId: resolvedApprovalRequestId,
+          adminCreateNew: normalizedAdminCreateNew,
+          isEditing,
+          itemId,
+          path: window.location.pathname,
+        });
+
+        // Never let an admin vendor-request form silently fall through to
+        // the normal vendor-create endpoint. If the request identity is missing,
+        // fail with the real missing-identity error below instead.
+        if (
+          saveMode === "vendor-create" &&
+          effectiveIsAdmin &&
+          (hasVendorBackedAdminWorkflow || explicitFlow === "vendor-registration-edit")
+        ) {
+          throw new Error(
+            resolvedApprovalRequestId
+              ? "Vendor request draft must use the admin request save-draft flow."
+              : "Vendor request draft requires a valid request id."
+          );
+        }
+
+        if (saveMode === "admin-approve" && !resolvedApprovalRequestId) {
+          throw new Error("Admin approval requires an approval request id.");
+        }
+
+        if (saveMode === "edit" && !hasInitialItem) {
+          throw new Error("Item edit requires an initial item.");
+        }
+
+        if (saveMode === "edit" && !safeItemId) {
+          throw new Error("Item edit requires a valid item id.");
+        }
+
+        if (
+          saveMode === "admin-approve" &&
+          !hasInitialItem &&
+          !resolvedApprovalRequestId
+        ) {
+          throw new Error("Vendor request draft requires a valid request id.");
+        }
+
+        if (saveMode === "admin-create") {
+          const adminVendorId = vendor?.id ?? vendorId ?? null;
+          if (!adminVendorId) {
+            throw new Error("Select a vendor before saving the item.");
+          }
+        }
+
+        if (resolvedApprovalRequestId && !["admin-approve", "vendor-registration-edit"].includes(saveMode)) {
+          throw new Error("Approval workflow mismatch: this request must use the admin request save-draft flow.");
+        }
+
+        if (normalizedAdminCreateNew && saveMode !== "admin-create") {
+          throw new Error("Admin create workflow mismatch: this form is in an admin-create context but is not in admin-create mode.");
+        }
+
+        if (explicitFlow && !["admin-approve", "admin-create", "edit", "vendor-registration-edit", "vendor-create"].includes(saveMode)) {
+          throw new Error("Workflow mismatch: unknown save mode for this form.");
+        }
+
+        if (hasWorkflowConflict) {
+          throw new Error("Workflow conflict: the form cannot determine a safe backend route.");
+        }
+
         // Vendor creation goes through the same request endpoint used by the
         // legacy VendorItemRequest form. The complete form is preserved in
         // draft_item so the admin approval flow can use all submitted fields.
@@ -1177,10 +1507,9 @@ const ItemAddNew = ({ initialItem, vendorId, itemId, onSave = () => {}, vendor, 
           ),
         };
 
-        // Vendor-request approval uses this same form. Save the complete edited
-        // product snapshot back to the request, then run the existing approval
-        // endpoint so the backend creates the final Item and finalizes draft media.
-        if (isApprovalMode) {
+        // Route selection is explicit so the same form can safely support
+        // vendor create, admin direct create, item edit, and admin approval.
+        if (saveMode === "admin-approve") {
           // Keep the JSON snapshot and uploaded media synchronized. Browser
           // File objects stay in multipart media; they are never serialized
           // into draft_item.
@@ -1188,22 +1517,8 @@ const ItemAddNew = ({ initialItem, vendorId, itemId, onSave = () => {}, vendor, 
           // exists. The form field can still contain the persisted URL after
           // draft/media hydration, but approval must upload the actual File
           // whenever the video slot is new or has been replaced.
-          const persistedSlots = new Set(
-            (initialItem?.draft_media || [])
-              .map((asset) => asset?.slot_key)
-              .filter(Boolean)
-          );
-
           const approvalMedia = draftMedia
             .filter((asset) => asset?.slotKey && asset?.kind)
-            .filter((asset) => {
-              const value = asset.value;
-              const isUrlOnlyAsset = typeof value === "string" && !isUploadFile(value);
-              if (isUrlOnlyAsset && !persistedSlots.has(asset.slotKey)) {
-                return false;
-              }
-              return true;
-            })
             .map((asset) => {
               if (asset.kind !== "video") return asset;
               const liveVideoFile =
@@ -1221,6 +1536,11 @@ const ItemAddNew = ({ initialItem, vendorId, itemId, onSave = () => {}, vendor, 
                   }
                 : asset;
             });
+          const persistedSlots = new Set(
+            (initialItem?.draft_media || [])
+              .map((asset) => asset?.slot_key)
+              .filter(Boolean)
+          );
           const currentSlots = new Set(
             approvalMedia.map((asset) => asset.slotKey)
           );
@@ -1261,7 +1581,7 @@ const ItemAddNew = ({ initialItem, vendorId, itemId, onSave = () => {}, vendor, 
           });
 
           const draftResponse = await api.put(
-            `/api/vendor-requests/${approvalRequestId}/save-draft/`,
+            `/api/vendor-requests/${resolvedApprovalRequestId}/save-draft/`,
             approvalFormData,
             {
               withCredentials: true,
@@ -1273,9 +1593,10 @@ const ItemAddNew = ({ initialItem, vendorId, itemId, onSave = () => {}, vendor, 
             throw new Error("Failed to save the edited vendor request.");          }
 
           const approvalResponse = await api.post(
-            `/api/vendor/requests/${approvalRequestId}/approve/`,
+            `/api/vendor/requests/${resolvedApprovalRequestId}/approve/`,
             { action: "approve" },
-            { withCredentials: true }          );
+            { withCredentials: true }
+          );
 
           if (approvalResponse.status === 200) {
             completeSave("Item approved successfully. Your changes have been saved.", approvalResponse.data);
@@ -1286,8 +1607,35 @@ const ItemAddNew = ({ initialItem, vendorId, itemId, onSave = () => {}, vendor, 
         }
 
         // Existing items use the same form for direct vendor/admin edits.
-        // This replaces the legacy EditItem/EditItemForm submission path.
-        if (isEditing && itemId && !adminCreateNew) {
+        // Admin editing of a pending vendor request persists the approval
+        // snapshot in VendorItemRequest.item_list. It does not create a
+        // VendorDraft.
+        if (saveMode === "vendor-registration-edit") {
+          if (!resolvedApprovalRequestId) {
+            throw new Error("Vendor item request id is required to save this item.");
+          }
+          if (vendorRequestItemIndex == null) {
+            throw new Error("Vendor request item index is required to save this item.");
+          }
+
+          const response = await api.patch(
+            `/api/vendor-requests/${resolvedApprovalRequestId}/items/${vendorRequestItemIndex}/`,
+            { item: formattedItem },
+            { withCredentials: true }
+          );
+
+          if (response.status !== 200) {
+            throw new Error("Failed to save the item to the vendor request.");
+          }
+
+          completeSave(
+            response.data?.message || "Item saved to vendor item request.",
+            response.data?.item || formattedItem
+          );
+          return;
+        }
+
+        if (saveMode === "edit") {
           const editFormData = new FormData();
           const appendValue = (key, value) => {
             if (value === null || value === undefined || value === "") return;
@@ -1370,7 +1718,7 @@ const ItemAddNew = ({ initialItem, vendorId, itemId, onSave = () => {}, vendor, 
           });
 
           const response = await api.put(
-            `/api/item-post/update/${itemId}/`,
+            `/api/item-post/update/${safeItemId}/`,
             editFormData,
             { withCredentials: true }
           );
@@ -1384,14 +1732,15 @@ const ItemAddNew = ({ initialItem, vendorId, itemId, onSave = () => {}, vendor, 
         }
 
         // Admin-created items are persisted directly against the selected vendor.
-        // Vendor create/edit continues through the existing vendor-request draft flow.
-        if (isAdmin) {
-          if (!vendor?.id) {
+        // This is intentionally a separate save mode from vendor-request creation.
+        if (saveMode === "admin-create") {
+          const adminVendorId = vendor?.id ?? vendorId ?? null;
+          if (!adminVendorId) {
             throw new Error("Select a vendor before saving the item.");
           }
 
           const adminFormData = new FormData();
-          adminFormData.append("vendor_id", String(vendor.id));
+          adminFormData.append("vendor_id", String(adminVendorId));
           if (submittedDraftId) adminFormData.append("draft_id", submittedDraftId);
 
           Object.entries(formattedItem).forEach(([key, value]) => {
@@ -1483,11 +1832,22 @@ const ItemAddNew = ({ initialItem, vendorId, itemId, onSave = () => {}, vendor, 
       }
     };
 
-  const draftStatusText = draftRestoring
-    ? "Restoring saved draft"
-    : draftSaving
-      ? "Saving draft"
-      : draftMessage || "Draft autosave is on";
+  if (hasWorkflowConflict) {
+    return (
+      <div className="rounded-2xl border border-red-500/30 bg-red-500/5 p-6 text-sm text-red-700">
+        <p className="text-base font-bold">Workflow error</p>
+        <p className="mt-2">The item form is in an unknown workflow state and cannot continue safely.</p>
+        <p className="mt-2 font-medium">Debug values:</p>
+        <ul className="mt-2 list-disc space-y-1 pl-5">
+          <li>flow: {String(flow || "unset")}</li>
+          <li>approvalMode: {String(Boolean(normalizedApprovalMode))}</li>
+          <li>approvalRequestId: {String(resolvedApprovalRequestId || "unset")}</li>
+          <li>adminCreateNew: {String(Boolean(normalizedAdminCreateNew))}</li>
+          <li>saveMode: {String(saveMode)}</li>
+        </ul>
+      </div>
+    );
+  }
 
   return (
       <Form {...form}>
@@ -1496,18 +1856,7 @@ const ItemAddNew = ({ initialItem, vendorId, itemId, onSave = () => {}, vendor, 
         <div className="mb-4 flex min-h-[92px] flex-wrap items-center justify-between gap-3 rounded-2xl border border-[#e6e6e4] bg-white px-4 py-3 text-xs">
           <div>
             <p className="font-semibold text-gray-900">
-              {draftSaving || draftRestoring ? (
-                <span className="inline-flex items-center gap-1">
-                  <span>{draftStatusText}</span>
-                  <span className="inline-flex items-center gap-1">
-                    <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-gray-500 [animation-delay:0ms]" />
-                    <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-gray-500 [animation-delay:120ms]" />
-                    <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-gray-500 [animation-delay:240ms]" />
-                  </span>
-                </span>
-              ) : (
-                draftStatusText
-              )}
+              {draftRestoring ? "Restoring saved draftâ¦" : draftSaving ? "Saving draftâ¦" : draftMessage || "Draft autosave is on"}
             </p>
             <p className="mt-1 min-h-[1rem] text-gray-500">
               {lastSavedAt ? `Last saved ${new Date(lastSavedAt).toLocaleString()}` : "\u00A0"}
@@ -1526,7 +1875,7 @@ const ItemAddNew = ({ initialItem, vendorId, itemId, onSave = () => {}, vendor, 
          {/* Vendor-only selector: only a new item from a "both" vendor can
              choose between organic and inorganic. Existing items never show it. */}
       <div className='border rounded-[20px] border-gray-300 p-4'>
-       {!isAdmin && !adminCreateNew && !approvalMode && !isEditing && productType === "both" && (
+       {!effectiveIsAdmin && !normalizedAdminCreateNew && !isApprovalMode && !isEditing && productType === "both" && (
         <div className="my-4 space-y-2">
           <label className="block text-sm leading-6 font-semibold text-foreground">Select Section</label>
           <div className="flex flex-wrap gap-2">
@@ -1778,7 +2127,7 @@ const ItemAddNew = ({ initialItem, vendorId, itemId, onSave = () => {}, vendor, 
                   {...field}
                   onChange={(e) => {
                     // Allow the field to become temporarily empty while the
-                    // user is editing. Do not force a 0 back in here — an
+                    // user is editing. Do not force a 0 back in here â an
                     // empty discount is resolved at submission time instead.
                     const value = e.target.value;
                     field.onChange(value === "" ? "" : parseFloat(value));
@@ -1844,9 +2193,11 @@ const ItemAddNew = ({ initialItem, vendorId, itemId, onSave = () => {}, vendor, 
               <div className="relative h-48 w-full max-w-sm overflow-hidden rounded-[20px] border border-gray-300 bg-[#f8f8f6]">
                 <img
                   src={
-                    isUploadFile(field.value)
-                      ? URL.createObjectURL(field.value)
-                      : resolveApiAssetUrl(normalizeMediaValue(field.value))
+                    typeof field.value === "string"
+                      ? field.value.startsWith("http")
+                        ? field.value
+                        : resolveApiAssetUrl(field.value)
+                      : URL.createObjectURL(field.value)
                   }
                   alt="Main product preview"
                   className="h-full w-full object-contain bg-white p-2"
@@ -1896,9 +2247,8 @@ const ItemAddNew = ({ initialItem, vendorId, itemId, onSave = () => {}, vendor, 
           <div key={asset.slotKey} className="relative overflow-hidden rounded-2xl border border-gray-300 bg-[#f8f8f6] p-1">
             <img
               src={
-                asset.value instanceof File
-                  ? asset.url || URL.createObjectURL(asset.value)
-                  : resolveApiAssetUrl(asset.url || asset.value)
+                asset.url ||
+                (asset.value instanceof File ? URL.createObjectURL(asset.value) : resolveApiAssetUrl(asset.value))
               }
               alt={asset.name || "Product gallery preview"}
               className="aspect-square w-full rounded-xl object-cover bg-white"
@@ -1920,7 +2270,7 @@ const ItemAddNew = ({ initialItem, vendorId, itemId, onSave = () => {}, vendor, 
     <div>
       <p className="text-sm font-semibold text-gray-900">Product video</p>
       <p className="mt-1 text-xs leading-5 text-gray-500">
-        Optional. MP4, MOV, or WEBM; 100 MB maximum; 3–15 seconds.
+        Optional. MP4, MOV, or WEBM; 100 MB maximum; 3â15 seconds.
       </p>
     </div>
     <Input
@@ -1929,7 +2279,7 @@ const ItemAddNew = ({ initialItem, vendorId, itemId, onSave = () => {}, vendor, 
       onChange={(event) => handleVideoChange(event.target.files?.[0])}
     />
 
-    {!isAdmin && videoTrimSource && (
+    {!effectiveIsAdmin && videoTrimSource && (
       <VideoTrimmer
         file={videoTrimSource.file}
         duration={videoTrimSource.duration}
@@ -1945,9 +2295,9 @@ const ItemAddNew = ({ initialItem, vendorId, itemId, onSave = () => {}, vendor, 
           playsInline
           preload="metadata"
           src={
-            isUploadFile(productVideo.value)
+            productVideo.value instanceof File
               ? productVideo.url || URL.createObjectURL(productVideo.value)
-              : resolveApiAssetUrl(normalizeMediaValue(productVideo.url || productVideo.value))
+              : resolveApiAssetUrl(productVideo.url || productVideo.value)
           }
           className="max-h-[360px] w-full bg-black"
         />
@@ -2253,7 +2603,7 @@ const ItemAddNew = ({ initialItem, vendorId, itemId, onSave = () => {}, vendor, 
             };
 
             const handleStockChange = (size, stock) => {
-              // Let the user clear the field while editing — an empty
+              // Let the user clear the field while editing â an empty
               // string is kept as-is instead of snapping back to a
               // default quantity. Only a completed, non-empty entry is
               // parsed into a number.
@@ -2614,7 +2964,7 @@ const ItemAddNew = ({ initialItem, vendorId, itemId, onSave = () => {}, vendor, 
             };
 
             const handleStockChange = (size, stock) => {
-              // Let the user clear the field while editing — an empty
+              // Let the user clear the field while editing â an empty
               // string is kept as-is instead of snapping back to a
               // default quantity. Only a completed, non-empty entry is
               // parsed into a number.
@@ -2883,9 +3233,9 @@ const ItemAddNew = ({ initialItem, vendorId, itemId, onSave = () => {}, vendor, 
                 >
                   <option value="">Select Coffee State</option>
                   <option value="whole_beans">Whole Beans</option>
-                  <option value="ground_coarse">Ground – Coarse</option>
-                  <option value="ground_medium">Ground – Medium</option>
-                  <option value="ground_fine">Ground – Fine</option>
+                  <option value="ground_coarse">Ground â Coarse</option>
+                  <option value="ground_medium">Ground â Medium</option>
+                  <option value="ground_fine">Ground â Fine</option>
                   <option value="instant">Instant Coffee</option>
                   <option value="capsules">Capsules/Pods</option>
                 </select>
@@ -2996,7 +3346,7 @@ const ItemAddNew = ({ initialItem, vendorId, itemId, onSave = () => {}, vendor, 
             required: "Expiry date is required",
             validate: (value) => {
               const manufactured = form.getValues("manufactured_date");
-              if (!manufactured) return true; // manufactured not set yet → skip
+              if (!manufactured) return true; // manufactured not set yet â skip
               return (
                 new Date(value) > new Date(manufactured) ||
                 "Expiry date must be later than manufactured date"
@@ -3136,8 +3486,16 @@ const ItemAddNew = ({ initialItem, vendorId, itemId, onSave = () => {}, vendor, 
               if (!validateImageFile(file)) return;
 
               const currentVariant = value.find((variant) => variant.color === color);
-              const replacingExisting = Boolean(currentVariant?.color_image);
-              if (!replacingExisting && currentImageCount >= MAX_ITEM_IMAGES) {
+              // Variant media follows the same explicit remove -> replace
+              // lifecycle as the main image and product video.
+              if (currentVariant?.color_image) {
+                setDraftError(
+                  "Remove the current color image before selecting a replacement."
+                );
+                return;
+              }
+
+              if (currentImageCount >= MAX_ITEM_IMAGES) {
                 setDraftError("You can add up to 10 product images in total.");
                 return;
               }
@@ -3166,7 +3524,7 @@ const ItemAddNew = ({ initialItem, vendorId, itemId, onSave = () => {}, vendor, 
             };
 
             const handleStockChange = (color, size, stock) => {
-              // Let the user clear the field while editing — an empty
+              // Let the user clear the field while editing â an empty
               // string is kept as-is instead of snapping back to a
               // default quantity. Only a completed, non-empty entry is
               // parsed into a number.
@@ -3456,10 +3814,14 @@ const ItemAddNew = ({ initialItem, vendorId, itemId, onSave = () => {}, vendor, 
               <div
                 role="status"
                 aria-live="polite"
-                className="fixed top-20 right-4 z-[1400] max-w-sm rounded-[20px] border-gray-300 bg-card px-4 py-3 text-sm font-semibold text-card-foreground shadow-lg"
+                className={`fixed bottom-5 right-5 z-[100] flex max-w-sm items-start gap-3 rounded-2xl border px-4 py-3 text-sm shadow-xl backdrop-blur-sm ${
+                  submissionStatus.type === "success"
+                    ? "border-green-200 bg-green-50/95 text-green-800"
+                    : "border-red-200 bg-red-50/95 text-red-800"
+                }`}
               >
                 <span className="mt-0.5 text-base font-semibold">
-                  {submissionStatus.type === "success" ? "✓" : "!"}
+                  {submissionStatus.type === "success" ? "â" : "!"}
                 </span>
                 <div className="pr-1">
                   <p className="font-semibold">
@@ -3473,18 +3835,28 @@ const ItemAddNew = ({ initialItem, vendorId, itemId, onSave = () => {}, vendor, 
                   onClick={() => setSubmissionStatus({ type: "", message: "" })}
                   className="ml-auto rounded-full px-2 text-lg leading-none opacity-60 transition hover:opacity-100"
                 >
-                  ×
+                  Ã
                 </button>
               </div>
             )}
 
-            <div className="mt-10 mb-10 w-full">
+            <div className="mt-10 mb-10 w-full space-y-3">
               <Button
                 type="submit"
                 className="w-full rounded-full bg-[#2563eb] px-4 py-3 text-center text-white hover:bg-[#1d4ed8]"
               >
                 {isApprovalMode ? "Save & Approve" : "Save Changes"}
               </Button>
+              {saveMode === "vendor-registration-edit" && onBack && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={onBack}
+                  className="w-full rounded-full border-border bg-transparent px-4 py-3 text-foreground hover:bg-muted"
+                >
+                  Back to Items
+                </Button>
+              )}
             </div>
             </div>
           </form>
