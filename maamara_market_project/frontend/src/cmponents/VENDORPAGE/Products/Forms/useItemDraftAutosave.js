@@ -68,6 +68,7 @@ export default function useItemDraftAutosave({
   const knownSlotsRef = useRef(new Set());
   const lastSavedFingerprintRef = useRef(null);
   const lastSavedDraftRef = useRef(null);
+  const restoredDraftPendingRef = useRef(false);
   const valuesRef = useRef(values);
   const mediaRef = useRef(media);
   valuesRef.current = values;
@@ -81,6 +82,7 @@ export default function useItemDraftAutosave({
     knownSlotsRef.current = new Set();
     lastSavedFingerprintRef.current = null;
     lastSavedDraftRef.current = null;
+    restoredDraftPendingRef.current = false;
     setCurrentDraftId(draftId || null);
     setRestoring(true);
 
@@ -99,6 +101,7 @@ export default function useItemDraftAutosave({
           knownSlotsRef.current = new Set(
             (draft.media || []).map((asset) => asset.slot_key)
           );
+          restoredDraftPendingRef.current = true;
           onRestore?.(draft);
         }
         setError(null);
@@ -223,6 +226,16 @@ export default function useItemDraftAutosave({
     if (!enabled || !restoredRef.current) return undefined;
 
     const fingerprint = makeDraftFingerprint(values, media);
+
+    // Restoring a draft updates React state asynchronously. Never autosave the
+    // pre-restore Item state, because that would mark restored media as removed.
+    if (restoredDraftPendingRef.current) {
+      restoredDraftPendingRef.current = false;
+      lastSavedFingerprintRef.current = fingerprint;
+      window.clearTimeout(timerRef.current);
+      return undefined;
+    }
+
     if (fingerprint === lastSavedFingerprintRef.current) {
       window.clearTimeout(timerRef.current);
       return undefined;
