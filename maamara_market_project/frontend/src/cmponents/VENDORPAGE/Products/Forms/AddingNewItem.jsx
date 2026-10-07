@@ -665,8 +665,8 @@ const ItemAddNew = ({
         ? restoredData.gallery_images
             .map((asset, index) => ({
               slotKey: asset.slot_key || (asset.id ? `additional:${asset.id}` : `gallery:${index}`),
-              value: asset.image || asset.url || asset.value || "",
-              url: asset.image || asset.url || asset.value || "",
+              value: normalizeMediaValue(asset.image || asset.url || asset.value),
+              url: normalizeMediaValue(asset.image || asset.url || asset.value),
               name: asset.name || `Product image ${index + 1}`,
             }))
             .filter((asset) => asset.value)
@@ -679,8 +679,8 @@ const ItemAddNew = ({
               .sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0))
               .map((asset) => ({
                 slotKey: asset.slot_key,
-                value: asset.url,
-                url: asset.url,
+                value: normalizeMediaValue(asset.url || asset.value),
+                url: normalizeMediaValue(asset.url || asset.value),
                 name: asset.name,
               }))
           : restoredGallery
@@ -689,15 +689,15 @@ const ItemAddNew = ({
       if (videoMedia?.url) {
         setProductVideo({
           slotKey: "video",
-          value: videoMedia.url,
-          url: videoMedia.url,
+          value: normalizeMediaValue(videoMedia.url || videoMedia.value),
+          url: normalizeMediaValue(videoMedia.url || videoMedia.value),
           name: videoMedia.name,
         });
       } else if (restoredData.video) {
         setProductVideo({
           slotKey: "video",
-          value: restoredData.video,
-          url: restoredData.video,
+          value: normalizeMediaValue(restoredData.video),
+          url: normalizeMediaValue(restoredData.video),
           name: "Product video",
         });
       } else {
