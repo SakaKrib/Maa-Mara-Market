@@ -18,7 +18,6 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
-from django.core.files.base import ContentFile
 from PIL import Image
 
 from ReactSerializers.Serializers import VendorPayoutSerializer
@@ -403,65 +402,6 @@ class ItemDraftView(APIView):
 
         raise ValueError("Unsupported draft media type.")
 
-    def _seed_edit_media(self, draft, item, slot_keys=None):
-        """Copy requested persisted item media into an edit draft when missing."""
-        allowed_slots = set(slot_keys) if slot_keys is not None else None
-
-        def copy_asset(source_file, *, kind, slot_key, sort_order, variant_key=""):
-            if not source_file or (allowed_slots is not None and slot_key not in allowed_slots):
-                return
-
-            source_name = os.path.basename(source_file.name)
-            source_file.open("rb")
-            try:
-                content = ContentFile(source_file.read())
-            finally:
-                source_file.close()
-
-            asset = ItemDraftMedia(
-                draft=draft,
-                media_type="video" if kind == "video" else "image",
-                kind=kind,
-                slot_key=slot_key,
-                variant_key=variant_key,
-                sort_order=sort_order,
-            )
-            asset.file.save(source_name, content, save=False)
-            asset.save()
-
-        copy_asset(
-            item.image,
-            kind="main",
-            slot_key="main",
-            sort_order=0,
-        )
-
-        for index, gallery in enumerate(item.additional_images.all()):
-            copy_asset(
-                gallery.image,
-                kind="gallery",
-                slot_key=f"additional:{gallery.id}",
-                sort_order=index + 1,
-            )
-
-        for index, variant in enumerate(item.variants.all()):
-            if not variant.image:
-                continue
-            copy_asset(
-                variant.image,
-                kind="variant",
-                slot_key=f"variant:{variant.color}",
-                variant_key=variant.color,
-                sort_order=20 + index,
-            )
-
-        copy_asset(
-            item.video,
-            kind="video",
-            slot_key="video",
-            sort_order=100,
-        )
-
     def _serialize_draft(self, request, draft):
         data = dict(draft.data or {})
         media = []
@@ -520,17 +460,6 @@ class ItemDraftView(APIView):
                 expires_at=timezone.now() + timezone.timedelta(days=30),
                 created_item_id=item_id or None,
             )
-
-            # An edit draft must own its persisted media so the normal
-            # manifest/autosave path can keep unchanged files without asking
-            # the browser to re-upload them.
-            if item_id:
-                item = Item.objects.filter(pk=item_id).prefetch_related(
-                    "additional_images",
-                    "variants",
-                ).first()
-                if item:
-                    self._seed_edit_media(draft, item)
         elif vendor and draft.vendor_id != vendor.id:
             draft.vendor = vendor
 
@@ -543,31 +472,6 @@ class ItemDraftView(APIView):
 
         if not isinstance(data, dict) or not isinstance(manifest, list) or not isinstance(removed_slots, list):
             return Response({"detail": "Invalid draft payload."}, status=status.HTTP_400_BAD_REQUEST)
-
-        # Older edit drafts may already exist without ItemDraftMedia. Hydrate only
-        # the persisted slots that the browser is still asking to keep, so an old
-        # draft is repaired without restoring media the vendor intentionally removed.
-        if item_id:
-            existing_slots = set(draft.media.values_list("slot_key", flat=True))
-            requested_persisted_slots = {
-                str(entry.get("slot_key") or "").strip()
-                for entry in manifest
-                if isinstance(entry, dict)
-                and str(entry.get("slot_key") or "").strip()
-                and not request.FILES.get(str(entry.get("upload_key") or "").strip())
-            }
-            missing_persisted_slots = requested_persisted_slots - existing_slots
-            if missing_persisted_slots:
-                item = Item.objects.filter(pk=item_id).prefetch_related(
-                    "additional_images",
-                    "variants",
-                ).first()
-                if item:
-                    self._seed_edit_media(
-                        draft,
-                        item,
-                        slot_keys=missing_persisted_slots,
-                    )
 
         existing = {asset.slot_key: asset for asset in draft.media.all()}
         for slot in removed_slots:
@@ -591,21 +495,18 @@ class ItemDraftView(APIView):
             uploaded = request.FILES.get(upload_key) if upload_key else None
             if not uploaded:
                 # Existing persisted media can stay in place without a re-upload.
-                # A blank upload key for an already-known slot is just a restored URL.
-                # Only brand-new slots without a real file are rejected.
-                if slot_key in existing:
-                    continue
-                if not upload_key:
-                    continue
-                return Response(
-                    {
-                        "detail": (
-                            f"Missing uploaded file for new media slot "
-                            f"'{slot_key}'."
-                        )
-                    },
-                    status=status.HTTP_400_BAD_REQUEST,
-                )
+                # A new manifest slot must include its actual uploaded file.
+                if slot_key not in existing:
+                    return Response(
+                        {
+                            "detail": (
+                                f"Missing uploaded file for new media slot "
+                                f"'{slot_key}'."
+                            )
+                        },
+                        status=status.HTTP_400_BAD_REQUEST,
+                    )
+                continue
 
             try:
                 self._validate_upload(uploaded, kind)
