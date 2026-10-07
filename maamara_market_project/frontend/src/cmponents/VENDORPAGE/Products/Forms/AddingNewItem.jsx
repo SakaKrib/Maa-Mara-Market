@@ -341,11 +341,14 @@ const ItemAddNew = ({
       (explicitFlow === "edit" || explicitFlow === "vendor-registration-edit")
   );
 
+  // A real existing Item is the authoritative signal for vendor edit mode.
+  // Do not require the caller to pass flow="edit" for the draft pipeline to work.
   const isEditing = Boolean(
     hasInitialItem &&
-      explicitFlow === "edit" &&
       !normalizedAdminCreateNew &&
-      !normalizedApprovalMode
+      !normalizedApprovalMode &&
+      !resolvedApprovalRequestId &&
+      !effectiveIsAdmin
   );
 
   const isApprovalMode = Boolean(
@@ -365,7 +368,7 @@ const ItemAddNew = ({
       ? "admin-create"
       : isVendorRegistrationEdit
         ? "vendor-registration-edit"
-        : explicitFlow === "edit" && hasInitialItem
+        : isEditing
         ? "edit"
         : resolvedApprovalRequestId || normalizedApprovalMode || explicitFlow === "admin-approve"
           ? "admin-approve"
@@ -752,17 +755,20 @@ const ItemAddNew = ({
         });
       }
 
-      setGalleryImages(
-        media
-          .filter((asset) => asset.kind === "gallery")
-          .sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0))
-          .map((asset) => ({
-            slotKey: asset.slot_key,
-            value: asset.url,
-            url: asset.url,
-            name: asset.name,
-          }))
-      );
+      const savedGallery = media
+        .filter((asset) => asset.kind === "gallery")
+        .sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0))
+        .map((asset) => ({
+          slotKey: asset.slot_key,
+          value: normalizeMediaValue(asset.url || asset.value),
+          url: normalizeMediaValue(asset.url || asset.value),
+          name: asset.name,
+        }))
+        .filter((asset) => asset.value);
+
+      if (savedGallery.length) {
+        setGalleryImages(savedGallery);
+      }
 
       const savedVariantMedia = new Map(
         media
