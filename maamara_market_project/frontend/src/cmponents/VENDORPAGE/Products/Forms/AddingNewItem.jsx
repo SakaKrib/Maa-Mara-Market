@@ -751,35 +751,44 @@ const ItemAddNew = ({
         form.setValue("image", normalizeMediaValue(mainMedia.url || mainMedia.value), { shouldDirty: false });
       }
 
-      if (videoMedia?.url || videoMedia?.value) {
-        const savedVideoUrl = normalizeMediaValue(videoMedia.url || videoMedia.value);
-        form.setValue("video", savedVideoUrl, { shouldDirty: false });
-        setProductVideo((current) => ({
-          ...(current || {}),
-          slotKey: "video",
-          value: savedVideoUrl,
-          url: savedVideoUrl,
-          name: videoMedia.name || current?.name || "Product video",
-        }));
-      }
+      if (videoMedia?.url) {
+        form.setValue("video", normalizeMediaValue(videoMedia.url), { shouldDirty: false });
+        setProductVideo((current) => {
+          // Keep a newly selected File alive after autosave. Save & Approve
+          // still needs that File when the draft media record is not yet
+          // persisted; replacing it with the returned URL would make the
+          // approval request reference a file that is not in the upload.
+          if (current?.value instanceof File) {
+            return {
+              ...current,
+              slotKey: "video",
+              url: normalizeMediaValue(videoMedia.url),
+              name: videoMedia.name || current.name,
+            };
+          }
 
-      const savedGallery = media
-        .filter((asset) => asset.kind === "gallery")
-        .sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0))
-        .map((asset) => ({
-          slotKey: asset.slot_key,
-          value: normalizeMediaValue(asset.url || asset.value),
-          url: normalizeMediaValue(asset.url || asset.value),
-          name: asset.name,
-        }))
-        .filter((asset) => asset.value);
-
-      if (savedGallery.length) {
-        setGalleryImages((current) => {
-          const savedBySlot = new Map(savedGallery.map((asset) => [asset.slotKey, asset]));
-          return current.filter((asset) => !savedBySlot.has(asset.slotKey)).concat(savedGallery);
+          return {
+            ...(current || {}),
+            slotKey: "video",
+            value: normalizeMediaValue(videoMedia.url),
+            url: normalizeMediaValue(videoMedia.url),
+            name: videoMedia.name || current?.name || "Product video",
+          };
         });
       }
+
+      setGalleryImages(
+        media
+          .filter((asset) => asset.kind === "gallery")
+          .sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0))
+          .map((asset) => ({
+            slotKey: asset.slot_key,
+            value: normalizeMediaValue(asset.url || asset.value),
+            url: normalizeMediaValue(asset.url || asset.value),
+            name: asset.name,
+          }))
+          .filter((asset) => asset.value)
+      );
 
       const savedVariantMedia = new Map(
         media
