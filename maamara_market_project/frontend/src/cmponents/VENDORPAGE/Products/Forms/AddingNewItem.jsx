@@ -250,8 +250,7 @@ const ItemAddNew = ({
     resolvedIsAdmin ||
     normalizedApprovalMode ||
     normalizedAdminCreateNew ||
-    explicitFlow === "admin-approve" ||
-    explicitFlow === "edit"
+    explicitFlow === "admin-approve"
   );
 
   // Vendor data is used for ownership/product configuration only. A normal
