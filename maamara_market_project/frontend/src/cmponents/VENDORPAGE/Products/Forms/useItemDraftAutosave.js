@@ -54,6 +54,7 @@ export default function useItemDraftAutosave({
   values,
   media = [],
   draftId,
+  itemId,
   onRestore,
   onSaved,
 }) {
@@ -87,6 +88,7 @@ export default function useItemDraftAutosave({
       try {
         const response = await api.get("/api/item-draft/", {
           withCredentials: true,
+          params: itemId ? { item_id: itemId } : undefined,
         });
 
         if (cancelled) return;
@@ -153,6 +155,8 @@ export default function useItemDraftAutosave({
         nextMedia.forEach((asset, index) => {
           if (!asset?.slotKey || !asset.kind) return;
 
+          if (!isFile(asset.value) && !knownSlotsRef.current.has(asset.slotKey)) return;
+
           currentSlots.add(asset.slotKey);
           const uploadKey = makeUploadKey(asset.slotKey);
 
@@ -176,6 +180,9 @@ export default function useItemDraftAutosave({
         formData.append("media_manifest", JSON.stringify(manifest));
         formData.append("removed_media_slots", JSON.stringify(removedSlots));
 
+        if (itemId) {
+          formData.append("item_id", String(itemId));
+        }
         if (currentDraftId) {
           formData.append("draft_id", currentDraftId);
         }
@@ -209,7 +216,7 @@ export default function useItemDraftAutosave({
         setSaving(false);
       }
     },
-    [currentDraftId, enabled, onSaved]
+    [currentDraftId, enabled, itemId, onSaved]
   );
 
   useEffect(() => {
