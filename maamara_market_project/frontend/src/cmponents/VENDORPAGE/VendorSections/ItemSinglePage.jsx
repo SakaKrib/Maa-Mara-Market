@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import { IonIcon } from "@ionic/react";
 import {
   eyeSharp,
@@ -11,7 +11,7 @@ import {
   trashSharp,
 } from "ionicons/icons";
 import EditItem from "../Products/Forms/EditItem/EditItem";
-import api from "../../../Services/Api";
+import api, { resolveApiAssetUrl } from "../../../Services/Api";
 import { useAuth } from "../../Auth/AuthContext/Context";
 import useItemActivityLogs from "../../Hooks/ActivityHook/ItemActivityHook";
 import dayjs from "dayjs";
@@ -84,7 +84,7 @@ const SingleItemProfile = () => {
   const item = data.item || {};
   const stats = data.stats || {};
   const vendor = data.vendor || {};
-  const image = item.image || "/placeholder.png";
+  const image = resolveApiAssetUrl(item.image) || "/placeholder.png";
 
   const handleDelete = async () => {
     if (!isAdmin) return;
@@ -167,6 +167,15 @@ const SingleItemProfile = () => {
                     <span className="text-sm text-gray-500 line-through">KES {Number(stats.discount_price).toLocaleString()}</span>
                   )}
                 </div>
+                {!isAdmin && (
+                  <Link
+                    to="/vendors-dashboard/add-item"
+                    state={{ activeTab: "price", itemId: item.id }}
+                    className="mt-5 inline-flex w-fit items-center justify-center rounded-full bg-[#2563eb] px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-[#1d4ed8]"
+                  >
+                    Request Price Change
+                  </Link>
+                )}
                 <div className="mt-5 grid gap-2 text-sm text-gray-600 sm:grid-cols-2">
                   <span>Category: {item.category || "—"}</span>
                   <span>Department: {item.department || "—"}</span>
