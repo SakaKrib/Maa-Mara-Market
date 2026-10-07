@@ -359,12 +359,15 @@ class ItemDraftView(APIView):
             raise PermissionError("Vendor account not found.")
         return request.user, vendor
 
-    def _draft_queryset(self, request):
-        return ItemDraft.objects.filter(
+    def _draft_queryset(self, request, item_id=None):
+        queryset = ItemDraft.objects.filter(
             owner=request.user,
             status="DRAFT",
             expires_at__gt=timezone.now(),
         ).prefetch_related("media")
+        if item_id:
+            queryset = queryset.filter(created_item_id=item_id)
+        return queryset
 
     def _validate_upload(self, uploaded, kind):
         if kind in {"main", "gallery", "variant"}:
@@ -424,7 +427,8 @@ class ItemDraftView(APIView):
         }
 
     def get(self, request):
-        draft = self._draft_queryset(request).order_by("-updated_at").first()
+        item_id = request.query_params.get("item_id")
+        draft = self._draft_queryset(request, item_id=item_id).order_by("-updated_at").first()
         if not draft:
             return Response({"exists": False, "draft": None})
         return Response({"draft": self._serialize_draft(request, draft)})
@@ -437,13 +441,15 @@ class ItemDraftView(APIView):
             return Response({"detail": str(exc)}, status=status.HTTP_403_FORBIDDEN)
 
         draft_id = request.data.get("draft_id")
+        item_id = request.data.get("item_id")
         if draft_id:
-            draft = get_object_or_404(self._draft_queryset(request), id=draft_id)
+            draft = get_object_or_404(self._draft_queryset(request, item_id=item_id), id=draft_id)
         else:
             draft = ItemDraft.objects.filter(
                 owner=owner,
                 status="DRAFT",
                 expires_at__gt=timezone.now(),
+                created_item_id=item_id or None,
             ).order_by("-updated_at").first()
 
         if draft is None:
@@ -452,6 +458,7 @@ class ItemDraftView(APIView):
                 vendor=vendor,
                 data={},
                 expires_at=timezone.now() + timezone.timedelta(days=30),
+                created_item_id=item_id or None,
             )
         elif vendor and draft.vendor_id != vendor.id:
             draft.vendor = vendor
