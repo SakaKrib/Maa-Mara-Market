@@ -2,7 +2,10 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import api from "../../../../Services/Api/";
 
 const isFile = (value) =>
-  typeof File !== "undefined" && value instanceof File;
+  typeof Blob !== "undefined" &&
+  value instanceof Blob &&
+  typeof value.name === "string" &&
+  value.name.trim() !== "";
 
 const stripFiles = (value) => {
   if (isFile(value)) return null;
@@ -192,7 +195,6 @@ export default function useItemDraftAutosave({
 
         const response = await api.post("/api/item-draft/", formData, {
           withCredentials: true,
-          headers: { "Content-Type": "multipart/form-data" },
         });
 
         const saved = response.data?.draft || response.data;
