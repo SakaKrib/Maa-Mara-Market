@@ -64,6 +64,7 @@ export default function useItemDraftAutosave({
   const [saving, setSaving] = useState(false);
   const [lastSavedAt, setLastSavedAt] = useState(null);
   const [error, setError] = useState(null);
+  const [restoredReady, setRestoredReady] = useState(false);
 
   const restoredRef = useRef(false);
   const timerRef = useRef(null);
@@ -88,6 +89,7 @@ export default function useItemDraftAutosave({
     restoredDraftPendingRef.current = false;
     setCurrentDraftId(draftId || null);
     setRestoring(true);
+    setRestoredReady(false);
 
     const load = async () => {
       try {
@@ -113,6 +115,7 @@ export default function useItemDraftAutosave({
       } finally {
         if (!cancelled) {
           restoredRef.current = true;
+          setRestoredReady(true);
           setRestoring(false);
         }
       }
@@ -249,7 +252,7 @@ export default function useItemDraftAutosave({
     }, 1200);
 
     return () => window.clearTimeout(timerRef.current);
-  }, [enabled, media, save, values]);
+  }, [enabled, media, restoredReady, save, values]);
 
   const clearDraft = useCallback(async () => {
     if (!currentDraftId) return;
