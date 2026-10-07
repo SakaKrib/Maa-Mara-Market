@@ -1,11 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import api from "../../../../Services/Api/";
+import api, { getWebSocketUrl } from "../../../../Services/Api/";
 
 const isFile = (value) =>
   typeof Blob !== "undefined" &&
   value instanceof Blob &&
-  typeof value.name === "string" &&
-  value.name.trim() !== "";
+  typeof value.name === "string";
 
 const stripFiles = (value) => {
   if (isFile(value)) return null;
@@ -55,7 +54,8 @@ export default function useItemDraftAutosave({
   values,
   media = [],
   draftId,
-  itemId,
+  itemId = null,
+  vendorId = null,
   onRestore,
   onSaved,
 }) {
@@ -64,7 +64,6 @@ export default function useItemDraftAutosave({
   const [saving, setSaving] = useState(false);
   const [lastSavedAt, setLastSavedAt] = useState(null);
   const [error, setError] = useState(null);
-  const [restoredReady, setRestoredReady] = useState(false);
 
   const restoredRef = useRef(false);
   const timerRef = useRef(null);
@@ -72,41 +71,46 @@ export default function useItemDraftAutosave({
   const knownSlotsRef = useRef(new Set());
   const lastSavedFingerprintRef = useRef(null);
   const lastSavedDraftRef = useRef(null);
-  const restoredDraftPendingRef = useRef(false);
+  const lastServerUpdatedAtRef = useRef(null);
+  const scopeKey = itemId ? String(itemId) : "new";
   const valuesRef = useRef(values);
   const mediaRef = useRef(media);
   valuesRef.current = values;
   mediaRef.current = media;
 
   useEffect(() => {
-    if (!enabled) return undefined;
+    setCurrentDraftId(draftId || null);
+  }, [draftId]);
 
-    let cancelled = false;
+  useEffect(() => {
     restoredRef.current = false;
-    knownSlotsRef.current = new Set();
     lastSavedFingerprintRef.current = null;
     lastSavedDraftRef.current = null;
-    restoredDraftPendingRef.current = false;
-    setCurrentDraftId(draftId || null);
-    setRestoring(true);
-    setRestoredReady(false);
+    lastServerUpdatedAtRef.current = null;
+    knownSlotsRef.current = new Set();
+  }, [scopeKey]);
+
+  useEffect(() => {
+    if (!enabled || restoredRef.current) return undefined;
+
+    let cancelled = false;
 
     const load = async () => {
       try {
         const response = await api.get("/api/item-draft/", {
           withCredentials: true,
-          params: itemId ? { item_id: itemId } : undefined,
+          params: itemId ? { item_id: itemId } : {},
         });
 
         if (cancelled) return;
 
         const draft = response.data?.draft;
         if (draft?.exists) {
+          lastServerUpdatedAtRef.current = draft.updated_at || null;
           setCurrentDraftId(draft.draft_id);
           knownSlotsRef.current = new Set(
             (draft.media || []).map((asset) => asset.slot_key)
           );
-          restoredDraftPendingRef.current = true;
           onRestore?.(draft);
         }
         setError(null);
@@ -115,7 +119,6 @@ export default function useItemDraftAutosave({
       } finally {
         if (!cancelled) {
           restoredRef.current = true;
-          setRestoredReady(true);
           setRestoring(false);
         }
       }
@@ -126,7 +129,44 @@ export default function useItemDraftAutosave({
     return () => {
       cancelled = true;
     };
-  }, [draftId, enabled, itemId, onRestore]);
+  }, [enabled, itemId, scopeKey, onRestore]);
+
+  const refreshFromServer = useCallback(async () => {
+    try {
+      const response = await api.get("/api/item-draft/", {
+        withCredentials: true,
+        params: itemId ? { item_id: itemId } : {},
+      });
+      const draft = response.data?.draft;
+
+      if (!draft?.exists) return null;
+
+      const incomingUpdatedAt = draft.updated_at || null;
+      if (
+        incomingUpdatedAt &&
+        lastServerUpdatedAtRef.current &&
+        new Date(incomingUpdatedAt) <= new Date(lastServerUpdatedAtRef.current)
+      ) {
+        return draft;
+      }
+
+      lastServerUpdatedAtRef.current = incomingUpdatedAt;
+      setCurrentDraftId(draft.draft_id);
+      knownSlotsRef.current = new Set(
+        (draft.media || []).map((asset) => asset.slot_key)
+      );
+      onRestore?.(draft);
+      setError(null);
+      return draft;
+    } catch (err) {
+      setError(
+        err?.response?.data?.detail ||
+          err?.response?.data?.error ||
+          "Draft could not be refreshed."
+      );
+      return null;
+    }
+  }, [itemId, onRestore]);
 
   const save = useCallback(
     async (nextValues = valuesRef.current, nextMedia = mediaRef.current) => {
@@ -164,8 +204,6 @@ export default function useItemDraftAutosave({
         nextMedia.forEach((asset, index) => {
           if (!asset?.slotKey || !asset.kind) return;
 
-          if (!isFile(asset.value) && !knownSlotsRef.current.has(asset.slotKey)) return;
-
           currentSlots.add(asset.slotKey);
           const uploadKey = makeUploadKey(asset.slotKey);
 
@@ -189,19 +227,25 @@ export default function useItemDraftAutosave({
         formData.append("media_manifest", JSON.stringify(manifest));
         formData.append("removed_media_slots", JSON.stringify(removedSlots));
 
-        if (itemId) {
-          formData.append("item_id", String(itemId));
-        }
         if (currentDraftId) {
           formData.append("draft_id", currentDraftId);
         }
 
+        if (itemId) {
+          formData.append("item_id", String(itemId));
+        }
+        if (vendorId) {
+          formData.append("vendor_id", String(vendorId));
+        }
+
         const response = await api.post("/api/item-draft/", formData, {
           withCredentials: true,
+          headers: { "Content-Type": "multipart/form-data" },
         });
 
         const saved = response.data?.draft || response.data;
         if (saved?.draft_id) setCurrentDraftId(saved.draft_id);
+        lastServerUpdatedAtRef.current = saved?.updated_at || lastServerUpdatedAtRef.current;
 
         knownSlotsRef.current = new Set(
           (saved?.media || []).map((asset) => asset.slot_key)
@@ -224,23 +268,60 @@ export default function useItemDraftAutosave({
         setSaving(false);
       }
     },
-    [currentDraftId, enabled, itemId, onSaved]
+    [currentDraftId, enabled, itemId, vendorId, onSaved]
   );
+
+  useEffect(() => {
+    if (!enabled) return undefined;
+
+    let socket = null;
+    let reconnectTimer = null;
+    let cancelled = false;
+
+    const connect = () => {
+      if (cancelled) return;
+
+      socket = new WebSocket(getWebSocketUrl("/ws/realtime/"));
+
+      socket.onmessage = async (event) => {
+        try {
+          const payload = JSON.parse(event.data);
+          if (
+            payload?.model !== "ItemDraft" ||
+            payload?.event !== "item_draft.updated"
+          ) {
+            return;
+          }
+
+          await refreshFromServer();
+        } catch {
+          // Ignore malformed realtime messages; the normal autosave remains authoritative.
+        }
+      };
+
+      socket.onclose = () => {
+        if (cancelled) return;
+        reconnectTimer = window.setTimeout(connect, 2000);
+      };
+
+      socket.onerror = () => {
+        socket?.close();
+      };
+    };
+
+    connect();
+
+    return () => {
+      cancelled = true;
+      window.clearTimeout(reconnectTimer);
+      socket?.close();
+    };
+  }, [enabled, refreshFromServer]);
 
   useEffect(() => {
     if (!enabled || !restoredRef.current) return undefined;
 
     const fingerprint = makeDraftFingerprint(values, media);
-
-    // Restoring a draft updates React state asynchronously. Never autosave the
-    // pre-restore Item state, because that would mark restored media as removed.
-    if (restoredDraftPendingRef.current) {
-      restoredDraftPendingRef.current = false;
-      lastSavedFingerprintRef.current = fingerprint;
-      window.clearTimeout(timerRef.current);
-      return undefined;
-    }
-
     if (fingerprint === lastSavedFingerprintRef.current) {
       window.clearTimeout(timerRef.current);
       return undefined;
@@ -252,7 +333,7 @@ export default function useItemDraftAutosave({
     }, 1200);
 
     return () => window.clearTimeout(timerRef.current);
-  }, [enabled, media, restoredReady, save, values]);
+  }, [enabled, media, save, values]);
 
   const clearDraft = useCallback(async () => {
     if (!currentDraftId) return;
@@ -264,6 +345,7 @@ export default function useItemDraftAutosave({
     knownSlotsRef.current.clear();
     lastSavedFingerprintRef.current = null;
     lastSavedDraftRef.current = null;
+    lastServerUpdatedAtRef.current = null;
   }, [currentDraftId]);
 
   return {

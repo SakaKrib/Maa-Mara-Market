@@ -495,18 +495,21 @@ class ItemDraftView(APIView):
             uploaded = request.FILES.get(upload_key) if upload_key else None
             if not uploaded:
                 # Existing persisted media can stay in place without a re-upload.
-                # A new manifest slot must include its actual uploaded file.
-                if slot_key not in existing:
-                    return Response(
-                        {
-                            "detail": (
-                                f"Missing uploaded file for new media slot "
-                                f"'{slot_key}'."
-                            )
-                        },
-                        status=status.HTTP_400_BAD_REQUEST,
-                    )
-                continue
+                # A blank upload key for an already-known slot is just a restored URL.
+                # Only brand-new slots without a real file are rejected.
+                if slot_key in existing:
+                    continue
+                if not upload_key:
+                    continue
+                return Response(
+                    {
+                        "detail": (
+                            f"Missing uploaded file for new media slot "
+                            f"'{slot_key}'."
+                        )
+                    },
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
 
             try:
                 self._validate_upload(uploaded, kind)

@@ -739,20 +739,20 @@ class VendorItemRequestDraftUpdateView(APIView):
             uploaded = request.FILES.get(upload_key) if upload_key else None
             if not uploaded:
                 # Existing persisted media does not need to be re-uploaded.
-                # A new manifest slot, however, must have its actual file.
-                if slot_key not in {
-                    asset.slot_key for asset in draft.media.all()
-                }:
-                    return Response(
-                        {
-                            "error": (
-                                f"Missing uploaded file for new media slot "
-                                f"'{slot_key}'."
-                            )
-                        },
-                        status=status.HTTP_400_BAD_REQUEST,
-                    )
-                continue
+                # Blank upload keys are expected for restored URL-backed assets.
+                if slot_key in {asset.slot_key for asset in draft.media.all()}:
+                    continue
+                if not upload_key:
+                    continue
+                return Response(
+                    {
+                        "error": (
+                            f"Missing uploaded file for new media slot "
+                            f"'{slot_key}'."
+                        )
+                    },
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
             try:
                 self._validate_media_upload(uploaded, kind)
             except ValueError as exc:
