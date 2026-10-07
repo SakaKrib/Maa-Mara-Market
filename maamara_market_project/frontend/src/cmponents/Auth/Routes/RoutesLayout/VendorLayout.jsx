@@ -20,7 +20,7 @@ const VendorLayout = () => {
           open={sidebarOpen}
           onClose={() => setSidebarOpen(false)}
         />
-        <main className="etsy-manager-main pb-20">
+        <main className="etsy-manager-main pb-28">
           {!isDashboard && (
             <div className="mb-5">
               <Link
