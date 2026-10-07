@@ -76,13 +76,15 @@ export default function useItemDraftAutosave({
   mediaRef.current = media;
 
   useEffect(() => {
-    setCurrentDraftId(draftId || null);
-  }, [draftId]);
-
-  useEffect(() => {
-    if (!enabled || restoredRef.current) return undefined;
+    if (!enabled) return undefined;
 
     let cancelled = false;
+    restoredRef.current = false;
+    knownSlotsRef.current = new Set();
+    lastSavedFingerprintRef.current = null;
+    lastSavedDraftRef.current = null;
+    setCurrentDraftId(draftId || null);
+    setRestoring(true);
 
     const load = async () => {
       try {
@@ -117,7 +119,7 @@ export default function useItemDraftAutosave({
     return () => {
       cancelled = true;
     };
-  }, [enabled, onRestore]);
+  }, [draftId, enabled, itemId, onRestore]);
 
   const save = useCallback(
     async (nextValues = valuesRef.current, nextMedia = mediaRef.current) => {
