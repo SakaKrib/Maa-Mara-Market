@@ -35,7 +35,7 @@ const VendorLayout = () => {
           )}
           <Outlet />
         </main>
-        <footer className="fixed inset-x-0 bottom-0 z-10 border-t border-gray-200 bg-white/95 px-4 py-4 text-center text-xs text-gray-500 shadow-[0_-4px_12px_rgba(0,0,0,0.04)] backdrop-blur-sm dark:border-gray-800 dark:bg-gray-950/95 dark:text-gray-400">
+        <footer className="fixed inset-x-0 bottom-0 z-10 border-t border-gray-200 bg-white/70 px-4 py-4 text-center text-xs text-gray-500 shadow-[0_-4px_12px_rgba(0,0,0,0.04)] backdrop-blur-md dark:border-gray-800 dark:bg-gray-950/70 dark:text-gray-400">
           © {new Date().getFullYear()} Maa Mara Market. All rights reserved.
         </footer>
       </div>
