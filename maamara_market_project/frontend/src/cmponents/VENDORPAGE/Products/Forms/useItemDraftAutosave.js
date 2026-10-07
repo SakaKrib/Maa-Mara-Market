@@ -75,10 +75,12 @@ export default function useItemDraftAutosave({
   const scopeKey = itemId ? String(itemId) : "new";
   const valuesRef = useRef(values);
   const mediaRef = useRef(media);
+  const currentDraftIdRef = useRef(draftId || null);
   valuesRef.current = values;
   mediaRef.current = media;
 
   useEffect(() => {
+    currentDraftIdRef.current = draftId || null;
     setCurrentDraftId(draftId || null);
   }, [draftId]);
 
@@ -188,7 +190,9 @@ export default function useItemDraftAutosave({
           };
           waitForSave();
         });
-        return save(nextValues, nextMedia);
+        // The waiting request must save the latest state, not the stale
+        // snapshot captured before the previous request finished.
+        return save(valuesRef.current, mediaRef.current);
       }
 
       savingRef.current = true;
@@ -227,8 +231,9 @@ export default function useItemDraftAutosave({
         formData.append("media_manifest", JSON.stringify(manifest));
         formData.append("removed_media_slots", JSON.stringify(removedSlots));
 
-        if (currentDraftId) {
-          formData.append("draft_id", currentDraftId);
+        const draftIdForRequest = currentDraftIdRef.current || currentDraftId;
+        if (draftIdForRequest) {
+          formData.append("draft_id", draftIdForRequest);
         }
 
         if (itemId) {
@@ -244,7 +249,10 @@ export default function useItemDraftAutosave({
         });
 
         const saved = response.data?.draft || response.data;
-        if (saved?.draft_id) setCurrentDraftId(saved.draft_id);
+        if (saved?.draft_id) {
+          currentDraftIdRef.current = saved.draft_id;
+          setCurrentDraftId(saved.draft_id);
+        }
         lastServerUpdatedAtRef.current = saved?.updated_at || lastServerUpdatedAtRef.current;
 
         knownSlotsRef.current = new Set(
