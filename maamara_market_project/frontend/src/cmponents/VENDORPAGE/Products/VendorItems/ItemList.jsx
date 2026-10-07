@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { Plus, RefreshCw, Tag, Megaphone, FileText } from "lucide-react";
 import api from "../../../../Services/Api";
+import { useLocation } from "react-router-dom";
 import ItemAddNew from "../Forms/AddingNewItem";
 import { useVendor } from "../vendorhooks";
 import BannerAdd from "../../Banners/Banners";
@@ -23,10 +24,17 @@ const TABS = [
 
 const VendorItems = () => {
   const { vendor } = useVendor();
-  const [activeTab, setActiveTab] = useState("item");
+  const location = useLocation();
+  const requestedItemId = location.state?.itemId;
+  const requestedTab = location.state?.activeTab;
+  const [activeTab, setActiveTab] = useState(
+    requestedTab === "price" ? "price" : "item"
+  );
 
   const [items, setItems] = useState([]);
-  const [selectedItem, setSelectedItem] = useState("");
+  const [selectedItem, setSelectedItem] = useState(
+    requestedItemId != null ? String(requestedItemId) : ""
+  );
   const [newPrice, setNewPrice] = useState("");
   const [reason, setReason] = useState("");
   const [priceLoading, setPriceLoading] = useState(false);
