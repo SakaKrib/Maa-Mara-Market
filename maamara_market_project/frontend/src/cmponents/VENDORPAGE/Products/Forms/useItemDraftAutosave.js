@@ -69,6 +69,7 @@ export default function useItemDraftAutosave({
   const restoredRef = useRef(false);
   const timerRef = useRef(null);
   const savingRef = useRef(false);
+  const pendingSaveRef = useRef(false);
   const knownSlotsRef = useRef(new Set());
   const lastSavedFingerprintRef = useRef(null);
   const lastSavedDraftRef = useRef(null);
@@ -138,21 +139,13 @@ export default function useItemDraftAutosave({
       }
 
       if (savingRef.current) {
-        await new Promise((resolve) => {
-          const waitForSave = () => {
-            if (!savingRef.current) {
-              resolve();
-              return;
-            }
-            window.setTimeout(waitForSave, 100);
-          };
-          waitForSave();
-        });
-
-        // Never replay the snapshot that was waiting behind the previous
-        // request. The refs contain the latest form/media state, which is
-        // the only state that should be persisted next.
-        return save(valuesRef.current, mediaRef.current);
+        // Do not wait recursively for the active request. The active save
+        // cannot finish until this invocation returns, so waiting here can
+        // deadlock autosave whenever the user changes a field while a save is
+        // still in flight. Mark the latest state as pending; the finally block
+        // below will persist the current refs after the active request ends.
+        pendingSaveRef.current = true;
+        return null;
       }
 
       savingRef.current = true;
@@ -239,6 +232,15 @@ export default function useItemDraftAutosave({
       } finally {
         savingRef.current = false;
         setSaving(false);
+
+        if (pendingSaveRef.current) {
+          pendingSaveRef.current = false;
+          // Let the current save fully release its lock before starting the
+          // queued latest-state save. valuesRef/mediaRef are authoritative.
+          window.setTimeout(() => {
+            save(valuesRef.current, mediaRef.current);
+          }, 0);
+        }
       }
     },
     [currentDraftId, enabled, itemId, onSaved]
