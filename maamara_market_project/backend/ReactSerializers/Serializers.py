@@ -398,6 +398,7 @@ class ItemSerializers(serializers.ModelSerializer):
             "name", "description", "image", "video", "additional_images", "gallery_images", "gallery_keep_ids", "price", "discount_price", "in_stock",
             "available", "returnable", "department", "category", "subcategory",
             "item_attribute",
+            "percentage_discount",
             "occasions",
             # 🔹 Nested relations
             "variants", "size_only_icon", "kids_sizes", "shoe_input", "shipping_dimension_data", "shipping_dimension",
