@@ -495,17 +495,53 @@ const ItemAddNew = ({ initialItem, vendorId, itemId, onSave = () => {}, vendor, 
         });
       }
 
-      setGalleryImages(
-        media
+      setGalleryImages((current) => {
+        const savedGallery = media
           .filter((asset) => asset.kind === "gallery")
-          .sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0))
-          .map((asset) => ({
+          .sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0));
+
+        const savedBySlot = new Map(
+          savedGallery.map((asset) => [asset.slot_key, asset])
+        );
+
+        // Never let an older/in-flight autosave response erase a newly
+        // selected local File. Once the server acknowledges that slot,
+        // replace the File with the persisted URL.
+        const currentFiles = new Map(
+          current
+            .filter((asset) => asset?.value instanceof File)
+            .map((asset) => [asset.slotKey, asset])
+        );
+
+        const merged = savedGallery.map((asset) => {
+          const local = currentFiles.get(asset.slot_key);
+          if (local) {
+            return {
+              ...local,
+              slotKey: asset.slot_key,
+              url: asset.url || local.url,
+              name: asset.name || local.name,
+            };
+          }
+
+          return {
             slotKey: asset.slot_key,
             value: asset.url,
             url: asset.url,
             name: asset.name,
-          }))
-      );
+          };
+        });
+
+        // Keep files that are not present in this response. This protects
+        // newly selected images from stale autosave responses.
+        current.forEach((asset) => {
+          if (asset?.value instanceof File && !savedBySlot.has(asset.slotKey)) {
+            merged.push(asset);
+          }
+        });
+
+        return merged;
+      });
 
       const savedVariantMedia = new Map(
         media
