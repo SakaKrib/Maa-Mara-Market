@@ -18,6 +18,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
+from django.core.files.base import ContentFile
 from PIL import Image
 
 from ReactSerializers.Serializers import VendorPayoutSerializer
@@ -402,6 +403,63 @@ class ItemDraftView(APIView):
 
         raise ValueError("Unsupported draft media type.")
 
+    def _seed_edit_media(self, draft, item):
+        """Copy an existing item's persisted media into its edit draft once."""
+        def copy_asset(source_file, *, kind, slot_key, sort_order, variant_key=""):
+            if not source_file:
+                return
+
+            source_name = os.path.basename(source_file.name)
+            source_file.open("rb")
+            try:
+                content = ContentFile(source_file.read())
+            finally:
+                source_file.close()
+
+            asset = ItemDraftMedia(
+                draft=draft,
+                media_type="video" if kind == "video" else "image",
+                kind=kind,
+                slot_key=slot_key,
+                variant_key=variant_key,
+                sort_order=sort_order,
+            )
+            asset.file.save(source_name, content, save=False)
+            asset.save()
+
+        copy_asset(
+            item.image,
+            kind="main",
+            slot_key="main",
+            sort_order=0,
+        )
+
+        for index, gallery in enumerate(item.additional_images.all()):
+            copy_asset(
+                gallery.image,
+                kind="gallery",
+                slot_key=f"additional:{gallery.id}",
+                sort_order=index + 1,
+            )
+
+        for index, variant in enumerate(item.variants.all()):
+            if not variant.image:
+                continue
+            copy_asset(
+                variant.image,
+                kind="variant",
+                slot_key=f"variant:{variant.color}",
+                variant_key=variant.color,
+                sort_order=20 + index,
+            )
+
+        copy_asset(
+            item.video,
+            kind="video",
+            slot_key="video",
+            sort_order=100,
+        )
+
     def _serialize_draft(self, request, draft):
         data = dict(draft.data or {})
         media = []
@@ -460,6 +518,17 @@ class ItemDraftView(APIView):
                 expires_at=timezone.now() + timezone.timedelta(days=30),
                 created_item_id=item_id or None,
             )
+
+            # An edit draft must own its persisted media so the normal
+            # manifest/autosave path can keep unchanged files without asking
+            # the browser to re-upload them.
+            if item_id:
+                item = Item.objects.filter(pk=item_id).prefetch_related(
+                    "additional_images",
+                    "variants",
+                ).first()
+                if item:
+                    self._seed_edit_media(draft, item)
         elif vendor and draft.vendor_id != vendor.id:
             draft.vendor = vendor
 
