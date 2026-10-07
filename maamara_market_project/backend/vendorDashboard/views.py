@@ -403,10 +403,12 @@ class ItemDraftView(APIView):
 
         raise ValueError("Unsupported draft media type.")
 
-    def _seed_edit_media(self, draft, item):
-        """Copy an existing item's persisted media into its edit draft once."""
+    def _seed_edit_media(self, draft, item, slot_keys=None):
+        """Copy requested persisted item media into an edit draft when missing."""
+        allowed_slots = set(slot_keys) if slot_keys is not None else None
+
         def copy_asset(source_file, *, kind, slot_key, sort_order, variant_key=""):
-            if not source_file:
+            if not source_file or (allowed_slots is not None and slot_key not in allowed_slots):
                 return
 
             source_name = os.path.basename(source_file.name)
@@ -541,6 +543,31 @@ class ItemDraftView(APIView):
 
         if not isinstance(data, dict) or not isinstance(manifest, list) or not isinstance(removed_slots, list):
             return Response({"detail": "Invalid draft payload."}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Older edit drafts may already exist without ItemDraftMedia. Hydrate only
+        # the persisted slots that the browser is still asking to keep, so an old
+        # draft is repaired without restoring media the vendor intentionally removed.
+        if item_id:
+            existing_slots = set(draft.media.values_list("slot_key", flat=True))
+            requested_persisted_slots = {
+                str(entry.get("slot_key") or "").strip()
+                for entry in manifest
+                if isinstance(entry, dict)
+                and str(entry.get("slot_key") or "").strip()
+                and not request.FILES.get(str(entry.get("upload_key") or "").strip())
+            }
+            missing_persisted_slots = requested_persisted_slots - existing_slots
+            if missing_persisted_slots:
+                item = Item.objects.filter(pk=item_id).prefetch_related(
+                    "additional_images",
+                    "variants",
+                ).first()
+                if item:
+                    self._seed_edit_media(
+                        draft,
+                        item,
+                        slot_keys=missing_persisted_slots,
+                    )
 
         existing = {asset.slot_key: asset for asset in draft.media.all()}
         for slot in removed_slots:
