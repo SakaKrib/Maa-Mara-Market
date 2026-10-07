@@ -106,6 +106,8 @@ const ItemAddNew = ({
   adminCreateNew,
   approvalMode,
   approvalRequestId = null,
+  vendorRequestItemIndex = null,
+  onBack = null,
   flow = null,
   vendorData: vendorDataProp = null,
   vendor_data: vendorDataLegacy = null,
@@ -527,6 +529,19 @@ const ItemAddNew = ({
   const selectedSizes = watch("size") || [];
   const selectedSubcategory = form.watch("subcategory") || "";
   const draftValues = watch();
+  const draftValuesForAutosave = useMemo(
+    () => ({
+      ...draftValues,
+      gallery_images: galleryImages.map((asset) => ({
+        id: asset?.slotKey?.startsWith("additional:") ? asset.slotKey.split(":")[1] : undefined,
+        slot_key: asset?.slotKey || "",
+        image: asset?.value ?? asset?.url ?? "",
+        name: asset?.name || "",
+      })),
+      video: productVideo?.value ?? draftValues.video ?? "",
+    }),
+    [draftValues, galleryImages, productVideo]
+  );
 
   const normalizedCategory = String(selectedCatSizes || "").trim().toLowerCase();
   const normalizedSubcategory = String(selectedSubcategory || "").trim().toLowerCase();
@@ -629,24 +644,44 @@ const ItemAddNew = ({
       setSelectedDepartment(restoredData.department || "");
       setSelectedCategory(restoredData.category || "");
 
+      const restoredGallery = Array.isArray(restoredData.gallery_images)
+        ? restoredData.gallery_images
+            .map((asset, index) => ({
+              slotKey: asset.slot_key || (asset.id ? `additional:${asset.id}` : `gallery:${index}`),
+              value: asset.image || asset.url || asset.value || "",
+              url: asset.image || asset.url || asset.value || "",
+              name: asset.name || `Product image ${index + 1}`,
+            }))
+            .filter((asset) => asset.value)
+        : [];
+
       setGalleryImages(
-        media
-          .filter((asset) => asset.kind === "gallery")
-          .sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0))
-          .map((asset) => ({
-            slotKey: asset.slot_key,
-            value: asset.url,
-            url: asset.url,
-            name: asset.name,
-          }))
+        media.some((asset) => asset.kind === "gallery")
+          ? media
+              .filter((asset) => asset.kind === "gallery")
+              .sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0))
+              .map((asset) => ({
+                slotKey: asset.slot_key,
+                value: asset.url,
+                url: asset.url,
+                name: asset.name,
+              }))
+          : restoredGallery
       );
 
-      if (videoMedia) {
+      if (videoMedia?.url) {
         setProductVideo({
           slotKey: "video",
           value: videoMedia.url,
           url: videoMedia.url,
           name: videoMedia.name,
+        });
+      } else if (restoredData.video) {
+        setProductVideo({
+          slotKey: "video",
+          value: restoredData.video,
+          url: restoredData.video,
+          name: "Product video",
         });
       } else {
         setProductVideo(null);
@@ -778,7 +813,12 @@ const ItemAddNew = ({
   // Only vendor-created item requests should use the generic autosave draft
   // pipeline. Admin create and approval flows use their dedicated APIs and must
   // not silently save through the vendor item-draft endpoint.
-  const draftEnabled = !isEditing && !initialItem && !effectiveIsAdmin && !normalizedAdminCreateNew && !isApprovalMode;
+  const draftEnabled = Boolean(
+    !effectiveIsAdmin &&
+      !normalizedAdminCreateNew &&
+      !isApprovalMode &&
+      (isEditing || !initialItem)
+  );
   const {
     draftId,
     restoring: draftRestoring,
@@ -788,8 +828,9 @@ const ItemAddNew = ({
     error: draftAutosaveError,
   } = useItemDraftAutosave({
     enabled: draftEnabled,
-    values: draftValues,
+    values: draftValuesForAutosave,
     media: draftMedia,
+    itemId: isEditing ? safeItemId : null,
     onRestore: handleDraftRestore,
     onSaved: handleDraftSaved,
   });
@@ -1507,19 +1548,19 @@ const ItemAddNew = ({
         }
 
         // Existing items use the same form for direct vendor/admin edits.
-        // This replaces the legacy EditItem/EditItemForm submission path.
+        // Admin editing of a pending vendor request persists the approval
+        // snapshot in VendorItemRequest.item_list. It does not create a
+        // VendorDraft.
         if (saveMode === "vendor-registration-edit") {
           if (!resolvedApprovalRequestId) {
             throw new Error("Vendor item request id is required to save this item.");
           }
-
-          const itemIndex = initialItem?.item_index ?? initialItem?.itemIndex;
-          if (itemIndex == null) {
+          if (vendorRequestItemIndex == null) {
             throw new Error("Vendor request item index is required to save this item.");
           }
 
           const response = await api.patch(
-            `/api/vendor-requests/${resolvedApprovalRequestId}/items/${itemIndex}/`,
+            `/api/vendor-requests/${resolvedApprovalRequestId}/items/${vendorRequestItemIndex}/`,
             { item: formattedItem },
             { withCredentials: true }
           );
@@ -3739,11 +3780,11 @@ const ItemAddNew = ({
               >
                 {isApprovalMode ? "Save & Approve" : "Save Changes"}
               </Button>
-              {saveMode === "vendor-registration-edit" && (
+              {saveMode === "vendor-registration-edit" && onBack && (
                 <Button
                   type="button"
                   variant="outline"
-                  onClick={() => onSave({ __backToItems: true })}
+                  onClick={onBack}
                   className="w-full rounded-full border-border bg-transparent px-4 py-3 text-foreground hover:bg-muted"
                 >
                   Back to Items
