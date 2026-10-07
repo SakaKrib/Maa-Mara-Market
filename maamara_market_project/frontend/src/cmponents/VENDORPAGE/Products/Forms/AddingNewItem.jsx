@@ -286,6 +286,17 @@ const ItemAddNew = ({
       return value ?? null;
     };
 
+    const normalizeMediaValue = (value) => {
+      if (!value) return "";
+      if (typeof value === "string") return resolveApiAssetUrl(value) || "";
+      if (typeof value === "object") {
+        return normalizeMediaValue(
+          value.url ?? value.image ?? value.file ?? value.src ?? value.path ?? value.value ?? ""
+        );
+      }
+      return "";
+    };
+
     const normalizeSection = (value) => {
     const section = String(value || "").trim().toLowerCase();
     if (section === "departmental") return "inorganic";
@@ -416,8 +427,8 @@ const ItemAddNew = ({
       const galleryMedia = requestMedia.filter((asset) => asset.kind === "gallery");
       const galleryFromItem = additionalImages.map((asset, index) => ({
         slotKey: asset.id ? `additional:${asset.id}` : `gallery:${index}`,
-        value: asset.image ?? asset.url ?? asset.file ?? asset,
-        url: asset.image ?? asset.url ?? asset.file ?? asset,
+        value: normalizeMediaValue(asset.image ?? asset.url ?? asset.file ?? asset),
+        url: normalizeMediaValue(asset.image ?? asset.url ?? asset.file ?? asset),
         name: asset.name ?? `Product image ${index + 1}`,
       }));
 
@@ -426,8 +437,8 @@ const ItemAddNew = ({
         .sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0))
         .map((asset, index) => ({
           slotKey: asset.slot_key || `gallery:${index}`,
-          value: asset.value ?? asset.url,
-          url: asset.url ?? asset.value,
+          value: normalizeMediaValue(asset.value ?? asset.url),
+          url: normalizeMediaValue(asset.url ?? asset.value),
           name: asset.name,
         }));
 
@@ -436,8 +447,8 @@ const ItemAddNew = ({
         initialItem.video
           ? {
               slotKey: "video",
-              value: initialItem.video,
-              url: initialItem.video,
+              value: normalizeMediaValue(initialItem.video),
+              url: normalizeMediaValue(initialItem.video),
               name: "Product video",
             }
           : null
@@ -449,8 +460,8 @@ const ItemAddNew = ({
         department,
         category,
         subcategory,
-        image: initialItem.image || "",
-        video: initialItem.video || "",
+        image: normalizeMediaValue(initialItem.image),
+        video: normalizeMediaValue(initialItem.video),
         brand: normalizeRelationId(initialItem.brand),
         gender_based: initialItem.gender_based ?? "none",
         children_size_based_age: initialItem.children_size_based_age ?? "none",
@@ -470,7 +481,7 @@ const ItemAddNew = ({
         color_variants: (initialItem.variants || initialItem.color_variants || []).map((variant) => ({
           id: variant.id,
           color: variant.color,
-          color_image: variant.image ?? variant.color_image ?? null,
+          color_image: normalizeMediaValue(variant.image ?? variant.color_image),
           sizes: (variant.sizes || []).map((size) => ({
             id: size.id,
             size: size.size,
@@ -635,8 +646,8 @@ const ItemAddNew = ({
 
       form.reset({
         ...restoredData,
-        image: mainMedia?.url || restoredData.image || "",
-        video: videoMedia?.url || restoredData.video || "",
+        image: normalizeMediaValue(mainMedia?.url || mainMedia?.value || restoredData.image),
+        video: normalizeMediaValue(videoMedia?.url || videoMedia?.value || restoredData.video),
         color_variants: restoredVariants,
       });
 
@@ -700,11 +711,11 @@ const ItemAddNew = ({
       const videoMedia = media.find((asset) => asset.kind === "video");
 
       if (mainMedia?.url) {
-        form.setValue("image", mainMedia.url, { shouldDirty: false });
+        form.setValue("image", normalizeMediaValue(mainMedia.url || mainMedia.value), { shouldDirty: false });
       }
 
       if (videoMedia?.url) {
-        form.setValue("video", videoMedia.url, { shouldDirty: false });
+        form.setValue("video", normalizeMediaValue(videoMedia.url || videoMedia.value), { shouldDirty: false });
         setProductVideo((current) => {
           // Keep a newly selected File alive after autosave. Save & Approve
           // still needs that File when the draft media record is not yet
@@ -744,7 +755,7 @@ const ItemAddNew = ({
       const savedVariantMedia = new Map(
         media
           .filter((asset) => asset.kind === "variant")
-          .map((asset) => [String(asset.variant_key).toLowerCase(), asset.url])
+          .map((asset) => [String(asset.variant_key).toLowerCase(), normalizeMediaValue(asset.url || asset.value)])
       );
 
       const currentVariants = form.getValues("color_variants") || [];
@@ -994,18 +1005,6 @@ const ItemAddNew = ({
     useEffect(() => {
       if (initialItem) {
         form.setValue("returnable", initialItem.returnable ?? true);
-      }
-    }, [initialItem, form]);
-
-    useEffect(() => {
-      if (initialItem) {
-        // Do not reset the whole form here: the normalization effect above
-        // prepares nested variants, sizes, shoes, and other edit fields.
-        // Resetting again would silently discard that normalized state.
-        form.setValue(
-          "image",
-          typeof initialItem.image === "string" ? initialItem.image : ""
-        );
       }
     }, [initialItem, form]);
 
