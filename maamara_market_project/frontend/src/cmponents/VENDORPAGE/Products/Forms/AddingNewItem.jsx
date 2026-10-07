@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo, useState, useEffect } from "react";
+import React, { useCallback, useMemo, useRef, useState, useEffect } from "react";
 import {
     Form,
     FormField,
@@ -409,6 +409,9 @@ const ItemAddNew = ({
     useEffect(() => {
       if (!initialItem) return;
 
+      const itemKey = String(initialItem.id ?? safeItemId ?? "new");
+      if (draftRestoredItemRef.current === itemKey) return;
+
       const relationName = (value) => {
         if (value && typeof value === "object") {
           return value.name ?? value.label ?? value.title ?? value.key ?? "";
@@ -530,7 +533,7 @@ const ItemAddNew = ({
       if (section === "organic" || section === "inorganic") {
         setSelectedSection(section);
       }
-    }, [initialItem, form]);
+    }, [initialItem, form, safeItemId]);
 
     const {
       control,
@@ -629,8 +632,11 @@ const ItemAddNew = ({
   const showGenericGenderField =
     isGenderRelevantCategory && normalizedCategory !== "shoes";
 
+  const draftRestoredItemRef = useRef(null);
+
   const handleDraftRestore = useCallback(
     (draft) => {
+      draftRestoredItemRef.current = isEditing ? String(safeItemId) : "new";
       const restoredData = { ...(draft?.data || {}) };
       delete restoredData.draft_id;
 
@@ -707,7 +713,7 @@ const ItemAddNew = ({
       setDraftMessage("Saved draft restored.");
       setDraftError("");
     },
-    [form]
+    [form, isEditing, safeItemId]
   );
 
   const handleDraftSaved = useCallback(
