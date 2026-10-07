@@ -554,7 +554,7 @@ def login_view(request):
         except Vendor.DoesNotExist:
             return JsonResponse({"success": False, "error": "Invalid credentials"}, status=401)
 
-    if check_password(password, vendor.password):
+    if vendor.user and vendor.user.check_password(password):
         merge_visitor_data_to_user(vendor.user, visitor_id)
         refresh = RefreshToken.for_user(vendor.user)
         access_token = str(refresh.access_token)
