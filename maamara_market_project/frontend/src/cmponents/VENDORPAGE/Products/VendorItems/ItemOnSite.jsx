@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Edit3, PackageOpen } from "lucide-react";
-import api from "../../../../Services/Api";
+import api, { resolveApiAssetUrl } from "../../../../Services/Api";
 import EditItem from "../Forms/EditItem/EditItem";
 
 const truncateWords = (text, numWords) => {
@@ -121,7 +121,7 @@ const ItemsOnsite = () => {
                 >
                   <div className="aspect-[4/3] w-full overflow-hidden bg-muted">
                     <img
-                      src={item.image || "/default-product.jpg"}
+                      src={resolveApiAssetUrl(item.image) || "/default-product.jpg"}
                       alt={item.name}
                       className="h-full w-full object-cover transition duration-200 group-hover:scale-[1.02]"
                     />
