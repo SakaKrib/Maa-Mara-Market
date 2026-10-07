@@ -642,10 +642,23 @@ const ItemAddNew = ({
       draftRestoredItemRef.current = isEditing ? String(safeItemId) : "new";
       const restoredData = { ...(draft?.data || {}) };
       delete restoredData.draft_id;
-
       const media = Array.isArray(draft?.media) ? draft.media : [];
       const mainMedia = media.find((asset) => asset.kind === "main");
       const videoMedia = media.find((asset) => asset.kind === "video");
+
+      const initialGallery = Array.isArray(initialItem?.additional_images)
+        ? initialItem.additional_images
+            .map((asset, index) => {
+              const value = normalizeMediaValue(asset?.image ?? asset?.url ?? asset?.file ?? asset);
+              return {
+                slotKey: asset?.id ? `additional:${asset.id}` : `gallery:${index}`,
+                value,
+                url: value,
+                name: asset?.name || `Product image ${index + 1}`,
+              };
+            })
+            .filter((asset) => asset.value)
+        : [];
 
       const restoredVariants = (restoredData.color_variants || []).map((variant) => {
         const variantMedia = media.find(
@@ -653,20 +666,29 @@ const ItemAddNew = ({
             asset.kind === "variant" &&
             String(asset.variant_key).toLowerCase() === String(variant.color).toLowerCase()
         );
+        const initialVariant = (initialItem?.variants || initialItem?.color_variants || []).find(
+          (itemVariant) =>
+            String(itemVariant.color).toLowerCase() === String(variant.color).toLowerCase()
+        );
         return {
           ...variant,
-          color_image: variantMedia?.url || variant.color_image || null,
+          color_image:
+            normalizeMediaValue(variantMedia?.url || variantMedia?.value) ||
+            normalizeMediaValue(variant.color_image) ||
+            normalizeMediaValue(initialVariant?.image || initialVariant?.color_image),
         };
       });
 
       form.reset({
         ...restoredData,
-        image: normalizeMediaValue(mainMedia?.url || mainMedia?.value || restoredData.image),
-        video: normalizeMediaValue(videoMedia?.url || videoMedia?.value || restoredData.video),
+        image: normalizeMediaValue(mainMedia?.url || mainMedia?.value) ||
+          normalizeMediaValue(restoredData.image) || normalizeMediaValue(initialItem?.image),
+        video: normalizeMediaValue(videoMedia?.url || videoMedia?.value) ||
+          normalizeMediaValue(restoredData.video) || normalizeMediaValue(initialItem?.video),
         color_variants: restoredVariants,
       });
 
-      setSelectedSection(restoredData.section || "");
+      setSelectedSection(restoredData.section || normalizeSection(initialItem?.section) || "");
       setSelectedDepartment(restoredData.department || "");
       setSelectedCategory(restoredData.category || "");
 
@@ -681,42 +703,42 @@ const ItemAddNew = ({
             .filter((asset) => asset.value)
         : [];
 
-      setGalleryImages(
-        media.some((asset) => asset.kind === "gallery")
-          ? media
-              .filter((asset) => asset.kind === "gallery")
-              .sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0))
-              .map((asset) => ({
-                slotKey: asset.slot_key,
-                value: normalizeMediaValue(asset.url || asset.value),
-                url: normalizeMediaValue(asset.url || asset.value),
-                name: asset.name,
-              }))
-          : restoredGallery
-      );
+      const draftGallery = media
+        .filter((asset) => asset.kind === "gallery")
+        .sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0))
+        .map((asset) => ({
+          slotKey: asset.slot_key,
+          value: normalizeMediaValue(asset.url || asset.value),
+          url: normalizeMediaValue(asset.url || asset.value),
+          name: asset.name,
+        }))
+        .filter((asset) => asset.value);
 
-      if (videoMedia?.url) {
-        setProductVideo({
-          slotKey: "video",
-          value: normalizeMediaValue(videoMedia.url || videoMedia.value),
-          url: normalizeMediaValue(videoMedia.url || videoMedia.value),
-          name: videoMedia.name,
-        });
-      } else if (restoredData.video) {
-        setProductVideo({
-          slotKey: "video",
-          value: normalizeMediaValue(restoredData.video),
-          url: normalizeMediaValue(restoredData.video),
-          name: "Product video",
-        });
-      } else {
-        setProductVideo(null);
-      }
+      const galleryBySlot = new Map(
+        [...initialGallery, ...restoredGallery, ...draftGallery].map((asset) => [asset.slotKey, asset])
+      );
+      setGalleryImages([...galleryBySlot.values()]);
+
+      const restoredVideo =
+        normalizeMediaValue(videoMedia?.url || videoMedia?.value) ||
+        normalizeMediaValue(restoredData.video) ||
+        normalizeMediaValue(initialItem?.video);
+
+      setProductVideo(
+        restoredVideo
+          ? {
+              slotKey: "video",
+              value: restoredVideo,
+              url: restoredVideo,
+              name: videoMedia?.name || "Product video",
+            }
+          : null
+      );
 
       setDraftMessage("Saved draft restored.");
       setDraftError("");
     },
-    [form, isEditing, safeItemId]
+    [form, initialItem, isEditing, safeItemId]
   );
 
   const handleDraftSaved = useCallback(
@@ -725,34 +747,20 @@ const ItemAddNew = ({
       const mainMedia = media.find((asset) => asset.kind === "main");
       const videoMedia = media.find((asset) => asset.kind === "video");
 
-      if (mainMedia?.url) {
+      if (mainMedia?.url || mainMedia?.value) {
         form.setValue("image", normalizeMediaValue(mainMedia.url || mainMedia.value), { shouldDirty: false });
       }
 
-      if (videoMedia?.url) {
-        form.setValue("video", normalizeMediaValue(videoMedia.url || videoMedia.value), { shouldDirty: false });
-        setProductVideo((current) => {
-          // Keep a newly selected File alive after autosave. Save & Approve
-          // still needs that File when the draft media record is not yet
-          // persisted; replacing it with the returned URL would make the
-          // approval request reference a file that is not in the upload.
-          if (current?.value instanceof File) {
-            return {
-              ...current,
-              slotKey: "video",
-              url: videoMedia.url,
-              name: videoMedia.name || current.name,
-            };
-          }
-
-          return {
-            ...(current || {}),
-            slotKey: "video",
-            value: videoMedia.url,
-            url: videoMedia.url,
-            name: videoMedia.name,
-          };
-        });
+      if (videoMedia?.url || videoMedia?.value) {
+        const savedVideoUrl = normalizeMediaValue(videoMedia.url || videoMedia.value);
+        form.setValue("video", savedVideoUrl, { shouldDirty: false });
+        setProductVideo((current) => ({
+          ...(current || {}),
+          slotKey: "video",
+          value: savedVideoUrl,
+          url: savedVideoUrl,
+          name: videoMedia.name || current?.name || "Product video",
+        }));
       }
 
       const savedGallery = media
@@ -767,13 +775,19 @@ const ItemAddNew = ({
         .filter((asset) => asset.value);
 
       if (savedGallery.length) {
-        setGalleryImages(savedGallery);
+        setGalleryImages((current) => {
+          const savedBySlot = new Map(savedGallery.map((asset) => [asset.slotKey, asset]));
+          return current.filter((asset) => !savedBySlot.has(asset.slotKey)).concat(savedGallery);
+        });
       }
 
       const savedVariantMedia = new Map(
         media
           .filter((asset) => asset.kind === "variant")
-          .map((asset) => [String(asset.variant_key).toLowerCase(), normalizeMediaValue(asset.url || asset.value)])
+          .map((asset) => [
+            String(asset.variant_key).toLowerCase(),
+            normalizeMediaValue(asset.url || asset.value),
+          ])
       );
 
       const currentVariants = form.getValues("color_variants") || [];
