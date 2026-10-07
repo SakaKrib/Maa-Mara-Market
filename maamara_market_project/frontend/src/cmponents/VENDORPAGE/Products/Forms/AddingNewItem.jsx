@@ -219,8 +219,15 @@ const ItemAddNew = ({
     resolveVendorRequestId(vendor) ??
     resolveVendorRequestId(initialItem);
 
-  const explicitFlow = String(flow || "").trim().toLowerCase();
-  const isVendorRegistrationEdit = explicitFlow === "vendor-registration-edit";
+  const requestedFlow = String(flow || "").trim().toLowerCase();
+  const isVendorRegistrationEdit = requestedFlow === "vendor-registration-edit";
+  const explicitFlow =
+    hasInitialItem &&
+    !isVendorRegistrationEdit &&
+    requestedFlow !== "admin-approve" &&
+    requestedFlow !== "admin-create"
+      ? "edit"
+      : requestedFlow;
   const isExplicitAdminApproval = Boolean(
     approvalMode || explicitFlow === "admin-approve"
   ) && !isVendorRegistrationEdit;
@@ -336,9 +343,9 @@ const ItemAddNew = ({
 
   const isEditing = Boolean(
     hasInitialItem &&
+      explicitFlow === "edit" &&
       !normalizedAdminCreateNew &&
-      !normalizedApprovalMode &&
-      !resolvedApprovalRequestId
+      !normalizedApprovalMode
   );
 
   const isApprovalMode = Boolean(
@@ -358,11 +365,11 @@ const ItemAddNew = ({
       ? "admin-create"
       : isVendorRegistrationEdit
         ? "vendor-registration-edit"
+        : explicitFlow === "edit" && hasInitialItem
+        ? "edit"
         : resolvedApprovalRequestId || normalizedApprovalMode || explicitFlow === "admin-approve"
           ? "admin-approve"
-          : hasInitialItem && (isExplicitEditMode || isEditing)
-            ? "edit"
-            : "vendor-create";
+          : "vendor-create";
 
   const hasWorkflowConflict =
     Boolean(
