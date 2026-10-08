@@ -35,6 +35,26 @@ const isUploadFile = (value) =>
   value instanceof Blob &&
   typeof value.name === "string";
 
+const isBlobValue = (value) => typeof Blob !== "undefined" && value instanceof Blob;
+
+// Real image/video source for a preview. A browser File gets one cached object
+// URL (no new URL per render); a persisted URL goes through the project's
+// existing resolveApiAssetUrl. No base-URL logic lives here.
+const previewUrlCache = new WeakMap();
+const previewSrc = (value) => {
+  if (!value) return "";
+  if (isBlobValue(value)) {
+    if (!previewUrlCache.has(value)) previewUrlCache.set(value, URL.createObjectURL(value));
+    return previewUrlCache.get(value);
+  }
+  if (typeof value === "string") {
+    // resolveApiAssetUrl already leaves blob:/data: URLs alone and puts /media/
+    // URLs on the API origin, so every string goes through it.
+    return resolveApiAssetUrl(value) || "";
+  }
+  return "";
+};
+
 const sizeOptions = [
   "XS", "S", "M", "L", "XL", "2XL", "3XL", "2XS", "3XS", "Oversize"
 ];
@@ -278,6 +298,9 @@ const ItemAddNew = ({
   const [colorVariants, setColorVariants] = useState([]);
   const [galleryImages, setGalleryImages] = useState([]);
   const [productVideo, setProductVideo] = useState(null);
+  // slotKey -> { url, file }: the server URL of a File we uploaded. It is only
+  // used while that exact File is still the slot's current value.
+  const [persistedMedia, setPersistedMedia] = useState({});
   const [videoTrimSource, setVideoTrimSource] = useState(null);
   const [draftMessage, setDraftMessage] = useState("");
   const [draftError, setDraftError] = useState("");
@@ -297,10 +320,60 @@ const ItemAddNew = ({
       if (typeof value === "string") return resolveApiAssetUrl(value) || "";
       if (typeof value === "object") {
         return normalizeMediaValue(
-          value.url ?? value.image ?? value.file ?? value.src ?? value.path ?? value.value ?? ""
+          value.url ||
+            value.image ||
+            value.file ||
+            value.src ||
+            value.path ||
+            value.value ||
+            value.file_url ||
+            value.image_url ||
+            value.media_url ||
+            ""
         );
       }
       return "";
+    };
+
+    // URL of a persisted draft media row, whichever key the serializer uses.
+    const mediaRowUrl = (asset) =>
+      normalizeMediaValue(asset?.url) ||
+      normalizeMediaValue(asset?.file) ||
+      normalizeMediaValue(asset?.image) ||
+      normalizeMediaValue(asset?.value) ||
+      "";
+
+    // A just-selected File is previewed locally at once; after the server has
+    // acknowledged that exact File its persisted URL takes over.
+    const mediaPreviewSrc = (slotKey, value) => {
+      if (isBlobValue(value)) {
+        const persisted = persistedMedia[slotKey];
+        return persisted && persisted.file === value && persisted.url
+          ? persisted.url
+          : previewSrc(value);
+      }
+      return previewSrc(value);
+    };
+
+    const videoPreviewSrc = () => {
+      if (!productVideo) return "";
+      if (isBlobValue(productVideo.value)) {
+        const persisted = persistedMedia.video;
+        if (persisted && persisted.file === productVideo.value && persisted.url) {
+          return persisted.url;
+        }
+        return productVideo.url || previewSrc(productVideo.value);
+      }
+      return previewSrc(productVideo.url || productVideo.value);
+    };
+
+    // If a persisted URL ever fails to load, fall back to the local File so the
+    // preview never turns into an empty box.
+    const fallbackToLocalPreview = (event, file) => {
+      const element = event.currentTarget;
+      if (!isBlobValue(file) || element.dataset.localFallback === "1") return;
+      element.dataset.localFallback = "1";
+      element.src = previewSrc(file);
     };
 
     const normalizeSection = (value) => {
@@ -397,6 +470,11 @@ const ItemAddNew = ({
   }
   // Vendor edits keep protected fields muted; admin item creation/editing never does.
   const shouldMuteProtectedFields = isEditing && !effectiveIsAdmin;
+
+  // An admin creating an item for a vendor keeps one draft per vendor. The
+  // scope is only set once a vendor has actually been selected.
+  const draftVendorScope =
+    saveMode === "admin-create" ? String(vendor?.id ?? vendorId ?? "") : "";
 
     const form = useForm({
       defaultValues: {
@@ -562,8 +640,9 @@ const ItemAddNew = ({
         name: asset?.name || "",
       })),
       video: productVideo?.value ?? draftValues.video ?? "",
+      ...(draftVendorScope ? { vendor_id: draftVendorScope } : {}),
     }),
-    [draftValues, galleryImages, productVideo]
+    [draftValues, galleryImages, productVideo, draftVendorScope]
   );
 
   const normalizedCategory = String(selectedCatSizes || "").trim().toLowerCase();
@@ -636,9 +715,16 @@ const ItemAddNew = ({
     isGenderRelevantCategory && normalizedCategory !== "shoes";
 
   const draftRestoredItemRef = useRef(null);
+  // Section applied by a draft restore; the section-default effects must not
+  // overwrite the restored values once.
+  const restoredSectionRef = useRef(null);
 
   const handleDraftRestore = useCallback(
     (draft) => {
+      // Admin-create: only restore a draft that was started for this vendor.
+      if (draftVendorScope && String(draft?.data?.vendor_id ?? "") !== draftVendorScope) {
+        return false;
+      }
       draftRestoredItemRef.current = isEditing ? String(safeItemId) : "new";
       const restoredData = { ...(draft?.data || {}) };
       delete restoredData.draft_id;
@@ -646,184 +732,139 @@ const ItemAddNew = ({
       const mainMedia = media.find((asset) => asset.kind === "main");
       const videoMedia = media.find((asset) => asset.kind === "video");
 
+      // A File picked while the draft was still loading is newer than the
+      // draft, so restoring must not overwrite it.
+      const pendingImage = form.getValues("image");
+      const pendingVideo = form.getValues("video");
+      const pendingVariantFiles = new Map(
+        (form.getValues("color_variants") || [])
+          .filter((variant) => isBlobValue(variant?.color_image))
+          .map((variant) => [String(variant.color).toLowerCase(), variant.color_image])
+      );
+
       // Once a draft exists, it is authoritative for the fields/media it
-      // contains. Never merge the original Item back into a restored draft:
-      // an empty draft media slot can be an intentional persisted removal.
+      // contains. Never merge the original Item back into a restored draft.
       const restoredVariants = (restoredData.color_variants || []).map((variant) => {
+        const key = String(variant.color).toLowerCase();
         const variantMedia = media.find(
           (asset) =>
             asset.kind === "variant" &&
-            String(asset.variant_key).toLowerCase() === String(variant.color).toLowerCase()
+            String(asset.variant_key).toLowerCase() === key
         );
         return {
           ...variant,
           color_image:
-            normalizeMediaValue(variantMedia?.url || variantMedia?.value) ||
+            pendingVariantFiles.get(key) ||
+            mediaRowUrl(variantMedia) ||
             normalizeMediaValue(variant.color_image) ||
             null,
         };
       });
 
+      const restoredImage = mediaRowUrl(mainMedia) || normalizeMediaValue(restoredData.image);
+      const restoredVideoUrl = mediaRowUrl(videoMedia) || normalizeMediaValue(restoredData.video);
+      const restoredSection =
+        restoredData.section || normalizeSection(initialItem?.section) || "";
+      restoredSectionRef.current = restoredSection;
+
       form.reset({
         ...restoredData,
-        image:
-          normalizeMediaValue(mainMedia?.url || mainMedia?.value) ||
-          normalizeMediaValue(restoredData.image),
-        video:
-          normalizeMediaValue(videoMedia?.url || videoMedia?.value) ||
-          normalizeMediaValue(restoredData.video),
+        image: isBlobValue(pendingImage) ? pendingImage : restoredImage,
+        video: isBlobValue(pendingVideo) ? pendingVideo : restoredVideoUrl,
         color_variants: restoredVariants,
       });
 
-      setSelectedSection(restoredData.section || normalizeSection(initialItem?.section) || "");
+      setSelectedSection(restoredSection);
       setSelectedDepartment(restoredData.department || "");
       setSelectedCategory(restoredData.category || "");
 
-      const restoredGallery = Array.isArray(restoredData.gallery_images)
-        ? restoredData.gallery_images
-            .map((asset, index) => ({
-              slotKey: asset.slot_key || (asset.id ? `additional:${asset.id}` : `gallery:${index}`),
-              value: normalizeMediaValue(asset.image || asset.url || asset.value),
-              url: normalizeMediaValue(asset.image || asset.url || asset.value),
-              name: asset.name || `Product image ${index + 1}`,
-            }))
-            .filter((asset) => asset.value)
-        : [];
-
-      const draftGallery = media
+      // Gallery membership comes from the list stored with the draft (it also
+      // contains the original item's images, which are not media rows); each
+      // entry's URL comes from its persisted media row when there is one. Rows
+      // the list does not mention are appended, so nothing is ever dropped
+      // just because only some images were uploaded.
+      const galleryRows = media
         .filter((asset) => asset.kind === "gallery")
-        .sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0))
-        .map((asset) => ({
-          slotKey: asset.slot_key,
-          value: normalizeMediaValue(asset.url || asset.value),
-          url: normalizeMediaValue(asset.url || asset.value),
-          name: asset.name,
-        }))
-        .filter((asset) => asset.value);
+        .sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0));
+      const rowBySlot = new Map(galleryRows.map((row) => [row.slot_key, row]));
+      const restoredGallery = [];
+      const seenSlots = new Set();
 
-      // The draft owns the gallery after restoration. Prefer its persisted
-      // media records; otherwise use the gallery list stored in draft.data.
-      // The original Item gallery is only the baseline used before a draft
-      // exists and must never resurrect an explicitly removed image here.
-      const authoritativeGallery = draftGallery.length
-        ? draftGallery
-        : restoredGallery;
-      setGalleryImages(authoritativeGallery);
+      (Array.isArray(restoredData.gallery_images) ? restoredData.gallery_images : []).forEach(
+        (asset, index) => {
+          const slotKey =
+            asset.slot_key || (asset.id ? `additional:${asset.id}` : `gallery:${index}`);
+          const row = rowBySlot.get(slotKey);
+          const url =
+            mediaRowUrl(row) || normalizeMediaValue(asset.image || asset.url || asset.value);
+          seenSlots.add(slotKey);
+          if (url) {
+            restoredGallery.push({
+              slotKey,
+              value: url,
+              url,
+              name: row?.name || asset.name || `Product image ${index + 1}`,
+            });
+          }
+        }
+      );
+      galleryRows.forEach((row, index) => {
+        if (seenSlots.has(row.slot_key)) return;
+        const url = mediaRowUrl(row);
+        if (url) {
+          restoredGallery.push({
+            slotKey: row.slot_key,
+            value: url,
+            url,
+            name: row.name || `Product image ${index + 1}`,
+          });
+        }
+      });
 
-      const restoredVideo =
-        normalizeMediaValue(videoMedia?.url || videoMedia?.value) ||
-        normalizeMediaValue(restoredData.video);
+      setGalleryImages((current) => {
+        const pendingFiles = current.filter((asset) => isBlobValue(asset?.value));
+        const pendingBySlot = new Map(pendingFiles.map((asset) => [asset.slotKey, asset]));
+        const restoredKeys = new Set(restoredGallery.map((asset) => asset.slotKey));
+        return [
+          ...restoredGallery.map((asset) => pendingBySlot.get(asset.slotKey) || asset),
+          ...pendingFiles.filter((asset) => !restoredKeys.has(asset.slotKey)),
+        ];
+      });
 
-      setProductVideo(
-        restoredVideo
-          ? {
-              slotKey: "video",
-              value: restoredVideo,
-              url: restoredVideo,
-              name: videoMedia?.name || "Product video",
-            }
-          : null
+      setProductVideo((current) =>
+        isBlobValue(current?.value)
+          ? current
+          : restoredVideoUrl
+            ? {
+                slotKey: "video",
+                value: restoredVideoUrl,
+                url: restoredVideoUrl,
+                name: videoMedia?.name || "Product video",
+              }
+            : null
       );
 
       setDraftMessage("Saved draft restored.");
       setDraftError("");
     },
-    [form, initialItem, isEditing, safeItemId]
+    [form, initialItem, isEditing, safeItemId, draftVendorScope]
   );
 
-  const handleDraftSaved = useCallback(
-    (draft) => {
-      const media = Array.isArray(draft?.media) ? draft.media : [];
-      const mainMedia = media.find((asset) => asset.kind === "main");
-      const videoMedia = media.find((asset) => asset.kind === "video");
+  const handleDraftSaved = useCallback((draft, filesBySlot = {}) => {
+    // The server response tells us where each uploaded File now lives. It is
+    // NOT the UI state: local media (files, removals, newer edits) is never
+    // replaced or cleared from a response, which may be older than the form.
+    const persisted = {};
+    (Array.isArray(draft?.media) ? draft.media : []).forEach((asset) => {
+      const file = filesBySlot[asset.slot_key];
+      const url = mediaRowUrl(asset);
+      if (file && url) persisted[asset.slot_key] = { url, file };
+    });
+    setPersistedMedia(persisted);
 
-      // The server response is the canonical persisted draft snapshot.
-      // If a slot is absent, that is also meaningful: it may have been
-      // explicitly removed and must be reflected in the form.
-      form.setValue(
-        "image",
-        normalizeMediaValue(mainMedia?.url || mainMedia?.value || draft?.data?.image),
-        { shouldDirty: false }
-      );
-
-      const savedVideoUrl = normalizeMediaValue(
-        videoMedia?.url || videoMedia?.value || draft?.data?.video
-      );
-
-      if (savedVideoUrl) {
-        form.setValue("video", savedVideoUrl, { shouldDirty: false });
-        setProductVideo((current) => {
-          // Keep a newly selected File alive after autosave. Save & Approve
-          // still needs that File when the draft media record is not yet
-          // persisted; replacing it with the returned URL would make the
-          // approval request reference a file that is not in the upload.
-          if (current?.value instanceof File) {
-            return {
-              ...current,
-              slotKey: "video",
-              url: normalizeMediaValue(videoMedia.url),
-              name: videoMedia.name || current.name,
-            };
-          }
-
-          return {
-            ...(current || {}),
-            slotKey: "video",
-            value: savedVideoUrl,
-            url: savedVideoUrl,
-            name: videoMedia.name || current?.name || "Product video",
-          };
-        });
-      } else {
-        if (productVideo?.value instanceof File && productVideo?.url) {
-          // A pending local upload remains untouched until its save request
-          // has acknowledged it.
-        } else {
-          setProductVideo(null);
-        }
-        form.setValue("video", "", { shouldDirty: false });
-      }
-
-      setGalleryImages(
-        media
-          .filter((asset) => asset.kind === "gallery")
-          .sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0))
-          .map((asset) => ({
-            slotKey: asset.slot_key,
-            value: normalizeMediaValue(asset.url || asset.value),
-            url: normalizeMediaValue(asset.url || asset.value),
-            name: asset.name,
-          }))
-          .filter((asset) => asset.value)
-      );
-
-      const savedVariantMedia = new Map(
-        media
-          .filter((asset) => asset.kind === "variant")
-          .map((asset) => [
-            String(asset.variant_key).toLowerCase(),
-            normalizeMediaValue(asset.url || asset.value),
-          ])
-      );
-
-      const currentVariants = form.getValues("color_variants") || [];
-      form.setValue(
-        "color_variants",
-        currentVariants.map((variant) => ({
-          ...variant,
-          color_image:
-            savedVariantMedia.get(String(variant.color).toLowerCase()) ||
-            variant.color_image ||
-            null,
-        })),
-        { shouldDirty: false }
-      );
-
-      setDraftMessage("Draft saved.");
-      setDraftError("");
-    },
-    [form]
-  );
+    setDraftMessage("Draft saved.");
+    setDraftError("");
+  }, []);
 
   const draftMedia = useMemo(() => {
     const assets = [];
@@ -873,10 +914,10 @@ const ItemAddNew = ({
   // pipeline. Admin create and approval flows use their dedicated APIs and must
   // not silently save through the vendor item-draft endpoint.
   const draftEnabled = Boolean(
-    !effectiveIsAdmin &&
-      !normalizedAdminCreateNew &&
-      !isApprovalMode &&
-      (isEditing || !initialItem)
+    !isApprovalMode &&
+      (saveMode === "admin-create"
+        ? draftVendorScope
+        : !effectiveIsAdmin && (isEditing || !initialItem))
   );
   const {
     draftId,
@@ -884,12 +925,14 @@ const ItemAddNew = ({
     saving: draftSaving,
     lastSavedAt,
     saveNow: saveDraftNow,
+    clearDraft,
     error: draftAutosaveError,
   } = useItemDraftAutosave({
     enabled: draftEnabled,
     values: draftValuesForAutosave,
     media: draftMedia,
     itemId: isEditing ? safeItemId : null,
+    scopeKey: draftVendorScope,
     onRestore: handleDraftRestore,
     onSaved: handleDraftSaved,
   });
@@ -912,6 +955,7 @@ const ItemAddNew = ({
   // The vendor can explicitly uncheck them; changing to Handmade/Inorganic
   // clears them and the organic-only fields.
   useEffect(() => {
+    if (restoredSectionRef.current && restoredSectionRef.current === selectedSection) return;
     if (selectedSection === "organic") {
       form.setValue("is_organic", true);
       form.setValue("is_fresh_food", true);
@@ -1016,7 +1060,7 @@ const ItemAddNew = ({
   };
 
   useEffect(() => {
-    if (initialItem) return;
+    if (initialItem || draftRestoredItemRef.current) return;
     if (activeData === organicDepartmentMap) {
       form.reset({ ...emptyValues, section: "organic" });
     } else if (activeData === departmentMap) {
@@ -1027,6 +1071,7 @@ const ItemAddNew = ({
   // Organic-only fields must never remain active when the form is switched
   // to Handmade/Inorganic. This keeps vendor and admin approval flows aligned.
   useEffect(() => {
+    if (restoredSectionRef.current && restoredSectionRef.current === selectedSection) return;
     if (selectedSection !== "organic") {
       setValue("is_organic", false);
       setValue("is_fresh_food", false);
@@ -1036,6 +1081,11 @@ const ItemAddNew = ({
       setValue("coffee_state", "");
     }
   }, [selectedSection, setValue]);
+
+  // Declared after the two section effects above, so it runs after them.
+  useEffect(() => {
+    restoredSectionRef.current = null;
+  }, [selectedSection]);
 
   // Reset manufactured/expiry dates when activeData changes
   useEffect(() => {
@@ -1375,7 +1425,7 @@ const ItemAddNew = ({
 
         let submittedDraftId = draftId || null;
         if (draftEnabled) {
-          const savedDraft = await saveDraftNow(data, draftMedia);
+          const savedDraft = await saveDraftNow(draftValuesForAutosave, draftMedia);
           if (!savedDraft?.draft_id) {
             throw new Error("The item draft could not be saved. The item was not submitted.");
           }
@@ -1787,6 +1837,13 @@ const ItemAddNew = ({
           );
 
           if (response.status === 201 || response.status === 200) {
+            if (draftEnabled) {
+              try {
+                await clearDraft();
+              } catch (clearError) {
+                console.warn("Draft cleanup after admin create failed:", clearError);
+              }
+            }
             onSave(response.data);
           } else {
             setSubmissionStatus({ type: "error", message: "Failed to create item." });
@@ -1856,7 +1913,7 @@ const ItemAddNew = ({
         <div className="mb-4 flex min-h-[92px] flex-wrap items-center justify-between gap-3 rounded-2xl border border-[#e6e6e4] bg-white px-4 py-3 text-xs">
           <div>
             <p className="font-semibold text-gray-900">
-              {draftRestoring ? "Restoring saved draftâ¦" : draftSaving ? "Saving draftâ¦" : draftMessage || "Draft autosave is on"}
+              {draftRestoring ? "Restoring saved draft…" : draftSaving ? "Saving draft…" : draftMessage || "Draft autosave is on"}
             </p>
             <p className="mt-1 min-h-[1rem] text-gray-500">
               {lastSavedAt ? `Last saved ${new Date(lastSavedAt).toLocaleString()}` : "\u00A0"}
@@ -1875,7 +1932,7 @@ const ItemAddNew = ({
          {/* Vendor-only selector: only a new item from a "both" vendor can
              choose between organic and inorganic. Existing items never show it. */}
       <div className='border rounded-[20px] border-gray-300 p-4'>
-       {!effectiveIsAdmin && !normalizedAdminCreateNew && !isApprovalMode && !isEditing && productType === "both" && (
+       {(saveMode === "vendor-create" || saveMode === "admin-create") && !isApprovalMode && !isEditing && productType === "both" && (
         <div className="my-4 space-y-2">
           <label className="block text-sm leading-6 font-semibold text-foreground">Select Section</label>
           <div className="flex flex-wrap gap-2">
@@ -2192,13 +2249,8 @@ const ItemAddNew = ({
             {field.value && (
               <div className="relative h-48 w-full max-w-sm overflow-hidden rounded-[20px] border border-gray-300 bg-[#f8f8f6]">
                 <img
-                  src={
-                    typeof field.value === "string"
-                      ? field.value.startsWith("http")
-                        ? field.value
-                        : resolveApiAssetUrl(field.value)
-                      : URL.createObjectURL(field.value)
-                  }
+                  src={mediaPreviewSrc("main", field.value)}
+                  onError={(event) => fallbackToLocalPreview(event, field.value)}
                   alt="Main product preview"
                   className="h-full w-full object-contain bg-white p-2"
                 />
@@ -2214,7 +2266,10 @@ const ItemAddNew = ({
             <Input
               type="file"
               accept="image/*"
-              onChange={(event) => handleMainImageChange(event.target.files?.[0])}
+              onChange={(event) => {
+                handleMainImageChange(event.target.files?.[0]);
+                event.target.value = "";
+              }}
             />
           </div>
         </FormControl>
@@ -2246,10 +2301,8 @@ const ItemAddNew = ({
         {galleryImages.map((asset) => (
           <div key={asset.slotKey} className="relative overflow-hidden rounded-2xl border border-gray-300 bg-[#f8f8f6] p-1">
             <img
-              src={
-                asset.url ||
-                (asset.value instanceof File ? URL.createObjectURL(asset.value) : resolveApiAssetUrl(asset.value))
-              }
+              src={mediaPreviewSrc(asset.slotKey, asset.value instanceof File ? asset.value : asset.url || asset.value)}
+              onError={(event) => fallbackToLocalPreview(event, asset.value)}
               alt={asset.name || "Product gallery preview"}
               className="aspect-square w-full rounded-xl object-cover bg-white"
             />
@@ -2270,13 +2323,16 @@ const ItemAddNew = ({
     <div>
       <p className="text-sm font-semibold text-gray-900">Product video</p>
       <p className="mt-1 text-xs leading-5 text-gray-500">
-        Optional. MP4, MOV, or WEBM; 100 MB maximum; 3â15 seconds.
+        Optional. MP4, MOV, or WEBM; 100 MB maximum; 3–15 seconds.
       </p>
     </div>
     <Input
       type="file"
       accept="video/mp4,video/quicktime,video/webm,.mp4,.mov,.webm"
-      onChange={(event) => handleVideoChange(event.target.files?.[0])}
+      onChange={(event) => {
+        handleVideoChange(event.target.files?.[0]);
+        event.target.value = "";
+      }}
     />
 
     {!effectiveIsAdmin && videoTrimSource && (
@@ -2294,11 +2350,8 @@ const ItemAddNew = ({
           controls
           playsInline
           preload="metadata"
-          src={
-            productVideo.value instanceof File
-              ? productVideo.url || URL.createObjectURL(productVideo.value)
-              : resolveApiAssetUrl(productVideo.url || productVideo.value)
-          }
+          src={videoPreviewSrc()}
+          onError={(event) => fallbackToLocalPreview(event, productVideo?.value)}
           className="max-h-[360px] w-full bg-black"
         />
         <button
@@ -3233,9 +3286,9 @@ const ItemAddNew = ({
                 >
                   <option value="">Select Coffee State</option>
                   <option value="whole_beans">Whole Beans</option>
-                  <option value="ground_coarse">Ground â Coarse</option>
-                  <option value="ground_medium">Ground â Medium</option>
-                  <option value="ground_fine">Ground â Fine</option>
+                  <option value="ground_coarse">Ground – Coarse</option>
+                  <option value="ground_medium">Ground – Medium</option>
+                  <option value="ground_fine">Ground – Fine</option>
                   <option value="instant">Instant Coffee</option>
                   <option value="capsules">Capsules/Pods</option>
                 </select>
@@ -3600,9 +3653,10 @@ const ItemAddNew = ({
                           <input
                             type="file"
                             accept="image/*"
-                            onChange={(e) =>
-                              handleImageUpload(variant.color, e.target.files[0])
-                            }
+                            onChange={(e) => {
+                              handleImageUpload(variant.color, e.target.files[0]);
+                              e.target.value = "";
+                            }}
                             style={{
                               width: "200px",
                               padding: ".5em 1em",
