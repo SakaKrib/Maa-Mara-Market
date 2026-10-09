@@ -737,7 +737,7 @@ const ItemAddNew = ({
       // "New item" must never restore (or reuse) a draft that belongs to an
       // existing item: GET /api/item-draft/ without item_id can return the
       // latest draft of any kind. Ignored completely.
-      if (!isEditing && draft?.data?.id) return "ignore";
+      if (!isEditing && !isApprovalMode && draft?.data?.id) return "ignore";
       // A draft that already produced an item is not shown again; the same
       // row is simply reused and overwritten by the next autosave.
       if (draft?.data?.draft_completed) return false;
@@ -867,7 +867,7 @@ const ItemAddNew = ({
       setDraftMessage("Saved draft restored.");
       setDraftError("");
     },
-    [form, initialItem, isEditing, safeItemId, draftVendorScope]
+    [form, initialItem, isEditing, isApprovalMode, safeItemId, draftVendorScope]
   );
 
   const handleDraftSaved = useCallback((draft, filesBySlot = {}) => {
@@ -934,10 +934,11 @@ const ItemAddNew = ({
   // Admin-create drafts use the same endpoint but are owned by the authenticated
   // administrator and scoped to the selected vendor. Approval uses its own API.
   const draftEnabled = Boolean(
-    !isApprovalMode &&
-      (saveMode === "admin-create"
-        ? draftVendorScope
-        : !effectiveIsAdmin && (isEditing || !hasInitialItem))
+    (isApprovalMode && resolvedApprovalRequestId) ||
+      (!isApprovalMode &&
+        (saveMode === "admin-create"
+          ? draftVendorScope
+          : !effectiveIsAdmin && (isEditing || !hasInitialItem)))
   );
 
   // Temporary diagnostics: report which workflow mounted and whether the
@@ -985,6 +986,8 @@ const ItemAddNew = ({
     media: draftMedia,
     itemId: isEditing ? safeItemId : null,
     vendorId: draftVendorScope || null,
+    approvalRequestId:
+      saveMode === "admin-approve" ? resolvedApprovalRequestId : null,
     onRestore: handleDraftRestore,
     onSaved: handleDraftSaved,
   });
@@ -1700,7 +1703,7 @@ const ItemAddNew = ({
           });
 
           const draftResponse = await api.put(
-            `/api/vendor-requests/${resolvedApprovalRequestId}/save-draft/`,
+            `/api/vendor-item-create-requests/${resolvedApprovalRequestId}/save-draft/`
             approvalFormData,
             {
               withCredentials: true,
