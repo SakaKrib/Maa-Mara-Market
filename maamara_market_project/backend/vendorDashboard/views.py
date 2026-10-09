@@ -350,7 +350,13 @@ class ItemDraftView(APIView):
     ALLOWED_VIDEO_TYPES = {"video/mp4", "video/quicktime", "video/webm"}
 
     def _owner(self, request):
-        if request.user.is_staff:
+        is_admin_actor = bool(
+            request.user.is_staff
+            or request.user.is_superuser
+            or getattr(request.user, "is_admin", False)
+            or getattr(request.user, "role", None) == "admin"
+        )
+        if is_admin_actor:
             vendor_id = request.data.get("vendor_id")
             vendor = Vendor.objects.filter(pk=vendor_id).first() if vendor_id else None
             if vendor is None:
