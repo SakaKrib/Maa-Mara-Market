@@ -1684,7 +1684,13 @@ const ItemAddNew = ({
                 kind: asset.kind,
                 variant_key: asset.variantKey || "",
                 sort_order: asset.sortOrder ?? index,
-                upload_key: makeApprovalUploadKey(asset.slotKey),
+                // Only a real File carries an upload key. A URL-backed asset
+                // (already persisted, or only present in the JSON snapshot)
+                // is sent without one so the server keeps it as it is instead
+                // of rejecting it as a "new slot without a file".
+                upload_key: isUploadFile(asset.value)
+                  ? makeApprovalUploadKey(asset.slotKey)
+                  : "",
               }))
             )
           );
