@@ -346,7 +346,7 @@ export default function useItemDraftAutosave({
     knownSlotsRef.current.clear();
     lastSavedFingerprintRef.current = null;
     lastSavedDraftRef.current = null;
-  }, [currentDraftId]);
+  }, [currentDraftId, vendorId]);
 
   return {
     draftId: currentDraftId,
