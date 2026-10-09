@@ -56,6 +56,7 @@ export default function useItemDraftAutosave({
   media = [],
   draftId,
   itemId,
+  vendorId = null,
   onRestore,
   onSaved,
 }) {
@@ -110,7 +111,10 @@ export default function useItemDraftAutosave({
       try {
         const response = await api.get("/api/item-draft/", {
           withCredentials: true,
-          params: itemId ? { item_id: itemId } : undefined,
+          params: {
+          ...(itemId ? { item_id: itemId } : {}),
+          ...(vendorId ? { vendor_id: vendorId } : {}),
+        },
         });
 
         if (cancelled) return;
@@ -151,7 +155,7 @@ export default function useItemDraftAutosave({
     return () => {
       cancelled = true;
     };
-  }, [draftId, enabled, itemId, onRestore]);
+  }, [draftId, enabled, itemId, vendorId, onRestore]);
 
   const save = useCallback(
     async (nextValues = valuesRef.current, nextMedia = mediaRef.current) => {
@@ -223,6 +227,9 @@ export default function useItemDraftAutosave({
         if (itemId) {
           formData.append("item_id", String(itemId));
         }
+        if (vendorId) {
+          formData.append("vendor_id", String(vendorId));
+        }
         if (currentDraftId) {
           formData.append("draft_id", currentDraftId);
         }
@@ -286,7 +293,7 @@ export default function useItemDraftAutosave({
         }
       }
     },
-    [currentDraftId, enabled, itemId, onSaved]
+    [currentDraftId, enabled, itemId, vendorId, onSaved]
   );
 
   useEffect(() => {
