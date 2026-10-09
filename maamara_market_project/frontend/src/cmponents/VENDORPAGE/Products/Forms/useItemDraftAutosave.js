@@ -112,9 +112,9 @@ export default function useItemDraftAutosave({
         const response = await api.get("/api/item-draft/", {
           withCredentials: true,
           params: {
-          ...(itemId ? { item_id: itemId } : {}),
-          ...(vendorId ? { vendor_id: vendorId } : {}),
-        },
+            ...(itemId ? { item_id: itemId } : {}),
+            ...(vendorId ? { vendor_id: vendorId } : {}),
+          },
         });
 
         if (cancelled) return;
@@ -349,7 +349,7 @@ export default function useItemDraftAutosave({
     knownSlotsRef.current.clear();
     lastSavedFingerprintRef.current = null;
     lastSavedDraftRef.current = null;
-  }, [currentDraftId, vendorId]);
+  }, [currentDraftId, itemId, vendorId]);
 
   return {
     draftId: currentDraftId,
