@@ -257,7 +257,7 @@ const ItemAddNew = ({
       ? "edit"
       : requestedFlow;
   const isExplicitAdminApproval = Boolean(
-    approvalMode || explicitFlow === "admin-approve"
+    resolvedIsAdmin && (approvalMode || explicitFlow === "admin-approve")
   ) && !isVendorRegistrationEdit;
 
   // Approval requests belong to the administrator workflow only. Vendor
@@ -286,9 +286,7 @@ const ItemAddNew = ({
 
   const effectiveIsAdmin = Boolean(
     resolvedIsAdmin ||
-    normalizedApprovalMode ||
-    normalizedAdminCreateNew ||
-    explicitFlow === "admin-approve"
+    normalizedAdminCreateNew
   );
 
   // Vendor data is used for ownership/product configuration only. A normal
@@ -456,7 +454,8 @@ const ItemAddNew = ({
         ? "vendor-registration-edit"
         : isEditing
         ? "edit"
-        : resolvedApprovalRequestId || normalizedApprovalMode || explicitFlow === "admin-approve"
+        : effectiveIsAdmin &&
+          (resolvedApprovalRequestId || normalizedApprovalMode || explicitFlow === "admin-approve")
           ? "admin-approve"
           : "vendor-create";
 
