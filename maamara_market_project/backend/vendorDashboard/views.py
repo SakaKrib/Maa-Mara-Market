@@ -353,13 +353,15 @@ class ItemDraftView(APIView):
         if request.user.is_staff:
             vendor_id = request.data.get("vendor_id")
             vendor = Vendor.objects.filter(pk=vendor_id).first() if vendor_id else None
+            if vendor is None:
+                raise PermissionError("Select a valid vendor before saving an admin item draft.")
             return request.user, vendor
         vendor = getattr(request.user, "vendor", None)
         if vendor is None:
             raise PermissionError("Vendor account not found.")
         return request.user, vendor
 
-    def _draft_queryset(self, request, item_id=None):
+    def _draft_queryset(self, request, item_id=None, vendor_id=None):
         queryset = ItemDraft.objects.filter(
             owner=request.user,
             status="DRAFT",
@@ -367,6 +369,8 @@ class ItemDraftView(APIView):
         ).prefetch_related("media")
         if item_id:
             queryset = queryset.filter(created_item_id=item_id)
+        if vendor_id:
+            queryset = queryset.filter(vendor_id=vendor_id)
         return queryset
 
     def _validate_upload(self, uploaded, kind):
@@ -428,7 +432,12 @@ class ItemDraftView(APIView):
 
     def get(self, request):
         item_id = request.query_params.get("item_id")
-        draft = self._draft_queryset(request, item_id=item_id).order_by("-updated_at").first()
+        vendor_id = request.query_params.get("vendor_id")
+        draft = self._draft_queryset(
+            request,
+            item_id=item_id,
+            vendor_id=vendor_id,
+        ).order_by("-updated_at").first()
         if not draft:
             return Response({"exists": False, "draft": None})
         return Response({"draft": self._serialize_draft(request, draft)})
@@ -443,14 +452,24 @@ class ItemDraftView(APIView):
         draft_id = request.data.get("draft_id")
         item_id = request.data.get("item_id")
         if draft_id:
-            draft = get_object_or_404(self._draft_queryset(request, item_id=item_id), id=draft_id)
+            draft = get_object_or_404(
+                self._draft_queryset(
+                    request,
+                    item_id=item_id,
+                    vendor_id=vendor.id if vendor else None,
+                ),
+                id=draft_id,
+            )
         else:
-            draft = ItemDraft.objects.filter(
+            draft_queryset = ItemDraft.objects.filter(
                 owner=owner,
                 status="DRAFT",
                 expires_at__gt=timezone.now(),
                 created_item_id=item_id or None,
-            ).order_by("-updated_at").first()
+            )
+            if vendor:
+                draft_queryset = draft_queryset.filter(vendor=vendor)
+            draft = draft_queryset.order_by("-updated_at").first()
 
         if draft is None:
             draft = ItemDraft.objects.create(
