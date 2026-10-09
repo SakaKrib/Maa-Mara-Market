@@ -208,6 +208,7 @@ const ItemAddNew = ({
       value.vendorItemRequest?.id ??
       value.vendor_request?.id ??
       value.vendorRequest?.id ??
+      value.id ??
       value.request?.id ??
       value.request_data?.id ??
       null;
