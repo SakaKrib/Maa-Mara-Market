@@ -77,6 +77,8 @@ export default function useItemDraftAutosave({
   const restoredDraftPendingRef = useRef(false);
   const valuesRef = useRef(values);
   const mediaRef = useRef(media);
+  const onRestoreRef = useRef(onRestore);
+  onRestoreRef.current = onRestore;
   valuesRef.current = values;
   mediaRef.current = media;
 
@@ -132,7 +134,7 @@ export default function useItemDraftAutosave({
             (draft.media || []).map((asset) => asset.slot_key)
           );
           restoredDraftPendingRef.current = true;
-          onRestore?.(draft);
+          onRestoreRef.current?.(draft);
         }
         setError(null);
       } catch (err) {
@@ -155,7 +157,7 @@ export default function useItemDraftAutosave({
     return () => {
       cancelled = true;
     };
-  }, [draftId, enabled, itemId, vendorId, onRestore]);
+  }, [draftId, enabled, itemId, vendorId]);
 
   const save = useCallback(
     async (nextValues = valuesRef.current, nextMedia = mediaRef.current) => {
