@@ -97,7 +97,7 @@ urlpatterns = [
     # draft item api
     path(
         "api/vendor-item-create-requests/<int:pk>/save-draft/",
-        save_vendor_item_draft,
+        VendorItemRequestDraftUpdateView.as_view(),
         name="vendor-item-draft"
     ),
 
