@@ -301,6 +301,8 @@ const ItemAddNew = ({
   // slotKey -> { url, file }: the server URL of a File we uploaded. It is only
   // used while that exact File is still the slot's current value.
   const [persistedMedia, setPersistedMedia] = useState({});
+  // Set after the item exists: autosave must not touch that draft again.
+  const [draftFinished, setDraftFinished] = useState(false);
   const [videoTrimSource, setVideoTrimSource] = useState(null);
   const [draftMessage, setDraftMessage] = useState("");
   const [draftError, setDraftError] = useState("");
@@ -721,6 +723,13 @@ const ItemAddNew = ({
 
   const handleDraftRestore = useCallback(
     (draft) => {
+      // "New item" must never restore (or reuse) a draft that belongs to an
+      // existing item: GET /api/item-draft/ without item_id can return the
+      // latest draft of any kind. Ignored completely.
+      if (!isEditing && draft?.data?.id) return "ignore";
+      // A draft that already produced an item is not shown again; the same
+      // row is simply reused and overwritten by the next autosave.
+      if (draft?.data?.draft_completed) return false;
       // Admin-create: only restore a draft that was started for this vendor.
       if (draftVendorScope && String(draft?.data?.vendor_id ?? "") !== draftVendorScope) {
         return false;
@@ -925,14 +934,14 @@ const ItemAddNew = ({
     saving: draftSaving,
     lastSavedAt,
     saveNow: saveDraftNow,
-    clearDraft,
     error: draftAutosaveError,
   } = useItemDraftAutosave({
-    enabled: draftEnabled,
+    enabled: draftEnabled && !draftFinished,
     values: draftValuesForAutosave,
     media: draftMedia,
     itemId: isEditing ? safeItemId : null,
     scopeKey: draftVendorScope,
+    vendorId: draftVendorScope || null,
     onRestore: handleDraftRestore,
     onSaved: handleDraftSaved,
   });
@@ -1310,6 +1319,21 @@ const ItemAddNew = ({
       };
 
       videoElement.src = sourceUrl;
+    };
+
+    // Vendor edit: PUT /api/item-post/update/<id>/ does not consume the draft, so
+    // flag it as used instead of deleting it (DELETE /api/item-draft/ has no draft
+    // id and could remove a different draft). Admin create needs none of this:
+    // the server finalizes that draft itself.
+    const markDraftCompleted = async () => {
+      if (!draftEnabled) return;
+      try {
+        await saveDraftNow({ ...draftValuesForAutosave, draft_completed: true }, draftMedia);
+        // Otherwise the next autosave would overwrite the flag.
+        setDraftFinished(true);
+      } catch (markError) {
+        console.warn("Could not mark the item draft as completed:", markError);
+      }
     };
 
     const completeSave = useCallback((message, responseData) => {
@@ -1774,6 +1798,7 @@ const ItemAddNew = ({
           );
 
           if (response.status === 200 || response.status === 201) {
+            await markDraftCompleted();
             onSave(response.data);
           } else {
             throw new Error("Failed to update item.");
@@ -1837,13 +1862,8 @@ const ItemAddNew = ({
           );
 
           if (response.status === 201 || response.status === 200) {
-            if (draftEnabled) {
-              try {
-                await clearDraft();
-              } catch (clearError) {
-                console.warn("Draft cleanup after admin create failed:", clearError);
-              }
-            }
+            // perform_create finalizes the draft (status COMPLETED) on the server.
+            setDraftFinished(true);
             onSave(response.data);
           } else {
             setSubmissionStatus({ type: "error", message: "Failed to create item." });
