@@ -1934,7 +1934,14 @@ const ItemAddNew = ({
         );
 
         if (response.status === 201 || response.status === 200) {
-          onSave(response.data);
+          // The backend marks a submitted draft as SUBMITTED. Stop autosaving
+          // this form and show confirmation before the parent closes it.
+          setDraftFinished(true);
+          completeSave(
+            response.data?.message ||
+              "Item submitted successfully for review. No further action is needed.",
+            response.data
+          );
         } else {
           setSubmissionStatus({ type: "error", message: "Failed to submit item request." });
         }
