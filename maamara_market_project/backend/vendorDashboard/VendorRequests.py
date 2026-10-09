@@ -26,6 +26,13 @@ from django.core.exceptions import ValidationError
 from rest_framework.permissions import IsAdminUser, IsAuthenticated
 from order.Base import IsVendor
 from .draft_service import submit_item_draft, finalize_item_draft
+from .draft_media import (
+    DraftMediaError,
+    MediaChangeSet,
+    parse_media_payload,
+    plan_media_changes,
+    serialize_media_rows,
+)
 import hashlib
 import json
 import os
@@ -691,39 +698,6 @@ class VendorItemRequestDraftUpdateView(APIView):
     ALLOWED_VIDEO_EXTENSIONS = {".mp4", ".mov", ".webm"}
     ALLOWED_VIDEO_TYPES = {"video/mp4", "video/quicktime", "video/webm"}
 
-    def _validate_media_upload(self, uploaded, kind):
-        if kind in {"main", "gallery", "variant"}:
-            if uploaded.size > self.MAX_IMAGE_BYTES:
-                raise ValueError("Each image must be 10 MB or smaller.")
-            try:
-                uploaded.seek(0)
-                with Image.open(uploaded) as image:
-                    image.verify()
-                uploaded.seek(0)
-                with Image.open(uploaded) as image:
-                    if image.width * image.height > 25_000_000:
-                        raise ValueError("Images must not exceed 25 megapixels.")
-            except ValueError:
-                uploaded.seek(0)
-                raise
-            except Exception:
-                uploaded.seek(0)
-                raise ValueError("The uploaded file is not a valid image.")
-            uploaded.seek(0)
-            return
-
-        if kind == "video":
-            if uploaded.size > self.MAX_VIDEO_BYTES:
-                raise ValueError("The product video must be 100 MB or smaller.")
-            extension = os.path.splitext(uploaded.name or "")[1].lower()
-            if extension not in self.ALLOWED_VIDEO_EXTENSIONS:
-                raise ValueError("Video must be MP4, MOV, or WEBM.")
-            if uploaded.content_type and uploaded.content_type not in self.ALLOWED_VIDEO_TYPES:
-                raise ValueError("The uploaded video type is not supported.")
-            return
-
-        raise ValueError("Unsupported draft media type.")
-
     def get(self, request, pk):
         vendor_request = get_object_or_404(
             VendorItemRequest.objects.select_related("draft"),
@@ -736,22 +710,7 @@ class VendorItemRequestDraftUpdateView(APIView):
             )
 
         draft = vendor_request.draft
-        media = []
-        if draft:
-            for asset in draft.media.all().order_by("sort_order", "id"):
-                media.append({
-                    "id": asset.id,
-                    "kind": asset.kind,
-                    "media_type": asset.media_type,
-                    "slot_key": asset.slot_key,
-                    "variant_key": asset.variant_key,
-                    "sort_order": asset.sort_order,
-                    "url": (
-                        request.build_absolute_uri(asset.file.url)
-                        if asset.file else ""
-                    ),
-                    "name": os.path.basename(asset.file.name) if asset.file else "",
-                })
+        media = serialize_media_rows(request, draft) if draft else []
 
         return Response({
             "draft": {
@@ -766,13 +725,29 @@ class VendorItemRequestDraftUpdateView(APIView):
             }
         }, status=status.HTTP_200_OK)
 
+    # PUT and PATCH share ONE validation + media-persistence path (_save).
+    #
+    #   PUT   explicit full save, sent right before approval. Writes the
+    #         approval snapshot (VendorItemRequest.draft_item / name /
+    #         description / price) and the draft media. Returns the serialized
+    #         request.
+    #   PATCH background autosave. Writes only the ItemDraft JSON + media; it
+    #         never touches the approval snapshot that approve_request reads,
+    #         so an autosave can never change what gets approved. Returns the
+    #         draft shape used by the shared form hook.
+    #
+    # Both carry the COMPLETE current media manifest: persisted media missing
+    # from it is removed. Requests are serialised per VendorItemRequest by
+    # select_for_update(); a stale manifest from a second browser tab would
+    # still win if it arrives last (the hook is single-flight per tab).
+    def put(self, request, pk):
+        return self._save(request, pk, autosave=False)
+
     def patch(self, request, pk):
-        # PATCH autosave and PUT-before-approval share the exact same
-        # validation and media-persistence path.
-        return self.put(request, pk)
+        return self._save(request, pk, autosave=True)
 
     @transaction.atomic
-    def put(self, request, pk):
+    def _save(self, request, pk, autosave):
         try:
             vendor_request = VendorItemRequest.objects.select_for_update().get(pk=pk)
         except VendorItemRequest.DoesNotExist:
@@ -825,190 +800,64 @@ class VendorItemRequestDraftUpdateView(APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        media_manifest_raw = request.data.get("media_manifest", "[]")
-        removed_slots_raw = request.data.get("removed_media_slots", "[]")
+        # Validate the whole media payload and decide the outcome BEFORE any
+        # file is stored or deleted. (A Response return does not roll back an
+        # atomic block, so nothing may be mutated before this point.)
         try:
-            media_manifest = json.loads(media_manifest_raw)
-            removed_slots = json.loads(removed_slots_raw)
-        except (TypeError, ValueError, json.JSONDecodeError):
-            return Response(
-                {"error": "Invalid media metadata."},
-                status=status.HTTP_400_BAD_REQUEST,
+            media_manifest, removed_slots = parse_media_payload(
+                request.data.get("media_manifest", "[]"),
+                request.data.get("removed_media_slots", "[]"),
             )
-
-        if not isinstance(media_manifest, list) or not isinstance(removed_slots, list):
-            return Response(
-                {"error": "Invalid media metadata."},
-                status=status.HTTP_400_BAD_REQUEST,
+            existing = {asset.slot_key: asset for asset in draft.media.all()}
+            plan = plan_media_changes(
+                existing,
+                media_manifest,
+                removed_slots,
+                request.FILES,
+                prune_unlisted=True,
+                ignore_blank_upload_for_new=True,
             )
+        except DraftMediaError as exc:
+            return Response({"error": exc.message}, status=exc.status)
 
-        upload_entries = []
-        for entry in media_manifest:
-            if not isinstance(entry, dict):
-                continue
-            slot_key = str(entry.get("slot_key") or "").strip()
-            kind = str(entry.get("kind") or "").strip()
-            upload_key = str(entry.get("upload_key") or "").strip()
-            if not slot_key or kind not in {"main", "gallery", "variant", "video"}:
-                continue
+        changes = MediaChangeSet(draft, plan, existing, ItemDraftMedia)
+        try:
+            changes.apply()
 
-            uploaded = request.FILES.get(upload_key) if upload_key else None
-            if not uploaded:
-                # Existing persisted media does not need to be re-uploaded.
-                # Blank upload keys are expected for restored URL-backed assets.
-                if slot_key in {asset.slot_key for asset in draft.media.all()}:
-                    continue
-                if not upload_key:
-                    continue
-                return Response(
-                    {
-                        "error": (
-                            f"Missing uploaded file for new media slot "
-                            f"'{slot_key}'."
-                        )
+            draft_data["draft_id"] = str(draft.id)
+            draft.data = draft_data
+            draft.save(update_fields=["data", "updated_at"])
+
+            if not autosave:
+                vendor_request.draft_item = draft_data
+                vendor_request.name = str(draft_data.get("name") or vendor_request.name)
+                vendor_request.description = str(
+                    draft_data.get("description") or vendor_request.description
+                )
+                if draft_data.get("price") is not None:
+                    vendor_request.price = draft_data.get("price")
+                vendor_request.save(
+                    update_fields=["draft_item", "name", "description", "price"]
+                )
+
+            if autosave:
+                return Response({
+                    "draft": {
+                        "exists": True,
+                        "draft_id": str(draft.id),
+                        "data": draft.data,
+                        "media": serialize_media_rows(request, draft),
                     },
-                    status=status.HTTP_400_BAD_REQUEST,
-                )
-            try:
-                self._validate_media_upload(uploaded, kind)
-            except ValueError as exc:
-                return Response(
-                    {"error": str(exc)},
-                    status=status.HTTP_400_BAD_REQUEST,
-                )
-            upload_entries.append((entry, uploaded))
+                }, status=status.HTTP_200_OK)
 
-        existing = {
-            asset.slot_key: asset
-            for asset in draft.media.all()
-        }
-
-        removed_slot_keys = {
-            str(slot).strip()
-            for slot in removed_slots
-            if str(slot).strip()
-        }
-
-        current_slots = {
-            str(entry.get("slot_key") or "").strip()
-            for entry in media_manifest
-            if isinstance(entry, dict) and entry.get("slot_key")
-        }
-
-        # Any persisted media that the edited form no longer contains is removed.
-        removed_slot_keys.update(
-            set(existing.keys()) - current_slots
-        )
-
-        # Validate the final media set before touching stored files. Returning
-        # a 400 from an atomic block does not roll back ordinary Response
-        # returns, so validation after deletes/uploads could leave a partial save.
-        projected_media = {
-            slot_key: (asset.kind, asset.media_type)
-            for slot_key, asset in existing.items()
-            if slot_key not in removed_slot_keys
-        }
-        for entry, uploaded in upload_entries:
-            slot_key = str(entry.get("slot_key") or "").strip()
-            kind = str(entry.get("kind") or "").strip()
-            projected_media[slot_key] = (
-                kind,
-                "video" if kind == "video" else "image",
+            serializer = VendorItemRequestSerializer(
+                vendor_request,
+                context={"request": request},
             )
-
-        if sum(1 for _, media_type in projected_media.values() if media_type == "image") > 10:
-            return Response(
-                {"error": "An item can contain at most 10 images, including the main and variant images."},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-
-        if sum(1 for kind, _ in projected_media.values() if kind == "video") > 1:
-            return Response(
-                {"error": "An item can contain only one product video."},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-
-        for slot_key in removed_slot_keys:
-            asset = existing.get(slot_key)
-            if asset:
-                asset.file.delete(save=False)
-                asset.delete()
-                existing.pop(slot_key, None)
-
-        for entry, uploaded in upload_entries:
-            slot_key = str(entry.get("slot_key")).strip()
-            old = existing.get(slot_key)
-            if old:
-                old.file.delete(save=False)
-                old.delete()
-
-            media_type = "video" if entry.get("kind") == "video" else "image"
-            asset = ItemDraftMedia(
-                draft=draft,
-                media_type=media_type,
-                kind=str(entry.get("kind")).strip(),
-                slot_key=slot_key,
-                variant_key=str(entry.get("variant_key") or ""),
-                sort_order=int(entry.get("sort_order") or 0),
-            )
-            asset.file.save(
-                os.path.basename(uploaded.name),
-                uploaded,
-                save=False,
-            )
-            asset.save()
-            existing[slot_key] = asset
-
-        draft_data["draft_id"] = str(draft.id)
-        draft.data = draft_data
-        draft.save(update_fields=["data", "updated_at"])
-
-        vendor_request.draft_item = draft_data
-        vendor_request.name = str(draft_data.get("name") or vendor_request.name)
-        vendor_request.description = str(
-            draft_data.get("description") or vendor_request.description
-        )
-        if draft_data.get("price") is not None:
-            vendor_request.price = draft_data.get("price")
-        vendor_request.save(
-            update_fields=["draft_item", "name", "description", "price"]
-        )
-
-        serializer = VendorItemRequestSerializer(
-            vendor_request,
-            context={"request": request},
-        )
-
-        # PATCH is used for background autosave and returns the draft shape
-        # expected by the shared form hook. Keep the established PUT response
-        # unchanged for the explicit save-before-approval action.
-        if request.method.upper() == "PATCH":
-            media_rows = []
-            for asset in draft.media.all().order_by("sort_order", "id"):
-                media_rows.append({
-                    "id": asset.id,
-                    "kind": asset.kind,
-                    "media_type": asset.media_type,
-                    "slot_key": asset.slot_key,
-                    "variant_key": asset.variant_key,
-                    "sort_order": asset.sort_order,
-                    "url": (
-                        request.build_absolute_uri(asset.file.url)
-                        if asset.file else ""
-                    ),
-                    "name": os.path.basename(asset.file.name) if asset.file else "",
-                })
-            return Response({
-                "draft": {
-                    "exists": True,
-                    "draft_id": str(draft.id),
-                    "data": draft.data if isinstance(draft.data, dict) and draft.data else draft_data,
-                    "media": media_rows,
-                },
-                "request": serializer.data,
-            }, status=status.HTTP_200_OK)
-
-        return Response(serializer.data, status=status.HTTP_200_OK)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        except Exception:
+            changes.abort()
+            raise
 
 
     # price change requests

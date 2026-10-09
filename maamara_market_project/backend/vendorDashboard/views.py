@@ -21,6 +21,14 @@ from django.shortcuts import get_object_or_404
 from PIL import Image
 
 from ReactSerializers.Serializers import VendorPayoutSerializer
+from .draft_media import (
+    DraftMediaError,
+    MediaChangeSet,
+    delete_draft_media_after_commit,
+    parse_media_payload,
+    plan_media_changes,
+    serialize_media_rows,
+)
 from ReactSerializers.models import Item
 from order.models import OrderItem, Order
 from .models import Vendor, SoldItem, VendorAdjustment, VendorPayout, VendorDraft, VendorDraftImage, VendorRequest, VendorItemRequest, ItemDraft, ItemDraftMedia
@@ -379,53 +387,9 @@ class ItemDraftView(APIView):
             queryset = queryset.filter(vendor_id=vendor_id)
         return queryset
 
-    def _validate_upload(self, uploaded, kind):
-        if kind in {"main", "gallery", "variant"}:
-            if uploaded.size > self.MAX_IMAGE_BYTES:
-                raise ValueError("Each image must be 10 MB or smaller.")
-            try:
-                uploaded.seek(0)
-                with Image.open(uploaded) as image:
-                    image.verify()
-                uploaded.seek(0)
-                with Image.open(uploaded) as image:
-                    if image.width * image.height > 25_000_000:
-                        raise ValueError("Images must not exceed 25 megapixels.")
-            except ValueError:
-                uploaded.seek(0)
-                raise
-            except Exception:
-                uploaded.seek(0)
-                raise ValueError("The uploaded file is not a valid image.")
-            uploaded.seek(0)
-            return
-
-        if kind == "video":
-            if uploaded.size > self.MAX_VIDEO_BYTES:
-                raise ValueError("The product video must be 100 MB or smaller.")
-            extension = os.path.splitext(uploaded.name or "")[1].lower()
-            if extension not in self.ALLOWED_VIDEO_EXTENSIONS:
-                raise ValueError("Video must be MP4, MOV, or WEBM.")
-            if uploaded.content_type and uploaded.content_type not in self.ALLOWED_VIDEO_TYPES:
-                raise ValueError("The uploaded video type is not supported.")
-            return
-
-        raise ValueError("Unsupported draft media type.")
-
     def _serialize_draft(self, request, draft):
         data = dict(draft.data or {})
-        media = []
-        for asset in draft.media.all().order_by("sort_order", "id"):
-            media.append({
-                "id": asset.id,
-                "kind": asset.kind,
-                "media_type": asset.media_type,
-                "slot_key": asset.slot_key,
-                "variant_key": asset.variant_key,
-                "sort_order": asset.sort_order,
-                "url": request.build_absolute_uri(asset.file.url),
-                "name": os.path.basename(asset.file.name),
-            })
+        media = serialize_media_rows(request, draft)
         data["draft_id"] = str(draft.id)
         return {
             "exists": True,
@@ -454,6 +418,23 @@ class ItemDraftView(APIView):
             owner, vendor = self._owner(request)
         except PermissionError as exc:
             return Response({"detail": str(exc)}, status=status.HTTP_403_FORBIDDEN)
+
+        # Parse and validate the whole payload BEFORE creating or changing
+        # anything. Returning a 400 Response does not roll back an atomic
+        # block, so every check that can fail on client input happens first.
+        try:
+            data = json.loads(request.data.get("data", "{}"))
+        except (TypeError, ValueError, json.JSONDecodeError):
+            return Response({"detail": "Invalid draft data or media metadata."}, status=status.HTTP_400_BAD_REQUEST)
+        if not isinstance(data, dict):
+            return Response({"detail": "Invalid draft payload."}, status=status.HTTP_400_BAD_REQUEST)
+        try:
+            manifest, removed_slots = parse_media_payload(
+                request.data.get("media_manifest", "[]"),
+                request.data.get("removed_media_slots", "[]"),
+            )
+        except DraftMediaError as exc:
+            return Response({"detail": exc.message}, status=exc.status)
 
         draft_id = request.data.get("draft_id")
         item_id = request.data.get("item_id")
@@ -488,94 +469,31 @@ class ItemDraftView(APIView):
         elif vendor and draft.vendor_id != vendor.id:
             draft.vendor = vendor
 
-        try:
-            data = json.loads(request.data.get("data", "{}"))
-            manifest = json.loads(request.data.get("media_manifest", "[]"))
-            removed_slots = json.loads(request.data.get("removed_media_slots", "[]"))
-        except (TypeError, ValueError, json.JSONDecodeError):
-            return Response({"detail": "Invalid draft data or media metadata."}, status=status.HTTP_400_BAD_REQUEST)
-
-        if not isinstance(data, dict) or not isinstance(manifest, list) or not isinstance(removed_slots, list):
-            return Response({"detail": "Invalid draft payload."}, status=status.HTTP_400_BAD_REQUEST)
-
         existing = {asset.slot_key: asset for asset in draft.media.all()}
-        for slot in removed_slots:
-            asset = existing.get(str(slot))
-            if asset:
-                asset.file.delete(save=False)
-                asset.delete()
-                existing.pop(str(slot), None)
+        try:
+            plan = plan_media_changes(existing, manifest, removed_slots, request.FILES)
+        except DraftMediaError as exc:
+            transaction.set_rollback(True)  # also undoes a draft created above
+            return Response({"detail": exc.message}, status=exc.status)
 
-        image_slots = {slot for slot, asset in existing.items() if asset.media_type == "image"}
+        changes = MediaChangeSet(draft, plan, existing, ItemDraftMedia)
+        try:
+            changes.apply()
 
-        for entry in manifest:
-            if not isinstance(entry, dict):
-                continue
-            slot_key = str(entry.get("slot_key") or "").strip()
-            kind = str(entry.get("kind") or "").strip()
-            upload_key = str(entry.get("upload_key") or "").strip()
-            if not slot_key or kind not in {"main", "gallery", "variant", "video"}:
-                continue
+            data["draft_id"] = str(draft.id)
+            data.pop("image_file", None)
+            data.pop("video_file", None)
+            draft.data = data
+            draft.expires_at = timezone.now() + timezone.timedelta(days=30)
+            draft.save(update_fields=["vendor", "data", "expires_at", "updated_at"])
 
-            uploaded = request.FILES.get(upload_key) if upload_key else None
-            if not uploaded:
-                # Existing persisted media can stay in place without a re-upload.
-                # A new manifest slot must include its actual uploaded file.
-                if slot_key not in existing:
-                    return Response(
-                        {
-                            "detail": (
-                                f"Missing uploaded file for new media slot "
-                                f"'{slot_key}'."
-                            )
-                        },
-                        status=status.HTTP_400_BAD_REQUEST,
-                    )
-                continue
-
-            try:
-                self._validate_upload(uploaded, kind)
-            except ValueError as exc:
-                return Response({"detail": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
-
-            media_type = "video" if kind == "video" else "image"
-            if media_type == "image":
-                image_slots.add(slot_key)
-
-            old = existing.get(slot_key)
-            if old:
-                old.file.delete(save=False)
-                old.delete()
-
-            asset = ItemDraftMedia(
-                draft=draft,
-                media_type=media_type,
-                kind=kind,
-                slot_key=slot_key,
-                variant_key=str(entry.get("variant_key") or ""),
-                sort_order=int(entry.get("sort_order") or 0),
-            )
-            asset.file.save(os.path.basename(uploaded.name), uploaded, save=False)
-            asset.save()
-            existing[slot_key] = asset
-
-        if len(image_slots) > self.MAX_IMAGES:
-            return Response(
-                {"detail": f"An item can contain at most {self.MAX_IMAGES} images, including the main and variant images."},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-
-        if sum(1 for asset in existing.values() if asset.kind == "video") > 1:
-            return Response({"detail": "An item can contain only one product video."}, status=status.HTTP_400_BAD_REQUEST)
-
-        data["draft_id"] = str(draft.id)
-        data.pop("image_file", None)
-        data.pop("video_file", None)
-        draft.data = data
-        draft.expires_at = timezone.now() + timezone.timedelta(days=30)
-        draft.save(update_fields=["vendor", "data", "expires_at", "updated_at"])
-
-        return Response(self._serialize_draft(request, draft), status=status.HTTP_200_OK)
+            return Response(self._serialize_draft(request, draft), status=status.HTTP_200_OK)
+        except Exception:
+            # The transaction rolls back. Newly stored files are not
+            # referenced by any committed row, so remove them; superseded
+            # files were never touched.
+            changes.abort()
+            raise
 
     @transaction.atomic
     def delete(self, request):
@@ -591,9 +509,8 @@ class ItemDraftView(APIView):
 
         draft.status = "ABANDONED"
         draft.save(update_fields=["status", "updated_at"])
-        for asset in draft.media.all():
-            asset.file.delete(save=False)
-        draft.media.all().delete()
+        # Files are removed only after the transaction commits.
+        delete_draft_media_after_commit(draft)
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 

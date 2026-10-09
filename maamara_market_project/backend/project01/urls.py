@@ -16,9 +16,9 @@ Including another URLconf
 """
 
 from django.contrib import admin
-from django.urls import include, path
+from django.urls import include, path, re_path
 from django.conf import settings
-from django.conf.urls.static import static
+from django.views.static import serve
 from django.http import HttpResponse
 
 def index_view(request):
@@ -39,6 +39,15 @@ urlpatterns = [
 
 
 # The Docker backend runs Django's development server directly, including when
-# DEBUG is disabled by the compose environment. Uploaded media therefore needs
-# an explicit route so browser asset URLs remain reachable.
-urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+# DEBUG is disabled by the compose environment. django.conf.urls.static.static()
+# returns an EMPTY list whenever DEBUG is False, so it cannot make uploaded
+# media reachable in that setup. Register the serve view explicitly instead.
+_media_prefix = settings.MEDIA_URL.strip("/")
+if _media_prefix:
+    urlpatterns += [
+        re_path(
+            rf"^{_media_prefix}/(?P<path>.*)$",
+            serve,
+            {"document_root": settings.MEDIA_ROOT},
+        ),
+    ]
