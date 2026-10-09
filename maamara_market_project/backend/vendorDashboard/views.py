@@ -579,8 +579,13 @@ class ItemDraftView(APIView):
 
     @transaction.atomic
     def delete(self, request):
+        item_id = request.query_params.get("item_id")
         vendor_id = request.query_params.get("vendor_id")
-        draft = self._draft_queryset(request, vendor_id=vendor_id).first()
+        draft = self._draft_queryset(
+            request,
+            item_id=item_id,
+            vendor_id=vendor_id,
+        ).first()
         if not draft:
             return Response(status=status.HTTP_204_NO_CONTENT)
 
