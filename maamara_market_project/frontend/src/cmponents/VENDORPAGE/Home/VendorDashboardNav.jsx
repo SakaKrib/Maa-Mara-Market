@@ -68,13 +68,13 @@ const VendorDashboardNav = ({ open = false, onClose }) => {
       />
 
       <aside
-        className={`etsy-shop-sidebar !z-[10000] ${open ? "!w-[244px] shadow-2xl" : ""}`}
+        className={`maamara-shop-sidebar !z-[10000] ${open ? "!w-[244px] shadow-2xl" : ""}`}
         style={{
           ...(open ? { width: "244px" } : {}),
         }}
         aria-label="Vendor dashboard navigation"
       >
-        <div className="etsy-sidebar-brand">
+        <div className="maamara-sidebar-brand">
           <a
             href="/vendors-dashboard"
             aria-label="Maa Mara Market"
@@ -102,7 +102,7 @@ const VendorDashboardNav = ({ open = false, onClose }) => {
           Welcome, <span className="font-semibold text-[#222]">{userName}</span>
         </div>
 
-        <nav className="etsy-sidebar-nav" aria-label="Vendor sections">
+        <nav className="maamara-sidebar-nav" aria-label="Vendor sections">
           {navItems.map((item) => (
             <Link
               key={item.to}
@@ -121,7 +121,7 @@ const VendorDashboardNav = ({ open = false, onClose }) => {
           ))}
         </nav>
 
-        <div className="etsy-sidebar-bottom">
+        <div className="maamara-sidebar-bottom">
           <Link to="/vendors-dashboard/settings" onClick={onClose}>
             <IonIcon icon={settingsOutline} aria-hidden="true" />
             <span>Settings</span>

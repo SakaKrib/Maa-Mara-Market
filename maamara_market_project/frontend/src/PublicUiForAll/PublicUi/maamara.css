@@ -3163,7 +3163,7 @@ RESPONSIVE MENU -OFF CANVAS
 
 
 
-/* Marketplace refresh: restrained Etsy-like marketplace presentation.
+/* Marketplace refresh: restrained Maa Mara-style marketplace presentation.
    Keeps Maa Mara's existing colors, controls, routes and data unchanged. */
 .header-top-1,
 .header-nav,
@@ -3289,7 +3289,7 @@ RESPONSIVE MENU -OFF CANVAS
 }
 
 
-/* Maa Mara marketplace refinement — Etsy-inspired structure, not a brand copy. */
+/* Maa Mara marketplace refinement — Maa Mara-native structure, not a brand copy. */
 :root{
   --mm-content-max:1280px;
   --mm-page-bg: transparent;
@@ -3835,7 +3835,7 @@ h1,h2,h3,h4{font-family:'regular','Poppins',Arial,sans-serif}
 }
 
 
-/* Final reusable Etsy-like product card polish */
+/* Final reusable Maa Mara-style product card polish */
 .mm-product-card{display:flex;flex-direction:column;min-width:0;overflow:hidden}
 .mm-product-media{background:var(--mm-surface-muted);overflow:hidden}
 .mm-product-media img{display:block;width:100%;aspect-ratio:1/1;object-fit:cover;transition:transform .22s ease}

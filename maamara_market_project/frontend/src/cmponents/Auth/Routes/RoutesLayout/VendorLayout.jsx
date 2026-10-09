@@ -14,13 +14,13 @@ const VendorLayout = () => {
 
   return (
     <ProtectedRoute requiredRole="vendor">
-      <div className="etsy-manager">
+      <div className="maamara-manager">
         <HeaderTop onMenuToggle={() => setSidebarOpen((open) => !open)} />
         <VendorDashboardNav
           open={sidebarOpen}
           onClose={() => setSidebarOpen(false)}
         />
-        <main className="etsy-manager-main pb-28">
+        <main className="maamara-manager-main">
           {!isDashboard && (
             <div className="mb-5">
               <Link
