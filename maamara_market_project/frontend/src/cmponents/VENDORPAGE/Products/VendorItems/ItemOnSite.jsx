@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Edit3, PackageOpen } from "lucide-react";
+import { Edit3, PackageOpen, Search, X } from "lucide-react";
 import api, { resolveApiAssetUrl } from "../../../../Services/Api";
 import EditItem from "../Forms/EditItem/EditItem";
 
@@ -17,6 +17,8 @@ const ItemsOnsite = () => {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
 
   const fetchItems = async () => {
     setLoading(true);
@@ -39,6 +41,14 @@ const ItemsOnsite = () => {
     fetchItems();
   }, []);
 
+  const filteredItems = items.filter((item) => {
+    const query = searchTerm.trim().toLowerCase();
+    if (!query) return true;
+    return [item.name, item.description].some((value) =>
+      String(value || "").toLowerCase().includes(query)
+    );
+  });
+
   return (
     <section className="space-y-5">
       <div className="flex flex-col gap-4 rounded-2xl border border-border bg-card p-5 shadow-sm sm:p-6 sm:flex-row sm:items-center sm:justify-between">
@@ -56,8 +66,20 @@ const ItemsOnsite = () => {
 
         <div className="flex items-center gap-2">
           <span className="rounded-full border border-border bg-muted px-3 py-2 text-xs font-semibold text-muted-foreground">
-            {items.length} {items.length === 1 ? "item" : "items"}
+            {searchTerm.trim() ? `${filteredItems.length} of ${items.length} items` : `${items.length} ${items.length === 1 ? "item" : "items"}`}
           </span>
+          <button
+            type="button"
+            onClick={() => {
+              if (searchOpen) setSearchTerm("");
+              setSearchOpen((open) => !open);
+            }}
+            aria-label={searchOpen ? "Close item search" : "Search items"}
+            aria-expanded={searchOpen}
+            className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-border bg-card text-card-foreground transition hover:bg-muted"
+          >
+            {searchOpen ? <X className="h-4 w-4" /> : <Search className="h-4 w-4" />}
+          </button>
           <button
             type="button"
             onClick={() => navigate("/vendors-dashboard/add-item")}
@@ -67,6 +89,24 @@ const ItemsOnsite = () => {
           </button>
         </div>
       </div>
+
+      {searchOpen && !loading && !error && items.length > 0 && (
+        <div className="rounded-2xl border border-border bg-card p-3 shadow-sm">
+          <label htmlFor="onsite-item-search" className="sr-only">Search items by name or description</label>
+          <div className="flex items-center gap-2 rounded-xl border border-border bg-background px-3 py-2.5">
+            <Search className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden="true" />
+            <input
+              id="onsite-item-search"
+              type="search"
+              value={searchTerm}
+              onChange={(event) => setSearchTerm(event.target.value)}
+              placeholder="Search your items..."
+              className="w-full bg-transparent text-sm text-card-foreground outline-none placeholder:text-muted-foreground"
+            />
+            {searchTerm && <button type="button" onClick={() => setSearchTerm("")} className="rounded-full p-1 text-muted-foreground transition hover:bg-muted hover:text-card-foreground" aria-label="Clear item search"><X className="h-3.5 w-3.5" /></button>}
+          </div>
+        </div>
+      )}
 
       {loading ? (
         <div className="rounded-2xl border border-border bg-card p-10 text-center shadow-sm">
@@ -100,9 +140,16 @@ const ItemsOnsite = () => {
             Add your first product
           </button>
         </div>
+      ) : filteredItems.length === 0 ? (
+        <div className="rounded-2xl border border-border bg-card p-10 text-center shadow-sm">
+          <Search className="mx-auto h-8 w-8 text-muted-foreground" />
+          <h2 className="mt-3 text-base font-bold text-card-foreground">No matching items</h2>
+          <p className="mt-1 text-sm text-muted-foreground">Try another item name or description.</p>
+          <button type="button" onClick={() => setSearchTerm("")} className="mt-4 rounded-full border border-border bg-card px-4 py-2 text-xs font-semibold text-card-foreground hover:bg-muted">Clear search</button>
+        </div>
       ) : (
         <div className="grid min-w-0 grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
-          {items.map((item) => {
+          {filteredItems.map((item) => {
             const hasDiscount =
               item.discount_price &&
               Number(item.discount_price) > 0 &&
