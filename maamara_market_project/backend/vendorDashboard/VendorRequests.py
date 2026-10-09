@@ -724,6 +724,53 @@ class VendorItemRequestDraftUpdateView(APIView):
 
         raise ValueError("Unsupported draft media type.")
 
+    def get(self, request, pk):
+        vendor_request = get_object_or_404(
+            VendorItemRequest.objects.select_related("draft"),
+            pk=pk,
+        )
+        if vendor_request.status != "pending":
+            return Response(
+                {"error": f"This request is already {vendor_request.status}."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        draft = vendor_request.draft
+        media = []
+        if draft:
+            for asset in draft.media.all().order_by("sort_order", "id"):
+                media.append({
+                    "id": asset.id,
+                    "kind": asset.kind,
+                    "media_type": asset.media_type,
+                    "slot_key": asset.slot_key,
+                    "variant_key": asset.variant_key,
+                    "sort_order": asset.sort_order,
+                    "url": (
+                        request.build_absolute_uri(asset.file.url)
+                        if asset.file else ""
+                    ),
+                    "name": os.path.basename(asset.file.name) if asset.file else "",
+                })
+
+        return Response({
+            "draft": {
+                "exists": bool(draft),
+                "draft_id": str(draft.id) if draft else None,
+                "data": (
+                    draft.data
+                    if draft and isinstance(draft.data, dict)
+                    else vendor_request.draft_item or {}
+                ),
+                "media": media,
+            }
+        }, status=status.HTTP_200_OK)
+
+    def patch(self, request, pk):
+        # PATCH autosave and PUT-before-approval share the exact same
+        # validation and media-persistence path.
+        return self.put(request, pk)
+
     @transaction.atomic
     def put(self, request, pk):
         try:
@@ -743,7 +790,7 @@ class VendorItemRequestDraftUpdateView(APIView):
                     status=status.HTTP_404_NOT_FOUND,
                 )
 
-        if vendor_request.status != "verified":
+        if vendor_request.status != "pending":
             return Response(
                 {"error": f"This request is already {vendor_request.status}."},
                 status=status.HTTP_400_BAD_REQUEST,
