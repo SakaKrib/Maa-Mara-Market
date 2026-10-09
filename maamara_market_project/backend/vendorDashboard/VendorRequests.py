@@ -900,6 +900,34 @@ class VendorItemRequestDraftUpdateView(APIView):
             set(existing.keys()) - current_slots
         )
 
+        # Validate the final media set before touching stored files. Returning
+        # a 400 from an atomic block does not roll back ordinary Response
+        # returns, so validation after deletes/uploads could leave a partial save.
+        projected_media = {
+            slot_key: (asset.kind, asset.media_type)
+            for slot_key, asset in existing.items()
+            if slot_key not in removed_slot_keys
+        }
+        for entry, uploaded in upload_entries:
+            slot_key = str(entry.get("slot_key") or "").strip()
+            kind = str(entry.get("kind") or "").strip()
+            projected_media[slot_key] = (
+                kind,
+                "video" if kind == "video" else "image",
+            )
+
+        if sum(1 for _, media_type in projected_media.values() if media_type == "image") > 10:
+            return Response(
+                {"error": "An item can contain at most 10 images, including the main and variant images."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        if sum(1 for kind, _ in projected_media.values() if kind == "video") > 1:
+            return Response(
+                {"error": "An item can contain only one product video."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
         for slot_key in removed_slot_keys:
             asset = existing.get(slot_key)
             if asset:
@@ -930,23 +958,6 @@ class VendorItemRequestDraftUpdateView(APIView):
             )
             asset.save()
             existing[slot_key] = asset
-
-        image_count = sum(
-            1
-            for asset in existing.values()
-            if asset.media_type == "image"
-        )
-        if image_count > 10:
-            return Response(
-                {"error": "An item can contain at most 10 images, including the main and variant images."},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-
-        if sum(1 for asset in existing.values() if asset.kind == "video") > 1:
-            return Response(
-                {"error": "An item can contain only one product video."},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
 
         draft_data["draft_id"] = str(draft.id)
         draft.data = draft_data
