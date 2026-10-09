@@ -619,9 +619,12 @@ class ItemSerializers(serializers.ModelSerializer):
         return item
 
     def update(self, instance, validated_data):
-        variants_data = validated_data.pop("variants", [])
-        size_only_data = validated_data.pop("size_only_icon", [])
-        age_variants_data = validated_data.pop("kids_sizes", [])
+        # None means the collection was omitted; [] means the caller explicitly
+        # requested an empty collection. The update view extracts nested fields
+        # before serializer.save(), so treating omission as [] would delete data.
+        variants_data = validated_data.pop("variants", None)
+        size_only_data = validated_data.pop("size_only_icon", None)
+        age_variants_data = validated_data.pop("kids_sizes", None)
         shoe_data = validated_data.pop("shoe_input", None)
         weight_data = validated_data.pop("weight", None)
         length_data = validated_data.pop("length", None)
@@ -756,7 +759,7 @@ class ItemSerializers(serializers.ModelSerializer):
                     model.objects.filter(id=old_id).delete()
 
             for item_data in items_data:
-                nested_data = item_data.pop(nested_field, []) if nested_field else []
+                nested_data = item_data.pop(nested_field, None) if nested_field else None
                 obj_id = item_data.get("id")
 
                 if obj_id:
@@ -768,7 +771,7 @@ class ItemSerializers(serializers.ModelSerializer):
                         item_data = {k: v for k, v in item_data.items() if k != "id"}
                         kwargs = {parent_field: instance} if parent_field else {"item": instance}
                         new_obj = model.objects.create(**item_data, **kwargs)
-                        if nested_field and nested_data:
+                        if nested_field and nested_data is not None:
                             for nested_item in nested_data:
                                 SizeStock.objects.create(variant=new_obj, **nested_item)
                         continue
@@ -779,7 +782,7 @@ class ItemSerializers(serializers.ModelSerializer):
                         setattr(obj, attr, val)
                     obj.save()
 
-                    if nested_field and nested_data:
+                    if nested_field and nested_data is not None:
                         update_nested(
                             nested_data,
                             getattr(obj, nested_field).all(),
@@ -789,13 +792,16 @@ class ItemSerializers(serializers.ModelSerializer):
                 else:
                     kwargs = {parent_field: instance} if parent_field else {"item": instance}
                     new_obj = model.objects.create(**item_data, **kwargs)
-                    if nested_field and nested_data:
+                    if nested_field and nested_data is not None:
                         for nested_item in nested_data:
                             SizeStock.objects.create(variant=new_obj, **nested_item)
 
-        update_nested(variants_data, instance.variants.all(), ColorVariant, "sizes", parent_field="item")
-        update_nested(size_only_data, instance.size_only_icon.all(), SizeStock, parent_field="item")
-        update_nested(age_variants_data, instance.kids_sizes.all(), AgeVariant, parent_field="item")
+        if variants_data is not None:
+            update_nested(variants_data, instance.variants.all(), ColorVariant, "sizes", parent_field="item")
+        if size_only_data is not None:
+            update_nested(size_only_data, instance.size_only_icon.all(), SizeStock, parent_field="item")
+        if age_variants_data is not None:
+            update_nested(age_variants_data, instance.kids_sizes.all(), AgeVariant, parent_field="item")
 
         instance.refresh_from_db()
 

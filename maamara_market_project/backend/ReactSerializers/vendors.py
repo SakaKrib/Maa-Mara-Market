@@ -232,7 +232,9 @@ class VendorItemViewSet(viewsets.ModelViewSet):
 
         # Update or create
         for idx, item_data in enumerate(items_data):
-            nested_data = item_data.pop(nested_field, []) if nested_field else []
+            # Preserve nested rows when a nested field is omitted; only an
+            # explicit empty list requests removal of all children.
+            nested_data = item_data.pop(nested_field, None) if nested_field else None
             obj_id = item_data.get("id")
             sanitized_data = {k: sanitize(v) for k, v in item_data.items()}
 
@@ -252,7 +254,7 @@ class VendorItemViewSet(viewsets.ModelViewSet):
                     # stale ID to access a related row outside this item.
                     sanitized_data.pop("id", None)
                     new_obj = model.objects.create(**{parent_field: self._current_item}, **sanitized_data)
-                    if nested_field and nested_data:
+                    if nested_field and nested_data is not None:
                         for nested_item in nested_data:
                             SizeStock.objects.create(
                                 variant=new_obj,
@@ -263,7 +265,7 @@ class VendorItemViewSet(viewsets.ModelViewSet):
                     setattr(obj, attr, val)
                 obj.save()
 
-                if nested_field and nested_data:
+                if nested_field and nested_data is not None:
                     self._update_nested(
                         nested_data,
                         getattr(obj, nested_field).all(),
@@ -272,7 +274,7 @@ class VendorItemViewSet(viewsets.ModelViewSet):
                     )
             else:
                 new_obj = model.objects.create(**{parent_field: self._current_item}, **sanitized_data)
-                if nested_field and nested_data:
+                if nested_field and nested_data is not None:
                     for nested_item in nested_data:
                         SizeStock.objects.create(
                             variant=new_obj,
