@@ -61,15 +61,25 @@ class VendorItemRequestCreateView(generics.CreateAPIView):
             existing_for_draft = VendorItemRequest.objects.filter(
                 created_by=request.user,
                 draft_id=draft_id,
-                status="pending",
             ).order_by("-created_at").first()
             if existing_for_draft:
                 response_data = dict(self.get_serializer(existing_for_draft).data)
                 response_data["already_submitted"] = True
-                response_data["message"] = (
-                    "This item has already been submitted and is awaiting review. "
-                    "No further action is needed."
-                )
+                if existing_for_draft.status == "pending":
+                    response_data["message"] = (
+                        "This item has already been submitted and is awaiting review. "
+                        "No further action is needed."
+                    )
+                elif existing_for_draft.status == "approved":
+                    response_data["message"] = (
+                        "This item request has already been approved. "
+                        "No further action is needed."
+                    )
+                else:
+                    response_data["message"] = (
+                        "This item request has already been processed. "
+                        "Check its status instead of submitting it again."
+                    )
                 return Response(response_data, status=status.HTTP_200_OK)
 
         # Keep the recent-duplicate guard, but report it as a conflict rather
