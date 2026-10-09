@@ -80,7 +80,17 @@ export default function useItemDraftAutosave({
   mediaRef.current = media;
 
   useEffect(() => {
-    if (!enabled) return undefined;
+    console.info("[ItemDraftDebug] Autosave hook state", {
+      enabled,
+      itemId: itemId ?? null,
+      draftId: draftId ?? null,
+      mediaCount: media.length,
+      fieldCount: values && typeof values === "object" ? Object.keys(values).length : 0,
+    });
+    if (!enabled) {
+      console.warn("[ItemDraftDebug] Autosave is DISABLED; no draft GET/POST will run from this hook.");
+      return undefined;
+    }
 
     let cancelled = false;
     restoredRef.current = false;
@@ -93,6 +103,10 @@ export default function useItemDraftAutosave({
     setRestoredReady(false);
 
     const load = async () => {
+      console.info("[ItemDraftDebug] GET draft started", {
+        endpoint: "/api/item-draft/",
+        itemId: itemId ?? null,
+      });
       try {
         const response = await api.get("/api/item-draft/", {
           withCredentials: true,
@@ -102,6 +116,12 @@ export default function useItemDraftAutosave({
         if (cancelled) return;
 
         const draft = response.data?.draft;
+        console.info("[ItemDraftDebug] GET draft completed", {
+          status: response.status,
+          exists: Boolean(draft?.exists),
+          draftId: draft?.draft_id ?? null,
+          mediaCount: Array.isArray(draft?.media) ? draft.media.length : 0,
+        });
         if (draft?.exists) {
           setCurrentDraftId(draft.draft_id);
           knownSlotsRef.current = new Set(
@@ -112,6 +132,10 @@ export default function useItemDraftAutosave({
         }
         setError(null);
       } catch (err) {
+        console.error("[ItemDraftDebug] GET draft FAILED", {
+          status: err?.response?.status ?? null,
+          message: err?.response?.data?.detail || err?.response?.data?.error || err?.message || "Unknown error",
+        });
         if (!cancelled) setError(err);
       } finally {
         if (!cancelled) {
@@ -150,6 +174,16 @@ export default function useItemDraftAutosave({
 
       savingRef.current = true;
       setSaving(true);
+
+      const fileCount = nextMedia.filter((asset) => isFile(asset?.value)).length;
+      console.info("[ItemDraftDebug] POST draft started", {
+        endpoint: "/api/item-draft/",
+        itemId: itemId ?? null,
+        draftId: currentDraftId ?? null,
+        fieldCount: nextValues && typeof nextValues === "object" ? Object.keys(nextValues).length : 0,
+        mediaCount: nextMedia.length,
+        fileCount,
+      });
 
       try {
         const formData = new FormData();
@@ -198,6 +232,11 @@ export default function useItemDraftAutosave({
         });
 
         const saved = response.data?.draft || response.data;
+        console.info("[ItemDraftDebug] POST draft succeeded", {
+          status: response.status,
+          draftId: saved?.draft_id ?? null,
+          mediaCount: Array.isArray(saved?.media) ? saved.media.length : 0,
+        });
         if (saved?.draft_id) setCurrentDraftId(saved.draft_id);
 
         // A request can finish after the user has already changed another
@@ -223,6 +262,10 @@ export default function useItemDraftAutosave({
         onSaved?.(saved);
         return saved;
       } catch (err) {
+        console.error("[ItemDraftDebug] POST draft FAILED", {
+          status: err?.response?.status ?? null,
+          message: err?.response?.data?.detail || err?.response?.data?.error || err?.message || "Unknown error",
+        });
         setError(
           err?.response?.data?.detail ||
             err?.response?.data?.error ||
@@ -247,7 +290,12 @@ export default function useItemDraftAutosave({
   );
 
   useEffect(() => {
-    if (!enabled || !restoredRef.current) return undefined;
+    if (!enabled || !restoredRef.current) {
+      if (enabled && !restoredRef.current) {
+        console.info("[ItemDraftDebug] Change observed before draft initialization completed; waiting for GET to finish.");
+      }
+      return undefined;
+    }
 
     const fingerprint = makeDraftFingerprint(values, media);
 
@@ -266,7 +314,14 @@ export default function useItemDraftAutosave({
     }
 
     window.clearTimeout(timerRef.current);
+    console.info("[ItemDraftDebug] Form change detected; autosave scheduled", {
+      delayMs: 1200,
+      fieldCount: values && typeof values === "object" ? Object.keys(values).length : 0,
+      mediaCount: media.length,
+      fileCount: media.filter((asset) => isFile(asset?.value)).length,
+    });
     timerRef.current = window.setTimeout(() => {
+      console.info("[ItemDraftDebug] Autosave timer fired");
       save(values, media);
     }, 1200);
 
