@@ -316,6 +316,7 @@ const ItemAddNew = ({
   const [draftMessage, setDraftMessage] = useState("");
   const [draftError, setDraftError] = useState("");
   const [submissionStatus, setSubmissionStatus] = useState({ type: "", message: "" });
+  const [successModal, setSuccessModal] = useState(null);
   const [customSizeInput, setCustomSizeInput] = useState("");
   const [customKidsSizeInput, setCustomKidsSizeInput] = useState("");
 
@@ -1378,10 +1379,12 @@ const ItemAddNew = ({
       }
     };
 
-    const completeSave = useCallback((message, responseData, closeDelay = 1200) => {
-      setSubmissionStatus({ type: "success", message });
-      window.setTimeout(() => onSave(responseData), closeDelay);
-    }, [onSave]);
+    // All successful submission paths share one confirmation modal. The existing
+    // parent onSave callback runs only after the user acknowledges the success.
+    const completeSave = useCallback((message, responseData) => {
+      setSubmissionStatus({ type: "", message: "" });
+      setSuccessModal({ message, responseData });
+    }, []);
 
     const getSubmissionErrorMessage = (error, fallback) => {
       const responseData = error?.response?.data;
@@ -1841,7 +1844,7 @@ const ItemAddNew = ({
 
           if (response.status === 200 || response.status === 201) {
             await markDraftCompleted();
-            onSave(response.data);
+            completeSave("Item updated successfully. Your changes have been saved.", response.data);
           } else {
             throw new Error("Failed to update item.");
           }
@@ -1906,7 +1909,7 @@ const ItemAddNew = ({
           if (response.status === 201 || response.status === 200) {
             // perform_create finalizes the draft (status COMPLETED) on the server.
             setDraftFinished(true);
-            onSave(response.data);
+            completeSave("Item created successfully. The item has been saved to the selected vendor.", response.data);
           } else {
             setSubmissionStatus({ type: "error", message: "Failed to create item." });
           }
@@ -1940,8 +1943,7 @@ const ItemAddNew = ({
           completeSave(
             response.data?.message ||
               "Item submitted successfully for review. No further action is needed.",
-            response.data,
-            2500
+            response.data
           );
         } else {
           setSubmissionStatus({ type: "error", message: "Failed to submit item request." });
@@ -3985,6 +3987,42 @@ const ItemAddNew = ({
                 >
                   Ã
                 </button>
+              </div>
+            )}
+
+            {successModal && (
+              <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/60 p-4">
+                <div
+                  role="dialog"
+                  aria-modal="true"
+                  aria-labelledby="item-success-title"
+                  aria-describedby="item-success-message"
+                  className="w-full max-w-md rounded-2xl border border-border bg-card p-6 text-card-foreground shadow-2xl"
+                >
+                  <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-green-100 text-2xl font-bold text-green-700" aria-hidden="true">
+                    ✓
+                  </div>
+                  <h2 id="item-success-title" className="text-center text-lg font-semibold">
+                    Action completed successfully
+                  </h2>
+                  <p id="item-success-message" className="mt-3 text-center text-sm leading-6 text-muted-foreground">
+                    {successModal.message}
+                  </p>
+                  <div className="mt-6 flex justify-center">
+                    <Button
+                      type="button"
+                      autoFocus
+                      onClick={() => {
+                        const responseData = successModal.responseData;
+                        setSuccessModal(null);
+                        onSave(responseData);
+                      }}
+                      className="min-w-28 rounded-full bg-[#2563eb] px-6 py-2 text-white hover:bg-[#1d4ed8]"
+                    >
+                      OK
+                    </Button>
+                  </div>
+                </div>
               </div>
             )}
 
