@@ -209,6 +209,8 @@ const ItemAddNew = ({
       value.vendor_request?.id ??
       value.vendorRequest?.id ??
       value.id ??
+      value.request?.id ??
+      value.request_data?.id ??
       null;
 
     if (requestId != null && requestId !== "") return requestId;
@@ -236,8 +238,14 @@ const ItemAddNew = ({
   // identity, not an Item identity.
   const vendorDataRequestId =
     resolveVendorRequestId(vendorData) ??
-    resolveVendorRequestId(vendor) ??
-    resolveVendorRequestId(initialItem);
+    resolveVendorRequestId(
+      vendor?.vendor_item_request ??
+        vendor?.vendorItemRequest ??
+        vendor?.vendor_request ??
+        vendor?.vendorRequest ??
+        null
+    ) ??
+    (!hasInitialItem ? resolveVendorRequestId(initialItem) : null);
 
   const requestedFlow = String(flow || "").trim().toLowerCase();
   const isVendorRegistrationEdit = requestedFlow === "vendor-registration-edit";
@@ -252,14 +260,17 @@ const ItemAddNew = ({
     approvalMode || explicitFlow === "admin-approve"
   ) && !isVendorRegistrationEdit;
 
-  const resolvedApprovalRequestId =
-    approvalRequestId ??
-    vendorDataRequestId ??
-    initialItem?.request_id ??
-    initialItem?.vendor_item_request_id ??
-    vendor?.request_id ??
-    vendor?.vendor_item_request_id ??
-    null;
+  // Approval requests belong to the administrator workflow only. Vendor
+  // item IDs and vendor IDs must never be interpreted as approval request IDs.
+  const resolvedApprovalRequestId = resolvedIsAdmin
+    ? approvalRequestId ??
+      vendorDataRequestId ??
+      initialItem?.request_id ??
+      initialItem?.vendor_item_request_id ??
+      vendor?.request_id ??
+      vendor?.vendor_item_request_id ??
+      null
+    : null;
 
   // Item id is relevant only when the form actually received an existing Item.
   // A vendor request draft must never fall back to a vendor/request id here.
@@ -919,14 +930,14 @@ const ItemAddNew = ({
     return assets;
   }, [draftValues, galleryImages, productVideo]);
 
-  // Only vendor-created item requests should use the generic autosave draft
-  // pipeline. Admin create and approval flows use their dedicated APIs and must
-  // not silently save through the vendor item-draft endpoint.
+  // Vendor create/edit drafts are owned by the authenticated vendor.
+  // Admin-create drafts use the same endpoint but are owned by the authenticated
+  // administrator and scoped to the selected vendor. Approval uses its own API.
   const draftEnabled = Boolean(
     !isApprovalMode &&
       (saveMode === "admin-create"
         ? draftVendorScope
-        : !effectiveIsAdmin && (isEditing || !initialItem))
+        : !effectiveIsAdmin && (isEditing || !hasInitialItem))
   );
 
   // Temporary diagnostics: report which workflow mounted and whether the
@@ -973,7 +984,6 @@ const ItemAddNew = ({
     values: draftValuesForAutosave,
     media: draftMedia,
     itemId: isEditing ? safeItemId : null,
-    scopeKey: draftVendorScope,
     vendorId: draftVendorScope || null,
     onRestore: handleDraftRestore,
     onSaved: handleDraftSaved,
