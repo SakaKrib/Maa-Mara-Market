@@ -268,6 +268,7 @@ class ItemSerializer(serializers.ModelSerializer):
     category = serializers.StringRelatedField()
     subcategory = serializers.StringRelatedField()
     image = serializers.ImageField(use_url=True)
+    video = serializers.FileField(use_url=True, read_only=True, allow_null=True)
     additional_images = ItemAdditionalImageSerializer(many=True, read_only=True)
     occasions = serializers.SerializerMethodField()
     final_price = serializers.SerializerMethodField()
@@ -300,6 +301,7 @@ class ItemSerializer(serializers.ModelSerializer):
             "name",
             "description",
             "image",
+            "video",
             "additional_images",
             "price",
             "discount_price",

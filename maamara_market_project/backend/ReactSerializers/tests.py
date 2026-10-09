@@ -284,3 +284,24 @@ class VendorItemUpdateRegressionTests(TestCase):
         self.assertTrue(
             fresh_response.data["additional_images"][0]["image"].endswith(gallery.image.name)
         )
+
+        # The same current media must be available through both customer-facing
+        # data sources: the product detail and homepage listing serializers.
+        public_detail = self.client.get(f"/api/items/{self.item.pk}/")
+        self.assertEqual(public_detail.status_code, 200, public_detail.data)
+        self.assertTrue(
+            public_detail.data["video"].endswith("/media/item_videos/replacement.webm")
+        )
+        self.assertEqual(len(public_detail.data["additional_images"]), 1)
+
+        homepage_response = self.client.get("/api/filtered-items/")
+        self.assertEqual(homepage_response.status_code, 200, homepage_response.data)
+        homepage_item = next(
+            (entry for entry in homepage_response.data["results"] if entry["id"] == self.item.pk),
+            None,
+        )
+        self.assertIsNotNone(homepage_item)
+        self.assertTrue(
+            homepage_item["video"].endswith("/media/item_videos/replacement.webm")
+        )
+        self.assertEqual(len(homepage_item["additional_images"]), 1)
