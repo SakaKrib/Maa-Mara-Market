@@ -140,6 +140,10 @@ export default function useItemDraftAutosave({
             });
           } else {
             setCurrentDraftId(draft.draft_id);
+            // The GET response is already a persisted draft. Cache it so an
+            // unchanged restored form can submit without an unnecessary POST.
+            // The save shortcut below still requires a valid draft_id.
+            lastSavedDraftRef.current = draft;
             knownSlotsRef.current = new Set(
               (draft.media || []).map((asset) => asset.slot_key)
             );
@@ -174,7 +178,10 @@ export default function useItemDraftAutosave({
       if (!enabled || !restoredRef.current) return null;
 
       const fingerprint = makeDraftFingerprint(nextValues, nextMedia);
-      if (fingerprint === lastSavedFingerprintRef.current) {
+      if (
+        fingerprint === lastSavedFingerprintRef.current &&
+        lastSavedDraftRef.current?.draft_id
+      ) {
         return lastSavedDraftRef.current;
       }
 
@@ -333,9 +340,18 @@ export default function useItemDraftAutosave({
     // pre-restore Item state, because that would mark restored media as removed.
     if (restoredDraftPendingRef.current) {
       restoredDraftPendingRef.current = false;
-      lastSavedFingerprintRef.current = fingerprint;
-      window.clearTimeout(timerRef.current);
-      return undefined;
+
+      // Files picked while the initial GET was in flight are newer than the
+      // persisted draft. Do not mark them as saved; let normal autosave persist
+      // them instead of suppressing the save based on the restored snapshot.
+      const hasPendingFileUploads = media.some((asset) => isFile(asset?.value));
+      if (!hasPendingFileUploads) {
+        lastSavedFingerprintRef.current = fingerprint;
+        window.clearTimeout(timerRef.current);
+        return undefined;
+      }
+
+      lastSavedFingerprintRef.current = null;
     }
 
     if (fingerprint === lastSavedFingerprintRef.current) {
