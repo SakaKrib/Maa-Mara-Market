@@ -340,6 +340,7 @@ export default function useItemDraftAutosave({
 
     await api.delete("/api/item-draft/", {
       withCredentials: true,
+      params: vendorId ? { vendor_id: vendorId } : undefined,
     });
     setCurrentDraftId(null);
     knownSlotsRef.current.clear();
