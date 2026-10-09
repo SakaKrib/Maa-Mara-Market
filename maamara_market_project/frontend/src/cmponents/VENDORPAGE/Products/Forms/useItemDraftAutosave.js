@@ -167,13 +167,24 @@ export default function useItemDraftAutosave({
       }
 
       if (savingRef.current) {
-        // Do not wait recursively for the active request. The active save
-        // cannot finish until this invocation returns, so waiting here can
-        // deadlock autosave whenever the user changes a field while a save is
-        // still in flight. Mark the latest state as pending; the finally block
-        // below will persist the current refs after the active request ends.
+        // Submission must not interpret an in-flight autosave as a failure.
+        // Wait for the active request, then persist the latest form/media state.
         pendingSaveRef.current = true;
-        return null;
+        while (savingRef.current) {
+          await new Promise((resolve) => window.setTimeout(resolve, 10));
+        }
+        pendingSaveRef.current = false;
+
+        const latestValues = valuesRef.current;
+        const latestMedia = mediaRef.current;
+        const latestFingerprint = makeDraftFingerprint(latestValues, latestMedia);
+        if (
+          latestFingerprint === lastSavedFingerprintRef.current &&
+          lastSavedDraftRef.current?.draft_id
+        ) {
+          return lastSavedDraftRef.current;
+        }
+        return save(latestValues, latestMedia);
       }
 
       savingRef.current = true;
