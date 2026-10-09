@@ -967,6 +967,36 @@ class VendorItemRequestDraftUpdateView(APIView):
             vendor_request,
             context={"request": request},
         )
+
+        # PATCH is used for background autosave and returns the draft shape
+        # expected by the shared form hook. Keep the established PUT response
+        # unchanged for the explicit save-before-approval action.
+        if request.method.upper() == "PATCH":
+            media_rows = []
+            for asset in draft.media.all().order_by("sort_order", "id"):
+                media_rows.append({
+                    "id": asset.id,
+                    "kind": asset.kind,
+                    "media_type": asset.media_type,
+                    "slot_key": asset.slot_key,
+                    "variant_key": asset.variant_key,
+                    "sort_order": asset.sort_order,
+                    "url": (
+                        request.build_absolute_uri(asset.file.url)
+                        if asset.file else ""
+                    ),
+                    "name": os.path.basename(asset.file.name) if asset.file else "",
+                })
+            return Response({
+                "draft": {
+                    "exists": True,
+                    "draft_id": str(draft.id),
+                    "data": draft.data if isinstance(draft.data, dict) else draft_data,
+                    "media": media_rows,
+                },
+                "request": serializer.data,
+            }, status=status.HTTP_200_OK)
+
         return Response(serializer.data, status=status.HTTP_200_OK)
 
 
