@@ -129,12 +129,22 @@ export default function useItemDraftAutosave({
           mediaCount: Array.isArray(draft?.media) ? draft.media.length : 0,
         });
         if (draft?.exists) {
-          setCurrentDraftId(draft.draft_id);
-          knownSlotsRef.current = new Set(
-            (draft.media || []).map((asset) => asset.slot_key)
-          );
-          restoredDraftPendingRef.current = true;
-          onRestoreRef.current?.(draft);
+          // Let the form decide whether this draft belongs to its current flow
+          // before adopting its ID or media slots. New-item routes can receive
+          // an unrelated existing-item draft from the unscoped GET endpoint.
+          const restoreDecision = onRestoreRef.current?.(draft);
+          if (restoreDecision === false || restoreDecision === "ignore") {
+            console.info("[ItemDraftDebug] Existing draft rejected by form restore guard", {
+              draftId: draft.draft_id ?? null,
+              itemId: itemId ?? null,
+            });
+          } else {
+            setCurrentDraftId(draft.draft_id);
+            knownSlotsRef.current = new Set(
+              (draft.media || []).map((asset) => asset.slot_key)
+            );
+            restoredDraftPendingRef.current = true;
+          }
         }
         setError(null);
       } catch (err) {
