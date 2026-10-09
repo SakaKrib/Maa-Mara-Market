@@ -928,6 +928,39 @@ const ItemAddNew = ({
         ? draftVendorScope
         : !effectiveIsAdmin && (isEditing || !initialItem))
   );
+
+  // Temporary diagnostics: report which workflow mounted and whether the
+  // shared draft hook should be active. Do not log product field values/files.
+  useEffect(() => {
+    console.info("[ItemDraftDebug] Form initialized/workflow resolved", {
+      actor: effectiveIsAdmin ? "admin" : "vendor",
+      saveMode,
+      flow: requestedFlow || "(implicit)",
+      isEditing,
+      isApprovalMode,
+      hasInitialItem: Boolean(initialItem),
+      itemId: safeItemId ?? null,
+      vendorId: vendor?.id ?? vendorId ?? null,
+      draftVendorScope: draftVendorScope || null,
+      draftEnabled,
+      draftFinished,
+      draftHookEnabled: draftEnabled && !draftFinished,
+    });
+  }, [
+    effectiveIsAdmin,
+    saveMode,
+    requestedFlow,
+    isEditing,
+    isApprovalMode,
+    initialItem,
+    safeItemId,
+    vendor?.id,
+    vendorId,
+    draftVendorScope,
+    draftEnabled,
+    draftFinished,
+  ]);
+
   const {
     draftId,
     restoring: draftRestoring,
