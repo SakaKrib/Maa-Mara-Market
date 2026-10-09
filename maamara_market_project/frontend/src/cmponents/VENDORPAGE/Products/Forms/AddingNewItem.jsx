@@ -208,7 +208,8 @@ const ItemAddNew = ({
       value.vendorItemRequest?.id ??
       value.vendor_request?.id ??
       value.vendorRequest?.id ??
-      value.id ??
+      value.request?.id ??
+      value.request_data?.id ??
       null;
 
     if (requestId != null && requestId !== "") return requestId;
@@ -236,8 +237,14 @@ const ItemAddNew = ({
   // identity, not an Item identity.
   const vendorDataRequestId =
     resolveVendorRequestId(vendorData) ??
-    resolveVendorRequestId(vendor) ??
-    resolveVendorRequestId(initialItem);
+    resolveVendorRequestId(
+      vendor?.vendor_item_request ??
+        vendor?.vendorItemRequest ??
+        vendor?.vendor_request ??
+        vendor?.vendorRequest ??
+        null
+    ) ??
+    (!hasInitialItem ? resolveVendorRequestId(initialItem) : null);
 
   const requestedFlow = String(flow || "").trim().toLowerCase();
   const isVendorRegistrationEdit = requestedFlow === "vendor-registration-edit";
@@ -252,14 +259,17 @@ const ItemAddNew = ({
     approvalMode || explicitFlow === "admin-approve"
   ) && !isVendorRegistrationEdit;
 
-  const resolvedApprovalRequestId =
-    approvalRequestId ??
-    vendorDataRequestId ??
-    initialItem?.request_id ??
-    initialItem?.vendor_item_request_id ??
-    vendor?.request_id ??
-    vendor?.vendor_item_request_id ??
-    null;
+  // Approval requests belong to the administrator workflow only. Vendor
+  // item IDs and vendor IDs must never be interpreted as approval request IDs.
+  const resolvedApprovalRequestId = resolvedIsAdmin
+    ? approvalRequestId ??
+      vendorDataRequestId ??
+      initialItem?.request_id ??
+      initialItem?.vendor_item_request_id ??
+      vendor?.request_id ??
+      vendor?.vendor_item_request_id ??
+      null
+    : null;
 
   // Item id is relevant only when the form actually received an existing Item.
   // A vendor request draft must never fall back to a vendor/request id here.
