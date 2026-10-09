@@ -759,7 +759,7 @@ class VendorItemRequestDraftUpdateView(APIView):
                 "draft_id": str(draft.id) if draft else None,
                 "data": (
                     draft.data
-                    if draft and isinstance(draft.data, dict)
+                    if draft and isinstance(draft.data, dict) and draft.data
                     else vendor_request.draft_item or {}
                 ),
                 "media": media,
@@ -991,7 +991,7 @@ class VendorItemRequestDraftUpdateView(APIView):
                 "draft": {
                     "exists": True,
                     "draft_id": str(draft.id),
-                    "data": draft.data if isinstance(draft.data, dict) else draft_data,
+                    "data": draft.data if isinstance(draft.data, dict) and draft.data else draft_data,
                     "media": media_rows,
                 },
                 "request": serializer.data,
