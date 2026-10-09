@@ -1378,9 +1378,9 @@ const ItemAddNew = ({
       }
     };
 
-    const completeSave = useCallback((message, responseData) => {
+    const completeSave = useCallback((message, responseData, closeDelay = 1200) => {
       setSubmissionStatus({ type: "success", message });
-      window.setTimeout(() => onSave(responseData), 1200);
+      window.setTimeout(() => onSave(responseData), closeDelay);
     }, [onSave]);
 
     const getSubmissionErrorMessage = (error, fallback) => {
@@ -1940,7 +1940,8 @@ const ItemAddNew = ({
           completeSave(
             response.data?.message ||
               "Item submitted successfully for review. No further action is needed.",
-            response.data
+            response.data,
+            2500
           );
         } else {
           setSubmissionStatus({ type: "error", message: "Failed to submit item request." });
