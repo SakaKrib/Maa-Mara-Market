@@ -1703,7 +1703,7 @@ const ItemAddNew = ({
           });
 
           const draftResponse = await api.put(
-            `/api/vendor-item-create-requests/${resolvedApprovalRequestId}/save-draft/`
+            `/api/vendor-item-create-requests/${resolvedApprovalRequestId}/save-draft/`,
             approvalFormData,
             {
               withCredentials: true,
