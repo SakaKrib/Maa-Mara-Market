@@ -57,6 +57,7 @@ export default function useItemDraftAutosave({
   draftId,
   itemId,
   vendorId = null,
+  approvalRequestId = null,
   onRestore,
   onSaved,
 }) {
@@ -66,6 +67,11 @@ export default function useItemDraftAutosave({
   const [lastSavedAt, setLastSavedAt] = useState(null);
   const [error, setError] = useState(null);
   const [restoredReady, setRestoredReady] = useState(false);
+
+  const approvalEndpoint = approvalRequestId
+    ? `/api/vendor-item-create-requests/${approvalRequestId}/save-draft/`
+    : null;
+  const draftEndpoint = approvalEndpoint || "/api/item-draft/";
 
   const restoredRef = useRef(false);
   const timerRef = useRef(null);
@@ -107,16 +113,21 @@ export default function useItemDraftAutosave({
 
     const load = async () => {
       console.info("[ItemDraftDebug] GET draft started", {
-        endpoint: "/api/item-draft/",
+        endpoint: draftEndpoint,
         itemId: itemId ?? null,
+        approvalRequestId: approvalRequestId ?? null,
       });
       try {
-        const response = await api.get("/api/item-draft/", {
+        const response = await api.get(draftEndpoint, {
           withCredentials: true,
-          params: {
-            ...(itemId ? { item_id: itemId } : {}),
-            ...(vendorId ? { vendor_id: vendorId } : {}),
-          },
+          ...(approvalRequestId
+            ? {}
+            : {
+                params: {
+                  ...(itemId ? { item_id: itemId } : {}),
+                  ...(vendorId ? { vendor_id: vendorId } : {}),
+                },
+              }),
         });
 
         if (cancelled) return;
@@ -171,7 +182,7 @@ export default function useItemDraftAutosave({
     return () => {
       cancelled = true;
     };
-  }, [draftId, enabled, itemId, vendorId]);
+  }, [draftId, enabled, itemId, vendorId, approvalRequestId, draftEndpoint]);
 
   const save = useCallback(
     async (nextValues = valuesRef.current, nextMedia = mediaRef.current) => {
@@ -210,10 +221,12 @@ export default function useItemDraftAutosave({
       setSaving(true);
 
       const fileCount = nextMedia.filter((asset) => isFile(asset?.value)).length;
-      console.info("[ItemDraftDebug] POST draft started", {
-        endpoint: "/api/item-draft/",
+      console.info("[ItemDraftDebug] Draft save started", {
+        endpoint: draftEndpoint,
+        method: approvalRequestId ? "PATCH" : "POST",
         itemId: itemId ?? null,
         draftId: currentDraftId ?? null,
+        approvalRequestId: approvalRequestId ?? null,
         fieldCount: nextValues && typeof nextValues === "object" ? Object.keys(nextValues).length : 0,
         mediaCount: nextMedia.length,
         fileCount,
@@ -221,7 +234,10 @@ export default function useItemDraftAutosave({
 
       try {
         const formData = new FormData();
-        formData.append("data", JSON.stringify(stripFiles(nextValues)));
+        formData.append(
+          approvalRequestId ? "draft_item" : "data",
+          JSON.stringify(stripFiles(nextValues))
+        );
 
         const manifest = [];
         const currentSlots = new Set();
@@ -254,22 +270,18 @@ export default function useItemDraftAutosave({
         formData.append("media_manifest", JSON.stringify(manifest));
         formData.append("removed_media_slots", JSON.stringify(removedSlots));
 
-        if (itemId) {
-          formData.append("item_id", String(itemId));
-        }
-        if (vendorId) {
-          formData.append("vendor_id", String(vendorId));
-        }
-        if (currentDraftId) {
-          formData.append("draft_id", currentDraftId);
+        if (!approvalRequestId) {
+          if (itemId) formData.append("item_id", String(itemId));
+          if (vendorId) formData.append("vendor_id", String(vendorId));
+          if (currentDraftId) formData.append("draft_id", currentDraftId);
         }
 
-        const response = await api.post("/api/item-draft/", formData, {
-          withCredentials: true,
-        });
+        const response = approvalRequestId
+          ? await api.patch(draftEndpoint, formData, { withCredentials: true })
+          : await api.post(draftEndpoint, formData, { withCredentials: true });
 
         const saved = response.data?.draft || response.data;
-        console.info("[ItemDraftDebug] POST draft succeeded", {
+        console.info("[ItemDraftDebug] Draft save succeeded", {
           status: response.status,
           draftId: saved?.draft_id ?? null,
           mediaCount: Array.isArray(saved?.media) ? saved.media.length : 0,
@@ -299,7 +311,7 @@ export default function useItemDraftAutosave({
         onSaved?.(saved);
         return saved;
       } catch (err) {
-        console.error("[ItemDraftDebug] POST draft FAILED", {
+        console.error("[ItemDraftDebug] Draft save FAILED", {
           status: err?.response?.status ?? null,
           message: err?.response?.data?.detail || err?.response?.data?.error || err?.message || "Unknown error",
         });
@@ -323,7 +335,7 @@ export default function useItemDraftAutosave({
         }
       }
     },
-    [currentDraftId, enabled, itemId, vendorId, onSaved]
+    [currentDraftId, enabled, itemId, vendorId, approvalRequestId, draftEndpoint, onSaved]
   );
 
   useEffect(() => {
