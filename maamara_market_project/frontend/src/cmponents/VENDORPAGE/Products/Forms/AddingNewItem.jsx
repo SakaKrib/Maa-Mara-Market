@@ -930,9 +930,9 @@ const ItemAddNew = ({
     return assets;
   }, [draftValues, galleryImages, productVideo]);
 
-  // Only vendor-created item requests should use the generic autosave draft
-  // pipeline. Admin create and approval flows use their dedicated APIs and must
-  // not silently save through the vendor item-draft endpoint.
+  // Vendor create/edit drafts are owned by the authenticated vendor.
+  // Admin-create drafts use the same endpoint but are owned by the authenticated
+  // administrator and scoped to the selected vendor. Approval uses its own API.
   const draftEnabled = Boolean(
     !isApprovalMode &&
       (saveMode === "admin-create"
@@ -984,7 +984,6 @@ const ItemAddNew = ({
     values: draftValuesForAutosave,
     media: draftMedia,
     itemId: isEditing ? safeItemId : null,
-    scopeKey: draftVendorScope,
     vendorId: draftVendorScope || null,
     onRestore: handleDraftRestore,
     onSaved: handleDraftSaved,
