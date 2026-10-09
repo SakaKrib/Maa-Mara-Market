@@ -937,7 +937,7 @@ const ItemAddNew = ({
     !isApprovalMode &&
       (saveMode === "admin-create"
         ? draftVendorScope
-        : !effectiveIsAdmin && (isEditing || !initialItem))
+        : !effectiveIsAdmin && (isEditing || !hasInitialItem))
   );
 
   // Temporary diagnostics: report which workflow mounted and whether the
