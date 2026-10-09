@@ -1,6 +1,7 @@
 from rest_framework import generics, permissions, status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
+from rest_framework.exceptions import ValidationError as DRFValidationError
 from django.core.mail import EmailMultiAlternatives
 from django.template.loader import render_to_string
 from django.conf import settings
@@ -48,6 +49,64 @@ class VendorItemRequestCreateView(generics.CreateAPIView):
     permission_classes = [permissions.IsAuthenticated, IsVendor]
 
     @transaction.atomic
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        # Make retries of the same draft idempotent. If the first request was
+        # saved but the client did not receive its response, return that
+        # existing request instead of creating a duplicate or showing an error.
+        draft_id = request.data.get("draft_id")
+        if draft_id:
+            existing_for_draft = VendorItemRequest.objects.filter(
+                created_by=request.user,
+                draft_id=draft_id,
+                status="pending",
+            ).order_by("-created_at").first()
+            if existing_for_draft:
+                response_data = dict(self.get_serializer(existing_for_draft).data)
+                response_data["already_submitted"] = True
+                response_data["message"] = (
+                    "This item has already been submitted and is awaiting review. "
+                    "No further action is needed."
+                )
+                return Response(response_data, status=status.HTTP_200_OK)
+
+        # Keep the recent-duplicate guard, but report it as a conflict rather
+        # than a server error. Do not treat a different draft as already
+        # submitted just because its name and price happen to match.
+        request_name = serializer.validated_data.get("name")
+        request_price = serializer.validated_data.get("price")
+        existing_similar_request = VendorItemRequest.objects.filter(
+            created_by=request.user,
+            name=request_name,
+            price=request_price,
+            status="pending",
+            created_at__gte=timezone.now() - timezone.timedelta(minutes=2),
+        ).order_by("-created_at").first()
+
+        if existing_similar_request:
+            return Response(
+                {
+                    "detail": (
+                        "A similar item request is already awaiting review. "
+                        "No second request was created. Check your pending item "
+                        "requests before submitting another item with the same name and price."
+                    ),
+                    "already_submitted": False,
+                },
+                status=status.HTTP_409_CONFLICT,
+            )
+
+        self.perform_create(serializer)
+        headers = self.get_success_headers(serializer.data)
+        return Response(
+            serializer.data,
+            status=status.HTTP_201_CREATED,
+            headers=headers,
+        )
+
+    @transaction.atomic
     def perform_create(self, serializer):
 
         # =========================
@@ -56,7 +115,7 @@ class VendorItemRequestCreateView(generics.CreateAPIView):
         try:
             vendor = Vendor.objects.get(user=self.request.user)
         except Vendor.DoesNotExist:
-            raise ValidationError("Vendor account not found.")
+            raise DRFValidationError("Vendor account not found.")
 
         # =========================
         # PREVENT RAPID DUPLICATES
@@ -73,8 +132,8 @@ class VendorItemRequestCreateView(generics.CreateAPIView):
         ).exists()
 
         if existing_request:
-            raise ValidationError(
-                "A similar item request was already submitted recently."
+            raise DRFValidationError(
+                "A similar item request is already awaiting review."
             )
 
         # =========================
@@ -89,7 +148,7 @@ class VendorItemRequestCreateView(generics.CreateAPIView):
                 status="DRAFT",
             ).first()
             if draft is None:
-                raise ValidationError("The selected draft is no longer active.")
+                raise DRFValidationError("The selected draft is no longer active.")
 
         item_request = serializer.save(
             vendor=vendor,
