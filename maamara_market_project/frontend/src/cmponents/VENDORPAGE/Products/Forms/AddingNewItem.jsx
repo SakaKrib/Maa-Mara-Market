@@ -3706,7 +3706,7 @@ const ItemAddNew = ({
                     {/* Color details */}
                     {value.map((variant) => (
                       <div key={variant.color} className="space-y-4">
-                        <div className="flex items-center gap-2">
+                        <div className="flex flex-wrap items-center gap-2">
                           <span
                             className="inline-block w-3 h-3 rounded-full border border-gray-300"
                             style={{ backgroundColor: colorMap[variant.color] || "#ccc" }}
@@ -3716,7 +3716,7 @@ const ItemAddNew = ({
                             type="file"
                             accept="image/*"
                             onChange={(e) => {
-                              handleImageUpload(variant.color, e.target.files[0]);
+                              handleImageUpload(variant.color, e.target.files?.[0]);
                               e.target.value = "";
                             }}
                             style={{
@@ -3726,6 +3726,30 @@ const ItemAddNew = ({
                             }}
                           />
                         </div>
+
+                        {variant.color_image && (
+                          <div className="relative h-40 w-full max-w-xs overflow-hidden rounded-[20px] border border-gray-300 bg-[#f8f8f6]">
+                            <img
+                              src={mediaPreviewSrc(`variant:${variant.color}`, variant.color_image)}
+                              onError={(event) => fallbackToLocalPreview(event, variant.color_image)}
+                              alt={`${variant.color} color variant preview`}
+                              className="h-full w-full bg-white p-2 object-contain"
+                            />
+                            <button
+                              type="button"
+                              onClick={() =>
+                                onChange(
+                                  value.map((v) =>
+                                    v.color === variant.color ? { ...v, color_image: null } : v
+                                  )
+                                )
+                              }
+                              className="absolute bottom-2 right-2 rounded-full bg-black px-3 py-1.5 text-xs font-semibold text-white hover:bg-[#262626]"
+                            >
+                              Remove image
+                            </button>
+                          </div>
+                        )}
 
                         {/* Sizes + Stock */}
                         <div className="grid grid-cols-2 gap-4">
