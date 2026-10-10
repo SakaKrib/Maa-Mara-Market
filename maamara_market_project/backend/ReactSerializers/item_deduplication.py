@@ -73,6 +73,11 @@ def _normalized_date(value):
     return value.isoformat() if hasattr(value, "isoformat") else str(value or "").strip()
 
 
+def _normalized_discount_price(value):
+    normalized = _normalized_decimal(value)
+    return None if normalized in (None, Decimal("0.00")) else normalized
+
+
 def _item_identity(source):
     """Return a stable signature for fields that identify the product itself."""
     raw_name = _read_value(source, "name", "")
@@ -84,7 +89,7 @@ def _item_identity(source):
         normalized_name,
         _normalized_text(_read_value(source, "description", "")),
         _normalized_decimal(_read_value(source, "price", Decimal("0.00")), default=Decimal("0.00")),
-        _normalized_decimal(_read_value(source, "discount_price")),
+        _normalized_discount_price(_read_value(source, "discount_price")),
     ]
 
     for field in ("section", "department", "category", "subcategory", "brand"):
@@ -92,7 +97,10 @@ def _item_identity(source):
 
     for field in _TEXT_FIELDS:
         default = "none" if field in {"gender_based", "children_size_based_age"} else ""
-        identity.append(_normalized_text(_read_value(source, field, default)))
+        value = _read_value(source, field, default)
+        if field in {"gender_based", "children_size_based_age"} and value in (None, ""):
+            value = "none"
+        identity.append(_normalized_text(value))
 
     identity.extend([
         _normalized_bool(_read_value(source, "is_organic", False)),
