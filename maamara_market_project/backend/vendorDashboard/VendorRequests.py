@@ -1,3 +1,5 @@
+import logging
+
 from rest_framework import generics, permissions, status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
@@ -14,6 +16,8 @@ from rest_framework.views import APIView
 from ReactSerializers.models import Department,Item,SubCategory,Category, Section
 from django.utils.html import strip_tags
 from django.shortcuts import get_object_or_404
+
+logger = logging.getLogger(__name__)
 from ReactSerializers.models import PriceChangeRequest
 from django.utils import timezone
 from .serializers import *
@@ -308,6 +312,10 @@ def approve_request(request, pk):
     if action == "approve":
 
         if item_request.status != "pending":
+            logger.warning(
+                "Vendor item approval rejected: request_id=%s status=%s",
+                item_request.id, item_request.status,
+            )
             return Response(
                 {"error": f"This request is already {item_request.status}."},
                 status=status.HTTP_400_BAD_REQUEST
@@ -315,12 +323,20 @@ def approve_request(request, pk):
 
         source_draft = item_request.draft
         if source_draft and source_draft.status != "SUBMITTED":
+            logger.warning(
+                "Vendor item approval rejected: request_id=%s draft_id=%s draft_status=%s",
+                item_request.id, source_draft.id, source_draft.status,
+            )
             return Response(
                 {"error": "The linked item draft is not in a submitted state."},
                 status=status.HTTP_400_BAD_REQUEST
             )
 
         if hasattr(item_request, "approved_item") and item_request.approved_item:
+            logger.warning(
+                "Vendor item approval rejected: request_id=%s existing_item_id=%s",
+                item_request.id, item_request.approved_item.id,
+            )
             return Response(
                 {"error": "An item has already been created for this request."},
                 status=status.HTTP_400_BAD_REQUEST
@@ -339,6 +355,10 @@ def approve_request(request, pk):
                 if department_name else None
             )
         except Department.DoesNotExist:
+            logger.warning(
+                "Vendor item approval rejected: request_id=%s department=%r not found",
+                item_request.id, department_name,
+            )
             return Response(
                 {"error": f"Department '{department_name}' not found."},
                 status=status.HTTP_400_BAD_REQUEST
@@ -350,6 +370,10 @@ def approve_request(request, pk):
                 if category_name else None
             )
         except Category.DoesNotExist:
+            logger.warning(
+                "Vendor item approval rejected: request_id=%s category=%r not found",
+                item_request.id, category_name,
+            )
             return Response(
                 {"error": f"Category '{category_name}' not found."},
                 status=status.HTTP_400_BAD_REQUEST
@@ -361,6 +385,10 @@ def approve_request(request, pk):
                 if subcategory_name else None
             )
         except SubCategory.DoesNotExist:
+            logger.warning(
+                "Vendor item approval rejected: request_id=%s subcategory=%r not found",
+                item_request.id, subcategory_name,
+            )
             return Response(
                 {"error": f"Subcategory '{subcategory_name}' not found."},
                 status=status.HTTP_400_BAD_REQUEST
@@ -372,6 +400,10 @@ def approve_request(request, pk):
                 if section_name else None
             )
         except Section.DoesNotExist:
+            logger.warning(
+                "Vendor item approval rejected: request_id=%s section=%r not found",
+                item_request.id, section_name,
+            )
             return Response(
                 {"error": f"Section '{section_name}' not found."},
                 status=status.HTTP_400_BAD_REQUEST
@@ -410,6 +442,10 @@ def approve_request(request, pk):
         if image_hash:
             existing = Item.objects.filter(image_hash=image_hash).first()
             if existing:
+                logger.warning(
+                    "Vendor item approval rejected: request_id=%s duplicate_image_item_id=%s",
+                    item_request.id, existing.id,
+                )
                 return Response(
                     {
                         "error": "This image is already used by another item.",
@@ -454,7 +490,14 @@ def approve_request(request, pk):
             data=approval_data,
             context={"request": request},
         )
-        serializer.is_valid(raise_exception=True)
+        try:
+            serializer.is_valid(raise_exception=True)
+        except DRFValidationError as exc:
+            logger.warning(
+                "Vendor item approval validation failed: request_id=%s errors=%s",
+                item_request.id, exc.detail,
+            )
+            raise
 
         item = serializer.save(
             vendor=vendor_user,
