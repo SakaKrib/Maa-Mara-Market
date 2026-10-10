@@ -30,6 +30,7 @@ from rest_framework.exceptions import ValidationError
 from rest_framework.response import Response
 from rest_framework import status
 from django.db import transaction
+from django.utils import timezone as django_timezone
 from django.db.models import Q
 from .models import Item, ItemAdditionalImage, ColorVariant, SizeStock, AgeVariant, Occasion
 from .Serializers import ItemSerializers
@@ -44,7 +45,11 @@ from django.template.loader import render_to_string
 import bleach # type: ignore
 from urllib.parse import urlparse, unquote
 from order.Base import IsVendor
-from vendorDashboard.draft_service import finalize_item_draft
+from vendorDashboard.draft_service import (
+    build_item_draft_update_payload,
+    finalize_item_draft,
+    sync_item_draft_media,
+)
 
 
 
@@ -238,8 +243,10 @@ class VendorItemViewSet(viewsets.ModelViewSet):
             obj_id = item_data.get("id")
             sanitized_data = {k: sanitize(v) for k, v in item_data.items()}
 
-            # Handle variant image upload (only for ColorVariant)
-            if model.__name__ == "ColorVariant":
+            # When an existing item has a saved draft, that draft's media rows
+            # are authoritative. Do not let the separate PUT upload overwrite
+            # or diverge from the files already committed to the draft.
+            if model.__name__ == "ColorVariant" and not getattr(self, "_active_edit_item_draft", None):
                 image_file = (
                     self.request.FILES.get(f"variants[{idx}][image]") or
                     self.request.FILES.get(f"variant_image_{idx}")
@@ -414,30 +421,51 @@ class VendorItemViewSet(viewsets.ModelViewSet):
 
     @transaction.atomic
     def perform_update(self, serializer):
-        # Item.price is protected at the model layer. Vendors must continue
-        # using the existing price-change request/approval workflow; admins
-        # are explicitly allowed to change it from the admin item editor.
-        if "price" in self.request.data and not self.request.user.is_staff:
-            # Vendors may submit the existing price while editing an item.
-            # Only an actual price change requires the administrator approval flow.
-            current_item = self.get_object()
-            submitted_price = self.request.data.get("price")
-            try:
-                submitted_price_decimal = Decimal(str(submitted_price))
-            except (InvalidOperation, TypeError, ValueError):
-                raise ValidationError({
-                    "price": "The item price must be a valid number."
-                })
+        current_item = self.get_object()
 
+        # Vendor edit drafts are saved independently from the live Item update.
+        # Resolve the active draft by both its owner and the exact Item being
+        # edited; never apply a draft belonging to another item or vendor.
+        edit_draft = None
+        if not self.request.user.is_staff:
+            draft_queryset = ItemDraft.objects.filter(
+                owner=self.request.user,
+                created_item=current_item,
+                status="DRAFT",
+                expires_at__gt=django_timezone.now(),
+            )
+            if current_item.vendor_id:
+                draft_queryset = draft_queryset.filter(vendor_id=current_item.vendor_id)
+            edit_draft = draft_queryset.order_by("-updated_at").first()
+
+        self._active_edit_item_draft = edit_draft
+        if edit_draft is not None:
+            # Use the latest persisted draft snapshot as the source of truth.
+            # The live PUT still triggers this existing endpoint, but its field
+            # values must not take precedence over the draft that was just saved.
+            draft_payload = build_item_draft_update_payload(edit_draft.data)
+            draft_serializer = self.get_serializer(
+                current_item,
+                data=draft_payload,
+                partial=True,
+            )
+            draft_serializer.is_valid(raise_exception=True)
+            serializer.initial_data = draft_payload
+            serializer._validated_data = draft_serializer.validated_data
+
+        validated = serializer.validated_data
+
+        # Item.price is protected at the model layer. Vendors may keep the
+        # current price, but a price change still requires administrator approval.
+        if not self.request.user.is_staff and "price" in validated:
+            submitted_price_decimal = Decimal(str(validated["price"]))
             if submitted_price_decimal != current_item.price:
                 raise ValidationError({
                     "price": "Direct price changes require administrator approval."
                 })
 
         if self.request.user.is_staff:
-            self.get_object()._allow_price_update = True
-
-        validated = serializer.validated_data
+            current_item._allow_price_update = True
 
         # Only mutate nested records when the client actually supplied that field.
         variants_supplied = "variants" in validated
@@ -494,6 +522,11 @@ class VendorItemViewSet(viewsets.ModelViewSet):
                 AgeVariant,
                 parent_field="item"
             )
+
+        # Draft data and draft media are the source of truth for vendor edits.
+        # Transfer media only after the field/variant rows exist on the live Item.
+        if edit_draft is not None:
+            sync_item_draft_media(edit_draft, item)
 
 
 
