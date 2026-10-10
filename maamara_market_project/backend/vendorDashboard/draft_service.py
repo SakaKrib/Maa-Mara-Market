@@ -78,6 +78,8 @@ def mark_item_draft_abandoned(draft):
     draft.save(update_fields=["status", "updated_at"])
 
 def _relation_or_none(value):
+    if value in (None, ""):
+        return None
     if isinstance(value, dict):
         return value.get("id") or value.get("pk") or value.get("value") or None
     return value
@@ -322,6 +324,24 @@ def sync_item_draft_media(draft, item):
                 continue
             _copy_media_to_field(row.file, variant.image)
             variant.save(update_fields=["image"])
+
+        # Clear a variant image only when the latest draft says the slot is
+        # empty and no current media row supplies a replacement for that slot.
+        for color, variant_data in variants_by_color.items():
+            current_value = variant_data.get("color_image") or variant_data.get("image")
+            if current_value:
+                continue
+            matching_row = next(
+                (row for row in media_rows
+                 if row.kind == "variant" and str(row.variant_key).strip().lower() == color),
+                None,
+            )
+            if matching_row and _media_is_current(draft, matching_row, current_value):
+                continue
+            variant = item.variants.filter(color__iexact=color).first()
+            if variant and variant.image:
+                variant.image.delete(save=False)
+                variant.save(update_fields=["image"])
 
     item.refresh_from_db()
     return item
