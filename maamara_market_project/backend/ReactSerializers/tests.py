@@ -9,7 +9,7 @@ from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import TestCase, override_settings
 from django.utils import timezone
 from PIL import Image
-from rest_framework.test import APIClient, APIRequestFactory
+from rest_framework.test import APIClient, APIRequestFactory, force_authenticate
 
 from vendorDashboard.models import ItemDraft, ItemDraftMedia, Vendor
 from .models import (
@@ -187,6 +187,38 @@ class VendorItemUpdateRegressionTests(TestCase):
             f"/api/item-post/update/{self.item.pk}/",
             payload,
             format="multipart",
+        )
+
+    def test_create_rejects_same_product_for_same_seller(self):
+        payload = {
+            "name": "  ORIGINAL ITEM  ",
+            "description": "  Original   description ",
+            "price": "100.00",
+            "in_stock": "10",
+            "available": "true",
+            "returnable": "true",
+            "section": self.section.name,
+            "department": self.department.name,
+            "category": self.category.name,
+            "subcategory": self.subcategory.name,
+        }
+        request = APIRequestFactory().post(
+            "/api/item-post/",
+            payload,
+            format="multipart",
+        )
+        force_authenticate(request, user=self.user)
+
+        response = VendorItemViewSet.as_view({"post": "create"})(request)
+
+        self.assertEqual(response.status_code, 400, response.data)
+        self.assertIn("duplicate", response.data)
+        self.assertEqual(
+            Item.objects.filter(
+                created_by=self.user,
+                name__iexact=self.item.name,
+            ).count(),
+            1,
         )
 
     def _existing_variant_payload(self, sizes=None):
