@@ -586,8 +586,10 @@ def approve_request(request, pk):
             related_url=f"/vendors-dashboard/vendor/items/requests/{item_request.id}/",
         )
 
+        # Notification.user is a ForeignKey to auth.User, not Vendor.
+        # Notify the account that owns this vendor profile.
         Notification.objects.create(
-            user=vendor_user,
+            user=vendor_user.user,
             title="Item Request Denied",
             message=f"Your request for {item_request.name} was declined by the administrator.",
             url=f"/vendors-dashboard/vendor/requests/{item_request.id}/",
