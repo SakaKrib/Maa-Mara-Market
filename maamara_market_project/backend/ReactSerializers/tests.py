@@ -307,3 +307,88 @@ class VendorItemUpdateRegressionTests(TestCase):
             homepage_item["video"].endswith("/media/item_videos/replacement.webm")
         )
         self.assertEqual(len(homepage_item["additional_images"]), 1)
+
+    def test_vendor_submit_uses_latest_saved_draft_values_and_media(self):
+        draft = ItemDraft.objects.create(
+            owner=self.user,
+            vendor=self.vendor,
+            created_item=self.item,
+            expires_at=timezone.now() + timedelta(days=30),
+            data={
+                "name": "Name from draft",
+                "description": "Description from draft",
+                "price": "100.00",
+                "in_stock": 24,
+                "available": True,
+                "returnable": False,
+                "section": self.section.name,
+                "department": self.department.name,
+                "category": self.category.name,
+                "subcategory": self.subcategory.name,
+                "in_offer": False,
+                "occasions": [],
+                "color_variants": [{
+                    "id": self.variant.id,
+                    "color": "Black",
+                    "color_image": None,
+                    "sizes": [{
+                        "id": self.size.id,
+                        "size": "M",
+                        "quantity_in_stock": 17,
+                    }],
+                }],
+                "size_variant": [],
+                "kids_sizes": [],
+                "shoe_type": "",
+                "shoe_gender": "",
+                "shoe_size": [],
+                "image": None,
+                "video": None,
+                "gallery_images": [{
+                    "slot_key": "gallery:draft",
+                    "image": None,
+                    "name": "Draft gallery image",
+                }],
+            },
+        )
+        media = [
+            ("image", "main", "main", _test_png("draft-main.png"), ""),
+            ("video", "video", "video", _test_webm("draft-video.webm"), ""),
+            ("image", "gallery", "gallery:draft", _test_png("draft-gallery.png"), ""),
+            ("image", "variant", "variant:Black", _test_png("draft-variant.png"), "Black"),
+        ]
+        for index, (media_type, kind, slot_key, upload, variant_key) in enumerate(media):
+            ItemDraftMedia.objects.create(
+                draft=draft, media_type=media_type, kind=kind, slot_key=slot_key,
+                variant_key=variant_key, sort_order=index, file=upload,
+            )
+
+        payload = self._base_payload()
+        payload.update({
+            "name": "Stale request name",
+            "description": "Stale request description",
+            "in_stock": "2",
+            "returnable": "true",
+            "variants": self._existing_variant_payload(sizes=[{
+                "id": self.size.id, "size": "M", "quantity_in_stock": 3,
+            }]),
+            "size_only_icon": json.dumps([]),
+            "kids_sizes": json.dumps([]),
+        })
+        response = self._put_item(payload)
+        self.assertEqual(response.status_code, 200, response.data)
+
+        self.item.refresh_from_db()
+        self.variant.refresh_from_db()
+        self.size.refresh_from_db()
+        self.assertEqual(self.item.name, "Name from draft")
+        self.assertEqual(self.item.description, "Description from draft")
+        self.assertEqual(self.item.in_stock, 24)
+        self.assertFalse(self.item.returnable)
+        self.assertEqual(self.size.quantity_in_stock, 17)
+        self.assertTrue(self.item.image.name.endswith("draft-main.png"))
+        self.assertTrue(self.item.video.name.endswith("draft-video.webm"))
+        self.assertTrue(self.variant.image.name.endswith("draft-variant.png"))
+        gallery = ItemAdditionalImage.objects.get(item=self.item)
+        self.assertTrue(gallery.image.name.endswith("draft-gallery.png"))
+
