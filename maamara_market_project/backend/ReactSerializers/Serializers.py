@@ -5,6 +5,8 @@ from vendorDashboard.models import Vendor,VendorPayout, VendorAdjustment
 from django.contrib.auth.models import User
 from core.models import Profile
 from .models import Item
+from django.db import transaction
+from .item_deduplication import find_duplicate_item
 from rest_framework.authentication import SessionAuthentication, BasicAuthentication
 from .models import *
 from django.contrib.auth import get_user_model
@@ -520,7 +522,33 @@ class ItemSerializers(serializers.ModelSerializer):
         return super().to_internal_value(data)
     
 
+    @transaction.atomic
     def create(self, validated_data):
+        # Keep duplicate protection at the serializer boundary as well, so
+        # alternate API views that reuse ItemSerializers cannot bypass it.
+        request = self.context.get("request")
+        actor = getattr(request, "user", None)
+        if actor and getattr(actor, "is_authenticated", False):
+            owner_user = actor
+            if getattr(actor, "is_staff", False):
+                vendor_id = request.data.get("vendor_id")
+                if vendor_id:
+                    target_vendor = Vendor.objects.select_related("user").filter(
+                        pk=vendor_id
+                    ).first()
+                    if target_vendor:
+                        owner_user = target_vendor.user
+
+            duplicate = find_duplicate_item(validated_data, owner_user=owner_user)
+            if duplicate:
+                raise serializers.ValidationError({
+                    "duplicate": (
+                        f"An equivalent item already exists (item ID {duplicate.pk}). "
+                        "Edit that item instead of creating another copy."
+                    ),
+                    "item_id": duplicate.pk,
+                })
+
         variants_data = validated_data.pop("variants", [])
         size_only_data = validated_data.pop("size_only_icon", [])
         age_variants_data = validated_data.pop("kids_sizes", [])
