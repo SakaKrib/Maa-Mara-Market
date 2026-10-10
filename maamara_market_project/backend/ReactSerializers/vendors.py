@@ -50,6 +50,7 @@ from vendorDashboard.draft_service import (
     finalize_item_draft,
     sync_item_draft_media,
 )
+from .item_deduplication import find_duplicate_item
 
 
 
@@ -64,9 +65,25 @@ def sanitize(value):
 class VendorItemCreateView(APIView):
     permission_classes = [permissions.IsAuthenticated, IsVendor]
 
+    @transaction.atomic
     def post(self, request):
         serializer = VendorItemSerializer(data=request.data)
         if serializer.is_valid():
+            duplicate = find_duplicate_item(
+                serializer.validated_data,
+                owner_user=request.user,
+            )
+            if duplicate:
+                return Response(
+                    {
+                        "duplicate": (
+                            f"An equivalent item already exists (item ID {duplicate.pk}). "
+                            "Edit that item instead of creating another copy."
+                        ),
+                        "item_id": duplicate.pk,
+                    },
+                    status=status.HTTP_409_CONFLICT,
+                )
             serializer.save(created_by=request.user)
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -351,6 +368,32 @@ class VendorItemViewSet(viewsets.ModelViewSet):
         self._validate_upload_limits()
         validated = serializer.validated_data
 
+        # Resolve the seller first so an admin creating on a vendor's behalf
+        # and the vendor creating directly use the same duplicate scope.
+        target_vendor = None
+        if self.request.user.is_staff:
+            vendor_id = self.request.data.get("vendor_id")
+            if not vendor_id:
+                raise ValidationError({"vendor_id": "A vendor is required when an admin creates an item."})
+            try:
+                target_vendor = Vendor.objects.select_related("user").get(pk=vendor_id)
+            except Vendor.DoesNotExist:
+                raise ValidationError({"vendor_id": "Selected vendor was not found."})
+            item_owner = target_vendor.user
+        else:
+            target_vendor = Vendor.objects.filter(user=self.request.user).first()
+            item_owner = self.request.user
+
+        duplicate = find_duplicate_item(validated, owner_user=item_owner)
+        if duplicate:
+            raise ValidationError({
+                "duplicate": (
+                    f"An equivalent item already exists (item ID {duplicate.pk}). "
+                    "Edit that item instead of creating another copy."
+                ),
+                "item_id": duplicate.pk,
+            })
+
         variants_supplied = "variants" in validated
         size_only_supplied = "size_only_icon" in validated
         kids_sizes_supplied = "kids_sizes" in validated
@@ -361,17 +404,10 @@ class VendorItemViewSet(viewsets.ModelViewSet):
         length_data = validated.pop("length", None)
         shoe_data = validated.pop("shoe_input", None)
         shipping_dimension_data = validated.pop("shipping_dimension_data", None)
-        offer_data = validated.pop("offer", None) 
+        offer_data = validated.pop("offer", None)
 
         if self.request.user.is_staff:
-            vendor_id = self.request.data.get("vendor_id")
-            if not vendor_id:
-                raise ValidationError({"vendor_id": "A vendor is required when an admin creates an item."})
-            try:
-                vendor = Vendor.objects.get(pk=vendor_id)
-            except Vendor.DoesNotExist:
-                raise ValidationError({"vendor_id": "Selected vendor was not found."})
-            item = serializer.save(created_by=self.request.user, vendor=vendor)
+            item = serializer.save(created_by=self.request.user, vendor=target_vendor)
         else:
             item = serializer.save(created_by=self.request.user)
 
@@ -911,9 +947,10 @@ logger = logging.getLogger(__name__)
 @transaction.atomic
 def approve_vendor(request, vendor_request_id):
 
-    # 🧭 Fetch the vendor request
+    # Lock this request so concurrent approval retries cannot create the
+    # same vendor/items in parallel.
     try:
-        vendor_request = VendorRequest.objects.get(id=vendor_request_id)
+        vendor_request = VendorRequest.objects.select_for_update().get(id=vendor_request_id)
     except VendorRequest.DoesNotExist:
         return Response({'error': 'Vendor request not found.'}, status=404)
 
@@ -1172,6 +1209,48 @@ def approve_vendor(request, vendor_request_id):
 
             name = sanitize(item.get('name') or "")
             if not name:
+                continue
+
+            # Refuse to create the same seller-owned product twice, including
+            # duplicate entries in one registration request or a retry of a
+            # previously processed item. Stock/media changes do not define a
+            # separate product identity.
+            duplicate_candidate = {
+                "section": section,
+                "name": name,
+                "description": sanitize(item.get("description") or ""),
+                "price": item.get("price", 0) or 0,
+                "discount_price": item.get("discount_price") or None,
+                "department": department,
+                "category": category,
+                "subcategory": subcategory,
+                "brand": brand,
+                "item_attribute": sanitize(item.get("item_attribute") or "") or None,
+                "gender_based": sanitize(item.get("gender_based") or "none") or "none",
+                "children_size_based_age": sanitize(
+                    item.get("children_size_based_age")
+                    or item.get("kids_sizes_label")
+                    or "none"
+                ),
+                "in_offer": item.get("in_offer", False),
+                "is_organic": item.get("is_organic", False),
+                "manufactured_date": item.get("manufactured_date") or None,
+                "expiry_date": item.get("expiry_date") or None,
+                "is_fresh_food": item.get("is_fresh_food", False),
+                "percentage_discount": item.get("percentage_discount", 0) or 0,
+                "roast_type": sanitize(item.get("roast_type") or "") or None,
+                "coffee_state": sanitize(item.get("coffee_state") or "") or None,
+            }
+            duplicate = find_duplicate_item(duplicate_candidate, owner_user=user)
+            if duplicate:
+                logger.warning(
+                    "Skipping duplicate vendor item: vendor_request_id=%s item_name=%r existing_item_id=%s",
+                    vendor_request_id,
+                    name,
+                    duplicate.pk,
+                )
+                if duplicate.pk not in created_items:
+                    created_items.append(duplicate.pk)
                 continue
 
             # Item.slug is a 50-character database field. Keep the full
