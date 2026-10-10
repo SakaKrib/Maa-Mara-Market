@@ -426,3 +426,45 @@ class VendorItemUpdateRegressionTests(TestCase):
         gallery = ItemAdditionalImage.objects.get(item=self.item)
         self.assertTrue(gallery.image.name.endswith("draft-gallery.png"))
 
+
+class ItemSlugLengthRegressionTests(TestCase):
+    def setUp(self):
+        self.user = User.objects.create_user(
+            username="item-slug-length-test",
+            password="test-password",
+        )
+
+    def _create_item(self, name):
+        return Item.objects.create(
+            name=name,
+            description="Regression test item",
+            price="1250.00",
+            created_by=self.user,
+        )
+
+    def test_long_item_name_generates_slug_within_database_limit(self):
+        name = (
+            "Premium handcrafted mahogany and resin coaster gift set "
+            "made in Kenya"
+        )
+        self.assertGreater(len(name), Item._meta.get_field("slug").max_length)
+
+        item = self._create_item(name)
+        slug_max_length = Item._meta.get_field("slug").max_length
+
+        self.assertLessEqual(len(item.slug), slug_max_length)
+        item.refresh_from_db()
+        self.assertLessEqual(len(item.slug), slug_max_length)
+
+    def test_truncated_long_item_slugs_remain_unique(self):
+        first = self._create_item(
+            "Premium handcrafted mahogany resin coaster gift set - red edition"
+        )
+        second = self._create_item(
+            "Premium handcrafted mahogany resin coaster gift set - blue edition"
+        )
+        slug_max_length = Item._meta.get_field("slug").max_length
+
+        self.assertNotEqual(first.slug, second.slug)
+        self.assertLessEqual(len(first.slug), slug_max_length)
+        self.assertLessEqual(len(second.slug), slug_max_length)
