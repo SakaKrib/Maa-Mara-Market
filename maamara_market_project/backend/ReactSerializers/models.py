@@ -292,11 +292,21 @@ class Item(models.Model):
                 )
 
         if not self.slug:
-            base_slug = slugify(self.name)
+            # Item names may be up to 100 characters, but SlugField's
+            # database column is limited to 50 by default. Keep generated
+            # slugs within the field's actual limit before saving.
+            slug_max_length = self._meta.get_field("slug").max_length or 50
+            full_base_slug = slugify(self.name) or "item"
+            base_slug = full_base_slug[:slug_max_length].rstrip("-") or "item"[:slug_max_length]
             slug = base_slug
             counter = 1
             while Item.objects.filter(slug=slug).exists():
-                slug = f"{base_slug}-{counter}"
+                suffix = f"-{counter}"
+                prefix_length = max(slug_max_length - len(suffix), 0)
+                slug_prefix = full_base_slug[:prefix_length].rstrip("-")
+                if not slug_prefix:
+                    slug_prefix = "item"[:prefix_length]
+                slug = f"{slug_prefix}{suffix}"
                 counter += 1
             self.slug = slug
 
