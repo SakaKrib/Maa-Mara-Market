@@ -388,19 +388,22 @@ def approve_request(request, pk):
                 status=status.HTTP_400_BAD_REQUEST
             )
 
-        try:
-            subcategory_instance = (
-                SubCategory.objects.get(name=subcategory_name)
-                if subcategory_name else None
-            )
-        except SubCategory.DoesNotExist:
-            logger.warning(
-                "Vendor item approval rejected: request_id=%s subcategory=%r not found",
-                item_request.id, subcategory_name,
-            )
-            return Response(
-                {"error": f"Subcategory '{subcategory_name}' not found."},
-                status=status.HTTP_400_BAD_REQUEST
+        # Resolve a subcategory inside the selected category. A valid
+        # custom subcategory may not exist yet; ItemSerializers.to_internal_value
+        # creates it under the resolved category when needed. Do not reject
+        # approval here just because that relationship has not been created.
+        subcategory_instance = (
+            SubCategory.objects.filter(
+                name__iexact=subcategory_name,
+                category=category_instance,
+            ).first()
+            if subcategory_name and category_instance else None
+        )
+        if subcategory_name and category_instance and not subcategory_instance:
+            logger.info(
+                "Vendor item approval: request_id=%s subcategory=%r not yet "
+                "present under category=%r; serializer will resolve it",
+                item_request.id, subcategory_name, category_name,
             )
 
         try:
