@@ -194,7 +194,9 @@ class VendorItemUpdateRegressionTests(TestCase):
             "name": "  ORIGINAL ITEM  ",
             "description": "  Original   description ",
             "price": "100.00",
-            "in_stock": "10",
+            # A stock change is an update to the existing listing, not a new
+            # product identity.
+            "in_stock": "99",
             "available": "true",
             "returnable": "true",
             "section": self.section.name,
