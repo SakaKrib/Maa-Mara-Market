@@ -63,6 +63,12 @@ def _normalized_decimal(value, *, default=None):
         return str(value).strip()
 
 
+def _normalized_bool(value):
+    if isinstance(value, str):
+        return value.strip().casefold() in {"1", "true", "yes", "on"}
+    return bool(value)
+
+
 def _normalized_date(value):
     return value.isoformat() if hasattr(value, "isoformat") else str(value or "").strip()
 
@@ -89,12 +95,15 @@ def _item_identity(source):
         identity.append(_normalized_text(_read_value(source, field, default)))
 
     identity.extend([
-        bool(_read_value(source, "is_organic", False)),
-        bool(_read_value(source, "is_fresh_food", False)),
+        _normalized_bool(_read_value(source, "is_organic", False)),
+        _normalized_bool(_read_value(source, "is_fresh_food", False)),
         _normalized_date(_read_value(source, "manufactured_date")),
         _normalized_date(_read_value(source, "expiry_date")),
-        _normalized_decimal(_read_value(source, "percentage_discount")),
-        bool(_read_value(source, "in_offer", False)),
+        _normalized_decimal(
+            _read_value(source, "percentage_discount"),
+            default=Decimal("0.00"),
+        ),
+        _normalized_bool(_read_value(source, "in_offer", False)),
     ])
     return tuple(identity)
 
