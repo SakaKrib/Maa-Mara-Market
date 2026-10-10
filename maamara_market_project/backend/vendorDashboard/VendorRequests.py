@@ -342,7 +342,16 @@ def approve_request(request, pk):
                 status=status.HTTP_400_BAD_REQUEST
             )
 
-        draft_data = item_request.draft_item or {}
+        draft_data = dict(item_request.draft_item or {})
+
+        # Draft values can contain accidental leading/trailing whitespace
+        # from form inputs (for example, "Magnets "). Normalize these names
+        # before both taxonomy lookups and serializer validation so approval
+        # resolves the same records the user selected.
+        for field_name in ("department", "category", "subcategory", "section"):
+            value = draft_data.get(field_name)
+            if isinstance(value, str):
+                draft_data[field_name] = value.strip()
 
         department_name = draft_data.get("department")
         category_name = draft_data.get("category")
