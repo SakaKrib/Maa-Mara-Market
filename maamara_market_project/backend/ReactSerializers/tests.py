@@ -2,14 +2,16 @@ import io
 import json
 import shutil
 import tempfile
+from datetime import timedelta
 
 from django.contrib.auth.models import User
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import TestCase, override_settings
+from django.utils import timezone
 from PIL import Image
 from rest_framework.test import APIClient, APIRequestFactory
 
-from vendorDashboard.models import Vendor
+from vendorDashboard.models import ItemDraft, ItemDraftMedia, Vendor
 from .models import (
     Category,
     ColorVariant,
