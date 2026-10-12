@@ -77,7 +77,12 @@ def register(request):
             {"success": False, "message": "Email already in use!"},
             status=400,
         )
-    if User.objects.filter(username=username).exists():
+    if (
+        User.objects.filter(username__iexact=username).exists()
+        or PendingRegistration.objects.filter(username__iexact=username)
+        .exclude(email=email)
+        .exists()
+    ):
         return JsonResponse(
             {"success": False, "message": "Username already exists!"},
             status=400,
@@ -173,6 +178,16 @@ def verify_otp_register_otp(request):
         pending.delete()
         return Response(
             {"success": False, "message": "An account already exists for this email."},
+            status=409,
+        )
+
+    if User.objects.filter(username__iexact=pending.username).exists():
+        pending.delete()
+        return Response(
+            {
+                "success": False,
+                "message": "That username is no longer available. Please register again with a different username.",
+            },
             status=409,
         )
 
