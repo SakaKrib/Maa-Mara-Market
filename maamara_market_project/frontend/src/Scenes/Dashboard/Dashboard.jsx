@@ -299,6 +299,19 @@ const Dashboard = () => {
       URL.revokeObjectURL(url);
     };
     const listFromResponse = (data) => Array.isArray(data) ? data : Array.isArray(data?.results) ? data.results : [];
+    const fetchAllPages = async (initialUrl) => {
+      const records = [];
+      let nextUrl = initialUrl;
+      let pageCount = 0;
+      while (nextUrl && pageCount < 100) {
+        const response = await api.get(nextUrl);
+        const data = response.data;
+        records.push(...listFromResponse(data));
+        nextUrl = Array.isArray(data) ? null : (data?.next || null);
+        pageCount += 1;
+      }
+      return records;
+    };
 
     setExportingKey(reportType);
     try {
@@ -323,8 +336,7 @@ const Dashboard = () => {
         ];
         downloadCsv(`maa-mara-dashboard-summary-${dateStamp}.csv`, ["Metric", "Value"], rows);
       } else if (reportType === "transactions") {
-        const response = await api.get("/api/admin-transactions/");
-        const records = listFromResponse(response.data);
+        const records = await fetchAllPages("/api/admin-transactions/");
         if (!records.length) throw new Error("No transaction records were returned for export.");
         downloadCsv(`maa-mara-payment-transactions-${dateStamp}.csv`,
           ["Transaction ID", "Reference", "Date", "Customer", "Email", "Amount (KES)", "Status", "Payment method"],
@@ -335,8 +347,7 @@ const Dashboard = () => {
             item.payment_method ?? item.method ?? "",
           ]));
       } else if (reportType === "emails") {
-        const response = await api.get("/api/email/list/?status=all");
-        const records = listFromResponse(response.data);
+        const records = await fetchAllPages("/api/email/list/?status=all");
         if (!records.length) throw new Error("No email records were returned for export.");
         downloadCsv(`maa-mara-email-delivery-${dateStamp}.csv`,
           ["Email ID", "Recipient", "Subject", "Status", "Created", "Sent", "Message"],
@@ -345,13 +356,13 @@ const Dashboard = () => {
             item.created_at ?? "", item.sent_at ?? "", item.message ?? item.body ?? "",
           ]));
       } else if (reportType === "vendors") {
-        const [pendingResponse, verifiedResponse] = await Promise.all([
-          api.get("/api/vendor/requests/?status=pending"),
-          api.get("/api/vendor/requests?status=verified"),
+        const [pendingRecords, verifiedRecords] = await Promise.all([
+          fetchAllPages("/api/vendor/requests/?status=pending"),
+          fetchAllPages("/api/vendor/requests?status=verified"),
         ]);
         const records = [
-          ...listFromResponse(pendingResponse.data).map((item) => ({ ...item, export_status: item.status || "pending" })),
-          ...listFromResponse(verifiedResponse.data).map((item) => ({ ...item, export_status: item.status || "verified" })),
+          ...pendingRecords.map((item) => ({ ...item, export_status: item.status || "pending" })),
+          ...verifiedRecords.map((item) => ({ ...item, export_status: item.status || "verified" })),
         ];
         if (!records.length) throw new Error("No vendor approval requests were returned for export.");
         const uniqueRecords = [...new Map(records.map((item) => [item.id ?? item.request_id ?? JSON.stringify(item), item])).values()];
