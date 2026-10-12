@@ -498,8 +498,7 @@ class VendorNotificationsConsumer(AsyncWebsocketConsumer):
             logger.exception("Notification fetch failed in WebSocket consumer")
             return []
         
-#Activity cosumer funtion class
-
+# Role-scoped activity feed for administrators and vendors.
 class ActivityLogsConsumer(AsyncWebsocketConsumer):
 
     async def connect(self):
@@ -510,51 +509,59 @@ class ActivityLogsConsumer(AsyncWebsocketConsumer):
             await self.close(code=4003)
             return
 
-        await self.channel_layer.group_add(
-            self.group_name,
-            self.channel_name
-        )
+        self.activity_actor_type = await self.get_activity_actor_type()
+        if not self.activity_actor_type:
+            await self.close(code=4003)
+            return
 
+        await self.channel_layer.group_add(self.group_name, self.channel_name)
         await self.accept()
 
         logs = await self.get_logs()
-
         await self.send(text_data=json.dumps({
             "type": "activity_logs_update",
-            "logs": logs
+            "logs": logs,
         }, cls=SafeJSONEncoder))
 
     async def disconnect(self, close_code):
         if getattr(self, "group_name", None):
-            await self.channel_layer.group_discard(
-                self.group_name,
-                self.channel_name
-            )
+            await self.channel_layer.group_discard(self.group_name, self.channel_name)
 
     async def activity_logs_update(self, event):
         logs = event.get("logs", [])
-        if not self.user.is_staff:
-            logs = [
-                log for log in logs
-                if (log.get("user") == self.user.id)
-                or (
-                    isinstance(log.get("user"), dict)
-                    and log["user"].get("id") == self.user.id
-                )
-            ]
+        scoped_logs = []
+        for log in logs:
+            actor_type = log.get("actor_type") or log.get("actor_role")
+            if actor_type != self.activity_actor_type:
+                continue
+            if self.activity_actor_type == "vendor":
+                log_user = log.get("user")
+                log_user_id = log_user.get("id") if isinstance(log_user, dict) else log_user
+                if str(log_user_id) != str(self.user.id):
+                    continue
+            scoped_logs.append(log)
 
         await self.send(text_data=json.dumps({
             "type": "activity_logs_update",
-            "logs": logs
+            "logs": scoped_logs,
         }, cls=SafeJSONEncoder))
 
     @database_sync_to_async
+    def get_activity_actor_type(self):
+        if self.user.is_staff or self.user.is_superuser:
+            return "admin"
+        if Vendor.objects.filter(user=self.user).exists():
+            return "vendor"
+        return None
+
+    @database_sync_to_async
     def get_logs(self):
-        if self.user.is_staff:
-            logs = ActivityLog.objects.all().order_by("-timestamp")[:100]
-        else:
-            logs = ActivityLog.objects.filter(user=self.user).order_by("-timestamp")[:100]
-        return ActivityLogSerializer(logs, many=True).data
+        logs = ActivityLog.objects.filter(
+            actor_type=self.activity_actor_type
+        ).select_related("user", "item").order_by("-timestamp")
+        if self.activity_actor_type == "vendor":
+            logs = logs.filter(user=self.user)
+        return ActivityLogSerializer(logs[:100], many=True).data
 
 # Admin activity
 
