@@ -113,6 +113,25 @@ class NotificationSerializer(serializers.ModelSerializer):
             viewer and getattr(viewer, "is_authenticated", False)
             and (viewer.is_staff or viewer.is_superuser)
         )
+        is_vendor_viewer = False
+        if viewer and getattr(viewer, "is_authenticated", False) and not is_admin_viewer:
+            try:
+                is_vendor_viewer = viewer.vendor is not None
+            except Exception:
+                is_vendor_viewer = False
+
+        # Vendor actions appear in first person on the vendor's own notification feed.
+        if is_vendor_viewer:
+            normalized_message = re.sub(
+                r"^A vendor\\b", "You", normalized_message, count=1, flags=re.I
+            )
+            normalized_message = re.sub(
+                r"^Vendor .+? (?=(?:submitted|updated|added)\\b)",
+                "You ",
+                normalized_message,
+                count=1,
+                flags=re.I,
+            )
 
         # Normalize older generic vendor messages in the administrator feed.
         # Newly created notifications already carry the named vendor.
