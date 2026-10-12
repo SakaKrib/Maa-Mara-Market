@@ -115,8 +115,12 @@ const ComposeEmail = ({ open, onClose, user }) => {
       maxWidth="md"
       PaperProps={{
         sx: {
-          backgroundColor: colors.primary[600],
-          borderRadius: "12px"
+          backgroundColor: theme.palette.background.paper,
+          color: theme.palette.text.primary,
+          border: "1px solid " + theme.palette.divider,
+          borderRadius: "16px",
+          boxShadow: theme.shadows[12],
+          backgroundImage: "none"
         }
       }}
     >
@@ -126,7 +130,10 @@ const ComposeEmail = ({ open, onClose, user }) => {
         sx={{
           display: "flex",
           justifyContent: "space-between",
-          color: colors.gray[100]
+          color: theme.palette.text.primary,
+          borderBottom: "1px solid " + theme.palette.divider,
+          px: { xs: 2, sm: 3 },
+          py: 2
         }}
       >
         <Typography variant="h6">Compose Email</Typography>
@@ -136,21 +143,24 @@ const ComposeEmail = ({ open, onClose, user }) => {
         </IconButton>
       </DialogTitle>
 
-      <DialogContent>
-        <Box display="flex" gap={2}>
+      <DialogContent sx={{ p: { xs: 2, sm: 3 } }}>
+        <Box display="flex" flexDirection={{ xs: "column", sm: "row" }} gap={{ xs: 2, sm: 3 }}>
 
           {/* 👤 USER LIST SIDEBAR */}
           <Box
-            width="40%"
+            width={{ xs: "100%", sm: "34%" }}
             sx={{
-              borderRight: `1px solid ${colors.primary[500]}`,
-              pr: 2,
-              maxHeight: 500,
-              overflowY: "auto"
+              borderRight: { xs: "none", sm: "1px solid " + theme.palette.divider },
+              borderBottom: { xs: "1px solid " + theme.palette.divider, sm: "none" },
+              pr: { xs: 0, sm: 2 },
+              pb: { xs: 2, sm: 0 },
+              maxHeight: { xs: 190, sm: 500 },
+              overflowY: "auto",
+              minWidth: 0
             }}
           >
-            <Typography color={colors.gray[100]} mb={1}>
-              Users
+            <Typography sx={{ color: "text.primary", fontWeight: 700, fontSize: 14 }} mb={1}>
+              Choose a recipient
             </Typography>
 
             <List>
@@ -164,16 +174,18 @@ const ComposeEmail = ({ open, onClose, user }) => {
                       selectedUserId === u.id
                         ? colors.primary[500]
                         : "transparent",
-                    borderRadius: "6px",
+                    borderRadius: "10px",
                     mb: 1,
                     flexDirection: "column",
-                    alignItems: "flex-start"
+                    alignItems: "flex-start",
+                    transition: "background-color 150ms ease",
+                    "&:hover": { backgroundColor: theme.palette.action.hover }
                   }}
                 >
-                  <Typography color={colors.gray[100]}>
+                  <Typography sx={{ color: "text.primary", fontWeight: 600, fontSize: 13 }}>
                     {u.username}
                   </Typography>
-                  <Typography variant="body2" color={colors.gray[300]}>
+                  <Typography variant="body2" sx={{ color: "text.secondary", fontSize: 12, overflowWrap: "anywhere" }}>
                     {u.email}
                   </Typography>
                 </ListItem>
@@ -182,7 +194,7 @@ const ComposeEmail = ({ open, onClose, user }) => {
           </Box>
 
           {/* ✉️ FORM */}
-          <Box width="60%" display="flex" flexDirection="column" gap={2} mt={'10px'}>
+          <Box width={{ xs: "100%", sm: "66%" }} minWidth={0} display="flex" flexDirection="column" gap={2} mt={{ xs: 0, sm: "4px" }}>
 
             <TextField
               label="To"
@@ -218,8 +230,9 @@ const ComposeEmail = ({ open, onClose, user }) => {
               component="label"
               startIcon={<AttachFileIcon />}
               variant="outlined"
+              sx={{ borderRadius: "10px", textTransform: "none", justifyContent: "center", py: 1.1 }}
             >
-              Attach Files
+              Attach files
               <input type="file" hidden multiple onChange={handleFileChange} />
             </Button>
 
@@ -244,6 +257,7 @@ const ComposeEmail = ({ open, onClose, user }) => {
             {/* SEND */}
             <Button
               variant="contained"
+              sx={{ borderRadius: "10px", py: 1.2, fontWeight: 700, textTransform: "none", boxShadow: "none" }}
               onClick={handleSend}
               disabled={loading}
             >
