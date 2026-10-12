@@ -11,7 +11,7 @@ import {
   Snackbar
 } from '@mui/material';
 import { tokens } from '../../../theme';
-import api from '../../../Services/Api';
+import api, { startGoogleLogin } from '../../../Services/Api';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../AuthContext/Context';
 import { Eye, EyeOff } from "lucide-react"
@@ -85,6 +85,15 @@ const LoginForm = () => {
     }
   };
 
+  const handleGoogleLogin = async () => {
+    sessionStorage.setItem("postLoginRedirect", window.location.pathname);
+    try {
+      await startGoogleLogin();
+    } catch (googleError) {
+      setError("Unable to start Google sign-in. Please try again.");
+    }
+  };
+
   return (
     <Box sx={{backgroundColor:colors.primary[500], color:colors.gray[100]}} width={"100%"} minHeight={'100vh'}>
     <Container maxWidth="xs" sx={{ border: '.1px solid', padding: '1em', position: 'relative', top: '50px', backgroundColor:colors.primary[500], minHeight:'100%' }}>
@@ -110,7 +119,7 @@ const LoginForm = () => {
 
         <Box component="form" onSubmit={handleLogin} sx={{ width: '100%' }}>
           <TextField
-            label="Username"
+            label="Email or username"
             variant="outlined"
             fullWidth
             margin="normal"
@@ -154,10 +163,7 @@ const LoginForm = () => {
                   backgroundColor: colors.primary[700],
                 }
               }}
-              onClick={() => {
-                sessionStorage.setItem("postLoginRedirect", window.location.pathname);
-                window.location.href = `${window.location.origin}/accounts/google/login/`;
-              }}
+              onClick={handleGoogleLogin}
             >
                 <svg width="18" height="18" viewBox="0 0 48 48">
                   <path
@@ -199,7 +205,7 @@ const LoginForm = () => {
             disabled={loading}
             sx={{ mt: 5, backgroundColor: colors.gray[100], color: colors.gray[900] }}
           >
-            {loading ? <CircularProgress size={24} /> : 'Login'}
+            {loading ? <CircularProgress size={24} /> : 'Continue with email'}
           </Button>
         </Box>
       </Box>
