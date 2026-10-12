@@ -51,7 +51,7 @@ const Activities = () => {
         <div className="flex items-center justify-between gap-3 border-b border-[#e6e6e4] pb-3">
           <div>
             <h2 className="text-base font-semibold text-[#222] sm:text-lg">Recent activities</h2>
-            <p className="mt-1 text-xs text-[#595959]">A simple record of what has been happening in your store.</p>
+            <p className="mt-1 text-xs text-[#595959]">A record of actions taken by your vendor account.</p>
           </div>
           <Link to="/vendors-dashboard/activities" className="shrink-0 rounded-full border border-[#d9d9d6] bg-white px-3.5 py-2 text-xs font-semibold text-[#222] transition hover:bg-[#f8f8f6] focus:outline-none focus:ring-2 focus:ring-[#2563eb]/20">
             View All
@@ -68,7 +68,7 @@ const Activities = () => {
         <div className="flex items-center justify-between gap-3 border-b border-[#e6e6e4] pb-3">
           <div>
             <h2 className="text-base font-semibold text-[#222] sm:text-lg">Recent activities</h2>
-            <p className="mt-1 text-xs text-[#595959]">A simple record of what has been happening in your store.</p>
+            <p className="mt-1 text-xs text-[#595959]">A record of actions taken by your vendor account.</p>
           </div>
           <Link to="/vendors-dashboard/activities" className="shrink-0 rounded-full border border-[#d9d9d6] bg-white px-3.5 py-2 text-xs font-semibold text-[#222] transition hover:bg-[#f8f8f6] focus:outline-none focus:ring-2 focus:ring-[#2563eb]/20">
             View All
@@ -84,7 +84,7 @@ const Activities = () => {
       <div className="flex flex-col gap-3 border-b border-[#e6e6e4] pb-3 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <h2 className="text-base font-semibold text-[#222] sm:text-lg">Recent activities</h2>
-          <p className="mt-1 text-xs leading-5 text-[#595959]">A simple record of what has been happening in your store.</p>
+          <p className="mt-1 text-xs leading-5 text-[#595959]">A record of actions taken by your vendor account.</p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
           {activityLogs.length > 0 && (
