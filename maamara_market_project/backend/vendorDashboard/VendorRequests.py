@@ -226,17 +226,35 @@ class VendorItemRequestCreateView(generics.CreateAPIView):
         # =========================
         # ADMIN ACTIVITY LOGS
         # =========================
-        admins = User.objects.filter(is_superuser=True)
+        admins = User.objects.filter(is_superuser=True).order_by("id")
+        vendor_name = " ".join(
+            part for part in (
+                getattr(vendor, "first_name", ""),
+                getattr(vendor, "surname_name", ""),
+            ) if part
+        ).strip()
+        vendor_name = (
+            vendor_name
+            or (getattr(vendor, "company_name", "") or "").strip()
+            or (getattr(vendor, "username", "") or "").strip()
+            or (self.request.user.get_full_name() or "").strip()
+            or self.request.user.username
+        )
+        vendor_label = (
+            vendor_name
+            if vendor_name.lower().startswith("vendor ")
+            else f"Vendor {vendor_name}"
+        )
 
-        for admin in admins:
+        # Activity feeds are shared per role, so create one admin-facing entry,
+        # not one indistinguishable activity row per administrator.
+        admin = admins.first()
+        if admin:
             ActivityLog.objects.create(
                 user=admin,
                 actor_type="admin",
                 action="vendor_item_request_received",
-                description=(
-                    "A vendor submitted "
-                    f"an item request for {item_request.name}"
-                ),
+                description=f"{vendor_label} submitted an item request for {item_request.name}.",
                 related_url=(
                     f"/admin/vendorDashboard/"
                     f"vendoritemrequest/{item_request.id}/"
@@ -250,13 +268,9 @@ class VendorItemRequestCreateView(generics.CreateAPIView):
             user=self.request.user,
             actor_type="vendor",
             action="item_request_created",
-            description=(
-                f"You submitted an item request for "
-                f"{item_request.name}"
-            ),
+            description=f"You submitted an item request for {item_request.name}.",
             related_url=(
-                f"/admin/vendorDashboard/"
-                f"vendoritemrequest/{item_request.id}/"
+                f"/vendors-dashboard/vendor/requests/{item_request.id}/"
             ),
         )
 
@@ -267,10 +281,7 @@ class VendorItemRequestCreateView(generics.CreateAPIView):
             Notification.objects.create(
                 user=admin,
                 title="New Vendor Item Request",
-                message=(
-                    "A vendor submitted "
-                    f"an item request for {item_request.name}"
-                ),
+                message=f"{vendor_label} submitted an item request for {item_request.name}.",
                 url=(
                     f"/vendorDashboard/"
                     f"vendoritemrequest/{item_request.id}/"
