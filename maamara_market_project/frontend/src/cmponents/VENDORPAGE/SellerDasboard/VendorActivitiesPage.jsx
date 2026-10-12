@@ -51,7 +51,7 @@ const VendorActivitiesPage = () => {
               All Activities
             </h1>
             <p className="mt-1.5 max-w-2xl text-sm leading-6 text-[#595959]">
-              See the actions and updates recorded for your vendor account, from requests and approvals to product and order activity.
+              See actions performed by your vendor account, including item requests and product updates.
             </p>
           </div>
         </div>
