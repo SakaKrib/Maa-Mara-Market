@@ -133,7 +133,7 @@ export function LoginForm({ className, ...props }) {
       let msg = "Something went wrong. Please try again later."
 
       if (status === 401) {
-        msg = err.response?.data?.error || "Invalid email/username or password. Please check your credentials and try again."
+        msg = err.response?.data?.error === "Invalid credentials" ? "Invalid email/username or password. Please check your credentials and try again." : (err.response?.data?.error || "Invalid email/username or password. Please check your credentials and try again.")
       } else if (status === 403) {
         msg = "You are not authorized to log in with these credentials."
       } else if (status >= 500) {
