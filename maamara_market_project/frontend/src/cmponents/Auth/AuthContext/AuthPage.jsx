@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import LoginForm from "../AdminLogin/AdminLogin";
+import { LoginForm } from "../../../../components/login-form";
 
 
 
