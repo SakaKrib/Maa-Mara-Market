@@ -677,9 +677,6 @@ def google_login_success(request):
     if last_name and not user.last_name:
         user.last_name = last_name[:150]
         update_fields.append("last_name")
-    if not user.email and email:
-        user.email = email.lower()
-        update_fields.append("email")
     if update_fields:
         user.save(update_fields=list(dict.fromkeys(update_fields)))
 
