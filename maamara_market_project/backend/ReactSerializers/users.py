@@ -517,6 +517,12 @@ def login_view(request):
         user_matches = list(
             User.objects.filter(email__iexact=identifier).order_by("pk")[:2]
         )
+        # Usernames may legally contain "@", so only fall back to username
+        # matching when no email account matches the supplied identifier.
+        if not user_matches:
+            user_matches = list(
+                User.objects.filter(username__iexact=identifier).order_by("pk")[:2]
+            )
     else:
         user_matches = list(
             User.objects.filter(username__iexact=identifier).order_by("pk")[:2]
@@ -594,6 +600,10 @@ def login_view(request):
         vendor_matches = list(
             Vendor.objects.filter(email__iexact=identifier).order_by("pk")[:2]
         )
+        if not vendor_matches:
+            vendor_matches = list(
+                Vendor.objects.filter(username__iexact=identifier).order_by("pk")[:2]
+            )
     else:
         vendor_matches = list(
             Vendor.objects.filter(username__iexact=identifier).order_by("pk")[:2]
