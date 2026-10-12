@@ -53,6 +53,34 @@ export const resolveApiAssetUrl = (value) => {
 
 const api = axios.create({ baseURL, withCredentials: true });
 
+// Start Google OAuth with a CSRF-protected POST. Keep the origin and URL
+// construction here so auth components do not duplicate API/base-URL logic.
+export const startGoogleLogin = async () => {
+  if (typeof document === "undefined" || !baseURL) {
+    throw new Error("Google sign-in is not available in this environment.");
+  }
+
+  const { data } = await api.get("/api/get-csrf-token/");
+  const csrfToken = data?.csrfToken;
+  if (!csrfToken) {
+    throw new Error("Unable to obtain a security token for Google sign-in.");
+  }
+
+  const form = document.createElement("form");
+  form.method = "POST";
+  form.action = `${baseURL.replace(/\\/$/, "")}/accounts/google/login/`;
+  form.style.display = "none";
+
+  const tokenInput = document.createElement("input");
+  tokenInput.type = "hidden";
+  tokenInput.name = "csrfmiddlewaretoken";
+  tokenInput.value = csrfToken;
+  form.appendChild(tokenInput);
+
+  document.body.appendChild(form);
+  form.submit();
+};
+
 let isRefreshing = false;
 let refreshPromise = null;
 let failedQueue = [];
