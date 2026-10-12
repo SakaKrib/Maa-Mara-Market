@@ -8,7 +8,6 @@ import {
 import { Routes, Route } from "react-router-dom";
 import { useMode } from "./theme";
 import BridgeToHTML from "./globalHtml";
-import LoginForm from "./cmponents/Auth/AdminLogin/AdminLogin";
 import { AuthProvider, useAuth } from "./cmponents/Auth/AuthContext/Context";
 import React, { useEffect, useState } from "react";
 import "./main.css";
@@ -215,7 +214,7 @@ function AppContent() {
                 <Route path="subcategory/:id/products" element={<SubcategoryProducts />} />
 
                 {/* Route for unified auth check for normal login and google */}
-                <Route path="login/auth-success" element={<AuthSuccess />} />
+                <Route path="auth-success" element={<AuthSuccess />} />
 
                
                
@@ -225,7 +224,7 @@ function AppContent() {
               {/* Public customer pages outside the outlet tree still use the same storefront shell. */}
               <Route element={<CustomerShop />}>
                 <Route path="list" element={<SearchResultsPage />} />
-                <Route path="customer-login" element={<LoginPage />} />
+                <Route path="customer-login" element={<HomeRedirectWrapper><LoginPage /></HomeRedirectWrapper>} />
                 <Route path="register" element={<RegisterPage />} />
                 <Route path="verify-otp" element={<VerifyRegistrationNewUser />} />
                 <Route path="checkout-page" element={<CheckoutPage />} />
@@ -246,15 +245,7 @@ function AppContent() {
                 <Route path="messages" element={<Messaging />} />
               </Route>
 
-              {/* Login */}
-              <Route
-                path="/login"
-                element={
-                  <HomeRedirectWrapper>
-                    <LoginForm />
-                  </HomeRedirectWrapper>
-                }
-              />
+
 
               {/* vendor success page */}
               <Route path="vendor-success-page" element={ <VendorSuccessPage/>}/>
@@ -408,7 +399,7 @@ function AppContent() {
                   <h1 className="mb-5">Unauthorized Access</h1>
                   <h5 className="mb-5 text-center font-semibold text-lg">oops! it seems you are not Authenticated</h5>
                   <div className="flex justify-center">
-                  <Link to="/login" className="mb-5 ring ring-1 hover:bg-blue-500 flex justify-center w-fit py-2 px-4 rounded-full bg-blue-200 hover:text-gray-100">Login</Link>
+                  <Link to="/customer-login" className="mb-5 ring ring-1 hover:bg-blue-500 flex justify-center w-fit py-2 px-4 rounded-full bg-blue-200 hover:text-gray-100">Login</Link>
                   </div>
                 </div>
               </div>} />
