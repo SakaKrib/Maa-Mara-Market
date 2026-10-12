@@ -21,12 +21,9 @@ export default function AuthSuccess() {
           return;
         }
 
-        const role = data?.user?.role;
-
-
-        if (role === "admin") window.location.href = "/admin-dashboard";
-        else if (role === "vendor") window.location.href = "/vendors-dashboard/";
-        else navigate("/");
+        // OAuth and other auth-success flows also return everyone to the homepage.
+        // Users can navigate to their dashboards after signing in.
+        navigate("/", { replace: true });
 
       } catch (err) {
         navigate("/customer-login");
