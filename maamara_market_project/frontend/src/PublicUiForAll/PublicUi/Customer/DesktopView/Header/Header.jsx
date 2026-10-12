@@ -28,6 +28,7 @@ const truncateName = (name, visibleChars = 3) => {
 
 const Header = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const isNativeApp = typeof window !== "undefined" && window.Capacitor?.isNativePlatform?.() === true;
   const [isFixed, setIsFixed] = useState(false);
   const [location, setLocation] = useState("Detecting location…");
   const [megaMenu, setMegaMenu] = useState(null);
@@ -62,7 +63,7 @@ const Header = () => {
   const displayFirstName = truncateName(firstName);
 
   return (
-    <header className={`mm-site-header ${isFixed ? "is-scrolled" : ""}`}>
+    <header className={`mm-site-header ${isFixed ? "is-scrolled" : ""} ${isNativeApp ? "mm-native-app" : ""}`}>
       <div className="mm-utility-bar">
         <div className="mm-container mm-utility-inner">
           <nav aria-label="Utility navigation">
