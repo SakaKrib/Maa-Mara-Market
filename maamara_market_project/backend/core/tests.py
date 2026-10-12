@@ -157,3 +157,39 @@ class ActivityAndNotificationScopeTests(TestCase):
 
         self.assertEqual(response.status_code, 404)
         self.assertTrue(Notification.objects.filter(pk=other_notification.pk).exists())
+
+    def test_admin_can_delete_a_notification_addressed_to_a_vendor(self):
+        notification = Notification.objects.create(
+            user=self.vendor_user,
+            title="Vendor update",
+            message="An update for this vendor.",
+        )
+
+        view = NotificationDeleteView.as_view()
+        request = self.factory.delete(f"/api/notifications/{notification.pk}/")
+        force_authenticate(request, user=self.admin)
+        response = view(request, notification_id=notification.pk)
+
+        self.assertEqual(response.status_code, 204)
+        self.assertFalse(Notification.objects.filter(pk=notification.pk).exists())
+
+    def test_admin_clear_all_removes_the_admin_visible_notification_stream(self):
+        Notification.objects.create(
+            user=self.vendor_user,
+            title="Vendor update",
+            message="An update for this vendor.",
+        )
+        Notification.objects.create(
+            user=self.other_vendor_user,
+            title="Other vendor update",
+            message="An update for another vendor.",
+        )
+
+        view = NotificationDeleteView.as_view()
+        request = self.factory.delete("/api/notifications/clear-all/")
+        force_authenticate(request, user=self.admin)
+        response = view(request)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data["deleted_count"], 2)
+        self.assertFalse(Notification.objects.exists())
