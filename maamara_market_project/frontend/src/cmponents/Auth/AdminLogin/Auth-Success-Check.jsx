@@ -29,7 +29,7 @@ export default function AuthSuccess() {
         else navigate("/");
 
       } catch (err) {
-        navigate("/login");
+        navigate("/customer-login");
       }
     };
 
