@@ -59,7 +59,7 @@ class NotificationSerializer(serializers.ModelSerializer):
         if vendor is None and user is not None:
             try:
                 vendor = user.vendor
-            except (AttributeError, Exception):
+            except Exception:
                 vendor = None
 
         name = ""
@@ -95,7 +95,7 @@ class NotificationSerializer(serializers.ModelSerializer):
                 vendor = getattr(item_request, "vendor", None)
                 vendor_user = getattr(vendor, "user", None) if vendor else None
                 return self._vendor_label(user=vendor_user, vendor=vendor)
-            except (ImportError, ValueError, VendorItemRequest.DoesNotExist):
+            except Exception:
                 return ""
         return ""
 
