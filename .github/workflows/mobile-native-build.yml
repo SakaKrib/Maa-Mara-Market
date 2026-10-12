@@ -1,0 +1,136 @@
+name: Maa Mara Market native app build
+
+on:
+  push:
+    branches:
+      - ui-redesign-foundation
+    paths:
+      - "maamara_market_project/frontend/**"
+      - ".github/workflows/mobile-native-build.yml"
+  workflow_dispatch:
+    inputs:
+      api_url:
+        description: "Public HTTPS origin serving the Django API (verify before release)"
+        required: true
+        type: string
+        default: "https://mamaramarket.com"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: mobile-native-build-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  FRONTEND_DIR: maamara_market_project/frontend
+  MOBILE_API_URL: ${{ github.event.inputs.api_url || 'https://mamaramarket.com' }}
+
+jobs:
+  android:
+    name: Generate and build Android debug APK
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: maamara_market_project/frontend/package-lock.json
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - name: Install web dependencies
+        working-directory: ${{ env.FRONTEND_DIR }}
+        run: npm ci
+
+      - name: Install temporary Capacitor build tools
+        working-directory: ${{ env.FRONTEND_DIR }}
+        run: npm install --no-save --package-lock=false @capacitor/core@7 @capacitor/cli@7 @capacitor/android@7 @capacitor/ios@7
+
+      - name: Build mobile web bundle
+        working-directory: ${{ env.FRONTEND_DIR }}
+        env:
+          VITE_BUILD_TARGET: mobile
+          VITE_API_URL: ${{ env.MOBILE_API_URL }}
+        run: npm run build:mobile
+
+      - name: Generate and sync Android project
+        working-directory: ${{ env.FRONTEND_DIR }}
+        run: |
+          npx cap add android
+          npx cap sync android
+
+      - name: Build Android debug APK
+        working-directory: ${{ env.FRONTEND_DIR }}/android
+        run: ./gradlew assembleDebug
+
+      - name: Upload Android APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: maa-mara-market-android-debug
+          path: ${{ env.FRONTEND_DIR }}/android/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Upload generated Android project
+        uses: actions/upload-artifact@v4
+        with:
+          name: maa-mara-market-android-project
+          path: ${{ env.FRONTEND_DIR }}/android/
+          if-no-files-found: error
+          retention-days: 14
+
+  ios-project:
+    name: Generate iOS project bundle
+    runs-on: macos-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: maamara_market_project/frontend/package-lock.json
+
+      - name: Install web dependencies
+        working-directory: ${{ env.FRONTEND_DIR }}
+        run: npm ci
+
+      - name: Install temporary Capacitor build tools
+        working-directory: ${{ env.FRONTEND_DIR }}
+        run: npm install --no-save --package-lock=false @capacitor/core@7 @capacitor/cli@7 @capacitor/android@7 @capacitor/ios@7
+
+      - name: Build mobile web bundle
+        working-directory: ${{ env.FRONTEND_DIR }}
+        env:
+          VITE_BUILD_TARGET: mobile
+          VITE_API_URL: ${{ env.MOBILE_API_URL }}
+        run: npm run build:mobile
+
+      - name: Generate and sync iOS project
+        working-directory: ${{ env.FRONTEND_DIR }}
+        run: |
+          npx cap add ios
+          npx cap sync ios
+
+      - name: Package generated iOS project
+        working-directory: ${{ env.FRONTEND_DIR }}
+        run: zip -qr maa-mara-market-ios-project.zip ios
+
+      - name: Upload generated iOS project
+        uses: actions/upload-artifact@v4
+        with:
+          name: maa-mara-market-ios-project
+          path: ${{ env.FRONTEND_DIR }}/maa-mara-market-ios-project.zip
+          if-no-files-found: error
+          retention-days: 14
