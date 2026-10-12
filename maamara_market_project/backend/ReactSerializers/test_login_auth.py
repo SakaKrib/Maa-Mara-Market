@@ -1,7 +1,10 @@
 from types import SimpleNamespace
 from unittest.mock import Mock, patch
 
-from allauth.core.exceptions import ImmediateHttpResponse
+try:
+    from allauth.core.exceptions import ImmediateHttpResponse
+except ImportError:  # Match the adapter's compatibility with older allauth versions.
+    from allauth.exceptions import ImmediateHttpResponse
 from django.contrib.auth.models import User
 from django.test import RequestFactory, TestCase
 
