@@ -496,7 +496,7 @@ logger = logging.getLogger("ReactSerializers.users")
 
 @require_http_methods(["POST"])
 def login_view(request):
-    """Authenticate customers/vendors using either username or email."""
+    """Authenticate a customer, vendor, or admin by case-insensitive email or username."""
     visitor_id = request.COOKIES.get("visitorId") or request.POST.get("visitorId")
     identifier = (
         request.POST.get("username")
@@ -511,24 +511,39 @@ def login_view(request):
             status=400,
         )
 
-    email_matches = []
-    auth_identifier = identifier
+    # Resolve a local Django account first. Django's default username lookup is
+    # case-sensitive, so resolve the canonical stored username before authenticating.
     if "@" in identifier:
-        email_matches = list(
+        user_matches = list(
             User.objects.filter(email__iexact=identifier).order_by("pk")[:2]
         )
-        if len(email_matches) > 1:
-            logger.warning("Login blocked because multiple local users share an email")
+    else:
+        user_matches = list(
+            User.objects.filter(username__iexact=identifier).order_by("pk")[:2]
+        )
+
+    if len(user_matches) > 1:
+        logger.warning("Login blocked because the identifier matches multiple local users")
+        return JsonResponse(
+            {"success": False, "error": "Invalid credentials"},
+            status=401,
+        )
+
+    if user_matches:
+        matched_user = user_matches[0]
+        user = authenticate(
+            request,
+            username=matched_user.get_username(),
+            password=password,
+        )
+        # Do not fall through to a separate vendor record if a local account
+        # matched the identifier but its password was incorrect.
+        if user is None:
             return JsonResponse(
                 {"success": False, "error": "Invalid credentials"},
                 status=401,
             )
-        if email_matches:
-            auth_identifier = email_matches[0].get_username()
 
-    user = authenticate(request, username=auth_identifier, password=password)
-
-    if user is not None:
         auth_login(request, user)
         role = (
             "admin"
@@ -573,62 +588,59 @@ def login_view(request):
         )
         return response
 
-    # If an email matched a local user, do not fall through to another account
-    # type after a bad password.
-    if email_matches:
+    # Legacy/separate Vendor records may use a vendor-specific username or email
+    # that differs from the linked Django user's username.
+    if "@" in identifier:
+        vendor_matches = list(
+            Vendor.objects.filter(email__iexact=identifier).order_by("pk")[:2]
+        )
+    else:
+        vendor_matches = list(
+            Vendor.objects.filter(username__iexact=identifier).order_by("pk")[:2]
+        )
+
+    if len(vendor_matches) != 1:
         return JsonResponse(
             {"success": False, "error": "Invalid credentials"},
             status=401,
         )
 
-    try:
-        vendor = Vendor.objects.get(email__iexact=identifier)
-    except Vendor.DoesNotExist:
-        try:
-            vendor = Vendor.objects.get(username=identifier)
-        except (Vendor.DoesNotExist, Vendor.MultipleObjectsReturned):
-            return JsonResponse(
-                {"success": False, "error": "Invalid credentials"},
-                status=401,
-            )
-    except Vendor.MultipleObjectsReturned:
+    vendor = vendor_matches[0]
+    if not vendor.user or not vendor.user.check_password(password):
         return JsonResponse(
             {"success": False, "error": "Invalid credentials"},
             status=401,
         )
 
-    if vendor.user and vendor.user.check_password(password):
-        merge_visitor_data_to_user(vendor.user, visitor_id)
-        refresh = RefreshToken.for_user(vendor.user)
-        access_token = str(refresh.access_token)
-        refresh_token = str(refresh)
-        response = JsonResponse({
-            "success": True,
-            "incomplete_profile": False,
-            "user": {
-                "id": vendor.id,
-                "username": vendor.username,
-                "role": "vendor",
-                "vendor_picture": getattr(vendor, "profile_picture", None),
-            },
-        })
-        response.delete_cookie("visitorAccessToken", path="/")
-        response.delete_cookie("visitorRefreshToken", path="/")
-        response.delete_cookie("visitorId", path="/")
-        response.delete_cookie("user_sessionid", path="/")
-        response.set_cookie(
-            "accessToken", access_token, httponly=True,
-            secure=request.is_secure(), samesite="Lax",
-            max_age=300, path="/",
-        )
-        response.set_cookie(
-            "refreshToken", refresh_token, httponly=True,
-            secure=request.is_secure(), samesite="Lax",
-            max_age=2592000, path="/",
-        )
-        return response
-
-    return JsonResponse({"success": False, "error": "Invalid credentials"}, status=401)
+    user = vendor.user
+    merge_visitor_data_to_user(user, visitor_id)
+    refresh = RefreshToken.for_user(user)
+    response = JsonResponse({
+        "success": True,
+        "incomplete_profile": False,
+        "user": {
+            "id": vendor.id,
+            "username": vendor.username,
+            "email": vendor.email,
+            "role": "vendor",
+            "vendor_picture": getattr(vendor, "profile_picture", None),
+        },
+    })
+    response.delete_cookie("visitorAccessToken", path="/")
+    response.delete_cookie("visitorRefreshToken", path="/")
+    response.delete_cookie("visitorId", path="/")
+    response.delete_cookie("user_sessionid", path="/")
+    response.set_cookie(
+        "accessToken", str(refresh.access_token), httponly=True,
+        secure=request.is_secure(), samesite="Lax",
+        max_age=5 * 60, path="/",
+    )
+    response.set_cookie(
+        "refreshToken", str(refresh), httponly=True,
+        secure=request.is_secure(), samesite="Lax",
+        max_age=2592000, path="/",
+    )
+    return response
 
 
 def google_login_success(request):
