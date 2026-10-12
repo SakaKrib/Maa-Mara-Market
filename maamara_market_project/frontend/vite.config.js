@@ -30,6 +30,15 @@ export default defineConfig({
         target: "http://backend:8000",
         changeOrigin: true,
       },
+      // Google OAuth endpoints run in Django as root-level URLs.
+      "/accounts": {
+        target: "http://backend:8000",
+        changeOrigin: true,
+      },
+      "/google": {
+        target: "http://backend:8000",
+        changeOrigin: true,
+      },
       "/ws": {
         target: "ws://backend:8000",
         ws: true,
