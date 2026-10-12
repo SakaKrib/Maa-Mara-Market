@@ -7,7 +7,7 @@ from rest_framework import status, permissions, viewsets
 from rest_framework import viewsets, permissions
 from rest_framework.views import APIView
 from ReactSerializers.models import Item, ItemView
-from core.models import Notification, EmailLog, SupportMessage, AboutPage, SearchEvent
+from core.models import Notification, EmailLog, SupportMessage, AboutPage, SearchEvent, SiteMaintenanceSettings
 from .Serializer import NotificationSerializer, ItemSerializer, ReviewSerializer, ReactionSerializer
 from vendorDashboard.models import Vendor
 from shop.models import  Review, Reaction
@@ -36,6 +36,81 @@ from shop.sanitizers import sanitize_rich_text
 
 logger = logging.getLogger(__name__)
 
+
+
+DEFAULT_MAINTENANCE_MESSAGE = (
+    "We're making a few improvements to Maa Mara Market. We'll be back shortly. "
+    "You can still check the status of an existing order below."
+)
+
+
+def _maintenance_settings():
+    settings_obj, _ = SiteMaintenanceSettings.objects.get_or_create(
+        pk=1,
+        defaults={"message": DEFAULT_MAINTENANCE_MESSAGE},
+    )
+    return settings_obj
+
+
+class MaintenanceStatusView(APIView):
+    """Public, read-only status used by the customer-facing maintenance gate."""
+
+    permission_classes = [AllowAny]
+    authentication_classes = []
+
+    def get(self, request):
+        settings_obj = _maintenance_settings()
+        return Response({
+            "enabled": settings_obj.enabled,
+            "message": settings_obj.message or DEFAULT_MAINTENANCE_MESSAGE,
+        })
+
+
+class MaintenanceSettingsView(APIView):
+    """Only staff administrators may change the site-wide maintenance state."""
+
+    permission_classes = [IsAdminUser]
+
+    def get(self, request):
+        settings_obj = _maintenance_settings()
+        return Response({
+            "enabled": settings_obj.enabled,
+            "message": settings_obj.message or DEFAULT_MAINTENANCE_MESSAGE,
+            "updated_at": settings_obj.updated_at,
+        })
+
+    def patch(self, request):
+        settings_obj = _maintenance_settings()
+        enabled = request.data.get("enabled", settings_obj.enabled)
+        message = request.data.get("message", settings_obj.message)
+
+        if not isinstance(enabled, bool):
+            return Response(
+                {"detail": "The enabled field must be true or false."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        if not isinstance(message, str):
+            return Response(
+                {"detail": "The maintenance message must be text."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        message = message.strip()
+        if not message:
+            message = DEFAULT_MAINTENANCE_MESSAGE
+        if len(message) > 2000:
+            return Response(
+                {"detail": "The maintenance message must be 2,000 characters or fewer."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        settings_obj.enabled = enabled
+        settings_obj.message = message
+        settings_obj.save(update_fields=["enabled", "message", "updated_at"])
+        return Response({
+            "enabled": settings_obj.enabled,
+            "message": settings_obj.message,
+            "updated_at": settings_obj.updated_at,
+        })
 
 
 # -------------------------------
