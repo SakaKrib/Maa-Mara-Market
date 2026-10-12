@@ -15,6 +15,13 @@ from core.activity_logger import log_activity
 from rest_framework.response import Response
 
 
+from django.shortcuts import get_object_or_404
+from rest_framework import status
+from rest_framework.views import APIView
+from core.Serializer import ReviewSerializer
+import bleach # type: ignore
+
+
 def _vendor_activity_label(user):
     """Return a readable vendor name for administrator-facing activity."""
     try:
@@ -35,11 +42,6 @@ def _vendor_activity_label(user):
     if not name:
         name = (user.get_full_name() or "").strip() or user.username
     return name if name.lower().startswith("vendor ") else f"Vendor {name}"
-from django.shortcuts import get_object_or_404
-from rest_framework import status
-from rest_framework.views import APIView
-from core.Serializer import ReviewSerializer
-import bleach # type: ignore
 
 
 class ItemAdditionalImageSerializer(serializers.ModelSerializer):
