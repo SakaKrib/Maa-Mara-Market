@@ -9,6 +9,7 @@ const SalesPage = () => {
   const [rows, setRows] = useState([]);
   const [loadingRows, setLoadingRows] = useState(true);
   const [error, setError] = useState("");
+  const [retryKey, setRetryKey] = useState(0);
   const { stats, loading } = useDashboardStats();
   const navigate = useNavigate();
 
@@ -50,7 +51,7 @@ const SalesPage = () => {
 
     fetchData();
     return () => { active = false; };
-  }, []);
+  }, [retryKey]);
 
   const totals = useMemo(
     () => ({
@@ -145,7 +146,24 @@ const SalesPage = () => {
         </div>
 
         {error ? (
-          <div className="p-6 text-sm text-destructive">{error}</div>
+          <div className="flex flex-col gap-3 p-5 sm:flex-row sm:items-center sm:justify-between sm:p-6">
+            <div className="flex items-start gap-3">
+              <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-destructive/10 text-destructive">
+                <IonIcon icon={trendingUpOutline} className="text-lg" />
+              </div>
+              <div>
+                <p className="font-semibold text-foreground">Could not load the vendor sales report</p>
+                <p className="mt-1 text-sm text-muted-foreground">{error}</p>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => setRetryKey((key) => key + 1)}
+              className="inline-flex shrink-0 items-center justify-center rounded-xl border border-border bg-card px-4 py-2.5 text-sm font-semibold text-foreground shadow-sm transition hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+            >
+              Try again
+            </button>
+          </div>
         ) : loadingRows ? (
           <div className="p-6 text-sm text-muted-foreground">Loading sales...</div>
         ) : rows.length === 0 ? (
