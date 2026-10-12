@@ -182,7 +182,7 @@ const Header = () => {
       </div>
 
       <div className="mm-category-row"><CategoryNavigation /></div>
-      <MobileNavigationDrawer open={mobileMenuOpen} onClose={() => setMobileMenuOpen(false)} />
+      <MobileNavigationDrawer open={mobileMenuOpen} onClose={() => setMobileMenuOpen(false)} nativeApp={isNativeApp} />
     </header>
   );
 };
