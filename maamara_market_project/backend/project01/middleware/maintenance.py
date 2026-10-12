@@ -19,6 +19,7 @@ ALLOWED_WRITE_PREFIXES = (
     "/api/maintenance/",
     "/api/pesapal/ipn/",
     "/api/pesapal/callback/",
+    "/api/paypal/webhook/",
     "/api/mpesa/stk-callback/",
     "/api/mpesa/stk-timeout/",
     "/api/mpesa/refund/result/",
@@ -43,7 +44,7 @@ def _request_user(request):
     try:
         validated = jwt_auth.get_validated_token(token)
         return jwt_auth.get_user(validated)
-    except (InvalidToken, TokenError, Exception):
+    except Exception:
         return None
 
 
