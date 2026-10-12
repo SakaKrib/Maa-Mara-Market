@@ -24,7 +24,7 @@ const ProtectedRoute = ({ children, requiredRole }) => {
 
   // 🔹 If user is not authenticated, redirect to login
   if (!isAuthenticated) {
-    return <Navigate to="/login" replace />;
+    return <Navigate to="/customer-login" replace />;
   }
 
   // 🔹 Role-based protection (supports single role or array of roles)
