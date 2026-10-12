@@ -154,19 +154,30 @@ function AppContent() {
   const colors = tokens(themeSetup.palette.mode);
   const isNativeApp = typeof window !== "undefined" && window.Capacitor?.isNativePlatform?.() === true;
   const [launchAnimationDone, setLaunchAnimationDone] = useState(false);
+  const [launchSequenceDone, setLaunchSequenceDone] = useState(false);
 
   useEffect(() => {
     if (!isNativeApp) {
       setLaunchAnimationDone(true);
+      setLaunchSequenceDone(true);
       return undefined;
     }
 
-    const animationTimer = window.setTimeout(() => setLaunchAnimationDone(true), 2300);
-    return () => window.clearTimeout(animationTimer);
+    let spinnerTimer;
+    const animationTimer = window.setTimeout(() => {
+      setLaunchAnimationDone(true);
+      // Keep the spinner visible briefly even when startup has already finished.
+      spinnerTimer = window.setTimeout(() => setLaunchSequenceDone(true), 600);
+    }, 2300);
+
+    return () => {
+      window.clearTimeout(animationTimer);
+      if (spinnerTimer) window.clearTimeout(spinnerTimer);
+    };
   }, [isNativeApp]);
 
-  if (isNativeApp && (!launchAnimationDone || loading)) {
-    return <NativeAppLaunchScreen showSpinner={launchAnimationDone && loading} />;
+  if (isNativeApp && (!launchSequenceDone || loading)) {
+    return <NativeAppLaunchScreen showSpinner={launchAnimationDone} />;
   }
 
   if (loading) {
