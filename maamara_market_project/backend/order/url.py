@@ -14,7 +14,7 @@ from .orderStat import (
     vendor_pending_order_items,
     vendor_pending_orders,
 )
-from .paypalApis import get_customers
+from .paypalApis import get_customers, paypal_webhook
 from .returns import (
     approve_return_request_api,
     get_pending_returns_api,
@@ -91,6 +91,9 @@ urlpatterns = [
     path("api/refunds/<int:refund_id>/process/", process_refund_api, name="process-refund"),
     path("api/mpesa/refund/result/", mpesa_refund_result, name="mpesa-refund-result"),
     path("api/mpesa/refund/timeout/", mpesa_refund_timeout, name="mpesa-refund-timeout"),
+
+    # PayPal checkout webhook must remain reachable during maintenance.
+    path("api/paypal/webhook/", paypal_webhook, name="paypal-checkout-webhook"),
 
     # mpesa payment gateways (B2C)
     path("mpesa/b2c/", mpesa_b2c_payment, name="mpesa_b2c"),
