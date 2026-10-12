@@ -145,3 +145,16 @@ class MyAdapter(DefaultSocialAccountAdapter):
             user.username = self._unique_username(user.email)
 
         return user
+
+    def save_user(self, request, sociallogin, form=None):
+        """Recheck the generated username at the actual Google signup boundary."""
+        account = getattr(sociallogin, "account", None)
+        user = sociallogin.user
+        if (
+            account
+            and getattr(account, "provider", None) == "google"
+            and user
+            and getattr(user, "email", "")
+        ):
+            user.username = self._unique_username(user.email)
+        return super().save_user(request, sociallogin, form=form)
