@@ -62,6 +62,7 @@ import AdminPriceRequestDetail from "./cmponents/AdminPages/Notifications/AdminA
 import SingleVendorProfile from "./cmponents/VENDORPAGE/VendorSections/VendorProfile";
 import PayoutsPage from "./cmponents/VendorPayoutReport/vendorPayouts/vendorPayouts";
 import VendorSettings from "./cmponents/VENDORPAGE/VendorSettings";
+import VendorMaintenanceGate from "./cmponents/VENDORPAGE/VendorMaintenanceGate";
 
 // ✅ ProtectedRoute wrapper
 import ProtectedRoute from "./cmponents/Auth/Routes/ProtectRoute";
@@ -334,7 +335,9 @@ function AppContent() {
                 path="/vendors-dashboard/*"
                 element={
                   <ProtectedRoute requiredRole="vendor">
-                    <VendorLayout />
+                    <VendorMaintenanceGate>
+                      <VendorLayout />
+                    </VendorMaintenanceGate>
                   </ProtectedRoute>
                 }
               >
