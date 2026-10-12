@@ -55,6 +55,50 @@ class NotificationSerializer(serializers.ModelSerializer):
             return title
         return 'Maa Mara Market update'
 
+    def _vendor_label(self, user=None, vendor=None):
+        if vendor is None and user is not None:
+            try:
+                vendor = user.vendor
+            except (AttributeError, Exception):
+                vendor = None
+
+        name = ""
+        if vendor is not None:
+            name = " ".join(
+                part for part in (
+                    getattr(vendor, "first_name", ""),
+                    getattr(vendor, "surname_name", ""),
+                ) if part
+            ).strip()
+            name = name or (getattr(vendor, "company_name", "") or "").strip()
+            name = name or (getattr(vendor, "username", "") or "").strip()
+
+        if not name and user is not None:
+            name = (user.get_full_name() or "").strip() or (getattr(user, "username", "") or "").strip()
+
+        if not name:
+            return "A vendor"
+        return name if name.lower().startswith("vendor ") else f"Vendor {name}"
+
+    def _notification_vendor_label(self, obj):
+        vendor_request = getattr(obj, "vendor_request", None)
+        vendor_user = getattr(vendor_request, "user", None) if vendor_request else None
+        if vendor_user is not None:
+            return self._vendor_label(user=vendor_user)
+
+        # Older item-request notifications only retained the request id in the URL.
+        match = re.search(r"vendoritemrequest/(\d+)", obj.url or "", re.I)
+        if match:
+            try:
+                from vendorDashboard.models import VendorItemRequest
+                item_request = VendorItemRequest.objects.select_related("vendor__user").get(pk=int(match.group(1)))
+                vendor = getattr(item_request, "vendor", None)
+                vendor_user = getattr(vendor, "user", None) if vendor else None
+                return self._vendor_label(user=vendor_user, vendor=vendor)
+            except (ImportError, ValueError, VendorItemRequest.DoesNotExist):
+                return ""
+        return ""
+
     def get_display_message(self, obj):
         message = (obj.message or '').strip()
         title = (obj.title or '').strip().lower()
@@ -62,11 +106,26 @@ class NotificationSerializer(serializers.ModelSerializer):
         def unquote(value):
             return re.sub(r"'([^']+)'", r"\1", value)
 
-        # Preserve already-normalized audience-aware messages. This prevents
-        # the legacy regexes below from accidentally duplicating phrases such
-        # as "to their wishlist".
         normalized_message = unquote(message)
-        if re.match(r"^(A customer|A vendor|The administrator|An administrator|Your|You)\b", normalized_message):
+        request = self.context.get("request")
+        viewer = getattr(request, "user", None) if request else None
+        is_admin_viewer = bool(
+            viewer and getattr(viewer, "is_authenticated", False)
+            and (viewer.is_staff or viewer.is_superuser)
+        )
+
+        # Normalize older generic vendor messages in the administrator feed.
+        # Newly created notifications already carry the named vendor.
+        if is_admin_viewer and re.match(r"^A vendor\b", normalized_message, re.I):
+            vendor_label = self._notification_vendor_label(obj)
+            if vendor_label:
+                normalized_message = re.sub(
+                    r"^A vendor\b", vendor_label, normalized_message, count=1, flags=re.I
+                )
+
+        # Preserve already-normalized audience-aware messages. This prevents
+        # legacy patterns below from duplicating phrases such as "to their wishlist".
+        if re.match(r"^(A customer|A vendor|Vendor |The administrator|An administrator|Your|You)\b", normalized_message):
             return normalized_message
 
         legacy_patterns = [
@@ -455,10 +514,53 @@ class ActivityLogSerializer(serializers.ModelSerializer):
             'item',
         ]
 
+    def _vendor_label(self, obj):
+        user = getattr(obj, "user", None)
+        try:
+            vendor = user.vendor if user is not None else None
+        except Exception:
+            vendor = None
+
+        name = ""
+        if vendor is not None:
+            name = " ".join(
+                part for part in (
+                    getattr(vendor, "first_name", ""),
+                    getattr(vendor, "surname_name", ""),
+                ) if part
+            ).strip()
+            name = name or (getattr(vendor, "company_name", "") or "").strip()
+            name = name or (getattr(vendor, "username", "") or "").strip()
+        if not name and user is not None:
+            name = (user.get_full_name() or "").strip() or (getattr(user, "username", "") or "").strip()
+        if not name:
+            return "A vendor"
+        return name if name.lower().startswith("vendor ") else f"Vendor {name}"
+
     def _actor_phrase(self, obj):
         request = self.context.get("request")
         current_user = getattr(request, "user", None) if request else None
+        is_authenticated = bool(current_user and getattr(current_user, "is_authenticated", False))
+        is_admin_viewer = bool(
+            is_authenticated and (current_user.is_staff or current_user.is_superuser)
+        )
         description = (obj.description or "").strip().lower()
+
+        # A vendor's own activity should read in first person in the vendor
+        # feed, including legacy records written with third-person wording.
+        if description.startswith("you "):
+            return "You"
+        if (
+            is_authenticated
+            and not is_admin_viewer
+            and obj.user_id == current_user.id
+            and obj.actor_type == "vendor"
+        ):
+            return "You"
+
+        # The administrator feed identifies which vendor performed the action.
+        if obj.actor_type == "vendor" and is_admin_viewer:
+            return self._vendor_label(obj)
         if description.startswith("the administrator"):
             return "The administrator"
         if description.startswith("a customer"):
@@ -478,8 +580,7 @@ class ActivityLogSerializer(serializers.ModelSerializer):
         }:
             return "The administrator"
         if (
-            current_user
-            and current_user.is_authenticated
+            is_authenticated
             and obj.user_id == current_user.id
             and obj.actor_type in {"user", "vendor"}
             and obj.action in {
@@ -516,6 +617,13 @@ class ActivityLogSerializer(serializers.ModelSerializer):
         )
 
     def get_display_message(self, obj):
+        description = (obj.description or "").strip()
+        if (
+            obj.action in {"item_created", "item_updated", "vendor_item_request_received"}
+            and description.lower().startswith("vendor ")
+        ):
+            return re.sub(r"'([^']+)'", r"\1", description)
+
         actor = self._actor_phrase(obj)
         item_name = self._item_name(obj)
 
@@ -585,13 +693,26 @@ class ActivityLogSerializer(serializers.ModelSerializer):
 
 
 
+def _keep_latest_vendor_request_view(logs):
+    """Keep one legacy vendor-request-view row while the GET remains read-only."""
+    latest_id = (
+        logs.filter(action="viewed_vendor_requests")
+        .order_by("-timestamp")
+        .values_list("id", flat=True)
+        .first()
+    )
+    if latest_id is None:
+        return logs
+    return logs.filter(~Q(action="viewed_vendor_requests") | Q(pk=latest_id))
+
+
 def activity_logs_for_user(user):
     """Return only activity records appropriate for the authenticated dashboard role."""
     logs = ActivityLog.objects.all().select_related("user", "item").order_by("-timestamp")
     if not user or not user.is_authenticated:
         return logs.none()
     if user.is_staff or user.is_superuser:
-        return logs.filter(actor_type="admin")
+        return _keep_latest_vendor_request_view(logs.filter(actor_type="admin"))
     vendor = getattr(user, "vendor", None)
     if vendor is None:
         return logs.none()
@@ -625,11 +746,14 @@ def get_activity_logs(request):
         else:
             return Response({"detail": "An admin or vendor account is required."}, status=403)
 
+    if is_admin:
+        logs = _keep_latest_vendor_request_view(logs)
+
     # Keep the dashboard compact; the full vendor activity page can request all records.
     if request.query_params.get("all") != "true":
         logs = logs[:100]
 
-    serializer = ActivityLogSerializer(logs, many=True)
+    serializer = ActivityLogSerializer(logs, many=True, context={"request": request})
     return Response(serializer.data)
 
 
