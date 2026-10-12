@@ -1,15 +1,6 @@
 /* Native-app-only storefront styling. The class is applied only inside Capacitor. */
 @media (max-width: 639px) {
-  .mm-site-header.mm-native-app {
-    padding-top: calc(64px + env(safe-area-inset-top, 0px));
-  }
-
   .mm-site-header.mm-native-app .mm-main-header {
-    position: fixed;
-    top: env(safe-area-inset-top, 0px);
-    left: 0;
-    right: 0;
-    z-index: 950;
     height: 64px;
     box-sizing: border-box;
     padding: 4px 0 !important;
@@ -45,18 +36,9 @@
 }
 
 
-/* Native storefront fixes: fixed header, compact scrollable drawer, and safe-area spacing. */
+/* Native storefront fixes: scroll-flow header and compact scrollable drawer. */
 @media (max-width: 639px) {
-  .mm-site-header.mm-native-app {
-    padding-top: calc(64px + env(safe-area-inset-top, 0px));
-  }
-
   .mm-site-header.mm-native-app .mm-main-header {
-    position: fixed;
-    top: env(safe-area-inset-top, 0px);
-    left: 0;
-    right: 0;
-    z-index: 950;
     height: 64px;
     box-sizing: border-box;
     padding: 4px 0 !important;
