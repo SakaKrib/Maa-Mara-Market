@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
+import { Trash2 } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { IonIcon } from "@ionic/react";
 import {
@@ -90,6 +91,8 @@ const Dashboard = () => {
     landing_pages: [],
   });
   const [selectedListView, setSelectedListView] = useState("activities");
+  const [activityActionError, setActivityActionError] = useState("");
+  const [notificationActionError, setNotificationActionError] = useState("");
   const lastNotificationIdRef = useRef(null);
   const notificationsHydratedRef = useRef(false);
 
@@ -105,7 +108,7 @@ const Dashboard = () => {
             api.get("/api/price-change-requests/?status=pending"),
             api.get("/api/moderation/banners/"),
             api.get("/api/admin-transactions/"),
-            api.get("/api/activity-logs/"),
+            api.get("/api/activity-logs/", { params: { scope: "admin" } }),
             api.get("/api/notifications/"),
           ]);
 
@@ -137,7 +140,7 @@ const Dashboard = () => {
       try {
         const [vendorRequests, activity, notificationList] = await Promise.all([
           api.get("/api/vendor/requests/unseen-count/"),
-          api.get("/api/activity-logs/"),
+          api.get("/api/activity-logs/", { params: { scope: "admin" } }),
           api.get("/api/notifications/"),
         ]);
         setUnseenVendorRequests(vendorRequests.data?.unseen_count ?? 0);
@@ -209,6 +212,54 @@ const Dashboard = () => {
       duration: 5000,
     });
   }, [notifications, toast, preferences.notifications]);
+
+  const deleteActivityLog = async (activityId) => {
+    if (!window.confirm("Delete this administrator activity? This cannot be undone.")) return;
+    try {
+      setActivityActionError("");
+      await api.delete(`/api/activity-logs-item/${activityId}/delete/`, { withCredentials: true });
+      setActivityLogs((items) => items.filter((item) => item.id !== activityId));
+    } catch (error) {
+      setActivityActionError("We couldn't delete that activity. Please try again.");
+    }
+  };
+
+  const clearAllActivityLogs = async () => {
+    if (!window.confirm("Clear all administrator activities? Vendor and customer activity records will be kept.")) return;
+    try {
+      setActivityActionError("");
+      await api.delete("/api/activity-logs-item/clear-all-logs/", { withCredentials: true });
+      setActivityLogs([]);
+    } catch (error) {
+      setActivityActionError("We couldn't clear administrator activities. Please try again.");
+    }
+  };
+
+  const deleteNotification = async (notificationId) => {
+    if (!window.confirm("Delete this notification? This cannot be undone.")) return;
+    try {
+      setNotificationActionError("");
+      await api.delete(`/api/notifications/${notificationId}/`, { withCredentials: true });
+      setNotifications((items) => items.filter((item) => item.id !== notificationId));
+      if (lastNotificationIdRef.current === notificationId) {
+        lastNotificationIdRef.current = notifications.filter((item) => item.id !== notificationId)[0]?.id ?? null;
+      }
+    } catch (error) {
+      setNotificationActionError("We couldn't delete that notification. Please try again.");
+    }
+  };
+
+  const clearAllNotifications = async () => {
+    if (!window.confirm("Clear every notification visible to administrators? This permanently removes notifications for all accounts, not just the admin dashboard.")) return;
+    try {
+      setNotificationActionError("");
+      await api.delete("/api/notifications/clear-all/", { withCredentials: true });
+      setNotifications([]);
+      lastNotificationIdRef.current = null;
+    } catch (error) {
+      setNotificationActionError("We couldn't clear notifications. Please try again.");
+    }
+  };
 
   const markAsSeen = async (id) => {
     try {
@@ -346,31 +397,84 @@ const Dashboard = () => {
             ))}
           </div>
 
+          {(selectedListView === "activities" && activityLogs.length > 0) || (selectedListView === "notifications" && notifications.length > 0) ? (
+            <div className="mb-3 flex justify-end">
+              {selectedListView === "activities" && activityLogs.length > 0 && (
+                <button
+                  type="button"
+                  onClick={clearAllActivityLogs}
+                  className="inline-flex items-center gap-1.5 rounded-full border border-red-200 px-3 py-2 text-xs font-semibold text-red-700 transition hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-red-200"
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                  Clear all activities
+                </button>
+              )}
+              {selectedListView === "notifications" && notifications.length > 0 && (
+                <button
+                  type="button"
+                  onClick={clearAllNotifications}
+                  className="inline-flex items-center gap-1.5 rounded-full border border-red-200 px-3 py-2 text-xs font-semibold text-red-700 transition hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-red-200"
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                  Clear all notifications
+                </button>
+              )}
+            </div>
+          ) : null}
+
+          {selectedListView === "activities" && activityActionError && (
+            <p role="alert" className="mb-2 text-xs text-red-700">{activityActionError}</p>
+          )}
+          {selectedListView === "notifications" && notificationActionError && (
+            <p role="alert" className="mb-2 text-xs text-red-700">{notificationActionError}</p>
+          )}
+
           <div className="h-[300px] min-w-0 space-y-2 overflow-x-hidden overflow-y-auto pr-1">
             {selectedListView === "activities" &&
               (activityLogs.length ? activityLogs.map((log) => (
-                <div key={log.id} className="rounded-xl bg-muted p-3 dark:bg-muted">
-                  <p className="text-xs font-medium text-card-foreground dark:text-card-foreground">{log.display_message || log.description}</p>
-                  <p className="mt-1 text-[10px] text-muted-foreground">{new Date(log.timestamp).toLocaleString()}</p>
+                <div key={log.id} className="flex items-start gap-3 rounded-xl bg-muted p-3 dark:bg-muted">
+                  <div className="min-w-0 flex-1">
+                    <p className="text-xs font-medium text-card-foreground dark:text-card-foreground">{log.display_message || log.description}</p>
+                    <p className="mt-1 text-[10px] text-muted-foreground">{new Date(log.timestamp).toLocaleString()}</p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => deleteActivityLog(log.id)}
+                    aria-label="Delete activity"
+                    title="Delete activity"
+                    className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-red-200 text-red-700 transition hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-red-200"
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </button>
                 </div>
-              )) : <p className="p-4 text-sm text-muted-foreground">No recent activity found.</p>)}
+              )) : <p className="p-4 text-sm text-muted-foreground">No administrator activity found.</p>)}
 
             {selectedListView === "notifications" &&
               (notifications.length ? notifications.map((note) => (
-                <button
-                  key={note.id}
-                  type="button"
-                  onClick={() => handleNotificationClick(note)}
-                  className="block w-full rounded-xl bg-muted p-3 text-left hover:bg-primary/10 dark:bg-muted dark:hover:bg-primary/100/10"
-                >
-                  <div className="flex items-start gap-2">
-                    <span className={`mt-1.5 h-2 w-2 shrink-0 rounded-full ${note.seen ? "bg-slate-300" : "bg-primary/100"}`} />
-                    <div className="min-w-0">
-                      <p className={`text-xs ${note.seen ? "text-foreground dark:text-muted-foreground" : "font-semibold text-card-foreground dark:text-card-foreground"}`}>{note.display_message || note.message}</p>
-                      <p className="mt-1 text-[10px] text-muted-foreground">{new Date(note.created_at).toLocaleString()}</p>
+                <div key={note.id} className="flex items-start gap-2 rounded-xl bg-muted p-3 dark:bg-muted">
+                  <button
+                    type="button"
+                    onClick={() => handleNotificationClick(note)}
+                    className="min-w-0 flex-1 rounded-lg p-1 text-left hover:bg-primary/10 focus:outline-none focus:ring-2 focus:ring-primary/20 dark:hover:bg-primary/100/10"
+                  >
+                    <div className="flex items-start gap-2">
+                      <span className={`mt-1.5 h-2 w-2 shrink-0 rounded-full ${note.seen ? "bg-slate-300" : "bg-primary/100"}`} />
+                      <div className="min-w-0">
+                        <p className={`text-xs ${note.seen ? "text-foreground dark:text-muted-foreground" : "font-semibold text-card-foreground dark:text-card-foreground"}`}>{note.display_title || note.title || note.display_message || note.message}</p>
+                        <p className="mt-1 text-[10px] text-muted-foreground">{new Date(note.created_at).toLocaleString()}</p>
+                      </div>
                     </div>
-                  </div>
-                </button>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => deleteNotification(note.id)}
+                    aria-label="Delete notification"
+                    title="Delete notification"
+                    className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-red-200 text-red-700 transition hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-red-200"
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </button>
+                </div>
               )) : <p className="p-4 text-sm text-muted-foreground">No notifications found.</p>)}
 
             {selectedListView === "transactions" &&
