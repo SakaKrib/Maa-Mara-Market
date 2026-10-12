@@ -13,6 +13,28 @@ from django.contrib.auth import get_user_model
 from vendorDashboard.models import *
 from core.activity_logger import log_activity
 from rest_framework.response import Response
+
+
+def _vendor_activity_label(user):
+    """Return a readable vendor name for administrator-facing activity."""
+    try:
+        vendor = user.vendor
+    except Exception:
+        vendor = None
+
+    name = ""
+    if vendor is not None:
+        name = " ".join(
+            part for part in (
+                getattr(vendor, "first_name", ""),
+                getattr(vendor, "surname_name", ""),
+            ) if part
+        ).strip()
+        name = name or (getattr(vendor, "company_name", "") or "").strip()
+        name = name or (getattr(vendor, "username", "") or "").strip()
+    if not name:
+        name = (user.get_full_name() or "").strip() or user.username
+    return name if name.lower().startswith("vendor ") else f"Vendor {name}"
 from django.shortcuts import get_object_or_404
 from rest_framework import status
 from rest_framework.views import APIView
@@ -634,15 +656,37 @@ class ItemSerializers(serializers.ModelSerializer):
         for age_data in age_variants_data:
             AgeVariant.objects.create(item=item, **age_data)
 
-        # ✅ Log creation activity
-        request = self.context.get('request')
-        user = getattr(request, 'user', None)
-        log_activity(
-            user=user,
-            actor_type='vendor' if hasattr(user, 'vendor') else 'admin' if user and user.is_staff else 'user',
-            action='item_created',
-            description=f"{'A vendor' if hasattr(user, 'vendor') else 'An administrator' if user and user.is_staff else 'A customer'} added {item.name}."
-        )
+        # Record the action once for the vendor and once in the admin-facing feed.
+        # The API call itself is a business action, unlike dashboard GET requests.
+        request = self.context.get("request")
+        user = getattr(request, "user", None)
+        is_vendor = bool(user and hasattr(user, "vendor"))
+
+        if is_vendor:
+            log_activity(
+                user=user,
+                actor_type="vendor",
+                action="item_created",
+                description=f"You added {item.name}.",
+                item=item,
+            )
+            admin_user = User.objects.filter(is_staff=True).order_by("id").first()
+            if admin_user:
+                log_activity(
+                    user=admin_user,
+                    actor_type="admin",
+                    action="item_created",
+                    description=f"{_vendor_activity_label(user)} added {item.name}.",
+                    item=item,
+                )
+        else:
+            log_activity(
+                user=user,
+                actor_type="admin" if user and (user.is_staff or user.is_superuser) else "user",
+                action="item_created",
+                description=f"{'An administrator' if user and (user.is_staff or user.is_superuser) else 'A customer'} added {item.name}.",
+                item=item,
+            )
 
         return item
 
@@ -833,15 +877,36 @@ class ItemSerializers(serializers.ModelSerializer):
 
         instance.refresh_from_db()
 
-        # ✅ Log update activity
+        # Vendor-facing copy is first-person; the admin feed identifies the vendor.
         request = self.context.get("request")
         user = getattr(request, "user", None)
-        log_activity(
-            user=user,
-            actor_type="vendor" if hasattr(user, "vendor") else "admin" if user and user.is_staff else "user",
-            action="item_updated",
-            description=f"{'A vendor' if hasattr(user, 'vendor') else 'An administrator' if user and user.is_staff else 'A customer'} updated {instance.name}.",
-        )
+        is_vendor = bool(user and hasattr(user, "vendor"))
+
+        if is_vendor:
+            log_activity(
+                user=user,
+                actor_type="vendor",
+                action="item_updated",
+                description=f"You updated {instance.name}.",
+                item=instance,
+            )
+            admin_user = User.objects.filter(is_staff=True).order_by("id").first()
+            if admin_user:
+                log_activity(
+                    user=admin_user,
+                    actor_type="admin",
+                    action="item_updated",
+                    description=f"{_vendor_activity_label(user)} updated {instance.name}.",
+                    item=instance,
+                )
+        else:
+            log_activity(
+                user=user,
+                actor_type="admin" if user and (user.is_staff or user.is_superuser) else "user",
+                action="item_updated",
+                description=f"{'An administrator' if user and (user.is_staff or user.is_superuser) else 'A customer'} updated {instance.name}.",
+                item=instance,
+            )
 
         return instance
 
