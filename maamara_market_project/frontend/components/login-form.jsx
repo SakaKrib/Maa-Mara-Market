@@ -112,14 +112,28 @@ export function LoginForm({ className, ...props }) {
 
       setUsername("")
       setPassword("")
-      await refreshAuth()
-      navigate(from, { replace: true })
+      const authData = await refreshAuth()
+      if (!authData?.isAuthenticated || !authData?.user) {
+        const msg = "Your credentials were accepted, but we could not confirm your signed-in session. Please try again."
+        setError(msg)
+        setSnackbar({ open: true, message: msg })
+        return
+      }
+
+      const role = authData.user.role
+      if (role === "admin") {
+        navigate("/admin-dashboard", { replace: true })
+      } else if (role === "vendor") {
+        navigate("/vendors-dashboard/", { replace: true })
+      } else {
+        navigate(from, { replace: true })
+      }
     } catch (err) {
       const status = err.response?.status
       let msg = "Something went wrong. Please try again later."
 
       if (status === 401) {
-        msg = "Invalid username or password. Please check your credentials and try again."
+        msg = err.response?.data?.error || "Invalid email/username or password. Please check your credentials and try again."
       } else if (status === 403) {
         msg = "You are not authorized to log in with these credentials."
       } else if (status >= 500) {
