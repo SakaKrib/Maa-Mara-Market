@@ -13,7 +13,6 @@ import {
 import { tokens } from '../../../theme';
 import api, { startGoogleLogin } from '../../../Services/Api';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../AuthContext/Context';
 import { Eye, EyeOff } from "lucide-react"
 
 
@@ -24,7 +23,6 @@ const LoginForm = () => {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
-  const { setIsAuthenticated, user } = useAuth();
   const [open, setOpen] = useState(false);
 
 
@@ -93,7 +91,7 @@ const LoginForm = () => {
       navigate("auth-success")
     } catch (err) {
       if (err.response?.status === 401) {
-        setError("Invalid username or password. Please check your credentials and try again.");
+        setError(err.response?.data?.error || "Invalid email/username or password. Please check your credentials and try again.");
       } else if (err.response?.status === 403) {
         setError("You are not authorized to log in with these credentials.");
       } else {
@@ -139,6 +137,7 @@ const LoginForm = () => {
         <Box component="form" onSubmit={handleLogin} sx={{ width: '100%' }}>
           <TextField
             label="Email or username"
+            placeholder="Enter your email or username"
             variant="outlined"
             fullWidth
             margin="normal"
