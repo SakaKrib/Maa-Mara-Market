@@ -716,7 +716,7 @@ def google_login_success(request):
     merge_visitor_data_to_user(user, visitor_id)
 
     response = redirect(
-        f"{settings.FRONTEND_URL.rstrip('/')}/login/auth-success"
+        f"{settings.FRONTEND_URL.rstrip('/')}/auth-success"
     )
     response.delete_cookie("visitorAccessToken", path="/")
     response.delete_cookie("visitorRefreshToken", path="/")
