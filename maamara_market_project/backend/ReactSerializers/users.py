@@ -649,8 +649,10 @@ def google_login_success(request):
     extra = social.extra_data or {}
     email = (extra.get("email") or user.email or "").strip()
     if not user.email:
-        email_verified = extra.get("email_verified") is True or (
-            str(extra.get("email_verified", "")).strip().lower() == "true"
+        email_verified = (
+            extra.get("email_verified") is True
+            or extra.get("verified_email") is True
+            or str(extra.get("email_verified", extra.get("verified_email", ""))).strip().lower() == "true"
         )
         if not email or not email_verified:
             return redirect(
