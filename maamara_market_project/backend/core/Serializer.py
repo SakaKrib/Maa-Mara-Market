@@ -123,10 +123,10 @@ class NotificationSerializer(serializers.ModelSerializer):
         # Vendor actions appear in first person on the vendor's own notification feed.
         if is_vendor_viewer:
             normalized_message = re.sub(
-                r"^A vendor\\b", "You", normalized_message, count=1, flags=re.I
+                r"^A vendor\b", "You", normalized_message, count=1, flags=re.I
             )
             normalized_message = re.sub(
-                r"^Vendor .+? (?=(?:submitted|updated|added)\\b)",
+                r"^Vendor .+? (?=(?:submitted|updated|added)\b),
                 "You ",
                 normalized_message,
                 count=1,
