@@ -16,6 +16,9 @@ router = DefaultRouter()
 
 
 urlpatterns = [
+    path("api/maintenance/status/", views.MaintenanceStatusView.as_view(), name="maintenance-status"),
+    path("api/maintenance/settings/", views.MaintenanceSettingsView.as_view(), name="maintenance-settings"),
+
     #path('', views.home, name='home'),  # Replace with your actual view
     path('', TemplateView.as_view(template_name="index.html"), name='home'),  # Replace with your actual view
     path('api/activity-logs/', get_activity_logs, name='activity-logs'),
