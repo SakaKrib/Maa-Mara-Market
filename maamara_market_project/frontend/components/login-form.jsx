@@ -120,14 +120,9 @@ export function LoginForm({ className, ...props }) {
         return
       }
 
-      const role = authData.user.role
-      if (role === "admin") {
-        navigate("/admin-dashboard", { replace: true })
-      } else if (role === "vendor") {
-        navigate("/vendors-dashboard/", { replace: true })
-      } else {
-        navigate(from, { replace: true })
-      }
+      // Keep all account types on the customer homepage after login.
+      // Dashboard navigation is left to the user.
+      navigate("/", { replace: true })
     } catch (err) {
       const status = err.response?.status
       let msg = "Something went wrong. Please try again later."
