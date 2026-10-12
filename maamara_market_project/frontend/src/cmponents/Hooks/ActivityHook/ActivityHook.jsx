@@ -24,8 +24,9 @@ export const useVendorActivityLogs = ({ all = false } = {}) => {
         const actorType = log.actor_type || log.actor_role;
         const logUserId = typeof log.user === "object" ? log.user?.id : log.user;
         if (actorType !== "vendor") return false;
-        return currentUserId == null || logUserId == null
-          || String(logUserId) === String(currentUserId);
+        return currentUserId != null
+          && logUserId != null
+          && String(logUserId) === String(currentUserId);
       });
     },
     [user]
