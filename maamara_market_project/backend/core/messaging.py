@@ -10,7 +10,7 @@ from django.core.exceptions import ValidationError
 from PIL import Image, UnidentifiedImageError
 
 from order.views import IsAuthenticatedOrVisitor
-from .models import Conversation, DirectMessage
+from .models import ActivityLog, Conversation, DirectMessage, SupportMessage
 
 User = get_user_model()
 MAX_IMAGE_BYTES = 5 * 1024 * 1024
@@ -181,6 +181,26 @@ def messaging_contacts(request):
         is_staff=False,
     ).exclude(id__in=vendor_ids).select_related("profile")
 
+    visitor_ids = set(
+        Conversation.objects.filter(visitor_id__isnull=False)
+        .exclude(visitor_id="")
+        .values_list("visitor_id", flat=True)
+    )
+    visitor_ids.update(
+        ActivityLog.objects.filter(visitor_id__isnull=False)
+        .exclude(visitor_id="")
+        .values_list("visitor_id", flat=True).distinct()
+    )
+    visitor_ids.update(
+        SupportMessage.objects.filter(visitor_id__isnull=False)
+        .exclude(visitor_id="")
+        .values_list("visitor_id", flat=True).distinct()
+    )
+    visitors = [
+        {**_display_visitor(visitor_id), "is_visitor": True}
+        for visitor_id in sorted(visitor_ids)
+    ]
+
     return Response({
         "admins": [
             _display_user(admin)
@@ -194,6 +214,7 @@ def messaging_contacts(request):
             _display_user(user)
             for user in vendor_users.order_by("vendor__company_name", "first_name", "username")
         ],
+        "visitors": visitors,
     })
 
 
@@ -246,9 +267,21 @@ def messaging_conversations(request):
         )
 
     if request.user.is_staff:
+        requested_visitor_id = str(request.data.get("visitor_id") or "").strip()
+        if requested_visitor_id:
+            conversation, created = Conversation.objects.get_or_create(
+                admin=request.user,
+                visitor_id=requested_visitor_id,
+                defaults={"participant": None},
+            )
+            return Response(
+                _conversation_payload(conversation, request),
+                status=status.HTTP_201_CREATED if created else status.HTTP_200_OK,
+            )
+
         participant_id = request.data.get("participant_id")
         if not participant_id:
-            return Response({"error": "participant_id is required."}, status=400)
+            return Response({"error": "participant_id or visitor_id is required."}, status=400)
         participant = get_object_or_404(
             User,
             id=participant_id,
