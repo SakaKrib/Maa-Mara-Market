@@ -179,7 +179,7 @@ ACCOUNT_UNIQUE_EMAIL = True
 
 SOCIALACCOUNT_EMAIL_VERIFICATION = "none"
 SOCIALACCOUNT_AUTO_SIGNUP = True
-SOCIALACCOUNT_LOGIN_ON_GET = True
+SOCIALACCOUNT_LOGIN_ON_GET = False  # Require POST to initiate social login.
 SOCIALACCOUNT_ADAPTER = "ReactSerializers.adapters.MyAdapter"
 
 # Google provider
@@ -189,6 +189,9 @@ SOCIALACCOUNT_PROVIDERS = {
         "AUTH_PARAMS": {"access_type": "online"},
         "OAUTH_PKE_ENABLED": True,
         "FETCH_USERINFO": True,
+        # Google email matching is only enabled for provider-verified addresses.
+        "VERIFIED_EMAIL": True,
+        "EMAIL_AUTHENTICATION": True,
     }
 }
 SOCIALACCOUNT_STORE_TOKENS = False
