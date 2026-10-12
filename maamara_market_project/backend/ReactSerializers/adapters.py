@@ -5,6 +5,8 @@ from django.utils.text import slugify
 
 from allauth.socialaccount.adapter import DefaultSocialAccountAdapter
 
+from core.models import PendingRegistration
+
 try:
     from allauth.core.exceptions import ImmediateHttpResponse
 except ImportError:  # Compatibility with older django-allauth releases.
@@ -34,7 +36,10 @@ class MyAdapter(DefaultSocialAccountAdapter):
 
         username = base
         counter = 2
-        while User.objects.filter(username__iexact=username).exists():
+        while (
+            User.objects.filter(username__iexact=username).exists()
+            or PendingRegistration.objects.filter(username__iexact=username).exists()
+        ):
             suffix = f"-{counter}"
             username = f"{base[:maximum_length - len(suffix)].rstrip('-')}{suffix}"
             counter += 1
