@@ -1,12 +1,23 @@
 import axios from "axios";
 
+// A native build must use the public HTTPS API origin rather than the
+// WebView's local origin (for example, capacitor://localhost). Keep this
+// configurable so development and production can use different API hosts.
+const configuredApiOrigin = (import.meta.env.VITE_API_URL || "").trim();
+
+const normalizeOrigin = (value) => value.replace(/\/+$/, "");
+
 const resolveApiOrigin = () => {
+  if (configuredApiOrigin) {
+    return normalizeOrigin(configuredApiOrigin);
+  }
+
   if (typeof window === "undefined") {
     return "";
   }
 
-  // Keep all browser API/WebSocket URLs on the same host as the storefront.
-  // Vite proxies /api, /media and /ws to the Django backend during development.
+  // Preserve the current same-origin website behavior. Vite proxies /api,
+  // /media and /ws to Django during local website development.
   return `${window.location.protocol}//${window.location.host}`;
 };
 
@@ -31,13 +42,9 @@ export const resolveApiAssetUrl = (value) => {
     const assetUrl = new URL(rawValue, `${apiOrigin.origin}/`);
 
     // Django can return absolute media URLs based on the request Host header.
-    // On mobile that host can be localhost or an HTTP origin, which makes the
-    // image unreachable or blocked as mixed content. Media owned by this API
-    // should always use the same API origin that served the request.
+    // Resolve API-owned media against the configured API origin so bundled
+    // mobile builds don't accidentally request media from their local origin.
     if (assetUrl.pathname.startsWith("/media/")) {
-      // Some legacy item records contain an already-prefixed media path
-      // (e.g. /media/media/items/...). Normalize it at the shared asset
-      // boundary so every product image uses the same browser URL.
       const normalizedPath = assetUrl.pathname.replace(/^\/(?:media\/)+/i, "/media/");
       return new URL(
         `${normalizedPath}${assetUrl.search}${assetUrl.hash}`,
