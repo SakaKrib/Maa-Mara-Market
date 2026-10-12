@@ -12,14 +12,42 @@ export const useVendorActivityLogs = ({ all = false } = {}) => {
   const wsRef = useRef(null);
   const reconnectRef = useRef(null);
 
-  // The backend now applies the vendor-store scope. Keep customer,
-  // vendor, and administrator activities tied to this vendor's items.
-  // Do not filter by actor_role here because customer actions are valid
-  // store activities (for example, a customer adding an item to a cart).
+  const deletedIdsRef = useRef(new Set());
+
+  // Filter defensively as the socket is shared by several activity producers.
+  // The backend remains authoritative for role and ownership checks.
   const filterVendorLogs = useCallback(
-    (logs = []) => logs,
-    []
+    (logs = []) => {
+      const currentUserId = user?.id ?? user?.pk;
+      return logs.filter((log) => {
+        if (deletedIdsRef.current.has(log.id)) return false;
+        const actorType = log.actor_type || log.actor_role;
+        const logUserId = typeof log.user === "object" ? log.user?.id : log.user;
+        if (actorType !== "vendor") return false;
+        return currentUserId == null || logUserId == null
+          || String(logUserId) === String(currentUserId);
+      });
+    },
+    [user]
   );
+
+  const deleteActivity = useCallback(async (activityId) => {
+    await api.delete(`/api/activity-logs-item/${activityId}/delete/`, {
+      withCredentials: true,
+    });
+    deletedIdsRef.current.add(activityId);
+    setActivityLogs((current) => current.filter((log) => log.id !== activityId));
+  }, []);
+
+  const clearAllActivities = useCallback(async () => {
+    await api.delete("/api/activity-logs-item/clear-all-logs/", {
+      withCredentials: true,
+    });
+    setActivityLogs((current) => {
+      current.forEach((log) => deletedIdsRef.current.add(log.id));
+      return [];
+    });
+  }, []);
 
   // -----------------------------
   // INITIAL FETCH
@@ -162,5 +190,7 @@ export const useVendorActivityLogs = ({ all = false } = {}) => {
     activityLogs,
     loading,
     error,
+    deleteActivity,
+    clearAllActivities,
   };
 };
