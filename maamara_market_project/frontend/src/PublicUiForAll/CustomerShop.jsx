@@ -22,6 +22,7 @@ const MAINTENANCE_ALLOWED_PATHS = [
 
 const CustomerShop = () => {
   const location = useLocation();
+  const isNativeApp = typeof window !== "undefined" && window.Capacitor?.isNativePlatform?.() === true;
   const [maintenance, setMaintenance] = useState({ enabled: false, message: "" });
 
   useEffect(() => {
@@ -64,7 +65,7 @@ const CustomerShop = () => {
         <Outlet />
       </main>
       <MobileMenu />
-      <Footer />
+      {!isNativeApp && <Footer />}
       <MessagingLauncher />
     </>
   );
