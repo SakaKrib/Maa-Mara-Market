@@ -59,18 +59,46 @@ class AllNotificationsView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
-        # Administrators can review the full notification stream. Vendors and
-        # customers only receive notifications addressed to their own account.
+        # Administrators can review the full notification stream. Other
+        # authenticated users only receive notifications addressed to them.
         notifications = Notification.objects.all().order_by("-created_at")
         if not request.user.is_staff and not request.user.is_superuser:
             notifications = notifications.filter(user=request.user)
         serializer = NotificationSerializer(notifications, many=True)
         data = serializer.data
-        # Sanitize string fields in notifications
-        for n in data:
-            for k, v in n.items():
-                n[k] = sanitize(v)
+        for notification in data:
+            for key, value in notification.items():
+                notification[key] = sanitize(value)
         return Response(data)
+
+
+class NotificationDeleteView(APIView):
+    """Delete one visible notification or clear the current role's notification feed."""
+
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self, request):
+        if request.user.is_staff or request.user.is_superuser:
+            # The admin feed currently exposes the full notification stream.
+            return Notification.objects.all()
+        return Notification.objects.filter(user=request.user)
+
+    def delete(self, request, notification_id=None):
+        notifications = self.get_queryset(request)
+
+        if notification_id is not None:
+            notification = notifications.filter(pk=notification_id).first()
+            if notification is None:
+                # Do not disclose whether another account owns this notification.
+                return Response({"detail": "Notification not found."}, status=status.HTTP_404_NOT_FOUND)
+            notification.delete()
+            return Response(status=status.HTTP_204_NO_CONTENT)
+
+        deleted_count, _ = notifications.delete()
+        return Response(
+            {"deleted_count": deleted_count},
+            status=status.HTTP_200_OK,
+        )
 
 # -------------------------------
 # About page content
@@ -775,37 +803,46 @@ class ActivityLogViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
-        queryset = ActivityLog.objects.all().order_by('-timestamp')
+        # Reuse the same actor-scoped queryset as the dashboard feed so that
+        # delete-by-id and clear-all cannot affect another role's activity.
+        queryset = activity_logs_for_user(self.request.user)
         item_id = self.request.query_params.get("item")
         if item_id:
             queryset = queryset.filter(item_id=item_id)
         return queryset
 
-    # ✅ DELETE a single log
+    def _has_activity_dashboard_role(self):
+        user = self.request.user
+        return bool(
+            user.is_staff
+            or user.is_superuser
+            or getattr(user, "vendor", None) is not None
+        )
+
     @action(detail=True, methods=["delete"], url_path="delete")
     def delete_single_log(self, request, pk=None):
-        try:
-            log = self.get_object()  # gets the ActivityLog instance by pk
-            log.delete()
-            return Response({"message": "Log deleted"}, status=status.HTTP_204_NO_CONTENT)
-        except ActivityLog.DoesNotExist:
-            return Response({"error": "Log not found"}, status=status.HTTP_404_NOT_FOUND)
+        if not self._has_activity_dashboard_role():
+            return Response({"detail": "Activity deletion is not permitted for this account."}, status=status.HTTP_403_FORBIDDEN)
+        log = self.get_object()
+        log.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
-    # ✅ DELETE logs for a specific item
     @action(detail=False, methods=["delete"], url_path="clear-item-logs")
     def clear_item_logs(self, request):
+        if not self._has_activity_dashboard_role():
+            return Response({"detail": "Activity deletion is not permitted for this account."}, status=status.HTTP_403_FORBIDDEN)
         item_id = request.query_params.get("item")
         if not item_id:
             return Response({"error": "Item ID is required"}, status=status.HTTP_400_BAD_REQUEST)
-        count, _ = ActivityLog.objects.filter(item_id=item_id).delete()
-        return Response({"message": f"{count} logs deleted for item ID {item_id}"}, status=status.HTTP_200_OK)
+        count, _ = self.get_queryset().filter(item_id=item_id).delete()
+        return Response({"deleted_count": count}, status=status.HTTP_200_OK)
 
-    # ✅ DELETE all activity logs
     @action(detail=False, methods=["delete"], url_path="clear-all-logs")
     def clear_all_logs(self, request):
-        count, _ = ActivityLog.objects.all().delete()
-        return Response({"message": f"{count} total logs deleted successfully"}, status=status.HTTP_200_OK)
-    
+        if not self._has_activity_dashboard_role():
+            return Response({"detail": "Activity deletion is not permitted for this account."}, status=status.HTTP_403_FORBIDDEN)
+        count, _ = self.get_queryset().delete()
+        return Response({"deleted_count": count}, status=status.HTTP_200_OK)
 
 
 # -------------------------------
