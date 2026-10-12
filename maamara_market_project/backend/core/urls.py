@@ -21,6 +21,8 @@ urlpatterns = [
     path('api/activity-logs/', get_activity_logs, name='activity-logs'),
     # path('api/notifications/', AllVendorNotificationsView.as_view(), name='get_user_notifications'),
      path('api/notifications/', AllNotificationsView.as_view(), name='get_user_notifications'),
+    path('api/notifications/clear-all/', NotificationDeleteView.as_view(), name='notifications-clear-all'),
+    path('api/notifications/<int:notification_id>/', NotificationDeleteView.as_view(), name='notification-delete'),
 
     path('api/notifications/<int:notification_id>/mark_seen/', mark_notification_seen, name='mark-notification-seen'),
 
