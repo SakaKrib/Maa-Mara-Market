@@ -1,0 +1,172 @@
+/* Native launch animation only. The website does not render this component. */
+.mm-native-launch-screen {
+  position: fixed;
+  inset: 0;
+  z-index: 100000;
+  display: grid;
+  place-items: center;
+  min-height: 100vh;
+  min-height: 100dvh;
+  padding: max(24px, env(safe-area-inset-top, 0px)) 20px max(24px, env(safe-area-inset-bottom, 0px));
+  box-sizing: border-box;
+  overflow: hidden;
+  background: #fff;
+  color: #0a021c;
+  animation: mm-launch-screen-in 220ms ease-out both;
+}
+
+.mm-native-launch-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 28px;
+  width: 100%;
+}
+
+.mm-native-launch-screen .mm-launch-logo {
+  margin: 0;
+  opacity: 0;
+  transform: translateY(8px) scale(.96);
+  animation: mm-launch-logo-arrive 480ms cubic-bezier(.2,.75,.25,1) 120ms forwards;
+}
+
+.mm-native-launch-screen .mm-launch-logo .mm-launch-logo-link {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  width: auto;
+  padding: 4px;
+  border: 1px solid #d4af37;
+  border-radius: 7px;
+  background: #fff;
+  color: #0a021c;
+  font-family: "Poppins", "regular", sans-serif;
+  font-size: clamp(1.45rem, 6vw, 2rem);
+  line-height: 1.2;
+  text-decoration: none;
+  box-shadow: 0 10px 28px rgba(10, 2, 28, .08);
+  animation: mm-launch-container-settle 680ms cubic-bezier(.2,.8,.2,1) 520ms both;
+}
+
+.mm-native-launch-screen .mm-launch-maa {
+  display: inline-block;
+  animation: mm-launch-piece-left 560ms cubic-bezier(.2,.8,.2,1) 300ms both;
+}
+
+.mm-native-launch-screen .mm-launch-mara {
+  display: inline-block;
+  animation: mm-launch-piece-up 600ms cubic-bezier(.2,.8,.2,1) 460ms both;
+}
+
+.mm-native-launch-screen .mm-launch-market {
+  display: inline-block;
+  animation: mm-launch-piece-right 600ms cubic-bezier(.2,.8,.2,1) 620ms both;
+}
+
+.mm-native-launch-screen .mm-launch-logo .it-name {
+  background-color: rgba(255, 0, 0, .253);
+  border-left: 5px solid #8de02c;
+  border-top-left-radius: 5px;
+  border-bottom-left-radius: 5px;
+  padding: 2px 10px;
+  margin-left: 0;
+}
+
+.mm-native-launch-screen .mm-launch-logo .mkrt {
+  color: green;
+  font-family: jaka, "regular", sans-serif;
+  font-weight: bold;
+}
+
+.mm-native-launch-loader {
+  display: flex;
+  min-height: 48px;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  opacity: 0;
+  transform: translateY(6px);
+  pointer-events: none;
+}
+
+.mm-native-launch-loader.is-visible {
+  animation: mm-launch-loader-in 320ms ease-out both;
+}
+
+.mm-native-launch-spinner {
+  display: block;
+  width: 28px;
+  height: 28px;
+  border: 3px solid rgba(0, 128, 0, .16);
+  border-top-color: #008000;
+  border-right-color: #d4af37;
+  border-radius: 50%;
+  animation: mm-launch-spin 760ms linear infinite;
+}
+
+.mm-native-launch-loading-text {
+  color: #7c899a;
+  font-family: "regular", sans-serif;
+  font-size: 12px;
+  letter-spacing: .025em;
+}
+
+@keyframes mm-launch-screen-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes mm-launch-logo-arrive {
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes mm-launch-piece-left {
+  from { opacity: 0; transform: translateX(-22px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes mm-launch-piece-up {
+  from { opacity: 0; transform: translateY(18px) scale(.94); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes mm-launch-piece-right {
+  from { opacity: 0; transform: translateX(22px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes mm-launch-container-settle {
+  from { box-shadow: 0 0 0 rgba(10, 2, 28, 0); border-color: rgba(212, 175, 55, .2); }
+  to { box-shadow: 0 10px 28px rgba(10, 2, 28, .08); border-color: #d4af37; }
+}
+
+@keyframes mm-launch-loader-in {
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes mm-launch-spin {
+  to { transform: rotate(360deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mm-native-launch-screen *,
+  .mm-native-launch-screen *::before,
+  .mm-native-launch-screen *::after {
+    animation-duration: .01ms !important;
+    animation-delay: 0ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+  }
+
+  .mm-native-launch-screen .mm-launch-logo {
+    opacity: 1;
+    transform: none;
+  }
+
+  .mm-native-launch-loader.is-visible {
+    opacity: 1;
+    transform: none;
+  }
+}
