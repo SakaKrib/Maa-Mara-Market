@@ -141,7 +141,9 @@ export default function Messaging({ floating = false, onClose = null }) {
   const startConversation = async (contact) => {
     try {
       setError("");
-      const payload = isAdmin ? { participant_id: contact.id } : {};
+      const payload = isAdmin
+        ? (contact.is_visitor ? { visitor_id: contact.visitor_id } : { participant_id: contact.id })
+        : {};
       const response = await api.post("/api/messaging/conversations/", payload);
       await loadConversations();
       setSelected(response.data);
@@ -194,7 +196,9 @@ export default function Messaging({ floating = false, onClose = null }) {
 
   const activeContacts = useMemo(() => {
     if (!isAdmin) return contacts.admins || [];
-    return tab === "vendors" ? contacts.vendors || [] : contacts.users || [];
+    if (tab === "vendors") return contacts.vendors || [];
+    if (tab === "visitors") return contacts.visitors || [];
+    return contacts.users || [];
   }, [contacts, isAdmin, tab]);
 
   const other = (conversation) => isAdmin ? conversation.participant : conversation.admin;
@@ -233,9 +237,10 @@ export default function Messaging({ floating = false, onClose = null }) {
               <div><h1 className="text-lg font-bold text-[#222]">Messages</h1><p className="text-xs text-[#595959]">{isAdmin ? "Users and vendors" : "Chat with Maa Mara Admin"}</p></div>
             </div>
             {isAdmin ? (
-              <div className="mt-4 grid grid-cols-2 gap-2">
-                <button type="button" onClick={() => setTab("users")} className={"rounded-xl px-3 py-2 text-xs font-bold " + (tab === "users" ? "bg-[#2563eb] text-[#2563eb]-foreground" : "bg-[#f8f8f6] text-[#595959]")}>Users</button>
-                <button type="button" onClick={() => setTab("vendors")} className={"rounded-xl px-3 py-2 text-xs font-bold " + (tab === "vendors" ? "bg-[#2563eb] text-[#2563eb]-foreground" : "bg-[#f8f8f6] text-[#595959]")}>Vendors</button>
+              <div className="mt-4 grid grid-cols-3 gap-2">
+                <button type="button" onClick={() => setTab("users")} className={"rounded-xl px-2 py-2 text-xs font-bold transition " + (tab === "users" ? "bg-[#2563eb] text-white" : "bg-[#f8f8f6] text-[#595959] hover:bg-[#eff6ff]")}>Users</button>
+                <button type="button" onClick={() => setTab("vendors")} className={"rounded-xl px-2 py-2 text-xs font-bold transition " + (tab === "vendors" ? "bg-[#2563eb] text-white" : "bg-[#f8f8f6] text-[#595959] hover:bg-[#eff6ff]")}>Vendors</button>
+                <button type="button" onClick={() => setTab("visitors")} className={"rounded-xl px-2 py-2 text-xs font-bold transition " + (tab === "visitors" ? "bg-[#2563eb] text-white" : "bg-[#f8f8f6] text-[#595959] hover:bg-[#eff6ff]")}>Visitors</button>
               </div>
             ) : (
               <button type="button" onClick={() => contacts.admins?.[0] && startConversation(contacts.admins[0])} className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-[#2563eb] px-4 py-2.5 text-xs font-bold text-gray-100"><IonIcon icon={addOutline} /> Start a chat with Admin</button>
@@ -246,16 +251,16 @@ export default function Messaging({ floating = false, onClose = null }) {
             {conversations.map((conversation) => (
               <button key={conversation.id} type="button" onClick={() => selectConversation(conversation)} className={"flex w-full gap-3 border-b border-[#e6e6e4] p-3 text-left hover:bg-[#f8f8f6] " + (selected?.id === conversation.id ? "bg-[#f8f8f6]" : "")}>
                 <div className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-[#eff6ff] text-[#2563eb]"><IonIcon icon={isAdmin && other(conversation)?.is_vendor ? storefrontOutline : peopleOutline} /></div>
-                <div className="min-w-0 flex-1"><div className="flex justify-between gap-2"><p className="truncate text-sm font-semibold text-[#222]">{nameOf(conversation)}</p>{conversation.unread_count > 0 && <span className="rounded-full bg-[#2563eb] px-2 py-0.5 text-[10px] text-[#2563eb]-foreground">{conversation.unread_count}</span>}</div><p className="truncate text-xs text-[#595959]">{conversation.last_message?.body || (conversation.last_message?.image ? "Image" : "No messages yet")}</p></div>
+                <div className="min-w-0 flex-1"><div className="flex justify-between gap-2"><p className="truncate text-sm font-semibold text-[#222]">{nameOf(conversation)}</p>{conversation.unread_count > 0 && <span className="rounded-full bg-[#2563eb] px-2 py-0.5 text-[10px] text-white">{conversation.unread_count}</span>}</div><p className="truncate text-xs text-[#595959]">{conversation.last_message?.body || (conversation.last_message?.image ? "Image" : "No messages yet")}</p></div>
               </button>
             ))}
 
             <div className="border-t border-[#e6e6e4] p-3">
               <p className="mb-2 px-1 text-[10px] font-bold uppercase tracking-wider text-[#595959]">{isAdmin ? "Start new chat" : "Available admin"}</p>
               {activeContacts.map((contact) => (
-                <button key={contact.id} type="button" onClick={() => startConversation(contact)} className="flex w-full items-center gap-3 rounded-xl p-2 text-left hover:bg-[#f8f8f6]">
-                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#eff6ff] text-[#2563eb]"><IonIcon icon={contact.is_vendor ? storefrontOutline : personOutline} /></div>
-                  <div className="min-w-0"><p className="truncate text-xs font-semibold text-[#222]">{contact.name}</p><p className="truncate text-[10px] text-[#595959]">{contact.email}</p></div>
+                <button key={contact.is_visitor ? contact.visitor_id : contact.id} type="button" onClick={() => startConversation(contact)} className="flex w-full items-center gap-3 rounded-xl p-2 text-left hover:bg-[#f8f8f6]">
+                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#eff6ff] text-[#2563eb]"><IonIcon icon={contact.is_vendor ? storefrontOutline : contact.is_visitor ? peopleOutline : personOutline} /></div>
+                  <div className="min-w-0"><p className="truncate text-xs font-semibold text-[#222]">{contact.name}</p><p className="truncate text-[10px] text-[#595959]">{contact.is_visitor ? "Visitor · start a chat" : contact.email}</p></div>
                 </button>
               ))}
             </div>
@@ -273,7 +278,7 @@ export default function Messaging({ floating = false, onClose = null }) {
               <div className="flex-1 overflow-y-auto bg-[#f8f8f6] p-3 sm:p-5">
                 {messages.map((message) => {
                   const mine = user ? message.sender_id === user.id : isGuest && message.sender_id === null;
-                  return <div key={message.id} className={"mb-3 flex " + (mine ? "justify-end" : "justify-start")}><div className={"max-w-[82%] rounded-2xl px-3 py-2 " + (mine ? "rounded-br-md bg-[#2563eb] text-[#2563eb]-foreground" : "rounded-bl-md bg-[#f8f8f6] text-[#222]")}>{message.image && <img src={resolveApiAssetUrl(message.image)} alt="Attachment" className="mb-2 max-h-72 max-w-full rounded-xl object-contain" />}{message.body && <p className="whitespace-pre-wrap break-words text-sm">{message.body}</p>}<p className="mt-1 text-[9px] opacity-70">{timeLabel(message.created_at)}</p></div></div>;
+                  return <div key={message.id} className={"mb-3 flex " + (mine ? "justify-end" : "justify-start")}><div className={"max-w-[82%] rounded-2xl px-3 py-2 " + (mine ? "rounded-br-md bg-[#2563eb] text-white" : "rounded-bl-md bg-[#f8f8f6] text-[#222]")}>{message.image && <img src={resolveApiAssetUrl(message.image)} alt="Attachment" className="mb-2 max-h-72 max-w-full rounded-xl object-contain" />}{message.body && <p className="whitespace-pre-wrap break-words text-sm">{message.body}</p>}<p className="mt-1 text-[9px] opacity-70">{timeLabel(message.created_at)}</p></div></div>;
                 })}
                 <div ref={endRef} />
               </div>
@@ -283,7 +288,7 @@ export default function Messaging({ floating = false, onClose = null }) {
                 <div className="flex items-end gap-2 rounded-2xl border border-[#e6e6e4] bg-[#f8f8f6] p-2">
                   <label className="grid h-10 w-10 shrink-0 cursor-pointer place-items-center rounded-xl text-[#595959] hover:bg-[#f8f8f6]"><IonIcon icon={attachOutline} className="text-xl" /><input type="file" accept="image/jpeg,image/png,image/webp" className="hidden" onChange={selectImage} /></label>
                   <textarea value={body} onChange={(e) => setBody(e.target.value)} rows={1} placeholder="Write a message..." className="min-h-10 flex-1 resize-none bg-transparent px-2 py-2 text-sm outline-none" />
-                  <button type="submit" disabled={sending || (!body.trim() && !image)} className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-[#2563eb] px-2.5 text-[#2563eb]-foreground transition hover:bg-[#1d4ed8] disabled:opacity-50"><IonIcon icon={sendOutline} /></button>
+                  <button type="submit" disabled={sending || (!body.trim() && !image)} className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-[#2563eb] px-2.5 text-white transition hover:bg-[#1d4ed8] disabled:opacity-50"><IonIcon icon={sendOutline} /></button>
                 </div>
               </form>
             </>
