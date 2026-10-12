@@ -19,11 +19,18 @@ def create_vendor_request_notification(sender, instance, created, **kwargs):
     admins = User.objects.filter(is_superuser=True)
 
     if created:
+        user = instance.user
+        vendor_name = (user.get_full_name() or "").strip() or user.username
+        vendor_label = (
+            vendor_name
+            if vendor_name.lower().startswith("vendor ")
+            else f"Vendor {vendor_name}"
+        )
         for admin in admins:
             Notification.objects.create(
                 user=admin,
                 title="New Vendor Request",
-                message="A vendor submitted a new vendor request.",
+                message=f"{vendor_label} submitted a new vendor request.",
                 vendor_request=instance,
                 url=frontend_review_url
             )
