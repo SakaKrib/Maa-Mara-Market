@@ -3,7 +3,7 @@ from django.test import TestCase
 from rest_framework.test import APIRequestFactory, force_authenticate
 
 from ReactSerializers.models import Item
-from vendorDashboard.models import Vendor
+from vendorDashboard.models import Vendor, VendorRequest
 from core.models import ActivityLog, Notification
 from core.Serializer import ActivityLogSerializer, NotificationSerializer, get_activity_logs
 from ReactSerializers.vendors import list_verified_vendor_requests
@@ -323,3 +323,44 @@ class ActivityNotificationPresentationTests(TestCase):
             data["display_message"],
             "Vendor One Vendor updated Bidets Tool.",
         )
+
+
+    def test_legacy_admin_vendor_registration_notification_names_vendor(self):
+        vendor_request = VendorRequest.objects.create(
+            user=self.vendor_user,
+            vendor_data={"first_name": "One", "surname_name": "Vendor"},
+        )
+        notification = Notification.objects.create(
+            user=self.admin,
+            title="New Vendor Request",
+            message="A vendor submitted a new vendor request.",
+            vendor_request=vendor_request,
+        )
+
+        request = APIRequestFactory().get("/api/notifications/")
+        force_authenticate(request, user=self.admin)
+        data = NotificationSerializer(
+            notification,
+            context={"request": request},
+        ).data
+
+        self.assertEqual(
+            data["display_message"],
+            "Vendor One Vendor submitted a new vendor request.",
+        )
+
+    def test_vendor_notification_hides_admin_style_vendor_name(self):
+        notification = Notification.objects.create(
+            user=self.vendor_user,
+            title="Item updated",
+            message="Vendor One Vendor updated Bidets Tool.",
+        )
+        request = APIRequestFactory().get("/api/notifications/")
+        force_authenticate(request, user=self.vendor_user)
+
+        data = NotificationSerializer(
+            notification,
+            context={"request": request},
+        ).data
+
+        self.assertEqual(data["display_message"], "You updated Bidets Tool.")
