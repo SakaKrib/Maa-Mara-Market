@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Drawer, Tabs, Tab, Divider, IconButton, CircularProgress } from "@mui/material";
-import { Close, Mail, Send, AlertCircle, Inbox, PenLine } from "lucide-react";
+import { X as Close, Mail, Send, AlertCircle, Inbox, PenLine } from "lucide-react";
 import api from "../../../Services/Api";
 import { Button } from "../../../../components/ui/button";
 import ComposeEmail from "./AdminComposeEmail";
