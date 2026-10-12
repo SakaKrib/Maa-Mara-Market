@@ -6,6 +6,7 @@ from ReactSerializers.models import Item
 from vendorDashboard.models import Vendor
 from core.models import ActivityLog, Notification
 from core.Serializer import ActivityLogSerializer, NotificationSerializer, get_activity_logs
+from ReactSerializers.vendors import list_verified_vendor_requests
 
 
 class ActivityNotificationPresentationTests(TestCase):
@@ -235,3 +236,90 @@ class ActivityNotificationPresentationTests(TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.data, [])
+
+
+    def test_vendor_request_list_get_does_not_create_activity(self):
+        request = APIRequestFactory().get("/api/vendor/requests?status=verified")
+        force_authenticate(request, user=self.admin)
+
+        response = list_verified_vendor_requests(request)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            ActivityLog.objects.filter(action="viewed_vendor_requests").count(),
+            0,
+        )
+
+    def test_admin_feed_shows_only_one_legacy_vendor_request_view_activity(self):
+        ActivityLog.objects.create(
+            user=self.admin,
+            actor_type="admin",
+            action="viewed_vendor_requests",
+            description="The administrator viewed vendor requests (all).",
+        )
+        ActivityLog.objects.create(
+            user=self.admin,
+            actor_type="admin",
+            action="viewed_vendor_requests",
+            description="The administrator viewed vendor requests (verified).",
+        )
+
+        request = APIRequestFactory().get("/api/activity-logs/?scope=admin&all=true")
+        force_authenticate(request, user=self.admin)
+        response = get_activity_logs(request)
+
+        matching = [
+            row for row in response.data
+            if row["action"] == "viewed_vendor_requests"
+        ]
+        self.assertEqual(len(matching), 1)
+
+    def test_vendor_item_update_uses_first_person_for_vendor_and_named_vendor_for_admin(self):
+        activity = ActivityLog.objects.create(
+            user=self.vendor_user,
+            actor_type="vendor",
+            action="item_updated",
+            description="A vendor updated Bidets Tool.",
+            item=self.item,
+        )
+
+        vendor_data = self.serialize_activity(activity, self.vendor_user)
+        admin_data = self.serialize_activity(activity, self.admin)
+
+        self.assertEqual(vendor_data["display_message"], "You updated Bidets Tool.")
+        self.assertEqual(
+            admin_data["display_message"],
+            "Vendor One Vendor updated Bidets Tool.",
+        )
+
+    def test_vendor_item_request_uses_first_person_in_vendor_activity(self):
+        activity = ActivityLog.objects.create(
+            user=self.vendor_user,
+            actor_type="vendor",
+            action="item_request_created",
+            description="A vendor submitted an item request for Bidets Tool.",
+            item=self.item,
+        )
+
+        data = self.serialize_activity(activity, self.vendor_user)
+
+        self.assertEqual(
+            data["display_message"],
+            "You submitted an item request for Bidets Tool.",
+        )
+
+    def test_admin_vendor_item_activity_preserves_named_vendor_message(self):
+        activity = ActivityLog.objects.create(
+            user=self.admin,
+            actor_type="admin",
+            action="item_updated",
+            description="Vendor One Vendor updated Bidets Tool.",
+            item=self.item,
+        )
+
+        data = self.serialize_activity(activity, self.admin)
+
+        self.assertEqual(
+            data["display_message"],
+            "Vendor One Vendor updated Bidets Tool.",
+        )
