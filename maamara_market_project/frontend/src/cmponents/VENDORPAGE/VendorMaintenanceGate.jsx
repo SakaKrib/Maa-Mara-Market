@@ -4,9 +4,9 @@ import { Clock3, PackageCheck, Wrench } from "lucide-react";
 import api from "../../Services/Api";
 
 const VENDOR_ORDER_PATHS = [
-  /^\\/vendors-dashboard\\/orders\\/?$/,
-  /^\\/vendors-dashboard\\/pending-orders\\/?$/,
-  /^\\/vendors-dashboard\\/order-stats\\/?$/,
+  /^\/vendors-dashboard\/orders\/?$/,
+  /^\/vendors-dashboard\/pending-orders\/?$/,
+  /^\/vendors-dashboard\/order-stats\/?$/,
 ];
 
 export default function VendorMaintenanceGate({ children }) {
