@@ -13,7 +13,7 @@ on:
         description: "Public HTTPS origin serving the Django API (verify before release)"
         required: true
         type: string
-        default: "https://mamaramarket.com"
+        default: "https://maamaramarket.com"
 
 permissions:
   contents: read
@@ -24,7 +24,7 @@ concurrency:
 
 env:
   FRONTEND_DIR: maamara_market_project/frontend
-  MOBILE_API_URL: ${{ github.event.inputs.api_url || 'https://mamaramarket.com' }}
+  MOBILE_API_URL: ${{ github.event.inputs.api_url || 'https://maamaramarket.com' }}
 
 jobs:
   android:
