@@ -923,12 +923,8 @@ def list_verified_vendor_requests(request):
         requests = VendorRequest.objects.filter(status=status)
     else:
         requests = VendorRequest.objects.all()
-    log_activity(
-        user=request.user,
-        actor_type='admin',
-        action='viewed_vendor_requests',
-        description=f"The administrator viewed vendor requests ({status or 'all'})."
-    )    
+    # This is a read-only list endpoint. Activity records must only be created
+    # by explicit business actions, not by dashboard fetches/reloads.
     serializer = VendorRequestSerializer(requests, many=True)
     return Response(serializer.data)
 
