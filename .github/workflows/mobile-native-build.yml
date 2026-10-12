@@ -30,6 +30,7 @@ jobs:
   android:
     name: Generate and build Android debug APK
     runs-on: ubuntu-latest
+    timeout-minutes: 45
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
@@ -91,6 +92,7 @@ jobs:
   ios-project:
     name: Generate iOS project bundle
     runs-on: macos-latest
+    timeout-minutes: 45
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
