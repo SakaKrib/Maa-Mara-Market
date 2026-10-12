@@ -54,7 +54,9 @@ jobs:
 
       - name: Install temporary Capacitor build tools
         working-directory: ${{ env.FRONTEND_DIR }}
-        run: npm install --no-save --package-lock=false @capacitor/core@7 @capacitor/cli@7 @capacitor/android@7 @capacitor/ios@7 typescript@5.8.3
+        # Keep package-lock.json as the resolution baseline for existing app
+        # dependencies; only add the native build tools without saving changes.
+        run: npm install --no-save @capacitor/core@7 @capacitor/cli@7 @capacitor/android@7 @capacitor/ios@7 typescript@5.8.3
 
       - name: Build mobile web bundle
         working-directory: ${{ env.FRONTEND_DIR }}
@@ -110,7 +112,9 @@ jobs:
 
       - name: Install temporary Capacitor build tools
         working-directory: ${{ env.FRONTEND_DIR }}
-        run: npm install --no-save --package-lock=false @capacitor/core@7 @capacitor/cli@7 @capacitor/android@7 @capacitor/ios@7 typescript@5.8.3
+        # Keep package-lock.json as the resolution baseline for existing app
+        # dependencies; only add the native build tools without saving changes.
+        run: npm install --no-save @capacitor/core@7 @capacitor/cli@7 @capacitor/android@7 @capacitor/ios@7 typescript@5.8.3
 
       - name: Build mobile web bundle
         working-directory: ${{ env.FRONTEND_DIR }}
