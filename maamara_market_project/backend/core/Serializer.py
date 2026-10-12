@@ -516,10 +516,27 @@ class ActivityLogSerializer(serializers.ModelSerializer):
 
     def _vendor_label(self, obj):
         user = getattr(obj, "user", None)
-        try:
-            vendor = user.vendor if user is not None else None
-        except Exception:
-            vendor = None
+        vendor = None
+
+        if obj.actor_type == "admin":
+            # Legacy admin rows retained the item-request id in related_url.
+            match = re.search(r"vendoritemrequest/(\d+)", obj.related_url or "", re.I)
+            if not match:
+                return "A vendor"
+            try:
+                from vendorDashboard.models import VendorItemRequest
+                item_request = VendorItemRequest.objects.select_related("vendor__user").get(
+                    pk=int(match.group(1))
+                )
+                vendor = item_request.vendor
+                user = getattr(vendor, "user", None)
+            except Exception:
+                return "A vendor"
+        else:
+            try:
+                vendor = user.vendor if user is not None else None
+            except Exception:
+                vendor = None
 
         name = ""
         if vendor is not None:
@@ -566,6 +583,14 @@ class ActivityLogSerializer(serializers.ModelSerializer):
         if description.startswith("a customer"):
             return "A customer"
         if description.startswith("a vendor"):
+            if (
+                is_admin_viewer
+                and obj.actor_type == "admin"
+                and obj.action == "vendor_item_request_received"
+            ):
+                vendor_label = self._vendor_label(obj)
+                if vendor_label != "A vendor":
+                    return vendor_label
             return "A vendor"
         if description.startswith("your ") and obj.action in {
             "item_request_approved",
@@ -623,6 +648,13 @@ class ActivityLogSerializer(serializers.ModelSerializer):
             and description.lower().startswith("vendor ")
         ):
             return re.sub(r"'([^']+)'", r"\1", description)
+        if (
+            obj.action == "vendor_item_request_received"
+            and description.lower().startswith("a vendor ")
+        ):
+            vendor_label = self._vendor_label(obj)
+            if vendor_label != "A vendor":
+                return re.sub(r"^A vendor\b", vendor_label, description, count=1, flags=re.I)
 
         actor = self._actor_phrase(obj)
         item_name = self._item_name(obj)
