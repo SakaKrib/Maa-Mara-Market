@@ -462,3 +462,24 @@ class AboutPage(models.Model):
 
     def __str__(self):
         return self.hero_title or "Maa Mara About Page"
+
+class SiteMaintenanceSettings(models.Model):
+    """Singleton configuration for the public marketplace maintenance window."""
+
+    enabled = models.BooleanField(default=False)
+    message = models.TextField(
+        blank=True,
+        default="We're making a few improvements to Maa Mara Market. We'll be back shortly. You can still check the status of an existing order below.",
+    )
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = "Site maintenance settings"
+        verbose_name_plural = "Site maintenance settings"
+
+    def save(self, *args, **kwargs):
+        self.pk = 1
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return "Maa Mara Market maintenance settings"
