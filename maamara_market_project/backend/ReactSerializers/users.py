@@ -493,18 +493,39 @@ class HybridCheckAuthView(APIView):
 
 logger = logging.getLogger("ReactSerializers.users")
 
-@csrf_exempt
-@permission_classes([AllowAny])
 @require_http_methods(["POST"])
 def login_view(request):
-
+    """Authenticate customers/vendors using either username or email."""
     visitor_id = request.COOKIES.get("visitorId") or request.POST.get("visitorId")
+    identifier = (
+        request.POST.get("username")
+        or request.POST.get("email")
+        or ""
+    ).strip()
+    password = request.POST.get("password") or ""
 
-    identifier = request.POST.get("username")
-    password = request.POST.get("password")
-    csrf_token = request.META.get('HTTP_X_CSRFTOKEN')
+    if not identifier or not password:
+        return JsonResponse(
+            {"success": False, "error": "Email/username and password are required."},
+            status=400,
+        )
 
-    user = authenticate(request, username=identifier, password=password)
+    email_matches = []
+    auth_identifier = identifier
+    if "@" in identifier:
+        email_matches = list(
+            User.objects.filter(email__iexact=identifier).order_by("pk")[:2]
+        )
+        if len(email_matches) > 1:
+            logger.warning("Login blocked because multiple local users share an email")
+            return JsonResponse(
+                {"success": False, "error": "Invalid credentials"},
+                status=401,
+            )
+        if email_matches:
+            auth_identifier = email_matches[0].get_username()
+
+    user = authenticate(request, username=auth_identifier, password=password)
 
     if user is not None:
         auth_login(request, user)
@@ -513,18 +534,17 @@ def login_view(request):
             if getattr(user, "is_superuser", False) or getattr(user, "is_staff", False)
             else ("vendor" if hasattr(user, "vendor") else "customer")
         )
-        Profile.objects.get_or_create(user=user)
+        profile, _ = Profile.objects.get_or_create(user=user)
 
         refresh = RefreshToken.for_user(user)
         access_token = str(refresh.access_token)
         refresh_token = str(refresh)
-
         merge_visitor_data_to_user(user, visitor_id)
 
         incomplete_profile = not all([
-            getattr(user.profile, "profile_picture", None),
-            getattr(user.profile, "date_of_birth", None),
-            getattr(user.profile, "location", None)
+            getattr(profile, "profile_picture", None),
+            getattr(profile, "date_of_birth", None),
+            getattr(profile, "location", None),
         ])
 
         response = JsonResponse({
@@ -534,25 +554,47 @@ def login_view(request):
                 "id": user.id,
                 "username": user.username,
                 "email": user.email,
-                "role": role
-            }
+                "role": role,
+            },
         })
-        response.delete_cookie('visitorAccessToken')
-        response.delete_cookie('visitorRefreshToken')
-        response.delete_cookie('visitorId')
-        response.delete_cookie('user_sessionid')
-
-        response.set_cookie("accessToken", access_token, httponly=True, secure=request.is_secure(), samesite="Lax", max_age=5 * 60, path="/")
-        response.set_cookie("refreshToken", refresh_token, httponly=True, secure=request.is_secure(), samesite="Lax", max_age=2592000, path="/")
+        response.delete_cookie("visitorAccessToken", path="/")
+        response.delete_cookie("visitorRefreshToken", path="/")
+        response.delete_cookie("visitorId", path="/")
+        response.set_cookie(
+            "accessToken", access_token, httponly=True,
+            secure=request.is_secure(), samesite="Lax",
+            max_age=5 * 60, path="/",
+        )
+        response.set_cookie(
+            "refreshToken", refresh_token, httponly=True,
+            secure=request.is_secure(), samesite="Lax",
+            max_age=2592000, path="/",
+        )
         return response
 
+    # If an email matched a local user, do not fall through to another account
+    # type after a bad password.
+    if email_matches:
+        return JsonResponse(
+            {"success": False, "error": "Invalid credentials"},
+            status=401,
+        )
+
     try:
-        vendor = Vendor.objects.get(email=identifier)
+        vendor = Vendor.objects.get(email__iexact=identifier)
     except Vendor.DoesNotExist:
         try:
             vendor = Vendor.objects.get(username=identifier)
-        except Vendor.DoesNotExist:
-            return JsonResponse({"success": False, "error": "Invalid credentials"}, status=401)
+        except (Vendor.DoesNotExist, Vendor.MultipleObjectsReturned):
+            return JsonResponse(
+                {"success": False, "error": "Invalid credentials"},
+                status=401,
+            )
+    except Vendor.MultipleObjectsReturned:
+        return JsonResponse(
+            {"success": False, "error": "Invalid credentials"},
+            status=401,
+        )
 
     if vendor.user and vendor.user.check_password(password):
         merge_visitor_data_to_user(vendor.user, visitor_id)
@@ -566,104 +608,95 @@ def login_view(request):
                 "id": vendor.id,
                 "username": vendor.username,
                 "role": "vendor",
-                "vendor_picture": getattr(vendor, "profile_picture", None)
-            }
+                "vendor_picture": getattr(vendor, "profile_picture", None),
+            },
         })
-
         response.delete_cookie("visitorAccessToken", path="/")
         response.delete_cookie("visitorRefreshToken", path="/")
         response.delete_cookie("visitorId", path="/")
         response.delete_cookie("user_sessionid", path="/")
-        response.set_cookie("accessToken", access_token, httponly=True, secure=request.is_secure(), samesite="Lax", max_age=300, path="/")
-        response.set_cookie("refreshToken", refresh_token, httponly=True, secure=request.is_secure(), samesite="Lax", max_age=2592000, path="/")
+        response.set_cookie(
+            "accessToken", access_token, httponly=True,
+            secure=request.is_secure(), samesite="Lax",
+            max_age=300, path="/",
+        )
+        response.set_cookie(
+            "refreshToken", refresh_token, httponly=True,
+            secure=request.is_secure(), samesite="Lax",
+            max_age=2592000, path="/",
+        )
         return response
 
     return JsonResponse({"success": False, "error": "Invalid credentials"}, status=401)
 
 
-from django.shortcuts import redirect
-from django.contrib.auth import login
-from django.contrib.auth.models import User
-from django.utils.text import slugify
-from allauth.socialaccount.models import SocialAccount
-from rest_framework_simplejwt.tokens import RefreshToken
-import logging
-
-logger = logging.getLogger(__name__)
-
 def google_login_success(request):
+    """Finish an allauth Google login and issue the storefront's JWT cookies."""
+    if not request.user.is_authenticated:
+        return redirect(f"{settings.FRONTEND_URL.rstrip('/')}/unauthorized")
 
-    try:
-        social = SocialAccount.objects.get(provider="google", user=request.user)
-    except SocialAccount.DoesNotExist:
-        return redirect(f"{settings.FRONTEND_URL}/unauthorized")
+    user = request.user
+    social = (
+        SocialAccount.objects
+        .filter(provider="google", user=user)
+        .order_by("pk")
+        .first()
+    )
+    if not social:
+        return redirect(f"{settings.FRONTEND_URL.rstrip('/')}/unauthorized")
 
-    extra = social.extra_data
-
-    google_uid = social.uid
-    email = extra.get("email")
-
-    first_name = extra.get("given_name", "") or ""
-    last_name = extra.get("family_name", "") or ""
-
-    if not email:
-        return redirect(f"{settings.FRONTEND_URL}/unauthorized")
-
-    logger.info("Google authentication completed for a linked account")
-
-    user = User.objects.filter(email=email).first()
-
-    if not user:
-        base_username = slugify(email.split("@")[0])
-        username = base_username
-        counter = 1
-
-        while User.objects.filter(username=username).exists():
-            username = f"{base_username}{counter}"
-            counter += 1
-
-        user = User.objects.create_user(
-            username=username,
-            email=email,
-            first_name=first_name,
-            last_name=last_name,
+    extra = social.extra_data or {}
+    email = (extra.get("email") or user.email or "").strip()
+    if not user.email:
+        email_verified = extra.get("email_verified") is True or (
+            str(extra.get("email_verified", "")).strip().lower() == "true"
         )
+        if not email or not email_verified:
+            return redirect(
+                f"{settings.FRONTEND_URL.rstrip('/')}/unauthorized?reason=google-email-unverified"
+            )
+        user.email = email.lower()
 
-    if social.user != user:
-        social.user = user
-        social.save()
+    first_name = (extra.get("given_name") or "").strip()
+    last_name = (extra.get("family_name") or "").strip()
+    full_name = (extra.get("name") or "").strip()
+    if full_name and (not first_name or not last_name):
+        parts = full_name.split()
+        if not first_name and parts:
+            first_name = parts[0]
+        if not last_name and len(parts) > 1:
+            last_name = " ".join(parts[1:])
 
-    updated = False
-
+    update_fields = []
     if first_name and not user.first_name:
-        user.first_name = first_name
-        updated = True
-
+        user.first_name = first_name[:150]
+        update_fields.append("first_name")
     if last_name and not user.last_name:
-        user.last_name = last_name
-        updated = True
+        user.last_name = last_name[:150]
+        update_fields.append("last_name")
+    if not user.email and email:
+        user.email = email.lower()
+        update_fields.append("email")
+    if update_fields:
+        user.save(update_fields=list(dict.fromkeys(update_fields)))
 
-    if updated:
-        user.save()
-
-    login(
-        request,
-        user,
-        backend="django.contrib.auth.backends.ModelBackend"
+    # Match the provisioning performed by regular registration/login.
+    Profile.objects.get_or_create(user=user)
+    Wallet.objects.get_or_create(
+        user=user,
+        defaults={"balance": 0, "earned_coins": 0},
     )
 
     refresh = RefreshToken.for_user(user)
-
     visitor_id = request.COOKIES.get("visitorId")
     merge_visitor_data_to_user(user, visitor_id)
 
-    response = redirect(f"{settings.FRONTEND_URL}/login/auth-success")
-
-    response.delete_cookie("visitorAccessToken")
-    response.delete_cookie("visitorRefreshToken")
-    response.delete_cookie("visitorId")
-    response.delete_cookie("user_sessionid")
-
+    response = redirect(
+        f"{settings.FRONTEND_URL.rstrip('/')}/login/auth-success"
+    )
+    response.delete_cookie("visitorAccessToken", path="/")
+    response.delete_cookie("visitorRefreshToken", path="/")
+    response.delete_cookie("visitorId", path="/")
     response.set_cookie(
         "accessToken",
         str(refresh.access_token),
@@ -673,7 +706,6 @@ def google_login_success(request):
         max_age=5 * 60,
         path="/",
     )
-
     response.set_cookie(
         "refreshToken",
         str(refresh),
@@ -681,9 +713,8 @@ def google_login_success(request):
         secure=request.is_secure(),
         samesite="Lax",
         max_age=2592000,
-        path="/"
+        path="/",
     )
-
     return response
 
 
