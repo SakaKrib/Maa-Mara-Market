@@ -17,7 +17,7 @@ export default function AuthSuccess() {
         const data = res.data;
 
         if (!data?.isAuthenticated) {
-          navigate("/login");
+          navigate("/customer-login");
           return;
         }
 
