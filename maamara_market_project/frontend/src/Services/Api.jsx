@@ -68,7 +68,7 @@ export const startGoogleLogin = async () => {
 
   const form = document.createElement("form");
   form.method = "POST";
-  form.action = `${baseURL.replace(/\\/$/, "")}/accounts/google/login/`;
+  form.action = `${baseURL}/accounts/google/login/`;
   form.style.display = "none";
 
   const tokenInput = document.createElement("input");
