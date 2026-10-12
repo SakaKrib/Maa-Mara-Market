@@ -5,6 +5,7 @@ import Messaging from "./Messaging";
 
 const MessagingLauncher = () => {
   const [open, setOpen] = useState(false);
+  const isNativeApp = typeof window !== "undefined" && window.Capacitor?.isNativePlatform?.() === true;
 
   if (open) {
     return (
@@ -19,7 +20,7 @@ const MessagingLauncher = () => {
   }
 
   return (
-    <div className="fixed bottom-24 right-5 z-40 sm:bottom-8 sm:right-6">
+    <div className={"fixed right-5 sm:bottom-8 sm:right-6 " + (isNativeApp ? "bottom-[calc(5rem+env(safe-area-inset-bottom))] z-[950]" : "bottom-24 z-40")}>
       <button
         type="button"
         onClick={() => setOpen(true)}

@@ -13,6 +13,7 @@ import MegaMenuChildren from "./ChildrenCat";
 import MegaMenuSports from "./SportsCat";
 import MegaMenuUnisex from "./UnisexCat";
 import MobileNavigationDrawer from "./MobileNavigationDrawer";
+import "./native-app.css";
 import { useAuth } from "../../../../../cmponents/Auth/AuthContext/Context";
 import { useCurrency } from "../Main/Currency/CurrencyContext";
 

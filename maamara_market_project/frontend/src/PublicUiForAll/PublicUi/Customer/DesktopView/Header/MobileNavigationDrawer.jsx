@@ -25,7 +25,36 @@ import {
   Star,
   ChevronDown,
   X,
+  Info,
+  Mail,
+  Package,
+  RotateCcw,
+  BriefcaseBusiness,
+  CircleHelp,
+  ShoppingBag,
+  Leaf,
+  ShoppingCart,
+  UserPlus,
+  MessageCircle,
+  LifeBuoy,
+  MapPin,
+  Phone,
 } from "lucide-react";
+
+const DrawerFooterLink = ({ to, href, icon: Icon, onClick, children }) => {
+  const content = (
+    <>
+      <Icon size={17} strokeWidth={1.8} aria-hidden="true" />
+      <span>{children}</span>
+    </>
+  );
+
+  if (href) {
+    return <a href={href} className="mm-mobile-drawer-link" onClick={onClick}>{content}</a>;
+  }
+
+  return <Link to={to} className="mm-mobile-drawer-link" onClick={onClick}>{content}</Link>;
+};
 
 const MobileNavigationDrawer = ({ open, onClose, nativeApp = false }) => {
   const { data, loading } = useCategories();
@@ -85,7 +114,7 @@ const MobileNavigationDrawer = ({ open, onClose, nativeApp = false }) => {
       />
 
       <aside
-        className={"mm-mobile-drawer " + (open ? "is-open" : "")}
+        className={"mm-mobile-drawer " + (nativeApp ? "mm-native-drawer " : "") + (open ? "is-open" : "")}
         aria-hidden={!open}
         aria-label="Mobile navigation"
       >
@@ -366,21 +395,21 @@ const MobileNavigationDrawer = ({ open, onClose, nativeApp = false }) => {
             <>
               <div className="mm-mobile-drawer-section mm-mobile-footer-links">
                 <div className="mm-mobile-drawer-section-title">Company</div>
-                <Link to="/about-us" className="mm-mobile-drawer-link" onClick={onClose}>About Us</Link>
-                <a href="mailto:maamaramarket@gmail.com?subject=Contact%20Maa%20Mara%20Market" className="mm-mobile-drawer-link" onClick={onClose}>Contact us</a>
-                <Link to="/customer-order" className="mm-mobile-drawer-link" onClick={onClose}>Order History</Link>
-                <Link to="/request-returns" className="mm-mobile-drawer-link" onClick={onClose}>Return Policy &amp; Returns</Link>
-                <a href="mailto:maamaramarket@gmail.com?subject=Shipping%20Question" className="mm-mobile-drawer-link" onClick={onClose}>Shipping</a>
-                <Link to="/careers/jobs" className="mm-mobile-drawer-link" onClick={onClose}>Career</Link>
-                <Link to="/faq" className="mm-mobile-drawer-link" onClick={onClose}>Frequently Asked Questions</Link>
+                <DrawerFooterLink to="/about-us" icon={Info} onClick={onClose}>About Us</DrawerFooterLink>
+                <DrawerFooterLink href="mailto:maamaramarket@gmail.com?subject=Contact%20Maa%20Mara%20Market" icon={Mail} onClick={onClose}>Contact us</DrawerFooterLink>
+                <DrawerFooterLink to="/customer-order" icon={Package} onClick={onClose}>Order History</DrawerFooterLink>
+                <DrawerFooterLink to="/request-returns" icon={RotateCcw} onClick={onClose}>Return Policy &amp; Returns</DrawerFooterLink>
+                <DrawerFooterLink href="mailto:maamaramarket@gmail.com?subject=Shipping%20Question" icon={Truck} onClick={onClose}>Shipping</DrawerFooterLink>
+                <DrawerFooterLink to="/careers/jobs" icon={BriefcaseBusiness} onClick={onClose}>Career</DrawerFooterLink>
+                <DrawerFooterLink to="/faq" icon={CircleHelp} onClick={onClose}>Frequently Asked Questions</DrawerFooterLink>
               </div>
               <div className="mm-mobile-drawer-section mm-mobile-footer-links">
                 <div className="mm-mobile-drawer-section-title">Shop</div>
-                <Link to="/list" className="mm-mobile-drawer-link" onClick={onClose}>All products</Link>
-                <Link to="/organic" className="mm-mobile-drawer-link" onClick={onClose}>Organic</Link>
-                <Link to="/blogs" className="mm-mobile-drawer-link" onClick={onClose}>Journal</Link>
-                <Link to="/filter-category" className="mm-mobile-drawer-link" onClick={onClose}>Featured</Link>
-                <Link to="/shopping-cart" className="mm-mobile-drawer-link" onClick={onClose}>Cart</Link>
+                <DrawerFooterLink to="/list" icon={ShoppingBag} onClick={onClose}>All products</DrawerFooterLink>
+                <DrawerFooterLink to="/organic" icon={Leaf} onClick={onClose}>Organic</DrawerFooterLink>
+                <DrawerFooterLink to="/blogs" icon={Newspaper} onClick={onClose}>Journal</DrawerFooterLink>
+                <DrawerFooterLink to="/filter-category" icon={Star} onClick={onClose}>Featured</DrawerFooterLink>
+                <DrawerFooterLink to="/shopping-cart" icon={ShoppingCart} onClick={onClose}>Cart</DrawerFooterLink>
               </div>
               <div className="mm-mobile-drawer-section mm-mobile-footer-links">
                 <div className="mm-mobile-drawer-section-title">Help &amp; contact</div>
@@ -389,18 +418,18 @@ const MobileNavigationDrawer = ({ open, onClose, nativeApp = false }) => {
                     <span className="flex items-center gap-3"><Store size={19} strokeWidth={1.8} />Become a vendor</span>
                   </button>
                 )}
-                <Link to="/send-invitation" className="mm-mobile-drawer-link" onClick={onClose}>Invite friends</Link>
-                <Link to="/chat" className="mm-mobile-drawer-link" onClick={onClose}>Chat with us</Link>
-                <Link to="/support" className="mm-mobile-drawer-link" onClick={onClose}>Support</Link>
-                <Link to="/support" className="mm-mobile-drawer-link" onClick={onClose}>Help</Link>
-                <a href="mailto:maamaramarket@gmail.com" className="mm-mobile-drawer-link" onClick={onClose}>maamaramarket@gmail.com</a>
-                <a href="tel:+254712345678" className="mm-mobile-drawer-link" onClick={onClose}>+254 712 345 678</a>
-                <div className="px-5 py-3 text-sm text-gray-500">Nairobi, Kenya · East Africa</div>
+                <DrawerFooterLink to="/send-invitation" icon={UserPlus} onClick={onClose}>Invite friends</DrawerFooterLink>
+                <DrawerFooterLink to="/messages" icon={MessageCircle} onClick={onClose}>Chat with us</DrawerFooterLink>
+                <DrawerFooterLink to="/support" icon={LifeBuoy} onClick={onClose}>Support</DrawerFooterLink>
+                <DrawerFooterLink to="/support" icon={CircleHelp} onClick={onClose}>Help</DrawerFooterLink>
+                <DrawerFooterLink href="mailto:maamaramarket@gmail.com" icon={Mail} onClick={onClose}>maamaramarket@gmail.com</DrawerFooterLink>
+                <DrawerFooterLink href="tel:+254712345678" icon={Phone} onClick={onClose}>+254 712 345 678</DrawerFooterLink>
+                <div className="flex items-center gap-2 px-4 py-3 text-xs text-gray-500"><MapPin size={15} />Nairobi, Kenya · East Africa</div>
               </div>
               {isAuthenticated && (isAdmin || isVendor) && (
                 <div className="mm-mobile-drawer-section mm-mobile-footer-links">
                   <div className="mm-mobile-drawer-section-title">Dashboard</div>
-                  <Link to={isAdmin ? "/admin-dashboard" : "/vendors-dashboard"} className="mm-mobile-drawer-link" onClick={onClose}>Dashboard</Link>
+                  <DrawerFooterLink to={isAdmin ? "/admin-dashboard" : "/vendors-dashboard"} icon={LayoutDashboard} onClick={onClose}>Dashboard</DrawerFooterLink>
                 </div>
               )}
             </>
