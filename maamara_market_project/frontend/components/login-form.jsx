@@ -78,7 +78,7 @@ export function LoginForm({ className, ...props }) {
     setSnackbar({ open: false, message: "" })
 
     if (!username || !password) {
-      const msg = "Both username and password are required."
+      const msg = "Email/username and password are required."
       setError(msg)
       setSnackbar({ open: true, message: msg })
       return
