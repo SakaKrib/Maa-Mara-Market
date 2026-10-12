@@ -18,7 +18,7 @@ not redesign the homepage, change routes, or replace the Django backend.
 
 Copy `.env.mobile.example` to `.env.mobile` (or configure the equivalent
 environment variables in the build environment) and verify the API origin
-before building. The example uses `https://mamaramarket.com` as a placeholder
+before building. The example uses `https://maamaramarket.com` as a placeholder
 for the intended public origin; confirm DNS, HTTPS, routing and API availability
 before treating it as production.
 
