@@ -24,8 +24,11 @@ const ChartBox = ({ title, value, percentage, duration, link, chartData = [], pe
           <span className="truncate text-[11px] text-[#777]">{duration}</span>
         </div>
         {link && (
-          <Link to={link} className="mt-2 inline-flex text-xs font-semibold text-[#2563eb] hover:text-[#1d4ed8]">
-            View all
+          <Link
+            to={link}
+            className="mt-2 inline-flex items-center justify-center rounded-lg border border-[#dbeafe] bg-[#eff6ff] px-3 py-2 text-xs font-semibold text-[#1d4ed8] transition hover:border-[#93c5fd] hover:bg-[#dbeafe] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2563eb] focus-visible:ring-offset-2"
+          >
+            {link === "vendor-sales" ? "View sales report" : "View all"}
           </Link>
         )}
       </div>
