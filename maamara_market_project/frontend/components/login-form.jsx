@@ -5,7 +5,7 @@ import { Button } from "./ui/button"
 import { Card, CardContent } from "./ui/card"
 import { Input } from "./ui/input"
 import { Label } from "./ui/label"
-import api, { baseURL } from "../src/Services/Api"
+import api, { startGoogleLogin } from "../src/Services/Api"
 import { useNavigate, useLocation, Link } from "react-router-dom"
 import { useAuth } from "../src/cmponents/Auth/AuthContext/Context"
 import Maamara from "../src/assets/Logo/Maamara.jpg"
@@ -59,6 +59,17 @@ export function LoginForm({ className, ...props }) {
 
   const handleSnackbarClose = () => {
     setSnackbar(prev => ({ ...prev, open: false }))
+  }
+
+  const handleGoogleLogin = async () => {
+    try {
+      sessionStorage.setItem("postLoginRedirect", from);
+      await startGoogleLogin();
+    } catch (err) {
+      const msg = "Unable to start Google sign-in. Please try again.";
+      setError(msg);
+      setSnackbar({ open: true, message: msg });
+    }
   }
 
   const handleSubmit = async (e) => {
@@ -146,11 +157,11 @@ export function LoginForm({ className, ...props }) {
                 {error && <p className="text-sm text-red-600">{error}</p>}
 
                 <div className="flex flex-col">
-                  <Label htmlFor="username">Username</Label>
+                  <Label htmlFor="username">Email or username</Label>
                   <Input
                     id="username"
                     type="text"
-                    placeholder="user123"
+                    placeholder="name@example.com or username"
                     value={username}
                     onChange={(e) => setUsername(e.target.value)}
                     required
@@ -194,10 +205,7 @@ export function LoginForm({ className, ...props }) {
                     type="button"
                     variant="outline"
                     className="mm-auth-google w-full flex items-center justify-center gap-2"
-                    onClick={() => {
-                      sessionStorage.setItem("postLoginRedirect", from)
-                      window.location.href = `${baseURL}/accounts/google/login/`
-                    }}
+                    onClick={handleGoogleLogin}
                   >
                     <svg width="18" height="18" viewBox="0 0 48 48">
                       <path
@@ -233,8 +241,14 @@ export function LoginForm({ className, ...props }) {
                     Continue with Google
                   </Button>
 
+                <div className="relative flex items-center text-xs text-muted-foreground">
+                  <span className="h-px flex-1 bg-border" />
+                  <span className="px-3">or continue with email</span>
+                  <span className="h-px flex-1 bg-border" />
+                </div>
+
                 <Button type="submit" className="mm-auth-submit w-full" disabled={loading}>
-                  {loading ? "Logging in..." : "Login"}
+                  {loading ? "Continuing..." : "Continue with email"}
                 </Button>
 
                 <div className="text-center text-sm">
