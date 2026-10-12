@@ -28,14 +28,14 @@ const LogoutButton = () => {
       sessionStorage.clear();
 
       // Hard redirect ensures full auth reset
-      window.location.replace("/login");
+      window.location.replace("/customer-login");
     } catch (err) {
       console.error("Logout error:", err);
 
       // Fallback logout UX even if backend fails
       localStorage.clear();
       sessionStorage.clear();
-      window.location.replace("/login");
+      window.location.replace("/customer-login");
     } finally {
       setLoading(false);
     }
