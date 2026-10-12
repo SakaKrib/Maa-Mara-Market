@@ -10,14 +10,14 @@ import MaintenancePage from "./MaintenancePage";
 import api from "../Services/Api";
 
 const MAINTENANCE_ALLOWED_PATHS = [
-  /^\\/customer-order\\/?$/,
-  /^\\/customer-order\\/track\\/[^/]+\\/?$/,
-  /^\\/customer-login\\/?$/,
-  /^\\/auth-success\\/?$/,
-  /^\\/forgot-password\\/?$/,
-  /^\\/reset-password\\//,
-  /^\\/payment-success\\/?$/,
-  /^\\/payment-pesapal-callback\\/?$/,
+  /^\/customer-order\/?$/,
+  /^\/customer-order\/track\/[^/]+\/?$/,
+  /^\/customer-login\/?$/,
+  /^\/auth-success\/?$/,
+  /^\/forgot-password\/?$/,
+  /^\/reset-password\//,
+  /^\/payment-success\/?$/,
+  /^\/payment-pesapal-callback\/?$/,
 ];
 
 const CustomerShop = () => {
