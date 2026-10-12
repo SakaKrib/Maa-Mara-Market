@@ -64,7 +64,7 @@ class AllNotificationsView(APIView):
         notifications = Notification.objects.all().order_by("-created_at")
         if not request.user.is_staff and not request.user.is_superuser:
             notifications = notifications.filter(user=request.user)
-        serializer = NotificationSerializer(notifications, many=True)
+        serializer = NotificationSerializer(notifications, many=True, context={"request": request})
         data = serializer.data
         for notification in data:
             for key, value in notification.items():
