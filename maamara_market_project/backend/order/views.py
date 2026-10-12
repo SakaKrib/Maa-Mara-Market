@@ -1314,40 +1314,57 @@ def dashboard_stats(request):
     })
 
 
-# vendors sales
+# Vendor sales for the admin analytics report.
 @api_view(["GET"])
 @permission_classes([IsAuthenticated, IsAdminUser])
 def vendor_sales(request):
-    items = OrderItem.objects.select_related("item", "item__vendor")
+    # Only completed orders count as sales. The Item model uses in_stock;
+    # stock_qty is not a field on the current model.
+    sold_quantities = {
+        row["item_id"]: int(row["quantity_sold"] or 0)
+        for row in (
+            OrderItem.objects
+            .filter(order__status__in=["COMPLETED", "completed"])
+            .values("item_id")
+            .annotate(quantity_sold=Sum("quantity"))
+        )
+    }
 
     vendors = {}
+    vendor_items = (
+        Item.objects
+        .filter(vendor__isnull=False)
+        .select_related("vendor")
+        .order_by("vendor__company_name", "name", "id")
+    )
 
-    for i in items:
-        vendor = i.item.vendor.company_name if i.item.vendor else "Unknown"
-        item_name = i.item.name
+    for item in vendor_items:
+        vendor = item.vendor
+        vendor_name = (
+            (vendor.company_name or "").strip()
+            or f"{vendor.first_name} {vendor.surname_name}".strip()
+            or "Unknown vendor"
+        )
+        vendor_key = vendor.pk
 
-        if vendor not in vendors:
-            vendors[vendor] = {
-                "vendor_name": vendor,
-                "items": {}
+        if vendor_key not in vendors:
+            vendors[vendor_key] = {
+                "vendor_id": vendor.pk,
+                "vendor_name": vendor_name,
+                "items": [],
             }
 
-        if item_name not in vendors[vendor]["items"]:
-            vendors[vendor]["items"][item_name] = {
-                "item_name": item_name,
-                "qty_sold": 0,
-                "total_qty": getattr(i.item, "stock_qty", 0),
-            }
+        quantity_sold = sold_quantities.get(item.pk, 0)
+        current_stock = int(item.in_stock or 0)
+        vendors[vendor_key]["items"].append({
+            "item_id": item.pk,
+            "item_name": item.name or "Unnamed item",
+            "qty_sold": quantity_sold,
+            "total_qty": current_stock + quantity_sold,
+            "current_stock": current_stock,
+        })
 
-        vendors[vendor]["items"][item_name]["qty_sold"] += i.quantity
-
-    # convert dict → list
-    result = []
-    for vendor in vendors.values():
-        vendor["items"] = list(vendor["items"].values())
-        result.append(vendor)
-
-    return Response(result)
+    return Response(list(vendors.values()))
 
 
 # Admin Dashbord monthly sales
