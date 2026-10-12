@@ -10,7 +10,7 @@ class Migration(migrations.Migration):
         migrations.CreateModel(
             name="SiteMaintenanceSettings",
             fields=[
-                ("id", models.PositiveSmallIntegerField(primary_key=True, serialize=False, default=1, editable=False)),
+                ("id", models.BigAutoField(primary_key=True, serialize=False, auto_created=True, verbose_name="ID")),
                 ("enabled", models.BooleanField(default=False)),
                 ("message", models.TextField(
                     blank=True,
