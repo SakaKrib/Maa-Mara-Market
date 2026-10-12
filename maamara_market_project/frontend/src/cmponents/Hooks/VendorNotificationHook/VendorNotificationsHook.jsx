@@ -36,6 +36,27 @@ export function useVendorNotifications({ enabled = true } = {}) {
     }
   }, [enabled]);
 
+  const deleteNotification = useCallback(async (notificationId) => {
+    await api.delete(`/api/notifications/${notificationId}/`, {
+      withCredentials: true,
+    });
+    if (!mountedRef.current) return;
+    setNotifications((current) => {
+      const next = current.filter((notification) => notification.id !== notificationId);
+      setUnseenCount(next.filter((notification) => !notification.seen).length);
+      return next;
+    });
+  }, []);
+
+  const clearAllNotifications = useCallback(async () => {
+    await api.delete("/api/notifications/clear-all/", {
+      withCredentials: true,
+    });
+    if (!mountedRef.current) return;
+    setNotifications([]);
+    setUnseenCount(0);
+  }, []);
+
   useEffect(() => {
     mountedRef.current = true;
 
@@ -57,5 +78,12 @@ export function useVendorNotifications({ enabled = true } = {}) {
     };
   }, [enabled, loadNotifications]);
 
-  return { notifications, unseenCount, loading, error };
+  return {
+    notifications,
+    unseenCount,
+    loading,
+    error,
+    deleteNotification,
+    clearAllNotifications,
+  };
 }
