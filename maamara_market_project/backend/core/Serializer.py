@@ -126,7 +126,7 @@ class NotificationSerializer(serializers.ModelSerializer):
                 r"^A vendor\b", "You", normalized_message, count=1, flags=re.I
             )
             normalized_message = re.sub(
-                r"^Vendor .+? (?=(?:submitted|updated|added)\b),
+                r"^Vendor .+? (?=(?:submitted|updated|added)\b)",
                 "You ",
                 normalized_message,
                 count=1,
