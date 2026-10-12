@@ -585,53 +585,48 @@ class ActivityLogSerializer(serializers.ModelSerializer):
 
 
 
-@api_view(['GET'])
+def activity_logs_for_user(user):
+    """Return only activity records appropriate for the authenticated dashboard role."""
+    logs = ActivityLog.objects.all().select_related("user", "item").order_by("-timestamp")
+    if not user or not user.is_authenticated:
+        return logs.none()
+    if user.is_staff or user.is_superuser:
+        return logs.filter(actor_type="admin")
+    vendor = getattr(user, "vendor", None)
+    if vendor is None:
+        return logs.none()
+    return logs.filter(user=user, actor_type="vendor")
+
+
+@api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def get_activity_logs(request):
-    logs = ActivityLog.objects.all().select_related('user', 'item').order_by('-timestamp')
+    base_logs = ActivityLog.objects.all().select_related("user", "item").order_by("-timestamp")
+    scope = request.query_params.get("scope")
+    is_admin = bool(request.user.is_staff or request.user.is_superuser)
+    vendor = getattr(request.user, "vendor", None)
 
-    if request.query_params.get('scope') == 'vendor':
-        vendor = getattr(request.user, "vendor", None)
-        if vendor is None:
-            logs = logs.none()
+    if scope not in (None, "admin", "vendor"):
+        return Response({"detail": "Unsupported activity scope."}, status=400)
+
+    if scope == "admin":
+        if not is_admin:
+            return Response({"detail": "Administrator activity access required."}, status=403)
+        logs = base_logs.filter(actor_type="admin")
+    elif scope == "vendor":
+        if is_admin or vendor is None:
+            return Response({"detail": "Vendor activity access required."}, status=403)
+        logs = base_logs.filter(user=request.user, actor_type="vendor")
+    else:
+        if is_admin:
+            logs = base_logs.filter(actor_type="admin")
+        elif vendor is not None:
+            logs = base_logs.filter(user=request.user, actor_type="vendor")
         else:
-            # A single business event can have audience-specific ActivityLog
-            # rows (customer, vendor, and admin). The vendor feed should not
-            # show all of those copies as separate activities.
-            #
-            # Keep:
-            #   1. the vendor's own activities;
-            #   2. customer/visitor actions on this vendor's items;
-            #   3. genuine administrator decisions that affect this store.
-            # This prevents return/refund/cart/wishlist events from appearing
-            # two or three times in the vendor dashboard.
-            admin_store_actions = {
-                "item_request_approved",
-                "item_request_denied",
-                "Price Change Approved",
-                "banner_approved",
-                "banner_rejected",
-                "return_rejected_admin",
-                "refund_approved_admin",
-                "exchange_approved_admin",
-                "approved_vendor",
-            }
-            logs = logs.filter(
-                Q(user=request.user)
-                | Q(
-                    item__vendor=vendor,
-                    actor_type__in=["user", "visitor"],
-                )
-                | Q(
-                    item__vendor=vendor,
-                    actor_type="admin",
-                    action__in=admin_store_actions,
-                )
-            ).distinct()
+            return Response({"detail": "An admin or vendor account is required."}, status=403)
 
-    # The dashboard only needs a compact recent window. The dedicated vendor
-    # activity page can request all matching records with ?all=true.
-    if request.query_params.get('all') != 'true':
+    # Keep the dashboard compact; the full vendor activity page can request all records.
+    if request.query_params.get("all") != "true":
         logs = logs[:100]
 
     serializer = ActivityLogSerializer(logs, many=True)
