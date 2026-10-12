@@ -35,7 +35,7 @@ const Settings = () => {
   useEffect(() => {
     const load = async () => {
       try {
-        const response = await api.get("/api/user/account/");
+        const response = await api.get("/api/profile/");
         const data = response.data || {};
         const account = data.user || {};
         const details = data.profile || {};
@@ -67,7 +67,7 @@ const Settings = () => {
     try {
       const body = new FormData();
       Object.entries(profile).forEach(([key, value]) => body.append(key, value || ""));
-      await api.post("/api/user/update/", body);
+      await api.patch("/api/profile/", Object.fromEntries(body.entries()));
       await refreshAuth();
       setMessage("Account details saved successfully.");
     } catch (err) {
@@ -182,7 +182,7 @@ const Settings = () => {
                 {field("Address", "address")}
               </div>
               <div className="mt-5 flex justify-end">
-                <button type="submit" disabled={saving} className="inline-flex items-center gap-2 w-full rounded-[20px] bg-primary px-5 py-3 text-sm font-semibold text-primary-foreground transition hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-60">
+                <button type="submit" disabled={saving} className="inline-flex w-full items-center justify-center gap-2 rounded-[20px] bg-primary px-5 py-3 text-center text-sm font-semibold text-primary-foreground transition hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-60">
                   <Save size={16} /> {saving ? "Saving..." : "Save changes"}
                 </button>
               </div>
