@@ -93,7 +93,7 @@
   }
 
   .mm-site-header.mm-native-app .mm-native-drawer .mm-mobile-drawer-nav > button,
-  .mm-site-header.mm-native-app .mm-native-drawer .mm-mobile-drawer-section > button,
+  .mm-site-header.mm-native-app .mm-native-drawer .mm-mobile-drawer-section button,
   .mm-site-header.mm-native-app .mm-native-drawer .mm-mobile-department-trigger {
     min-height: 42px;
     padding: 9px 16px;
