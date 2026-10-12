@@ -270,7 +270,8 @@ class VendorItemRequestCreateView(generics.CreateAPIView):
             action="item_request_created",
             description=f"You submitted an item request for {item_request.name}.",
             related_url=(
-                f"/vendors-dashboard/vendor/requests/{item_request.id}/"
+                f"/admin/vendorDashboard/"
+                f"vendoritemrequest/{item_request.id}/"
             ),
         )
 
