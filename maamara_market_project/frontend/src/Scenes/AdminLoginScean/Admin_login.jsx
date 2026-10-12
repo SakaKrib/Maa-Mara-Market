@@ -3,7 +3,7 @@ import Header from "../../Header/Header";
 import ProductGrid from "../../cmponents/Onsite/Onsite";
 import {useTheme} from "@mui/material";
 import { tokens } from "../../theme";
-import AdminLogin from "../../cmponents/Auth/AdminLogin/AdminLogin";
+import { LoginForm } from "../../../components/login-form";
 
 const LoginAdmin = () => {
     const theme = useTheme();
@@ -14,7 +14,7 @@ const LoginAdmin = () => {
         backgroundColor: colors.primary[900], justifyContent: "space-between"
       }}>View all</Button>
       <Box height="fit-content">
-        <AdminLogin />
+        <LoginForm />
       </Box>
     </Box>
   );
