@@ -61,6 +61,8 @@ const Dashboard = () => {
   const [openSupportPanel, setOpenSupportPanel] = useState(false);
   const [openAboutPanel, setOpenAboutPanel] = useState(false);
   const [filter, setFilter] = useState("sent");
+  const [exportMenuOpen, setExportMenuOpen] = useState(false);
+  const [exportingKey, setExportingKey] = useState("");
 
   const [activityLogs, setActivityLogs] = useState([]);
   const [notifications, setNotifications] = useState([]);
@@ -279,6 +281,100 @@ const Dashboard = () => {
     }
   };
 
+  const exportDashboardData = async (reportType) => {
+    const csvCell = (value) => {
+      const normalized = value == null ? "" : typeof value === "object" ? JSON.stringify(value) : String(value);
+      return '"' + normalized.replace(/"/g, '""') + '"';
+    };
+    const downloadCsv = (filename, headers, rows) => {
+      const csv = [headers, ...rows].map((row) => row.map(csvCell).join(",")).join("\r\n");
+      const blob = new Blob(["\\uFEFF", csv], { type: "text/csv;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+      const anchor = document.createElement("a");
+      anchor.href = url;
+      anchor.download = filename;
+      document.body.appendChild(anchor);
+      anchor.click();
+      anchor.remove();
+      URL.revokeObjectURL(url);
+    };
+    const listFromResponse = (data) => Array.isArray(data) ? data : Array.isArray(data?.results) ? data.results : [];
+
+    setExportingKey(reportType);
+    try {
+      const dateStamp = new Date().toISOString().slice(0, 10);
+      if (reportType === "summary") {
+        const rows = [
+          ["Report date", dateStamp],
+          ["Total revenue (KES)", Number(analytics.total_revenue || transactionSummary.total_revenue || 0)],
+          ["Total transactions", Number(transactionSummary.total_transactions || transactions.length || 0)],
+          ["Total sales", Number(stats?.total_sales || 0)],
+          ["Total orders", totalOrders],
+          ["Completed orders", completedOrders],
+          ["Vendor approval/request count", approvalRequestTotal],
+          ["Unseen vendor requests", unseenVendorRequests],
+          ["Unique visitors (last 30 days)", Number(trafficData.unique_visitors || 0)],
+          ["Page views (last 30 days)", Number(trafficData.page_views || 0)],
+          ["Total visits (last 30 days)", Number(trafficData.total_visits || 0)],
+          ["Emails sent", Number(emailStats?.total || 0)],
+          ["Email growth (%)", emailGrowth],
+          ["Unseen job applications", jobsCount],
+          ["Pending support messages", supportCount],
+        ];
+        downloadCsv(`maa-mara-dashboard-summary-${dateStamp}.csv`, ["Metric", "Value"], rows);
+      } else if (reportType === "transactions") {
+        const response = await api.get("/api/admin-transactions/");
+        const records = listFromResponse(response.data);
+        if (!records.length) throw new Error("No transaction records were returned for export.");
+        downloadCsv(`maa-mara-payment-transactions-${dateStamp}.csv`,
+          ["Transaction ID", "Reference", "Date", "Customer", "Email", "Amount (KES)", "Status", "Payment method"],
+          records.map((item) => [
+            item.id ?? "", item.txid ?? item.reference ?? item.transaction_reference ?? "",
+            item.created_at ?? item.date ?? "", item.user?.username ?? item.username ?? "",
+            item.payer_email ?? item.user?.email ?? "", item.amount ?? "", item.status ?? item.payment_status ?? "",
+            item.payment_method ?? item.method ?? "",
+          ]));
+      } else if (reportType === "emails") {
+        const response = await api.get("/api/email/list/?status=all");
+        const records = listFromResponse(response.data);
+        if (!records.length) throw new Error("No email records were returned for export.");
+        downloadCsv(`maa-mara-email-delivery-${dateStamp}.csv`,
+          ["Email ID", "Recipient", "Subject", "Status", "Created", "Sent", "Message"],
+          records.map((item) => [
+            item.id ?? "", item.recipient ?? item.to ?? "", item.subject ?? "", item.status ?? "",
+            item.created_at ?? "", item.sent_at ?? "", item.message ?? item.body ?? "",
+          ]));
+      } else if (reportType === "vendors") {
+        const [pendingResponse, verifiedResponse] = await Promise.all([
+          api.get("/api/vendor/requests/?status=pending"),
+          api.get("/api/vendor/requests?status=verified"),
+        ]);
+        const records = [
+          ...listFromResponse(pendingResponse.data).map((item) => ({ ...item, export_status: item.status || "pending" })),
+          ...listFromResponse(verifiedResponse.data).map((item) => ({ ...item, export_status: item.status || "verified" })),
+        ];
+        if (!records.length) throw new Error("No vendor approval requests were returned for export.");
+        const uniqueRecords = [...new Map(records.map((item) => [item.id ?? item.request_id ?? JSON.stringify(item), item])).values()];
+        downloadCsv(`maa-mara-vendor-requests-${dateStamp}.csv`,
+          ["Request ID", "Vendor", "Email", "Status", "Submitted", "Business name"],
+          uniqueRecords.map((item) => [
+            item.id ?? item.request_id ?? "", item.username ?? item.vendor_name ?? item.vendor?.username ?? item.name ?? "",
+            item.email ?? item.vendor_email ?? item.vendor?.email ?? "", item.export_status ?? item.status ?? "",
+            item.created_at ?? item.submitted_at ?? "", item.business_name ?? item.vendor_data?.business_name ?? "",
+          ]));
+      }
+      toast({ title: "Export ready", description: "Your CSV report has been downloaded.", duration: 4000 });
+    } catch (error) {
+      toast({
+        title: "Export failed",
+        description: error?.response?.data?.detail || error?.response?.data?.error || error?.message || "We couldn't prepare this report. Please try again.",
+        duration: 6000,
+      });
+    } finally {
+      setExportingKey("");
+    }
+  };
+
   const unreadNotifications = notifications.filter((item) => !item.seen).length;
   const totalOrders = Number(stats?.total_orders || 0);
   const completedOrders = Number(stats?.completed_orders || 0);
@@ -298,14 +394,42 @@ const Dashboard = () => {
         </div>
 
         <div className="grid grid-cols-2 gap-2 sm:flex">
-          <button
-            type="button"
-            title="Dashboard export"
-            className="inline-flex items-center justify-center gap-2 rounded-xl border border-border bg-card px-4 py-2.5 text-xs font-semibold text-foreground transition hover:bg-muted"
-          >
-            <IonIcon icon={downloadOutline} />
-            Export
-          </button>
+          <div className="relative">
+            <button
+              type="button"
+              title="Export dashboard data"
+              aria-haspopup="menu"
+              aria-expanded={exportMenuOpen}
+              onClick={() => setExportMenuOpen((open) => !open)}
+              className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-border bg-card px-4 py-2.5 text-xs font-semibold text-foreground transition hover:bg-muted"
+            >
+              <IonIcon icon={downloadOutline} />
+              {exportingKey ? "Exporting…" : "Export"}
+            </button>
+            {exportMenuOpen && (
+              <div role="menu" aria-label="Dashboard export options" className="absolute right-0 z-30 mt-2 w-72 max-w-[calc(100vw-2rem)] overflow-hidden rounded-2xl border border-border bg-card p-1.5 shadow-xl">
+                <p className="px-3 pb-1 pt-2 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Download report</p>
+                {[
+                  ["summary", "Dashboard summary", "Revenue, orders, visitors and email totals"],
+                  ["transactions", "Payment transactions", "Transaction references, amounts and statuses"],
+                  ["emails", "Email delivery report", "Recipients, subjects, statuses and dates"],
+                  ["vendors", "Vendor approval requests", "Vendor requests and their current statuses"],
+                ].map(([key, label, description]) => (
+                  <button
+                    key={key}
+                    type="button"
+                    role="menuitem"
+                    disabled={Boolean(exportingKey)}
+                    onClick={() => { setExportMenuOpen(false); exportDashboardData(key); }}
+                    className="flex w-full flex-col gap-1 rounded-xl px-3 py-2.5 text-left transition hover:bg-muted disabled:cursor-wait disabled:opacity-60"
+                  >
+                    <span className="text-sm font-semibold text-card-foreground">{label}</span>
+                    <span className="text-xs leading-4 text-muted-foreground">{description}</span>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
           <button
             type="button"
             onClick={() => { setFilter("sent"); setOpenEmailPanel(true); }}
