@@ -1,4 +1,6 @@
 import dayjs from "dayjs";
+import { useState } from "react";
+import { Trash2 } from "lucide-react";
 import relativeTime from "dayjs/plugin/relativeTime";
 import { Link } from "react-router-dom";
 import { useVendorActivityLogs } from "../../../../../cmponents/Hooks/ActivityHook/ActivityHook";
@@ -14,7 +16,34 @@ const truncateWords = (text, numWords) => {
 };
 
 const Activities = () => {
-  const { activityLogs = [], loading, error } = useVendorActivityLogs();
+  const {
+    activityLogs = [],
+    loading,
+    error,
+    deleteActivity,
+    clearAllActivities,
+  } = useVendorActivityLogs();
+  const [actionError, setActionError] = useState("");
+
+  const handleDeleteActivity = async (activityId) => {
+    if (!window.confirm("Delete this activity? This cannot be undone.")) return;
+    try {
+      setActionError("");
+      await deleteActivity(activityId);
+    } catch (deleteError) {
+      setActionError("We couldn't delete that activity. Please try again.");
+    }
+  };
+
+  const handleClearAllActivities = async () => {
+    if (!window.confirm("Clear all of your vendor activities? This cannot be undone.")) return;
+    try {
+      setActionError("");
+      await clearAllActivities();
+    } catch (clearError) {
+      setActionError("We couldn't clear your activities. Please try again.");
+    }
+  };
 
   if (loading) {
     return (
@@ -52,10 +81,28 @@ const Activities = () => {
 
   return (
     <section className="min-w-0">
-      <div className="border-b border-[#e6e6e4] pb-3">
-        <h2 className="text-base font-semibold text-[#222] sm:text-lg">Recent activities</h2>
-        <p className="mt-1 text-xs leading-5 text-[#595959]">A simple record of what has been happening in your store.</p>
+      <div className="flex flex-col gap-3 border-b border-[#e6e6e4] pb-3 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <h2 className="text-base font-semibold text-[#222] sm:text-lg">Recent activities</h2>
+          <p className="mt-1 text-xs leading-5 text-[#595959]">A simple record of what has been happening in your store.</p>
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          {activityLogs.length > 0 && (
+            <button
+              type="button"
+              onClick={handleClearAllActivities}
+              className="inline-flex items-center gap-1.5 rounded-full border border-red-200 px-3 py-2 text-[11px] font-semibold text-red-700 transition hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-red-200"
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+              Clear all
+            </button>
+          )}
+          <Link to="/vendors-dashboard/activities" className="shrink-0 rounded-full border border-[#d9d9d6] bg-white px-3.5 py-2 text-xs font-semibold text-[#222] transition hover:bg-[#f8f8f6] focus:outline-none focus:ring-2 focus:ring-[#2563eb]/20">
+            View All
+          </Link>
+        </div>
       </div>
+      {actionError && <p role="alert" className="mt-3 text-xs text-red-700">{actionError}</p>}
 
       <div className="mt-4 max-h-[320px] overflow-y-auto pr-1">
         {activityLogs.length === 0 ? (
@@ -71,6 +118,15 @@ const Activities = () => {
                     <p className="mt-1 text-sm leading-6 text-[#222]">{truncateWords(log.display_message || log.description, 16)}</p>
                     <p className="mt-1 text-xs text-[#6b7280]">{log.timestamp ? dayjs(log.timestamp).fromNow() : "Recently"}</p>
                   </div>
+                  <button
+                    type="button"
+                    onClick={() => handleDeleteActivity(log.id)}
+                    aria-label="Delete activity"
+                    title="Delete activity"
+                    className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-red-200 text-red-700 transition hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-red-200"
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </button>
                 </div>
               </li>
             ))}
