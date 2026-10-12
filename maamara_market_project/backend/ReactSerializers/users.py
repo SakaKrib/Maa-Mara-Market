@@ -32,6 +32,7 @@ from core.models import Profile, Wallet, Voucher, Referral, Notification, Activi
 from vendorDashboard.models import Vendor
 from order.models import Customer, Order
 from core.mergeVisitortoUserData import merge_visitor_data_to_user
+from allauth.socialaccount.models import SocialAccount
 from .registration import register, verify_otp_register_otp, resend_otp_register_otp
 
 from django.contrib.auth import get_user_model
@@ -656,6 +657,9 @@ def google_login_success(request):
                 f"{settings.FRONTEND_URL.rstrip('/')}/unauthorized?reason=google-email-unverified"
             )
         user.email = email.lower()
+        update_fields = ["email"]
+    else:
+        update_fields = []
 
     first_name = (extra.get("given_name") or "").strip()
     last_name = (extra.get("family_name") or "").strip()
@@ -667,7 +671,6 @@ def google_login_success(request):
         if not last_name and len(parts) > 1:
             last_name = " ".join(parts[1:])
 
-    update_fields = []
     if first_name and not user.first_name:
         user.first_name = first_name[:150]
         update_fields.append("first_name")
