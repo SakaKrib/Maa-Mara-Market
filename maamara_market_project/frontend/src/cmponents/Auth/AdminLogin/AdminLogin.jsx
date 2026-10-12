@@ -55,13 +55,32 @@ const LoginForm = () => {
       return;
     }
   
+    let token = csrfToken;
+    try {
+      if (!token) {
+        const csrfResponse = await api.get("/api/get-csrf-token/");
+        token = csrfResponse.data?.csrfToken || "";
+        setCsrfToken(token);
+      }
+    } catch (csrfError) {
+      setError("Unable to initialize secure login. Please try again.");
+      setLoading(false);
+      return;
+    }
+
+    if (!token) {
+      setError("Security token is not ready. Please try again.");
+      setLoading(false);
+      return;
+    }
+
     const formData = new FormData();
     formData.append("username", username);
     formData.append("password", password);
-  
+
     try {
       const response = await api.post("/api/login/", formData, {
-        headers: { "X-CSRFToken": csrfToken }
+        headers: { "X-CSRFToken": token }
       })
 
       const data = response.data
