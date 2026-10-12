@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../../../../../cmponents/Auth/AuthContext/Context";
 import { useCategories } from "./SectionHook";
 import MegaMenuWomen from "./WomenCat";
@@ -326,6 +326,9 @@ const MobileNavigationDrawer = ({ open, onClose }) => {
                 <button type="button" onClick={() => go("/user-account")} className={itemClass}>
                   <span className="flex items-center gap-3"><UserRound size={19} strokeWidth={1.8} />My Account</span>
                 </button>
+                <button type="button" onClick={() => go("/profile")} className={itemClass}>
+                  <span className="flex items-center gap-3"><UserRound size={19} strokeWidth={1.8} />Profile</span>
+                </button>
                 <button type="button" onClick={() => go("/customer-order")} className={itemClass}>
                   <span className="flex items-center gap-3"><Truck size={19} strokeWidth={1.8} />Order Tracking</span>
                 </button>
@@ -356,6 +359,49 @@ const MobileNavigationDrawer = ({ open, onClose }) => {
               <span className="flex items-center gap-3"><Star size={19} strokeWidth={1.8} />Featured</span>
             </button>
           </div>
+
+          <div className="mm-mobile-drawer-section mm-mobile-footer-links">
+            <div className="mm-mobile-drawer-section-title">Company</div>
+            <Link to="/about-us" className="mm-mobile-drawer-link" onClick={onClose}>About Us</Link>
+            <a href="mailto:maamaramarket@gmail.com?subject=Contact%20Maa%20Mara%20Market" className="mm-mobile-drawer-link" onClick={onClose}>Contact us</a>
+            <Link to="/customer-order" className="mm-mobile-drawer-link" onClick={onClose}>Order History</Link>
+            <Link to="/request-returns" className="mm-mobile-drawer-link" onClick={onClose}>Return Policy &amp; Returns</Link>
+            <a href="mailto:maamaramarket@gmail.com?subject=Shipping%20Question" className="mm-mobile-drawer-link" onClick={onClose}>Shipping</a>
+            <Link to="/careers/jobs" className="mm-mobile-drawer-link" onClick={onClose}>Career</Link>
+            <Link to="/faq" className="mm-mobile-drawer-link" onClick={onClose}>Frequently Asked Questions</Link>
+          </div>
+
+          <div className="mm-mobile-drawer-section mm-mobile-footer-links">
+            <div className="mm-mobile-drawer-section-title">Shop</div>
+            <Link to="/list" className="mm-mobile-drawer-link" onClick={onClose}>All products</Link>
+            <Link to="/organic" className="mm-mobile-drawer-link" onClick={onClose}>Organic</Link>
+            <Link to="/blogs" className="mm-mobile-drawer-link" onClick={onClose}>Journal</Link>
+            <Link to="/filter-category" className="mm-mobile-drawer-link" onClick={onClose}>Featured</Link>
+            <Link to="/shopping-cart" className="mm-mobile-drawer-link" onClick={onClose}>Cart</Link>
+          </div>
+
+          <div className="mm-mobile-drawer-section mm-mobile-footer-links">
+            <div className="mm-mobile-drawer-section-title">Help &amp; contact</div>
+            {canBecomeVendor && (
+              <button type="button" onClick={() => go("/vendor-register-form")} className={itemClass}>
+                <span className="flex items-center gap-3"><Store size={19} strokeWidth={1.8} />Become a vendor</span>
+              </button>
+            )}
+            <Link to="/send-invitation" className="mm-mobile-drawer-link" onClick={onClose}>Invite friends</Link>
+            <Link to="/chat" className="mm-mobile-drawer-link" onClick={onClose}>Chat with us</Link>
+            <Link to="/support" className="mm-mobile-drawer-link" onClick={onClose}>Support</Link>
+            <Link to="/support" className="mm-mobile-drawer-link" onClick={onClose}>Help</Link>
+            <a href="mailto:maamaramarket@gmail.com" className="mm-mobile-drawer-link" onClick={onClose}>maamaramarket@gmail.com</a>
+            <a href="tel:+254712345678" className="mm-mobile-drawer-link" onClick={onClose}>+254 712 345 678</a>
+            <div className="px-5 py-3 text-sm text-gray-500">Nairobi, Kenya · East Africa</div>
+          </div>
+
+          {isAuthenticated && (isAdmin || isVendor) && (
+            <div className="mm-mobile-drawer-section mm-mobile-footer-links">
+              <div className="mm-mobile-drawer-section-title">Dashboard</div>
+              <Link to={isAdmin ? "/admin-dashboard" : "/vendors-dashboard"} className="mm-mobile-drawer-link" onClick={onClose}>Dashboard</Link>
+            </div>
+          )}
         </nav>
       </aside>
     </>
