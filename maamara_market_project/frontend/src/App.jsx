@@ -33,6 +33,7 @@ import ItemCreateDrawer from "./cmponents/VENDORPAGE/Products/Forms/DrawerCreate
 
 // Customer Pages
 import CustomerShop from "./PublicUiForAll/CustomerShop";
+import NativeAppLaunchScreen from "./PublicUiForAll/PublicUi/Customer/DesktopView/Header/NativeAppLaunchScreen";
 
 // Layouts
 import AdminLayout from "./cmponents/Auth/Routes/RoutesLayout/AdminLayot";
@@ -151,6 +152,22 @@ function AppContent() {
   const [theme, colorMode] = useMode();
   const themeSetup = useTheme();
   const colors = tokens(themeSetup.palette.mode);
+  const isNativeApp = typeof window !== "undefined" && window.Capacitor?.isNativePlatform?.() === true;
+  const [launchAnimationDone, setLaunchAnimationDone] = useState(false);
+
+  useEffect(() => {
+    if (!isNativeApp) {
+      setLaunchAnimationDone(true);
+      return undefined;
+    }
+
+    const animationTimer = window.setTimeout(() => setLaunchAnimationDone(true), 2300);
+    return () => window.clearTimeout(animationTimer);
+  }, [isNativeApp]);
+
+  if (isNativeApp && (!launchAnimationDone || loading)) {
+    return <NativeAppLaunchScreen showSpinner={launchAnimationDone && loading} />;
+  }
 
   if (loading) {
     return (
