@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Bell, Check, ChevronRight, Globe2, KeyRound, LogOut, Monitor, RefreshCw, Save, Settings as SettingsIcon, ShieldCheck, UserRound, X, Eye, EyeOff } from "lucide-react";
+import { Bell, Check, ChevronRight, Globe2, KeyRound, LogOut, Monitor, RefreshCw, Save, Settings as SettingsIcon, ShieldCheck, UserRound, X, Eye, EyeOff, Wrench, Power } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../Auth/AuthContext/Context";
 import { useAdminPreferences } from "./AdminPreferencesContext";
@@ -31,6 +31,12 @@ const Settings = () => {
   const [passwordForm, setPasswordForm] = useState({ current_password: "", new_password: "", confirm_password: "" });
   const [passwordBusy, setPasswordBusy] = useState(false);
   const [passwordError, setPasswordError] = useState("");
+  const [maintenance, setMaintenance] = useState({
+    enabled: false,
+    message: "We're making a few improvements to Maa Mara Market. We'll be back shortly. You can still check the status of an existing order below.",
+  });
+  const [maintenanceLoading, setMaintenanceLoading] = useState(true);
+  const [maintenanceSaving, setMaintenanceSaving] = useState(false);
 
   useEffect(() => {
     const load = async () => {
@@ -75,6 +81,52 @@ const Settings = () => {
       setError(err.response?.data?.detail || "Could not save your account details.");
     } finally {
       setSaving(false);
+    }
+  };
+
+
+  useEffect(() => {
+    let active = true;
+    api.get("/api/maintenance/settings/")
+      .then((response) => {
+        if (active) {
+          setMaintenance({
+            enabled: response.data?.enabled === true,
+            message: response.data?.message || "",
+          });
+        }
+      })
+      .catch((err) => {
+        if (active) {
+          setError(err.response?.data?.detail || "Could not load maintenance settings.");
+        }
+      })
+      .finally(() => {
+        if (active) setMaintenanceLoading(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  const saveMaintenance = async () => {
+    if (maintenanceSaving) return;
+    setMaintenanceSaving(true);
+    setMessage("");
+    setError("");
+    try {
+      const response = await api.patch("/api/maintenance/settings/", maintenance);
+      setMaintenance({
+        enabled: response.data?.enabled === true,
+        message: response.data?.message || maintenance.message,
+      });
+      setMessage(response.data?.enabled
+        ? "Maintenance mode is now enabled."
+        : "Maintenance mode is now disabled.");
+    } catch (err) {
+      setError(err.response?.data?.detail || "Could not save maintenance settings.");
+    } finally {
+      setMaintenanceSaving(false);
     }
   };
 
@@ -211,6 +263,59 @@ const Settings = () => {
                   ))}
                 </div>
                 <button type="button" onClick={restoreDefaults} className="mt-4 inline-flex items-center gap-2 text-xs font-semibold text-muted-foreground hover:text-foreground"><RefreshCw size={14} /> Restore defaults</button>
+              </div>
+
+              <div className="rounded-2xl border border-border bg-card p-5 shadow-sm sm:p-6">
+                <div className="mb-3 flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary"><Wrench size={19} /></div>
+                    <div>
+                      <h2 className="text-sm font-semibold text-card-foreground">Maintenance mode</h2>
+                      <p className="text-xs text-muted-foreground">Temporarily pause shopping while keeping order tracking available.</p>
+                    </div>
+                  </div>
+                  <span className={`shrink-0 rounded-full px-2.5 py-1 text-[11px] font-semibold ${maintenance.enabled ? "bg-amber-500/10 text-amber-700 dark:text-amber-300" : "bg-emerald-500/10 text-emerald-700 dark:text-emerald-300"}`}>
+                    {maintenance.enabled ? "Enabled" : "Disabled"}
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  disabled={maintenanceLoading || maintenanceSaving}
+                  onClick={() => setMaintenance((current) => ({ ...current, enabled: !current.enabled }))}
+                  role="switch"
+                  aria-checked={maintenance.enabled}
+                  className="flex w-full items-center gap-3 rounded-xl border border-border p-3 text-left transition hover:bg-muted disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${maintenance.enabled ? "bg-amber-500/10 text-amber-600" : "bg-muted text-muted-foreground"}`}><Power size={17} /></div>
+                  <span className="min-w-0 flex-1">
+                    <strong className="block text-sm text-card-foreground">{maintenance.enabled ? "Turn maintenance off" : "Turn maintenance on"}</strong>
+                    <small className="mt-0.5 block text-xs text-muted-foreground">Changes take effect across the marketplace after saving.</small>
+                  </span>
+                  <span className={`h-5 w-9 rounded-full p-0.5 transition ${maintenance.enabled ? "bg-primary" : "bg-muted"}`}>
+                    <span className={`block h-4 w-4 rounded-full bg-white shadow transition ${maintenance.enabled ? "translate-x-4" : ""}`} />
+                  </span>
+                </button>
+                <label className="mt-4 block">
+                  <span className="mb-1.5 block text-xs font-semibold text-muted-foreground">Customer-facing message</span>
+                  <textarea
+                    value={maintenance.message}
+                    onChange={(event) => setMaintenance((current) => ({ ...current, message: event.target.value }))}
+                    maxLength={2000}
+                    rows={4}
+                    disabled={maintenanceLoading || maintenanceSaving}
+                    placeholder="Tell customers why the marketplace is temporarily unavailable."
+                    className="w-full resize-y rounded-[20px] border border-border bg-background px-4 py-3 text-sm text-foreground outline-none transition placeholder:text-muted-foreground focus:border-primary focus:ring-4 focus:ring-primary/10 disabled:opacity-60"
+                  />
+                  <span className="mt-1 block text-right text-[11px] text-muted-foreground">{maintenance.message.length}/2000</span>
+                </label>
+                <button
+                  type="button"
+                  onClick={saveMaintenance}
+                  disabled={maintenanceLoading || maintenanceSaving}
+                  className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-[20px] bg-primary px-4 py-3 text-sm font-semibold text-primary-foreground transition hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  <Save size={15} /> {maintenanceSaving ? "Saving..." : "Save maintenance settings"}
+                </button>
               </div>
 
               <div className="rounded-2xl border border-border bg-card p-5 shadow-sm sm:p-6">
