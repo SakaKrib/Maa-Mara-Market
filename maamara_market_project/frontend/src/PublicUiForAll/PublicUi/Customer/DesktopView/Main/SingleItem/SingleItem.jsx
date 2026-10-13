@@ -10,6 +10,7 @@ import { useWishlistContext } from "../../../../../../cmponents/Hooks/WishListHo
 import MarketplaceItemContext from "./MarketplaceItemContext";
 import TrendingProduct from "../Trending/TrendingProduct";
 import VendorPerformanceBadges from "./VendorPerformanceBadges";
+import { shareProduct as shareMarketplaceProduct } from "../../../../../../Services/ProductSharing";
 
 const truncateWords = (text, limit = 15) => {
   const words = String(text || "").trim().split(/\s+/).filter(Boolean);
@@ -198,13 +199,18 @@ const SingleItem = () => {
                   <button
                     type="button"
                     className="flex w-full items-center justify-center rounded-full border border-border bg-background px-4 py-2.5 text-center text-sm font-semibold text-card-foreground transition-colors hover:bg-muted"
-                    onClick={() => {
-                      if (navigator.share) {
-                        navigator.share({ title: item.name, url: window.location.href }).catch(() => {});
-                      } else if (navigator.clipboard) {
-                        navigator.clipboard.writeText(window.location.href);
-                      }
-                    }}
+                    onClick={() =>
+                      shareMarketplaceProduct({
+                        item,
+                        image:
+                          selectedImage?.url ||
+                          selectedImage ||
+                          selectedVariant?.image?.url ||
+                          selectedVariant?.image ||
+                          item.image?.url ||
+                          item.image,
+                      })
+                    }
                   >
                     ↗ Share
                   </button>
