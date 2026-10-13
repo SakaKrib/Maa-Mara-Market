@@ -3,6 +3,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 import api from "../../../../../Services/Api";
 import { resolveApiAssetUrl } from "../../../../../Services/Api";
 import TrendingProductCard from "../../../Customer/DesktopView/Main/Trending/TrendingProductCard";
+import ProductSkeleton from "../../../Customer/DesktopView/Main/Trending/ProductSkelwton";
 import "../../../maamara.css";
 
 const ITEMS_PER_PAGE = 12;
@@ -119,13 +120,16 @@ if (vendorId) params.set("vendor_id", vendorId);
 
           {loading && (
             <div
-              className="mm-search-loading"
+              className="product-card-grid grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2 sm:gap-4 lg:gap-6"
               role="status"
               aria-live="polite"
               aria-label="Loading search results"
+              aria-busy="true"
             >
-              <span className="mm-search-spinner" aria-hidden="true" />
-              <span>Loading products</span>
+              {Array.from({ length: ITEMS_PER_PAGE }, (_, index) => (
+                <ProductSkeleton key={index} />
+              ))}
+              <span className="sr-only">Loading products, please wait.</span>
             </div>
           )}
 
