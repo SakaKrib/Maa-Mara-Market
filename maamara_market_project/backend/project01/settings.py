@@ -100,6 +100,9 @@ INSTALLED_APPS = [
 MIDDLEWARE = [
     "corsheaders.middleware.CorsMiddleware",
     "django.middleware.security.SecurityMiddleware",
+    # Runs after the response has been created, including Django auth/CSRF
+    # cookies, so cross-origin native WebView requests can send them securely.
+    "project01.middleware.mobile_cookie_compat.NativeWebViewCookieMiddleware",
     "whitenoise.middleware.WhiteNoiseMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
@@ -232,22 +235,32 @@ SIMPLE_JWT = {
 # CORS / CSRF / SESSION
 # =========================================================
 
-CORS_ALLOWED_ORIGINS = [
-    origin.strip().rstrip("/")
-    for origin in env(
-        "CORS_ALLOWED_ORIGINS",
-        default=FRONTEND_URL,
-    ).split(",")
-    if origin.strip()
-]
-CSRF_TRUSTED_ORIGINS = [
-    origin.strip().rstrip("/")
-    for origin in env(
-        "CSRF_TRUSTED_ORIGINS",
-        default=",".join(CORS_ALLOWED_ORIGINS),
-    ).split(",")
-    if origin.strip()
-]
+# The native Capacitor WebView is served from https://localhost.
+# Keep these origins in addition to the configurable website origins.
+NATIVE_WEBVIEW_ORIGINS = ["https://localhost"]
+
+CORS_ALLOWED_ORIGINS = list(dict.fromkeys([
+    *[
+        origin.strip().rstrip("/")
+        for origin in env(
+            "CORS_ALLOWED_ORIGINS",
+            default=FRONTEND_URL,
+        ).split(",")
+        if origin.strip()
+    ],
+    *NATIVE_WEBVIEW_ORIGINS,
+]))
+CSRF_TRUSTED_ORIGINS = list(dict.fromkeys([
+    *[
+        origin.strip().rstrip("/")
+        for origin in env(
+            "CSRF_TRUSTED_ORIGINS",
+            default=",".join(CORS_ALLOWED_ORIGINS),
+        ).split(",")
+        if origin.strip()
+    ],
+    *NATIVE_WEBVIEW_ORIGINS,
+]))
 CORS_ALLOW_CREDENTIALS = True
 
 SESSION_EXPIRE_AT_BROWSER_CLOSE = True
