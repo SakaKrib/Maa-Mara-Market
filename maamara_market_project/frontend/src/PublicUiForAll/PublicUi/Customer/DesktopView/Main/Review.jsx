@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import api from "../../../../../Services/Api";
 import Avatar from "@mui/material/Avatar";
+import NativeAwareSelect from "../../../../../components/NativeAwareSelect";
 
 // MUI Alert wrapper
 const ReviewSection = ({ item }) => {
@@ -94,9 +95,13 @@ const ReviewSection = ({ item }) => {
           <form onSubmit={handleSubmitReview} className="mt-4 space-y-4">
             <div className="flex flex-wrap items-center gap-2">
               <span className="text-sm text-card-foreground">Rating:</span>
-              <select value={rating} onChange={(e) => setRating(parseInt(e.target.value))} className="rounded-full border border-border bg-background px-3 py-1.5 text-sm">
-                {[1,2,3,4,5].map((star) => <option key={star} value={star}>{star} Star{star>1&&"s"}</option>)}
-              </select>
+              <NativeAwareSelect
+                aria-label="Rating"
+                value={rating}
+                onChange={(event) => setRating(parseInt(event.target.value, 10))}
+                className="rounded-full border border-border bg-background px-3 py-1.5 text-sm"
+                options={[1, 2, 3, 4, 5].map((star) => ({ value: star, label: `${star} Star${star > 1 ? "s" : ""}` }))}
+              />
             </div>
             <textarea
               rows={4}
