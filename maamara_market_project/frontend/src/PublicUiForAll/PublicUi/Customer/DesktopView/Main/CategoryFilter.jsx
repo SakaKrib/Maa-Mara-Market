@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { IonIcon } from "@ionic/react";
 import { closeOutline, filterOutline } from "ionicons/icons";
 import useCategoryFilters from "./CategoryFilter/useCategoryFilters";
+import NativeAwareSelect from "../../../../components/NativeAwareSelect";
 import CategoryFilterSidebar from "./CategoryFilter/CategoryFilterSidebar";
 import CategoryProductCard from "./CategoryFilter/CategoryProductCard";
 import "../../../maamara.css";
@@ -52,16 +53,20 @@ const SingleCategory = () => {
                     <button type="button" className="mm-mobile-filter-button" onClick={() => setMobileFiltersOpen(true)}>
                       <IonIcon icon={filterOutline} /><span>Filter</span>
                     </button>
-                    <select aria-label="Sort by" value={selectedFilters.sortBy}
-                      onChange={(e) => setSelectedFilters((p) => ({ ...p, sortBy: e.target.value }))}
-                      className="ring-1 ring-gray-300 p-2 rounded-md bg-white text-sm">
-                      {["Default", "Product Name", "Price", "Brand"].map((sort) => <option key={sort}>{sort}</option>)}
-                    </select>
-                    <select aria-label="Products per page" value={selectedFilters.perPage}
-                      onChange={(e) => setSelectedFilters((p) => ({ ...p, perPage: Number(e.target.value) }))}
-                      className="ring-1 ring-gray-300 p-2 rounded-md bg-white text-sm">
-                      {[10,20,30,40].map((num) => <option key={num} value={num}>{num} / page</option>)}
-                    </select>
+                    <NativeAwareSelect
+                      aria-label="Sort by"
+                      value={selectedFilters.sortBy}
+                      onChange={(event) => setSelectedFilters((previous) => ({ ...previous, sortBy: event.target.value }))}
+                      className="p-2 text-sm"
+                      options={["Default", "Product Name", "Price", "Brand"].map((sort) => ({ value: sort, label: sort }))}
+                    />
+                    <NativeAwareSelect
+                      aria-label="Products per page"
+                      value={selectedFilters.perPage}
+                      onChange={(event) => setSelectedFilters((previous) => ({ ...previous, perPage: Number(event.target.value) }))}
+                      className="p-2 text-sm"
+                      options={[10, 20, 30, 40].map((num) => ({ value: num, label: `${num} / page` }))}
+                    />
                     <button type="button" onClick={resetFilters} className="secondary-button px-3 py-2 rounded-md text-white">Clear filters</button>
                   </div>
                 </div>
