@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { IonIcon } from "@ionic/react";
 import { closeOutline, filterOutline } from "ionicons/icons";
 import useCategoryFilters from "./CategoryFilter/useCategoryFilters";
@@ -14,6 +14,50 @@ const SingleCategory = () => {
   } = useCategoryFilters();
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
 
+  // Keep the page behind the filter drawer still while allowing its own
+  // category list to scroll. Preserve the exact scroll position on close.
+  useEffect(() => {
+    if (!mobileFiltersOpen || !window.matchMedia("(max-width: 639px)").matches) {
+      return undefined;
+    }
+
+    const body = document.body;
+    const html = document.documentElement;
+    const scrollY = window.scrollY;
+    const previous = {
+      bodyPosition: body.style.position,
+      bodyTop: body.style.top,
+      bodyLeft: body.style.left,
+      bodyRight: body.style.right,
+      bodyWidth: body.style.width,
+      bodyOverflow: body.style.overflow,
+      htmlOverflow: html.style.overflow,
+    };
+
+    body.classList.add("mm-filter-drawer-open");
+    html.classList.add("mm-filter-drawer-open");
+    body.style.position = "fixed";
+    body.style.top = `-${scrollY}px`;
+    body.style.left = "0";
+    body.style.right = "0";
+    body.style.width = "100%";
+    body.style.overflow = "hidden";
+    html.style.overflow = "hidden";
+
+    return () => {
+      body.classList.remove("mm-filter-drawer-open");
+      html.classList.remove("mm-filter-drawer-open");
+      body.style.position = previous.bodyPosition;
+      body.style.top = previous.bodyTop;
+      body.style.left = previous.bodyLeft;
+      body.style.right = previous.bodyRight;
+      body.style.width = previous.bodyWidth;
+      body.style.overflow = previous.bodyOverflow;
+      html.style.overflow = previous.htmlOverflow;
+      window.scrollTo(0, scrollY);
+    };
+  }, [mobileFiltersOpen]);
+
   if (loadingFilters) return <main className="mm-page"><div className="mm-container p-10 text-center text-gray-500">Loading filters…</div></main>;
   if (!filters) return <main className="mm-page"><div className="mm-container p-10 text-center text-gray-500">No filters available.</div></main>;
 
@@ -22,7 +66,7 @@ const SingleCategory = () => {
       <section className="mm-section">
         <div className="mm-container">
           <div className="flex flex-col lg:flex-row gap-5 lg:items-start">
-            <div className={`mm-mobile-filter-drawer ${mobileFiltersOpen ? "is-open" : ""}`}>
+            <div className={`mm-mobile-filter-drawer ${mobileFiltersOpen ? "is-open" : ""}`} role="dialog" aria-modal="true" aria-label="Product filters">
               <div className="mm-mobile-filter-head">
                 <strong>Filters</strong>
                 <button type="button" onClick={() => setMobileFiltersOpen(false)} aria-label="Close filters">
@@ -31,11 +75,11 @@ const SingleCategory = () => {
               </div>
               <CategoryFilterSidebar filters={filters} selectedFilters={selectedFilters} toggleFilter={toggleFilter} />
               <div className="mm-mobile-filter-actions">
-                <button type="button" onClick={resetFilters}>Clear all</button>
-                <button type="button" onClick={() => setMobileFiltersOpen(false)} className="secondary-button">Show results</button>
+                <button type="button" className="mm-filter-clear-button" onClick={resetFilters}>Clear all</button>
+                <button type="button" onClick={() => setMobileFiltersOpen(false)} className="mm-filter-apply-button">Show results</button>
               </div>
             </div>
-            <div className="mm-mobile-filter-backdrop" onClick={() => setMobileFiltersOpen(false)} />
+            <div className={`mm-mobile-filter-backdrop ${mobileFiltersOpen ? "is-open" : ""}`} onClick={() => setMobileFiltersOpen(false)} aria-hidden="true" />
 
             <aside className="mm-desktop-filter">
               <CategoryFilterSidebar filters={filters} selectedFilters={selectedFilters} toggleFilter={toggleFilter} />
@@ -67,7 +111,7 @@ const SingleCategory = () => {
                       className="ring-1 ring-gray-300 p-2 rounded-md bg-white text-sm"
                       options={[10, 20, 30, 40].map((num) => ({ value: num, label: `${num} / page` }))}
                     />
-                    <button type="button" onClick={resetFilters} className="secondary-button px-3 py-2 rounded-md text-white">Clear filters</button>
+                    <button type="button" onClick={resetFilters} className="mm-filter-clear-button">Clear filters</button>
                   </div>
                 </div>
               </div>
@@ -75,7 +119,7 @@ const SingleCategory = () => {
               {error && <div className="mm-card p-4 mb-4 text-sm text-red-700 bg-red-50">{error}</div>}
               {loadingProducts ? (
                 <div
-                  className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-4 lg:gap-6"
+                  className="category-product-skeleton"
                   role="status"
                   aria-label="Loading products"
                   aria-busy="true"
