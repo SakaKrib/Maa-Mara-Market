@@ -3,7 +3,7 @@ import {
   CircularProgress,
   ThemeProvider,
 } from "@mui/material";
-import { Routes, Route, Navigate } from "react-router-dom";
+import { Routes, Route } from "react-router-dom";
 import { AuthProvider, useAuth } from "./cmponents/Auth/AuthContext/Context";
 import { ColourModeContext, useMode } from "./theme";
 import BridgeToHTML from "./globalHtml";
