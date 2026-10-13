@@ -53,6 +53,36 @@ class DatabaseBackedTaxonomyTests(TestCase):
         self.assertEqual(first["category"].department_id, self.department.pk)
         self.assertEqual(first["subcategory"].category_id, first["category"].pk)
 
+    def test_item_serializer_creates_missing_custom_taxonomy_with_item(self):
+        from rest_framework.test import APIRequestFactory
+        from ReactSerializers.Serializers import ItemSerializers
+
+        payload = {
+            "name": "Serializer-created custom product",
+            "description": "Verifies custom taxonomy is created with a submitted item.",
+            "price": "990.00",
+            "in_stock": "4",
+            "available": "true",
+            "section": "inorganic",
+            "department": self.department.name,
+            "category": "Serializer Custom Category",
+            "subcategory": "Made to Order",
+            "item_attribute": "Custom Finish",
+        }
+        request = APIRequestFactory().post("/api/item-post/update/", payload, format="multipart")
+        request.user = self.user
+
+        serializer = ItemSerializers(data=payload, context={"request": request})
+        self.assertTrue(serializer.is_valid(), serializer.errors)
+        item = serializer.save(created_by=self.user)
+        item.refresh_from_db()
+
+        self.assertEqual(item.category.name, "Serializer Custom Category")
+        self.assertEqual(item.category.department_id, self.department.pk)
+        self.assertEqual(item.subcategory.name, "Made to Order")
+        self.assertEqual(item.subcategory.category_id, item.category_id)
+        self.assertEqual(item.section.name, "inorganic")
+
     def test_same_category_label_can_be_created_under_another_department(self):
         another_department = Department.objects.create(
             name="Second Taxonomy Department",
