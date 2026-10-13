@@ -64,7 +64,7 @@ const SingleCategory = () => {
                       aria-label="Products per page"
                       value={selectedFilters.perPage}
                       onChange={(event) => setSelectedFilters((previous) => ({ ...previous, perPage: Number(event.target.value) }))}
-                      className="p-2 text-sm"
+                      className="ring-1 ring-gray-300 p-2 rounded-md bg-white text-sm"
                       options={[10, 20, 30, 40].map((num) => ({ value: num, label: `${num} / page` }))}
                     />
                     <button type="button" onClick={resetFilters} className="secondary-button px-3 py-2 rounded-md text-white">Clear filters</button>
