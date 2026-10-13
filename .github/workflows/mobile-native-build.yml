@@ -98,7 +98,7 @@ jobs:
               )
           else:
               text, count = re.subn(
-                  r"<application\\b",
+                  r"<application\b",
                   '<application android:usesCleartextTraffic="true"',
                   text,
                   count=1,
