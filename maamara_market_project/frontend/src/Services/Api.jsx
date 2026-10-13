@@ -17,11 +17,12 @@ const resolveApiOrigin = () => {
     return "";
   }
 
-  // A bundled Capacitor app cannot use its WebView origin as the API host.
-  // Keep the development APK connected to the backend exposed over Tailscale.
-  // Production builds override this with VITE_API_URL=https://maamaramarket.com.
+  // Native apps must receive their backend origin from the build configuration.
+  // Do not hard-code development or production hosts in shared application code.
   if (Capacitor.isNativePlatform()) {
-    return "http://100.109.224.0:8000";
+    throw new Error(
+      "VITE_API_URL is required for native builds. Set it in the build configuration."
+    );
   }
 
   // Preserve same-origin website behavior. Vite proxies /api, /media and /ws
