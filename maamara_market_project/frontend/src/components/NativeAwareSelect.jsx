@@ -40,6 +40,10 @@ const NativeAwareSelect = forwardRef(function NativeAwareSelect({
 
   const setSourceRef = (node) => {
     sourceRef.current = node;
+  };
+
+  const setTriggerRef = (node) => {
+    triggerRef.current = node;
     if (typeof forwardedRef === "function") forwardedRef(node);
     else if (forwardedRef) forwardedRef.current = node;
   };
@@ -88,12 +92,7 @@ const NativeAwareSelect = forwardRef(function NativeAwareSelect({
 
   const chooseOption = (option) => {
     if (option.disabled) return;
-    if (sourceRef.current) {
-      sourceRef.current.value = option.value;
-      sourceRef.current.dispatchEvent(new Event("change", { bubbles: true }));
-    } else {
-      onChange?.({ target: { name, value: option.value } });
-    }
+    onChange?.({ target: { name, value: option.value, type: "select-one" }, type: "change" });
     setOpen(false);
     triggerRef.current?.focus();
   };
@@ -126,7 +125,7 @@ const NativeAwareSelect = forwardRef(function NativeAwareSelect({
   }
 
   return (
-    <div ref={wrapperRef} className="native-aware-select">
+    <div ref={wrapperRef} className="native-aware-select" style={className.split(/\\s+/).includes("w-full") ? { width: "100%" } : undefined}>
       <select
         {...selectProps}
         id={id}
@@ -137,7 +136,7 @@ const NativeAwareSelect = forwardRef(function NativeAwareSelect({
         onBlur={onBlur}
         onFocus={onFocus}
         aria-label={ariaLabel}
-        required={required}
+        required={false}
         disabled={disabled}
         tabIndex={-1}
         aria-hidden="true"
@@ -146,13 +145,14 @@ const NativeAwareSelect = forwardRef(function NativeAwareSelect({
         {selectOptions}
       </select>
       <button
-        ref={triggerRef}
+        ref={setTriggerRef}
         id={id ? `${id}-trigger` : undefined}
         type="button"
         className={`native-aware-select__trigger ${className}`}
         aria-label={ariaLabel || placeholder}
         aria-haspopup="listbox"
         aria-expanded={open}
+        aria-required={required || undefined}
         disabled={disabled}
         onClick={openMenu}
       >
