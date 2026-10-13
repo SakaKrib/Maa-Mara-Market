@@ -7,7 +7,7 @@ import { Link } from "react-router-dom";
 import FormattedCurrency from "../Currency/FormattedCurrency";
 import { useCurrency } from "../Currency/CurrencyContext";
 import api from "../../../../../../Services/Api";
-import NativeAwareSelect from "../../../../../components/NativeAwareSelect";
+import NativeAwareSelect from "../../../../../../components/NativeAwareSelect";
 
 const imageUrl = (image) => image || "";
 
