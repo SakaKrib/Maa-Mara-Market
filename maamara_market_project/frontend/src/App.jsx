@@ -1,13 +1,8 @@
-import { ColourModeContext, tokens } from "./theme";
 import {
   CssBaseline,
-  ThemeProvider,
   CircularProgress,
-  useTheme,
 } from "@mui/material";
 import { Routes, Route } from "react-router-dom";
-import { useMode } from "./theme";
-import BridgeToHTML from "./globalHtml";
 import { AuthProvider, useAuth } from "./cmponents/Auth/AuthContext/Context";
 import React, { useEffect, useState } from "react";
 import "./main.css";
@@ -149,9 +144,6 @@ import SearchGlobalResultsPage from "./cmponents/SearchPage/SearchResultsPage";
 
 function AppContent() {
   const { loading } = useAuth();
-  const [theme, colorMode] = useMode();
-  const themeSetup = useTheme();
-  const colors = tokens(themeSetup.palette.mode);
   const isNativeApp = typeof window !== "undefined" && window.Capacitor?.isNativePlatform?.() === true;
   const [launchAnimationDone, setLaunchAnimationDone] = useState(false);
   const [launchSequenceDone, setLaunchSequenceDone] = useState(false);
@@ -185,8 +177,8 @@ function AppContent() {
       <div
     
         style={{
-          backgroundColor: colors.primary[500],
-          color: colors.gray[500],
+          backgroundColor: "var(--app-background, #f8fafc)",
+          color: "var(--app-foreground, #475569)",
         }}
         className="loader-screen flex justify-center items-center h-screen"
       >
@@ -196,9 +188,7 @@ function AppContent() {
   }
 
   return (
-    <ColourModeContext.Provider value={colorMode}>
-      <ThemeProvider theme={theme}>
-        <BridgeToHTML />
+    <>
         <CssBaseline />
         <div className="app">
           <div
@@ -451,8 +441,7 @@ function AppContent() {
 
           </div>
         </div>
-      </ThemeProvider>
-    </ColourModeContext.Provider>
+    </>
   );
 }
 
