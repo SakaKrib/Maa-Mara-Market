@@ -233,7 +233,7 @@ const VendorItems = () => {
               aria-label="Item"
               value={selectedItem}
               onChange={(event) => setSelectedItem(event.target.value)}
-              className="w-full rounded-[20px] px-4 py-3 text-sm outline-none transition focus:border-primary"
+              className="w-full rounded-[20px] border border-gray-300 bg-background px-4 py-3 text-sm text-foreground outline-none transition focus:border-primary"
               placeholder="Select item"
               options={[
                 { value: "", label: "Select item" },
