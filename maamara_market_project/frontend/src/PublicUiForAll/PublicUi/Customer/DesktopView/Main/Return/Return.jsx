@@ -3,6 +3,7 @@ import api from "../../../../../../Services/Api";
 import { Button } from "../../../../../../../components/ui/button";
 import { Loader2, PackageCheck, UploadCloud, Undo2 } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
+import NativeAwareSelect from "../../../../../../components/NativeAwareSelect";
 
 const reasonOptions = [
   { value: "damaged", label: "The item was delivered broken." },
@@ -216,41 +217,40 @@ const RequestReturnForm = ({ selectedItem = null }) => {
             <form onSubmit={handleSubmit} className="mm-return-form">
               <div className="mm-return-field">
                 <label htmlFor="return-order">Completed order</label>
-                <select
+                <NativeAwareSelect
                   id="return-order"
+                  aria-label="Completed order"
                   className="mm-return-input"
                   value={orderId}
                   onChange={(event) => handleOrderChange(event.target.value)}
                   required
-                >
-                  <option value="">Select a completed order</option>
-                  {orders.map((order) => (
-                    <option key={order.id} value={order.id}>
-                      Order #{order.paypal_order_id || order.id}
-                    </option>
-                  ))}
-                </select>
+                  placeholder="Select a completed order"
+                  options={[
+                    { value: "", label: "Select a completed order" },
+                    ...orders.map((order) => ({ value: order.id, label: `Order #${order.paypal_order_id || order.id}` })),
+                  ]}
+                />
               </div>
 
               <div className="mm-return-field">
                 <label htmlFor="return-item">Item to return</label>
-                <select
+                <NativeAwareSelect
                   id="return-item"
+                  aria-label="Item to return"
                   className="mm-return-input"
                   value={itemId}
                   onChange={(event) => setItemId(event.target.value)}
                   disabled={!selectedOrder}
                   required
-                >
-                  <option value="">
-                    {selectedOrder ? "Select an item from this order" : "Select an order first"}
-                  </option>
-                  {availableItems.map((orderItem) => (
-                    <option key={orderItem.id} value={orderItem.id}>
-                      {orderItem.item?.name || `Item #${orderItem.id}`} · Qty {orderItem.quantity}
-                    </option>
-                  ))}
-                </select>
+                  placeholder={selectedOrder ? "Select an item from this order" : "Select an order first"}
+                  options={[
+                    { value: "", label: selectedOrder ? "Select an item from this order" : "Select an order first" },
+                    ...availableItems.map((orderItem) => ({
+                      value: orderItem.id,
+                      label: `${orderItem.item?.name || `Item #${orderItem.id}`} · Qty ${orderItem.quantity}`,
+                    })),
+                  ]}
+                />
               </div>
 
               {selectedOrderItem && (
@@ -268,21 +268,20 @@ const RequestReturnForm = ({ selectedItem = null }) => {
 
               <div className="mm-return-field">
                 <label htmlFor="return-reason">Reason for return</label>
-                <select
+                <NativeAwareSelect
                   id="return-reason"
+                  aria-label="Reason for return"
                   className="mm-return-input"
                   value={reason}
                   onChange={(event) => setReason(event.target.value)}
                   disabled={!selectedOrderItem}
                   required
-                >
-                  <option value="">Select a reason</option>
-                  {reasonOptions.map((option) => (
-                    <option key={option.value} value={option.value}>
-                      {option.label}
-                    </option>
-                  ))}
-                </select>
+                  placeholder="Select a reason"
+                  options={[
+                    { value: "", label: "Select a reason" },
+                    ...reasonOptions,
+                  ]}
+                />
               </div>
 
               {reason === "custom" && (
@@ -301,16 +300,18 @@ const RequestReturnForm = ({ selectedItem = null }) => {
 
               <div className="mm-return-field">
                 <label htmlFor="return-preference">What would you like?</label>
-                <select
+                <NativeAwareSelect
                   id="return-preference"
+                  aria-label="What would you like?"
                   className="mm-return-input"
                   value={preference}
                   onChange={(event) => setPreference(event.target.value)}
                   disabled={!selectedOrderItem}
-                >
-                  <option value="refund">Refund</option>
-                  <option value="exchange">Exchange</option>
-                </select>
+                  options={[
+                    { value: "refund", label: "Refund" },
+                    { value: "exchange", label: "Exchange" },
+                  ]}
+                />
               </div>
 
               <div className="mm-return-field">
