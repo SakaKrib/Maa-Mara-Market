@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { IonIcon } from "@ionic/react";
 import { closeOutline, filterOutline } from "ionicons/icons";
 import useCategoryFilters from "./CategoryFilter/useCategoryFilters";
-import NativeAwareSelect from "../../../../components/NativeAwareSelect";
+import NativeAwareSelect from "../../../../../components/NativeAwareSelect";
 import CategoryFilterSidebar from "./CategoryFilter/CategoryFilterSidebar";
 import CategoryProductCard from "./CategoryFilter/CategoryProductCard";
 import "../../../maamara.css";
