@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { ResponsiveLine } from "@nivo/line";
 import { ResponsiveBar } from "@nivo/bar";
 import api from "../../Services/Api";
+import NativeAwareSelect from "../../components/NativeAwareSelect";
 
 const emptyData = {
   summary: { page_views: 0, unique_visitors: 0, sessions: 0, countries: 0, pages: 0, events: 0 },
@@ -73,12 +74,18 @@ const InboundTraffic = () => {
             Understand where visitors come from, which pages they use, and how far they progress through the storefront.
           </p>
         </div>
-        <select value={days} onChange={(e) => setDays(Number(e.target.value))} className="rounded-xl border border-border bg-card px-3 py-2 text-sm text-foreground outline-none focus:ring-2 focus:ring-primary/20">
-          <option value={7}>Last 7 days</option>
-          <option value={30}>Last 30 days</option>
-          <option value={60}>Last 60 days</option>
-          <option value={90}>Last 90 days</option>
-        </select>
+        <NativeAwareSelect
+          aria-label="Reporting period"
+          value={days}
+          onChange={(event) => setDays(Number(event.target.value))}
+          className="rounded-xl px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/20"
+          options={[
+            { value: 7, label: "Last 7 days" },
+            { value: 30, label: "Last 30 days" },
+            { value: 60, label: "Last 60 days" },
+            { value: 90, label: "Last 90 days" },
+          ]}
+        />
       </div>
 
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-6">
