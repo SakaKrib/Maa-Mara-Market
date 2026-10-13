@@ -103,6 +103,28 @@ const FilterTree = ({ filters, selectedFilters, toggleFilter }) => (
       </section>
     )}
 
+    {filters.attributes?.length > 0 && (
+      <section className="mm-filter-tree__group">
+        <h4 className="mm-filter-tree__section-title">Attributes</h4>
+        <ul className="mm-filter-tree__options">
+          {filters.attributes.map((attribute) => (
+            <li key={attribute}>
+              <label className="mm-filter-tree__option">
+                <input
+                  className="mm-filter-tree__input"
+                  type="radio"
+                  name="category-attribute"
+                  checked={selectedFilters.attribute === attribute}
+                  onChange={() => toggleFilter("attribute", attribute)}
+                />
+                <span className="mm-filter-tree__name">{truncateWords(attribute, 28)}</span>
+              </label>
+            </li>
+          ))}
+        </ul>
+      </section>
+    )}
+
     {filters.colors?.length > 0 && (
       <section className="mm-filter-tree__group">
         <h4 className="mm-filter-tree__section-title">Colors</h4>
