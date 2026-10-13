@@ -1,12 +1,13 @@
 import { ResponsivePie } from "@nivo/pie";
+import "../admin-charts.css";
 
 const PieGraph = ({ data = [] }) => {
   if (!Array.isArray(data) || data.length === 0) {
-    return <div className="flex h-full items-center justify-center text-sm text-muted-foreground">No category data available yet.</div>;
+    return <div className="mm-admin-chart-empty">No category data available yet.</div>;
   }
 
   return (
-    <div className="h-full min-h-0 w-full">
+    <div className="mm-admin-chart-fill">
       <ResponsivePie
         data={data}
         margin={{ top: 18, right: 18, bottom: 70, left: 18 }}
