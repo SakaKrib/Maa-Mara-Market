@@ -71,6 +71,74 @@ jobs:
           npx cap add android
           npx cap sync android
 
+      # Capacitor creates the native project on every run, so enforce the
+      # status-bar behavior in the generated activity before compiling.
+      - name: Keep Android status bar visible and respect top safe area
+        working-directory: ${{ env.FRONTEND_DIR }}
+        run: |
+          cat > android/app/src/main/java/com/mamaramarket/app/MainActivity.java <<'JAVA'
+          package com.mamaramarket.app;
+
+          import android.graphics.Color;
+          import android.os.Build;
+          import android.os.Bundle;
+          import android.view.View;
+          import android.view.WindowManager;
+
+          import androidx.core.graphics.Insets;
+          import androidx.core.view.ViewCompat;
+          import androidx.core.view.WindowCompat;
+          import androidx.core.view.WindowInsetsCompat;
+          import androidx.core.view.WindowInsetsControllerCompat;
+
+          import com.getcapacitor.BridgeActivity;
+
+          public class MainActivity extends BridgeActivity {
+              @Override
+              public void onCreate(Bundle savedInstanceState) {
+                  super.onCreate(savedInstanceState);
+                  applySystemBarSettings();
+                  // Reapply after Capacitor plugins initialize.
+                  getWindow().getDecorView().post(this::applySystemBarSettings);
+              }
+
+              private void applySystemBarSettings() {
+                  getWindow().clearFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN);
+
+                  boolean edgeToEdgeEnforced = Build.VERSION.SDK_INT >= 35;
+                  WindowCompat.setDecorFitsSystemWindows(getWindow(), !edgeToEdgeEnforced);
+
+                  WindowInsetsControllerCompat controller =
+                      WindowCompat.getInsetsController(getWindow(), getWindow().getDecorView());
+                  controller.show(WindowInsetsCompat.Type.statusBars());
+                  controller.setAppearanceLightStatusBars(true);
+                  getWindow().setStatusBarColor(Color.WHITE);
+
+                  // Android 15 enforces edge-to-edge. Add the top system inset
+                  // to the WebView container so page content starts below it.
+                  if (edgeToEdgeEnforced) {
+                      View content = findViewById(android.R.id.content);
+                      if (content != null) {
+                          ViewCompat.setOnApplyWindowInsetsListener(content, (view, insets) -> {
+                              Insets safeTop = insets.getInsets(
+                                  WindowInsetsCompat.Type.statusBars()
+                                      | WindowInsetsCompat.Type.displayCutout()
+                              );
+                              view.setPadding(
+                                  safeTop.left,
+                                  safeTop.top,
+                                  safeTop.right,
+                                  view.getPaddingBottom()
+                              );
+                              return insets;
+                          });
+                          ViewCompat.requestApplyInsets(content);
+                      }
+                  }
+              }
+          }
+          JAVA
+
       - name: Build Android debug APK
         working-directory: ${{ env.FRONTEND_DIR }}/android
         run: ./gradlew assembleDebug
