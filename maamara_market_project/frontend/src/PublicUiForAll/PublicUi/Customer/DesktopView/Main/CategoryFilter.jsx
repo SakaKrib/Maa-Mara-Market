@@ -57,7 +57,7 @@ const SingleCategory = () => {
                       aria-label="Sort by"
                       value={selectedFilters.sortBy}
                       onChange={(event) => setSelectedFilters((previous) => ({ ...previous, sortBy: event.target.value }))}
-                      className="p-2 text-sm"
+                      className="ring-1 ring-gray-300 p-2 rounded-md bg-white text-sm"
                       options={["Default", "Product Name", "Price", "Brand"].map((sort) => ({ value: sort, label: sort }))}
                     />
                     <NativeAwareSelect
