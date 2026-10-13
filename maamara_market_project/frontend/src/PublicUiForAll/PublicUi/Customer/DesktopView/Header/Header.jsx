@@ -16,6 +16,7 @@ import MobileNavigationDrawer from "./MobileNavigationDrawer";
 import "./native-app.css";
 import { useAuth } from "../../../../../cmponents/Auth/AuthContext/Context";
 import { useCurrency } from "../Main/Currency/CurrencyContext";
+import NativeAwareSelect from "../../../../../components/NativeAwareSelect";
 
 const truncateName = (name, visibleChars = 3) => {
   const cleanName = name?.trim() || "";
@@ -92,9 +93,13 @@ const Header = () => {
             <span className="mm-utility-separator">·</span>
             <label className="flex items-center gap-1 cursor-pointer" aria-label="Select currency">
               <span>{currencies[currency]?.flag}</span>
-              <select value={currency} onChange={e => setCurrency(e.target.value)} className="bg-transparent border-0 outline-none cursor-pointer">
-                {Object.keys(currencies).map(code => <option key={code} value={code}>{code}</option>)}
-              </select>
+              <NativeAwareSelect
+                aria-label="Currency"
+                value={currency}
+                onChange={(event) => setCurrency(event.target.value)}
+                className="bg-transparent border-0 outline-none cursor-pointer"
+                options={Object.keys(currencies).map((code) => ({ value: code, label: code }))}
+              />
             </label>
           </div>
         </div>
@@ -120,9 +125,13 @@ const Header = () => {
           <div className="flex flex-row w-full relative gap-3 items-center justify-end desktop-hide">
             <label className="mm-mobile-currency" aria-label="Select currency">
               <span aria-hidden="true">{currencies[currency]?.flag}</span>
-              <select value={currency} onChange={e => setCurrency(e.target.value)} className="bg-transparent border-0 outline-none cursor-pointer" aria-label="Currency">
-                {Object.keys(currencies).map(code => <option key={code} value={code}>{code}</option>)}
-              </select>
+              <NativeAwareSelect
+                aria-label="Currency"
+                value={currency}
+                onChange={(event) => setCurrency(event.target.value)}
+                className="bg-transparent border-0 outline-none cursor-pointer"
+                options={Object.keys(currencies).map((code) => ({ value: code, label: code }))}
+              />
             </label>
 
             {isAuthenticated && !isAdminOrVendor && (
