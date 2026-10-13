@@ -370,12 +370,11 @@ def approve_request(request, pk):
         subcategory_name = draft_data.get("subcategory")
         section_name = draft_data.get("section")
 
-        try:
-            department_instance = (
-                Department.objects.get(name=department_name)
-                if department_name else None
-            )
-        except Department.DoesNotExist:
+        department_instance = (
+            Department.objects.filter(name__iexact=department_name).first()
+            if department_name else None
+        )
+        if department_name and department_instance is None:
             logger.warning(
                 "Vendor item approval rejected: request_id=%s department=%r not found",
                 item_request.id, department_name,
@@ -385,25 +384,24 @@ def approve_request(request, pk):
                 status=status.HTTP_400_BAD_REQUEST
             )
 
-        try:
-            category_instance = (
-                Category.objects.get(name=category_name)
-                if category_name else None
-            )
-        except Category.DoesNotExist:
-            logger.warning(
-                "Vendor item approval rejected: request_id=%s category=%r not found",
-                item_request.id, category_name,
-            )
-            return Response(
-                {"error": f"Category '{category_name}' not found."},
-                status=status.HTTP_400_BAD_REQUEST
+        # Custom categories and subcategories are valid input even when no
+        # database row exists yet. ItemSerializers resolves/creates them under
+        # this department and category atomically when the item is saved.
+        category_instance = (
+            Category.objects.filter(
+                name__iexact=category_name,
+                department=department_instance,
+            ).first()
+            if category_name and department_instance else None
+        )
+        if category_name and category_instance is None:
+            logger.info(
+                "Vendor item approval: request_id=%s custom category=%r will be created under department=%r",
+                item_request.id, category_name, department_name,
             )
 
-        # Resolve a subcategory inside the selected category. A valid
-        # custom subcategory may not exist yet; ItemSerializers.to_internal_value
-        # creates it under the resolved category when needed. Do not reject
-        # approval here just because that relationship has not been created.
+        # Resolve an existing subcategory only for diagnostics; a custom
+        # subcategory is created by ItemSerializers when the item is saved.
         subcategory_instance = (
             SubCategory.objects.filter(
                 name__iexact=subcategory_name,
@@ -416,21 +414,6 @@ def approve_request(request, pk):
                 "Vendor item approval: request_id=%s subcategory=%r not yet "
                 "present under category=%r; serializer will resolve it",
                 item_request.id, subcategory_name, category_name,
-            )
-
-        try:
-            section_instance = (
-                Section.objects.get(name__iexact=section_name)
-                if section_name else None
-            )
-        except Section.DoesNotExist:
-            logger.warning(
-                "Vendor item approval rejected: request_id=%s section=%r not found",
-                item_request.id, section_name,
-            )
-            return Response(
-                {"error": f"Section '{section_name}' not found."},
-                status=status.HTTP_400_BAD_REQUEST
             )
 
         raw_image = draft_data.get("image") or (item_request.image.name if item_request.image else None)
