@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import NativeAwareSelect from "../../../../components/NativeAwareSelect";
 
 const initialForm = {
   category: "vendors",
@@ -50,15 +51,21 @@ export default function AddPaymentModal({ open, onClose, onSubmit, editingEntry 
         <form onSubmit={handleSubmit} className="space-y-4">
           <label className="block">
             <span className="mb-1.5 block text-xs font-semibold text-card-foreground">Category</span>
-            <select name="category" value={form.category} onChange={handleChange} className="w-full rounded-xl border border-border bg-background px-3 py-2.5 text-sm text-foreground outline-none focus:ring-2 focus:ring-primary/20">
-              <option value="vendors">Vendors</option>
-              <option value="staffs">Staffs</option>
-              <option value="kra">KRA Licenses</option>
-              <option value="rent">Rent</option>
-              <option value="subscriptions">Subscriptions</option>
-              <option value="training">Training</option>
-              <option value="refund">Refund</option>
-            </select>
+            <NativeAwareSelect
+              name="category"
+              value={form.category}
+              onChange={handleChange}
+              className="w-full rounded-xl border border-border bg-background px-3 py-2.5 text-sm text-foreground outline-none focus:ring-2 focus:ring-primary/20"
+              options={[
+                { value: "vendors", label: "Vendors" },
+                { value: "staffs", label: "Staffs" },
+                { value: "kra", label: "KRA Licenses" },
+                { value: "rent", label: "Rent" },
+                { value: "subscriptions", label: "Subscriptions" },
+                { value: "training", label: "Training" },
+                { value: "refund", label: "Refund" },
+              ]}
+            />
           </label>
 
           <label className="block">
@@ -68,10 +75,16 @@ export default function AddPaymentModal({ open, onClose, onSubmit, editingEntry 
 
           <label className="block">
             <span className="mb-1.5 block text-xs font-semibold text-card-foreground">Payment Method</span>
-            <select name="payment_method" value={form.payment_method} onChange={handleChange} className="w-full rounded-xl border border-border bg-background px-3 py-2.5 text-sm text-foreground outline-none focus:ring-2 focus:ring-primary/20">
-              <option value="mpesa">M-Pesa</option>
-              <option value="paypal">PayPal</option>
-            </select>
+            <NativeAwareSelect
+              name="payment_method"
+              value={form.payment_method}
+              onChange={handleChange}
+              className="w-full rounded-xl border border-border bg-background px-3 py-2.5 text-sm text-foreground outline-none focus:ring-2 focus:ring-primary/20"
+              options={[
+                { value: "mpesa", label: "M-Pesa" },
+                { value: "paypal", label: "PayPal" },
+              ]}
+            />
           </label>
 
           <div className="flex flex-col-reverse gap-2 pt-2 sm:flex-row sm:justify-end">
