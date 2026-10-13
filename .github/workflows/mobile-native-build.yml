@@ -13,7 +13,7 @@ on:
         description: "API origin for this development build. Use the Tailscale backend for testing; use https://maamaramarket.com explicitly for a public production build."
         required: true
         type: string
-        default: "http://100.109.224.0:8000"
+        default: "https://opondo-thinkpad-t14-gen-1.tail34bca9.ts.net"
 
 permissions:
   contents: read
@@ -24,7 +24,7 @@ concurrency:
 
 env:
   FRONTEND_DIR: maamara_market_project/frontend
-  MOBILE_API_URL: ${{ github.event.inputs.api_url || 'http://100.109.224.0:8000' }}
+  MOBILE_API_URL: ${{ github.event.inputs.api_url || 'https://opondo-thinkpad-t14-gen-1.tail34bca9.ts.net' }}
 
 jobs:
 
@@ -107,9 +107,9 @@ jobs:
           npx cap add android
           npx cap sync android
 
-      # This workflow builds the development branch, so default to the known Tailscale backend.
-      # Select https://maamaramarket.com explicitly when making a public production build.
-      - name: Allow HTTP API access for Tailscale builds
+      # GitHub development builds use HTTPS Tailscale Serve to avoid Android WebView mixed-content blocking.
+      # Use https://maamaramarket.com only for an explicitly requested production build.
+      - name: Allow HTTP API access only when explicitly configured
         working-directory: ${{ env.FRONTEND_DIR }}
         env:
           MOBILE_API_URL: ${{ env.MOBILE_API_URL }}
