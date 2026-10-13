@@ -418,7 +418,7 @@ const Dashboard = () => {
               {exportingKey ? "Exporting…" : "Export"}
             </button>
             {exportMenuOpen && (
-              <div role="menu" aria-label="Dashboard export options" className="absolute right-0 z-30 mt-2 w-72 max-w-[calc(100vw-2rem)] overflow-hidden rounded-2xl border border-border bg-card p-1.5 shadow-xl">
+              <div role="menu" aria-label="Dashboard export options" className="absolute left-0 right-auto z-30 mt-2 w-72 max-w-[calc(100vw-2rem)] overflow-hidden rounded-2xl border border-border bg-card p-1.5 shadow-xl">
                 <p className="px-3 pb-1 pt-2 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Download report</p>
                 {[
                   ["summary", "Dashboard summary", "Revenue, orders, visitors and email totals"],
