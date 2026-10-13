@@ -74,8 +74,26 @@ const SingleCategory = () => {
 
               {error && <div className="mm-card p-4 mb-4 text-sm text-red-700 bg-red-50">{error}</div>}
               {loadingProducts ? (
-                <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2 sm:gap-4 lg:gap-6">
-                  {Array.from({ length: 8 }).map((_, i) => <div key={i} className="mm-card aspect-[3/4] animate-pulse bg-gray-100" />)}
+                <div
+                  className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-4 lg:gap-6"
+                  role="status"
+                  aria-label="Loading products"
+                  aria-busy="true"
+                >
+                  {Array.from({ length: 6 }).map((_, i) => (
+                    <div
+                      key={i}
+                      className="mm-card overflow-hidden rounded-lg border border-gray-200 bg-white animate-pulse"
+                    >
+                      <div className="aspect-square w-full bg-gray-200" />
+                      <div className="space-y-3 p-3 sm:p-4">
+                        <div className="h-3 w-3/4 rounded bg-gray-200" />
+                        <div className="h-3 w-1/2 rounded bg-gray-200" />
+                        <div className="h-5 w-1/3 rounded bg-gray-300" />
+                      </div>
+                    </div>
+                  ))}
+                  <span className="sr-only">Loading products, please wait.</span>
                 </div>
               ) : products.length ? (
                 <div className="category-product-grid">{products.map((item) => <CategoryProductCard key={item.id} item={item} />)}</div>
