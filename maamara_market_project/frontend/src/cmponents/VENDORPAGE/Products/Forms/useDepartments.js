@@ -1,3 +1,6 @@
+import { useEffect, useRef, useState } from "react";
+import api from "../../../../Services/Api";
+
 // Canonical frontend copy of backend/order/management/commands/populate_categories.py.
 // Keep this file synchronized with the backend management command.
 // This is intentionally local/static data: AddingNewItem does not need a category API request.
@@ -103,9 +106,6 @@ const organicDepartmentMap = {
 // The lists above are a first-render fallback only. After the API responds,
 // the database taxonomy becomes authoritative, including vendor-created
 // categories and subcategories that are not present in these defaults.
-import { useEffect, useRef, useState } from "react";
-import api from "../../../../Services/Api";
-
 const cloneDepartmentMap = (source) =>
   Object.fromEntries(
     Object.entries(source).map(([name, data]) => [
