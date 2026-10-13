@@ -1,5 +1,6 @@
 import React from "react";
 import { useCurrency } from "./CurrencyContext";
+import { FALLBACK_RATES } from "./Currency";
 
 const FormattedCurrency = ({ value = 0, className = "" }) => {
   const { currency, rates, loading } = useCurrency();
@@ -8,7 +9,9 @@ const FormattedCurrency = ({ value = 0, className = "" }) => {
     return <span className={className}>...</span>;
   }
 
-  const rate = currency === "KES" ? 1 : (rates?.[currency] ?? 1);
+  const rate = currency === "KES"
+    ? 1
+    : (rates?.[currency] ?? FALLBACK_RATES[currency]);
 
   const numericValue = Number(value);
   const safeValue = Number.isFinite(numericValue) ? numericValue : 0;
