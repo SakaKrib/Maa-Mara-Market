@@ -64,6 +64,8 @@
   }
   body {
     @apply bg-background text-foreground;
+    /* Keep app content below the Android/iOS status bar when it overlays the WebView. */
+    padding-top: env(safe-area-inset-top, 0px);
   }
 }
 
