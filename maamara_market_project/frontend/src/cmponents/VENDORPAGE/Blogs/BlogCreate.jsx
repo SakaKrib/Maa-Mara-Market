@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import NativeAwareSelect from "../../../components/NativeAwareSelect";
 import api from "../../../Services/Api";
 import RichTextEditor from "../../RichTextEditor/RichTextEdit";
 
@@ -140,21 +141,19 @@ const BlogCreate = ({ items = [] }) => {
             <label htmlFor="blog-item" className={labelClass}>
               Related Item <span className="font-normal text-gray-400">(optional)</span>
             </label>
-            <select
+            <NativeAwareSelect
               id="blog-item"
+              name="blog-item"
               value={item}
               onChange={(event) => setItem(event.target.value)}
-              className={inputClass}
+              placeholder="No related item"
+              options={[
+                { value: "", label: "No related item" },
+                ...(Array.isArray(items) ? items.map((product) => ({ value: String(product.id), label: product.name })) : []),
+              ]}
+              className="w-full rounded-xl border border-border bg-card px-4 py-3 text-sm text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
               disabled={submitting}
-            >
-              <option value="">No related item</option>
-              {Array.isArray(items) &&
-                items.map((product) => (
-                  <option key={product.id} value={product.id}>
-                    {product.name}
-                  </option>
-                ))}
-            </select>
+            />
           </div>
 
           <div>
