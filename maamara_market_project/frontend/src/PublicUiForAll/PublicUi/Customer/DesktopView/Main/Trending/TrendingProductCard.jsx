@@ -5,6 +5,7 @@ import { heart, heartOutline, eyeOutline, shareOutline } from "ionicons/icons";
 import { Link, useNavigate } from "react-router-dom";
 import { resolveApiAssetUrl } from "../../../../../../Services/Api";
 import FormattedCurrency from "../Currency/FormattedCurrency";
+import { shareProduct as shareMarketplaceProduct } from "../../../../../../Services/ProductSharing";
 
 const TrendingProductCard = ({ item, isWishlisted: controlledWishlist, onToggleWishlist, onOpen }) => {
   const navigate = useNavigate();
@@ -50,6 +51,23 @@ const TrendingProductCard = ({ item, isWishlisted: controlledWishlist, onToggleW
   const isWishlisted = controlledWishlist ?? derivedWishlist;
   const [imageLoaded, setImageLoaded] = React.useState(false);
   const [imageFailed, setImageFailed] = React.useState(false);
+  const [isImagePreviewOpen, setIsImagePreviewOpen] = React.useState(false);
+
+  React.useEffect(() => {
+    if (!isImagePreviewOpen) return undefined;
+
+    const handleKeyDown = (event) => {
+      if (event.key === "Escape") setIsImagePreviewOpen(false);
+    };
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    document.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [isImagePreviewOpen]);
 
   const displayName = String(item.name || "Marketplace product");
   const truncatedName = displayName.length > 42
@@ -70,16 +88,7 @@ const TrendingProductCard = ({ item, isWishlisted: controlledWishlist, onToggleW
 
   const shareProduct = async (event) => {
     event.stopPropagation();
-    const url = window.location.origin + `/item/${item.id}`;
-    try {
-      if (navigator.share) {
-        await navigator.share({ title: item.name || "Maa Mara Market product", url });
-      } else if (navigator.clipboard) {
-        await navigator.clipboard.writeText(url);
-      }
-    } catch (error) {
-      if (error?.name !== "AbortError") console.error("Unable to share product", error);
-    }
+    await shareMarketplaceProduct({ item, image });
   };
 
   return (
@@ -111,7 +120,7 @@ const TrendingProductCard = ({ item, isWishlisted: controlledWishlist, onToggleW
           <button type="button" onClick={toggleWishlist} aria-label={isWishlisted ? "Remove from wishlist" : "Add to wishlist"} className="mm-product-action">
             <IonIcon icon={isWishlisted ? heart : heartOutline} />
           </button>
-          <button type="button" onClick={(event) => { event.stopPropagation(); openProduct(); }} aria-label="View product" className="mm-product-action">
+          <button type="button" onClick={(event) => { event.stopPropagation(); setIsImagePreviewOpen(true); }} aria-label="Preview product image" className="mm-product-action">
             <IonIcon icon={eyeOutline} />
           </button>
           <button type="button" onClick={shareProduct} aria-label="Share product" className="mm-product-action">
@@ -169,6 +178,31 @@ const TrendingProductCard = ({ item, isWishlisted: controlledWishlist, onToggleW
         )}
 
       </div>
+
+      {isImagePreviewOpen && image && !imageFailed && (
+        <div
+          className="fixed inset-0 z-[100] flex h-screen w-screen items-center justify-center bg-black/90 p-4 sm:p-8"
+          role="dialog"
+          aria-modal="true"
+          aria-label={`${displayName} image preview`}
+          onClick={() => setIsImagePreviewOpen(false)}
+        >
+          <button
+            type="button"
+            className="absolute right-4 top-4 z-10 flex h-11 w-11 items-center justify-center rounded-full bg-white/10 text-2xl text-white backdrop-blur transition-colors hover:bg-white/20"
+            onClick={() => setIsImagePreviewOpen(false)}
+            aria-label="Close image preview"
+          >
+            ×
+          </button>
+          <img
+            src={image}
+            alt={displayName}
+            className="max-h-full max-w-full object-contain"
+            onClick={(event) => event.stopPropagation()}
+          />
+        </div>
+      )}
     </article>
   );
 };
