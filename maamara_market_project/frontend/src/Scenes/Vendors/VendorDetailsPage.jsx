@@ -76,7 +76,7 @@ const VendorDetailsPage = () => {
   return (
     <main className="mm-vendor-detail-page">
       <Link className="mm-vendor-detail-back" to="/admin-dashboard/vendors">← Back to vendors</Link>
-      <header className="mm-vendor-detail-header">
+      <header className="mm-vendor-detail-header" style={{ backgroundColor: colors.primary[600], color: colors.gray[100] }}>
         {avatar ? (
           <img className="mm-vendor-detail-avatar" src={avatar} alt="" />
         ) : (
@@ -84,14 +84,14 @@ const VendorDetailsPage = () => {
         )}
         <div>
           <h1 className="mm-vendor-detail-heading">{vendor.company_name || fullName || vendor.username || "Vendor details"}</h1>
-          <p className="mm-vendor-detail-subtitle">{fullName && vendor.company_name ? fullName : vendor.email || "Vendor account"}</p>
-          <span className="mm-vendor-detail-state">{vendor.status || (vendor.is_active === false ? "Inactive" : "Active")}</span>
+          <p className="mm-vendor-detail-subtitle" style={{ color: colors.gray[300] }}>{fullName && vendor.company_name ? fullName : vendor.email || "Vendor account"}</p>
+          <span className="mm-vendor-detail-state" style={{ backgroundColor: colors.primary[700], color: colors.gray[100] }}>{vendor.status || (vendor.is_active === false ? "Inactive" : "Active")}</span>
         </div>
       </header>
       <section className="mm-vendor-detail-grid" aria-label="Vendor information">
         {fields.map(([label, rawValue]) => (
-          <article className="mm-vendor-detail-card" key={label}>
-            <p className="mm-vendor-detail-label">{label}</p>
+          <article className="mm-vendor-detail-card" key={label} style={{ backgroundColor: colors.primary[700], color: colors.gray[100] }}>
+            <p className="mm-vendor-detail-label" style={{ color: colors.gray[300] }}>{label}</p>
             <p className="mm-vendor-detail-value">{rawValue === null || rawValue === undefined || rawValue === "" ? "—" : String(rawValue)}</p>
           </article>
         ))}
