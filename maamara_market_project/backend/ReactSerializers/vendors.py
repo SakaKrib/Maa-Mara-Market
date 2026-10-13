@@ -1145,335 +1145,336 @@ def approve_vendor(request, vendor_request_id):
 
     for item in item_list:
         try:
-            normalized_item = {k.lower(): v for k, v in item.items()}
+            with transaction.atomic():
+                name = sanitize(item.get("name") or "")
+                if not name:
+                    continue
 
-            # Prefer the authoritative stored draft image. This means an
-            # unchanged image is promoted directly from the draft asset;
-            # a replacement already has a new asset/path from submission.
-            image_asset_id = item.get("image_asset_id")
-            raw_path = item.get("image")
-            if image_asset_id:
-                raw_path = resolved_draft_images[image_asset_id]
+                normalized_item = {k.lower(): v for k, v in item.items()}
 
-            # SECTION / DEPARTMENT / CATEGORY / SUBCATEGORY
-            # Use the same scoped resolver as normal item creation and editing.
-            # Custom categories/subcategories are created under their selected
-            # parents and cannot silently attach to a same-named unrelated record.
-            taxonomy = resolve_item_taxonomy(
-                section_value=sanitize(item.get("section")) if item.get("section") else None,
-                department_value=sanitize(item.get("department")) if item.get("department") else None,
-                category_value=sanitize(item.get("category")) if item.get("category") else None,
-                subcategory_value=sanitize(item.get("subcategory")) if item.get("subcategory") else None,
-                default_section=(
-                    "organic" if item.get("is_organic", False) else "inorganic"
-                ),
-            )
-            section = taxonomy["section"]
-            department = taxonomy["department"]
-            category = taxonomy["category"]
-            subcategory = taxonomy["subcategory"]
+                # Prefer the authoritative stored draft image. This means an
+                # unchanged image is promoted directly from the draft asset;
+                # a replacement already has a new asset/path from submission.
+                image_asset_id = item.get("image_asset_id")
+                raw_path = item.get("image")
+                if image_asset_id:
+                    raw_path = resolved_draft_images[image_asset_id]
 
-            brand = None
-            raw_brand = item.get('brand')
-
-            # The frontend may submit the selected Brand as an ID, while
-            # older vendor-request payloads may contain a brand name/object.
-            # Resolve all supported forms to an actual Brand instance before
-            # creating the Item.
-            if isinstance(raw_brand, dict):
-                brand_id = raw_brand.get('id') or raw_brand.get('pk')
-                brand_name = sanitize(raw_brand.get('name', '')).strip()
-            else:
-                brand_id = raw_brand if isinstance(raw_brand, (int, str)) else None
-                brand_name = sanitize(raw_brand).strip() if raw_brand else None
-
-            if brand_id not in (None, ''):
-                try:
-                    brand = Brand.objects.filter(pk=int(brand_id)).first()
-                except (TypeError, ValueError):
-                    brand = None
-
-            if brand is None and brand_name:
-                if not brand_name.isdigit():
-                    brand, _ = Brand.objects.get_or_create(name=brand_name)
-
-            if brand is None:
-                brand = brand_instance
-
-            relative_path = normalize_media_path(raw_path)
-            video_relative_path = normalize_media_path(item.get("video"))
-
-            name = sanitize(item.get('name') or "")
-            if not name:
-                continue
-
-            # Refuse to create the same seller-owned product twice, including
-            # duplicate entries in one registration request or a retry of a
-            # previously processed item. Stock/media changes do not define a
-            # separate product identity.
-            duplicate_candidate = {
-                "section": section,
-                "name": name,
-                "description": sanitize(item.get("description") or ""),
-                "price": item.get("price", 0) or 0,
-                "discount_price": item.get("discount_price") or None,
-                "department": department,
-                "category": category,
-                "subcategory": subcategory,
-                "brand": brand,
-                "item_attribute": sanitize(item.get("item_attribute") or "") or None,
-                "gender_based": sanitize(item.get("gender_based") or "none") or "none",
-                "children_size_based_age": sanitize(
-                    item.get("children_size_based_age")
-                    or item.get("kids_sizes_label")
-                    or "none"
-                ),
-                "in_offer": item.get("in_offer", False),
-                "is_organic": item.get("is_organic", False),
-                "manufactured_date": item.get("manufactured_date") or None,
-                "expiry_date": item.get("expiry_date") or None,
-                "is_fresh_food": item.get("is_fresh_food", False),
-                "percentage_discount": item.get("percentage_discount", 0) or 0,
-                "roast_type": sanitize(item.get("roast_type") or "") or None,
-                "coffee_state": sanitize(item.get("coffee_state") or "") or None,
-            }
-            duplicate = find_duplicate_item(duplicate_candidate, owner_user=user)
-            if duplicate:
-                logger.warning(
-                    "Skipping duplicate vendor item: vendor_request_id=%s item_name=%r existing_item_id=%s",
-                    vendor_request_id,
-                    name,
-                    duplicate.pk,
+                # SECTION / DEPARTMENT / CATEGORY / SUBCATEGORY
+                # Use the same scoped resolver as normal item creation and editing.
+                # Custom categories/subcategories are created under their selected
+                # parents and cannot silently attach to a same-named unrelated record.
+                taxonomy = resolve_item_taxonomy(
+                    section_value=sanitize(item.get("section")) if item.get("section") else None,
+                    department_value=sanitize(item.get("department")) if item.get("department") else None,
+                    category_value=sanitize(item.get("category")) if item.get("category") else None,
+                    subcategory_value=sanitize(item.get("subcategory")) if item.get("subcategory") else None,
+                    default_section=(
+                        "organic" if item.get("is_organic", False) else "inorganic"
+                    ),
                 )
-                if duplicate.pk not in created_items:
-                    created_items.append(duplicate.pk)
-                continue
+                section = taxonomy["section"]
+                department = taxonomy["department"]
+                category = taxonomy["category"]
+                subcategory = taxonomy["subcategory"]
 
-            # Item.slug is a 50-character database field. Keep the full
-            # product name in Item.name, but generate a bounded unique slug.
-            slug_suffix = f"-{user.id}"
-            base_slug = slugify(name) or f"item-{user.id}"
-            max_base_length = 50 - len(slug_suffix)
-            base_slug = base_slug[:max_base_length].rstrip("-") or "item"
-            slug = f"{base_slug}{slug_suffix}"
-            counter = 1
-            while Item.objects.filter(slug=slug).exists():
-                counter_suffix = f"-{counter}"
-                available_base_length = 50 - len(slug_suffix) - len(counter_suffix)
-                slug = (
-                    f"{base_slug[:available_base_length].rstrip('-')}"
-                    f"{slug_suffix}{counter_suffix}"
-                )
-                counter += 1
+                brand = None
+                raw_brand = item.get('brand')
 
-            image_hash = hashlib.sha256(slug.encode("utf-8")).hexdigest()
+                # The frontend may submit the selected Brand as an ID, while
+                # older vendor-request payloads may contain a brand name/object.
+                # Resolve all supported forms to an actual Brand instance before
+                # creating the Item.
+                if isinstance(raw_brand, dict):
+                    brand_id = raw_brand.get('id') or raw_brand.get('pk')
+                    brand_name = sanitize(raw_brand.get('name', '')).strip()
+                else:
+                    brand_id = raw_brand if isinstance(raw_brand, (int, str)) else None
+                    brand_name = sanitize(raw_brand).strip() if raw_brand else None
 
-            # Map every persistable Item model field from the vendor-request payload.
-            created_item = Item.objects.create(
-                section=section,
-                name=name,
-                description=sanitize(item.get("description") or ""),
-                image=relative_path,
-                video=video_relative_path,
-                price=item.get("price", 0) or 0,
-                discount_price=item.get("discount_price") or None,
-                in_stock=item.get("in_stock", 0) or 0,
-                available=item.get("available", True),
-                returnable=item.get("returnable", True),
-                brand=brand,
-                department=department,
-                category=category,
-                subcategory=subcategory,
-                item_attribute=sanitize(item.get("item_attribute") or "") or None,
-                gender_based=sanitize(item.get("gender_based") or "none") or "none",
-                children_size_based_age=sanitize(
-                    item.get("children_size_based_age")
-                    or item.get("kids_sizes_label")
-                    or "none"
-                ),
-                in_offer=item.get("in_offer", False),
-                is_organic=item.get("is_organic", False),
-                manufactured_date=item.get("manufactured_date") or None,
-                expiry_date=item.get("expiry_date") or None,
-                is_fresh_food=item.get("is_fresh_food", False),
-                vendor=vendor,
-                created_by=user,
-                slug=slug,
-                image_hash=image_hash,
-                likes=item.get("likes", 0) or 0,
-                views=item.get("views", 0) or 0,
-                percentage_discount=item.get("percentage_discount", 0) or 0,
-                roast_type=sanitize(item.get("roast_type") or "") or None,
-                coffee_state=sanitize(item.get("coffee_state") or "") or None,
-            )
+                if brand_id not in (None, ''):
+                    try:
+                        brand = Brand.objects.filter(pk=int(brand_id)).first()
+                    except (TypeError, ValueError):
+                        brand = None
 
-            occasion_keys = item.get("occasions") or []
-            if occasion_keys:
-                if not isinstance(occasion_keys, list):
-                    occasion_keys = [occasion_keys]
-                created_item.occasions.set(
-                    Occasion.objects.filter(
-                        key__in=[str(key) for key in occasion_keys],
-                        is_active=True,
+                if brand is None and brand_name:
+                    if not brand_name.isdigit():
+                        brand, _ = Brand.objects.get_or_create(name=brand_name)
+
+                if brand is None:
+                    brand = brand_instance
+
+                relative_path = normalize_media_path(raw_path)
+                video_relative_path = normalize_media_path(item.get("video"))
+
+                # Refuse to create the same seller-owned product twice, including
+                # duplicate entries in one registration request or a retry of a
+                # previously processed item. Stock/media changes do not define a
+                # separate product identity.
+                duplicate_candidate = {
+                    "section": section,
+                    "name": name,
+                    "description": sanitize(item.get("description") or ""),
+                    "price": item.get("price", 0) or 0,
+                    "discount_price": item.get("discount_price") or None,
+                    "department": department,
+                    "category": category,
+                    "subcategory": subcategory,
+                    "brand": brand,
+                    "item_attribute": sanitize(item.get("item_attribute") or "") or None,
+                    "gender_based": sanitize(item.get("gender_based") or "none") or "none",
+                    "children_size_based_age": sanitize(
+                        item.get("children_size_based_age")
+                        or item.get("kids_sizes_label")
+                        or "none"
+                    ),
+                    "in_offer": item.get("in_offer", False),
+                    "is_organic": item.get("is_organic", False),
+                    "manufactured_date": item.get("manufactured_date") or None,
+                    "expiry_date": item.get("expiry_date") or None,
+                    "is_fresh_food": item.get("is_fresh_food", False),
+                    "percentage_discount": item.get("percentage_discount", 0) or 0,
+                    "roast_type": sanitize(item.get("roast_type") or "") or None,
+                    "coffee_state": sanitize(item.get("coffee_state") or "") or None,
+                }
+                duplicate = find_duplicate_item(duplicate_candidate, owner_user=user)
+                if duplicate:
+                    logger.warning(
+                        "Skipping duplicate vendor item: vendor_request_id=%s item_name=%r existing_item_id=%s",
+                        vendor_request_id,
+                        name,
+                        duplicate.pk,
                     )
+                    if duplicate.pk not in created_items:
+                        created_items.append(duplicate.pk)
+                    continue
+
+                # Item.slug is a 50-character database field. Keep the full
+                # product name in Item.name, but generate a bounded unique slug.
+                slug_suffix = f"-{user.id}"
+                base_slug = slugify(name) or f"item-{user.id}"
+                max_base_length = 50 - len(slug_suffix)
+                base_slug = base_slug[:max_base_length].rstrip("-") or "item"
+                slug = f"{base_slug}{slug_suffix}"
+                counter = 1
+                while Item.objects.filter(slug=slug).exists():
+                    counter_suffix = f"-{counter}"
+                    available_base_length = 50 - len(slug_suffix) - len(counter_suffix)
+                    slug = (
+                        f"{base_slug[:available_base_length].rstrip('-')}"
+                        f"{slug_suffix}{counter_suffix}"
+                    )
+                    counter += 1
+
+                image_hash = hashlib.sha256(slug.encode("utf-8")).hexdigest()
+
+                # Map every persistable Item model field from the vendor-request payload.
+                created_item = Item.objects.create(
+                    section=section,
+                    name=name,
+                    description=sanitize(item.get("description") or ""),
+                    image=relative_path,
+                    video=video_relative_path,
+                    price=item.get("price", 0) or 0,
+                    discount_price=item.get("discount_price") or None,
+                    in_stock=item.get("in_stock", 0) or 0,
+                    available=item.get("available", True),
+                    returnable=item.get("returnable", True),
+                    brand=brand,
+                    department=department,
+                    category=category,
+                    subcategory=subcategory,
+                    item_attribute=sanitize(item.get("item_attribute") or "") or None,
+                    gender_based=sanitize(item.get("gender_based") or "none") or "none",
+                    children_size_based_age=sanitize(
+                        item.get("children_size_based_age")
+                        or item.get("kids_sizes_label")
+                        or "none"
+                    ),
+                    in_offer=item.get("in_offer", False),
+                    is_organic=item.get("is_organic", False),
+                    manufactured_date=item.get("manufactured_date") or None,
+                    expiry_date=item.get("expiry_date") or None,
+                    is_fresh_food=item.get("is_fresh_food", False),
+                    vendor=vendor,
+                    created_by=user,
+                    slug=slug,
+                    image_hash=image_hash,
+                    likes=item.get("likes", 0) or 0,
+                    views=item.get("views", 0) or 0,
+                    percentage_discount=item.get("percentage_discount", 0) or 0,
+                    roast_type=sanitize(item.get("roast_type") or "") or None,
+                    coffee_state=sanitize(item.get("coffee_state") or "") or None,
                 )
 
-            for additional_image in item.get("additional_images", []) or []:
-                if not additional_image:
-                    continue
-                additional_relative_path = normalize_media_path(additional_image)
-                if not additional_relative_path:
-                    continue
-                ItemAdditionalImage.objects.create(
-                    item=created_item,
-                    image=additional_relative_path,
-                )
+                occasion_keys = item.get("occasions") or []
+                if occasion_keys:
+                    if not isinstance(occasion_keys, list):
+                        occasion_keys = [occasion_keys]
+                    created_item.occasions.set(
+                        Occasion.objects.filter(
+                            key__in=[str(key) for key in occasion_keys],
+                            is_active=True,
+                        )
+                    )
 
-            shipping_data = (
-                item.get("shipping_dimension_data")
-                or item.get("shipping_dimension")
-                or {}
-            )
-            if shipping_data:
-                ShippingDimension.objects.update_or_create(
-                    item=created_item,
-                    defaults={
-                        "length": shipping_data.get("length", 0) or 0,
-                        "width": shipping_data.get("width", 0) or 0,
-                        "height": shipping_data.get("height", 0) or 0,
-                        "weight": shipping_data.get("weight", 0) or 0,
-                        "unit": shipping_data.get("unit", "cm") or "cm",
-                        "weight_unit": shipping_data.get("weight_unit", "kg") or "kg",
-                    },
-                )
+                for additional_image in item.get("additional_images", []) or []:
+                    if not additional_image:
+                        continue
+                    additional_relative_path = normalize_media_path(additional_image)
+                    if not additional_relative_path:
+                        continue
+                    ItemAdditionalImage.objects.create(
+                        item=created_item,
+                        image=additional_relative_path,
+                    )
 
-            variant_data = item.get("variants")
-            if variant_data is None:
-                variant_data = item.get("color_variants", [])
+                shipping_data = (
+                    item.get("shipping_dimension_data")
+                    or item.get("shipping_dimension")
+                    or {}
+                )
+                if shipping_data:
+                    ShippingDimension.objects.update_or_create(
+                        item=created_item,
+                        defaults={
+                            "length": shipping_data.get("length", 0) or 0,
+                            "width": shipping_data.get("width", 0) or 0,
+                            "height": shipping_data.get("height", 0) or 0,
+                            "weight": shipping_data.get("weight", 0) or 0,
+                            "unit": shipping_data.get("unit", "cm") or "cm",
+                            "weight_unit": shipping_data.get("weight_unit", "kg") or "kg",
+                        },
+                    )
 
-            for cv in variant_data or []:
-                if not isinstance(cv, dict):
-                    continue
-                color = sanitize(cv.get("color"))
-                if not color:
-                    continue
-                raw_variant_image = cv.get("image") or cv.get("color_image")
-                variant_image_path = (
-                    str(raw_variant_image).lstrip("/").removeprefix("media/")
-                    if isinstance(raw_variant_image, str) and raw_variant_image
-                    else None
-                )
-                variant = ColorVariant.objects.create(
-                    item=created_item,
-                    color=color,
-                    image=variant_image_path,
-                )
-                for sz in cv.get("sizes", []) or []:
+                variant_data = item.get("variants")
+                if variant_data is None:
+                    variant_data = item.get("color_variants", [])
+
+                for cv in variant_data or []:
+                    if not isinstance(cv, dict):
+                        continue
+                    color = sanitize(cv.get("color"))
+                    if not color:
+                        continue
+                    raw_variant_image = cv.get("image") or cv.get("color_image")
+                    variant_image_path = (
+                        str(raw_variant_image).lstrip("/").removeprefix("media/")
+                        if isinstance(raw_variant_image, str) and raw_variant_image
+                        else None
+                    )
+                    variant = ColorVariant.objects.create(
+                        item=created_item,
+                        color=color,
+                        image=variant_image_path,
+                    )
+                    for sz in cv.get("sizes", []) or []:
+                        if not isinstance(sz, dict):
+                            continue
+                        size = sz.get("size")
+                        quantity = sz.get("quantity_in_stock", sz.get("stock", 0)) or 0
+                        if size not in (None, ""):
+                            SizeStock.objects.create(
+                                variant=variant,
+                                size=size,
+                                quantity_in_stock=quantity,
+                            )
+
+                size_data = item.get("size_only_icon")
+                if size_data is None:
+                    size_data = item.get("size_stock", [])
+                for sz in size_data or []:
                     if not isinstance(sz, dict):
                         continue
                     size = sz.get("size")
                     quantity = sz.get("quantity_in_stock", sz.get("stock", 0)) or 0
                     if size not in (None, ""):
                         SizeStock.objects.create(
-                            variant=variant,
+                            item=created_item,
                             size=size,
                             quantity_in_stock=quantity,
                         )
 
-            size_data = item.get("size_only_icon")
-            if size_data is None:
-                size_data = item.get("size_stock", [])
-            for sz in size_data or []:
-                if not isinstance(sz, dict):
-                    continue
-                size = sz.get("size")
-                quantity = sz.get("quantity_in_stock", sz.get("stock", 0)) or 0
-                if size not in (None, ""):
-                    SizeStock.objects.create(
+                age_data = item.get("kids_sizes")
+                if age_data is None:
+                    age_data = item.get("age_variants", [])
+                for av in age_data or []:
+                    if not isinstance(av, dict):
+                        continue
+                    age_group = sanitize(av.get("age_group") or av.get("size") or "")
+                    quantity = av.get("quantity_in_stock", av.get("stock", 0)) or 0
+                    if age_group:
+                        AgeVariant.objects.create(
+                            item=created_item,
+                            age_group=age_group,
+                            quantity_in_stock=quantity,
+                        )
+
+                for shoe in item.get("shoe_input", []) or []:
+                    if not isinstance(shoe, dict):
+                        continue
+                    Shoe.objects.create(
                         item=created_item,
-                        size=size,
-                        quantity_in_stock=quantity,
+                        shoe_type=sanitize(shoe.get("shoe_type") or ""),
+                        shoe_gender=sanitize(shoe.get("shoe_gender") or ""),
+                        shoe_size=shoe.get("shoe_size") or [],
                     )
 
-            age_data = item.get("kids_sizes")
-            if age_data is None:
-                age_data = item.get("age_variants", [])
-            for av in age_data or []:
-                if not isinstance(av, dict):
-                    continue
-                age_group = sanitize(av.get("age_group") or av.get("size") or "")
-                quantity = av.get("quantity_in_stock", av.get("stock", 0)) or 0
-                if age_group:
-                    AgeVariant.objects.create(
-                        item=created_item,
-                        age_group=age_group,
-                        quantity_in_stock=quantity,
-                    )
+                if item.get("weight"):
+                    weight_data = item["weight"]
+                    if isinstance(weight_data, dict):
+                        Weight.objects.update_or_create(
+                            item=created_item,
+                            defaults={
+                                "value": weight_data.get("value", 0) or 0,
+                                "unit": sanitize(weight_data.get("unit", "kg")),
+                            },
+                        )
 
-            for shoe in item.get("shoe_input", []) or []:
-                if not isinstance(shoe, dict):
-                    continue
-                Shoe.objects.create(
-                    item=created_item,
-                    shoe_type=sanitize(shoe.get("shoe_type") or ""),
-                    shoe_gender=sanitize(shoe.get("shoe_gender") or ""),
-                    shoe_size=shoe.get("shoe_size") or [],
-                )
+                if item.get("length"):
+                    length_data = item["length"]
+                    if isinstance(length_data, dict):
+                        Length.objects.update_or_create(
+                            item=created_item,
+                            defaults={
+                                "value": length_data.get("value", 0) or 0,
+                                "unit": sanitize(length_data.get("unit", "cm")),
+                            },
+                        )
 
-            if item.get("weight"):
-                weight_data = item["weight"]
-                if isinstance(weight_data, dict):
-                    Weight.objects.update_or_create(
-                        item=created_item,
-                        defaults={
-                            "value": weight_data.get("value", 0) or 0,
-                            "unit": sanitize(weight_data.get("unit", "kg")),
-                        },
-                    )
+                offer_data = item.get("offer")
+                if item.get("in_offer") and isinstance(offer_data, dict):
+                    offer_percentage = offer_data.get("discount_percentage")
+                    start_date = offer_data.get("start_date")
+                    end_date = offer_data.get("end_date")
+                    if offer_percentage and start_date and end_date:
+                        from datetime import datetime as _datetime
+                        from django.utils import timezone as _timezone
 
-            if item.get("length"):
-                length_data = item["length"]
-                if isinstance(length_data, dict):
-                    Length.objects.update_or_create(
-                        item=created_item,
-                        defaults={
-                            "value": length_data.get("value", 0) or 0,
-                            "unit": sanitize(length_data.get("unit", "cm")),
-                        },
-                    )
+                        def _approval_datetime(value):
+                            if isinstance(value, _datetime):
+                                parsed = value
+                            else:
+                                parsed = _datetime.fromisoformat(
+                                    str(value).replace("Z", "+00:00")
+                                )
+                            if parsed.tzinfo is None:
+                                parsed = _timezone.make_aware(
+                                    parsed,
+                                    _timezone.get_current_timezone(),
+                                )
+                            return parsed
 
-            offer_data = item.get("offer")
-            if item.get("in_offer") and isinstance(offer_data, dict):
-                offer_percentage = offer_data.get("discount_percentage")
-                start_date = offer_data.get("start_date")
-                end_date = offer_data.get("end_date")
-                if offer_percentage and start_date and end_date:
-                    from datetime import datetime as _datetime
-                    from django.utils import timezone as _timezone
-
-                    def _approval_datetime(value):
-                        if isinstance(value, _datetime):
-                            parsed = value
-                        else:
-                            parsed = _datetime.fromisoformat(
-                                str(value).replace("Z", "+00:00")
-                            )
-                        if parsed.tzinfo is None:
-                            parsed = _timezone.make_aware(
-                                parsed,
-                                _timezone.get_current_timezone(),
-                            )
-                        return parsed
-
-                    Offer.objects.create(
-                        item=created_item,
-                        discount_percentage=offer_percentage,
-                        start_date=_approval_datetime(start_date),
-                        end_date=_approval_datetime(end_date),
-                    )
+                        Offer.objects.create(
+                            item=created_item,
+                            discount_percentage=offer_percentage,
+                            start_date=_approval_datetime(start_date),
+                            end_date=_approval_datetime(end_date),
+                        )
 
 
-            created_items.append(created_item.id)
+                created_items.append(created_item.id)
 
         except Exception as exc:
             logger.exception(
