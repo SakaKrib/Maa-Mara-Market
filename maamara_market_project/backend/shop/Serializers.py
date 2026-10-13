@@ -31,7 +31,9 @@ class SubCategorySerializer(serializers.ModelSerializer):
         fields = ["id", "name", "count"]
 
     def get_count(self, obj):
-        return obj.items.count()
+        # Item.subcategory uses Django's default reverse accessor (item_set),
+        # so query the FK directly rather than relying on obj.items.
+        return Item.objects.filter(subcategory=obj).count()
 
 
 class CategorySerializer(serializers.ModelSerializer):
@@ -43,7 +45,8 @@ class CategorySerializer(serializers.ModelSerializer):
         fields = ["id", "name", "count", "subcategories"]
 
     def get_count(self, obj):
-        return obj.items.count()
+        # Item.category has no related_name="items"; count through the FK.
+        return Item.objects.filter(category=obj).count()
 
 
 class DepartmentSerializer(serializers.ModelSerializer):
