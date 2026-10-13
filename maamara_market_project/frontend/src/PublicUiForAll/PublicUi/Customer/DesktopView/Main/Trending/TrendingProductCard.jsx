@@ -152,7 +152,7 @@ const TrendingProductCard = ({ item, isWishlisted: controlledWishlist, onToggleW
           <span> · {reviewCount} reviews</span>
         </p>
 
-        <div className="mm-product-price-row">
+        <div className="flex flex-wrap items-baseline gap-2 mb-2">
           <span className={`font-bold text-lg sm:text-xl ${hasDiscount ? "text-red-600" : "text-gray-900"}`}>
             <FormattedCurrency value={Number(currentPrice)} />
           </span>
@@ -163,22 +163,19 @@ const TrendingProductCard = ({ item, isWishlisted: controlledWishlist, onToggleW
           )}
         </div>
 
-        {/* Reserve the same promotion area on every card so rows keep a
-            consistent height whether or not a product has a discount. */}
-        <div className="mm-product-promotion" aria-label={hasDiscount ? "Product discount details" : undefined}>
-          {hasDiscount && Number(originalPrice) > Number(currentPrice) && (
-            <>
-              {discountPercent > 0 && (
-                <span className="block text-[10px] sm:text-xs font-semibold text-red-600">{discountPercent}% OFF</span>
-              )}
-              {savings > 0 && (
-                <span className="block text-[10px] sm:text-xs font-medium text-green-600">
-                  Save up to <FormattedCurrency value={savings} />
-                </span>
-              )}
-            </>
-          )}
-        </div>
+
+        {hasDiscount && Number(originalPrice) > Number(currentPrice) && (
+          <div className="mt-0.5 leading-tight">
+            {discountPercent > 0 && (
+              <span className="block text-[10px] sm:text-xs font-semibold text-red-600">{discountPercent}% OFF</span>
+            )}
+            {savings > 0 && (
+              <span className="block text-[10px] sm:text-xs font-medium text-green-600">
+                Save up to <FormattedCurrency value={savings} />
+              </span>
+            )}
+          </div>
+        )}
 
       </div>
 
