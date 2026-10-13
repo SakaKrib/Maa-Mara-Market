@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo, useRef, useState, useEffect } from "react";
+import React, { useCallback, useLayoutEffect, useMemo, useRef, useState, useEffect } from "react";
 import {
     Form,
     FormField,
@@ -115,6 +115,270 @@ const OCCASION_OPTIONS = [
   { key: "office", label: "Office" },
 ];
 
+
+// ---------------------------------------------------------------------------
+// Dropdown used by every select in this form.
+// Website (wider than a phone): the standard native <select>, untouched.
+// Phone viewport: the same custom dropdown panel as the Export menu in the
+// mobile app, kept at least 8 px away from both screen edges.
+// ---------------------------------------------------------------------------
+const PHONE_VIEWPORT_QUERY = "(max-width: 767px)";
+const VIEWPORT_GUTTER = 8;
+
+const useIsPhoneViewport = () => {
+  const getMatch = () =>
+    typeof window !== "undefined" && typeof window.matchMedia === "function"
+      ? window.matchMedia(PHONE_VIEWPORT_QUERY).matches
+      : false;
+  const [isPhone, setIsPhone] = useState(getMatch);
+
+  useEffect(() => {
+    if (typeof window === "undefined" || typeof window.matchMedia !== "function") {
+      return undefined;
+    }
+    const query = window.matchMedia(PHONE_VIEWPORT_QUERY);
+    const update = () => setIsPhone(query.matches);
+    update();
+    if (query.addEventListener) {
+      query.addEventListener("change", update);
+      return () => query.removeEventListener("change", update);
+    }
+    query.addListener(update);
+    return () => query.removeListener(update);
+  }, []);
+
+  return isPhone;
+};
+
+const optionText = (node) =>
+  React.Children.toArray(node)
+    .map((part) => (typeof part === "string" || typeof part === "number" ? String(part) : ""))
+    .join("");
+
+const PhoneSelect = React.forwardRef(function PhoneSelect(
+  { children, value, onChange, onBlur, className = "", disabled, name, id, ...rest },
+  forwardedRef
+) {
+  const [open, setOpen] = useState(false);
+  const [placement, setPlacement] = useState({ shiftX: 0, openUp: false, listMax: 280 });
+  const wrapRef = useRef(null);
+  const panelRef = useRef(null);
+  const listRef = useRef(null);
+  const triggerRef = useRef(null);
+
+  const setTriggerRef = useCallback(
+    (node) => {
+      triggerRef.current = node;
+      if (typeof forwardedRef === "function") forwardedRef(node);
+      else if (forwardedRef) forwardedRef.current = node;
+    },
+    [forwardedRef]
+  );
+
+  const options = React.Children.toArray(children)
+    .filter((child) => React.isValidElement(child) && child.type === "option")
+    .map((child) => {
+      const label = optionText(child.props.children);
+      return {
+        value: String(child.props.value ?? label),
+        label,
+        disabled: Boolean(child.props.disabled),
+      };
+    });
+
+  const current = String(value ?? "");
+  const selectedOption = options.find((option) => option.value === current);
+  const placeholderOption = options.find((option) => option.value === "");
+  const triggerLabel = selectedOption
+    ? selectedOption.label
+    : placeholderOption?.label ?? "";
+  const showingPlaceholder = !selectedOption || selectedOption.value === "";
+
+  const choose = (nextValue) => {
+    setOpen(false);
+    if (onChange) {
+      onChange({
+        type: "change",
+        target: { value: nextValue, name },
+        currentTarget: { value: nextValue, name },
+      });
+    }
+    triggerRef.current?.focus();
+  };
+
+  // Keep the panel inside the phone viewport (>= 8 px each side) and flip it
+  // upward when there is not enough room underneath.
+  useLayoutEffect(() => {
+    if (!open || !wrapRef.current || !panelRef.current) return;
+    const wrapRect = wrapRef.current.getBoundingClientRect();
+    const viewportWidth = document.documentElement.clientWidth || window.innerWidth;
+    const viewportHeight = window.innerHeight;
+    const panelWidth = panelRef.current.offsetWidth;
+
+    const maxLeft = Math.max(VIEWPORT_GUTTER, viewportWidth - VIEWPORT_GUTTER - panelWidth);
+    const clampedLeft = Math.min(Math.max(wrapRect.left, VIEWPORT_GUTTER), maxLeft);
+
+    const spaceBelow = viewportHeight - wrapRect.bottom - VIEWPORT_GUTTER - 8;
+    const spaceAbove = wrapRect.top - VIEWPORT_GUTTER - 8;
+    const desiredHeight = Math.min(280, options.length * 44 + 12);
+    const openUp = spaceBelow < desiredHeight && spaceAbove > spaceBelow;
+    const available = openUp ? spaceAbove : spaceBelow;
+
+    setPlacement({
+      shiftX: clampedLeft - wrapRect.left,
+      openUp,
+      listMax: Math.max(120, Math.min(280, available - 12)),
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open]);
+
+  // Bring the selected option into view when the menu opens.
+  useEffect(() => {
+    if (!open || !listRef.current) return;
+    const selectedEl = listRef.current.querySelector('[aria-selected="true"]');
+    if (selectedEl) {
+      listRef.current.scrollTop = Math.max(
+        0,
+        selectedEl.offsetTop - listRef.current.clientHeight / 2
+      );
+    }
+  }, [open, placement.listMax]);
+
+  useEffect(() => {
+    if (!open) return undefined;
+    const handlePointerDown = (event) => {
+      if (wrapRef.current && !wrapRef.current.contains(event.target)) setOpen(false);
+    };
+    const handleResize = () => setOpen(false);
+    document.addEventListener("pointerdown", handlePointerDown);
+    window.addEventListener("resize", handleResize);
+    return () => {
+      document.removeEventListener("pointerdown", handlePointerDown);
+      window.removeEventListener("resize", handleResize);
+    };
+  }, [open]);
+
+  const handleKeyDown = (event) => {
+    if (event.key === "Escape" && open) {
+      event.preventDefault();
+      setOpen(false);
+      triggerRef.current?.focus();
+      return;
+    }
+    if (event.key !== "ArrowDown" && event.key !== "ArrowUp") return;
+    event.preventDefault();
+    if (!open) {
+      if (!disabled) setOpen(true);
+      return;
+    }
+    const items = Array.from(
+      panelRef.current?.querySelectorAll('button[role="option"]:not(:disabled)') || []
+    );
+    if (!items.length) return;
+    const index = items.indexOf(document.activeElement);
+    const next =
+      event.key === "ArrowDown"
+        ? items[(index + 1) % items.length]
+        : items[(index - 1 + items.length) % items.length];
+    next?.focus();
+  };
+
+  return (
+    <div ref={wrapRef} className="relative w-full" onKeyDown={handleKeyDown}>
+      <button
+        type="button"
+        id={id}
+        name={name}
+        ref={setTriggerRef}
+        disabled={disabled}
+        aria-haspopup="listbox"
+        aria-expanded={open}
+        onBlur={onBlur}
+        onClick={() => {
+          if (!disabled) setOpen((isOpen) => !isOpen);
+        }}
+        className={`${className} text-left`}
+        {...rest}
+      >
+        <span className="flex w-full items-center justify-between gap-2">
+          <span
+            className={`min-w-0 flex-1 truncate ${showingPlaceholder ? "text-muted-foreground" : ""}`}
+          >
+            {triggerLabel}
+          </span>
+          <svg
+            aria-hidden="true"
+            viewBox="0 0 20 20"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.5"
+            className={`h-4 w-4 shrink-0 text-muted-foreground transition-transform ${open ? "rotate-180" : ""}`}
+          >
+            <path d="M5 7.5l5 5 5-5" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        </span>
+      </button>
+
+      {open && (
+        <div
+          ref={panelRef}
+          role="listbox"
+          className={`absolute left-0 right-auto z-30 w-72 max-w-[calc(100vw-2rem)] overflow-hidden rounded-2xl border border-border bg-card p-1.5 shadow-xl ${
+            placement.openUp ? "bottom-full mb-2" : "top-full mt-2"
+          }`}
+          style={
+            placement.shiftX ? { transform: `translateX(${placement.shiftX}px)` } : undefined
+          }
+        >
+          <div
+            ref={listRef}
+            className="relative overflow-y-auto"
+            style={{ maxHeight: placement.listMax }}
+          >
+            {options.map((option, index) => {
+              const isSelected = option.value === current;
+              return (
+                <button
+                  key={`${option.value}-${index}`}
+                  type="button"
+                  role="option"
+                  aria-selected={isSelected}
+                  disabled={option.disabled}
+                  onClick={() => choose(option.value)}
+                  className={`flex w-full items-center justify-between gap-3 rounded-xl px-3 py-2.5 text-left text-sm leading-6 transition-colors disabled:opacity-50 ${
+                    isSelected
+                      ? "bg-muted font-semibold text-foreground"
+                      : "text-foreground hover:bg-muted focus:bg-muted"
+                  } outline-none`}
+                >
+                  <span className="min-w-0 truncate">{option.label}</span>
+                  {isSelected && (
+                    <svg
+                      aria-hidden="true"
+                      viewBox="0 0 20 20"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      className="h-4 w-4 shrink-0"
+                    >
+                      <path d="M4.5 10.5l3.5 3.5 7.5-8" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+});
+
+const AppSelect = React.forwardRef(function AppSelect(props, ref) {
+  const isPhone = useIsPhoneViewport();
+  if (!isPhone) return <select ref={ref} {...props} />;
+  return <PhoneSelect ref={ref} {...props} />;
+});
 
 const ItemAddNew = ({
   initialItem,
@@ -2077,7 +2341,7 @@ const ItemAddNew = ({
             <FormItem className='px-0 m-0'>
               <FormLabel className='text-sm font-semibold text-foreground'>Department</FormLabel>
               <FormControl className='flex flex-col justify-end h-65'>
-                <select
+                <AppSelect
                   className="w-full rounded-[20px] border border-border bg-card px-2 py-2 text-sm leading-6 text-foreground outline-none transition focus:border-[#2563eb] focus:ring-2 focus:ring-[#2563eb]/20"
                   {...field}
                   onChange={(e) => {
@@ -2102,7 +2366,7 @@ const ItemAddNew = ({
                   })().map((dept) => (
                     <option key={dept} value={dept}>{dept}</option>
                   ))}
-                </select>
+                </AppSelect>
               </FormControl>
               <FormDescription>
                 Choose the department this product belongs to. This determines which categories are available next.
@@ -2125,7 +2389,7 @@ const ItemAddNew = ({
                     <Input {...field} value={field.value ?? ""} placeholder="Enter custom category"
                       onChange={(e) => { setSelectedCategory(e.target.value); field.onChange(e.target.value); }} />
                   ) : (
-                    <select {...field} value={field.value ?? ""}
+                    <AppSelect {...field} value={field.value ?? ""}
                       className="w-full rounded-[20px] border border-border bg-card px-2 py-2 text-sm leading-6 text-foreground outline-none transition focus:border-[#2563eb] focus:ring-2 focus:ring-[#2563eb]/20"
                       onChange={(e) => {
                         const cat = e.target.value;
@@ -2145,7 +2409,7 @@ const ItemAddNew = ({
                       })().map((cat) => (
                         <option key={cat} value={cat}>{cat}</option>
                       ))}
-                    </select>
+                    </AppSelect>
                   )}
                 </FormControl>
                 <button type="button" className="w-fit text-sm font-medium text-[#2563eb] hover:underline"
@@ -2178,7 +2442,7 @@ const ItemAddNew = ({
                   {isCustomSubcategory ? (
                     <Input {...field} value={field.value ?? ""} placeholder="Enter custom subcategory" />
                   ) : (
-                    <select {...field} value={field.value ?? ""}
+                    <AppSelect {...field} value={field.value ?? ""}
                       className="w-full rounded-[20px] border border-border bg-card px-2 py-2 text-sm leading-6 text-foreground outline-none transition focus:border-[#2563eb] focus:ring-2 focus:ring-[#2563eb]/20">
                       <option value="">Select Subcategory</option>
                       {(() => {
@@ -2192,7 +2456,7 @@ const ItemAddNew = ({
                       })().map((subcat) => (
                         <option key={subcat} value={subcat}>{subcat}</option>
                       ))}
-                    </select>
+                    </AppSelect>
                   )}
                 </FormControl>
                 <button type="button" className="w-fit text-sm font-medium text-[#2563eb] hover:underline"
@@ -2526,11 +2790,11 @@ const ItemAddNew = ({
                       {isCustomAttribute ? (
                         <Input {...field} value={field.value ?? ""} placeholder="Enter custom attribute" />
                       ) : (
-                        <select {...field} value={field.value ?? ""}
+                        <AppSelect {...field} value={field.value ?? ""}
                           className="w-full rounded-[20px] border border-border bg-card px-2 py-2 text-sm leading-6 text-foreground outline-none focus:border-[#2563eb] focus:ring-2 focus:ring-[#2563eb]/20">
                           <option value="">Select attribute</option>
                           {attributes.map((attr) => <option key={attr.value} value={attr.value}>{attr.label}</option>)}
-                        </select>
+                        </AppSelect>
                       )}
                     </FormControl>
                     <button type="button" className="w-fit text-sm font-medium text-[#2563eb] hover:underline"
@@ -2668,7 +2932,7 @@ const ItemAddNew = ({
                         <FormItem className="rounded-[20px] border border-gray-300 bg-transparent p-4">
                           <FormLabel className="text-sm leading-6 font-semibold text-foreground">Gender</FormLabel>
                           <FormControl>
-                            <select
+                            <AppSelect
                               {...field}
                               value={field.value ?? "none"}
                               className="w-full rounded-full border border-border bg-card px-4 py-2 text-sm text-foreground outline-none transition focus:border-[#2563eb] focus:ring-2 focus:ring-[#2563eb]/20"
@@ -2677,7 +2941,7 @@ const ItemAddNew = ({
                               <option value="men">Men</option>
                               <option value="women">Women</option>
                               <option value="unisex">Unisex</option>
-                            </select>
+                            </AppSelect>
                           </FormControl>
                           <FormDescription>Choose the intended gender for this person-oriented product.</FormDescription>
                           <FormMessage />
@@ -2694,7 +2958,7 @@ const ItemAddNew = ({
                         <FormItem className="rounded-[20px] border border-gray-300 bg-transparent p-4">
                           <FormLabel className="text-sm leading-6 font-semibold text-foreground">Children Sizing Basis</FormLabel>
                           <FormControl>
-                            <select
+                            <AppSelect
                               {...field}
                               value={field.value ?? "none"}
                               className="w-full rounded-full border border-border bg-card px-4 py-2 text-sm text-foreground outline-none transition focus:border-[#2563eb] focus:ring-2 focus:ring-[#2563eb]/20"
@@ -2703,7 +2967,7 @@ const ItemAddNew = ({
                               <option value="age">Age based</option>
                               <option value="size">Size based</option>
                               <option value="age_and_size">Age &amp; size based</option>
-                            </select>
+                            </AppSelect>
                           </FormControl>
                           <FormDescription>Tell customers whether the children's sizing is based on age, size, or both.</FormDescription>
                           <FormMessage />
@@ -2887,7 +3151,7 @@ const ItemAddNew = ({
                       placeholder="Enter length"
                       className="w-full rounded-[20px] border border-border bg-card px-2 py-2 text-sm leading-6 text-foreground outline-none transition focus:border-[#2563eb] focus:ring-2 focus:ring-[#2563eb]/20 md:w-32"
                     />
-                    <select
+                    <AppSelect
                       className="w-full rounded-[20px] border border-border bg-card px-2 py-2 text-sm leading-6 text-foreground outline-none transition focus:border-[#2563eb] focus:ring-2 focus:ring-[#2563eb]/20"
                       value={value?.unit ?? "cm"}
                       onChange={(e) => handleUnitChange(e.target.value)}
@@ -2895,7 +3159,7 @@ const ItemAddNew = ({
                       <option value="cm">Centimeters</option>
                       <option value="m">Meters</option>
                       <option value="in">Inches</option>
-                    </select>
+                    </AppSelect>
                   </div>
                 </FormControl>
                 <FormDescription>
@@ -2947,7 +3211,7 @@ const ItemAddNew = ({
                     className="w-full rounded-[20px] border border-border bg-card px-2 py-2 text-sm leading-6 text-foreground outline-none transition focus:border-[#2563eb] focus:ring-2 focus:ring-[#2563eb]/20 md:w-32"
                   />
 
-                  <select
+                  <AppSelect
                     className="w-full rounded-[20px] border border-border bg-card px-2 py-2 text-sm leading-6 text-foreground outline-none transition focus:border-[#2563eb] focus:ring-2 focus:ring-[#2563eb]/20"
                     value={value?.unit ?? "g"}
                     onChange={(e) => handleUnitChange(e.target.value)}
@@ -2957,7 +3221,7 @@ const ItemAddNew = ({
                     <option value="ml">Milliliters</option>
                     <option value="l">Liters</option>
                     <option value="oz">Ounces</option>
-                  </select>
+                  </AppSelect>
                 </div>
               </FormControl>
               <FormDescription>
@@ -2979,7 +3243,7 @@ const ItemAddNew = ({
             <FormItem>
               <FormLabel className="text-sm leading-6 font-semibold text-foreground">Shoe Type</FormLabel>
               <FormControl>
-                <select
+                <AppSelect
                   {...field}
                   className="w-full rounded-[20px] border border-border bg-card px-2 py-2 text-sm leading-6 text-foreground outline-none transition focus:border-[#2563eb] focus:ring-2 focus:ring-[#2563eb]/20"
                 >
@@ -2989,7 +3253,7 @@ const ItemAddNew = ({
                       {type}
                     </option>
                   ))}
-                </select>
+                </AppSelect>
               </FormControl>
               <FormDescription>
                 Select the type of shoe, such as Sneakers, Sandals, Boots, or Heels.
@@ -3007,7 +3271,7 @@ const ItemAddNew = ({
             <FormItem>
               <FormLabel className="text-sm leading-6 font-semibold text-foreground">Gender</FormLabel>
               <FormControl>
-                <select
+                <AppSelect
                   {...field}
                   className="w-full rounded-[20px] border border-border bg-card px-2 py-2 text-sm leading-6 text-foreground outline-none transition focus:border-[#2563eb] focus:ring-2 focus:ring-[#2563eb]/20"
                 >
@@ -3017,7 +3281,7 @@ const ItemAddNew = ({
                       {gender}
                     </option>
                   ))}
-                </select>
+                </AppSelect>
               </FormControl>
               <FormDescription>
                 Select which group this shoe is designed for. Choosing Children shows kids' size options below.
@@ -3245,7 +3509,7 @@ const ItemAddNew = ({
                       placeholder="Enter length"
                       className="w-full rounded-[20px] border border-border bg-card px-2 py-2 text-sm leading-6 text-foreground outline-none transition focus:border-[#2563eb] focus:ring-2 focus:ring-[#2563eb]/20 md:w-32"
                     />
-                    <select
+                    <AppSelect
                       className="w-full rounded-[20px] border border-border bg-card px-2 py-2 text-sm leading-6 text-foreground outline-none transition focus:border-[#2563eb] focus:ring-2 focus:ring-[#2563eb]/20"
                       value={value?.unit ?? "cm"}
                       onChange={(e) => handleUnitChange(e.target.value)}
@@ -3253,7 +3517,7 @@ const ItemAddNew = ({
                       <option value="cm">Centimeters</option>
                       <option value="m">Meters</option>
                       <option value="in">Inches</option>
-                    </select>
+                    </AppSelect>
                   </div>
                 </FormControl>
                 <FormDescription>
@@ -3326,7 +3590,7 @@ const ItemAddNew = ({
             <FormItem>
               <FormLabel className="text-sm leading-6 font-semibold text-foreground">Roast Type</FormLabel>
               <FormControl>
-                <select
+                <AppSelect
                   {...field}
                   value={field.value ?? ""}
                   onChange={(e) => field.onChange(e.target.value)}
@@ -3338,7 +3602,7 @@ const ItemAddNew = ({
                   <option value="dark">Dark Roast</option>
                   <option value="espresso">Espresso Roast</option>
                   <option value="decaf">Decaf</option>
-                </select>
+                </AppSelect>
               </FormControl>
               <FormDescription>
                 Choose the roast type for coffee products.
@@ -3356,7 +3620,7 @@ const ItemAddNew = ({
             <FormItem>
               <FormLabel className="text-lg">Coffee State</FormLabel>
               <FormControl>
-                <select
+                <AppSelect
                   {...field}
                   value={field.value ?? ""}
                   onChange={(e) => field.onChange(e.target.value)}
@@ -3369,7 +3633,7 @@ const ItemAddNew = ({
                   <option value="ground_fine">Ground – Fine</option>
                   <option value="instant">Instant Coffee</option>
                   <option value="capsules">Capsules/Pods</option>
-                </select>
+                </AppSelect>
               </FormControl>
               <FormDescription>
                 Choose whether it's whole beans or ground, and what grind size.
@@ -3420,7 +3684,7 @@ const ItemAddNew = ({
                   className="w-32"
                 />
 
-                  <select
+                  <AppSelect
                     className="border rounded-full p-2"
                     value={value?.unit ?? "g"}
                     onChange={(e) => handleUnitChange(e.target.value)}
@@ -3430,7 +3694,7 @@ const ItemAddNew = ({
                     <option value="ml">Milliliters</option>
                     <option value="l">Liters</option>
                     <option value="oz">Ounces</option>
-                  </select>
+                  </AppSelect>
                 </div>
               </FormControl>
               <FormDescription>
@@ -3879,7 +4143,7 @@ const ItemAddNew = ({
      <FormItem>
        <FormLabel>Dimension Unit</FormLabel>
        <FormControl>
-         <select
+         <AppSelect
            {...field}
            className="w-full appearance-none rounded-full border border-border bg-transparent px-4 py-2 text-sm text-card-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
          >
@@ -3887,7 +4151,7 @@ const ItemAddNew = ({
            <option value="m">Meters</option>
            <option value="in">Inches</option>
            <option value="ft">Feet</option>
-         </select>
+         </AppSelect>
        </FormControl>
        <FormDescription>Choose the unit used for the length, width, and height above.</FormDescription>
        <FormMessage />
@@ -3917,7 +4181,7 @@ const ItemAddNew = ({
      <FormItem>
        <FormLabel>Weight Unit</FormLabel>
        <FormControl>
-         <select
+         <AppSelect
            {...field}
            className="w-full appearance-none rounded-full border border-border bg-transparent px-4 py-2 text-sm text-card-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
          >
@@ -3925,7 +4189,7 @@ const ItemAddNew = ({
            <option value="kg">Kilograms</option>
            <option value="oz">Ounces</option>
            <option value="lb">Pounds</option>
-         </select>
+         </AppSelect>
        </FormControl>
        <FormDescription>Choose the unit used for the shipping weight above.</FormDescription>
        <FormMessage />
