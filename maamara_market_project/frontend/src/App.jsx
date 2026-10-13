@@ -19,6 +19,7 @@ import Line from "./Scenes/Line/LineChart";
 import Pie from "./Scenes/Pie/PieChart";
 import Vendors from "./cmponents/Vendors/Vendors";
 import VendorPerformance from "./Scenes/Vendors/VendorPerformance";
+import VendorDetailsPage from "./Scenes/Vendors/VendorDetailsPage";
 import PaymentReport from "./Scenes/PayoutReports/VendorReport";
 import FAQ from "./cmponents/FAQ/FAQ";
 import Calendar from "./cmponents/Calendar/Calendar";
@@ -291,7 +292,8 @@ function AppContent() {
                <Route path="bar-chart" element={<Bar />} />
                <Route path="line-chart" element={<Line />} />
                <Route path="pie-chart" element={<Pie />} />
-              <Route path="vendors/:vendorId/performance" element={<VendorPerformance />} />
+              <Route path="vendors/:vendorId" element={<VendorDetailsPage />} />
+               <Route path="vendors/:vendorId/performance" element={<VendorPerformance />} />
               <Route path="items/:id" element={<SingleItemProfile />} />
               <Route path="vendor/create-items/requests" element={<VendorItemCreateRequests />} />
               <Route path="vendor-requests" element={<UiForVendorRequest />} />
