@@ -9,6 +9,7 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import api from "../../Services/Api";
+import "../admin-charts.css";
 
 const cssVar = (name, fallback) => {
   if (typeof window === "undefined") return fallback;
@@ -50,12 +51,12 @@ const CustomAreaChart = ({ showSummary = true, data: suppliedData = [] }) => {
   const chart2 = cssVar("--chart-2", "217 91% 60%");
 
   return (
-    <div className="relative h-full min-h-0 w-full">
+    <div className="mm-admin-chart-fill mm-admin-chart-relative">
       {showSummary && (
         <button
           type="button"
           onClick={() => setSummaryOpen(true)}
-          className="absolute right-2 top-1 z-10 rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground shadow-sm transition hover:bg-primary/90"
+          className="mm-admin-chart-summary-button"
         >
           Summary
         </button>
@@ -90,15 +91,15 @@ const CustomAreaChart = ({ showSummary = true, data: suppliedData = [] }) => {
       </ResponsiveContainer>
 
       {summaryOpen && (
-        <div className="absolute inset-x-2 top-12 z-20 rounded-xl border border-border bg-card p-4 shadow-xl sm:left-auto sm:w-72">
-          <h3 className="font-semibold text-foreground">Revenue Summary</h3>
-          <div className="my-2 border-t border-border" />
-          <p className="text-sm text-muted-foreground">Months: {data.length}</p>
-          <p className="mt-2 text-sm text-muted-foreground">Total Revenue</p>
-          <p className="font-bold text-primary">KES {totalRevenue.toLocaleString()}</p>
+        <div className="mm-admin-chart-summary-card">
+          <h3 className="mm-admin-chart-summary-heading">Revenue Summary</h3>
+          <div className="mm-admin-chart-summary-divider" />
+          <p className="mm-admin-chart-summary-label">Months: {data.length}</p>
+          <p className="mm-admin-chart-summary-label mm-admin-chart-summary-spaced">Total Revenue</p>
+          <p className="mm-admin-chart-summary-value-primary">KES {totalRevenue.toLocaleString()}</p>
           <p className="mt-2 text-sm text-muted-foreground">Total Orders</p>
-          <p className="font-bold text-foreground">{totalOrders.toLocaleString()}</p>
-          <button type="button" onClick={() => setSummaryOpen(false)} className="mt-4 w-full rounded-lg bg-muted px-3 py-2 text-sm font-semibold text-foreground hover:bg-muted/80">
+          <p className="mm-admin-chart-summary-value">{totalOrders.toLocaleString()}</p>
+          <button type="button" onClick={() => setSummaryOpen(false)} className="mm-admin-chart-summary-close">
             Close
           </button>
         </div>
