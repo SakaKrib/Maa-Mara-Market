@@ -1,19 +1,19 @@
 /* Native-app-only storefront spacing and system-bar presentation. */
 @media (max-width: 639px) {
   /*
-   * Android draws edge-to-edge behind the status bar. Keep that exposed area
-   * white, matching the storefront header and the light system icons setting.
+   * Keep the document background transparent in the native status-bar area.
+   * Capacitor reserves the system bar; the header itself remains white.
    */
   html:has(.mm-site-header.mm-native-app),
   body:has(.mm-site-header.mm-native-app) {
-    background-color: #fff !important;
+    background-color: transparent !important;
   }
 
   .mm-site-header.mm-native-app .mm-main-header {
-    /* Reserve only the real status-bar inset; don't add extra vertical padding. */
-    height: calc(56px + env(safe-area-inset-top, 0px));
+    /* Compact the header; Android reserves the status-bar area outside the WebView. */
+    height: 59px;
     box-sizing: border-box;
-    padding: env(safe-area-inset-top, 0px) 0 0 !important;
+    padding: 3px 0 0 !important;
     background: #fff;
     border-bottom: 1px solid var(--mm-border);
     box-shadow: 0 3px 14px rgba(0, 0, 0, 0.07);
