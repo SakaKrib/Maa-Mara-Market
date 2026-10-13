@@ -43,8 +43,6 @@ const CustomAreaChart = ({ showSummary = true, data: suppliedData = [] }) => {
   const totalRevenue = data.reduce((sum, d) => sum + Number(d.revenue || 0), 0);
   const totalOrders = data.reduce((sum, d) => sum + Number(d.orders || 0), 0);
 
-  const primary = cssVar("--mm-primary-hsl", "142 71% 35%");
-  const foreground = cssVar("--mm-foreground-hsl", "0 0% 10%");
   const muted = cssVar("--mm-muted-hsl", "0 0% 45%");
   const border = cssVar("--mm-border-hsl", "0 0% 85%");
   const chart1 = cssVar("--mm-chart-1-hsl", "142 71% 45%");
