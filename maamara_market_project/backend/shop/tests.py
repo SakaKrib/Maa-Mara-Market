@@ -143,6 +143,12 @@ class DatabaseBackedTaxonomyTests(TestCase):
             if entry["id"] == taxonomy["category"].pk
         )
         self.assertEqual(category_data["name"], "Handmade Organizers")
+        self.assertEqual(category_data["count"], 1)
+        subcategory_data = next(
+            entry for entry in category_data["subcategories"]
+            if entry["id"] == taxonomy["subcategory"].pk
+        )
+        self.assertEqual(subcategory_data["count"], 1)
         self.assertIn(
             "Woven Storage",
             [entry["name"] for entry in category_data["subcategories"]],
