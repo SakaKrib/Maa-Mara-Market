@@ -7,7 +7,24 @@ from asgiref.sync import sync_to_async
 
 
 SUPPORTED_CURRENCIES = ("USD", "EUR", "GBP")
-FALLBACK_USD_TO_KES = 140.0
+# Approximate emergency rates used only when the live exchange-rate API fails.
+# Values represent KES per unit of the foreign currency.
+FALLBACK_KES_PER_CURRENCY = {
+    "USD": 140.0,
+    "EUR": 155.0,
+    "GBP": 180.0,
+}
+
+
+def fallback_currency_rates():
+    """Return approximate KES-to-target rates for offline storefront display."""
+    return {
+        "KES": 1.0,
+        **{
+            currency: 1.0 / kes_per_currency
+            for currency, kes_per_currency in FALLBACK_KES_PER_CURRENCY.items()
+        },
+    }
 
 
 def fetch_currency_rates():
@@ -20,21 +37,25 @@ def fetch_currency_rates():
         if usd_to_kes <= 0:
             raise ValueError("Invalid USD/KES rate")
 
-        result = {}
+        fallback_rates = fallback_currency_rates()
+        result = {"KES": 1.0}
         for currency in SUPPORTED_CURRENCIES:
             usd_to_currency = rates.get(currency)
             if usd_to_currency is not None:
-                result[currency] = float(usd_to_currency) / usd_to_kes
+                try:
+                    rate = float(usd_to_currency) / usd_to_kes
+                    if rate > 0:
+                        result[currency] = rate
+                        continue
+                except (TypeError, ValueError):
+                    pass
+            result[currency] = fallback_rates[currency]
 
-        # KES is the store's source currency. USD is derived from USD/KES.
+        # USD is derived from USD/KES to keep KES as the store's source currency.
         result["USD"] = 1.0 / usd_to_kes
-        result["KES"] = 1.0
         return result
     except Exception:
-        return {
-            "KES": 1.0,
-            "USD": 1.0 / FALLBACK_USD_TO_KES,
-        }
+        return fallback_currency_rates()
 
 
 class CurrencyConsumer(AsyncWebsocketConsumer):
