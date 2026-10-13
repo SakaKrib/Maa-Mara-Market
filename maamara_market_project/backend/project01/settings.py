@@ -264,10 +264,19 @@ CSRF_TRUSTED_ORIGINS = list(dict.fromkeys([
 CORS_ALLOW_CREDENTIALS = True
 
 SESSION_EXPIRE_AT_BROWSER_CLOSE = True
-SESSION_COOKIE_NAME = "user_sessionid"
 
+# Honour production reverse-proxy settings passed by Docker Compose.
+# Caddy terminates TLS and forwards X-Forwarded-Proto to Django.
+SECURE_SSL_REDIRECT = env.bool("SECURE_SSL_REDIRECT", default=not DEBUG)
+SECURE_PROXY_SSL_HEADER = (
+    ("HTTP_X_FORWARDED_PROTO", "https")
+    if env.bool("SECURE_PROXY_SSL_HEADER", default=not DEBUG)
+    else None
+)
+
+SESSION_COOKIE_NAME = "user_sessionid"
 SESSION_COOKIE_SAMESITE = "Lax"
-SESSION_COOKIE_SECURE = not DEBUG
+SESSION_COOKIE_SECURE = env.bool("SESSION_COOKIE_SECURE", default=not DEBUG)
 CSRF_COOKIE_SAMESITE = "Lax"
 CSRF_COOKIE_SECURE = env.bool("CSRF_COOKIE_SECURE", default=FRONTEND_URL.startswith("https://"))
 CSRF_COOKIE_HTTPONLY = False
