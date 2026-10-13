@@ -2,13 +2,27 @@ import { useEffect, useState } from "react";
 import { getWebSocketUrl } from "../../../../../../Services/Api";
 
 const getCurrencyWebSocketUrl = () => getWebSocketUrl("/ws/currency/");
-const FALLBACK_RATES = { KES: 1, USD: 1 / 140 };
+
+// Emergency display-only rates relative to KES. These are approximate and
+// should be replaced by live rates whenever the currency WebSocket connects.
+export const FALLBACK_RATES = {
+  KES: 1,
+  USD: 1 / 140,
+  EUR: 1 / 155,
+  GBP: 1 / 180,
+};
 
 const getSameOriginWebSocketUrl = () => {
   if (typeof window === "undefined") return "";
   const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
   return `${protocol}//${window.location.host}/ws/currency/`;
 };
+
+const withFallbackRates = (rates) => ({
+  ...FALLBACK_RATES,
+  ...(rates && typeof rates === "object" ? rates : {}),
+  KES: 1,
+});
 
 export const useCurrencyRates = () => {
   const [rates, setRates] = useState(null);
@@ -44,7 +58,7 @@ export const useCurrencyRates = () => {
           try {
             const data = JSON.parse(event.data);
             if (data?.type === "currency_rates" && active) {
-              setRates(data.rates ?? FALLBACK_RATES);
+              setRates(withFallbackRates(data.rates));
               setLoading(false);
             }
           } catch {
@@ -64,8 +78,7 @@ export const useCurrencyRates = () => {
             return;
           }
 
-          // Currency selection should remain usable when a socket is offline.
-          // KES remains exact; USD uses a conservative offline fallback rate.
+          // Keep currency selection usable when live rates are unavailable.
           useFallbackRates();
         };
       } catch {
