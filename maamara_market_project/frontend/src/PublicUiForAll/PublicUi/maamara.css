@@ -6019,7 +6019,7 @@ h1,h2,h3,h4{font-family:'regular','Poppins',Arial,sans-serif}
 .category-product-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 20px 16px;
+  gap: 20px;
   width: 100%;
   align-items: stretch;
 }
