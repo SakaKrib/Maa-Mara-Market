@@ -43,12 +43,12 @@ const CustomAreaChart = ({ showSummary = true, data: suppliedData = [] }) => {
   const totalRevenue = data.reduce((sum, d) => sum + Number(d.revenue || 0), 0);
   const totalOrders = data.reduce((sum, d) => sum + Number(d.orders || 0), 0);
 
-  const primary = cssVar("--primary", "120 100% 40%");
-  const foreground = cssVar("--foreground", "0 0% 10%");
-  const muted = cssVar("--muted-foreground", "0 0% 45%");
-  const border = cssVar("--border", "0 0% 85%");
-  const chart1 = cssVar("--chart-1", "142 71% 45%");
-  const chart2 = cssVar("--chart-2", "217 91% 60%");
+  const primary = cssVar("--mm-primary-hsl", "142 71% 35%");
+  const foreground = cssVar("--mm-foreground-hsl", "0 0% 10%");
+  const muted = cssVar("--mm-muted-hsl", "0 0% 45%");
+  const border = cssVar("--mm-border-hsl", "0 0% 85%");
+  const chart1 = cssVar("--mm-chart-1-hsl", "142 71% 45%");
+  const chart2 = cssVar("--mm-chart-2-hsl", "217 91% 60%");
 
   return (
     <div className="mm-admin-chart-fill mm-admin-chart-relative">
@@ -79,10 +79,10 @@ const CustomAreaChart = ({ showSummary = true, data: suppliedData = [] }) => {
           <YAxis tick={{ fill: `hsl(${muted})`, fontSize: 10 }} axisLine={false} tickLine={false} width={42} />
           <Tooltip
             contentStyle={{
-              background: `hsl(var(--card))`,
-              border: `1px solid hsl(${border})`,
+              background: "var(--mm-surface, #fff)",
+              border: "1px solid var(--mm-border, #e5e7eb)",
               borderRadius: 10,
-              color: `hsl(${foreground})`,
+              color: "var(--mm-foreground, #1f2937)",
             }}
           />
           <Area type="monotone" dataKey="revenue" name="Revenue (KES)" stroke={`hsl(${chart1})`} fill="url(#adminRevenueFill)" strokeWidth={2} />
