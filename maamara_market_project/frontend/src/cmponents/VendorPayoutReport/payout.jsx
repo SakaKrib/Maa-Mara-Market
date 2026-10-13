@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import NativeAwareSelect from "../../../components/NativeAwareSelect";
 import { IonIcon } from "@ionic/react";
 import {
   alertCircleOutline,
@@ -437,17 +438,18 @@ export default function VendorReport() {
             </p>
           </div>
 
-          <select
+          <NativeAwareSelect
             value={filter}
             onChange={(event) => setFilter(event.target.value)}
-            className="min-h-10 rounded-xl border border-border bg-background px-3 text-xs font-semibold text-foreground outline-none focus:ring-2 focus:ring-primary/30"
+            options={[
+              { value: "all", label: "All payments" },
+              { value: "pending", label: "Pending" },
+              { value: "processing", label: "Processing" },
+              { value: "completed", label: "Completed" },
+            ]}
+            className="min-h-10 rounded-xl border border-border bg-card px-3 text-xs font-semibold text-foreground outline-none focus:ring-2 focus:ring-primary/30"
             aria-label="Filter vendor payments"
-          >
-            <option value="all">All payments</option>
-            <option value="pending">Pending</option>
-            <option value="processing">Processing</option>
-            <option value="completed">Completed</option>
-          </select>
+          />
         </div>
 
         {loading ? (
