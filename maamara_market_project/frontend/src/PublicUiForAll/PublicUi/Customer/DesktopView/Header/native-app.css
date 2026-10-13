@@ -11,7 +11,7 @@
   }
 
   .mm-site-header.mm-native-app .mm-main-header-inner {
-    min-height: 46px !important;
+    min-height: 50px !important;
   }
 
   .mm-site-header.mm-native-app .mm-mobile-drawer-link {
@@ -40,7 +40,7 @@
 @media (max-width: 639px) {
   .mm-site-header.mm-native-app .mm-main-header {
     /* Keep the native status-bar area clear while the header scrolls with the page. */
-    height: calc(46px + env(safe-area-inset-top, 0px));
+    height: calc(64px + env(safe-area-inset-top, 0px));
     box-sizing: border-box;
     padding: calc(4px + env(safe-area-inset-top, 0px)) 0 4px !important;
     background: rgba(255, 255, 255, 0.98);
