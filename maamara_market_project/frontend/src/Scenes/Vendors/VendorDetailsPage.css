@@ -1,0 +1,51 @@
+.mm-vendor-detail-page {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  padding: clamp(1rem, 2vw, 1.75rem);
+  color: var(--mm-foreground, #1f2937);
+}
+.mm-vendor-detail-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: fit-content;
+  color: var(--mm-primary, #166534);
+  font-weight: 600;
+  text-decoration: none;
+}
+.mm-vendor-detail-back:hover { text-decoration: underline; }
+.mm-vendor-detail-header {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1.25rem;
+  border: 1px solid var(--mm-border, #e5e7eb);
+  border-radius: 1rem;
+  background: var(--mm-surface, #fff);
+}
+.mm-vendor-detail-avatar {
+  width: 5rem;
+  height: 5rem;
+  flex: 0 0 auto;
+  border: 1px solid var(--mm-border, #e5e7eb);
+  border-radius: 1rem;
+  object-fit: cover;
+  background: var(--mm-surface-muted, #f3f4f6);
+}
+.mm-vendor-detail-heading { margin: 0; font-size: clamp(1.25rem, 2vw, 1.75rem); font-weight: 700; }
+.mm-vendor-detail-subtitle { margin: 0.25rem 0 0; color: var(--mm-muted, #6b7280); }
+.mm-vendor-detail-grid { display: grid; grid-template-columns: repeat(1, minmax(0, 1fr)); gap: 0.875rem; }
+.mm-vendor-detail-card {
+  min-width: 0;
+  padding: 1rem;
+  border: 1px solid var(--mm-border, #e5e7eb);
+  border-radius: 0.875rem;
+  background: var(--mm-surface, #fff);
+}
+.mm-vendor-detail-label { margin: 0 0 0.35rem; color: var(--mm-muted, #6b7280); font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; }
+.mm-vendor-detail-value { margin: 0; overflow-wrap: anywhere; font-size: 0.975rem; font-weight: 600; }
+.mm-vendor-detail-state { padding: 0.25rem 0.625rem; border-radius: 999px; background: var(--mm-surface-muted, #f3f4f6); font-size: 0.75rem; font-weight: 700; }
+.mm-vendor-detail-error { border: 1px solid #fecaca; border-radius: 0.75rem; background: #fef2f2; color: #991b1b; padding: 1rem; }
+@media (min-width: 640px) { .mm-vendor-detail-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (min-width: 1024px) { .mm-vendor-detail-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
