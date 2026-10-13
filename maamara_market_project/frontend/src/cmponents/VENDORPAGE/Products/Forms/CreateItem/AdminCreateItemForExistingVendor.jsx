@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import NativeAwareSelect from "../../../../../components/NativeAwareSelect";
 import {
     Form,
     FormField,
@@ -616,25 +617,22 @@ useEffect(() => {
             <FormItem className='px-0 m-0'>
               <FormLabel className="text-sm font-semibold text-card-foreground">Department</FormLabel>
               <FormControl className='flex flex-col justify-end h-65'>
-                <select
-                  
-                  {...field}
-                  onChange={(e) => {
-                    const dept = e.target.value;
-                    setSelectedDepartment(dept);
-                    setSelectedCategory("");
-                    setValue("department", dept);
-                    setValue("category", "");
-                    setValue("subcategory", "");
-                  }}
-                >
-                  <option  value="">
-                    Select Department
-                  </option>
-                  {Object.keys(activeData || {}).map((dept) => (
-                    <option key={dept} value={dept}>{dept}</option>
-                  ))}
-                </select>
+                <NativeAwareSelect
+  {...field}
+  options={[
+    { value: "", label: "Select Department" },
+    ...Object.keys(activeData || {}).map((dept) => ({ value: dept, label: dept })),
+  ]}
+  onChange={(e) => {
+    const dept = e.target.value;
+    setSelectedDepartment(dept);
+    setSelectedCategory("");
+    setValue("department", dept);
+    setValue("category", "");
+    setValue("subcategory", "");
+  }}
+  className="w-full rounded-xl border border-border bg-card px-3 py-2.5 text-sm text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
+/>
               </FormControl>
               <FormDescription>
                 Enter the department of the product.
@@ -653,23 +651,20 @@ useEffect(() => {
               <FormItem className='flex flex-col justify-end h-65'>
                 <FormLabel className="text-sm font-semibold text-card-foreground">Category</FormLabel>
                 <FormControl>
-                  <select
-                    
-                    {...field}
-                    onChange={(e) => {
-                      const cat = e.target.value;
-                      setSelectedCategory(cat);
-                      setValue("category", cat);
-                      setValue("subcategory", "");
-                    }}
-                  >
-                    <option  value="">
-                      Select Category
-                    </option>
-                    {(activeData?.[selectedDepartment]?.categories || []).map((cat) => (
-                      <option key={cat} value={cat}>{cat}</option>
-                    ))}
-                  </select>
+                  <NativeAwareSelect
+  {...field}
+  options={[
+    { value: "", label: "Select Category" },
+    ...(activeData?.[selectedDepartment]?.categories || []).map((cat) => ({ value: cat, label: cat })),
+  ]}
+  onChange={(e) => {
+    const cat = e.target.value;
+    setSelectedCategory(cat);
+    setValue("category", cat);
+    setValue("subcategory", "");
+  }}
+  className="w-full rounded-xl border border-border bg-card px-3 py-2.5 text-sm text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
+/>
                 </FormControl>
                 <FormDescription>
                   Enter the category of the product.
@@ -689,21 +684,14 @@ useEffect(() => {
               <FormItem className='flex flex-col justify-end relative top-1'>
                 <FormLabel className="text-sm font-semibold text-card-foreground">Subcategory</FormLabel>
                 <FormControl>
-                  <select
-                    
-                    {...field}
-                  >
-                    <option value="">Select Subcategory</option>
-                    {(activeData?.[selectedDepartment]?.subcategories?.[selectedCategory] || []).map((subcat) => (
-                      <option
-                        
-                        key={subcat}
-                        value={subcat}
-                      >
-                        {subcat}
-                      </option>
-                    ))}
-                  </select>
+                  <NativeAwareSelect
+  {...field}
+  options={[
+    { value: "", label: "Select Subcategory" },
+    ...(activeData?.[selectedDepartment]?.subcategories?.[selectedCategory] || []).map((subcat) => ({ value: subcat, label: subcat })),
+  ]}
+  className="w-full rounded-xl border border-border bg-card px-3 py-2.5 text-sm text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
+/>
                 </FormControl>
                 <FormDescription>
                   Enter the sub-category of the product.
@@ -920,19 +908,15 @@ useEffect(() => {
                     <FormItem>
                       <FormLabel className="text-sm font-semibold text-card-foreground">Product Attribute</FormLabel>
                       <FormControl>
-                        <select
-                          {...field}
-                          value={field.value ?? ""}
-                          className="w-full rounded-[20px] border border-border bg-card px-3 py-2 text-sm text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
-                          
-                        >
-                          <option value="">Select attribute</option>
-                          {attributes.map((attr) => (
-                            <option key={attr.value} value={attr.value}>
-                              {attr.label}
-                            </option>
-                          ))}
-                        </select>
+                        <NativeAwareSelect
+  {...field}
+  value={field.value ?? ""}
+  options={[
+    { value: "", label: "Select attribute" },
+    ...attributes.map((attr) => ({ value: attr.value, label: attr.label })),
+  ]}
+  className="w-full rounded-xl border border-border bg-card px-3 py-2.5 text-sm text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
+/>
                       </FormControl>
                       <FormDescription>
                         Choose the most relevant attribute for this product.
@@ -1129,16 +1113,16 @@ useEffect(() => {
                       placeholder="Enter length"
                       className="w-32"
                     />
-                    <select
-                      className="w-full rounded-[20px] border border-border bg-card px-3 py-2 text-sm text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
-                      
-                      value={value?.unit ?? "cm"}
-                      onChange={(e) => handleUnitChange(e.target.value)}
-                    >
-                      <option value="cm">Centimeters</option>
-                      <option value="m">Meters</option>
-                      <option value="in">Inches</option>
-                    </select>
+                    <NativeAwareSelect
+  value={value?.unit ?? "cm"}
+  onChange={(e) => handleUnitChange(e.target.value)}
+  options={[
+    { value: "cm", label: "Centimeters" },
+    { value: "m", label: "Meters" },
+    { value: "in", label: "Inches" },
+  ]}
+  className="w-full rounded-xl border border-border bg-card px-3 py-2.5 text-sm text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
+/>
                   </div>
                 </FormControl>
                 <FormDescription>
@@ -1190,17 +1174,18 @@ useEffect(() => {
                   />
     
                   {/* Dropdown for unit */}
-                  <select
-                    className="w-full rounded-[20px] border border-border bg-card px-3 py-2 text-sm text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
-                    value={value?.unit ?? "g"}
-                    onChange={(e) => handleUnitChange(e.target.value)}
-                  >
-                    <option value="g">Grams</option>
-                    <option value="kg">Kilograms</option>
-                    <option value="ml">Milliliters</option>
-                    <option value="l">Liters</option>
-                    <option value="oz">Ounces</option>
-                  </select>
+                  <NativeAwareSelect
+  value={value?.unit ?? "g"}
+  onChange={(e) => handleUnitChange(e.target.value)}
+  options={[
+    { value: "g", label: "Grams" },
+    { value: "kg", label: "Kilograms" },
+    { value: "ml", label: "Milliliters" },
+    { value: "l", label: "Liters" },
+    { value: "oz", label: "Ounces" },
+  ]}
+  className="w-full rounded-xl border border-border bg-card px-3 py-2.5 text-sm text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
+/>
                 </div>
               </FormControl>
               <FormDescription>
@@ -1226,17 +1211,14 @@ useEffect(() => {
             <FormItem>
               <FormLabel className="text-sm font-semibold text-card-foreground">Shoe Type</FormLabel>
               <FormControl>
-                <select
-                  {...field}
-                  className="w-full rounded-[20px] border border-border bg-card px-3 py-2 text-sm text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
-                >
-                  <option value="">Select Shoe Type</option>
-                  {shoeTypes.map((type) => (
-                    <option key={type} value={type}>
-                      {type}
-                    </option>
-                  ))}
-                </select>
+                <NativeAwareSelect
+  {...field}
+  options={[
+    { value: "", label: "Select Shoe Type" },
+    ...shoeTypes.map((type) => ({ value: type, label: type })),
+  ]}
+  className="w-full rounded-xl border border-border bg-card px-3 py-2.5 text-sm text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
+/>
               </FormControl>
               <FormDescription>
                 Enter the Shoe type.
@@ -1255,17 +1237,14 @@ useEffect(() => {
             <FormItem>
               <FormLabel className="text-sm font-semibold text-card-foreground">Gender</FormLabel>
               <FormControl>
-                <select
-                  {...field}
-                  className="w-full rounded-[20px] border border-border bg-card px-3 py-2 text-sm text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
-                >
-                  <option value="">Select Gender</option>
-                  {shoeGenders.map((gender) => (
-                    <option key={gender} value={gender}>
-                      {gender}
-                    </option>
-                  ))}
-                </select>
+                <NativeAwareSelect
+  {...field}
+  options={[
+    { value: "", label: "Select Gender" },
+    ...shoeGenders.map((gender) => ({ value: gender, label: gender })),
+  ]}
+  className="w-full rounded-xl border border-border bg-card px-3 py-2.5 text-sm text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
+/>
               </FormControl>
               <FormDescription>
                 Select Gender.
@@ -1442,16 +1421,16 @@ useEffect(() => {
                       placeholder="Enter length"
                       className="w-32"
                     />
-                    <select
-                      className="w-full rounded-[20px] border border-border bg-card px-3 py-2 text-sm text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
-                      
-                      value={value?.unit ?? "cm"}
-                      onChange={(e) => handleUnitChange(e.target.value)}
-                    >
-                      <option value="cm">Centimeters</option>
-                      <option value="m">Meters</option>
-                      <option value="in">Inches</option>
-                    </select>
+                    <NativeAwareSelect
+  value={value?.unit ?? "cm"}
+  onChange={(e) => handleUnitChange(e.target.value)}
+  options={[
+    { value: "cm", label: "Centimeters" },
+    { value: "m", label: "Meters" },
+    { value: "in", label: "Inches" },
+  ]}
+  className="w-full rounded-xl border border-border bg-card px-3 py-2.5 text-sm text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
+/>
                   </div>
                 </FormControl>
                 <FormDescription>
@@ -1531,20 +1510,20 @@ useEffect(() => {
             <FormItem>
               <FormLabel className="text-sm font-semibold text-card-foreground">Roast Type</FormLabel>
               <FormControl>
-                <select
-                  {...field}
-                  value={field.value ?? ""} // keeps it controlled
-                  onChange={(e) => field.onChange(e.target.value)}
-                  className="w-full rounded-[20px] border border-border bg-card px-3 py-2 text-sm text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
-                  
-                >
-                  <option value="">Select Roast Type</option>
-                  <option value="light">Light Roast</option>
-                  <option value="medium">Medium Roast</option>
-                  <option value="dark">Dark Roast</option>
-                  <option value="espresso">Espresso Roast</option>
-                  <option value="decaf">Decaf</option>
-                </select>
+                <NativeAwareSelect
+  {...field}
+  value={field.value ?? ""}
+  onChange={(e) => field.onChange(e.target.value)}
+  options={[
+    { value: "", label: "Select Roast Type" },
+    { value: "light", label: "Light Roast" },
+    { value: "medium", label: "Medium Roast" },
+    { value: "dark", label: "Dark Roast" },
+    { value: "espresso", label: "Espresso Roast" },
+    { value: "decaf", label: "Decaf" },
+  ]}
+  className="w-full rounded-xl border border-border bg-card px-3 py-2.5 text-sm text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
+/>
               </FormControl>
               <FormDescription>
                 Choose the roast type for coffee products.
@@ -1562,21 +1541,21 @@ useEffect(() => {
             <FormItem>
               <FormLabel className="text-sm font-semibold text-card-foreground">Coffee State</FormLabel>
               <FormControl>
-                <select
-                  {...field}
-                  value={field.value ?? ""} // keeps it controlled
-                  onChange={(e) => field.onChange(e.target.value)}
-                  className="w-full rounded-[20px] border border-border bg-card px-3 py-2 text-sm text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
-                  
-                >
-                  <option value="">Select Coffee State</option>
-                  <option value="whole_beans">Whole Beans</option>
-                  <option value="ground_coarse">Ground – Coarse</option>
-                  <option value="ground_medium">Ground – Medium</option>
-                  <option value="ground_fine">Ground – Fine</option>
-                  <option value="instant">Instant Coffee</option>
-                  <option value="capsules">Capsules/Pods</option>
-                </select>
+                <NativeAwareSelect
+  {...field}
+  value={field.value ?? ""}
+  onChange={(e) => field.onChange(e.target.value)}
+  options={[
+    { value: "", label: "Select Coffee State" },
+    { value: "whole_beans", label: "Whole Beans" },
+    { value: "ground_coarse", label: "Ground – Coarse" },
+    { value: "ground_medium", label: "Ground – Medium" },
+    { value: "ground_fine", label: "Ground – Fine" },
+    { value: "instant", label: "Instant Coffee" },
+    { value: "capsules", label: "Capsules/Pods" },
+  ]}
+  className="w-full rounded-xl border border-border bg-card px-3 py-2.5 text-sm text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
+/>
               </FormControl>
               <FormDescription>
                 Choose whether it’s whole beans or ground, and what grind size.
@@ -1624,18 +1603,18 @@ useEffect(() => {
     
     
                   {/* Dropdown for unit */}
-                  <select
-                    className="w-full rounded-[20px] border border-border bg-card px-3 py-2 text-sm text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
-                    
-                    value={value?.unit ?? "g"}
-                    onChange={(e) => handleUnitChange(e.target.value)}
-                  >
-                    <option value="g">Grams</option>
-                    <option value="kg">Kilograms</option>
-                    <option value="ml">Milliliters</option>
-                    <option value="l">Liters</option>
-                    <option value="oz">Ounces</option>
-                  </select>
+                  <NativeAwareSelect
+  value={value?.unit ?? "g"}
+  onChange={(e) => handleUnitChange(e.target.value)}
+  options={[
+    { value: "g", label: "Grams" },
+    { value: "kg", label: "Kilograms" },
+    { value: "ml", label: "Milliliters" },
+    { value: "l", label: "Liters" },
+    { value: "oz", label: "Ounces" },
+  ]}
+  className="w-full rounded-xl border border-border bg-card px-3 py-2.5 text-sm text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
+/>
                 </div>
               </FormControl>
               <FormDescription>
@@ -2031,16 +2010,16 @@ useEffect(() => {
      <FormItem>
        <FormLabel className="text-sm font-semibold text-card-foreground">Dimension Unit</FormLabel>
        <FormControl>
-         <select
-           {...field}
-           className="w-full rounded-[20px] border border-border bg-card px-3 py-2 text-sm text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
-           
-         >
-           <option value="cm">Centimeters</option>
-           <option value="m">Meters</option>
-           <option value="in">Inches</option>
-           <option value="ft">Feet</option>
-         </select>
+         <NativeAwareSelect
+  {...field}
+  options={[
+    { value: "cm", label: "Centimeters" },
+    { value: "m", label: "Meters" },
+    { value: "in", label: "Inches" },
+    { value: "ft", label: "Feet" },
+  ]}
+  className="w-full rounded-xl border border-border bg-card px-3 py-2.5 text-sm text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
+/>
        </FormControl>
        <FormMessage />
      </FormItem>
@@ -2075,16 +2054,16 @@ useEffect(() => {
      <FormItem>
        <FormLabel className="text-sm font-semibold text-card-foreground">Weight Unit</FormLabel>
        <FormControl>
-         <select
-           {...field}
-           className="w-full rounded-[20px] border border-border bg-card px-3 py-2 text-sm text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
-           
-         >
-           <option value="g">Grams</option>
-           <option value="kg">Kilograms</option>
-           <option value="oz">Ounces</option>
-           <option value="lb">Pounds</option>
-         </select>
+         <NativeAwareSelect
+  {...field}
+  options={[
+    { value: "g", label: "Grams" },
+    { value: "kg", label: "Kilograms" },
+    { value: "oz", label: "Ounces" },
+    { value: "lb", label: "Pounds" },
+  ]}
+  className="w-full rounded-xl border border-border bg-card px-3 py-2.5 text-sm text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
+/>
        </FormControl>
        <FormMessage />
      </FormItem>
