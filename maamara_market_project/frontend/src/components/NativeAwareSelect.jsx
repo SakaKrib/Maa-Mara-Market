@@ -1,5 +1,4 @@
 import React, { forwardRef, useEffect, useRef, useState } from "react";
-import { Capacitor } from "@capacitor/core";
 import { ChevronDown } from "lucide-react";
 import "./NativeAwareSelect.css";
 
@@ -29,7 +28,7 @@ const NativeAwareSelect = forwardRef(function NativeAwareSelect({
   "aria-label": ariaLabel,
   ...selectProps
 }, forwardedRef) {
-  const isNative = Capacitor.isNativePlatform();
+  const isNative = typeof window !== "undefined" && window.Capacitor?.isNativePlatform?.() === true;
   const normalizedOptions = normalizeOptions(options);
   const wrapperRef = useRef(null);
   const sourceRef = useRef(null);
