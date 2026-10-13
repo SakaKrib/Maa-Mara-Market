@@ -2,7 +2,7 @@ import {
   CssBaseline,
   CircularProgress,
 } from "@mui/material";
-import { Routes, Route } from "react-router-dom";
+import { Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "./cmponents/Auth/AuthContext/Context";
 import React, { useEffect, useState } from "react";
 import "./main.css";
@@ -11,20 +11,14 @@ import "../src/PublicUiForAll/PublicUi/maamara.css";
 // Admin Pages
 import Dashboard from "./Scenes/Dashboard/Dashboard";
 import InboundTraffic from "./Scenes/InboundTraffic/InboundTraffic";
-import Vendors from "./Scenes/Vendors/Vendors";
+import Vendors from "./cmponents/Vendors/Vendors";
 import VendorPerformance from "./Scenes/Vendors/VendorPerformance";
 import PaymentReport from "./Scenes/PayoutReports/VendorReport";
-import Bar from "./Scenes/Bar/BarChartsBar";
-import Line from "./Scenes/Line/LineChart";
-import Pie from "./Scenes/Pie/PieChart";
 import FAQ from "./cmponents/FAQ/FAQ";
 import Calendar from "./cmponents/Calendar/Calendar";
-import Single from "./cmponents/SinglePage/SinglePage";
 
 // Vendor Pages
 import Home from "./cmponents/VENDORPAGE/SellerDasboard/Seller";
-import ItemFormSheet from "./cmponents/VENDORPAGE/Products/FormSheet/ItemFormSheet";
-import ItemCreateDrawer from "./cmponents/VENDORPAGE/Products/Forms/DrawerCreateNewItem/Drawer";
 
 // Customer Pages
 import CustomerShop from "./PublicUiForAll/CustomerShop";
@@ -83,6 +77,7 @@ import { WishlistProvider } from "./cmponents/Hooks/WishListHook/Wishlist";
 import api from "./Services/Api";
 import ItemsOnsite from "./cmponents/VENDORPAGE/Products/VendorItems/ItemOnSite";
 import EditItemPage from "./cmponents/VENDORPAGE/Products/Forms/EditItemPage";
+import AddingNewItem from "./cmponents/VENDORPAGE/Products/Forms/AddingNewItem";
 import TransactionTable from "./cmponents/VENDORPAGE/Home/Transaction";
 import AdminAccounts from "./cmponents/Admin/AccountMain/Accountmain";
 import Settings from "./cmponents/Settings/Settings";
@@ -106,11 +101,6 @@ import AboutUs from "./PublicUiForAll/PublicUi/Navigations/Footer/AboutUs";
 import CustomerToAdminRequests from "./cmponents/Admin/CustomerRequests/CustomerRequests";
 import VendorPendingOrdersTable from "./cmponents/VENDORPAGE/Home/Orders/VendorPendingOrders";
 import AdminPayoutTriggerPayment from "./cmponents/VendorPayoutReport/vendorPayouts/Business2Customer";
-import MpesaB2CPayment from "./cmponents/VendorPayoutReport/vendorPayouts/Payments/mpesa";
-import MpesaB2CMultiPayment from "./cmponents/VendorPayoutReport/vendorPayouts/Payments/PayManyVendors";
-import PaypalBulkPayment from "./cmponents/VendorPayoutReport/vendorPayouts/Payments/PaypalPayVendor";
-import BankTransferBulkPayment from "./cmponents/VendorPayoutReport/vendorPayouts/BankTransfer";
-import SuccessPage from "./cmponents/VendorPayoutReport/vendorPayouts/Payments/SuccessPagePayout";
 import CustomerPage from "./cmponents/VENDORPAGE/Home/TopBox/CustomerPage";
 import VendorSalesPage from "./cmponents/VENDORPAGE/ChartBox/ChartData/HomeChartData/VendorSalesPage";
 import GrowthPage from "./cmponents/Hooks/ItemStats/ItemstatsPage";
@@ -122,24 +112,18 @@ import { Link } from "react-router-dom";
 import ReviewsPage from "./cmponents/VENDORPAGE/Home/TopBox/VendorReviewPage";
 import VendorOrdersPage from "./cmponents/Hooks/Order/OrderPage";
 import SalesReportPage from "./cmponents/VENDORPAGE/Home/Orders/SalesRegister";
-import SingleItemProfileNotif from "./cmponents/VENDORPAGE/VendorSections/NotificationPages/SingleItemProfileNotif";
 import SubcategoryProducts from "./PublicUiForAll/PublicUi/Customer/DesktopView/Header/subcategoryListItem";
 import SearchResultsPage from "./PublicUiForAll/PublicUi/Navigations/Search/NavIcons/ResultsPage";
 import OrganicPage from "./PublicUiForAll/PublicUi/Customer/DesktopView/Main/Trending/OrganicAdvert/OrganicPage";
-import PayoutSuccess from "./cmponents/VendorPayoutReport/vendorPayouts/Payments/PayoutSuccess";
-import AuthSuccess from "./cmponents/Auth/AdminLogin/Auth-Success-Check";
 import ResetPassword from "./cmponents/Auth/AdminLogin/ResetLink";
 import ForgotPassword from "./cmponents/Auth/AdminLogin/RecoverPassword";
 import SalesPage from "./cmponents/Admin/AdminAccounts/Reports/SalesStatsPage";
-import RevenueGrowthCard from "./cmponents/AdminPages/Notifications/Transactions/AdminTransactionGrowthTrack";
 import VendorSuccessPage from "./cmponents/VENDORPAGE/VendorRegistration/VendorSuccessPage";
 import CreateItemPage from "./cmponents/AdminPages/Notifications/CreateItemPage";
 import AdminCreateNewVendorItemPage from "./cmponents/AdminPages/Notifications/AdminCreateNewVendorItemPage";
 import AdminBannerApprovalPage from "./cmponents/Admin/ApproveBanner/ApproveBanner";
 import AdminPostCareer from "./cmponents/AdminPages/Notifications/PostCareers/AdminPostCareer";
 import SupportAdminPanel from "./cmponents/AdminPages/Notifications/Support/SupportMessages";
-import VendorBannerManager from "./cmponents/VENDORPAGE/VendorSections/NotificationPages/SingleBannerPage";
-import VendorBlogManagerNotification from "./cmponents/VENDORPAGE/VendorSections/NotificationPages/BlogsSinglePage";
 import SearchGlobalResultsPage from "./cmponents/SearchPage/SearchResultsPage";
 
 function AppContent() {
@@ -233,7 +217,7 @@ function AppContent() {
                 <Route path="subcategory/:id/products" element={<SubcategoryProducts />} />
 
                 {/* Route for unified auth check for normal login and google */}
-                <Route path="auth-success" element={<AuthSuccess />} />
+                <Route path="auth-success" element={<Navigate to="/" replace />} />
 
                
                
@@ -284,10 +268,6 @@ function AppContent() {
               <Route path="vendor-payout" element={<PaymentReport />} />
               <Route path="faq" element={<FAQ />} />
               <Route path="calendar" element={<Calendar />} />
-              <Route path="bar-chart" element={<Bar />} />
-              <Route path="line-chart" element={<Line />} />
-              <Route path="pie-chart" element={<Pie />} />
-              <Route path="vendors/:vendorId" element={<Single />} />
               <Route path="vendors/:vendorId/performance" element={<VendorPerformance />} />
               <Route path="items/:id" element={<SingleItemProfile />} />
               <Route path="vendor/create-items/requests" element={<VendorItemCreateRequests />} />
@@ -317,28 +297,20 @@ function AppContent() {
               <Route path="vendor-payout/payment-trigger" element={<AdminPayoutTriggerPayment />} />
 
               {/* payments route */}
-              <Route path="vendor-payout/payment-trigger/mpesa-payment/single-vendor" element={<MpesaB2CPayment />} />
-              <Route path="vendor-payout/payment-trigger/mpesa-payment-group" element={<MpesaB2CMultiPayment />} />
 
               {/* paypal */}
-              <Route path="vendor-payout/payment-trigger/paypal-payment-group" element={<PaypalBulkPayment />} />
-              <Route path="vendor-payout/payment-trigger/paypal-payment/single-vendor" element={<PaypalBulkPayment />} />
 
               {/* bank transfer */}
-              <Route path="vendor-payout/payment-trigger/bank-transfer-payment-group" element={<BankTransferBulkPayment />} />
 
               {/* successpage payout */}
-              {/* <Route path="payout/success/:reference" element={<SuccessPage />} /> */}
 
               {/* payout success page */}
-              <Route path="vendor-payout/payment-trigger/mpesa-payment/single-vendor/vendor-payouts/success/:reference" element={<PayoutSuccess />} />
               
               
               {/* sales stats page */}
               <Route path="sales-Analytics" element={<SalesPage />} />
 
               {/* Transaction Growth */}
-              <Route path="sales-Analytics/transaction-growth-track" element={<RevenueGrowthCard />} />
 
               {/* search global results route */}
               <Route path="search/global-results" element={<SearchGlobalResultsPage />} />
@@ -360,8 +332,8 @@ function AppContent() {
                 }
               >
                 <Route index element={<Home />} />
-                <Route path="item-update-post" element={<ItemFormSheet />} />
-                <Route path="create-item" element={<ItemCreateDrawer />} />
+                <Route path="item-update-post" element={<AddingNewItem />} />
+                <Route path="create-item" element={<AddingNewItem />} />
                 <Route path="add-item" element={<VendorItems />} />
                 <Route path="vendor-profile" element={<SingleVendorProfile />} />
                 <Route path="settings" element={<VendorSettings />} />
@@ -401,13 +373,11 @@ function AppContent() {
                 <Route path="sales/report" element={<SalesReportPage />} />
 
                 {/* NOTIFICATION ROUTES */}
-                <Route path="vendor/items/:id" element={<SingleItemProfileNotif />} />
+                <Route path="vendor/items/:id" element={<SingleItemProfile />} />
 
                 {/* banners single page */}
-                <Route path="vendor/banners/:id" element={<VendorBannerManager />} />
 
                 {/* blogs signle page */}
-                <Route path="vendor/blogs/:id" element={<VendorBlogManagerNotification />} />
 
                 <Route path="search/global-results" element={<SearchGlobalResultsPage />} />
                 <Route path="messages" element={<Messaging />} />
