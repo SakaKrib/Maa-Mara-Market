@@ -1,9 +1,12 @@
 import {
   CssBaseline,
   CircularProgress,
+  ThemeProvider,
 } from "@mui/material";
 import { Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "./cmponents/Auth/AuthContext/Context";
+import { ColourModeContext, useMode } from "./theme";
+import BridgeToHTML from "./globalHtml";
 import React, { useEffect, useState } from "react";
 import "./main.css";
 import "../src/PublicUiForAll/PublicUi/maamara.css";
@@ -125,8 +128,13 @@ import AdminBannerApprovalPage from "./cmponents/Admin/ApproveBanner/ApproveBann
 import AdminPostCareer from "./cmponents/AdminPages/Notifications/PostCareers/AdminPostCareer";
 import SupportAdminPanel from "./cmponents/AdminPages/Notifications/Support/SupportMessages";
 import SearchGlobalResultsPage from "./cmponents/SearchPage/SearchResultsPage";
+import AuthSuccess from "./cmponents/Auth/AdminLogin/Auth-Success-Check";
+import RevenueGrowthCard from "./cmponents/AdminPages/Notifications/Transactions/AdminTransactionGrowthTrack";
+import VendorBannerManager from "./cmponents/VENDORPAGE/VendorSections/NotificationPages/SingleBannerPage";
+import VendorBlogManagerNotification from "./cmponents/VENDORPAGE/VendorSections/NotificationPages/BlogsSinglePage";
 
 function AppContent() {
+  const [theme, colorMode] = useMode();
   const { loading } = useAuth();
   const isNativeApp = typeof window !== "undefined" && window.Capacitor?.isNativePlatform?.() === true;
   const [launchAnimationDone, setLaunchAnimationDone] = useState(false);
@@ -172,7 +180,10 @@ function AppContent() {
   }
 
   return (
-    <>
+    <ColourModeContext.Provider value={colorMode}>
+      <ThemeProvider theme={theme}>
+        <BridgeToHTML />
+        <>
         <CssBaseline />
         <div className="app">
           <div
@@ -217,7 +228,7 @@ function AppContent() {
                 <Route path="subcategory/:id/products" element={<SubcategoryProducts />} />
 
                 {/* Route for unified auth check for normal login and google */}
-                <Route path="auth-success" element={<Navigate to="/" replace />} />
+                <Route path="auth-success" element={<AuthSuccess />} />
 
                
                
@@ -309,6 +320,7 @@ function AppContent() {
               
               {/* sales stats page */}
               <Route path="sales-Analytics" element={<SalesPage />} />
+               <Route path="sales-Analytics/transaction-growth-track" element={<RevenueGrowthCard />} />
 
               {/* Transaction Growth */}
 
@@ -374,6 +386,8 @@ function AppContent() {
 
                 {/* NOTIFICATION ROUTES */}
                 <Route path="vendor/items/:id" element={<SingleItemProfile />} />
+                 <Route path="vendor/banners/:id" element={<VendorBannerManager />} />
+                 <Route path="vendor/blogs/:id" element={<VendorBlogManagerNotification />} />
 
                 {/* banners single page */}
 
@@ -411,7 +425,9 @@ function AppContent() {
 
           </div>
         </div>
-    </>
+        </>
+      </ThemeProvider>
+    </ColourModeContext.Provider>
   );
 }
 
