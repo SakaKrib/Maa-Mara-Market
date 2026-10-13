@@ -10,7 +10,7 @@ from django.core.validators import MinValueValidator, MaxValueValidator
 
 SECTION_CHOICES = [
     ("organic", "Organic"),
-    ("departmental", "Departmental"),
+    ("inorganic", "Inorganic"),
 ]
 
 
@@ -95,8 +95,18 @@ class Department(models.Model):
     
 
 class Category(models.Model):
-    name = models.CharField(max_length=50, unique=True)
+    # Category names are unique within a department, not globally. This allows
+    # different departments to use the same label without cross-linking items.
+    name = models.CharField(max_length=50)
     department = models.ForeignKey(Department, related_name='categories', on_delete=models.CASCADE)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=("name", "department"),
+                name="uniq_category_name_department",
+            )
+        ]
 
     def __str__(self):
         return self.name
