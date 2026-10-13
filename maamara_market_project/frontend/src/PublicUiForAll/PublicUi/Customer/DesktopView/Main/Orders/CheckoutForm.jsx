@@ -11,6 +11,7 @@ import { getData } from "country-list";
 import PhoneInput from "react-phone-input-2";
 import { useNavigate } from "react-router-dom";
 import api from "../../../../../../Services/Api";
+import NativeAwareSelect from "../../../../../../components/NativeAwareSelect";
 import "react-phone-input-2/lib/style.css";
 
 // Zod validation schema
@@ -499,16 +500,28 @@ const fetchShippingQuote = async () => {
 
                   <div>
                     <label htmlFor="country" className="mb-1.5 block text-sm font-medium text-card-foreground">Country</label>
-                    <select
-                      id="country"
-                      {...register("country")}
-                      className="w-full rounded-xl border border-border bg-background px-4 py-3 text-sm text-card-foreground outline-none transition focus:border-gray-900"
-                    >
-                      <option value="">Select country</option>
-                      {countries.map((country, idx) => (
-                        <option key={idx} value={country.code}>{country.name}</option>
-                      ))}
-                    </select>
+                    <Controller
+                      name="country"
+                      control={control}
+                      render={({ field }) => (
+                        <NativeAwareSelect
+                          id="country"
+                          aria-label="Country"
+                          name={field.name}
+                          ref={field.ref}
+                          value={field.value || ""}
+                          onChange={field.onChange}
+                          onBlur={field.onBlur}
+                          className="w-full rounded-xl px-4 py-3 text-sm outline-none transition focus:border-gray-900"
+                          placeholder="Select country"
+                          required
+                          options={[
+                            { value: "", label: "Select country" },
+                            ...countries.map((country) => ({ value: country.code, label: country.name })),
+                          ]}
+                        />
+                      )}
+                    />
                     {errors.country && <p className="mt-1 text-sm text-red-500">{errors.country.message}</p>}
                   </div>
                 </div>
