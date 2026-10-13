@@ -241,19 +241,9 @@ def search_items(request):
         except (TypeError, ValueError):
             vendor_id = None
 
-    if not query and not category_id and not vendor_id:
-        return Response(
-            {
-                "query": "",
-                "results": [],
-                "suggestions": [],
-                "total": 0,
-                "page": 1,
-                "page_size": SEARCH_PAGE_SIZE,
-                "total_pages": 0,
-            }
-        )
-
+    # With no search/category/vendor constraint, return the normal browse-all
+    # listing. The View All and Browse products links intentionally open this
+    # endpoint without a query and should not render an empty search prompt.
     requested_page_size = request.GET.get("page_size", SEARCH_PAGE_SIZE)
     try:
         page_size = max(1, min(int(requested_page_size), MAX_PAGE_SIZE))
