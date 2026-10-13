@@ -64,6 +64,8 @@
   }
   body {
     @apply bg-background text-foreground;
+    /* Keep content clear of the overlaid phone status bar/notch. */
+    padding-top: env(safe-area-inset-top, 0px);
   }
 }
 
