@@ -8,7 +8,7 @@ Build the mobile-compatible web bundle with the Tailscale API origin:
 
 ```bash
 cd maamara_market_project/frontend
-npm run build -- --mode tailscale
+npm run build:mobile:tailscale
 ```
 
 The `.env.tailscale` file is loaded only in the explicit `tailscale` mode.
