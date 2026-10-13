@@ -32,7 +32,7 @@
   background: hsl(var(--card)) !important;
   color: hsl(var(--card-foreground)) !important;
   text-align: left;
-  box-shadow: none;
+  box-shadow: none !important;
   -webkit-tap-highlight-color: transparent;
 }
 
