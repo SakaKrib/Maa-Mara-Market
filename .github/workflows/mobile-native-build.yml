@@ -206,9 +206,12 @@ jobs:
                   controller.show(WindowInsetsCompat.Type.navigationBars());
                   controller.setAppearanceLightStatusBars(true);
                   controller.setAppearanceLightNavigationBars(true);
-                  // A very light neutral surface blends with the app's white theme.
-                  getWindow().setStatusBarColor(Color.rgb(250, 250, 250));
-                  getWindow().setNavigationBarColor(Color.rgb(250, 250, 250));
+                  // Use a true white surface for both Android system-bar areas.
+                  // With edge-to-edge enabled, these views also provide the
+                  // background visible behind the transparent system bars.
+                  getWindow().setStatusBarColor(Color.WHITE);
+                  getWindow().setNavigationBarColor(Color.WHITE);
+                  getWindow().getDecorView().setBackgroundColor(Color.WHITE);
                   if (Build.VERSION.SDK_INT >= 29) {
                       getWindow().setNavigationBarContrastEnforced(false);
                   }
@@ -217,11 +220,16 @@ jobs:
                   // WebView uses the full screen height and width.
                   View content = findViewById(android.R.id.content);
                   if (content != null) {
+                      content.setBackgroundColor(Color.WHITE);
                       ViewCompat.setOnApplyWindowInsetsListener(content, (view, insets) -> {
                           view.setPadding(0, 0, 0, 0);
                           return insets;
                       });
                       ViewCompat.requestApplyInsets(content);
+                  }
+                  WebView activeWebView = bridge != null ? bridge.getWebView() : null;
+                  if (activeWebView != null) {
+                      activeWebView.setBackgroundColor(Color.WHITE);
                   }
               }
           }
