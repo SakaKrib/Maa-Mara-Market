@@ -194,10 +194,13 @@ class Command(BaseCommand):
         organic_section, _ = Section.objects.get_or_create(name="organic")
         for dept_name, data in organicDepartmentMap.items():
             dept_obj, _ = Department.objects.get_or_create(
-                name=dept_name, section=organic_section
+                name=dept_name,
+                defaults={"section": organic_section},
             )
+            if dept_obj.section_id != organic_section.id:
+                dept_obj.section = organic_section
+                dept_obj.save(update_fields=["section"])
             self.stdout.write(self.style.SUCCESS(f"[Organic] Using Department: {dept_name}"))
-
             self._create_categories_and_subcategories(data, dept_obj)
 
     def _create_categories_and_subcategories(self, data, dept_obj):
