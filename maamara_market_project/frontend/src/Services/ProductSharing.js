@@ -54,14 +54,25 @@ export const shareProduct = async ({ item, image }) => {
   try {
     if (typeof navigator.share === "function") {
       const file = await createImageFile(image, title);
+      let canShareImage = false;
 
-      if (
-        file &&
-        typeof navigator.canShare === "function" &&
-        navigator.canShare({ files: [file] })
-      ) {
-        await navigator.share({ title, text, url, files: [file] });
-        return;
+      if (file && typeof navigator.canShare === "function") {
+        try {
+          canShareImage = navigator.canShare({ files: [file] });
+        } catch {
+          canShareImage = false;
+        }
+      }
+
+      if (canShareImage) {
+        try {
+          await navigator.share({ title, text, url, files: [file] });
+          return;
+        } catch (error) {
+          // Don't reopen the share sheet if the user intentionally dismissed it.
+          if (error?.name === "AbortError") return;
+          // Some share targets/platforms reject files; retry with the product link.
+        }
       }
 
       await navigator.share({ title, text, url });
