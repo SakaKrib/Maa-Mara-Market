@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import NativeAwareSelect from "../../../components/NativeAwareSelect";
 import api from "../../../Services/Api";
 import { CircularProgress } from "@mui/material";
 
@@ -193,14 +194,15 @@ const BannerAdd = ({ items = [], onSave = () => {} }) => {
           <label className="mb-1.5 block text-xs font-semibold text-card-foreground">
             Call to action
           </label>
-          <select
-            value={ctaType}
-            onChange={(e) => setCtaType(e.target.value)}
-            className="w-full rounded-[20px] border border-gray-300 bg-background px-4 py-3 text-sm text-foreground outline-none transition focus:border-primary"
-          >
-            <option value="item">Product</option>
-            <option value="external">External Link</option>
-          </select>
+          <NativeAwareSelect
+              value={ctaType}
+              onChange={(e) => setCtaType(e.target.value)}
+              options={[
+                { value: "item", label: "Product" },
+                { value: "external", label: "External Link" },
+              ]}
+              className="w-full rounded-xl border border-border bg-card px-4 py-3 text-sm text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
+            />
         </div>
 
         {ctaType === "item" && (
@@ -208,18 +210,16 @@ const BannerAdd = ({ items = [], onSave = () => {} }) => {
             <label className="mb-1.5 block text-xs font-semibold text-card-foreground">
               Select product
             </label>
-            <select
+            <NativeAwareSelect
               value={ctaItem}
               onChange={(e) => setCtaItem(e.target.value)}
-              className="w-full rounded-[20px] border border-gray-300 bg-background px-4 py-3 text-sm text-foreground outline-none transition focus:border-primary"
-            >
-              <option value="">Select product</option>
-              {items.map((item) => (
-                <option key={item.id} value={item.id}>
-                  {item.name}
-                </option>
-              ))}
-            </select>
+              placeholder="Select product"
+              options={[
+                { value: "", label: "Select product" },
+                ...items.map((item) => ({ value: String(item.id), label: item.name })),
+              ]}
+              className="w-full rounded-xl border border-border bg-card px-4 py-3 text-sm text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
+            />
           </div>
         )}
 
