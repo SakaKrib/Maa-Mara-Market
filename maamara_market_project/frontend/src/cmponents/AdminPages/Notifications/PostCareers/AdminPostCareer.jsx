@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Briefcase, Check, Edit3, Eye, Plus, Trash2, Users, X } from "lucide-react";
 import api from "../../../../Services/Api";
 import RichTextEditor from "../../../../cmponents/RichTextEditor/RichTextEdit";
+import NativeAwareSelect from "../../../../components/NativeAwareSelect";
 
 const emptyForm = {
   title: "", department: "", location: "", employment_type: "full_time",
@@ -177,9 +178,18 @@ const AdminPostCareer = ({ open = true, onClose }) => {
             ].map(([key,label]) => (
               <label key={key}>{label}<input value={form[key]} onChange={(e) => setForm({ ...form, [key]: e.target.value })} required={key !== "salary"} /></label>
             ))}
-            <label>Employment type<select value={form.employment_type} onChange={(e) => setForm({ ...form, employment_type: e.target.value })}>
-              <option value="full_time">Full time</option><option value="part_time">Part time</option><option value="contract">Contract</option><option value="internship">Internship</option><option value="remote">Remote</option>
-            </select></label>
+            <label>Employment type<NativeAwareSelect
+              value={form.employment_type}
+              onChange={(event) => setForm({ ...form, employment_type: event.target.value })}
+              className="w-full rounded-xl border border-border bg-background px-3 py-2.5 text-sm text-foreground outline-none focus:ring-2 focus:ring-primary/20"
+              options={[
+                { value: "full_time", label: "Full time" },
+                { value: "part_time", label: "Part time" },
+                { value: "contract", label: "Contract" },
+                { value: "internship", label: "Internship" },
+                { value: "remote", label: "Remote" },
+              ]}
+            /></label>
             <label>Application deadline<input type="date" value={form.application_deadline} onChange={(e) => setForm({ ...form, application_deadline: e.target.value })} /></label>
           </div>
           <div>
