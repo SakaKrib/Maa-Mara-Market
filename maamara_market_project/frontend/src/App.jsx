@@ -14,7 +14,6 @@ import "../src/PublicUiForAll/PublicUi/maamara.css";
 // Admin Pages
 import Dashboard from "./Scenes/Dashboard/Dashboard";
 import InboundTraffic from "./Scenes/InboundTraffic/InboundTraffic";
-import Bar from "./Scenes/Bar/BarChartsBar";
 import Line from "./Scenes/Line/LineChart";
 import Pie from "./Scenes/Pie/PieChart";
 import Vendors from "./cmponents/Vendors/Vendors";
@@ -288,7 +287,6 @@ function AppContent() {
               <Route path="vendor-payout" element={<PaymentReport />} />
               <Route path="faq" element={<FAQ />} />
               <Route path="calendar" element={<Calendar />} />
-               <Route path="bar-chart" element={<Bar />} />
                <Route path="line-chart" element={<Line />} />
                <Route path="pie-chart" element={<Pie />} />
               <Route path="vendors/:vendorId" element={<VendorDetailsPage />} />
