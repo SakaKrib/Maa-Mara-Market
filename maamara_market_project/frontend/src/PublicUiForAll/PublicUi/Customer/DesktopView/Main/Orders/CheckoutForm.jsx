@@ -512,7 +512,7 @@ const fetchShippingQuote = async () => {
                           value={field.value || ""}
                           onChange={field.onChange}
                           onBlur={field.onBlur}
-                          className="w-full rounded-xl px-4 py-3 text-sm outline-none transition focus:border-gray-900"
+                          className="w-full rounded-xl border border-border bg-background px-4 py-3 text-sm text-card-foreground outline-none transition focus:border-gray-900"
                           placeholder="Select country"
                           required
                           options={[
