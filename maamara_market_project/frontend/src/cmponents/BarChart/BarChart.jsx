@@ -35,7 +35,7 @@ const BarChart = ({ data = [] }) => {
           <div className="mm-admin-chart-tooltip">
             <div className="mm-admin-chart-tooltip-title">{indexValue}</div>
             <div className="mm-admin-chart-tooltip-muted">KES {Number(value || 0).toLocaleString()}</div>
-            <div className="text-muted-foreground">{Number(point?.orders || 0).toLocaleString()} orders</div>
+            <div className="mm-admin-chart-tooltip-muted">{Number(point?.orders || 0).toLocaleString()} orders</div>
           </div>
         )}
       />
