@@ -7,6 +7,7 @@ import { Link } from "react-router-dom";
 import FormattedCurrency from "../Currency/FormattedCurrency";
 import { useCurrency } from "../Currency/CurrencyContext";
 import api from "../../../../../../Services/Api";
+import NativeAwareSelect from "../../../../../components/NativeAwareSelect";
 
 const imageUrl = (image) => image || "";
 
@@ -155,22 +156,24 @@ const CartPage = () => {
             {vouchers.length > 0 && (
               <label className="block mt-5 text-sm font-medium">
                 Voucher
-                <select value={selectedVoucher} onChange={(e) => setSelectedVoucher(e.target.value)} className="mt-2 w-full rounded-md border border-gray-300 bg-white px-3 py-2">
-                  <option value="">Select a voucher</option>
-                  {vouchers.map((voucher) => {
-                    const discount = Number(voucher.discount || 0);
-                    const rate = currency === "KES" ? 1 : (rates?.[currency] ?? 1);
-                    const formattedDiscount = new Intl.NumberFormat(undefined, {
-                      style: "currency",
-                      currency,
-                    }).format((Number.isFinite(discount) ? discount : 0) * rate);
-                    return (
-                      <option key={voucher.code} value={voucher.code}>
-                        {voucher.code} — {formattedDiscount}
-                      </option>
-                    );
-                  })}
-                </select>
+                <NativeAwareSelect
+                  aria-label="Voucher"
+                  value={selectedVoucher}
+                  onChange={(event) => setSelectedVoucher(event.target.value)}
+                  className="mt-2 w-full rounded-md border border-gray-300 bg-white px-3 py-2"
+                  options={[
+                    { value: "", label: "Select a voucher" },
+                    ...vouchers.map((voucher) => {
+                      const discount = Number(voucher.discount || 0);
+                      const rate = currency === "KES" ? 1 : (rates?.[currency] ?? 1);
+                      const formattedDiscount = new Intl.NumberFormat(undefined, {
+                        style: "currency",
+                        currency,
+                      }).format((Number.isFinite(discount) ? discount : 0) * rate);
+                      return { value: voucher.code, label: `${voucher.code} — ${formattedDiscount}` };
+                    }),
+                  ]}
+                />
               </label>
             )}
 
