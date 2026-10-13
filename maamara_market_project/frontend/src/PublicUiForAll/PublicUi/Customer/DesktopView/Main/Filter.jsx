@@ -3,6 +3,7 @@ import { useSearchParams, useLocation, useNavigate } from "react-router-dom";
 import api from "../../../../../Services/Api";
 import { IonIcon } from "@ionic/react";
 import { filterOutline, closeOutline } from "ionicons/icons";
+import NativeAwareSelect from "../../../../../components/NativeAwareSelect";
 
 const Filter = ({ onFilterChange }) => {
   const [searchParams] = useSearchParams();
@@ -69,8 +70,7 @@ const Filter = ({ onFilterChange }) => {
 
   const renderOptions = (list) => list.map((item) => {
     const value = typeof item === "object" ? item.name : item;
-    const key = typeof item === "object" ? item.id : item;
-    return <option key={key} value={value}>{value}</option>;
+    return { value: String(value ?? ""), label: String(value ?? "") };
   });
 
   return (
@@ -88,14 +88,14 @@ const Filter = ({ onFilterChange }) => {
         </div>
 
         <div className="marketplace-filter__fields">
-          <select name="section" value={filters.section} onChange={handleChange} disabled={loading}><option value="">Section</option>{renderOptions(filterOptions.sections)}</select>
-          <select name="department" value={filters.department} onChange={handleChange} disabled={loading}><option value="">Department</option>{renderOptions(filterOptions.departments)}</select>
-          <select name="category" value={filters.category} onChange={handleChange} disabled={loading}><option value="">Category</option>{renderOptions(filterOptions.categories)}</select>
-          <select name="size" value={filters.size} onChange={handleChange} disabled={loading}><option value="">Size</option>{renderOptions(filterOptions.sizes)}</select>
-          <select name="color" value={filters.color} onChange={handleChange} disabled={loading}><option value="">Color</option>{renderOptions(filterOptions.colors)}</select>
+          <NativeAwareSelect name="section" aria-label="Section" value={filters.section} onChange={handleChange} disabled={loading} className="marketplace-filter__select" options={[{ value: "", label: "Section" }, ...renderOptions(filterOptions.sections)]} />
+          <NativeAwareSelect name="department" aria-label="Department" value={filters.department} onChange={handleChange} disabled={loading} className="marketplace-filter__select" options={[{ value: "", label: "Department" }, ...renderOptions(filterOptions.departments)]} />
+          <NativeAwareSelect name="category" aria-label="Category" value={filters.category} onChange={handleChange} disabled={loading} className="marketplace-filter__select" options={[{ value: "", label: "Category" }, ...renderOptions(filterOptions.categories)]} />
+          <NativeAwareSelect name="size" aria-label="Size" value={filters.size} onChange={handleChange} disabled={loading} className="marketplace-filter__select" options={[{ value: "", label: "Size" }, ...renderOptions(filterOptions.sizes)]} />
+          <NativeAwareSelect name="color" aria-label="Color" value={filters.color} onChange={handleChange} disabled={loading} className="marketplace-filter__select" options={[{ value: "", label: "Color" }, ...renderOptions(filterOptions.colors)]} />
           <input type="number" name="minPrice" value={filters.minPrice} onChange={handleChange} placeholder="Min price" />
           <input type="number" name="maxPrice" value={filters.maxPrice} onChange={handleChange} placeholder="Max price" />
-          <select name="sort" value={filters.sort} onChange={handleChange}><option value="">Sort by</option><option value="low-high">Price: Low to High</option><option value="high-low">Price: High to Low</option><option value="newest">Newest First</option><option value="oldest">Oldest First</option></select>
+          <NativeAwareSelect name="sort" aria-label="Sort by" value={filters.sort} onChange={handleChange} className="marketplace-filter__select" options={[{ value: "", label: "Sort by" }, { value: "low-high", label: "Price: Low to High" }, { value: "high-low", label: "Price: High to Low" }, { value: "newest", label: "Newest First" }, { value: "oldest", label: "Oldest First" }]} />
         </div>
 
         <button type="button" className="primary-button marketplace-filter__apply" onClick={() => setMobileOpen(false)}>Apply filters</button>
