@@ -1,7 +1,8 @@
 import React from "react";
+import { createPortal } from "react-dom";
 import { useWishlistContext } from "../../../../../../cmponents/Hooks/WishListHook/Wishlist";
 import { IonIcon } from "@ionic/react";
-import { heart, heartOutline, eyeOutline, shareOutline } from "ionicons/icons";
+import { heart, heartOutline, eyeOutline, shareOutline, closeOutline } from "ionicons/icons";
 import { Link, useNavigate } from "react-router-dom";
 import { resolveApiAssetUrl } from "../../../../../../Services/Api";
 import FormattedCurrency from "../Currency/FormattedCurrency";
@@ -52,6 +53,13 @@ const TrendingProductCard = ({ item, isWishlisted: controlledWishlist, onToggleW
   const [imageLoaded, setImageLoaded] = React.useState(false);
   const [imageFailed, setImageFailed] = React.useState(false);
   const [isImagePreviewOpen, setIsImagePreviewOpen] = React.useState(false);
+  const [previewImageFailed, setPreviewImageFailed] = React.useState(false);
+
+  const openImagePreview = (event) => {
+    event.stopPropagation();
+    setPreviewImageFailed(false);
+    setIsImagePreviewOpen(true);
+  };
 
   React.useEffect(() => {
     if (!isImagePreviewOpen) return undefined;
@@ -120,7 +128,7 @@ const TrendingProductCard = ({ item, isWishlisted: controlledWishlist, onToggleW
           <button type="button" onClick={toggleWishlist} aria-label={isWishlisted ? "Remove from wishlist" : "Add to wishlist"} className="mm-product-action">
             <IonIcon icon={isWishlisted ? heart : heartOutline} />
           </button>
-          <button type="button" onClick={(event) => { event.stopPropagation(); setIsImagePreviewOpen(true); }} aria-label="Preview product image" className="mm-product-action">
+          <button type="button" onClick={openImagePreview} aria-label="Preview product image" className="mm-product-action">
             <IonIcon icon={eyeOutline} />
           </button>
           <button type="button" onClick={shareProduct} aria-label="Share product" className="mm-product-action">
@@ -179,9 +187,9 @@ const TrendingProductCard = ({ item, isWishlisted: controlledWishlist, onToggleW
 
       </div>
 
-      {isImagePreviewOpen && image && !imageFailed && (
+      {isImagePreviewOpen && image && typeof document !== "undefined" && createPortal(
         <div
-          className="fixed inset-0 z-[100] flex h-screen w-screen items-center justify-center bg-black/90 p-4 sm:p-8"
+          className="fixed inset-0 z-[1000] flex min-h-[100dvh] w-screen items-center justify-center bg-black/90 p-4 sm:p-8"
           role="dialog"
           aria-modal="true"
           aria-label={`${displayName} image preview`}
@@ -189,19 +197,41 @@ const TrendingProductCard = ({ item, isWishlisted: controlledWishlist, onToggleW
         >
           <button
             type="button"
-            className="absolute right-4 top-4 z-10 flex h-11 w-11 items-center justify-center rounded-full bg-white/10 text-2xl text-white backdrop-blur transition-colors hover:bg-white/20"
+            className="absolute z-10 flex h-12 w-12 items-center justify-center rounded-full bg-white text-3xl text-gray-900 shadow-lg transition-transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-black"
+            style={{
+              top: "max(1rem, env(safe-area-inset-top))",
+              right: "max(1rem, env(safe-area-inset-right))",
+            }}
             onClick={() => setIsImagePreviewOpen(false)}
             aria-label="Close image preview"
+            title="Close image"
           >
-            ×
+            <IonIcon icon={closeOutline} aria-hidden="true" />
           </button>
-          <img
-            src={image}
-            alt={displayName}
-            className="max-h-full max-w-full object-contain"
-            onClick={(event) => event.stopPropagation()}
-          />
-        </div>
+          {!previewImageFailed ? (
+            <img
+              src={image}
+              alt={displayName}
+              className="block h-auto w-auto object-contain"
+              style={{
+                maxHeight: "calc(100dvh - 2rem)",
+                maxWidth: "calc(100vw - 2rem)",
+              }}
+              onError={() => setPreviewImageFailed(true)}
+              onClick={(event) => event.stopPropagation()}
+            />
+          ) : (
+            <div
+              role="status"
+              className="max-w-sm rounded-xl bg-white p-5 text-center text-sm text-gray-700 shadow-xl"
+              onClick={(event) => event.stopPropagation()}
+            >
+              <p className="font-semibold">Unable to load this product image.</p>
+              <p className="mt-1">Check your connection and close this preview to try again.</p>
+            </div>
+          )}
+        </div>,
+        document.body
       )}
     </article>
   );
