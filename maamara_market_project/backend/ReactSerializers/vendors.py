@@ -51,6 +51,7 @@ from vendorDashboard.draft_service import (
     sync_item_draft_media,
 )
 from .item_deduplication import find_duplicate_item
+from .category_taxonomy import resolve_item_taxonomy
 
 
 
@@ -1154,24 +1155,23 @@ def approve_vendor(request, vendor_request_id):
             if image_asset_id:
                 raw_path = resolved_draft_images[image_asset_id]
 
-            # SECTION / DEPARTMENT / CATEGORY
-            section_name = sanitize(item.get('section')) if item.get('section') else None
-            section = Section.objects.get_or_create(name=section_name)[0] if section_name else None
-
-            department_name = sanitize(item.get('department')) if item.get('department') else None
-            department = None
-            if department_name:
-                department, _ = Department.objects.get_or_create(name=department_name, defaults={'section': section})
-
-            category_name = sanitize(item.get('category')) if item.get('category') else None
-            category = None
-            if category_name:
-                category, _ = Category.objects.get_or_create(name=category_name, defaults={'department': department})
-
-            subcategory_name = sanitize(item.get('subcategory')) if item.get('subcategory') else None
-            subcategory = None
-            if subcategory_name:
-                subcategory, _ = SubCategory.objects.get_or_create(name=subcategory_name, defaults={'category': category})
+            # SECTION / DEPARTMENT / CATEGORY / SUBCATEGORY
+            # Use the same scoped resolver as normal item creation and editing.
+            # Custom categories/subcategories are created under their selected
+            # parents and cannot silently attach to a same-named unrelated record.
+            taxonomy = resolve_item_taxonomy(
+                section_value=sanitize(item.get("section")) if item.get("section") else None,
+                department_value=sanitize(item.get("department")) if item.get("department") else None,
+                category_value=sanitize(item.get("category")) if item.get("category") else None,
+                subcategory_value=sanitize(item.get("subcategory")) if item.get("subcategory") else None,
+                default_section=(
+                    "organic" if item.get("is_organic", False) else "inorganic"
+                ),
+            )
+            section = taxonomy["section"]
+            department = taxonomy["department"]
+            category = taxonomy["category"]
+            subcategory = taxonomy["subcategory"]
 
             brand = None
             raw_brand = item.get('brand')
