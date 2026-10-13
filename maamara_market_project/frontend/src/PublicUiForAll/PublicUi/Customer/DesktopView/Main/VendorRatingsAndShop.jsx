@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import NativeAwareSelect from "../../../../../components/NativeAwareSelect";
 import api from "../../../../../Services/Api";
 const VendorRatingForm = ({ vendorId, onRated, hasReviews = false }) => {
   const [vendorRatingForm, setVendorRatingForm] = useState({
@@ -118,7 +119,7 @@ const VendorRatingForm = ({ vendorId, onRated, hasReviews = false }) => {
                   <span className="text-xs font-semibold capitalize text-card-foreground">
                     {key}
                   </span>
-                  <select
+                  <NativeAwareSelect
                     value={vendorRatingForm[key]}
                     onChange={(event) =>
                       setVendorRatingForm((prev) => ({
@@ -126,15 +127,16 @@ const VendorRatingForm = ({ vendorId, onRated, hasReviews = false }) => {
                         [key]: Number.parseInt(event.target.value, 10),
                       }))
                     }
-                    className="rounded-full border border-border bg-card px-3 py-2 text-sm text-card-foreground outline-none focus:ring-2 focus:ring-border"
-                  >
-                    <option value={0}>Select rating</option>
-                    {[1, 2, 3, 4, 5].map((star) => (
-                      <option key={star} value={star}>
-                        {star} Star{star > 1 ? "s" : ""}
-                      </option>
-                    ))}
-                  </select>
+                    placeholder="Select rating"
+                    options={[
+                      { value: "0", label: "Select rating" },
+                      ...[1, 2, 3, 4, 5].map((star) => ({
+                        value: String(star),
+                        label: `${star} Star${star > 1 ? "s" : ""}`,
+                      })),
+                    ]}
+                    className="rounded-xl border border-border bg-card px-3 py-2 text-sm text-card-foreground outline-none focus:ring-2 focus:ring-border"
+                  />
                 </label>
               ))}
             </div>
