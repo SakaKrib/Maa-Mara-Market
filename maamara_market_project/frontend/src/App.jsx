@@ -75,6 +75,7 @@ import PesapalCallback from "./PublicUiForAll/PublicUi/Customer/DesktopView/Main
 import MpesaSTKPayment from "./PublicUiForAll/PublicUi/Customer/DesktopView/Main/Orders/Payment/MpesaStkPayment";
 import CheckoutPaypalPayment from "./PublicUiForAll/PublicUi/Customer/DesktopView/Main/Orders/Payment/Paypal";
 import SingleItemProfile from "./cmponents/VENDORPAGE/VendorSections/ItemSinglePage";
+import SingleItemProfileNotif from "./cmponents/VENDORPAGE/VendorSections/NotificationPages/SingleItemProfileNotif";
 import PaymentSuccess from "./PublicUiForAll/PublicUi/Customer/DesktopView/Main/Trending/SuccessPage";
 import BlogCard from "./cmponents/VENDORPAGE/Blogs/BlogCard";
 import BlogFeed from "./cmponents/VENDORPAGE/Blogs/BlogFeed";
@@ -402,7 +403,7 @@ function AppContent() {
                 <Route path="sales/report" element={<SalesReportPage />} />
 
                 {/* NOTIFICATION ROUTES */}
-                <Route path="vendor/items/:id" element={<SingleItemProfile />} />
+                <Route path="vendor/items/:id" element={<SingleItemProfileNotif />} />
                  <Route path="vendor/banners/:id" element={<VendorBannerManager />} />
                  <Route path="vendor/blogs/:id" element={<VendorBlogManagerNotification />} />
 
