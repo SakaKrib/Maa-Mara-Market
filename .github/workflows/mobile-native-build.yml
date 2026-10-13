@@ -81,7 +81,6 @@ jobs:
 
           import android.graphics.Color;
           import android.net.Uri;
-          import android.os.Build;
           import android.os.Bundle;
           import android.os.SystemClock;
           import android.view.View;
@@ -89,7 +88,6 @@ jobs:
           import android.webkit.WebView;
           import android.widget.Toast;
 
-          import androidx.core.graphics.Insets;
           import androidx.core.view.ViewCompat;
           import androidx.core.view.WindowCompat;
           import androidx.core.view.WindowInsetsCompat;
@@ -167,22 +165,12 @@ jobs:
                       getWindow().setNavigationBarContrastEnforced(false);
                   }
 
-                  // Let content extend behind the status bar (no top inset), while
-                  // retaining side/cutout and bottom navigation safe areas.
+                  // Explicitly clear top, bottom, and side inset padding so the
+                  // WebView uses the full screen height and width.
                   View content = findViewById(android.R.id.content);
                   if (content != null) {
                       ViewCompat.setOnApplyWindowInsetsListener(content, (view, insets) -> {
-                          Insets safeBars = insets.getInsets(
-                              WindowInsetsCompat.Type.statusBars()
-                                  | WindowInsetsCompat.Type.navigationBars()
-                                  | WindowInsetsCompat.Type.displayCutout()
-                          );
-                          view.setPadding(
-                              Math.max(view.getPaddingLeft(), safeBars.left),
-                              0,
-                              Math.max(view.getPaddingRight(), safeBars.right),
-                              Math.max(view.getPaddingBottom(), safeBars.bottom)
-                          );
+                          view.setPadding(0, 0, 0, 0);
                           return insets;
                       });
                       ViewCompat.requestApplyInsets(content);
