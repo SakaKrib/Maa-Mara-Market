@@ -3,7 +3,8 @@ import { resolveApiAssetUrl } from "./Api";
 const getProductUrl = (itemId) => {
   const isNativeApp =
     typeof window !== "undefined" &&
-    Boolean(window.Capacitor?.isNativePlatform?.());
+    (Boolean(window.Capacitor?.isNativePlatform?.()) ||
+      import.meta.env.VITE_BUILD_TARGET === "mobile");
 
   const configuredPublicOrigin = String(import.meta.env.VITE_PUBLIC_SITE_URL || "")
     .trim()
