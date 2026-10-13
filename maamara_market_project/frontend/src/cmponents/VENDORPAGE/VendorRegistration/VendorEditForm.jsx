@@ -1,5 +1,5 @@
 import React from "react";
-import NativeAwareSelect from "../../../../components/NativeAwareSelect";
+import NativeAwareSelect from "../../../components/NativeAwareSelect";
 import { Button } from "../../../../components/ui/button";
 
 export default function VendorEditForm({
