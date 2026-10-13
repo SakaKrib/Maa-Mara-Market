@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - ui-redesign-foundation
+      - android-tailscale-testing
     paths:
       - "maamara_market_project/frontend/**"
       - ".github/workflows/mobile-native-build.yml"
@@ -24,7 +25,7 @@ concurrency:
 
 env:
   FRONTEND_DIR: maamara_market_project/frontend
-  MOBILE_API_URL: ${{ github.event.inputs.api_url || 'https://maamaramarket.com' }}
+  MOBILE_API_URL: ${{ github.event.inputs.api_url || (github.ref_name == 'android-tailscale-testing' && 'http://100.109.224.0:8000') || 'https://maamaramarket.com' }}
 
 jobs:
   android:
@@ -56,7 +57,7 @@ jobs:
         working-directory: ${{ env.FRONTEND_DIR }}
         # Keep package-lock.json as the resolution baseline for existing app
         # dependencies; only add the native build tools without saving changes.
-        run: npm install --no-save @capacitor/core@7 @capacitor/cli@7 @capacitor/android@7 @capacitor/ios@7 typescript@5.8.3
+        run: npm install --no-save @capacitor/core@7 @capacitor/cli@7 @capacitor/android@7 @capacitor/ios@7 @capacitor/status-bar@7 typescript@5.8.3
 
       - name: Build mobile web bundle
         working-directory: ${{ env.FRONTEND_DIR }}
