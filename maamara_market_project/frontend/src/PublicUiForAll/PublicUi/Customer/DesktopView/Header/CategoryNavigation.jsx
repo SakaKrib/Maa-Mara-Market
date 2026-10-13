@@ -14,7 +14,7 @@ const CategoryNavigation = () => {
   const departments = useMemo(() => {
     const section =
       data?.sections?.find((item) =>
-        ["departmental", "general"].includes(item?.name?.toLowerCase())
+        ["inorganic", "departmental", "general"].includes(item?.name?.toLowerCase())
       ) || data?.sections?.[0];
 
     return section?.departments || [];
