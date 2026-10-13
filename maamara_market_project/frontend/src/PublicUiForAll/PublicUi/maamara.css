@@ -6015,6 +6015,215 @@ h1,h2,h3,h4{font-family:'regular','Poppins',Arial,sans-serif}
 }
 
  
+
+/* Category filter tree — align headings and controls with the Maa Mara storefront. */
+.mm-filter-sidebar {
+  box-sizing: border-box;
+  min-width: 0;
+  width: 100%;
+  padding: 16px;
+  background: var(--mm-surface, #fff);
+  border: 1px solid var(--mm-border, #e6e3de);
+  border-radius: var(--mm-radius-lg, 14px);
+  box-shadow: var(--mm-shadow-card, 0 1px 3px rgba(0, 0, 0, .08));
+}
+
+.mm-filter-sidebar__title {
+  margin: 0 0 14px;
+  padding: 0 0 10px;
+  border-bottom: 1px solid var(--mm-border, #e6e3de);
+  color: var(--mm-text, #222);
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 1rem;
+  font-weight: 600;
+  line-height: 1.25;
+}
+
+.mm-filter-sidebar__scroll {
+  min-width: 0;
+  scrollbar-width: thin;
+  scrollbar-color: var(--mm-border-strong, #cfc9c0) transparent;
+}
+
+.mm-filter-tree {
+  display: grid;
+  gap: 18px;
+  min-width: 0;
+  color: var(--mm-text, #222);
+}
+
+.mm-filter-tree__group {
+  min-width: 0;
+}
+
+.mm-filter-tree .mm-filter-tree__section-title {
+  margin: 0 0 8px;
+  color: var(--mm-text, #222);
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: .96rem;
+  font-weight: 600;
+  line-height: 1.25;
+}
+
+.mm-filter-tree__options {
+  display: grid;
+  gap: 2px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.mm-filter-tree__nested-list {
+  display: grid;
+  gap: 2px;
+  margin: 4px 0 4px 9px;
+  padding: 0 0 0 9px;
+  border-left: 1px solid var(--mm-border, #e6e3de);
+  list-style: none;
+}
+
+.mm-filter-tree__option {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  min-width: 0;
+  padding: 5px 6px;
+  border-radius: 6px;
+  color: var(--mm-text-muted, #6f6a63);
+  font-family: 'regular', 'Poppins', Arial, sans-serif;
+  font-size: .81rem;
+  font-weight: 400;
+  line-height: 1.35;
+  cursor: pointer;
+  transition: background-color .15s ease, color .15s ease;
+}
+
+.mm-filter-tree__option:hover,
+.mm-filter-tree__color-option:hover {
+  background: var(--mm-surface-muted, #f5f4f1);
+  color: var(--mm-text, #222);
+}
+
+.mm-filter-tree__input {
+  flex: 0 0 15px;
+  width: 15px;
+  height: 15px;
+  margin: 1px 0 0;
+  accent-color: var(--blue, #2a2185);
+  cursor: pointer;
+}
+
+.mm-filter-tree__name {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.mm-filter-tree__count {
+  flex: 0 0 auto;
+  margin-left: auto;
+  padding-left: 4px;
+  color: var(--mm-muted, #6f6a63);
+  font-size: .7rem;
+  line-height: 1.5;
+  font-variant-numeric: tabular-nums;
+}
+
+.mm-filter-tree__color-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.mm-filter-tree__color-option {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 8px;
+  border: 1px solid var(--mm-border, #e6e3de);
+  border-radius: 999px;
+  color: var(--mm-text-muted, #6f6a63);
+  font-size: .78rem;
+  line-height: 1.2;
+  cursor: pointer;
+}
+
+.mm-filter-tree__color-option .mm-filter-tree__input {
+  flex-basis: 13px;
+  width: 13px;
+  height: 13px;
+}
+
+.mm-filter-tree__price-range {
+  display: block;
+  width: 100%;
+  margin: 6px 0 8px;
+  accent-color: var(--blue, #2a2185);
+  cursor: pointer;
+}
+
+.mm-filter-tree__price-value {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  color: var(--mm-text-muted, #6f6a63);
+  font-size: .75rem;
+  font-variant-numeric: tabular-nums;
+}
+
+@media (max-width: 639px) {
+  .mm-filter-sidebar {
+    padding: 14px 16px !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    box-shadow: none;
+    background: #fff !important;
+    overflow: hidden;
+  }
+
+  .mm-mobile-filter-drawer .mm-filter-sidebar__title {
+    display: none;
+  }
+
+  .mm-filter-sidebar__scroll {
+    max-height: none !important;
+    height: 100%;
+    overflow-y: auto !important;
+    padding-right: 3px;
+  }
+
+  .mm-mobile-filter-head {
+    padding: 12px 16px;
+  }
+
+  .mm-mobile-filter-head strong {
+    color: var(--mm-text, #222);
+    font-family: Georgia, "Times New Roman", serif;
+    font-size: 1rem;
+    font-weight: 600;
+    line-height: 1.25;
+  }
+
+  .mm-mobile-filter-head button {
+    display: grid;
+    place-items: center;
+    width: 34px;
+    height: 34px;
+    border: 1px solid var(--mm-border, #e6e3de);
+    border-radius: 999px;
+    background: var(--mm-surface-muted, #f5f4f1);
+    color: var(--mm-text, #222);
+    font-size: 20px;
+  }
+
+  .mm-mobile-filter-actions button {
+    min-height: 40px;
+    border-radius: 999px;
+    font-family: 'regular', 'Poppins', Arial, sans-serif;
+    font-size: .8rem;
+  }
+}
+
 /* Category results grid: explicit responsive columns and consistent spacing. */
 .category-product-grid {
   display: grid;
