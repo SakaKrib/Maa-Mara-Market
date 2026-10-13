@@ -7,10 +7,12 @@ import NavBar from "../../../Portions/NavBar/NavBarSide";
 
 const AdminLayout = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const isNativeApp =
+    typeof window !== "undefined" && window.Capacitor?.isNativePlatform?.() === true;
 
   return (
     <ProtectedRoute requiredRole="admin">
-      <div className="min-h-screen bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-100">
+      <div className={`min-h-screen bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-100 ${isNativeApp ? "mm-native-dashboard-shell" : ""}`}>
         <HeaderTop onMenuToggle={() => setSidebarOpen((open) => !open)} />
         <NavBar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
         <main className="min-h-screen pb-20 pt-[72px] lg:pl-64">

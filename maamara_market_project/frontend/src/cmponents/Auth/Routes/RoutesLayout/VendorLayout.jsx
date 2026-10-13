@@ -9,12 +9,14 @@ import VendorDashboardNav from "../../../VENDORPAGE/Home/VendorDashboardNav";
 
 const VendorLayout = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const isNativeApp =
+    typeof window !== "undefined" && window.Capacitor?.isNativePlatform?.() === true;
   const location = useLocation();
   const isDashboard = location.pathname === "/vendors-dashboard";
 
   return (
     <ProtectedRoute requiredRole="vendor">
-      <div className="maamara-manager">
+      <div className={`maamara-manager ${isNativeApp ? "mm-native-dashboard-shell" : ""}`}>
         <HeaderTop onMenuToggle={() => setSidebarOpen((open) => !open)} />
         <VendorDashboardNav
           open={sidebarOpen}

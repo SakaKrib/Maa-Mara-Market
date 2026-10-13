@@ -340,3 +340,23 @@
 .maamara-sidebar-nav a,.maamara-sidebar-bottom a,.maamara-sidebar-bottom button{font-size:.875rem;font-weight:500;line-height:1.25rem}
 .maamara-sidebar-nav a span,.maamara-sidebar-bottom span{font-size:.875rem}
 .maamara-sidebar-brand strong{font-size:.875rem;font-weight:600;line-height:1.25rem}.maamara-sidebar-brand small{font-size:.75rem;line-height:1rem}
+
+/*
+ * Native admin/vendor dashboard safe areas.
+ * The marker class is only rendered inside Capacitor apps; leave website
+ * dashboard positioning unchanged. Match the customer shell's safe-area
+ * environment variables so fixed chrome avoids phone system bars.
+ */
+.mm-native-dashboard-shell > header {
+  top: env(safe-area-inset-top, 0px) !important;
+}
+
+.mm-native-dashboard-shell > aside {
+  top: env(safe-area-inset-top, 0px) !important;
+  bottom: env(safe-area-inset-bottom, 0px) !important;
+  height: auto !important;
+}
+
+.mm-native-dashboard-shell > footer {
+  padding-bottom: calc(1rem + env(safe-area-inset-bottom, 0px)) !important;
+}
