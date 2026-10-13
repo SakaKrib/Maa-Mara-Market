@@ -1,0 +1,69 @@
+/* CSS-only layout for the vendor item notification detail view. */
+.mm-item-notification-message { padding: 1rem; color: var(--mm-foreground, #222); }
+.mm-item-notification-layout {
+  display: flex;
+  flex-direction: column;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  width: 100%;
+  padding: 0.5rem;
+  max-height: 165vh;
+  overflow-y: hidden;
+}
+.mm-item-notification-main { display: flex; flex-direction: column; gap: 1.5rem; width: 100%; min-width: 0; }
+.mm-item-notification-card { padding: 1rem; border-radius: 0.5rem; }
+.mm-item-notification-details { display: flex; flex-direction: column; align-items: flex-start; gap: 1rem; }
+.mm-item-notification-image { width: 16rem; height: 16rem; max-width: 100%; border-radius: 0.5rem; object-fit: cover; }
+.mm-item-notification-details-copy { display: flex; flex-direction: column; gap: 0.5rem; min-width: 0; }
+.mm-item-notification-title { margin: 0; font-size: 1.25rem; font-weight: 600; }
+.mm-item-notification-description { color: var(--mm-muted, #d1d5db); font-size: 0.875rem; }
+.mm-item-notification-price { color: #4ade80; font-size: 1rem; font-weight: 700; }
+.mm-item-notification-meta { color: var(--mm-muted, #9ca3af); font-size: 0.875rem; }
+.mm-item-notification-action {
+  display: inline-flex;
+  width: fit-content;
+  align-items: center;
+  justify-content: center;
+  margin-top: 0.5rem;
+  border-radius: 9999px;
+  background: var(--mm-primary, #166534);
+  color: #fff;
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  text-decoration: none;
+  transition: filter 150ms ease;
+}
+.mm-item-notification-action:hover { filter: brightness(0.92); }
+.mm-item-notification-chart-title { margin: 0 0 1rem; font-size: 1.125rem; }
+.mm-item-notification-chart { width: 100%; height: 15rem; }
+.mm-item-notification-activity {
+  width: 100%;
+  min-width: 0;
+  max-height: 165vh;
+  overflow-y: auto;
+  padding: 1rem;
+  border-radius: 0.5rem;
+}
+.mm-item-notification-activity-header { display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; margin-bottom: 1rem; padding: 0.5rem; }
+.mm-item-notification-activity-title { margin: 0; font-size: 1.125rem; font-weight: 600; }
+.mm-item-notification-clear { border: 0; border-radius: 0.375rem; background: #dc2626; color: #fff; padding: 0.25rem 0.5rem; font-size: 0.875rem; cursor: pointer; }
+.mm-item-notification-clear:hover { background: #b91c1c; }
+.mm-item-notification-list { display: flex; flex-direction: column; gap: 0.75rem; margin: 0; padding: 0 0.5rem; list-style: none; }
+.mm-item-notification-log { display: flex; align-items: flex-start; justify-content: space-between; gap: 0.75rem; border-bottom: 1px solid var(--mm-border, #4b5563); border-radius: 0.375rem; padding: 0.5rem; transition: background-color 150ms ease; }
+.mm-item-notification-log:hover { background: var(--mm-hover, rgba(0, 0, 0, 0.08)); }
+.mm-item-notification-log-copy { display: flex; flex-direction: column; gap: 0.25rem; min-width: 0; }
+.mm-item-notification-time { color: var(--mm-muted, #9ca3af); font-size: 0.75rem; }
+.mm-item-notification-delete { border: 0; background: transparent; color: #ef4444; font-size: 0.875rem; cursor: pointer; transition: color 150ms ease; }
+.mm-item-notification-delete:hover { color: #f87171; }
+.mm-item-notification-empty { color: var(--mm-muted, #9ca3af); font-size: 0.875rem; }
+@media (min-width: 640px) { .mm-item-notification-details { flex-direction: row; } }
+@media (min-width: 768px) {
+  .mm-item-notification-main { width: 50%; }
+  .mm-item-notification-activity { width: 50%; }
+}
+@media (min-width: 1024px) {
+  .mm-item-notification-layout { flex-direction: row; }
+  .mm-item-notification-main { width: 49%; }
+  .mm-item-notification-activity { width: 50%; }
+}
