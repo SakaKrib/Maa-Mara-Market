@@ -128,7 +128,7 @@ const NativeAwareSelect = forwardRef(function NativeAwareSelect({
     <div ref={wrapperRef} className="native-aware-select" style={className.split(/\\s+/).includes("w-full") ? { width: "100%" } : undefined}>
       <select
         {...selectProps}
-        id={id}
+        id={id ? `${id}-source` : undefined}
         name={name}
         ref={setSourceRef}
         value={value ?? ""}
@@ -146,7 +146,8 @@ const NativeAwareSelect = forwardRef(function NativeAwareSelect({
       </select>
       <button
         ref={setTriggerRef}
-        id={id ? `${id}-trigger` : undefined}
+        id={id}
+        name={name}
         type="button"
         className={`native-aware-select__trigger ${className}`}
         aria-label={ariaLabel || placeholder}
@@ -155,6 +156,8 @@ const NativeAwareSelect = forwardRef(function NativeAwareSelect({
         aria-required={required || undefined}
         disabled={disabled}
         onClick={openMenu}
+        onBlur={onBlur}
+        onFocus={onFocus}
       >
         <span className="native-aware-select__value">{selectedLabel}</span>
         <ChevronDown aria-hidden="true" className={`native-aware-select__chevron ${open ? "is-open" : ""}`} size={16} />
