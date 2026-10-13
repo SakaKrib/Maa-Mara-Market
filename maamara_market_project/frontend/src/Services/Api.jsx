@@ -1,9 +1,9 @@
 import axios from "axios";
 import { Capacitor } from "@capacitor/core";
 
-// A native build must use the public HTTPS API origin rather than the
-// WebView's local origin (for example, capacitor://localhost). Keep this
-// configurable so development and production can use different API hosts.
+// Keep the API host configurable. This branch is used for development testing,
+ // so native builds without VITE_API_URL fall back to the Tailscale backend.
+ // Production/release builds should explicitly set VITE_API_URL=https://maamaramarket.com.
 const configuredApiOrigin = (import.meta.env.VITE_API_URL || "").trim();
 
 const normalizeOrigin = (value) => value.replace(/\/+$/, "");
@@ -17,11 +17,11 @@ const resolveApiOrigin = () => {
     return "";
   }
 
-  // Capacitor serves bundled files from https://localhost. That is not the
-  // Django API host, so native builds without an injected VITE_API_URL must
-  // use the public Maa Mara API origin instead of calling the WebView itself.
+  // A bundled Capacitor app cannot use its WebView origin as the API host.
+  // Keep the development APK connected to the backend exposed over Tailscale.
+  // Production builds override this with VITE_API_URL=https://maamaramarket.com.
   if (Capacitor.isNativePlatform()) {
-    return "https://maamaramarket.com";
+    return "http://100.109.224.0:8000";
   }
 
   // Preserve same-origin website behavior. Vite proxies /api, /media and /ws
