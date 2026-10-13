@@ -6743,8 +6743,76 @@ h1,h2,h3,h4{font-family:'regular','Poppins',Arial,sans-serif}
   }
 }
 
-/* Match skeleton text-slot sizes to the fixed product-card rows on phones. */
+/* Product cards follow their own content height; keep shared grid columns unchanged. */
+.mm-product-card {
+  align-self: start !important;
+  height: fit-content !important;
+  min-height: 0 !important;
+}
+
+.mm-product-card .mm-product-content {
+  flex: 0 0 auto !important;
+}
+
+.mm-product-card .mm-product-content h3 {
+  min-height: 0 !important;
+  max-height: none !important;
+}
+
+.mm-product-card .mm-product-rating {
+  min-height: 0 !important;
+}
+
+.mm-product-card .mm-product-price-row {
+  flex: 0 1 auto !important;
+  min-height: 0 !important;
+  max-height: none !important;
+  overflow: visible !important;
+}
+
+.mm-product-card .mm-product-promotion {
+  flex: 0 1 auto !important;
+  min-height: 0 !important;
+  max-height: none !important;
+  overflow: visible !important;
+}
+
+.product-card-grid,
+.category-product-grid,
+.category-product-skeleton {
+  align-items: start !important;
+}
+
+.product-card-grid > .mm-product-card,
+.category-product-grid > .mm-product-card {
+  align-self: start !important;
+  height: fit-content !important;
+  min-height: 0 !important;
+}
+
 @media (max-width: 639px) {
+  .mm-product-card .mm-product-content h3 {
+    min-height: 0 !important;
+    max-height: none !important;
+  }
+
+  .product-card-grid > .mm-product-card,
+  .category-product-grid > .mm-product-card {
+    align-self: start !important;
+    height: fit-content !important;
+  }
+
+  .mm-mobile-product-rail-item {
+    align-items: flex-start !important;
+  }
+
+  .mm-mobile-product-rail-item > .mm-product-card,
+  .mm-mobile-discovery-rail > .mm-product-card,
+  .mm-mobile-discovery-rail > article {
+    align-self: flex-start !important;
+    height: fit-content !important;
+  }
+
   .mm-product-skeleton-card .mm-product-content > div:first-child {
     height: 1.15rem;
     min-height: 1.15rem;
@@ -6754,4 +6822,3 @@ h1,h2,h3,h4{font-family:'regular','Poppins',Arial,sans-serif}
     min-height: 16px;
   }
 }
-
