@@ -29,6 +29,10 @@ const navigation = [
     items: [
       { label: "Dashboard", to: "/admin-dashboard", icon: homeOutline },
       { label: "Analytics", to: "/admin-dashboard/sales-Analytics", icon: statsChartOutline },
+      { label: "Revenue growth", to: "/admin-dashboard/sales-Analytics/transaction-growth-track", icon: statsChartOutline },
+      { label: "Sales chart", to: "/admin-dashboard/bar-chart", icon: statsChartOutline },
+      { label: "Revenue trend", to: "/admin-dashboard/line-chart", icon: statsChartOutline },
+      { label: "Category distribution", to: "/admin-dashboard/pie-chart", icon: statsChartOutline },
     ],
   },
   {
