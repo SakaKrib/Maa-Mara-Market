@@ -9,8 +9,9 @@ const config: CapacitorConfig = {
   webDir: "dist",
   plugins: {
     StatusBar: {
-      // Keep Android system icons visible over a light status-bar background.
-      overlaysWebView: true,
+      // Let Android reserve the system status-bar area above the WebView.
+      // This keeps time, network, battery, and notification icons visible.
+      overlaysWebView: false,
       style: "DARK",
       backgroundColor: "#FFFFFFFF",
     },
