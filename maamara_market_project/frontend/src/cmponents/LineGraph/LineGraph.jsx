@@ -97,7 +97,7 @@ const CustomAreaChart = ({ showSummary = true, data: suppliedData = [] }) => {
           <p className="mm-admin-chart-summary-label">Months: {data.length}</p>
           <p className="mm-admin-chart-summary-label mm-admin-chart-summary-spaced">Total Revenue</p>
           <p className="mm-admin-chart-summary-value-primary">KES {totalRevenue.toLocaleString()}</p>
-          <p className="mt-2 text-sm text-muted-foreground">Total Orders</p>
+          <p className="mm-admin-chart-summary-label mm-admin-chart-summary-spaced">Total Orders</p>
           <p className="mm-admin-chart-summary-value">{totalOrders.toLocaleString()}</p>
           <button type="button" onClick={() => setSummaryOpen(false)} className="mm-admin-chart-summary-close">
             Close
