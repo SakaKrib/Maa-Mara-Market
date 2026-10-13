@@ -175,8 +175,19 @@ def filters_view(request):
 
     sections_data = SectionSerializer(sections, many=True, context={"request": request}).data
 
-    # ✅ Attributes
-    attributes = [attr for attr, _ in Item._meta.get_field("item_attribute").choices]
+    # Attributes are currently free-text on Item. Read field choices when
+    # configured; otherwise expose the distinct non-empty values already in use.
+    attribute_field = Item._meta.get_field("item_attribute")
+    if attribute_field.choices:
+        attributes = [value for value, _label in attribute_field.choices if value]
+    else:
+        attributes = list(
+            Item.objects.exclude(item_attribute__isnull=True)
+            .exclude(item_attribute__exact="")
+            .values_list("item_attribute", flat=True)
+            .distinct()
+            .order_by("item_attribute")
+        )
 
     # ✅ Genders (excluding "none")
     genders = (
