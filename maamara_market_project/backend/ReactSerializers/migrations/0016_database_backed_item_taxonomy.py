@@ -70,6 +70,76 @@ def normalize_taxonomy_sections(apps, schema_editor):
     ).delete()
 
 
+def repair_item_category_links(apps, schema_editor):
+    """Repair historical items whose category/subcategory parents disagree."""
+    db_alias = schema_editor.connection.alias
+    Department = apps.get_model("ReactSerializers", "Department")
+    Category = apps.get_model("ReactSerializers", "Category")
+    SubCategory = apps.get_model("ReactSerializers", "SubCategory")
+    Item = apps.get_model("ReactSerializers", "Item")
+
+    for item in Item.objects.using(db_alias).select_related(
+        "department", "category", "subcategory"
+    ).iterator():
+        department_id = item.department_id
+        category = item.category
+        subcategory = item.subcategory
+        updates = {}
+
+        # Legacy data can contain a subcategory while category is blank.
+        if category is None and subcategory is not None:
+            category = subcategory.category
+            updates["category_id"] = category.pk
+
+        # If the item has a category but no department, infer the department
+        # from the actual category relationship rather than leaving a broken tree.
+        if category is not None and department_id is None:
+            department_id = category.department_id
+            updates["department_id"] = department_id
+
+        # Vendor approval previously looked up categories by name only. If an
+        # item's selected department disagrees with the stored category parent,
+        # preserve the category label by creating/reusing it under the selected
+        # department before adding the scoped uniqueness constraint.
+        if (
+            category is not None
+            and department_id is not None
+            and category.department_id != department_id
+        ):
+            corrected_category = Category.objects.using(db_alias).filter(
+                name__iexact=category.name,
+                department_id=department_id,
+            ).first()
+            if corrected_category is None:
+                corrected_category = Category.objects.using(db_alias).create(
+                    name=category.name,
+                    department_id=department_id,
+                )
+            category = corrected_category
+            updates["category_id"] = category.pk
+
+        # Keep the item's subcategory label but place it under the resolved
+        # category if its historical parent relationship was incorrect.
+        if (
+            subcategory is not None
+            and category is not None
+            and subcategory.category_id != category.pk
+        ):
+            corrected_subcategory = SubCategory.objects.using(db_alias).filter(
+                name__iexact=subcategory.name,
+                category_id=category.pk,
+            ).first()
+            if corrected_subcategory is None:
+                corrected_subcategory = SubCategory.objects.using(db_alias).create(
+                    name=subcategory.name,
+                    category_id=category.pk,
+                )
+            updates["subcategory_id"] = corrected_subcategory.pk
+
+        if updates:
+            Item.objects.using(db_alias).filter(pk=item.pk).update(**updates)
+
+
 class Migration(migrations.Migration):
 
     dependencies = [
@@ -94,6 +164,10 @@ class Migration(migrations.Migration):
             model_name="category",
             name="name",
             field=models.CharField(max_length=50),
+        ),
+        migrations.RunPython(
+            repair_item_category_links,
+            migrations.RunPython.noop,
         ),
         migrations.AddConstraint(
             model_name="category",
