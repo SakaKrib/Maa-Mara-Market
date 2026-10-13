@@ -4,6 +4,7 @@ import { helpCircleOutline, sendOutline, checkmarkCircleOutline } from "ionicons
 import { Link } from "react-router-dom";
 import api from "../../../../../Services/Api";
 import { useAuth } from "../../../../../cmponents/Auth/AuthContext/Context";
+import NativeAwareSelect from "../../../../../components/NativeAwareSelect";
 
 const SUPPORT_ISSUES = [
   ["accounts", "Accounts"],
@@ -209,11 +210,14 @@ const Support = () => {
 
             <div>
               <label htmlFor="support-category" className="text-sm font-semibold text-card-foreground">What is this about?</label>
-              <select id="support-category" value={form.category} onChange={update("category")}
-                className="mt-2 min-h-11 w-full min-w-0 rounded-xl border border-border bg-card px-4 text-sm text-card-foreground outline-none focus:ring-2 focus:ring-primary/20">
-                <option value="">Choose a related issue</option>
-                {SUPPORT_ISSUES.map(([value, label]) => <option key={value} value={value}>{label}</option>)}
-              </select>
+              <NativeAwareSelect
+                id="support-category"
+                aria-label="What is this about?"
+                value={form.category}
+                onChange={update("category")}
+                className="mt-2 min-h-11 w-full min-w-0 rounded-xl border border-border bg-card px-4 text-sm text-card-foreground outline-none focus:ring-2 focus:ring-primary/20"
+                options={[{ value: "", label: "Choose a related issue" }, ...SUPPORT_ISSUES.map(([value, label]) => ({ value, label }))]}
+              />
             </div>
 
             {form.category === "other" && (
