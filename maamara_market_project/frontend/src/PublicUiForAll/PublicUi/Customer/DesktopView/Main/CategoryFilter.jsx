@@ -5,6 +5,7 @@ import useCategoryFilters from "./CategoryFilter/useCategoryFilters";
 import NativeAwareSelect from "../../../../../components/NativeAwareSelect";
 import CategoryFilterSidebar from "./CategoryFilter/CategoryFilterSidebar";
 import CategoryProductCard from "./CategoryFilter/CategoryProductCard";
+import ProductSkeleton from "./Trending/ProductSkelwton";
 import "../../../maamara.css";
 
 const SingleCategory = () => {
@@ -124,18 +125,8 @@ const SingleCategory = () => {
                   aria-label="Loading products"
                   aria-busy="true"
                 >
-                  {Array.from({ length: 6 }).map((_, i) => (
-                    <div
-                      key={i}
-                      className="mm-card overflow-hidden rounded-lg border border-gray-200 bg-white animate-pulse"
-                    >
-                      <div className="aspect-square w-full bg-gray-200" />
-                      <div className="space-y-3 p-3 sm:p-4">
-                        <div className="h-3 w-3/4 rounded bg-gray-200" />
-                        <div className="h-3 w-1/2 rounded bg-gray-200" />
-                        <div className="h-5 w-1/3 rounded bg-gray-300" />
-                      </div>
-                    </div>
+                  {Array.from({ length: 6 }, (_, index) => (
+                    <ProductSkeleton key={index} />
                   ))}
                   <span className="sr-only">Loading products, please wait.</span>
                 </div>
