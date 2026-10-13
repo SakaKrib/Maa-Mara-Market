@@ -100,5 +100,108 @@ const organicDepartmentMap = {
   },
 };
 
-export const useDepartments = () => ({ departmentMap, organicDepartmentMap });
+// The lists above are a first-render fallback only. After the API responds,
+// the database taxonomy becomes authoritative, including vendor-created
+// categories and subcategories that are not present in these defaults.
+import { useEffect, useRef, useState } from "react";
+import api from "../../../../Services/Api";
+
+const cloneDepartmentMap = (source) =>
+  Object.fromEntries(
+    Object.entries(source).map(([name, data]) => [
+      name,
+      {
+        categories: [...(data.categories || [])],
+        subcategories: Object.fromEntries(
+          Object.entries(data.subcategories || {}).map(([category, values]) => [
+            category,
+            [...(values || [])],
+          ])
+        ),
+      },
+    ])
+  );
+
+const normalizeSectionName = (name) => {
+  const normalized = String(name || "").trim().toLowerCase();
+  if (normalized === "organic") return "organic";
+  if (normalized === "inorganic" || normalized === "general" || normalized === "departmental") {
+    return "inorganic";
+  }
+  return "";
+};
+
+const replaceObjectContents = (target, source) => {
+  Object.keys(target).forEach((key) => delete target[key]);
+  Object.assign(target, source);
+};
+
+export const useDepartments = () => {
+  const [, setRevision] = useState(0);
+  const mapsRef = useRef(null);
+
+  if (!mapsRef.current) {
+    mapsRef.current = {
+      departmentMap: cloneDepartmentMap(departmentMap),
+      organicDepartmentMap: cloneDepartmentMap(organicDepartmentMap),
+    };
+  }
+
+  useEffect(() => {
+    const controller = new AbortController();
+
+    api.get("/filters/", { signal: controller.signal })
+      .then((response) => {
+        const sections = response.data?.sections;
+        if (!Array.isArray(sections) || sections.length === 0) return;
+
+        const liveInorganic = {};
+        const liveOrganic = {};
+
+        sections.forEach((section) => {
+          const sectionName = normalizeSectionName(section.name);
+          if (!sectionName) return;
+
+          const target = sectionName === "organic" ? liveOrganic : liveInorganic;
+          (section.departments || []).forEach((department) => {
+            if (!department?.name) return;
+            const categories = Array.isArray(department.categories)
+              ? department.categories
+              : [];
+
+            target[department.name] = {
+              categories: categories.map((category) => category.name).filter(Boolean),
+              subcategories: Object.fromEntries(
+                categories.map((category) => [
+                  category.name,
+                  (category.subcategories || [])
+                    .map((subcategory) => subcategory.name)
+                    .filter(Boolean),
+                ])
+              ),
+            };
+          });
+        });
+
+        // Keep map object identities stable: AddingNewItem stores one of these
+        // objects as activeData, and mutating its contents avoids resetting a
+        // partially completed form when the live taxonomy finishes loading.
+        if (Object.keys(liveInorganic).length || Object.keys(liveOrganic).length) {
+          replaceObjectContents(mapsRef.current.departmentMap, liveInorganic);
+          replaceObjectContents(mapsRef.current.organicDepartmentMap, liveOrganic);
+          setRevision((value) => value + 1);
+        }
+      })
+      .catch((error) => {
+        if (error?.code !== "ERR_CANCELED") {
+          // Keep the defaults as a temporary fallback if taxonomy cannot load.
+        }
+      });
+
+    return () => controller.abort();
+  }, []);
+
+  return mapsRef.current;
+};
+
 export { departmentMap, organicDepartmentMap };
