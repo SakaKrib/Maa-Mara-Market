@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
+import NativeAwareSelect from "../../../../components/NativeAwareSelect";
 import { useNavigate } from "react-router-dom";
 import { Store, ArrowLeft, CheckCircle2 } from "lucide-react";
 import { Button } from "../../../../components/ui/button";
@@ -128,20 +129,21 @@ export default function AdminCreateNewVendorItemPage() {
             Loading vendors…
           </div>
         ) : (
-          <select
+          <NativeAwareSelect
             id="admin-vendor-select"
+            name="vendor"
             value={selectedVendorId}
             onChange={(event) => setSelectedVendorId(event.target.value)}
+            options={[
+              { value: "", label: "Select a vendor…" },
+              ...vendors.map((vendor) => ({
+                value: String(vendor.id),
+                label: `${getVendorName(vendor)}${vendor.company_name ? ` — ${vendor.company_name}` : ""}`,
+              })),
+            ]}
+            placeholder="Select a vendor…"
             className="w-full rounded-xl border border-border bg-card px-3 py-3 text-sm text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
-          >
-            <option value="">Select a vendor…</option>
-            {vendors.map((vendor) => (
-              <option key={vendor.id} value={vendor.id}>
-                {getVendorName(vendor)}
-                {vendor.company_name ? ` — ${vendor.company_name}` : ""}
-              </option>
-            ))}
-          </select>
+          />
         )}
 
         {error && (
