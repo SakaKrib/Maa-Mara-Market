@@ -67,15 +67,14 @@ class SectionSerializer(serializers.ModelSerializer):
         fields = ["id", "name", "count", "departments"]
 
     def get_count(self, obj):
-        if obj.name.lower() == "general":
-            # Count all items in the DB
-            return Item.objects.count()
         return Item.objects.filter(section=obj).count()
-    
+
     def get_items(self, obj):
-        if obj.name.lower() == "general":
-            return ItemSerializer(Item.objects.all(), many=True, context=self.context).data
-        return ItemSerializer(Item.objects.filter(section=obj), many=True, context=self.context).data
+        return ItemSerializer(
+            Item.objects.filter(section=obj),
+            many=True,
+            context=self.context,
+        ).data
 
 
 
