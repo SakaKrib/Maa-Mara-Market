@@ -60,13 +60,16 @@ const useCategoryFilters = () => {
       .catch((requestError) => {
         if (requestError?.code !== "ERR_CANCELED") {
           const requestUrl = api.getUri({ url: endpoint("/filters/") });
-          console.error("[CategoryFilters] Failed to load filter options", {
+          const diagnostic = {
             url: requestUrl,
             status: requestError?.response?.status ?? null,
             response: requestError?.response?.data ?? null,
             code: requestError?.code ?? null,
             message: requestError?.message ?? "Unknown request error",
-          });
+          };
+          console.error(
+            `[CategoryFilters] Failed to load filter options: ${JSON.stringify(diagnostic)}`
+          );
 
           setFilters({});
           setError(
@@ -95,13 +98,16 @@ const useCategoryFilters = () => {
       setPrevUrl(data.previous || null);
     } catch (requestError) {
       if (requestError?.code === "ERR_CANCELED") return;
-      console.error("[CategoryFilters] Failed to load filtered products", {
+      const diagnostic = {
         url: typeof url === "string" ? url : api.getUri({ url }),
         status: requestError?.response?.status ?? null,
         response: requestError?.response?.data ?? null,
         code: requestError?.code ?? null,
         message: requestError?.message ?? "Unknown request error",
-      });
+      };
+      console.error(
+        `[CategoryFilters] Failed to load filtered products: ${JSON.stringify(diagnostic)}`
+      );
       setProducts([]);
       setNextUrl(null);
       setPrevUrl(null);
