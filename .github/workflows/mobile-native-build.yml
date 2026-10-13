@@ -13,7 +13,7 @@ on:
         description: "Public HTTPS origin serving the Django API (verify before release)"
         required: true
         type: string
-        default: "https://maamaramarket.com"
+        default: "http://100.109.224.0:8000"
 
 permissions:
   contents: read
@@ -24,7 +24,7 @@ concurrency:
 
 env:
   FRONTEND_DIR: maamara_market_project/frontend
-  MOBILE_API_URL: ${{ github.event.inputs.api_url || 'https://maamaramarket.com' }}
+  MOBILE_API_URL: ${{ github.event.inputs.api_url || 'http://100.109.224.0:8000' }}
 
 jobs:
   android:
@@ -71,6 +71,44 @@ jobs:
           npx cap add android
           npx cap sync android
 
+      # The Tailscale API endpoint currently uses HTTP inside the encrypted tailnet.
+      # Allow cleartext only for this generated app when its configured API URL is HTTP.
+      - name: Allow HTTP API access for Tailscale builds
+        working-directory: ${{ env.FRONTEND_DIR }}
+        env:
+          MOBILE_API_URL: ${{ env.MOBILE_API_URL }}
+        run: |
+          python3 - <<'PY'
+          import os
+          import re
+          from pathlib import Path
+
+          if not os.environ["MOBILE_API_URL"].lower().startswith("http://"):
+              print("HTTPS API configured; no cleartext manifest change needed.")
+              raise SystemExit(0)
+
+          manifest = Path("android/app/src/main/AndroidManifest.xml")
+          text = manifest.read_text()
+          if re.search(r"android:usesCleartextTraffic\\s*=", text):
+              text = re.sub(
+                  r'android:usesCleartextTraffic\\s*=\\s*"[^"]*"',
+                  'android:usesCleartextTraffic="true"',
+                  text,
+                  count=1,
+              )
+          else:
+              text, count = re.subn(
+                  r"<application\\b",
+                  '<application android:usesCleartextTraffic="true"',
+                  text,
+                  count=1,
+              )
+              if count != 1:
+                  raise SystemExit("Could not locate the application tag in AndroidManifest.xml")
+          manifest.write_text(text)
+          print("Enabled HTTP requests for the configured Tailscale API origin.")
+          PY
+
       # Capacitor creates the native project on every run, so enforce the
       # edge-to-edge system-bar behavior in the generated activity before compiling.
       - name: Keep Android system bars visible with full-screen content
@@ -81,6 +119,7 @@ jobs:
 
           import android.graphics.Color;
           import android.net.Uri;
+          import android.os.Build;
           import android.os.Bundle;
           import android.os.SystemClock;
           import android.view.View;
