@@ -21,12 +21,12 @@ const BarChart = ({ data = [] }) => {
         legends={[]}
         theme={{
           axis: {
-            domain: { line: { stroke: "hsl(var(--border))" } },
-            ticks: { text: { fill: "hsl(var(--muted-foreground))", fontSize: 10 } },
-            legend: { text: { fill: "hsl(var(--muted-foreground))", fontSize: 10 } },
+            domain: { line: { stroke: "var(--mm-border, #e5e7eb)" } },
+            ticks: { text: { fill: "var(--mm-muted, #6b7280)", fontSize: 10 } },
+            legend: { text: { fill: "var(--mm-muted, #6b7280)", fontSize: 10 } },
           },
-          grid: { line: { stroke: "hsl(var(--border))", strokeWidth: 1 } },
-          labels: { text: { fill: "hsl(var(--foreground))" } },
+          grid: { line: { stroke: "var(--mm-border, #e5e7eb)", strokeWidth: 1 } },
+          labels: { text: { fill: "var(--mm-foreground, #1f2937)" } },
         }}
         colors={{ scheme: "paired" }}
         role="img"
