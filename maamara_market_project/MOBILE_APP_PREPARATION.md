@@ -28,8 +28,10 @@ using relative asset paths.
 
 ## Work still required before a store build
 
-1. Add and lock Capacitor packages through npm so `package.json` and
-   `package-lock.json` remain consistent.
+1. Keep the runtime Capacitor core, Share, and Filesystem plugins pinned in
+   `package.json` and `package-lock.json`. The native-build workflow temporarily
+   installs the CLI/platform generators and Status Bar plugin, then generates
+   the Android/iOS projects for each CI run.
 2. Generate Android and iOS platform projects from the Capacitor configuration.
 3. Validate cookies, refresh-token behavior, Google OAuth return handling,
    WebSockets, media uploads, checkout and payment-provider redirects on devices.
@@ -42,7 +44,10 @@ using relative asset paths.
 
 ## Current status
 
-The shared frontend now supports an explicit API origin and mobile-specific
-relative asset paths. The Capacitor CLI/platform dependencies and native platform
-projects have not yet been installed/generated. This document is a preparation
-record, not a claim that store-ready builds have been produced or tested.
+The shared frontend supports an explicit API origin and mobile-specific relative
+asset paths. Runtime image sharing uses Capacitor Share plus a temporary image file
+in the app cache, deleted after the share flow returns. The native-build workflow
+generates the Android/iOS projects on each run; it does not commit those generated
+platform directories. Store readiness still requires checking the production API
+and storefront domains and validating authentication, checkout, and share targets
+on real devices.

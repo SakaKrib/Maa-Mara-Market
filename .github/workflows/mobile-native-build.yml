@@ -27,6 +27,42 @@ env:
   MOBILE_API_URL: ${{ github.event.inputs.api_url || 'https://opondo-thinkpad-t14-gen-1.tail34bca9.ts.net' }}
 
 jobs:
+
+  frontend-checks:
+    name: Website/mobile frontend build and sharing lint
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: maamara_market_project/frontend/package-lock.json
+
+      - name: Install web dependencies
+        working-directory: ${{ env.FRONTEND_DIR }}
+        run: npm ci
+
+      - name: Build website bundle
+        working-directory: ${{ env.FRONTEND_DIR }}
+        run: npm run build
+
+      - name: Build mobile web bundle
+        working-directory: ${{ env.FRONTEND_DIR }}
+        env:
+          VITE_BUILD_TARGET: mobile
+          VITE_API_URL: ${{ env.MOBILE_API_URL }}
+          VITE_PUBLIC_SITE_URL: https://maamaramarket.com
+        run: npm run build:mobile
+
+      - name: Lint product sharing module
+        working-directory: ${{ env.FRONTEND_DIR }}
+        run: npx eslint src/Services/ProductSharing.js
+
   android:
     name: Generate and build Android debug APK
     runs-on: ubuntu-latest
@@ -54,9 +90,9 @@ jobs:
 
       - name: Install temporary Capacitor build tools
         working-directory: ${{ env.FRONTEND_DIR }}
-        # Keep package-lock.json as the resolution baseline for existing app
-        # dependencies; only add the native build tools without saving changes.
-        run: npm install --no-save @capacitor/core@7 @capacitor/cli@7 @capacitor/android@7 @capacitor/ios@7 @capacitor/status-bar@7 typescript@5.8.3
+        # Runtime core/share/filesystem plugins are pinned in package.json and the lockfile.
+        # Install only project generators/platform wrappers and Status Bar temporarily.
+        run: npm install --no-save @capacitor/cli@7 @capacitor/android@7 @capacitor/ios@7 @capacitor/status-bar@7 typescript@5.8.3
 
       - name: Build mobile web bundle
         working-directory: ${{ env.FRONTEND_DIR }}
@@ -256,7 +292,7 @@ jobs:
           retention-days: 14
 
   ios-project:
-    name: Generate iOS project bundle
+    name: Generate and compile iOS project
     runs-on: macos-latest
     timeout-minutes: 45
     steps:
@@ -276,9 +312,9 @@ jobs:
 
       - name: Install temporary Capacitor build tools
         working-directory: ${{ env.FRONTEND_DIR }}
-        # Keep package-lock.json as the resolution baseline for existing app
-        # dependencies; only add the native build tools without saving changes.
-        run: npm install --no-save @capacitor/core@7 @capacitor/cli@7 @capacitor/android@7 @capacitor/ios@7 @capacitor/status-bar@7 typescript@5.8.3
+        # Runtime core/share/filesystem plugins are pinned in package.json and the lockfile.
+        # Install only project generators/platform wrappers and Status Bar temporarily.
+        run: npm install --no-save @capacitor/cli@7 @capacitor/android@7 @capacitor/ios@7 @capacitor/status-bar@7 typescript@5.8.3
 
       - name: Build mobile web bundle
         working-directory: ${{ env.FRONTEND_DIR }}
@@ -292,6 +328,11 @@ jobs:
         run: |
           npx cap add ios
           npx cap sync ios
+
+
+      - name: Build iOS simulator app
+        working-directory: ${{ env.FRONTEND_DIR }}/ios
+        run: xcodebuild -workspace App/App.xcworkspace -scheme App -configuration Debug -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' CODE_SIGNING_ALLOWED=NO build
 
       - name: Package generated iOS project
         working-directory: ${{ env.FRONTEND_DIR }}
