@@ -1,12 +1,13 @@
 import { ResponsiveBar } from "@nivo/bar";
+import "../admin-charts.css";
 
 const BarChart = ({ data = [] }) => {
   if (!Array.isArray(data) || data.length === 0) {
-    return <div className="flex h-full items-center justify-center text-sm text-muted-foreground">No sales data available yet.</div>;
+    return <div className="mm-admin-chart-empty">No sales data available yet.</div>;
   }
 
   return (
-    <div className="h-full min-h-0 w-full">
+    <div className="mm-admin-chart-fill">
       <ResponsiveBar
         data={data}
         keys={["sales"]}
@@ -31,9 +32,9 @@ const BarChart = ({ data = [] }) => {
         role="img"
         ariaLabel="Admin sales activity bar chart"
         tooltip={({ indexValue, value, data: point }) => (
-          <div className="rounded-lg border border-border bg-card px-3 py-2 text-xs shadow-md">
-            <div className="font-semibold">{indexValue}</div>
-            <div className="text-muted-foreground">KES {Number(value || 0).toLocaleString()}</div>
+          <div className="mm-admin-chart-tooltip">
+            <div className="mm-admin-chart-tooltip-title">{indexValue}</div>
+            <div className="mm-admin-chart-tooltip-muted">KES {Number(value || 0).toLocaleString()}</div>
             <div className="text-muted-foreground">{Number(point?.orders || 0).toLocaleString()} orders</div>
           </div>
         )}
