@@ -15,6 +15,7 @@ const useCategoryFilters = () => {
     categories: initialCategories,
     subcategories: [],
     brands: [],
+    attribute: "",
     color: "",
     priceRange: [0, 150000],
     sortBy: "Default",
@@ -104,6 +105,7 @@ const useCategoryFilters = () => {
     addList("subcategories", selectedFilters.subcategories);
     addList("brands", selectedFilters.brands);
 
+    if (selectedFilters.attribute) params.set("attribute", selectedFilters.attribute);
     if (selectedFilters.color) params.set("color", selectedFilters.color);
     if (selectedFilters.priceRange?.[0] != null) params.set("min_price", selectedFilters.priceRange[0]);
     if (selectedFilters.priceRange?.[1] != null) params.set("max_price", selectedFilters.priceRange[1]);
@@ -116,7 +118,7 @@ const useCategoryFilters = () => {
 
   const toggleFilter = useCallback((group, value) => {
     setSelectedFilters((prev) => {
-      if (group === "color" || group === "priceRange") {
+      if (group === "color" || group === "attribute" || group === "priceRange") {
         return { ...prev, [group]: value };
       }
 
@@ -139,6 +141,7 @@ const useCategoryFilters = () => {
       categories: [],
       subcategories: [],
       brands: [],
+      attribute: "",
       color: "",
       priceRange: [min, max],
       sortBy: "Default",
