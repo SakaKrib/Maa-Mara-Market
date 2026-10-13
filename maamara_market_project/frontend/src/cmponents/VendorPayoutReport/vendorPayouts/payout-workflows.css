@@ -1,0 +1,41 @@
+/* Production CSS for vendor payout workflows; no Tailwind utilities. */
+.mm-payout-notice {
+  position: fixed;
+  z-index: 1400;
+  top: 5rem;
+  right: 1rem;
+  max-width: 24rem;
+  border: 1px solid var(--mm-border, #d1d5db);
+  border-radius: 20px;
+  background: var(--mm-surface, #fff);
+  color: var(--mm-foreground, #222);
+  padding: 0.75rem 1rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+}
+.mm-payout-notice-dismiss {
+  margin-left: 0.75rem;
+  border: 0;
+  background: transparent;
+  color: var(--mm-muted, #6b7280);
+  font-size: 0.75rem;
+  cursor: pointer;
+}
+.mm-payout-notice-dismiss:hover { color: var(--mm-foreground, #222); }
+.mm-payout-shadow { box-shadow: 0 4px 14px rgba(0, 0, 0, 0.12); }
+.mm-payout-logo-row {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  justify-content: center;
+}
+.mm-payout-logo-row--large { height: 200px; }
+.mm-payout-logo-row--compact { height: 100px; margin-bottom: 1rem; }
+.mm-payout-logo-image { max-width: 100%; max-height: 100%; }
+.mm-payout-logo-image--contain { object-fit: contain; }
+.mm-payout-logo-image--cover { object-fit: cover; }
+.mm-payout-rounded-control { border-radius: 9999px; box-shadow: 0 0 0 1px currentColor; }
+@media (max-width: 480px) {
+  .mm-payout-notice { right: 0.75rem; left: 0.75rem; max-width: none; }
+}
