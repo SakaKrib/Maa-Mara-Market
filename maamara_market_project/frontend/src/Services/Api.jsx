@@ -2,8 +2,8 @@ import axios from "axios";
 import { Capacitor } from "@capacitor/core";
 
 // Keep the API host configurable. This branch is used for development testing,
- // so native builds without VITE_API_URL fall back to the Tailscale backend.
- // Production/release builds should explicitly set VITE_API_URL=https://maamaramarket.com.
+// so native builds without VITE_API_URL fall back to the Tailscale backend.
+// Production/release builds should explicitly set VITE_API_URL=https://maamaramarket.com.
 const configuredApiOrigin = (import.meta.env.VITE_API_URL || "").trim();
 
 const normalizeOrigin = (value) => value.replace(/\/+$/, "");
