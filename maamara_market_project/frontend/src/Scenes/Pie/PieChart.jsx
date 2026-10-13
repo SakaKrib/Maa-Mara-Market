@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from "react";
 import { Box, CircularProgress, Typography } from "@mui/material";
-import Header from "../../Header/Header";
 import api from "../../Services/Api";
 import PieGraph from "../../cmponents/PieChart/pieChart";
 
@@ -44,7 +43,10 @@ const Pie = () => {
 
   return (
     <Box m="10px">
-      <Header title="Pie Chart" subtitle="Marketplace Category Distribution" />
+      <Box sx={{ mb: 2 }}>
+        <Typography variant="h4" component="h1">Pie Chart</Typography>
+        <Typography variant="body2" color="text.secondary">Marketplace Category Distribution</Typography>
+      </Box>
       <Box sx={{ height: "70vh", minHeight: 320, position: "relative" }}>
         {loading ? (
           <Box sx={{ height: "100%", display: "flex", alignItems: "center", justifyContent: "center" }}>
