@@ -174,17 +174,23 @@ class Command(BaseCommand):
     help = "Import predefined categories and subcategories with departments and sections"
 
     def handle(self, *args, **kwargs):
-        # 1️⃣ General departments (Fashion, Beauty, etc.)
-        general_section, _ = Section.objects.get_or_create(name="general")
+        # Default non-organic departments live under the canonical Inorganic
+        # section. This command seeds predefined taxonomy only; custom
+        # categories and subcategories are created transactionally with items.
+        inorganic_section, _ = Section.objects.get_or_create(name="inorganic")
         for dept_name, data in departmentMap.items():
             dept_obj, _ = Department.objects.get_or_create(
-                name=dept_name, section=general_section
+                name=dept_name,
+                defaults={"section": inorganic_section},
             )
-            self.stdout.write(self.style.SUCCESS(f"[General] Using Department: {dept_name}"))
-
+            # Keep already-created departments aligned with the canonical parent.
+            if dept_obj.section_id != inorganic_section.id:
+                dept_obj.section = inorganic_section
+                dept_obj.save(update_fields=["section"])
+            self.stdout.write(self.style.SUCCESS(f"[Inorganic] Using Department: {dept_name}"))
             self._create_categories_and_subcategories(data, dept_obj)
 
-        # 2️⃣ Organic departments (Organic Foods, Organic Drinks, etc.)
+        # Organic departments use their own canonical section.
         organic_section, _ = Section.objects.get_or_create(name="organic")
         for dept_name, data in organicDepartmentMap.items():
             dept_obj, _ = Department.objects.get_or_create(
@@ -193,11 +199,6 @@ class Command(BaseCommand):
             self.stdout.write(self.style.SUCCESS(f"[Organic] Using Department: {dept_name}"))
 
             self._create_categories_and_subcategories(data, dept_obj)
-
-        # 3️⃣ Inorganic section (catch-all for non-organic items)
-        inorganic_section, created = Section.objects.get_or_create(name="inorganic")
-        if created:
-            self.stdout.write(self.style.SUCCESS("[Inorganic] Section created as catch-all for non-organic items"))
 
     def _create_categories_and_subcategories(self, data, dept_obj):
         """Helper to avoid repetition"""
