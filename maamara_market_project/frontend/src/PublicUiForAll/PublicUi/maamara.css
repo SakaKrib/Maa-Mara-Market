@@ -6013,3 +6013,47 @@ h1,h2,h3,h4{font-family:'regular','Poppins',Arial,sans-serif}
         line-height: 1.25;
     }
 }
+
+ 
+/* Category results grid: explicit responsive columns and consistent spacing. */
+.category-product-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 20px 16px;
+  width: 100%;
+  align-items: stretch;
+}
+
+@media (min-width: 640px) {
+  .category-product-grid {
+    gap: 20px;
+  }
+}
+
+@media (min-width: 1024px) {
+  .category-product-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 22px;
+  }
+}
+
+@media (min-width: 1280px) {
+  .category-product-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 24px;
+  }
+}
+
+@media (max-width: 639px) {
+  .category-product-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    column-gap: 12px;
+    row-gap: 16px;
+  }
+
+  .category-product-grid > article {
+    min-width: 0;
+    height: 100%;
+    margin: 0;
+  }
+}
