@@ -17,7 +17,7 @@ import {
   Snackbar,
   Alert as MuiAlert
 } from '@mui/material';
-import NativeAwareSelect from "../../../../components/NativeAwareSelect";
+import NativeAwareSelect from "../../../components/NativeAwareSelect";
 import api, { resolveApiAssetUrl } from "../../../Services/Api";
 import "./VendorRegistration.css";
 import { getNames, getCodeList } from "country-list";
