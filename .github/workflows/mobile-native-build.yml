@@ -80,10 +80,14 @@ jobs:
           package com.mamaramarket.app;
 
           import android.graphics.Color;
+          import android.net.Uri;
           import android.os.Build;
           import android.os.Bundle;
+          import android.os.SystemClock;
           import android.view.View;
           import android.view.WindowManager;
+          import android.webkit.WebView;
+          import android.widget.Toast;
 
           import androidx.core.graphics.Insets;
           import androidx.core.view.ViewCompat;
@@ -94,12 +98,53 @@ jobs:
           import com.getcapacitor.BridgeActivity;
 
           public class MainActivity extends BridgeActivity {
+              private static final long BACK_EXIT_INTERVAL_MS = 2000L;
+              private long lastHomeBackPressAt = 0L;
+
               @Override
               public void onCreate(Bundle savedInstanceState) {
                   super.onCreate(savedInstanceState);
                   applySystemBarSettings();
                   // Reapply after Capacitor plugins initialize.
                   getWindow().getDecorView().post(this::applySystemBarSettings);
+              }
+
+              @Override
+              @SuppressWarnings("deprecation")
+              public void onBackPressed() {
+                  WebView webView = bridge != null ? bridge.getWebView() : null;
+                  if (webView != null) {
+                      String currentUrl = webView.getUrl();
+                      String currentPath = currentUrl == null ? "/" : Uri.parse(currentUrl).getPath();
+                      boolean isHome = currentPath == null
+                          || currentPath.isEmpty()
+                          || "/".equals(currentPath)
+                          || "/index.html".equals(currentPath);
+
+                      // React Router uses the WebView's browser history. On
+                      // any non-home route, Back should navigate within the app.
+                      if (!isHome) {
+                          lastHomeBackPressAt = 0L;
+                          if (webView.canGoBack()) {
+                              webView.goBack();
+                          } else {
+                              webView.evaluateJavascript(
+                                  "window.history.length > 1 ? window.history.back() : window.location.assign('/')",
+                                  null
+                              );
+                          }
+                          return;
+                      }
+                  }
+
+                  long now = SystemClock.elapsedRealtime();
+                  if (now - lastHomeBackPressAt <= BACK_EXIT_INTERVAL_MS && lastHomeBackPressAt != 0L) {
+                      finish();
+                      return;
+                  }
+
+                  lastHomeBackPressAt = now;
+                  Toast.makeText(this, "Press back again to exit", Toast.LENGTH_SHORT).show();
               }
 
               private void applySystemBarSettings() {
@@ -111,24 +156,31 @@ jobs:
                   WindowInsetsControllerCompat controller =
                       WindowCompat.getInsetsController(getWindow(), getWindow().getDecorView());
                   controller.show(WindowInsetsCompat.Type.statusBars());
+                  controller.show(WindowInsetsCompat.Type.navigationBars());
                   controller.setAppearanceLightStatusBars(true);
+                  controller.setAppearanceLightNavigationBars(true);
                   getWindow().setStatusBarColor(Color.WHITE);
+                  getWindow().setNavigationBarColor(Color.WHITE);
+                  if (Build.VERSION.SDK_INT >= 29) {
+                      getWindow().setNavigationBarContrastEnforced(false);
+                  }
 
-                  // Android 15 enforces edge-to-edge. Add the top system inset
-                  // to the WebView container so page content starts below it.
+                  // Android 15 enforces edge-to-edge. Keep both the status-bar
+                  // and navigation-bar safe areas outside the WebView content.
                   if (edgeToEdgeEnforced) {
                       View content = findViewById(android.R.id.content);
                       if (content != null) {
                           ViewCompat.setOnApplyWindowInsetsListener(content, (view, insets) -> {
-                              Insets safeTop = insets.getInsets(
+                              Insets safeBars = insets.getInsets(
                                   WindowInsetsCompat.Type.statusBars()
+                                      | WindowInsetsCompat.Type.navigationBars()
                                       | WindowInsetsCompat.Type.displayCutout()
                               );
                               view.setPadding(
-                                  safeTop.left,
-                                  safeTop.top,
-                                  safeTop.right,
-                                  view.getPaddingBottom()
+                                  Math.max(view.getPaddingLeft(), safeBars.left),
+                                  Math.max(view.getPaddingTop(), safeBars.top),
+                                  Math.max(view.getPaddingRight(), safeBars.right),
+                                  Math.max(view.getPaddingBottom(), safeBars.bottom)
                               );
                               return insets;
                           });
