@@ -56,7 +56,7 @@ jobs:
         working-directory: ${{ env.FRONTEND_DIR }}
         # Keep package-lock.json as the resolution baseline for existing app
         # dependencies; only add the native build tools without saving changes.
-        run: npm install --no-save @capacitor/core@7 @capacitor/cli@7 @capacitor/android@7 @capacitor/ios@7 typescript@5.8.3
+        run: npm install --no-save @capacitor/core@7 @capacitor/cli@7 @capacitor/android@7 @capacitor/ios@7 @capacitor/status-bar@7 typescript@5.8.3
 
       - name: Build mobile web bundle
         working-directory: ${{ env.FRONTEND_DIR }}
@@ -114,7 +114,7 @@ jobs:
         working-directory: ${{ env.FRONTEND_DIR }}
         # Keep package-lock.json as the resolution baseline for existing app
         # dependencies; only add the native build tools without saving changes.
-        run: npm install --no-save @capacitor/core@7 @capacitor/cli@7 @capacitor/android@7 @capacitor/ios@7 typescript@5.8.3
+        run: npm install --no-save @capacitor/core@7 @capacitor/cli@7 @capacitor/android@7 @capacitor/ios@7 @capacitor/status-bar@7 typescript@5.8.3
 
       - name: Build mobile web bundle
         working-directory: ${{ env.FRONTEND_DIR }}
