@@ -78,7 +78,7 @@ const InboundTraffic = () => {
           aria-label="Reporting period"
           value={days}
           onChange={(event) => setDays(Number(event.target.value))}
-          className="rounded-xl px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/20"
+          className="rounded-xl border border-border bg-card px-3 py-2 text-sm text-foreground outline-none focus:ring-2 focus:ring-primary/20"
           options={[
             { value: 7, label: "Last 7 days" },
             { value: 30, label: "Last 30 days" },
