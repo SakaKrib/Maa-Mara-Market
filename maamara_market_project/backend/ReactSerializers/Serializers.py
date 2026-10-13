@@ -7,6 +7,7 @@ from core.models import Profile
 from .models import Item
 from django.db import transaction
 from .item_deduplication import find_duplicate_item
+from .category_taxonomy import resolve_item_taxonomy
 from rest_framework.authentication import SessionAuthentication, BasicAuthentication
 from .models import *
 from django.contrib.auth import get_user_model
@@ -358,17 +359,17 @@ class ItemSerializers(serializers.ModelSerializer):
         queryset=Brand.objects.all(), required=False, allow_null=True
     )
 
-    section = serializers.SlugRelatedField(
-        slug_field="name", queryset=Section.objects.all()
+    # Names are resolved to canonical taxonomy records inside the atomic
+    # create/update methods. This accepts both predefined and custom values.
+    section = serializers.CharField(required=False, allow_blank=True, allow_null=True)
+    department = serializers.CharField(
+        required=False, allow_blank=True, allow_null=True, max_length=50
     )
-    department = serializers.SlugRelatedField(
-        slug_field="name", queryset=Department.objects.all()
+    category = serializers.CharField(
+        required=False, allow_blank=True, allow_null=True, max_length=50
     )
-    category = serializers.SlugRelatedField(
-        slug_field="name", queryset=Category.objects.all()
-    )
-    subcategory = serializers.SlugRelatedField(
-        slug_field="name", queryset=SubCategory.objects.all()
+    subcategory = serializers.CharField(
+        required=False, allow_blank=True, allow_null=True, max_length=50
     )
 
 
@@ -479,75 +480,34 @@ class ItemSerializers(serializers.ModelSerializer):
             if isinstance(parsed_gallery_ids, list):
                 data["gallery_keep_ids"] = parsed_gallery_ids
 
-        # Decode HTML entities before resolving category relationships.
-        for field_name in ("department", "category", "subcategory", "item_attribute"):
-            if field_name in data and data[field_name]:
+        # Normalize category fields as names only. Database records are
+        # resolved/created transactionally in create() and update(), so an
+        # invalid item submission cannot leave orphan taxonomy rows behind.
+        for field_name in (
+            "section", "department", "category", "subcategory", "item_attribute"
+        ):
+            if field_name in data and data[field_name] is not None:
                 data[field_name] = html.unescape(str(data[field_name])).strip()
-        for field_name in ("department", "category", "subcategory", "item_attribute"):
-            if field_name in data and data[field_name]:
-                data[field_name] = html.unescape(str(data[field_name])).strip()
-
-        # Category and subcategory names are normally selected from the
-        # canonical frontend lists. If a vendor supplies a new value, create
-        # the corresponding relationship record so the Item still uses the
-        # normal ForeignKey structure.
-        department_name = data.get("department")
-        category_name = data.get("category")
-        subcategory_name = data.get("subcategory")
-
-        if department_name and category_name:
-            department = Department.objects.filter(name__iexact=department_name).first()
-            if department:
-                # Resolve categories within the selected department so a
-                # same-named category can never be attached to the wrong
-                # department.
-                category = Category.objects.filter(
-                    name__iexact=category_name,
-                    department=department,
-                ).first()
-                if not category:
-                    # Category names are globally unique in the current schema.
-                    # Do not let a custom value collide with an existing category
-                    # belonging to another department and become a database 500.
-                    existing_category = Category.objects.filter(
-                        name__iexact=category_name
-                    ).first()
-                    if existing_category:
-                        raise serializers.ValidationError({
-                            "category": (
-                                f"Category '{category_name}' already exists under "
-                                f"department '{existing_category.department.name}'. "
-                                "Please choose a different custom category name."
-                            )
-                        })
-                    category = Category.objects.create(
-                        name=category_name[:50],
-                        department=department,
-                    )
-                data["category"] = category.name
-                # SlugRelatedField normally searches globally by name. Restrict
-                # it to the category we just resolved so duplicate names across
-                # departments cannot attach the wrong Category object.
-                self.fields["category"].queryset = Category.objects.filter(pk=category.pk)
-
-                if subcategory_name:
-                    subcategory = SubCategory.objects.filter(
-                        name__iexact=subcategory_name,
-                        category=category,
-                    ).first()
-                    if not subcategory:
-                        subcategory = SubCategory.objects.create(
-                            name=subcategory_name[:50],
-                            category=category,
-                        )
-                    data["subcategory"] = subcategory.name
-                    self.fields["subcategory"].queryset = SubCategory.objects.filter(pk=subcategory.pk)
 
         return super().to_internal_value(data)
     
 
     @transaction.atomic
     def create(self, validated_data):
+        # Create/resolve taxonomy records in the same transaction as the item.
+        # A new category or subcategory is therefore committed with the item,
+        # and rolled back if the item cannot be created.
+        taxonomy = resolve_item_taxonomy(
+            section_value=validated_data.get("section"),
+            department_value=validated_data.get("department"),
+            category_value=validated_data.get("category"),
+            subcategory_value=validated_data.get("subcategory"),
+            default_section=(
+                "organic" if validated_data.get("is_organic", False) else "inorganic"
+            ),
+        )
+        validated_data.update(taxonomy)
+
         # Keep duplicate protection at the serializer boundary as well, so
         # alternate API views that reuse ItemSerializers cannot bypass it.
         request = self.context.get("request")
@@ -589,20 +549,9 @@ class ItemSerializers(serializers.ModelSerializer):
         
         # ✅ Extract brand if passed
 
-        # Preserve the section selected/determined by the form. The organic
-        # flag is independent: an organic-section item may explicitly have
-        # is_organic=False, so section must not be derived from that checkbox.
-        section_obj = validated_data.get("section")
-        if section_obj is None:
-            is_organic = validated_data.get("is_organic", False)
-            section_name = "organic" if is_organic else "inorganic"
-            section_obj, _ = Section.objects.get_or_create(name=section_name)
-
-        validated_data["section"] = section_obj
-
-
-
-        item = Item.objects.create( **validated_data)
+        # Taxonomy foreign keys were resolved above, independently from the
+        # organic/fresh-food flags.
+        item = Item.objects.create(**validated_data)
 
         if occasions_data is not None:
             item.occasions.set(occasions_data)
@@ -692,7 +641,45 @@ class ItemSerializers(serializers.ModelSerializer):
 
         return item
 
+    @transaction.atomic
     def update(self, instance, validated_data):
+        taxonomy_fields = {"section", "department", "category", "subcategory"}
+        if taxonomy_fields.intersection(validated_data):
+            requested_category = validated_data.get(
+                "category",
+                instance.category.name if instance.category_id else "",
+            )
+            category_was_changed = (
+                "category" in validated_data
+                and str(requested_category or "").strip().casefold()
+                != str(instance.category.name if instance.category_id else "").strip().casefold()
+            )
+            if category_was_changed and "subcategory" not in validated_data:
+                # A previous subcategory must not be carried across to a new
+                # category unless the client explicitly submits it.
+                subcategory_value = ""
+            else:
+                subcategory_value = validated_data.get(
+                    "subcategory",
+                    instance.subcategory.name if instance.subcategory_id else "",
+                )
+
+            taxonomy = resolve_item_taxonomy(
+                section_value=validated_data.get(
+                    "section", instance.section.name if instance.section_id else None
+                ),
+                department_value=validated_data.get(
+                    "department", instance.department.name if instance.department_id else None
+                ),
+                category_value=requested_category,
+                subcategory_value=subcategory_value,
+                default_section=(
+                    instance.section.name if instance.section_id
+                    else ("organic" if instance.is_organic else "inorganic")
+                ),
+            )
+            validated_data.update(taxonomy)
+
         # None means the collection was omitted; [] means the caller explicitly
         # requested an empty collection. The update view extracts nested fields
         # before serializer.save(), so treating omission as [] would delete data.
