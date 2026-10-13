@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { Plus, RefreshCw, Tag, Megaphone, FileText } from "lucide-react";
 import api from "../../../../Services/Api";
+import NativeAwareSelect from "../../../../components/NativeAwareSelect";
 import { useLocation } from "react-router-dom";
 import ItemAddNew from "../Forms/AddingNewItem";
 import { useVendor } from "../vendorhooks";
@@ -228,18 +229,17 @@ const VendorItems = () => {
             <label className="mb-1.5 block text-xs font-semibold text-card-foreground">
               Item
             </label>
-            <select
+            <NativeAwareSelect
+              aria-label="Item"
               value={selectedItem}
-              onChange={(e) => setSelectedItem(e.target.value)}
-              className="w-full rounded-[20px] border border-gray-300 bg-background px-4 py-3 text-sm text-foreground outline-none transition focus:border-primary"
-            >
-              <option value="">Select item</option>
-              {items.map((item) => (
-                <option key={item.id} value={item.id}>
-                  {item.name}
-                </option>
-              ))}
-            </select>
+              onChange={(event) => setSelectedItem(event.target.value)}
+              className="w-full rounded-[20px] px-4 py-3 text-sm outline-none transition focus:border-primary"
+              placeholder="Select item"
+              options={[
+                { value: "", label: "Select item" },
+                ...items.map((item) => ({ value: item.id, label: item.name })),
+              ]}
+            />
           </div>
 
           <div>
