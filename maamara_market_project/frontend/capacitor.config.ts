@@ -7,6 +7,14 @@ const config: CapacitorConfig = {
   appId: "com.mamaramarket.app",
   appName: "Maa Mara Market",
   webDir: "dist",
+  plugins: {
+    StatusBar: {
+      // Keep Android system icons visible over a light status-bar background.
+      overlaysWebView: true,
+      style: "DARK",
+      backgroundColor: "#FFFFFFFF",
+    },
+  },
 };
 
 export default config;
