@@ -100,7 +100,20 @@ def resolve_item_taxonomy(
                     f"'{department_section}' section, not '{resolved_section_name}'."
                 )
             })
-        if not department.section_id:
+        stored_department_section = (
+            _clean_name(department.section.name).lower()
+            if department.section_id and department.section
+            else ""
+        )
+        # Legacy rows ("general"/"departmental") are aliases for Inorganic.
+        # Attach them to the canonical Section record even before the data
+        # migration has been applied, so newly saved items cannot disagree
+        # with the department hierarchy.
+        if (
+            not department.section_id
+            or stored_department_section in SECTION_ALIASES
+            or stored_department_section != resolved_section_name
+        ):
             section_for_department, _ = Section.objects.get_or_create(
                 name=resolved_section_name
             )
