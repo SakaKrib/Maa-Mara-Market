@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
-import NativeAwareSelect from "../../../../components/NativeAwareSelect";
+import NativeAwareSelect from "../../../components/NativeAwareSelect";
 import { useNavigate } from "react-router-dom";
 import { Store, ArrowLeft, CheckCircle2 } from "lucide-react";
 import { Button } from "../../../../components/ui/button";
