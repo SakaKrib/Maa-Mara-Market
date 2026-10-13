@@ -10,10 +10,10 @@ on:
   workflow_dispatch:
     inputs:
       api_url:
-        description: "Public HTTPS origin serving the Django API (verify before release)"
+        description: "HTTPS API origin reachable by devices connected to your Tailscale network"
         required: true
         type: string
-        default: "http://100.109.224.0:8000"
+        default: "https://opondo-thinkpad-t14-gen-1.tail34bca9.ts.net"
 
 permissions:
   contents: read
@@ -24,7 +24,7 @@ concurrency:
 
 env:
   FRONTEND_DIR: maamara_market_project/frontend
-  MOBILE_API_URL: ${{ github.event.inputs.api_url || 'http://100.109.224.0:8000' }}
+  MOBILE_API_URL: ${{ github.event.inputs.api_url || 'https://opondo-thinkpad-t14-gen-1.tail34bca9.ts.net' }}
 
 jobs:
   android:
@@ -71,8 +71,8 @@ jobs:
           npx cap add android
           npx cap sync android
 
-      # The Tailscale API endpoint currently uses HTTP inside the encrypted tailnet.
-      # Allow cleartext only for this generated app when its configured API URL is HTTP.
+      # The default API origin is Tailscale Serve over HTTPS. Keep HTTP compatibility
+      # for explicit development builds, but don't use the raw tailnet IP by default.
       - name: Allow HTTP API access for Tailscale builds
         working-directory: ${{ env.FRONTEND_DIR }}
         env:
@@ -124,6 +124,7 @@ jobs:
           import android.os.SystemClock;
           import android.view.View;
           import android.view.WindowManager;
+          import android.webkit.CookieManager;
           import android.webkit.WebView;
           import android.widget.Toast;
 
@@ -141,6 +142,14 @@ jobs:
               @Override
               public void onCreate(Bundle savedInstanceState) {
                   super.onCreate(savedInstanceState);
+                  // The API is cross-site from https://localhost. Android WebView
+                  // must explicitly accept third-party cookies for JWT refresh/login.
+                  CookieManager cookieManager = CookieManager.getInstance();
+                  cookieManager.setAcceptCookie(true);
+                  WebView webView = bridge != null ? bridge.getWebView() : null;
+                  if (webView != null) {
+                      cookieManager.setAcceptThirdPartyCookies(webView, true);
+                  }
                   applySystemBarSettings();
                   // Reapply after Capacitor plugins initialize.
                   getWindow().getDecorView().post(this::applySystemBarSettings);
