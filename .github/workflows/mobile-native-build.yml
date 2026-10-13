@@ -72,8 +72,8 @@ jobs:
           npx cap sync android
 
       # Capacitor creates the native project on every run, so enforce the
-      # status-bar behavior in the generated activity before compiling.
-      - name: Keep Android status bar visible and respect top safe area
+      # edge-to-edge system-bar behavior in the generated activity before compiling.
+      - name: Keep Android system bars visible with full-screen content
         working-directory: ${{ env.FRONTEND_DIR }}
         run: |
           cat > android/app/src/main/java/com/mamaramarket/app/MainActivity.java <<'JAVA'
@@ -150,8 +150,9 @@ jobs:
               private void applySystemBarSettings() {
                   getWindow().clearFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN);
 
-                  boolean edgeToEdgeEnforced = Build.VERSION.SDK_INT >= 35;
-                  WindowCompat.setDecorFitsSystemWindows(getWindow(), !edgeToEdgeEnforced);
+                  // Draw edge-to-edge on all supported Android versions so there
+                  // is no artificial gap between the status bar and app content.
+                  WindowCompat.setDecorFitsSystemWindows(getWindow(), false);
 
                   WindowInsetsControllerCompat controller =
                       WindowCompat.getInsetsController(getWindow(), getWindow().getDecorView());
@@ -159,33 +160,32 @@ jobs:
                   controller.show(WindowInsetsCompat.Type.navigationBars());
                   controller.setAppearanceLightStatusBars(true);
                   controller.setAppearanceLightNavigationBars(true);
-                  getWindow().setStatusBarColor(Color.WHITE);
-                  getWindow().setNavigationBarColor(Color.WHITE);
+                  // A very light neutral surface blends with the app's white theme.
+                  getWindow().setStatusBarColor(Color.rgb(250, 250, 250));
+                  getWindow().setNavigationBarColor(Color.rgb(250, 250, 250));
                   if (Build.VERSION.SDK_INT >= 29) {
                       getWindow().setNavigationBarContrastEnforced(false);
                   }
 
-                  // Android 15 enforces edge-to-edge. Keep both the status-bar
-                  // and navigation-bar safe areas outside the WebView content.
-                  if (edgeToEdgeEnforced) {
-                      View content = findViewById(android.R.id.content);
-                      if (content != null) {
-                          ViewCompat.setOnApplyWindowInsetsListener(content, (view, insets) -> {
-                              Insets safeBars = insets.getInsets(
-                                  WindowInsetsCompat.Type.statusBars()
-                                      | WindowInsetsCompat.Type.navigationBars()
-                                      | WindowInsetsCompat.Type.displayCutout()
-                              );
-                              view.setPadding(
-                                  Math.max(view.getPaddingLeft(), safeBars.left),
-                                  Math.max(view.getPaddingTop(), safeBars.top),
-                                  Math.max(view.getPaddingRight(), safeBars.right),
-                                  Math.max(view.getPaddingBottom(), safeBars.bottom)
-                              );
-                              return insets;
-                          });
-                          ViewCompat.requestApplyInsets(content);
-                      }
+                  // Let content extend behind the status bar (no top inset), while
+                  // retaining side/cutout and bottom navigation safe areas.
+                  View content = findViewById(android.R.id.content);
+                  if (content != null) {
+                      ViewCompat.setOnApplyWindowInsetsListener(content, (view, insets) -> {
+                          Insets safeBars = insets.getInsets(
+                              WindowInsetsCompat.Type.statusBars()
+                                  | WindowInsetsCompat.Type.navigationBars()
+                                  | WindowInsetsCompat.Type.displayCutout()
+                          );
+                          view.setPadding(
+                              Math.max(view.getPaddingLeft(), safeBars.left),
+                              0,
+                              Math.max(view.getPaddingRight(), safeBars.right),
+                              Math.max(view.getPaddingBottom(), safeBars.bottom)
+                          );
+                          return insets;
+                      });
+                      ViewCompat.requestApplyInsets(content);
                   }
               }
           }
