@@ -1,4 +1,5 @@
 import React from "react";
+import NativeAwareSelect from "../../components/NativeAwareSelect";
 import { useEffect, useMemo, useState } from "react";
 import { sanitizeRichText } from "../../utils/sanitizeRichText";
 import RichTextEditor from "../RichTextEditor/RichTextEdit";
@@ -145,7 +146,7 @@ const FAQ = () => {
                 className="min-h-11 w-full min-w-0 rounded-xl border border-border bg-transparent px-4 text-sm text-card-foreground outline-none focus:ring-2 focus:ring-primary/20"
               />
               {faqCandidates.length > 0 && (
-                <select
+                <NativeAwareSelect
                   value=""
                   onChange={(e) => {
                     const candidate = faqCandidates.find((item) => String(item.question) === e.target.value);
@@ -157,16 +158,17 @@ const FAQ = () => {
                       }));
                     }
                   }}
+                  options={[
+                    { value: "", label: "Use a repeated support question (3+ requests)" },
+                    ...faqCandidates.map((candidate) => ({
+                      value: String(candidate.question),
+                      label: `${candidate.question} — ${candidate.question_count} requests`,
+                    })),
+                  ]}
+                  placeholder="Use a repeated support question (3+ requests)"
                   className="mt-2 min-h-10 w-full min-w-0 rounded-xl border border-border bg-card px-3 text-xs text-card-foreground outline-none focus:ring-2 focus:ring-primary/20"
                   aria-label="Repeated support questions"
-                >
-                  <option value="">Use a repeated support question (3+ requests)</option>
-                  {faqCandidates.map((candidate) => (
-                    <option key={candidate.question} value={candidate.question}>
-                      {candidate.question} — {candidate.question_count} requests
-                    </option>
-                  ))}
-                </select>
+                />
               )}
             </div>
             <input
