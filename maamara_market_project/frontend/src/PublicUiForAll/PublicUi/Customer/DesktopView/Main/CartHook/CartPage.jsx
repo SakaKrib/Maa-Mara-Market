@@ -6,6 +6,7 @@ import RemoveFromCartButton from "../CartActionButtons/RemoveFromBtn";
 import { Link } from "react-router-dom";
 import FormattedCurrency from "../Currency/FormattedCurrency";
 import { useCurrency } from "../Currency/CurrencyContext";
+import { FALLBACK_RATES } from "../Currency/Currency";
 import api from "../../../../../../Services/Api";
 import NativeAwareSelect from "../../../../../../components/NativeAwareSelect";
 
@@ -165,7 +166,7 @@ const CartPage = () => {
                     { value: "", label: "Select a voucher" },
                     ...vouchers.map((voucher) => {
                       const discount = Number(voucher.discount || 0);
-                      const rate = currency === "KES" ? 1 : (rates?.[currency] ?? 1);
+                      const rate = currency === "KES" ? 1 : (rates?.[currency] ?? FALLBACK_RATES[currency] ?? 1);
                       const formattedDiscount = new Intl.NumberFormat(undefined, {
                         style: "currency",
                         currency,
