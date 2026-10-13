@@ -17,13 +17,7 @@ import {
   Snackbar,
   Alert as MuiAlert
 } from '@mui/material';
-import {
-  Select,
-  SelectTrigger,
-  SelectValue,
-  SelectContent,
-  SelectItem,
-} from "../../../../components/ui/select";
+import NativeAwareSelect from "../../../../components/NativeAwareSelect";
 import api, { resolveApiAssetUrl } from "../../../Services/Api";
 import "./VendorRegistration.css";
 import { getNames, getCodeList } from "country-list";
@@ -1028,21 +1022,15 @@ const onSubmit = async (data) => {
       <FormField name="country" control={form.control} render={({ field }) => (
         <FormItem>
           <FormLabel>Country</FormLabel>
-          <Select
-            onValueChange={field.onChange}
-            value={field.value}
-            name="country"
+          <NativeAwareSelect
             id="country"
-          >
-            <SelectTrigger id="country_trigger">
-              <SelectValue placeholder="Select a country" />
-            </SelectTrigger>
-            <SelectContent>
-              {countries.map(country => (
-                <SelectItem key={country} value={country}>{country}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+            name="country"
+            value={field.value ?? ""}
+            onChange={field.onChange}
+            placeholder="Select a country"
+            options={countries.map((country) => ({ value: country, label: country }))}
+            className="w-full rounded-xl border border-border bg-card px-3 py-2.5 text-sm text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
+          />
           <FormMessage />
         </FormItem>
       )} />
@@ -1089,30 +1077,19 @@ const onSubmit = async (data) => {
       <FormLabel htmlFor="product_type">Product Type</FormLabel>
 
       {/* Select component with name and id for form submission and accessibility */}
-      <Select
-        onValueChange={field.onChange}
-        value={field.value}
-        name="product_type"
-        id={`product_type_${field.value}`}
-      >
-        {/* Trigger with its own id for accessibility or testing */}
-        <SelectTrigger id="product_type_trigger">
-          <SelectValue placeholder="Select" />
-        </SelectTrigger>
-
-        {/* Each SelectItem has a unique id for accessibility and testing */}
-        <SelectContent>
-          <SelectItem id="product_type_organic" value="organic">
-            Organic Products
-          </SelectItem>
-          <SelectItem id="product_type_inorganic" value="inorganic">
-            Handmade (inorganic)
-          </SelectItem>
-          <SelectItem id="product_type_both" value="both">
-            Both (handmade & organic)
-          </SelectItem>
-        </SelectContent>
-      </Select>
+      <NativeAwareSelect
+         id="product_type"
+         name="product_type"
+         value={field.value ?? ""}
+         onChange={field.onChange}
+         placeholder="Select product type"
+         options={[
+           { value: "organic", label: "Organic Products" },
+           { value: "inorganic", label: "Handmade (inorganic)" },
+           { value: "both", label: "Both" },
+         ]}
+         className="w-full rounded-xl border border-border bg-card px-3 py-2.5 text-sm text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
+       />
 
       <FormMessage />
     </FormItem>
@@ -1129,20 +1106,18 @@ const onSubmit = async (data) => {
               <FormField name="is_food" control={form.control} render={({ field }) => (
               <FormItem>
                 <FormLabel htmlFor="is_food">Is Food?</FormLabel>
-                <Select
-                  onValueChange={field.onChange}
-                  value={field.value}
-                  name="is_food"
+                <NativeAwareSelect
                   id="is_food"
-                >
-                  <SelectTrigger id="is_food_trigger">
-                    <SelectValue placeholder="Select" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem id="is_food_yes" value="yes">Yes</SelectItem>
-                    <SelectItem id="is_food_no" value="no">No</SelectItem>
-                  </SelectContent>
-                </Select>
+                  name="is_food"
+                  value={field.value ?? ""}
+                  onChange={field.onChange}
+                  placeholder="Select"
+                  options={[
+                    { value: "yes", label: "Yes" },
+                    { value: "no", label: "No" },
+                  ]}
+                  className="w-full rounded-xl border border-border bg-card px-3 py-2.5 text-sm text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
+                />
                 <FormMessage />
               </FormItem>
             )} />
@@ -1151,20 +1126,18 @@ const onSubmit = async (data) => {
               <FormField name="Are_You_KEBS_certified" control={form.control} render={({ field }) => (
               <FormItem>
                 <FormLabel htmlFor="Are_You_KEBS_certified">KEBS Certified?</FormLabel>
-                <Select
-                  onValueChange={field.onChange}
-                  value={field.value}
-                  name="Are_You_KEBS_certified"
+                <NativeAwareSelect
                   id="Are_You_KEBS_certified"
-                >
-                  <SelectTrigger id="Are_You_KEBS_certified_trigger">
-                    <SelectValue placeholder="Select" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem id="kebs_yes" value="yes">Yes</SelectItem>
-                    <SelectItem id="kebs_no" value="no">No</SelectItem>
-                  </SelectContent>
-                </Select>
+                  name="Are_You_KEBS_certified"
+                  value={field.value ?? ""}
+                  onChange={field.onChange}
+                  placeholder="Select"
+                  options={[
+                    { value: "yes", label: "Yes" },
+                    { value: "no", label: "No" },
+                  ]}
+                  className="w-full rounded-xl border border-border bg-card px-3 py-2.5 text-sm text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
+                />
                 <FormMessage />
               </FormItem>
             )} />
@@ -1291,21 +1264,19 @@ const onSubmit = async (data) => {
 <FormField name="payment_method" control={form.control} render={({ field }) => (
   <FormItem>
     <FormLabel htmlFor="payment_method">Payment Method</FormLabel>
-    <Select
-      onValueChange={field.onChange}
-      value={field.value}
-      name="payment_method"
-      id="payment_method"
-    >
-      <SelectTrigger id="payment_method_trigger">
-        <SelectValue placeholder="Select" />
-      </SelectTrigger>
-      <SelectContent>
-        <SelectItem id="payment_method_bank" value="BANK_TRANSFER">Bank Transfer</SelectItem>
-        <SelectItem id="payment_method_mobile" value="MOBILE_MONEY">M-Pesa</SelectItem>
-        <SelectItem id="payment_method_paypal" value="PAYPAL">PayPal</SelectItem>
-      </SelectContent>
-    </Select>
+    <NativeAwareSelect
+       id="payment_method"
+       name="payment_method"
+       value={field.value ?? ""}
+       onChange={field.onChange}
+       placeholder="Select payment method"
+       options={[
+         { value: "BANK_TRANSFER", label: "Bank Transfer" },
+         { value: "MOBILE_MONEY", label: "M-Pesa" },
+         { value: "PAYPAL", label: "PayPal" },
+       ]}
+       className="w-full rounded-xl border border-border bg-card px-3 py-2.5 text-sm text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
+     />
     <FormMessage />
   </FormItem>
 )} />
@@ -1458,21 +1429,19 @@ const onSubmit = async (data) => {
     <FormField name="mpesa_type" control={form.control} render={({ field }) => (
       <FormItem>
         <FormLabel htmlFor="mpesa_type">M-Pesa Type</FormLabel>
-        <Select
-          onValueChange={field.onChange}
-          value={field.value}
-          name="mpesa_type"
-          id="mpesa_type"
-        >
-          <SelectTrigger id="mpesa_type_trigger">
-            <SelectValue placeholder="Select M-Pesa Type" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="PHONE">Phone Number</SelectItem>
-            <SelectItem value="TILL">Till Number</SelectItem>
-            <SelectItem value="LIPA_NA_MPESA">Lipa na M-Pesa</SelectItem>
-          </SelectContent>
-        </Select>
+        <NativeAwareSelect
+           id="mpesa_type"
+           name="mpesa_type"
+           value={field.value ?? ""}
+           onChange={field.onChange}
+           placeholder="Select M-Pesa Type"
+           options={[
+             { value: "PHONE", label: "Phone Number" },
+             { value: "TILL", label: "Till Number" },
+             { value: "LIPA_NA_MPESA", label: "Lipa na M-Pesa" },
+           ]}
+           className="w-full rounded-xl border border-border bg-card px-3 py-2.5 text-sm text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
+         />
         <FormMessage />
       </FormItem>
     )} />
