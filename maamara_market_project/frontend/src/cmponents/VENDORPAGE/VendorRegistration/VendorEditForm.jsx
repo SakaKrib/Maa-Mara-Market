@@ -1,4 +1,5 @@
 import React from "react";
+import NativeAwareSelect from "../../../../components/NativeAwareSelect";
 import { Button } from "../../../../components/ui/button";
 
 export default function VendorEditForm({
@@ -79,17 +80,20 @@ export default function VendorEditForm({
                 <label htmlFor={key} className="mb-1 block text-xs font-semibold">
                   {label}
                 </label>
-                <select
+                <NativeAwareSelect
                   id={key}
+                  name={key}
                   value={fieldValue || ""}
                   onChange={(e) => onChange({ ...value, [key]: e.target.value })}
+                  options={[
+                    { value: "", label: `Select ${label}` },
+                    { value: "BANK_TRANSFER", label: "Bank Transfer" },
+                    { value: "MOBILE_MONEY", label: "Mobile Money" },
+                    { value: "CASH", label: "Cash" },
+                  ]}
+                  placeholder={`Select ${label}`}
                   className="w-full rounded-[12px] border border-border bg-card px-2 py-2 text-sm text-foreground outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
-                >
-                  <option value="">Select {label}</option>
-                  <option value="BANK_TRANSFER">Bank Transfer</option>
-                  <option value="MOBILE_MONEY">Mobile Money</option>
-                  <option value="CASH">Cash</option>
-                </select>
+                />
               </div>
             );
           }
