@@ -16,9 +16,9 @@
 .mm-item-notification-image { width: 16rem; height: 16rem; max-width: 100%; border-radius: 0.5rem; object-fit: cover; }
 .mm-item-notification-details-copy { display: flex; flex-direction: column; gap: 0.5rem; min-width: 0; }
 .mm-item-notification-title { margin: 0; font-size: 1.25rem; font-weight: 600; }
-.mm-item-notification-description { color: var(--mm-muted, #d1d5db); font-size: 0.875rem; }
+.mm-item-notification-description { color: rgba(255, 255, 255, 0.82); font-size: 0.875rem; }
 .mm-item-notification-price { color: #4ade80; font-size: 1rem; font-weight: 700; }
-.mm-item-notification-meta { color: var(--mm-muted, #9ca3af); font-size: 0.875rem; }
+.mm-item-notification-meta { color: rgba(255, 255, 255, 0.72); font-size: 0.875rem; }
 .mm-item-notification-action {
   display: inline-flex;
   width: fit-content;
