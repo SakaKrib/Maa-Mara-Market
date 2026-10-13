@@ -10,10 +10,10 @@ on:
   workflow_dispatch:
     inputs:
       api_url:
-        description: "HTTPS API origin reachable by devices connected to your Tailscale network"
+        description: "HTTPS API origin for the native build. Use the public production API for general device access, or a Tailscale Serve URL for development."
         required: true
         type: string
-        default: "https://opondo-thinkpad-t14-gen-1.tail34bca9.ts.net"
+        default: "https://maamaramarket.com"
 
 permissions:
   contents: read
@@ -24,7 +24,7 @@ concurrency:
 
 env:
   FRONTEND_DIR: maamara_market_project/frontend
-  MOBILE_API_URL: ${{ github.event.inputs.api_url || 'https://opondo-thinkpad-t14-gen-1.tail34bca9.ts.net' }}
+  MOBILE_API_URL: ${{ github.event.inputs.api_url || 'https://maamaramarket.com' }}
 
 jobs:
 
@@ -107,8 +107,8 @@ jobs:
           npx cap add android
           npx cap sync android
 
-      # The default API origin is Tailscale Serve over HTTPS. Keep HTTP compatibility
-      # for explicit development builds, but don't use the raw tailnet IP by default.
+      # Public HTTPS is the default so native builds work without a Tailscale client.
+      # A Tailscale Serve URL can still be selected for an explicit development build.
       - name: Allow HTTP API access for Tailscale builds
         working-directory: ${{ env.FRONTEND_DIR }}
         env:
