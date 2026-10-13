@@ -6047,8 +6047,7 @@ h1,h2,h3,h4{font-family:'regular','Poppins',Arial,sans-serif}
 @media (max-width: 639px) {
   .category-product-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    column-gap: 12px;
-    row-gap: 16px;
+    gap: 16px;
   }
 
   .category-product-grid > article {
