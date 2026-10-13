@@ -125,7 +125,7 @@ const NativeAwareSelect = forwardRef(function NativeAwareSelect({
   }
 
   return (
-    <div ref={wrapperRef} className="native-aware-select" style={className.split(/\\s+/).includes("w-full") ? { width: "100%" } : undefined}>
+    <div ref={wrapperRef} className="native-aware-select" style={className.includes("w-full") ? { width: "100%" } : undefined}>
       <select
         {...selectProps}
         id={id ? `${id}-source` : undefined}
