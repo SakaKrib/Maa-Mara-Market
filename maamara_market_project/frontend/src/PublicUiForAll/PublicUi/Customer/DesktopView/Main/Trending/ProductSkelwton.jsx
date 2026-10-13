@@ -7,19 +7,19 @@ const ProductSkeleton = () => (
     </div>
 
     <div className="mm-product-content p-3 sm:p-4 flex flex-col">
-      <div className="mb-1 h-5 w-3/4 animate-pulse rounded bg-gray-200" />
+      <div className="mb-1 h-4 w-3/4 animate-pulse rounded bg-gray-200" />
 
-      <div className="mb-[6px] flex min-h-[18px] items-center gap-2">
+      <div className="mb-1 flex items-center gap-2">
         <div className="h-3 w-10 animate-pulse rounded bg-gray-200" />
         <div className="h-3 w-20 animate-pulse rounded bg-gray-200" />
       </div>
 
-      <div className="mm-product-price-row" aria-hidden="true">
+      <div className="mb-2 flex flex-wrap items-baseline gap-2">
         <div className="h-4 w-20 animate-pulse rounded bg-gray-300" />
         <div className="h-3 w-14 animate-pulse rounded bg-gray-200" />
       </div>
 
-      <div className="mm-product-promotion" aria-hidden="true">
+      <div className="mt-0.5 space-y-1" aria-hidden="true">
         <div className="h-3 w-14 animate-pulse rounded bg-gray-200" />
       </div>
     </div>
