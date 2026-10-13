@@ -16,15 +16,15 @@ const PieGraph = ({ data = [] }) => {
         cornerRadius={3}
         activeOuterRadiusOffset={5}
         arcLinkLabelsSkipAngle={12}
-        arcLinkLabelsTextColor="hsl(var(--muted-foreground))"
+        arcLinkLabelsTextColor="var(--mm-muted, #6b7280)"
         arcLinkLabelsThickness={1}
         arcLinkLabelsColor={{ from: "color" }}
         arcLabelsSkipAngle={12}
         arcLabelsTextColor={{ from: "color", modifiers: [["darker", 2]] }}
         colors={{ scheme: "paired" }}
         theme={{
-          legends: { text: { fill: "hsl(var(--muted-foreground))", fontSize: 10 } },
-          labels: { text: { fill: "hsl(var(--foreground))", fontSize: 10 } },
+          legends: { text: { fill: "var(--mm-muted, #6b7280)", fontSize: 10 } },
+          labels: { text: { fill: "var(--mm-foreground, #1f2937)", fontSize: 10 } },
         }}
         legends={[{
           anchor: "bottom",
@@ -33,7 +33,7 @@ const PieGraph = ({ data = [] }) => {
           itemWidth: 85,
           itemHeight: 18,
           symbolShape: "circle",
-          itemTextColor: "hsl(var(--muted-foreground))",
+          itemTextColor: "var(--mm-muted, #6b7280)",
         }]}
         role="img"
         ariaLabel="Admin category distribution pie chart"
