@@ -24,10 +24,9 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 0.75rem;
   max-width: 100%;
   min-width: 0;
-  border: 1px solid hsl(var(--border)) !important;
+  border: none !important;
   border-radius: 1rem !important;
   background: hsl(var(--card)) !important;
   color: hsl(var(--card-foreground)) !important;
