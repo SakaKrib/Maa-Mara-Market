@@ -6743,3 +6743,15 @@ h1,h2,h3,h4{font-family:'regular','Poppins',Arial,sans-serif}
   }
 }
 
+/* Match skeleton text-slot sizes to the fixed product-card rows on phones. */
+@media (max-width: 639px) {
+  .mm-product-skeleton-card .mm-product-content > div:first-child {
+    height: 1.15rem;
+    min-height: 1.15rem;
+  }
+
+  .mm-product-skeleton-card .mm-product-content > div:nth-child(2) {
+    min-height: 16px;
+  }
+}
+
