@@ -363,6 +363,30 @@
 
 /* Keep the native dashboard status-bar inset transparent, like the customer shell. */
 @media (max-width: 639px) {
+  /*
+   * Leave the top safe-area transparent so the native status-bar canvas shows
+   * through, then restore the dashboard's existing surface color below it.
+   */
+  .mm-native-dashboard-shell {
+    --mm-native-dashboard-surface: #f8fafc;
+    background-color: transparent !important;
+    background-image: linear-gradient(
+      to bottom,
+      transparent 0,
+      transparent env(safe-area-inset-top, 0px),
+      var(--mm-native-dashboard-surface) env(safe-area-inset-top, 0px),
+      var(--mm-native-dashboard-surface) 100%
+    ) !important;
+  }
+
+  .dark .mm-native-dashboard-shell {
+    --mm-native-dashboard-surface: #020617;
+  }
+
+  .mm-native-dashboard-shell.maamara-manager {
+    --mm-native-dashboard-surface: var(--maamara-soft, #f8f8f6);
+  }
+
   html:has(.mm-native-dashboard-shell),
   body:has(.mm-native-dashboard-shell) {
     background-color: transparent !important;
