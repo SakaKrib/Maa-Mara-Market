@@ -526,15 +526,16 @@ const ItemAddNew = ({
 
   // Approval requests belong to the administrator workflow only. Vendor
   // item IDs and vendor IDs must never be interpreted as approval request IDs.
-  const resolvedApprovalRequestId = resolvedIsAdmin
-    ? approvalRequestId ??
-      vendorDataRequestId ??
-      initialItem?.request_id ??
-      initialItem?.vendor_item_request_id ??
-      vendor?.request_id ??
-      vendor?.vendor_item_request_id ??
-      null
-    : null;
+  const resolvedApprovalRequestId =
+    resolvedIsAdmin && explicitFlow !== "edit"
+      ? approvalRequestId ??
+        vendorDataRequestId ??
+        initialItem?.request_id ??
+        initialItem?.vendor_item_request_id ??
+        vendor?.request_id ??
+        vendor?.vendor_item_request_id ??
+        null
+      : null;
 
   // Item id is relevant only when the form actually received an existing Item.
   // A vendor request draft must never fall back to a vendor/request id here.
@@ -717,7 +718,7 @@ const ItemAddNew = ({
       ? "admin-create"
       : isVendorRegistrationEdit
         ? "vendor-registration-edit"
-        : isEditing
+        : isEditing || (effectiveIsAdmin && isExplicitEditMode)
         ? "edit"
         : effectiveIsAdmin &&
           (resolvedApprovalRequestId || normalizedApprovalMode || explicitFlow === "admin-approve")
