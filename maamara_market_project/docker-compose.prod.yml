@@ -1,0 +1,70 @@
+services:
+  backend:
+    restart: unless-stopped
+    env_file:
+      - ./backend/project01/.env
+    environment:
+      DEBUG: ${DEBUG:?DEBUG must be set}
+      POSTGRES_HOST: db
+      POSTGRES_PORT: "5432"
+      REDIS_URL: redis://redis:6379/0
+      FRONTEND_URL: ${FRONTEND_URL:?FRONTEND_URL must be set}
+      BACKEND_URL: ${BACKEND_URL:?BACKEND_URL must be set}
+      ALLOWED_HOSTS: ${ALLOWED_HOSTS:?ALLOWED_HOSTS must be set}
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:?CORS_ALLOWED_ORIGINS must be set}
+      CSRF_TRUSTED_ORIGINS: ${CSRF_TRUSTED_ORIGINS:?CSRF_TRUSTED_ORIGINS must be set}
+      SECURE_SSL_REDIRECT: ${SECURE_SSL_REDIRECT:?SECURE_SSL_REDIRECT must be set}
+      SECURE_PROXY_SSL_HEADER: ${SECURE_PROXY_SSL_HEADER:?SECURE_PROXY_SSL_HEADER must be set}
+      SESSION_COOKIE_SECURE: ${SESSION_COOKIE_SECURE:?SESSION_COOKIE_SECURE must be set}
+      CSRF_COOKIE_SECURE: ${CSRF_COOKIE_SECURE:?CSRF_COOKIE_SECURE must be set}
+    ports: !reset []
+    volumes: !override
+      - backend_static:/app/static
+      - backend_media:/app/media
+    command: ["./entrypoint.production.sh"]
+
+  pending-registration-cleanup:
+    restart: unless-stopped
+    env_file:
+      - ./backend/project01/.env
+    environment:
+      DEBUG: "False"
+      POSTGRES_HOST: db
+      POSTGRES_PORT: "5432"
+      REDIS_URL: redis://redis:6379/0
+    volumes: !reset []
+    command: >
+      sh -c "until python manage.py cleanup_pending_registrations; do
+             echo 'Waiting for Django migrations before pending-registration cleanup...';
+             sleep 10;
+             done;
+             while true; do
+               sleep 60;
+               python manage.py cleanup_pending_registrations;
+             done"
+
+  frontend:
+    restart: unless-stopped
+    ports: !reset []
+    volumes: !reset []
+    command: ["nginx", "-g", "daemon off;"]
+
+  caddy:
+    image: caddy:2.10-alpine
+    restart: unless-stopped
+    environment:
+      ACME_EMAIL: ${ACME_EMAIL:?ACME_EMAIL must be set}
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - frontend
+      - backend
+
+volumes:
+  caddy_data:
+  caddy_config:
