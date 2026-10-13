@@ -89,9 +89,9 @@ jobs:
 
           manifest = Path("android/app/src/main/AndroidManifest.xml")
           text = manifest.read_text()
-          if re.search(r"android:usesCleartextTraffic\\s*=", text):
+          if re.search(r"android:usesCleartextTraffic\s*=", text):
               text = re.sub(
-                  r'android:usesCleartextTraffic\\s*=\\s*"[^"]*"',
+                  r'android:usesCleartextTraffic\s*=\s*"[^"]*"',
                   'android:usesCleartextTraffic="true"',
                   text,
                   count=1,
