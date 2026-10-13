@@ -360,3 +360,11 @@
 .mm-native-dashboard-shell > footer {
   padding-bottom: calc(1rem + env(safe-area-inset-bottom, 0px)) !important;
 }
+
+/* Keep the native dashboard status-bar inset transparent, like the customer shell. */
+@media (max-width: 639px) {
+  html:has(.mm-native-dashboard-shell),
+  body:has(.mm-native-dashboard-shell) {
+    background-color: transparent !important;
+  }
+}
