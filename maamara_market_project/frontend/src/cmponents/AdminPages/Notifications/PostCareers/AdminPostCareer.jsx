@@ -93,7 +93,7 @@ const AdminPostCareer = ({ open = true, onClose }) => {
   if (!open) return null;
 
   return (
-    <div className="fixed inset-x-0 bottom-0 top-20 z-[80] overflow-y-auto bg-background/80 p-2 backdrop-blur-sm sm:top-16 sm:p-4">
+    <div className="fixed inset-x-0 z-[80] overflow-y-auto bg-background/80 p-2 backdrop-blur-sm sm:p-4" style={{ top: "calc(72px + env(safe-area-inset-top, 0px))", bottom: "calc(52px + env(safe-area-inset-bottom, 0px))" }}>
       <div className="relative mx-auto max-w-6xl overflow-hidden rounded-2xl border border-border bg-background shadow-2xl">
         <button
           type="button"
