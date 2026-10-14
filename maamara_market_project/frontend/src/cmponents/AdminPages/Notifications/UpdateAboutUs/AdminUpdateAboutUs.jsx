@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { IonIcon } from "@ionic/react";
 import { closeOutline } from "ionicons/icons";
 import api from "../../../../Services/Api";
@@ -17,6 +18,8 @@ const emptyForm = {
 };
 
 const AboutAdminPanel = ({ open, onClose }) => {
+  const navigate = useNavigate();
+  const closePanel = () => (onClose ? onClose() : navigate("/admin-dashboard"));
   const [form, setForm] = useState(emptyForm);
   const [preview, setPreview] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -89,18 +92,17 @@ const AboutAdminPanel = ({ open, onClose }) => {
   if (!open) return null;
 
   return (
-    <div className="fixed inset-x-0 bottom-0 top-14 z-[80] flex justify-end bg-background/80 backdrop-blur-sm sm:top-16" onMouseDown={onClose}>
+    <div className="fixed inset-x-0 bottom-[52px] top-[72px] z-[80] flex justify-end bg-background/80 backdrop-blur-sm" onMouseDown={closePanel}>
       <section
         className="flex h-full w-full max-w-4xl flex-col border-l border-border bg-background shadow-2xl"
         onMouseDown={(event) => event.stopPropagation()}
       >
-        {snackbar.open && (<div className="fixed right-4 top-20 z-[1400] max-w-sm rounded-[20px] border border-gray-300 bg-card px-4 py-3 text-sm font-semibold text-card-foreground shadow-lg">{snackbar.message}<button type="button" onClick={() => setSnackbar((prev) => ({ ...prev, open: false }))} className="ml-3 text-xs text-muted-foreground hover:text-card-foreground" aria-label="Dismiss notification">×</button></div>)}
         <header className="flex min-h-[72px] shrink-0 items-center justify-between border-b border-border bg-card px-4 sm:px-6">
           <div>
             <p className="text-xs font-bold uppercase tracking-[0.14em] text-muted-foreground">Content management</p>
             <h2 className="text-lg font-bold text-card-foreground">About Maa Mara</h2>
           </div>
-          <button type="button" onClick={onClose} className="rounded-xl p-2 text-muted-foreground hover:bg-muted">
+          <button type="button" onClick={closePanel} aria-label="Close About Maa Mara" className="rounded-xl p-2 text-muted-foreground hover:bg-muted">
             <IonIcon icon={closeOutline} className="text-xl" />
           </button>
         </header>
