@@ -4236,30 +4236,26 @@ const ItemAddNew = ({
 
             {submissionStatus.message && (
               <div
-                role="status"
-                aria-live="polite"
-                className={`fixed bottom-5 right-5 z-[100] flex max-w-sm items-start gap-3 rounded-2xl border px-4 py-3 text-sm shadow-xl backdrop-blur-sm ${
-                  submissionStatus.type === "success"
-                    ? "border-green-200 bg-green-50/95 text-green-800"
-                    : "border-red-200 bg-red-50/95 text-red-800"
+                role={submissionStatus.type === "error" ? "alert" : "status"}
+                aria-live={submissionStatus.type === "error" ? "assertive" : "polite"}
+                className={`fixed right-4 top-20 z-[1400] max-w-sm rounded-[20px] border px-4 py-3 text-sm font-semibold shadow-lg ${
+                  submissionStatus.type === "error"
+                    ? "border-red-200 bg-red-50 text-red-700"
+                    : "border-gray-300 bg-card text-card-foreground"
                 }`}
               >
-                <span className="mt-0.5 text-base font-semibold">
-                  {submissionStatus.type === "success" ? "â" : "!"}
-                </span>
-                <div className="pr-1">
-                  <p className="font-semibold">
-                    {submissionStatus.type === "success" ? "Saved successfully" : "Unable to save"}
-                  </p>
-                  <p className="mt-0.5 text-sm">{submissionStatus.message}</p>
-                </div>
+                {submissionStatus.message}
                 <button
                   type="button"
-                  aria-label="Dismiss notification"
                   onClick={() => setSubmissionStatus({ type: "", message: "" })}
-                  className="ml-auto rounded-full px-2 text-lg leading-none opacity-60 transition hover:opacity-100"
+                  className={`ml-3 text-xs ${
+                    submissionStatus.type === "error"
+                      ? "text-red-600 hover:text-red-800"
+                      : "text-muted-foreground hover:text-card-foreground"
+                  }`}
+                  aria-label="Dismiss notification"
                 >
-                  Ã
+                  ×
                 </button>
               </div>
             )}
