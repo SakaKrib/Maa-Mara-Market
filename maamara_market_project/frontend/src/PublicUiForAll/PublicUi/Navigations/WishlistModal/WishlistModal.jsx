@@ -1,9 +1,27 @@
 import { useWishlistContext } from "../../../../cmponents/Hooks/WishListHook/Wishlist";
+import { resolveApiAssetUrl } from "../../../../Services/Api";
 import { Heart, Share2, Trash2 } from "lucide-react";
 import FormattedCurrency from "../../Customer/DesktopView/Main/Currency/FormattedCurrency";
 
 const WishlistModal = () => {
   const { wishlist, loading, removeFromWishlist } = useWishlistContext();
+
+  const getImage = (item) => {
+    const candidate =
+      item?.image?.url ||
+      item?.image ||
+      item?.image_url ||
+      item?.imageUrl ||
+      item?.images?.[0]?.url ||
+      item?.images?.[0];
+
+    const imageUrl =
+      typeof candidate === "string"
+        ? candidate
+        : candidate?.url || candidate?.image_url || candidate?.src || candidate?.path;
+
+    return resolveApiAssetUrl(imageUrl) || "";
+  };
 
   if (loading) {
     return (
@@ -50,7 +68,7 @@ const WishlistModal = () => {
           return (
             <div key={item.id} className="flex gap-4">
               <img
-                src={item.image || ""}
+                src={getImage(item)}
                 alt={item.name || "Item"}
                 width={96}
                 height={96}
