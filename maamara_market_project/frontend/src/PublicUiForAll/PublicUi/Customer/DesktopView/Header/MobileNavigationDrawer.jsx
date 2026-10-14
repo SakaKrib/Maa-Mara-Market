@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../../../../../cmponents/Auth/AuthContext/Context";
 import { useCategories } from "./SectionHook";
+import Maamara from "../../../../../assets/Logo/Maamara.jpg";
 import MegaMenuWomen from "./WomenCat";
 import MegaMenuMen from "./MenCat";
 import MegaMenuChildren from "./ChildrenCat";
@@ -119,7 +120,11 @@ const MobileNavigationDrawer = ({ open, onClose, nativeApp = false }) => {
         aria-label="Mobile navigation"
       >
         <div className="mm-mobile-drawer-head">
-          <strong>Maa Mara Market</strong>
+          {nativeApp ? (
+            <img src={Maamara} alt="Maa Mara Market" className="mm-drawer-logo ring ring-green-500 p-1" />
+          ) : (
+            <strong>Maa Mara Market</strong>
+          )}
           <button type="button" onClick={onClose} aria-label="Close menu">
             <X size={21} />
           </button>
