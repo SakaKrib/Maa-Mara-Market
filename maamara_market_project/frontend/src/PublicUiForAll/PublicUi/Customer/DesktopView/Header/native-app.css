@@ -27,7 +27,8 @@
   }
 
   .mm-site-header.mm-native-app .mm-native-drawer {
-    top: env(safe-area-inset-top, 0px);
+    /* The drawer background reaches the screen top; only its header content respects the system inset. */
+    top: 0;
     bottom: calc(60px + env(safe-area-inset-bottom, 0px));
     height: auto;
     min-height: 0;
@@ -43,8 +44,22 @@
   }
 
   .mm-site-header.mm-native-app .mm-native-drawer .mm-mobile-drawer-head {
-    min-height: 52px;
-    padding: 0 14px;
+    min-height: calc(62px + env(safe-area-inset-top, 0px));
+    padding: env(safe-area-inset-top, 0px) 14px 0;
+    box-sizing: border-box;
+  }
+
+  .mm-site-header.mm-native-app .mm-native-drawer .mm-mobile-drawer-head .mm-drawer-logo {
+    display: block;
+    width: 50px;
+    height: 50px;
+    flex: 0 0 50px;
+    object-fit: cover;
+    border-radius: 9999px;
+  }
+
+  .mm-site-header.mm-native-app .mm-native-drawer .mm-mobile-drawer-head button {
+    flex: 0 0 38px;
   }
 
   .mm-site-header.mm-native-app .mm-native-drawer .mm-mobile-drawer-nav > button,
@@ -61,11 +76,29 @@
   }
 
   .mm-site-header.mm-native-app .mm-native-drawer .mm-mobile-drawer-link {
-    min-height: 38px;
-    padding: 8px 16px;
-    gap: 11px;
-    font-size: 12px;
+    display: flex;
+    align-items: center;
+    width: 100%;
+    box-sizing: border-box;
+    min-height: 42px;
+    padding: 9px 16px;
+    gap: 12px;
+    border-bottom: 1px solid #f3f4f6;
+    color: #222;
+    font-size: 13px;
+    font-weight: 500;
     line-height: 1.25;
+    text-align: left;
+    text-decoration: none;
+  }
+
+  .mm-site-header.mm-native-app .mm-native-drawer .mm-mobile-drawer-link span {
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+
+  .mm-site-header.mm-native-app .mm-native-drawer .mm-mobile-drawer-link:active {
+    background: #f8fafc;
   }
 
   .mm-site-header.mm-native-app .mm-native-drawer .mm-mobile-drawer-link svg {
