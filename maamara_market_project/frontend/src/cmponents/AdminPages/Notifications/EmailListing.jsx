@@ -62,6 +62,10 @@ const EmailPanel = ({ open, onClose, filter = "sent" }) => {
   return (
     <Drawer anchor="right" open={open} onClose={onClose} PaperProps={{ sx: {
       width: { xs: "100%", sm: "min(100%, 1080px)" }, maxWidth: "100vw",
+      top: "calc(72px + env(safe-area-inset-top, 0px))",
+      bottom: "calc(52px + env(safe-area-inset-bottom, 0px))",
+      height: "auto", maxHeight: "none",
+      borderRadius: { xs: "20px 20px 0 0", sm: "20px 0 0 20px" },
       bgcolor: "background.default", color: "text.primary", overflow: "hidden",
     } }}>
       <div className="flex h-full min-h-0 flex-col bg-background text-foreground">
@@ -98,7 +102,7 @@ const EmailPanel = ({ open, onClose, filter = "sent" }) => {
           <main className="flex min-h-0 min-w-0 flex-1 flex-col overflow-y-auto p-4 sm:p-6">
             <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div><h3 className="text-lg font-bold text-card-foreground">Email activity</h3><p className="mt-1 text-sm text-muted-foreground">Track delivery and open a message to review its details.</p></div>
-              <Button onClick={() => openComposer()} className="inline-flex items-center gap-2 self-start"><PenLine size={16} /> Compose email</Button>
+              <Button onClick={() => openComposer()} className="inline-flex items-center gap-2 self-start rounded-[20px]"><PenLine size={16} /> Compose email</Button>
             </div>
 
             <div className="mb-5 grid grid-cols-1 gap-3 sm:grid-cols-3">
