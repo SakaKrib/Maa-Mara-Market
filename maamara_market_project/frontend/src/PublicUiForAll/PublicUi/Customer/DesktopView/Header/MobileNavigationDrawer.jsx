@@ -2,7 +2,6 @@ import React, { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../../../../../cmponents/Auth/AuthContext/Context";
 import { useCategories } from "./SectionHook";
-import Maamara from "../../../../../assets/Logo/Maamara.jpg";
 import MegaMenuWomen from "./WomenCat";
 import MegaMenuMen from "./MenCat";
 import MegaMenuChildren from "./ChildrenCat";
@@ -121,7 +120,9 @@ const MobileNavigationDrawer = ({ open, onClose, nativeApp = false }) => {
       >
         <div className="mm-mobile-drawer-head">
           {nativeApp ? (
-            <img src={Maamara} alt="Maa Mara Market" className="mm-drawer-logo ring ring-green-500 p-1" />
+            <div className="logo mm-drawer-wordmark">
+              <a href="/">Maa <span className="it-name">Mara</span> <span className="mkrt">Market</span></a>
+            </div>
           ) : (
             <strong>Maa Mara Market</strong>
           )}
