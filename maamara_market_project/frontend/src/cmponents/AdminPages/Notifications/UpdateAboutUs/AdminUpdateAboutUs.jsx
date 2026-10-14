@@ -92,7 +92,7 @@ const AboutAdminPanel = ({ open, onClose }) => {
   if (!open) return null;
 
   return (
-    <div className="fixed inset-x-0 bottom-[52px] top-[72px] z-[80] flex justify-end bg-background/80 backdrop-blur-sm" onMouseDown={closePanel}>
+    <div className="fixed inset-x-0 z-[80] flex justify-end bg-background/80 backdrop-blur-sm" style={{ top: "calc(72px + env(safe-area-inset-top, 0px))", bottom: "calc(52px + env(safe-area-inset-bottom, 0px))" }} onMouseDown={closePanel}>
       <section
         className="flex h-full w-full max-w-4xl flex-col border-l border-border bg-background shadow-2xl"
         onMouseDown={(event) => event.stopPropagation()}
