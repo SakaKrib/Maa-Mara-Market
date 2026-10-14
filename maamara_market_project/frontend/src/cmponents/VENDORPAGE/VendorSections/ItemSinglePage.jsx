@@ -221,6 +221,7 @@ const SingleItemProfile = () => {
             </div>
             <div className="grid gap-3 sm:grid-cols-2">
               {[
+                ["Item ID", item.id],
                 ["Department", item.department],
                 ["Category", item.category],
                 ["Subcategory", item.subcategory],
@@ -235,6 +236,7 @@ const SingleItemProfile = () => {
                 ["Available for sale", item.available],
                 ["Stock quantity", item.in_stock],
                 ["Discount price", item.discount_price == null ? null : "KES " + Number(item.discount_price).toLocaleString()],
+                ["Percentage discount", item.percentage_discount == null ? null : item.percentage_discount + "%"],
                 ["Limited-time offer", item.in_offer],
                 ["Offer discount", item.offer?.discount_percentage == null ? null : item.offer.discount_percentage + "%"],
                 ["Offer start date", item.offer?.start_date],
