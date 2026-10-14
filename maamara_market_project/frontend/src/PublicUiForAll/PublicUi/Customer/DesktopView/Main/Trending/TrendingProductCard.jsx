@@ -54,6 +54,7 @@ const TrendingProductCard = ({ item, isWishlisted: controlledWishlist, onToggleW
   const [imageFailed, setImageFailed] = React.useState(false);
   const [isImagePreviewOpen, setIsImagePreviewOpen] = React.useState(false);
   const [previewImageFailed, setPreviewImageFailed] = React.useState(false);
+  const [isSharing, setIsSharing] = React.useState(false);
 
   const openImagePreview = (event) => {
     event.stopPropagation();
@@ -96,7 +97,14 @@ const TrendingProductCard = ({ item, isWishlisted: controlledWishlist, onToggleW
 
   const shareProduct = async (event) => {
     event.stopPropagation();
-    await shareMarketplaceProduct({ item, image });
+    if (isSharing) return;
+
+    setIsSharing(true);
+    try {
+      await shareMarketplaceProduct({ item, image });
+    } finally {
+      setIsSharing(false);
+    }
   };
 
   return (
@@ -131,7 +139,7 @@ const TrendingProductCard = ({ item, isWishlisted: controlledWishlist, onToggleW
           <button type="button" onClick={openImagePreview} aria-label="Preview product image" className="mm-product-action">
             <IonIcon icon={eyeOutline} />
           </button>
-          <button type="button" onClick={shareProduct} aria-label="Share product" className="mm-product-action">
+          <button type="button" onClick={shareProduct} disabled={isSharing} aria-busy={isSharing} aria-label={isSharing ? "Preparing share" : "Share product"} className="mm-product-action disabled:opacity-60">
             <IonIcon icon={shareOutline} />
           </button>
         </div>
