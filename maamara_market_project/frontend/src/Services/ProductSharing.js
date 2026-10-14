@@ -170,10 +170,13 @@ const shareNativeProduct = async ({
 }) => {
   let temporaryImage = null;
   const controller = new AbortController();
-  const timeoutId = setTimeout(
-    () => controller.abort(),
-    SHARE_IMAGE_PREPARATION_TIMEOUT_MS
-  );
+  let timeoutId;
+  const imagePreparationTimeout = new Promise((resolve) => {
+    timeoutId = setTimeout(() => {
+      controller.abort();
+      resolve(null);
+    }, SHARE_IMAGE_PREPARATION_TIMEOUT_MS);
+  });
 
   // A tap on another product supersedes image preparation for the previous one.
   pendingNativePreparationController?.abort();
@@ -181,10 +184,20 @@ const shareNativeProduct = async ({
 
   try {
     try {
-      temporaryImage = await createNativeShareImage(imageUrl, item.id, controller.signal);
+      // Bound the wait itself, not just the network request. If conversion or
+      // filesystem work stalls, continue with the product link without an image.
+      temporaryImage = await Promise.race([
+        createNativeShareImage(imageUrl, item.id, controller.signal).catch(() => null),
+        imagePreparationTimeout,
+      ]);
     } catch {
       // The image is optional: network/CORS/filesystem issues must not block sharing.
       temporaryImage = null;
+    } finally {
+      if (timeoutId) {
+        if (timeoutId) clearTimeout(timeoutId);
+        timeoutId = null;
+      }
     }
 
     if (requestId !== latestShareRequestId) return false;
