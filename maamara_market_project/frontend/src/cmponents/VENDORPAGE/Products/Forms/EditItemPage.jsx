@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
 import api from "../../../../Services/Api";
 import ItemAddNew from "./AddingNewItem";
@@ -8,6 +8,7 @@ import { useVendor } from "../vendorhooks";
 const EditItemPage = () => {
   const { itemId } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const { vendor } = useVendor();
   const [item, setItem] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -110,6 +111,7 @@ const EditItemPage = () => {
               itemId={item.id}
               vendor={vendor}
               onSave={handleSave}
+              focusOffer={Boolean(location.state?.focusOffer)}
             />
           </div>
         ) : null}
