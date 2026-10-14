@@ -356,6 +356,14 @@
   backdrop-filter: none !important;
 }
 
+.mm-native-dashboard-shell:not(.maamara-manager) > main {
+  padding-top: calc(72px + env(safe-area-inset-top, 0px)) !important;
+}
+
+.mm-native-dashboard-shell.maamara-manager > main {
+  padding-top: calc(88px + env(safe-area-inset-top, 0px)) !important;
+}
+
 .mm-native-dashboard-shell > aside {
   top: 0 !important;
   bottom: 0 !important;
@@ -373,14 +381,6 @@
 @media (max-width: 639px) {
   .mm-native-dashboard-shell {
     background-image: none !important;
-  }
-
-  .mm-native-dashboard-shell:not(.maamara-manager) > main {
-    padding-top: calc(72px + env(safe-area-inset-top, 0px)) !important;
-  }
-
-  .mm-native-dashboard-shell.maamara-manager > main {
-    padding-top: calc(88px + env(safe-area-inset-top, 0px)) !important;
   }
 
   html:has(.mm-native-dashboard-shell),
