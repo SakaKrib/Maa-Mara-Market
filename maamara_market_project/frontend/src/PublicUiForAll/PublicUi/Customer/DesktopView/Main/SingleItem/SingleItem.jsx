@@ -50,6 +50,7 @@ const SingleItem = () => {
 
   const { wishlist, addToWishlist, removeFromWishlist } = useWishlistContext();
   const [descriptionOpen, setDescriptionOpen] = useState(false);
+  const [isSharing, setIsSharing] = useState(false);
   const isWishlisted =
     Array.isArray(wishlist) &&
     wishlist.some((entry) => (entry.item?.id || entry.id) === item?.id);
@@ -58,6 +59,26 @@ const SingleItem = () => {
   if (error || !item) return <div className="p-10 text-center">Item not found.</div>;
 
   const hasDiscount = Number(item.discount_price || item.discount || 0) > 0;
+
+  const handleShareProduct = async () => {
+    if (isSharing) return;
+
+    setIsSharing(true);
+    try {
+      await shareMarketplaceProduct({
+        item,
+        image:
+          selectedImage?.url ||
+          selectedImage ||
+          selectedVariant?.image?.url ||
+          selectedVariant?.image ||
+          item.image?.url ||
+          item.image,
+      });
+    } finally {
+      setIsSharing(false);
+    }
+  };
 
   return (
     <main className="mm-single-item mm-page pb-12 pt-6">
@@ -198,21 +219,12 @@ const SingleItem = () => {
 
                   <button
                     type="button"
-                    className="flex w-full items-center justify-center rounded-full border border-border bg-background px-4 py-2.5 text-center text-sm font-semibold text-card-foreground transition-colors hover:bg-muted"
-                    onClick={() =>
-                      shareMarketplaceProduct({
-                        item,
-                        image:
-                          selectedImage?.url ||
-                          selectedImage ||
-                          selectedVariant?.image?.url ||
-                          selectedVariant?.image ||
-                          item.image?.url ||
-                          item.image,
-                      })
-                    }
+                    className="flex w-full items-center justify-center rounded-full border border-border bg-background px-4 py-2.5 text-center text-sm font-semibold text-card-foreground transition-colors hover:bg-muted disabled:opacity-60"
+                    onClick={handleShareProduct}
+                    disabled={isSharing}
+                    aria-busy={isSharing}
                   >
-                    ↗ Share
+                    {isSharing ? "↗ Preparing share…" : "↗ Share"}
                   </button>
                 </div>
               </div>
