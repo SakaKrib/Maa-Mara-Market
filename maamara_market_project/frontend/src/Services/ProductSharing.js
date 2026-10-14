@@ -194,10 +194,8 @@ const shareNativeProduct = async ({
       // The image is optional: network/CORS/filesystem issues must not block sharing.
       temporaryImage = null;
     } finally {
-      if (timeoutId) {
-        if (timeoutId) clearTimeout(timeoutId);
-        timeoutId = null;
-      }
+      if (timeoutId) clearTimeout(timeoutId);
+      timeoutId = null;
     }
 
     if (requestId !== latestShareRequestId) return false;
@@ -229,7 +227,7 @@ const shareNativeProduct = async ({
     // Once Share.share has been attempted, don't fall through to web sharing.
     return true;
   } finally {
-    clearTimeout(timeoutId);
+    if (timeoutId) clearTimeout(timeoutId);
     if (pendingNativePreparationController === controller) {
       pendingNativePreparationController = null;
     }
