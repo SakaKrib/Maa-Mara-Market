@@ -395,6 +395,7 @@ const ItemAddNew = ({
   flow = null,
   vendorData: vendorDataProp = null,
   vendor_data: vendorDataLegacy = null,
+  focusOffer = false,
 }) => {
   const { departmentMap, organicDepartmentMap } = useDepartments();
   const authContext = useAuth() ?? {};
@@ -893,6 +894,15 @@ const ItemAddNew = ({
         setSelectedSection(section);
       }
     }, [initialItem, form, safeItemId]);
+
+    useEffect(() => {
+      if (!focusOffer || !initialItem) return;
+      form.setValue("in_offer", true, { shouldDirty: false });
+      const timer = window.setTimeout(() => {
+        document.getElementById("item-offer-settings")?.scrollIntoView({ behavior: "smooth", block: "center" });
+      }, 350);
+      return () => window.clearTimeout(timer);
+    }, [focusOffer, initialItem, form]);
 
     const {
       control,
@@ -3777,7 +3787,7 @@ const ItemAddNew = ({
               control={form.control}
               name="in_offer"
               render={({ field }) => (
-                <FormItem className="rounded-[20px] border border-border p-4 w-full" >
+                <FormItem id="item-offer-settings" className="rounded-[20px] border border-border p-4 w-full" >
                   <div className="flex items-center gap-2">
                     <FormControl className="space-x-2">
                     <Checkbox
