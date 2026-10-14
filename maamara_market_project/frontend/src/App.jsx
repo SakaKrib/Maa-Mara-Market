@@ -16,6 +16,7 @@ import Dashboard from "./Scenes/Dashboard/Dashboard";
 import InboundTraffic from "./Scenes/InboundTraffic/InboundTraffic";
 import Line from "./Scenes/Line/LineChart";
 import Pie from "./Scenes/Pie/PieChart";
+import BarChartPage from "./Scenes/Bar/BarChartPage";
 import Vendors from "./cmponents/Vendors/Vendors";
 import VendorPerformance from "./Scenes/Vendors/VendorPerformance";
 import VendorDetailsPage from "./Scenes/Vendors/VendorDetailsPage";
@@ -288,6 +289,7 @@ function AppContent() {
               <Route path="faq" element={<FAQ />} />
               <Route path="calendar" element={<Calendar />} />
                <Route path="line-chart" element={<Line />} />
+               <Route path="bar-chart" element={<BarChartPage />} />
                <Route path="pie-chart" element={<Pie />} />
               <Route path="vendors/:vendorId" element={<VendorDetailsPage />} />
                <Route path="vendors/:vendorId/performance" element={<VendorPerformance />} />
