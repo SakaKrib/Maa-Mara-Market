@@ -2221,10 +2221,13 @@ const ItemAddNew = ({
         }
       } catch (error) {
         console.error("Item draft save failed:", error);
+        // Show the server's field-level validation message (e.g. {"name": [...]})
+        // instead of the generic axios text. 5xx bodies can be raw HTML, so those
+        // keep the generic message.
         const backendMessage =
-          typeof error?.response?.data?.detail === "string"
-            ? error.response.data.detail
-            : error?.response?.data?.price?.[0] || error?.message;
+          error?.response?.status >= 500
+            ? error?.message
+            : getSubmissionErrorMessage(error, error?.message);
         setSubmissionStatus({
           type: "error",
           message: backendMessage || "Unable to save the item. Please try again.",

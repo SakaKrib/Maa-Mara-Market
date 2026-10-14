@@ -458,6 +458,9 @@ class VendorItemViewSet(viewsets.ModelViewSet):
 
     @transaction.atomic
     def perform_update(self, serializer):
+        # Enforce the same media limits as creation so a direct edit request
+        # cannot bypass the frontend image/video limits.
+        self._validate_upload_limits()
         current_item = self.get_object()
 
         # Vendor edit drafts are saved independently from the live Item update.
@@ -503,6 +506,10 @@ class VendorItemViewSet(viewsets.ModelViewSet):
 
         if self.request.user.is_staff:
             current_item._allow_price_update = True
+            # serializer.save() updates serializer.instance, which is a different
+            # object from current_item, and Item.save() reads the flag from the
+            # instance being saved.
+            serializer.instance._allow_price_update = True
 
         # Only mutate nested records when the client actually supplied that field.
         variants_supplied = "variants" in validated

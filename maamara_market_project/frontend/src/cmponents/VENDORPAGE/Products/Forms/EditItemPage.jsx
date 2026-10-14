@@ -21,13 +21,14 @@ const EditItemPage = () => {
       setError("");
 
       try {
-        const response = await api.get("/api/item-post/update/", {
+        // Fetch the single item. The list endpoint is paginated (12 per page),
+        // so searching it would miss any item outside the first page.
+        const response = await api.get(`/api/item-post/update/${itemId}/`, {
           withCredentials: true,
         });
-        const items = response.data?.results || [];
-        const found = items.find((entry) => String(entry.id) === String(itemId));
+        const found = response.data;
 
-        if (!found) {
+        if (!found || String(found.id) !== String(itemId)) {
           throw new Error("Item not found.");
         }
 

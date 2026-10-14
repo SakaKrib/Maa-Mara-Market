@@ -403,11 +403,17 @@ class ItemDraftView(APIView):
     def get(self, request):
         item_id = request.query_params.get("item_id")
         vendor_id = request.query_params.get("vendor_id")
-        draft = self._draft_queryset(
+        queryset = self._draft_queryset(
             request,
             item_id=item_id,
             vendor_id=vendor_id,
-        ).order_by("-updated_at").first()
+        )
+        if not item_id:
+            # A new-item form must only see new-item drafts. Without this, a
+            # more recently updated edit draft (including a finished one, which
+            # stays DRAFT) hides the saved new-item draft.
+            queryset = queryset.filter(created_item__isnull=True)
+        draft = queryset.order_by("-updated_at").first()
         if not draft:
             return Response({"exists": False, "draft": None})
         return Response({"draft": self._serialize_draft(request, draft)})
