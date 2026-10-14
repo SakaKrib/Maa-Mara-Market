@@ -343,12 +343,17 @@
 
 /*
  * Native admin/vendor dashboard safe areas.
- * The marker class is only rendered inside Capacitor apps; leave website
- * dashboard positioning unchanged. Match the customer shell's safe-area
- * environment variables so fixed chrome avoids phone system bars.
+ * Only the Capacitor dashboard shell gets these fixed-header and inset changes.
+ * Keep the status-bar region opaque and exactly the same surface as the header.
  */
 .mm-native-dashboard-shell > header {
-  top: env(safe-area-inset-top, 0px) !important;
+  top: 0 !important;
+  height: calc(72px + env(safe-area-inset-top, 0px)) !important;
+  padding-top: env(safe-area-inset-top, 0px) !important;
+  box-sizing: border-box !important;
+  background-color: hsl(var(--background)) !important;
+  background-image: none !important;
+  backdrop-filter: none !important;
 }
 
 .mm-native-dashboard-shell > aside {
@@ -365,30 +370,17 @@
   padding-bottom: calc(1rem + env(safe-area-inset-bottom, 0px)) !important;
 }
 
-/* Keep the native dashboard status-bar inset transparent, like the customer shell. */
 @media (max-width: 639px) {
-  /*
-   * Leave the top safe-area transparent so the native status-bar canvas shows
-   * through, then restore the dashboard's existing surface color below it.
-   */
   .mm-native-dashboard-shell {
-    --mm-native-dashboard-surface: #f8fafc;
-    background-color: transparent !important;
-    background-image: linear-gradient(
-      to bottom,
-      transparent 0,
-      transparent env(safe-area-inset-top, 0px),
-      var(--mm-native-dashboard-surface) env(safe-area-inset-top, 0px),
-      var(--mm-native-dashboard-surface) 100%
-    ) !important;
+    background-image: none !important;
   }
 
-  .dark .mm-native-dashboard-shell {
-    --mm-native-dashboard-surface: #020617;
+  .mm-native-dashboard-shell:not(.maamara-manager) > main {
+    padding-top: calc(72px + env(safe-area-inset-top, 0px)) !important;
   }
 
-  .mm-native-dashboard-shell.maamara-manager {
-    --mm-native-dashboard-surface: var(--maamara-soft, #f8f8f6);
+  .mm-native-dashboard-shell.maamara-manager > main {
+    padding-top: calc(88px + env(safe-area-inset-top, 0px)) !important;
   }
 
   html:has(.mm-native-dashboard-shell),
