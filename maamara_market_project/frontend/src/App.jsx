@@ -293,7 +293,7 @@ function AppContent() {
                <Route path="pie-chart" element={<Pie />} />
               <Route path="vendors/:vendorId" element={<VendorDetailsPage />} />
                <Route path="vendors/:vendorId/performance" element={<VendorPerformance />} />
-              <Route path="items/:id" element={<SingleItemProfile />} />
+              <Route path="items/:id" element={<SingleItemProfile viewMode="admin" />} />
               <Route path="vendor/create-items/requests" element={<VendorItemCreateRequests />} />
               <Route path="vendor-requests" element={<UiForVendorRequest />} />
               <Route path="vendorDashboard/vendoritemrequest/:id" element={<VendorItemRequestDetail />} />
@@ -369,7 +369,7 @@ function AppContent() {
                 <Route path="vendor-profile" element={<SingleVendorProfile />} />
                 <Route path="settings" element={<VendorSettings />} />
                 <Route path="vendor-payouts/payout-report" element={<PayoutsPage />} />
-                <Route path="item-onsite/items/:id" element={<SingleItemProfile />} />
+                <Route path="item-onsite/items/:id" element={<SingleItemProfile viewMode="vendor" />} />
 
                 {/* Item on site */}
                 <Route path="item-onsite" element={<ItemsOnsite />} />
