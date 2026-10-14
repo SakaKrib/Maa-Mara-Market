@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { IonIcon } from "@ionic/react";
 import { helpCircleOutline, sendOutline, refreshOutline, closeOutline } from "ionicons/icons";
 import api from "../../../../Services/Api";
@@ -9,6 +10,8 @@ const statusClasses = {
 };
 
 const SupportAdminPanel = ({ open = true, onClose }) => {
+  const navigate = useNavigate();
+  const closePanel = () => (onClose ? onClose() : navigate("/admin-dashboard"));
   const [tickets, setTickets] = useState([]);
   const [selectedTicket, setSelectedTicket] = useState(null);
   const [reply, setReply] = useState("");
@@ -81,7 +84,7 @@ const SupportAdminPanel = ({ open = true, onClose }) => {
     <div className="min-h-[calc(100vh-72px)] w-full bg-background p-2 text-foreground sm:p-4 lg:p-6">
       {snackbar.open && (<div className="fixed right-4 top-20 z-[1400] max-w-sm rounded-[20px] border border-gray-300 bg-card px-4 py-3 text-sm font-semibold text-card-foreground shadow-lg">{snackbar.message}<button type="button" onClick={() => setSnackbar((prev) => ({ ...prev, open: false }))} className="ml-3 text-xs text-muted-foreground hover:text-card-foreground" aria-label="Dismiss notification">×</button></div>)}
       <div className="relative mx-auto max-w-7xl rounded-2xl border border-border bg-background p-2 shadow-2xl sm:p-4">
-        <button type="button" onClick={onClose} aria-label="Close support" className="absolute right-3 top-3 z-10 rounded-xl p-2 text-muted-foreground hover:bg-muted">
+        <button type="button" onClick={closePanel} aria-label="Close support" className="absolute right-3 top-3 z-10 rounded-xl p-2 text-muted-foreground hover:bg-muted">
           <IonIcon icon={closeOutline} />
         </button>
         <header className="mb-5 rounded-2xl border border-border bg-card p-5 pr-14 shadow-sm sm:p-6 sm:pr-14">
