@@ -3,6 +3,12 @@ import { Directory, Filesystem } from "@capacitor/filesystem";
 import { Share } from "@capacitor/share";
 import { resolveApiAssetUrl } from "./Api";
 
+// Keep native sharing responsive and ensure only the latest pending product request opens.
+const SHARE_IMAGE_PREPARATION_TIMEOUT_MS = 1200;
+let latestShareRequestId = 0;
+let pendingNativePreparationController = null;
+let nativeShareDialogOpen = false;
+
 const getProductUrl = (itemId) => {
   const isNativeApp =
     Capacitor.isNativePlatform() ||
@@ -38,10 +44,10 @@ const getImageUrl = (image, item) => {
   return rawUrl ? resolveApiAssetUrl(rawUrl) : null;
 };
 
-const fetchImageBlob = async (imageUrl) => {
-  if (!imageUrl) return null;
+const fetchImageBlob = async (imageUrl, signal) => {
+  if (!imageUrl || signal?.aborted) return null;
 
-  const response = await fetch(imageUrl, { mode: "cors" });
+  const response = await fetch(imageUrl, { mode: "cors", signal });
   if (!response.ok) return null;
 
   const blob = await response.blob();
@@ -89,19 +95,30 @@ const blobToBase64 = (blob) =>
     reader.readAsDataURL(blob);
   });
 
-const createNativeShareImage = async (imageUrl, itemId) => {
-  const result = await fetchImageBlob(imageUrl);
-  if (!result) return null;
+const createNativeShareImage = async (imageUrl, itemId, signal) => {
+  const result = await fetchImageBlob(imageUrl, signal);
+  if (!result || signal?.aborted) return null;
 
   const extension = getImageExtension(result.contentType);
   const safeItemId = String(itemId || "product").replace(/[^a-z0-9-_]/gi, "-");
   const path = `maa-mara-share-${safeItemId}-${Date.now()}.${extension}`;
   const data = await blobToBase64(result.blob);
+  if (signal?.aborted) return null;
+
   const savedFile = await Filesystem.writeFile({
     path,
     data,
     directory: Directory.Cache,
   });
+
+  if (signal?.aborted) {
+    try {
+      await Filesystem.deleteFile({ path, directory: Directory.Cache });
+    } catch {
+      // Best-effort cleanup when a newer share request supersedes this one.
+    }
+    return null;
+  }
 
   if (!savedFile?.uri) {
     try {
@@ -143,16 +160,34 @@ const createWebShareFile = async (imageUrl, title) => {
 
 const isShareCancelled = (error) => error?.name === "AbortError";
 
-const shareNativeProduct = async ({ item, title, text, url, imageUrl }) => {
+const shareNativeProduct = async ({
+  item,
+  title,
+  text,
+  url,
+  imageUrl,
+  requestId,
+}) => {
   let temporaryImage = null;
+  const controller = new AbortController();
+  const timeoutId = setTimeout(
+    () => controller.abort(),
+    SHARE_IMAGE_PREPARATION_TIMEOUT_MS
+  );
+
+  // A tap on another product supersedes image preparation for the previous one.
+  pendingNativePreparationController?.abort();
+  pendingNativePreparationController = controller;
 
   try {
     try {
-      temporaryImage = await createNativeShareImage(imageUrl, item.id);
+      temporaryImage = await createNativeShareImage(imageUrl, item.id, controller.signal);
     } catch {
-      // Do not block sharing when media CORS/network rules prevent a local copy.
+      // The image is optional: network/CORS/filesystem issues must not block sharing.
       temporaryImage = null;
     }
+
+    if (requestId !== latestShareRequestId) return false;
 
     const options = {
       title,
@@ -162,31 +197,29 @@ const shareNativeProduct = async ({ item, title, text, url, imageUrl }) => {
       ...(temporaryImage?.uri ? { files: [temporaryImage.uri] } : {}),
     };
 
+    // Never open a second native dialog while one is already active.
+    if (nativeShareDialogOpen) return false;
+
+    nativeShareDialogOpen = true;
     try {
       await Share.share(options);
-      return true;
     } catch (error) {
-      if (isShareCancelled(error)) return true;
-
-      // Some targets/platforms do not accept an image together with a URL.
-      // Retry with the same public link and text before falling back to web.
-      if (temporaryImage?.uri) {
-        try {
-          await Share.share({
-            title,
-            text: `${text}\n${url}`,
-            url,
-            dialogTitle: "Share product",
-          });
-          return true;
-        } catch (fallbackError) {
-          if (isShareCancelled(fallbackError)) return true;
-        }
+      // Do not retry with a second dialog: a rejected native call may already
+      // have opened the system share sheet on some Android versions.
+      if (!isShareCancelled(error)) {
+        console.error("Unable to open native product sharing", error);
       }
-
-      return false;
+    } finally {
+      nativeShareDialogOpen = false;
     }
+
+    // Once Share.share has been attempted, don't fall through to web sharing.
+    return true;
   } finally {
+    clearTimeout(timeoutId);
+    if (pendingNativePreparationController === controller) {
+      pendingNativePreparationController = null;
+    }
     if (temporaryImage?.path) {
       try {
         await Filesystem.deleteFile({
@@ -194,7 +227,7 @@ const shareNativeProduct = async ({ item, title, text, url, imageUrl }) => {
           directory: Directory.Cache,
         });
       } catch {
-        // Cache cleanup is best-effort; a failed cleanup must not block sharing.
+        // Cache cleanup is best-effort and must not block sharing.
       }
     }
   }
@@ -241,8 +274,13 @@ const shareOnWeb = async ({ title, text, url, imageUrl }) => {
 };
 
 export const shareProduct = async ({ item, image }) => {
-  if (!item?.id || typeof window === "undefined") return;
+  if (!item?.id || typeof window === "undefined") return false;
 
+  // Ignore taps while the system share sheet is already open. During image
+  // preparation, a newer tap is allowed to replace the older pending product.
+  if (Capacitor.isNativePlatform() && nativeShareDialogOpen) return false;
+
+  const requestId = ++latestShareRequestId;
   const title = String(item.name || "Maa Mara Market product");
   const url = getProductUrl(item.id);
   const text = `Check out ${title} on Maa Mara Market.`;
@@ -250,21 +288,23 @@ export const shareProduct = async ({ item, image }) => {
 
   try {
     if (Capacitor.isNativePlatform()) {
-      const handled = await shareNativeProduct({
+      await shareNativeProduct({
         item,
         title,
         text,
         url,
         imageUrl,
+        requestId,
       });
-
-      if (handled) return;
+      return true;
     }
 
     await shareOnWeb({ title, text, url, imageUrl });
+    return true;
   } catch (error) {
     if (!isShareCancelled(error)) {
       console.error("Unable to share product", error);
     }
+    return false;
   }
 };
