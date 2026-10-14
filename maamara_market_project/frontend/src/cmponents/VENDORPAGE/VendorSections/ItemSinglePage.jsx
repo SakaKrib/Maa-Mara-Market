@@ -10,7 +10,6 @@ import {
   cubeSharp,
   trashSharp,
 } from "ionicons/icons";
-import EditItem from "../Products/Forms/EditItem/EditItem";
 import api, { resolveApiAssetUrl } from "../../../Services/Api";
 import { useAuth } from "../../Auth/AuthContext/Context";
 import useItemActivityLogs from "../../Hooks/ActivityHook/ItemActivityHook";
@@ -41,6 +40,9 @@ const SingleItemProfile = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [deleting, setDeleting] = useState(false);
+  const [showPriceEditor, setShowPriceEditor] = useState(false);
+  const [priceDraft, setPriceDraft] = useState("");
+  const [savingPrice, setSavingPrice] = useState(false);
 
   const {
     activityLogs,
@@ -102,12 +104,27 @@ const SingleItemProfile = () => {
     }
   };
 
-  const itemForEditor = {
-    ...item,
-    vendor: vendor.id,
-    vendor_id: vendor.id,
-  };
 
+  const handlePriceSave = async (event) => {
+    event.preventDefault();
+    const nextPrice = Number(priceDraft);
+    if (!Number.isFinite(nextPrice) || nextPrice < 0) {
+      setSnackbar({ open: true, message: "Enter a valid non-negative price." });
+      return;
+    }
+    try {
+      setSavingPrice(true);
+      await api.patch("/api/item-post/update/" + id + "/", { price: nextPrice }, { withCredentials: true });
+      setShowPriceEditor(false);
+      setSnackbar({ open: true, message: "Item price updated successfully." });
+      await loadItem();
+    } catch (requestError) {
+      console.error("Failed to update item price:", requestError);
+      setSnackbar({ open: true, message: requestError.response?.data?.detail || requestError.response?.data?.price?.[0] || "Unable to update the item price." });
+    } finally {
+      setSavingPrice(false);
+    }
+  };
   return (
     <>
       {snackbar.open && (
@@ -126,12 +143,13 @@ const SingleItemProfile = () => {
 
         {isAdmin && (
           <div className="flex flex-wrap gap-2">
-            <EditItem
-              vendor={{ ...vendor, isAdmin: true }}
-              item={itemForEditor}
-              isAdmin
-              onSuccess={loadItem}
-            />
+            <button
+              type="button"
+              onClick={() => { setPriceDraft(String(item.price ?? "")); setShowPriceEditor((open) => !open); }}
+              className="inline-flex items-center gap-2 rounded-xl bg-[#2563eb] px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-[#1d4ed8]"
+            >
+              {showPriceEditor ? "Cancel price change" : "Change price"}
+            </button>
             <button
               type="button"
               onClick={handleDelete}
@@ -145,6 +163,16 @@ const SingleItemProfile = () => {
         )}
       </div>
 
+      {isAdmin && showPriceEditor && (
+        <form onSubmit={handlePriceSave} className="mx-auto w-full max-w-[1500px] rounded-2xl border border-blue-200 bg-white p-4 shadow-sm sm:p-5">
+          <label htmlFor="admin-item-price" className="block text-sm font-semibold text-gray-800">New item price (KES)</label>
+          <div className="mt-2 flex flex-col gap-3 sm:flex-row">
+            <input id="admin-item-price" type="number" min="0" step="0.01" required value={priceDraft} onChange={(event) => setPriceDraft(event.target.value)} className="min-w-0 flex-1 rounded-xl border border-gray-300 bg-white px-4 py-3 text-sm text-gray-900 outline-none focus:border-blue-500" />
+            <button type="submit" disabled={savingPrice} className="rounded-xl bg-[#2563eb] px-5 py-3 text-sm font-semibold text-white disabled:opacity-60">{savingPrice ? "Saving…" : "Save new price"}</button>
+          </div>
+          <p className="mt-2 text-xs text-gray-500">This updates the item price directly; it does not create a price-change request.</p>
+        </form>
+      )}
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1.15fr)_minmax(360px,0.85fr)]">
         <div className="space-y-6">
           <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
@@ -168,13 +196,13 @@ const SingleItemProfile = () => {
                   )}
                 </div>
                 {!isAdmin && (
-                  <Link
-                    to="/vendors-dashboard/add-item"
-                    state={{ activeTab: "price", itemId: item.id }}
+                  <button
+                    type="button"
+                    onClick={() => navigate("/vendors-dashboard/edit-item/" + item.id, { state: { focusOffer: true } })}
                     className="mt-5 inline-flex w-fit items-center justify-center rounded-full bg-[#2563eb] px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-[#1d4ed8]"
                   >
-                    Request Price Change
-                  </Link>
+                    Put this item on offer
+                  </button>
                 )}
                 <div className="mt-5 grid gap-2 text-sm text-gray-600 sm:grid-cols-2">
                   <span>Category: {item.category || "—"}</span>
@@ -186,6 +214,105 @@ const SingleItemProfile = () => {
             </div>
           </div>
 
+          <section className="space-y-4 rounded-2xl border border-gray-200 bg-white p-5 shadow-sm sm:p-6">
+            <div>
+              <h2 className="text-lg font-bold text-gray-900">Complete product details</h2>
+              <p className="mt-1 text-sm text-gray-500">Saved product information, specifications, variants, sizes and offer settings.</p>
+            </div>
+            <div className="grid gap-3 sm:grid-cols-2">
+              {[
+                ["Department", item.department],
+                ["Category", item.category],
+                ["Subcategory", item.subcategory],
+                ["Section", item.section],
+                ["Brand", item.brand?.name || item.brand?.title || item.brand],
+                ["Item attribute", item.item_attribute],
+                ["Gender sizing", item.gender_based],
+                ["Children size age group", item.children_size_based_age],
+                ["Organic", item.is_organic],
+                ["Fresh food", item.is_fresh_food],
+                ["Returnable", item.returnable],
+                ["Available for sale", item.available],
+                ["Stock quantity", item.in_stock],
+                ["Discount price", item.discount_price == null ? null : "KES " + Number(item.discount_price).toLocaleString()],
+                ["Limited-time offer", item.in_offer],
+                ["Offer discount", item.offer?.discount_percentage == null ? null : item.offer.discount_percentage + "%"],
+                ["Offer start date", item.offer?.start_date],
+                ["Offer end date", item.offer?.end_date],
+                ["Occasions", item.occasions],
+                ["Manufactured date", item.manufactured_date],
+                ["Expiry date", item.expiry_date],
+                ["Roast type", item.roast_type],
+                ["Coffee state", item.coffee_state],
+                ["Weight", item.weight?.value != null ? item.weight.value + " " + (item.weight.unit || "kg") : item.weight],
+                ["Length", item.length?.value != null ? item.length.value + " " + (item.length.unit || "cm") : item.length],
+                ["Shipping dimensions", item.shipping_dimension || item.shipping_dimension_data],
+                ["Created", item.created_at ? new Date(item.created_at).toLocaleString() : null],
+                ["Last updated", item.updated ? new Date(item.updated).toLocaleString() : null],
+              ].map(([label, value]) => {
+                const displayValue = Array.isArray(value)
+                  ? value.map((entry) => typeof entry === "object" ? (entry?.name || entry?.label || entry?.occasion || JSON.stringify(entry)) : String(entry)).join(", ")
+                  : value && typeof value === "object"
+                    ? Object.entries(value).filter(([, part]) => part !== null && part !== "").map(([key, part]) => `${key.replaceAll("_", " ")}: ${typeof part === "object" ? JSON.stringify(part) : String(part)}`).join(" · ")
+                    : typeof value === "boolean" ? (value ? "Yes" : "No") : value;
+                return (
+                  <div key={label} className="min-w-0 rounded-xl border border-gray-100 bg-gray-50 px-3 py-3">
+                    <p className="text-[10px] font-semibold uppercase tracking-wide text-gray-500">{label}</p>
+                    <p className="mt-1 break-words text-sm font-medium text-gray-800">{displayValue === null || displayValue === undefined || displayValue === "" ? "—" : displayValue}</p>
+                  </div>
+                );
+              })}
+            </div>
+
+            {((item.variants || item.color_variants || []).length > 0) && (
+              <div className="border-t border-gray-100 pt-4">
+                <h3 className="text-sm font-bold text-gray-900">Colour variants and size stock</h3>
+                <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                  {(item.variants || item.color_variants || []).map((variant, index) => {
+                    const variantImage = resolveApiAssetUrl(variant.image || variant.color_image);
+                    return (
+                      <article key={variant.id || `${variant.color || "variant"}-${index}`} className="rounded-xl border border-gray-200 p-3">
+                        <div className="flex items-center gap-3">
+                          {variantImage ? <img src={variantImage} alt={`${variant.color || "Variant"} colour`} className="h-14 w-14 rounded-lg border border-gray-200 object-cover" /> : <span className="h-14 w-14 rounded-lg border border-gray-200 bg-gray-100" aria-hidden="true" /> }
+                          <div><p className="text-sm font-semibold text-gray-900">{variant.color || variant.name || `Variant ${index + 1}`}</p><p className="text-xs text-gray-500">{(variant.sizes || []).length} size option(s)</p></div>
+                        </div>
+                        {(variant.sizes || []).length > 0 && <div className="mt-3 flex flex-wrap gap-2">{variant.sizes.map((size, sizeIndex) => <span key={size.id || `${size.size}-${sizeIndex}`} className="rounded-lg bg-gray-100 px-2.5 py-1.5 text-xs text-gray-700">{size.size || "Size"} · Stock: {size.quantity_in_stock ?? size.stock ?? "—"}</span>)}</div>}
+                      </article>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {(item.size_only_icon || item.size_variant || []).length > 0 && (
+              <div className="border-t border-gray-100 pt-4">
+                <h3 className="text-sm font-bold text-gray-900">Standalone sizes</h3>
+                <div className="mt-3 flex flex-wrap gap-2">{(item.size_only_icon || item.size_variant || []).map((size, index) => <span key={size.id || `${size.size}-${index}`} className="rounded-lg bg-gray-100 px-3 py-2 text-xs text-gray-700">{size.size || "Size"} · Stock: {size.quantity_in_stock ?? size.stock ?? "—"}</span>)}</div>
+              </div>
+            )}
+
+            {(item.kids_sizes || []).length > 0 && (
+              <div className="border-t border-gray-100 pt-4">
+                <h3 className="text-sm font-bold text-gray-900">Children’s sizes</h3>
+                <div className="mt-3 flex flex-wrap gap-2">{item.kids_sizes.map((size, index) => <span key={size.id || `${size.age_group || size.size}-${index}`} className="rounded-lg bg-gray-100 px-3 py-2 text-xs text-gray-700">{size.age_group || size.size || "Size"} · Stock: {size.quantity_in_stock ?? size.stock ?? "—"}</span>)}</div>
+              </div>
+            )}
+
+            {(item.shoe_input || []).length > 0 && (
+              <div className="border-t border-gray-100 pt-4">
+                <h3 className="text-sm font-bold text-gray-900">Shoe specifications</h3>
+                <div className="mt-3 grid gap-3 sm:grid-cols-2">{item.shoe_input.map((shoe, index) => <div key={shoe.id || index} className="rounded-xl border border-gray-100 bg-gray-50 p-3 text-sm text-gray-700"><p>Type: {shoe.shoe_type || "—"}</p><p>Gender: {shoe.shoe_gender || "—"}</p><p>Sizes: {Array.isArray(shoe.shoe_size) ? shoe.shoe_size.join(", ") : shoe.shoe_size || "—"}</p></div>)}</div>
+              </div>
+            )}
+
+            {(item.additional_images || []).length > 0 && (
+              <div className="border-t border-gray-100 pt-4">
+                <h3 className="text-sm font-bold text-gray-900">Additional product images</h3>
+                <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">{item.additional_images.map((asset, index) => { const src = resolveApiAssetUrl(asset.image || asset.url || asset.file); return src ? <img key={asset.id || index} src={src} alt={asset.alt_text || `${item.name || "Product"} image ${index + 1}`} className="aspect-square w-full rounded-xl border border-gray-200 object-cover" /> : null; })}</div>
+              </div>
+            )}
+            {item.video && <div className="border-t border-gray-100 pt-4"><h3 className="text-sm font-bold text-gray-900">Product video</h3><video className="mt-3 max-h-80 w-full rounded-xl bg-black" controls preload="metadata" src={resolveApiAssetUrl(item.video)} /></div>}
+          </section>
           <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
             <Metric icon={cubeSharp} label="In stock" value={Number(stats.stock || 0).toLocaleString()} />
             <Metric icon={cartSharp} label="In carts" value={Number(stats.in_carts || 0).toLocaleString()} />
