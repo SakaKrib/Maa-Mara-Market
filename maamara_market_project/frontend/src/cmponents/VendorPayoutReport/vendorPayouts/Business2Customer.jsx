@@ -6,6 +6,7 @@ import {
   checkmarkCircleOutline,
   timeOutline,
   arrowForwardOutline,
+  arrowBackOutline,
 } from "ionicons/icons";
 import { useGenerateMonthlyPayouts } from "../../Hooks/Payouts/GeneratePayoutHook";
 import { useNavigate } from "react-router-dom";
@@ -75,6 +76,14 @@ export default function AdminPayoutTriggerPayment() {
 
   return (
     <section className="min-w-0 space-y-5 p-2 sm:p-4 lg:p-6">
+      <button
+        type="button"
+        onClick={() => navigate("/admin-dashboard")}
+        className="inline-flex min-h-10 items-center gap-2 rounded-[20px] border border-border bg-card px-4 py-2 text-sm font-semibold text-card-foreground transition hover:bg-muted"
+      >
+        <IonIcon icon={arrowBackOutline} />
+        Back to dashboard
+      </button>
       <header className="rounded-2xl border border-border bg-card p-5 shadow-sm sm:p-6">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <div className="flex min-w-0 items-start gap-3">
