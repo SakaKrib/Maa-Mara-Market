@@ -1303,14 +1303,16 @@ def revenue_growth(request):
 @permission_classes([IsAuthenticated, IsAdminUser])
 def dashboard_stats(request):
     completed_orders = Order.objects.filter(status__in=["COMPLETED", "completed"])
-
     total_sales = sum(order.get_total() for order in completed_orders)
-
-    total_orders = completed_orders.count()
+    completed_count = completed_orders.count()
+    total_orders = Order.objects.count()
+    pending_orders = Order.objects.filter(status__in=["PENDING", "pending"]).count()
 
     return Response({
         "total_sales": total_sales,
         "total_orders": total_orders,
+        "completed_orders": completed_count,
+        "pending_orders": pending_orders,
     })
 
 
