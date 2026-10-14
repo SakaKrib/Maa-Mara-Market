@@ -28,14 +28,14 @@ const Metric = ({ icon, label, value }) => (
   </div>
 );
 
-const SingleItemProfile = () => {
+const SingleItemProfile = ({ viewMode = null }) => {
   const [snackbar, setSnackbar] = useState({ open: false, message: "" });
   const handleCloseSnackbar = () => setSnackbar((prev) => ({ ...prev, open: false }));
 
   const { id } = useParams();
   const navigate = useNavigate();
   const { authType, user } = useAuth();
-  const isAdmin = authType === "admin" || Boolean(user?.is_staff || user?.is_superuser);
+  const isAdmin = viewMode ? viewMode === "admin" : authType === "admin" || Boolean(user?.is_staff || user?.is_superuser);
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
