@@ -3,13 +3,29 @@ import MobileBottomSheet from "./MobileBottomSheet";
 import { useNavigate } from "react-router-dom";
 import { Heart, Share2 } from "lucide-react";
 import { useWishlistContext } from "../../../../../cmponents/Hooks/WishListHook/Wishlist";
+import { resolveApiAssetUrl } from "../../../../../Services/Api";
 import FormattedCurrency from "../../../Customer/DesktopView/Main/Currency/FormattedCurrency";
 
 const MobileWishlistModal = ({ open, onClose }) => {
   const navigate = useNavigate();
   const { wishlist: items = [] } = useWishlistContext();
 
-  const getImage = (image) => image || "";
+  const getImage = (item) => {
+    const candidate =
+      item?.image?.url ||
+      item?.image ||
+      item?.image_url ||
+      item?.imageUrl ||
+      item?.images?.[0]?.url ||
+      item?.images?.[0];
+
+    const imageUrl =
+      typeof candidate === "string"
+        ? candidate
+        : candidate?.url || candidate?.image_url || candidate?.src || candidate?.path;
+
+    return resolveApiAssetUrl(imageUrl) || "";
+  };
 
   const handleShare = async (item) => {
     const url = `${window.location.origin}/item/${item.slug || item.id}`;
@@ -41,7 +57,7 @@ const MobileWishlistModal = ({ open, onClose }) => {
               const item = entry.item || entry;
               return (
                 <div key={item.id || index} className="mm-mobile-line-item">
-                  <img src={getImage(item.image)} alt={item.name || "Wishlist item"} />
+                  <img src={getImage(item)} alt={item.name || "Wishlist item"} />
                   <div className="mm-mobile-line-copy">
                     <strong>{item.name}</strong>
                     <span><FormattedCurrency value={Number(item.final_price || 0)} /></span>
