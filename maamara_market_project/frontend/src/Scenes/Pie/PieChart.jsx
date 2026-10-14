@@ -3,57 +3,62 @@ import { Box, CircularProgress, Typography } from "@mui/material";
 import api from "../../Services/Api";
 import PieGraph from "../../cmponents/PieChart/pieChart";
 
-const getCategoryLabel = (item) => {
-  const value = item.category_name
-    || (typeof item.category === "string" ? item.category : item.category?.name || item.category?.title)
-    || item.subcategory_name
-    || (typeof item.subcategory === "string" ? item.subcategory : item.subcategory?.name)
-    || "Uncategorized";
-  return String(value).trim() || "Uncategorized";
-};
-
 const Pie = () => {
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [retryKey, setRetryKey] = useState(0);
 
   useEffect(() => {
     let active = true;
-    api.get("/api/items/", { withCredentials: true })
+    setLoading(true);
+    setError("");
+
+    api.get("/api/admin/dashboard-chart-data/")
       .then(({ data: payload }) => {
-        const items = Array.isArray(payload)
-          ? payload
-          : payload?.results || payload?.items || [];
-        const counts = new Map();
-        items.forEach((item) => {
-          const label = getCategoryLabel(item);
-          counts.set(label, (counts.get(label) || 0) + 1);
-        });
-        if (active) {
-          setData([...counts.entries()].map(([label, value]) => ({ id: label, label, value })));
+        if (!active) return;
+        const categories = payload?.category_distribution;
+        if (!Array.isArray(categories)) {
+          throw new Error("The category distribution response was not in the expected format.");
         }
+        setData(categories);
       })
       .catch((requestError) => {
-        if (active) setError(requestError?.response?.data?.detail || "Unable to load category distribution.");
+        if (active) {
+          console.error("Category distribution load failed:", requestError);
+          setError("Unable to load Category Distribution. Please try again.");
+        }
       })
       .finally(() => { if (active) setLoading(false); });
 
     return () => { active = false; };
-  }, []);
+  }, [retryKey]);
 
   return (
-    <Box m="10px">
+    <Box m={{ xs: 0, sm: 1 }} sx={{ minWidth: 0 }}>
       <Box sx={{ mb: 2 }}>
-        <Typography variant="h4" component="h1">Pie Chart</Typography>
-        <Typography variant="body2" color="text.secondary">Marketplace Category Distribution</Typography>
+        <Typography variant="overline" sx={{ color: "primary.main", fontWeight: 700, letterSpacing: "0.16em" }}>
+          Marketplace analytics
+        </Typography>
+        <Typography variant="h4" component="h1" sx={{ fontWeight: 700, letterSpacing: "-0.025em" }}>
+          Category Distribution
+        </Typography>
+        <Typography variant="body2" color="text.secondary">
+          Completed-order item quantities grouped by product category.
+        </Typography>
       </Box>
-      <Box sx={{ height: "70vh", minHeight: 320, position: "relative" }}>
+      <Box sx={{ height: { xs: "65vh", sm: "70vh" }, minHeight: 320, position: "relative", minWidth: 0 }}>
         {loading ? (
           <Box sx={{ height: "100%", display: "flex", alignItems: "center", justifyContent: "center" }}>
             <CircularProgress size={28} />
           </Box>
         ) : error ? (
-          <Typography role="alert" color="error" sx={{ p: 2 }}>{error}</Typography>
+          <Box role="alert" sx={{ p: 3 }}>
+            <Typography color="error" sx={{ mb: 2 }}>{error}</Typography>
+            <button type="button" onClick={() => setRetryKey((key) => key + 1)} className="rounded-xl border border-border px-4 py-2 text-sm font-semibold">
+              Try again
+            </button>
+          </Box>
         ) : (
           <PieGraph data={data} />
         )}
