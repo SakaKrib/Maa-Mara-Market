@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { CheckCircle2, Clock3, Gift, Loader2, MapPin, ShoppingBag, Undo2, Wallet } from "lucide-react";
+import { CheckCircle2, Clock3, Download, Gift, Loader2, MapPin, ShoppingBag, Undo2, Wallet } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "../../../../../../../components/ui/card";
 import { Badge } from "../../../../../../../components/ui/badge";
@@ -7,6 +7,70 @@ import { Button } from "../../../../../../../components/ui/button";
 import RequestReturnForm from "../Return/Return";
 import FormattedCurrency from "../Currency/FormattedCurrency";
 import api from "../../../../../../Services/Api";
+
+const csvCell = (value) => {
+  const text = value == null
+    ? ""
+    : typeof value === "object"
+      ? JSON.stringify(value)
+      : String(value);
+  const safeText = /^[=+@-]/.test(text) ? `'${text}` : text;
+  return '"' + safeText.replace(/"/g, '""') + '"';
+};
+
+const downloadOrderHistory = (orders) => {
+  const generatedAt = new Date().toLocaleString("en-KE", { timeZone: "Africa/Nairobi" });
+  const rows = [
+    ["MAA MARA MARKET — CUSTOMER ORDER HISTORY"],
+    ["Generated at (Africa/Nairobi)", generatedAt],
+    [],
+    ["Order ID", "Order date", "Order status", "Payment status", "Item ID", "Item", "Quantity", "Unit price (KES)", "Line total (KES)", "Order total (KES)"],
+  ];
+
+  orders.forEach((order) => {
+    const items = Array.isArray(order.items) ? order.items : [];
+    const paymentStatus = order.payment?.status || order.payment_status || "";
+    if (!items.length) {
+      rows.push([
+        order.id ?? order.paypal_order_id ?? "",
+        order.ordered_date ?? order.created_at ?? "",
+        order.status ?? "",
+        paymentStatus,
+        "", "No item details returned", "", "", "",
+        order.final_total ?? "",
+      ]);
+      return;
+    }
+    items.forEach((line) => {
+      const product = line.product || line.item || {};
+      const unitPrice = line.final_price ?? line.total_item_price ?? line.price ?? product.price ?? "";
+      const quantity = Number(line.quantity) || 0;
+      rows.push([
+        order.id ?? order.paypal_order_id ?? "",
+        order.ordered_date ?? order.created_at ?? "",
+        order.status ?? "",
+        paymentStatus,
+        line.id ?? product.id ?? "",
+        product.name ?? line.item_name ?? line.name ?? "Product",
+        line.quantity ?? "",
+        unitPrice,
+        Number.isFinite(Number(unitPrice)) ? Number(unitPrice) * quantity : "",
+        order.final_total ?? "",
+      ]);
+    });
+  });
+
+  const csv = rows.map((row) => row.map(csvCell).join(",")).join("\\r\\n");
+  const blob = new Blob(["\\uFEFF", csv], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const anchor = document.createElement("a");
+  anchor.href = url;
+  anchor.download = `maa-mara-customer-order-history-${new Date().toISOString().slice(0, 10)}.csv`;
+  document.body.appendChild(anchor);
+  anchor.click();
+  anchor.remove();
+  window.setTimeout(() => URL.revokeObjectURL(url), 1500);
+};
 
 const normalizeStatus = (status) => String(status || "").trim().toUpperCase();
 
