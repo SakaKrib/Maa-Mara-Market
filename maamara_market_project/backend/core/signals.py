@@ -68,6 +68,8 @@ def notify_item_owner_for_marketplace_activity(sender, instance, created, **kwar
         "item_added_to_cart",
         "item_viewed",
         "item_sold",
+        "item_reviewed",
+        "item_added_to_wishlist",
     }:
         return
 
@@ -92,6 +94,16 @@ def notify_item_owner_for_marketplace_activity(sender, instance, created, **kwar
             "Your item was purchased",
             f"Your item {item.name} was purchased.",
             "/vendors-dashboard/orders",
+        ),
+        "item_reviewed": (
+            "New customer review",
+            f"A customer left a review for {item.name}.",
+            f"/item/{item.pk}/",
+        ),
+        "item_added_to_wishlist": (
+            "Your item was wishlisted",
+            f"A customer added {item.name} to their wishlist.",
+            "/vendors-dashboard",
         ),
     }
     title, message, url = action_copy[instance.action]
