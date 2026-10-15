@@ -15,7 +15,7 @@ from core.push_notifications import send_notification_push
 @receiver(post_save, sender=VendorRequest)
 def create_vendor_request_notification(sender, instance, created, **kwargs):
     # Define your frontend route template — update this as needed
-    frontend_review_url = f"/admin/vendor-requests/{instance.id}/review"  # or full URL if needed
+    frontend_review_url = "/admin-dashboard/vendor-requests"
 
     # Notify all admins (you can change this to a group or specific users)
     admins = User.objects.filter(is_superuser=True)
