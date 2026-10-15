@@ -231,6 +231,39 @@ def complete_paid_order(order, payment, *, transaction_id=None):
         locked_payment,
     )
 
+    # Paid-order notifications are written in the same atomic transaction as
+    # the order state, so a payment retry cannot alert vendors about an unpaid
+    # or rolled-back order. The Notification signal handles push delivery.
+    from core.models import Notification
+
+    vendor_items = {}
+    for order_item in order_items:
+        vendor = getattr(order_item.item, "vendor", None)
+        if vendor and getattr(vendor, "user_id", None):
+            vendor_items.setdefault(vendor.user_id, {
+                "user": vendor.user,
+                "items": [],
+            })["items"].append(order_item)
+
+    for group in vendor_items.values():
+        item_names = ", ".join(dict.fromkeys(
+            str(order_item.item.name) for order_item in group["items"]
+        ))
+        Notification.objects.create(
+            user=group["user"],
+            title="New paid order",
+            message=f"Paid order #{locked_order.id} includes: {item_names}. Prepare the items for dispatch.",
+            url=f"/vendors-dashboard/orders?order={locked_order.id}",
+        )
+
+    if locked_order.user_id:
+        Notification.objects.create(
+            user=locked_order.user,
+            title="Order confirmed",
+            message=f"Your payment for order #{locked_order.id} was confirmed.",
+            url=f"/customer-order?order={locked_order.id}",
+        )
+
     _broadcast_payment_success(locked_order)
 
     # Email notifications are post-commit side effects. They must never cause
