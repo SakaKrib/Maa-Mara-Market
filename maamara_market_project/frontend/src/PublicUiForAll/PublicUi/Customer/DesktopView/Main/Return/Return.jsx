@@ -30,7 +30,8 @@ const RequestReturnForm = ({ selectedItem = null }) => {
   const [image, setImage] = useState(null);
   const [loadingOrders, setLoadingOrders] = useState(true);
   const [loading, setLoading] = useState(false);
-  const [snackbar, setSnackbar] = useState({ open: false, message: "" });\n  const [lastReturnRecord, setLastReturnRecord] = useState(null);
+  const [snackbar, setSnackbar] = useState({ open: false, message: "" });
+  const [lastReturnRecord, setLastReturnRecord] = useState(null);
 
   useEffect(() => {
     let active = true;
@@ -77,19 +78,17 @@ const RequestReturnForm = ({ selectedItem = null }) => {
 
   const downloadReturnRecord = (record) => {
     if (!record) return;
-    const order = orders.find((entry) => String(entry.id) === String(orderId));
-    const item = selectedOrderItem;
     const rows = [
       ["MAA MARA MARKET — RETURN / EXCHANGE REQUEST"],
       ["Generated at (Africa/Nairobi)", new Date().toLocaleString("en-KE", { timeZone: "Africa/Nairobi" })],
       ["Return request ID", record.id ?? record.return_request_id ?? ""],
-      ["Order ID", order?.id ?? orderId ?? ""],
-      ["Item", item?.item?.name ?? item?.name ?? item?.item_name ?? "Purchased item"],
-      ["Quantity", item?.quantity ?? ""],
-      ["Reason", record.custom_reason || record.reason || (reason === "custom" ? customReason : reason)],
-      ["Customer preference", record.customer_preference || preference],
+      ["Order ID", record.order_id ?? ""],
+      ["Item", record.item_name ?? "Purchased item"],
+      ["Quantity", record.quantity ?? ""],
+      ["Reason", record.custom_reason || record.reason || ""],
+      ["Customer preference", record.customer_preference || ""],
       ["Status", record.status || "Submitted — awaiting review"],
-      ["Description", record.description || description],
+      ["Description", record.description || ""],
       ["Refund amount (KES)", record.refund_amount ?? ""],
       ["Decision / response", record.admin_response || record.decision_note || ""],
     ];
@@ -168,8 +167,33 @@ const RequestReturnForm = ({ selectedItem = null }) => {
       );
 
       if (response.data?.success) {
-        showMessage(
-          response.data.message || "Your return request has been submitted.");
+        const returned = response.data.return_request || {};
+        setLastReturnRecord({
+          ...returned,
+          id: returned.id ?? returned.return_request_id ?? response.data.return_request_id ?? "",
+          order_id: selectedOrder.id,
+          item_name:
+            returned.item_name ||
+            returned.item?.name ||
+            selectedOrderItem.item?.name ||
+            selectedOrderItem.name ||
+            selectedOrderItem.item_name ||
+            "Purchased item",
+          quantity: returned.quantity ?? selectedOrderItem.quantity ?? "",
+          reason:
+            returned.custom_reason ||
+            returned.reason ||
+            (reason === "custom" ? finalReason : reason),
+          customer_preference: returned.customer_preference || preference,
+          status:
+            returned.status ||
+            response.data.message ||
+            "Submitted — awaiting review",
+          description: returned.description || description.trim(),
+          refund_amount: returned.refund_amount ?? response.data.refund_amount ?? "",
+          admin_response: returned.admin_response || returned.decision_note || "",
+        });
+        showMessage(response.data.message || "Your return request has been submitted.");
         resetForm();
       } else {
         showMessage(response.data?.error || "The return request could not be submitted.");
