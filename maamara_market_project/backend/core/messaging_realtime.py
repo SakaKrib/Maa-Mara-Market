@@ -4,7 +4,7 @@ from django.db import transaction
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 
-from .models import Conversation, DirectMessage
+from .models import Conversation, DirectMessage, Notification
 
 
 def _send(group, payload):
@@ -28,6 +28,27 @@ def _send(group, payload):
 def direct_message_saved(sender, instance, created, **kwargs):
     if not created:
         return
+
+    # Persist a recipient-facing notification alongside the realtime event.
+    # This also feeds the shared FCM dispatcher through core.signals.
+    conversation = instance.conversation
+    recipient = (
+        conversation.participant
+        if instance.sender_id == conversation.admin_id
+        else conversation.admin
+    )
+    if recipient and recipient.pk != instance.sender_id:
+        preview = (instance.body or "").strip()
+        if not preview and instance.image:
+            preview = "Sent you an image."
+        if not preview:
+            preview = "You have a new message."
+        Notification.objects.create(
+            user=recipient,
+            title="New message",
+            message=preview[:1000],
+            url=f"/?openMessage=1&conversation={conversation.pk}&message={instance.pk}",
+        )
 
     payload = {
         "type": "message.created",
