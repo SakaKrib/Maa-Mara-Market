@@ -458,18 +458,18 @@ class VendorRequest(models.Model):
         admin_email_obj.attach_alternative(html_content_admin, "text/html")
         admin_email_obj.send()
 
-        # Notify admin via system notifications
+        # Create each notification through model.save()/post_save so the
+        # shared notification dispatcher can also send native push alerts.
+        # bulk_create() bypasses Django post_save signals.
         admin_users = User.objects.filter(is_staff=True)
-        Notification.objects.bulk_create([
-            Notification(
+        for admin in admin_users:
+            Notification.objects.create(
                 user=admin,
                 title="New Vendor Request Verified",
                 message=f"User '{user.username}' has verified their OTP and submitted a vendor request.",
                 vendor_request=self,
-                url=f"https:/admin/vendor-requests/{self.id}/"
+                url=f"/admin/vendor-requests/{self.id}/review",
             )
-            for admin in admin_users
-        ])
 
         return True, "OTP verified successfully"
 
