@@ -938,7 +938,7 @@ class WishlistAPIView(APIView):
                     user=admin,
                     title="Item added to wishlist",
                     message=f"A customer added {item.name} to their wishlist.",
-                    url=f"/admin-item/vendorDashboard/items/{item.id}/"
+                    url=f"/admin-dashboard/items/{item.id}"
                 )
 
         else:
@@ -1006,7 +1006,7 @@ class WishlistAPIView(APIView):
                     user=admin,
                     title="Wishlist Update",
                     message=f"A customer removed {item.name} from their wishlist.",
-                    url=f"/admin-item/vendorDashboard/items/{item.id}/"
+                    url=f"/admin-dashboard/items/{item.id}"
                 )
 
             return Response({"success": True, "message": "Item removed from wishlist"})
