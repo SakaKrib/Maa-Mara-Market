@@ -82,7 +82,7 @@ export const AuthProvider = ({ children }) => {
       setIsVisitor(false);
       setAuthType("anonymous");
       setUser(null);
-      if (typeof window !== "undefined") window.location.assign("/");
+      if (typeof window !== "undefined") window.location.assign("/customer-login");
     }
   };
 
