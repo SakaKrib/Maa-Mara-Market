@@ -90,8 +90,8 @@ jobs:
 
       - name: Install temporary Capacitor build tools
         working-directory: ${{ env.FRONTEND_DIR }}
-        # Runtime core/share/filesystem plugins are pinned in package.json and the lockfile.
-        # Install only project generators/platform wrappers and Status Bar temporarily.
+        # Runtime plugins (including push notifications) are pinned in package.json and the lockfile.
+        # Install project generators/platform wrappers and Status Bar temporarily.
         run: npm install --no-save @capacitor/cli@7 @capacitor/android@7 @capacitor/ios@7 @capacitor/status-bar@7 typescript@5.8.3
 
       - name: Build mobile web bundle
@@ -99,12 +99,39 @@ jobs:
         env:
           VITE_BUILD_TARGET: mobile
           VITE_API_URL: ${{ env.MOBILE_API_URL }}
+          VITE_NATIVE_PUSH_ENABLED: ${{ secrets.FIREBASE_ANDROID_CONFIG != '' }}
         run: npm run build:mobile
 
-      - name: Generate and sync Android project
+      - name: Generate Android project and configure Firebase when credentials are available
         working-directory: ${{ env.FRONTEND_DIR }}
+        env:
+          FIREBASE_ANDROID_CONFIG: ${{ secrets.FIREBASE_ANDROID_CONFIG }}
         run: |
           npx cap add android
+          if [ -n "$FIREBASE_ANDROID_CONFIG" ]; then
+            printf '%s' "$FIREBASE_ANDROID_CONFIG" > android/app/google-services.json
+            python3 - <<'PY'
+          from pathlib import Path
+
+          root_gradle = Path("android/build.gradle")
+          root_text = root_gradle.read_text()
+          google_classpath = "classpath 'com.google.gms:google-services:4.4.2'"
+          if google_classpath not in root_text:
+              root_text = root_text.replace(
+                  "dependencies {",
+                  "dependencies {\\n        " + google_classpath,
+                  1,
+              )
+              root_gradle.write_text(root_text)
+
+          app_gradle = Path("android/app/build.gradle")
+          app_text = app_gradle.read_text()
+          if "com.google.gms.google-services" not in app_text:
+              app_gradle.write_text(app_text.rstrip() + "\\n\\napply plugin: 'com.google.gms.google-services'\\n")
+          PY
+          else
+            echo "Firebase Android config missing; this APK will build, but native push registration stays disabled."
+          fi
           npx cap sync android
 
       # GitHub development builds use HTTPS Tailscale Serve to avoid Android WebView mixed-content blocking.
@@ -321,12 +348,57 @@ jobs:
         env:
           VITE_BUILD_TARGET: mobile
           VITE_API_URL: ${{ env.MOBILE_API_URL }}
+          VITE_NATIVE_PUSH_ENABLED: ${{ secrets.FIREBASE_IOS_CONFIG != '' }}
         run: npm run build:mobile
 
-      - name: Generate and sync iOS project
+      - name: Generate iOS project and configure Firebase when credentials are available
         working-directory: ${{ env.FRONTEND_DIR }}
+        env:
+          FIREBASE_IOS_CONFIG: ${{ secrets.FIREBASE_IOS_CONFIG }}
         run: |
           npx cap add ios
+          if [ -n "$FIREBASE_IOS_CONFIG" ]; then
+            printf '%s' "$FIREBASE_IOS_CONFIG" > ios/App/App/GoogleService-Info.plist
+            ruby - <<'RUBY'
+          require 'xcodeproj'
+          project = Xcodeproj::Project.open('ios/App/App.xcodeproj')
+          target = project.targets.find { |entry| entry.name == 'App' }
+          raise 'App target was not found in the generated Xcode project' unless target
+          app_group = project.main_group.find_subpath('App', false)
+          raise 'App group was not found in the generated Xcode project' unless app_group
+          file_ref = app_group.files.find { |file| file.path == 'GoogleService-Info.plist' }
+          file_ref ||= app_group.new_file('GoogleService-Info.plist')
+          unless target.resources_build_phase.files_references.include?(file_ref)
+            target.resources_build_phase.add_file_reference(file_ref)
+          end
+          project.save
+          RUBY
+          else
+            echo "Firebase iOS config missing; this simulator build will not register for native push."
+          fi
+
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+
+          app_delegate = Path("ios/App/App/AppDelegate.swift")
+          source = app_delegate.read_text()
+          if "capacitorDidRegisterForRemoteNotifications" not in source:
+              methods = """
+              func application(_ application: UIApplication, didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data) {
+                  NotificationCenter.default.post(name: .capacitorDidRegisterForRemoteNotifications, object: deviceToken)
+              }
+
+              func application(_ application: UIApplication, didFailToRegisterForRemoteNotificationsWithError error: Error) {
+                  NotificationCenter.default.post(name: .capacitorDidFailToRegisterForRemoteNotifications, object: error)
+              }
+          """
+              closing = source.rfind("}")
+              if closing < 0:
+                  raise SystemExit("Could not locate AppDelegate class closing brace")
+              source = source[:closing] + methods + source[closing:]
+              app_delegate.write_text(source)
+          PY
           npx cap sync ios
 
 
