@@ -26,6 +26,7 @@ export default function Messaging({ floating = false, onClose = null, initialCon
   const endRef = useRef(null);
   const messageElementRefs = useRef(new Map());
   const pendingTargetMessageRef = useRef(initialMessageId ? String(initialMessageId) : "");
+  const processedNotificationTargetRef = useRef("");
 
   const loadContacts = useCallback(async () => {
     const response = await api.get("/api/messaging/contacts/");
@@ -61,6 +62,10 @@ export default function Messaging({ floating = false, onClose = null, initialCon
       (conversation) => String(conversation.id) === String(initialConversationId)
     );
     if (!targetConversation) return;
+
+    const targetKey = `${targetConversation.id}:${initialMessageId ? String(initialMessageId) : ""}`;
+    if (processedNotificationTargetRef.current === targetKey) return;
+    processedNotificationTargetRef.current = targetKey;
 
     // Set the message target even when this conversation is already open.
     // Notifications for multiple messages in the same chat must still scroll
