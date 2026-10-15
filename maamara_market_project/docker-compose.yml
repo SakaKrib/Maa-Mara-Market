@@ -26,6 +26,7 @@ services:
       retries: 10
 
   backend:
+    image: maamara-market-backend:dev
     build:
       context: ./backend
     restart: unless-stopped
@@ -60,8 +61,8 @@ services:
         condition: service_healthy
 
   pending-registration-cleanup:
-    build:
-      context: ./backend
+    # Reuse the backend image; do not build/install Python dependencies a second time.
+    image: maamara-market-backend:dev
     restart: unless-stopped
     env_file:
       - ./backend/project01/.env
