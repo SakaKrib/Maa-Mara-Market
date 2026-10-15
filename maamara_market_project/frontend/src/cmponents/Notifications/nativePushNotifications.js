@@ -17,6 +17,7 @@ const resolvePushTarget = (rawUrl) => {
 
 export async function setupNativePushNotifications() {
   if (!Capacitor.isNativePlatform()) return () => {};
+  if (import.meta.env.VITE_NATIVE_PUSH_ENABLED === "false") return () => {};
   if (setupPromise) return setupPromise;
 
   setupPromise = (async () => {
