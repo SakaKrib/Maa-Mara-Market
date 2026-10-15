@@ -806,12 +806,32 @@ class ReviewViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         item_id = self.kwargs.get('item_id')
+        user = self.request.user if self.request.user.is_authenticated else None
+        visitor_id = None if user else self.request.COOKIES.get("visitorId")
 
-        if self.request.user.is_authenticated:
-            serializer.save(user=self.request.user, visitor_id=None, item_id=item_id)
-        else:
-            visitor_id = self.request.COOKIES.get("visitorId")
-            serializer.save(user=None, visitor_id=visitor_id, item_id=item_id)
+        review = serializer.save(
+            user=user,
+            visitor_id=visitor_id,
+            item_id=item_id,
+        )
+
+        # Record one canonical review event. core.signals converts this into
+        # a vendor-owned Notification, which then uses the shared FCM push path.
+        item = review.item
+        ActivityLog.objects.create(
+            user=user,
+            visitor_id=visitor_id,
+            actor_type=(
+                "admin" if user and user.is_staff
+                else "vendor" if user and hasattr(user, "vendor")
+                else "user" if user
+                else "visitor"
+            ),
+            action="item_reviewed",
+            item=item,
+            description=f"A customer left a review for {item.name}.",
+            related_url=f"/item/{item.pk}/",
+        )
 
 
 
