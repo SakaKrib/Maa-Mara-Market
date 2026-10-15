@@ -71,6 +71,17 @@ export const AdminPreferencesProvider = ({ children }) => {
   }, []);
 
   const updatePreference = async (key, value) => {
+    const isNativeApp =
+      typeof window !== "undefined" &&
+      window.Capacitor?.isNativePlatform?.() === true;
+
+    if (
+      key === "browserAlerts" &&
+      isNativeApp
+    ) {
+      return;
+    }
+
     if (
       key === "browserAlerts" &&
       value &&
@@ -95,6 +106,7 @@ export const AdminPreferencesProvider = ({ children }) => {
     if (
       !preferences.browserAlerts ||
       typeof window === "undefined" ||
+      window.Capacitor?.isNativePlatform?.() === true ||
       !("Notification" in window) ||
       Notification.permission !== "granted"
     ) {
@@ -110,8 +122,9 @@ export const AdminPreferencesProvider = ({ children }) => {
 
   useEffect(() => {
     const isAdminWorkspace = location.pathname.startsWith("/admin-dashboard");
+    const isVendorWorkspace = location.pathname.startsWith("/vendors-dashboard");
 
-    if (!isAdminWorkspace) {
+    if (!isAdminWorkspace && !isVendorWorkspace) {
       notificationStateRef.current = {
         initialized: false,
         notificationIds: new Set(),
@@ -132,8 +145,12 @@ export const AdminPreferencesProvider = ({ children }) => {
         const [notificationResponse, conversationResponse, supportResponse] =
           await Promise.allSettled([
             api.get("/api/notifications/"),
-            api.get("/api/messaging/conversations/"),
-            api.get("/api/support/status-counts/"),
+            isAdminWorkspace
+              ? api.get("/api/messaging/conversations/")
+              : Promise.resolve({ data: [] }),
+            isAdminWorkspace
+              ? api.get("/api/support/status-counts/")
+              : Promise.resolve({ data: { pending: 0 } }),
           ]);
 
         if (!active) return;
@@ -175,7 +192,11 @@ export const AdminPreferencesProvider = ({ children }) => {
             .slice(0, 5)
             .forEach((item) => {
               notifyBrowser(item.title || "Maa Mara Market", {
-                body: item.message || "You have a new admin notification.",
+                body: item.message || (
+                  isVendorWorkspace
+                    ? "You have a new vendor notification."
+                    : "You have a new admin notification."
+                ),
                 tag: `maamara-notification-${item.id}`,
               });
             });
