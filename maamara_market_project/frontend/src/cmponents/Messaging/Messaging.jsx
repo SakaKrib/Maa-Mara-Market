@@ -53,7 +53,7 @@ export default function Messaging({ floating = false, onClose = null, initialCon
     Promise.all([loadContacts(), loadConversations()]).catch((err) => {
       setError(err?.response?.data?.error || "Unable to load messages.");
     });
-  }, [loadContacts, loadConversations]);
+  }, [loadContacts, loadConversations, user?.id, isVisitor]);
 
   useEffect(() => {
     if (!initialConversationId || !conversations.length) return;
