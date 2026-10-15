@@ -1,14 +1,16 @@
 # Maa Mara Market backend dependencies
 # Keep this file limited to pip package requirements; Django URL imports belong in project01/urls.py.
 
-Django==4.2.11
+# Keep Django and django-allauth on a compatible, reproducible pair.
+# Django 4.2.30 is the final 4.2 release; plan a separate upgrade to supported Django 5.2 LTS.
+Django==4.2.30
 daphne==4.2.3
 channels>=4.0,<5.0
 channels-redis>=4.2,<5.0
 
 djangorestframework>=3.15,<4.0
 djangorestframework-simplejwt>=5.3,<6.0
-django-allauth>=0.61,<66.0
+django-allauth==65.19.7
 django-cors-headers>=4.3,<5.0
 django-countries>=7.5,<8.0
 django-environ>=0.11,<1.0
