@@ -1,30 +1,29 @@
-# Django application
-Django>=4.2.11,<5.0
-djangorestframework>=3.14,<4.0
-djangorestframework-simplejwt>=5.3,<6.0
-django-allauth>=0.61,<66.0
+# Maa Mara Market backend dependencies
+# Keep this file limited to pip package requirements; Django URL imports belong in project01/urls.py.
 
-# Database and environment configuration
-psycopg2-binary>=2.9,<3.0
-django-environ>=0.11,<1.0
-python-dotenv>=1.0,<2.0
-
-# WebSockets, background tasks, and production serving
+Django==4.2.11
+daphne==4.2.3
 channels>=4.0,<5.0
 channels-redis>=4.2,<5.0
-daphne>=4.1,<5.0
-celery>=5.3,<6.0
-redis>=5.0,<6.0
+
+djangorestframework>=3.15,<4.0
+djangorestframework-simplejwt>=5.3,<6.0
+django-allauth>=0.61,<66.0
+django-cors-headers>=4.3,<5.0
+django-countries>=7.5,<8.0
+django-environ>=0.11,<1.0
 whitenoise>=6.6,<7.0
 
-# Django integrations
-django-cors-headers>=4.3,<5.0
-django-countries>=7.6,<8.0
-
-# Media and input sanitization
+psycopg2-binary>=2.9,<3.0
 Pillow>=10.0,<13.0
-bleach>=6.1,<7.0
-
-# HTTP APIs and Firebase Cloud Messaging
+python-dotenv>=1.0,<2.0
 requests>=2.31,<3.0
+
+celery>=5.3,<6.0
+redis>=5.0,<7.0
+
 firebase-admin>=6.5,<8.0
+google-api-python-client>=2.120,<3.0
+google-auth>=2.28,<3.0
+google-auth-httplib2>=0.2,<1.0
+google-auth-oauthlib>=1.2,<2.0
