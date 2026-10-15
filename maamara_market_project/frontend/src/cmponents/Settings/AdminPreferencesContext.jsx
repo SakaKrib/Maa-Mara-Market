@@ -1,6 +1,7 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { Bell } from "lucide-react";
+import MessagingLauncher from "../Messaging/MessagingLauncher";
 import api from "../../Services/Api";
 
 const STORAGE_KEYS = {
@@ -293,6 +294,7 @@ export const AdminPreferencesProvider = ({ children }) => {
   return (
     <AdminPreferencesContext.Provider value={value}>
       {children}
+      <MessagingLauncher />
       {toastNotification && preferences.notifications && (
         <div className="fixed right-4 top-4 z-[2500] w-[min(390px,calc(100vw-2rem))]">
           <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white text-slate-900 shadow-2xl">
