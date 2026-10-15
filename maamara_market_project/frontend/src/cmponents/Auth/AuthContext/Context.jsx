@@ -8,6 +8,8 @@ import React, {
   useState,
 } from "react";
 import api from "../../../Services/Api";
+import { Capacitor } from "@capacitor/core";
+import { setupNativePushNotifications, unregisterNativePushDevice } from "../../Notifications/nativePushNotifications";
 
 const AuthContext = createContext(null);
 let authCheckPromise = null;
@@ -62,6 +64,27 @@ export const AuthProvider = ({ children }) => {
     void checkAuth();
   }, []);
 
+  useEffect(() => {
+    if (loading || !isAuthenticated || !user?.id || !Capacitor.isNativePlatform()) return undefined;
+    let cleanup;
+    let cancelled = false;
+    setupNativePushNotifications().then((removeListeners) => {
+      if (cancelled) {
+        removeListeners?.();
+      } else {
+        cleanup = removeListeners;
+      }
+    }).catch((error) => {
+      console.warn("Native push setup failed:", error);
+    });
+    return () => {
+      cancelled = true;
+      cleanup?.();
+    };
+  }, [loading, isAuthenticated, user?.id]);
+
+
+
   const refreshAuth = async () => {
     setLoading(true);
     return checkAuth();
@@ -76,6 +99,9 @@ export const AuthProvider = ({ children }) => {
 
   const logout = async () => {
     try {
+      if (Capacitor.isNativePlatform()) {
+        await unregisterNativePushDevice();
+      }
       await api.post("/api/logout/");
     } finally {
       setIsAuthenticated(false);
