@@ -43,8 +43,9 @@ const downloadOrderHistory = (orders) => {
     }
     items.forEach((line) => {
       const product = line.product || line.item || {};
-      const unitPrice = line.final_price ?? line.total_item_price ?? line.price ?? product.price ?? "";
+      const unitPrice = product.price ?? line.price ?? "";
       const quantity = Number(line.quantity) || 0;
+      const lineTotal = line.final_price ?? line.total_item_price ?? (unitPrice !== "" ? Number(unitPrice) * quantity : "");
       rows.push([
         order.id ?? order.paypal_order_id ?? "",
         order.ordered_date ?? order.created_at ?? "",
@@ -54,7 +55,7 @@ const downloadOrderHistory = (orders) => {
         product.name ?? line.item_name ?? line.name ?? "Product",
         line.quantity ?? "",
         unitPrice,
-        Number.isFinite(Number(unitPrice)) ? Number(unitPrice) * quantity : "",
+        lineTotal,
         order.final_total ?? "",
       ]);
     });
