@@ -2,6 +2,8 @@ import React, { createContext, useCallback, useContext, useEffect, useMemo, useR
 import { useLocation, useNavigate } from "react-router-dom";
 import { Bell } from "lucide-react";
 import MessagingLauncher from "../Messaging/MessagingLauncher";
+import { useAuth } from "../Auth/AuthContext/Context";
+import { setupNativePushNotifications, unregisterNativePushDevice } from "../Notifications/nativePushNotifications";
 import api from "../../Services/Api";
 
 const STORAGE_KEYS = {
@@ -40,6 +42,7 @@ const getConversationResults = (data) => (
 
 export const AdminPreferencesProvider = ({ children }) => {
   const location = useLocation();
+  const { isAuthenticated } = useAuth();
   const navigate = useNavigate();
   const [toastNotification, setToastNotification] = useState(null);
   const toastTimerRef = useRef(null);
@@ -102,10 +105,29 @@ export const AdminPreferencesProvider = ({ children }) => {
       }
     }
 
+    if (key === "notifications" && typeof window !== "undefined") {
+      window.localStorage.setItem("maamara-push-notifications-enabled", String(Boolean(value)));
+      if (isNativeApp) {
+        if (value && isAuthenticated) {
+          void setupNativePushNotifications();
+        } else if (!value) {
+          await unregisterNativePushDevice();
+        }
+      }
+    }
+
     setPreferences((current) => ({ ...current, [key]: value }));
   };
 
-  const resetPreferences = () => setPreferences({ ...preferenceDefaults });
+  const resetPreferences = () => {
+    setPreferences({ ...preferenceDefaults });
+    if (typeof window !== "undefined") {
+      window.localStorage.setItem("maamara-push-notifications-enabled", "true");
+      if (window.Capacitor?.isNativePlatform?.() === true && isAuthenticated) {
+        void setupNativePushNotifications();
+      }
+    }
+  };
 
   const notifyBrowser = useCallback((title, options = {}) => {
     if (
