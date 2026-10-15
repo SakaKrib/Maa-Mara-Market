@@ -1505,6 +1505,14 @@ def approve_vendor(request, vendor_request_id):
     vendor_request.status = 'approved'
     vendor_request.save()
 
+    from core.models import Notification
+    Notification.objects.create(
+        user=user,
+        title="Vendor registration approved",
+        message=f"Your vendor registration has been approved. {len(created_items)} item(s) were created and your vendor dashboard is ready.",
+        url="/vendors-dashboard",
+    )
+
     user_first_name = user.first_name or user.username
     dashboard_url = f"{settings.FRONTEND_URL.rstrip('/')}/vendors-dashboard"
     total_items = len(created_items)
@@ -1572,8 +1580,16 @@ def deny_vendor(request, vendor_request_id):
     vendor_request.status = 'denied'
     vendor_request.save()
 
-    # Prepare email
     user = vendor_request.user
+    from core.models import Notification
+    Notification.objects.create(
+        user=user,
+        title="Vendor registration update",
+        message="Your vendor registration request was declined. Please contact support if you need clarification.",
+        url="/vendors-dashboard/settings",
+    )
+
+    # Prepare email
     subject = 'Vendor Registration Denied'
     current_year = timezone.now().year
 
