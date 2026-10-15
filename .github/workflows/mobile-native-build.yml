@@ -164,7 +164,7 @@ jobs:
                   android:strokeWidth="4.5"
                   android:strokeLineCap="round"
                   android:strokeLineJoin="round"
-                  android:pathData="M12,36 V20 C12,10 24,10 24,20 V36 V20 C24,10 36,10 36,20 V36 V20 C36,10 48,10 48,20 V36 V20 C48,10 60,10 60,20 V36 V20 C60,10 72,10 72,20 V36 V20 C72,10 84,10 84,20 V36" />
+                  android:pathData="M12,36 V20 C12,10 24,10 24,20 V36 C24,10 36,10 36,20 V36 C36,10 48,10 48,20 V36 C48,10 60,10 60,20 V36 C60,10 72,10 72,20 V36 C72,10 84,10 84,20 V36" />
           </vector>
           XML
           python3 - <<'PY'
@@ -188,13 +188,11 @@ jobs:
               if count != 1:
                   raise SystemExit("Could not locate the Android application element in AndroidManifest.xml")
           manifest.write_text(source)
-
-          # Validate both resources before Gradle starts.
           ET.parse(manifest)
           ET.parse("android/app/src/main/res/drawable/ic_stat_maamara.xml")
           if '@drawable/ic_stat_maamara' not in manifest.read_text():
               raise SystemExit("Notification icon metadata was not installed")
-          print("Validated monochrome lowercase triple-m notification icon and Firebase default icon metadata.")
+          print("Validated lowercase triple-m Android notification icon.")
           PY
 
       # GitHub development builds use HTTPS Tailscale Serve to avoid Android WebView mixed-content blocking.
@@ -474,6 +472,39 @@ jobs:
               app_delegate.write_text(source)
           PY
           npx cap sync ios
+
+      # iOS displays the app icon for notifications; unlike Android, it has no separate
+      # custom monochrome status-bar notification icon. Brand the app icon with the same mmm mark.
+      - name: Apply Maa Mara Market triple-m icon to iOS app and notifications
+        working-directory: ${{ env.FRONTEND_DIR }}
+        run: |
+          python3 -m pip install --quiet cairosvg
+          mkdir -p ios/App/App/Assets.xcassets/AppIcon.appiconset
+          cat > /tmp/maamara-icon.svg <<'SVG'
+          <svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+            <rect width="1024" height="1024" rx="190" fill="#173C76"/>
+            <path d="M130 650 V400 C130 280 260 280 260 400 V650 C260 280 390 280 390 400 V650 C390 280 520 280 520 400 V650 C520 280 650 280 650 400 V650 C650 280 780 280 780 400 V650 C780 280 894 280 894 400 V650"
+              fill="none" stroke="#FFFFFF" stroke-width="38" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          SVG
+          python3 - <<'PY'
+          import cairosvg
+          import json
+          from pathlib import Path
+
+          icon_dir = Path("ios/App/App/Assets.xcassets/AppIcon.appiconset")
+          cairosvg.svg2png(url="/tmp/maamara-icon.svg", write_to=str(icon_dir / "AppIcon-1024.png"), output_width=1024, output_height=1024)
+          (icon_dir / "Contents.json").write_text(json.dumps({
+              "images": [{
+                  "filename": "AppIcon-1024.png",
+                  "idiom": "universal",
+                  "platform": "ios",
+                  "size": "1024x1024"
+              }],
+              "info": {"author": "xcode", "version": 1}
+          }, indent=2) + "\\n")
+          print("Generated iOS Maa Mara Market triple-m app icon for notification identity.")
+          PY
 
 
       - name: Build iOS simulator app
