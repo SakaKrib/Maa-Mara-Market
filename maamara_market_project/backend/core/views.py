@@ -1006,16 +1006,9 @@ class UserAccountView(APIView):
         # Ensure related records exist
         wallet, _ = Wallet.objects.get_or_create(user=user)
         referral, _ = Referral.objects.get_or_create(referrer=user)
-        if (
-            user.order_set.filter(status__in=["COMPLETED", "completed"]).count() >= 5
-            and not Voucher.objects.filter(user=user, active=True).exists()
-        ):
-            Voucher.objects.create(
-                user=user,
-                code=generate_voucher_code(),
-                active=True
-            )
-
+        # Account reads must not create vouchers as a side effect. The old
+        # block attempted to create Voucher without its required discount field,
+        # which could make this entire endpoint fail for eligible accounts.
         voucher = Voucher.objects.filter(user=user, active=True).first()
 
         # Preserve direct user-owned orders and include Customer records that
