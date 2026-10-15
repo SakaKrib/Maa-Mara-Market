@@ -256,8 +256,7 @@ class VendorItemRequestCreateView(generics.CreateAPIView):
                 action="vendor_item_request_received",
                 description=f"{vendor_label} submitted an item request for {item_request.name}.",
                 related_url=(
-                    f"/admin/vendorDashboard/"
-                    f"vendoritemrequest/{item_request.id}/"
+                    f"/admin-dashboard/vendorDashboard/vendoritemrequest/{item_request.id}"
                 ),
             )
 
@@ -284,8 +283,7 @@ class VendorItemRequestCreateView(generics.CreateAPIView):
                 title="New Vendor Item Request",
                 message=f"{vendor_label} submitted an item request for {item_request.name}.",
                 url=(
-                    f"/vendorDashboard/"
-                    f"vendoritemrequest/{item_request.id}/"
+                    f"/admin-dashboard/vendorDashboard/vendoritemrequest/{item_request.id}"
                 ),
             )
 
@@ -549,7 +547,7 @@ def approve_request(request, pk):
                 "The administrator approved "
                 f"the vendor item request for {item_request.name}."
             ),
-            related_url=f"/admin/vendorDashboard/item/{item.id}/",
+            related_url=f"/admin-dashboard/items/{item.id}",
         )
 
         # =========================
@@ -628,7 +626,7 @@ def approve_request(request, pk):
             actor_type="admin",
             action="item_request_denied",
             description=f"The administrator declined the vendor request for {item_request.name}.",
-            related_url=f"/admin/vendorDashboard/vendoritemrequest/{item_request.id}/",
+            related_url=f"/admin-dashboard/vendorDashboard/vendoritemrequest/{item_request.id}",
         )
 
         # =========================
@@ -639,7 +637,7 @@ def approve_request(request, pk):
             actor_type="vendor",
             action="item_request_denied",
             description=f"Your item request for {item_request.name} was declined by the administrator.",
-            related_url=f"/vendors-dashboard/vendor/items/requests/{item_request.id}/",
+            related_url="/vendors-dashboard/add-item",
         )
 
         # Notification.user is a ForeignKey to auth.User, not Vendor.
