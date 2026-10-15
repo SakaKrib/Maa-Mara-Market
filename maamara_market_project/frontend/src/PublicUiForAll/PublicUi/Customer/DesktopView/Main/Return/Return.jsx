@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import api from "../../../../../../Services/Api";
 import { Button } from "../../../../../../../components/ui/button";
-import { Loader2, PackageCheck, UploadCloud, Undo2 } from "lucide-react";
+import { Download, Loader2, PackageCheck, UploadCloud, Undo2 } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 import NativeAwareSelect from "../../../../../../components/NativeAwareSelect";
 
@@ -30,7 +30,7 @@ const RequestReturnForm = ({ selectedItem = null }) => {
   const [image, setImage] = useState(null);
   const [loadingOrders, setLoadingOrders] = useState(true);
   const [loading, setLoading] = useState(false);
-  const [snackbar, setSnackbar] = useState({ open: false, message: "" });
+  const [snackbar, setSnackbar] = useState({ open: false, message: "" });\n  const [lastReturnRecord, setLastReturnRecord] = useState(null);
 
   useEffect(() => {
     let active = true;
@@ -74,6 +74,41 @@ const RequestReturnForm = ({ selectedItem = null }) => {
 
   const showMessage = (message) =>
     setSnackbar({ open: true, message });
+
+  const downloadReturnRecord = (record) => {
+    if (!record) return;
+    const order = orders.find((entry) => String(entry.id) === String(orderId));
+    const item = selectedOrderItem;
+    const rows = [
+      ["MAA MARA MARKET — RETURN / EXCHANGE REQUEST"],
+      ["Generated at (Africa/Nairobi)", new Date().toLocaleString("en-KE", { timeZone: "Africa/Nairobi" })],
+      ["Return request ID", record.id ?? record.return_request_id ?? ""],
+      ["Order ID", order?.id ?? orderId ?? ""],
+      ["Item", item?.item?.name ?? item?.name ?? item?.item_name ?? "Purchased item"],
+      ["Quantity", item?.quantity ?? ""],
+      ["Reason", record.custom_reason || record.reason || (reason === "custom" ? customReason : reason)],
+      ["Customer preference", record.customer_preference || preference],
+      ["Status", record.status || "Submitted — awaiting review"],
+      ["Description", record.description || description],
+      ["Refund amount (KES)", record.refund_amount ?? ""],
+      ["Decision / response", record.admin_response || record.decision_note || ""],
+    ];
+    const csvCell = (value) => {
+      const text = value == null ? "" : String(value);
+      const safeText = /^[=+@-]/.test(text) ? `'${text}` : text;
+      return '"' + safeText.replace(/"/g, '""') + '"';
+    };
+    const csv = rows.map((row) => row.map(csvCell).join(",")).join("\\r\\n");
+    const blob = new Blob(["\\uFEFF", csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement("a");
+    anchor.href = url;
+    anchor.download = `maa-mara-return-request-${record.id ?? orderId ?? "record"}.csv`;
+    document.body.appendChild(anchor);
+    anchor.click();
+    anchor.remove();
+    window.setTimeout(() => URL.revokeObjectURL(url), 1500);
+  };
 
   const resetForm = () => {
     setReason("");
