@@ -111,7 +111,22 @@ jobs:
           if [ -n "$FIREBASE_ANDROID_CONFIG" ]; then
             printf '%s' "$FIREBASE_ANDROID_CONFIG" > android/app/google-services.json
             python3 - <<'PY'
+          import json
           from pathlib import Path
+
+          config = json.loads(Path("android/app/google-services.json").read_text())
+          package_names = {
+              client.get("client_info", {}).get("android_client_info", {}).get("package_name")
+              for client in config.get("client", [])
+          }
+          expected_package = "com.maamaramarket.app"
+          if expected_package not in package_names:
+              raise SystemExit(
+                  f"Firebase Android config does not contain {expected_package}; "
+                  f"found: {sorted(name for name in package_names if name)}"
+              )
+
+          root_gradle = Path("android/build.gradle")
 
           root_gradle = Path("android/build.gradle")
           root_text = root_gradle.read_text()
@@ -359,6 +374,18 @@ jobs:
           npx cap add ios
           if [ -n "$FIREBASE_IOS_CONFIG" ]; then
             printf '%s' "$FIREBASE_IOS_CONFIG" > ios/App/App/GoogleService-Info.plist
+            python3 - <<'PY'
+          import plistlib
+          from pathlib import Path
+
+          config = plistlib.loads(Path("ios/App/App/GoogleService-Info.plist").read_bytes())
+          expected_bundle = "com.maamaramarket.app"
+          actual_bundle = config.get("BUNDLE_ID")
+          if actual_bundle != expected_bundle:
+              raise SystemExit(
+                  f"Firebase iOS config BUNDLE_ID must be {expected_bundle}; got {actual_bundle!r}"
+              )
+          PY
             ruby - <<'RUBY'
           require 'xcodeproj'
           project = Xcodeproj::Project.open('ios/App/App.xcodeproj')
