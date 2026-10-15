@@ -4,7 +4,7 @@ import type { CapacitorConfig } from "@capacitor/cli";
 // server.url here: the website and native app should share source code, not
 // depend on loading the entire app from a remote website.
 const config: CapacitorConfig = {
-  appId: "com.mamaramarket.app",
+  appId: "com.maamaramarket.app",
   appName: "Maa Mara Market",
   webDir: "dist",
   plugins: {
