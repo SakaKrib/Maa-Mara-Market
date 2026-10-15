@@ -46,7 +46,12 @@ export function useVendorNotifications({ enabled = true } = {}) {
         ? { ...notification, seen: true, is_read: true }
         : notification
     )));
-    setUnseenCount((current) => Math.max(0, current - 1));
+    setUnseenCount((current) => {
+      const wasUnseen = notifications.some(
+        (notification) => notification.id === notificationId && !notification.seen
+      );
+      return wasUnseen ? Math.max(0, current - 1) : current;
+    });
   }, []);
 
   const deleteNotification = useCallback(async (notificationId) => {
