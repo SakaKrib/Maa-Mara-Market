@@ -266,7 +266,7 @@ CORS_ALLOW_CREDENTIALS = True
 SESSION_EXPIRE_AT_BROWSER_CLOSE = True
 
 # Honour production reverse-proxy settings passed by Docker Compose.
-# Caddy terminates TLS and forwards X-Forwarded-Proto to Django.
+# Nginx terminates TLS and forwards X-Forwarded-Proto to Django.
 SECURE_SSL_REDIRECT = env.bool("SECURE_SSL_REDIRECT", default=not DEBUG)
 SECURE_PROXY_SSL_HEADER = (
     ("HTTP_X_FORWARDED_PROTO", "https")
