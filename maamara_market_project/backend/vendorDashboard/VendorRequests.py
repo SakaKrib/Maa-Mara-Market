@@ -563,7 +563,7 @@ def approve_request(request, pk):
                 f"Your item request for {item_request.name} "
                 f"was approved by the admin."
             ),
-            related_url=f"/vendor/items/{item.id}/",
+            related_url=f"/vendors-dashboard/item-onsite/items/{item.id}",
         )
 
         Notification.objects.create(
@@ -573,7 +573,7 @@ def approve_request(request, pk):
             user=item_request.created_by or vendor_user.user,
             title="Item Request Approved",
             message=f"Your request for {item_request.name} has been approved.",
-            url=f"/vendor/items/{item.id}/",
+            url=f"/vendors-dashboard/item-onsite/items/{item.id}",
         )
 
         subject = f"Your Item Request for {item_request.name} Was Approved"
@@ -648,7 +648,7 @@ def approve_request(request, pk):
             user=vendor_user.user,
             title="Item Request Denied",
             message=f"Your request for {item_request.name} was declined by the administrator.",
-            url=f"/vendors-dashboard/vendor/requests/{item_request.id}/",
+            url="/vendors-dashboard/add-item",
         )
 
         current_year = timezone.now().year
@@ -1000,7 +1000,7 @@ class CreatePriceChangeRequestView(APIView):
                     "A vendor requested a price change "
                     f"for {item.name}. Reason: {reason or 'No reason provided'}"
                 ),
-                related_url=f"/admin/vendorDashboard/vendoritems/{item.id}/"
+                related_url=f"/admin-dashboard/vendorDashboard/vendoritemPricerequest/{price_request.id}"
             )
 
         # Vendor activity log
@@ -1012,7 +1012,7 @@ class CreatePriceChangeRequestView(APIView):
                 "You requested a price change "
                 f"for {item.name}. Reason: {reason or 'No reason provided'}"
             ),
-            related_url=f"/vendor/vendorDashboard/vendoritems/{item.id}/"
+            related_url=f"/vendors-dashboard/edit-item/{item.id}"
         )
 
         # =========================
@@ -1028,7 +1028,7 @@ class CreatePriceChangeRequestView(APIView):
                     "A vendor submitted a price change request "
                     f"for {item.name}. Reason: {reason or 'No reason provided'}"
                 ),
-                url=f"/admin/vendorDashboard/vendoritemPricerequest/{price_request.id}/",
+                url=f"/admin-dashboard/vendorDashboard/vendoritemPricerequest/{price_request.id}",
             )
 
             # Email admin
@@ -1136,7 +1136,7 @@ class ApprovePriceChangeRequestView(APIView):
                     f"The administrator approved the new price {price_request.new_price} for "
                     f"{item.name}."
                 ),
-                related_url=f"/admin/vendorDashboard/vendoritems/{item.id}/"
+                related_url=f"/admin-dashboard/vendorDashboard/vendoritemPricerequest/{price_request.id}"
             )
 
         # =========================
@@ -1150,7 +1150,7 @@ class ApprovePriceChangeRequestView(APIView):
                 f"Your price change request for {item.name} "
                 f"has been approved. New price: {price_request.new_price}"
             ),
-            related_url=f"/vendor/vendorDashboard/vendoritems/{item.id}/"
+            related_url=f"/vendors-dashboard/edit-item/{item.id}"
         )
 
         # =========================
@@ -1174,7 +1174,7 @@ class ApprovePriceChangeRequestView(APIView):
                 f"Your request for {item.name} has been approved. "
                 f"The new price is {item.price}."
             ),
-            url=f"/vendors-dashboard/vendor/items/{item.id}/"
+            url=f"/vendors-dashboard/edit-item/{item.id}"
         )
 
         # =========================
