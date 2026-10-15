@@ -929,14 +929,7 @@ class WishlistAPIView(APIView):
                 related_url=f"/item/{item.id}/"
             )
 
-            # --- Vendor notification ---
-            if item.vendor and item.vendor.user:
-                Notification.objects.create(
-                    user=item.vendor.user,
-                    title="Item added to wishlist",
-                    message=f"A customer added {item.name} to their wishlist.",
-                    url=f"/item/{item.id}/"
-                )
+            # Vendor notification is created once by the ActivityLog signal above.
 
             # --- Admin notifications ---
             superadmins = User.objects.filter(is_superuser=True)
