@@ -66,6 +66,7 @@ export const AuthProvider = ({ children }) => {
 
   useEffect(() => {
     if (loading || !isAuthenticated || !user?.id || !Capacitor.isNativePlatform()) return undefined;
+    if (typeof window !== "undefined" && window.localStorage.getItem("maamara-push-notifications-enabled") === "false") return undefined;
     let cleanup;
     let cancelled = false;
     setupNativePushNotifications().then((removeListeners) => {
