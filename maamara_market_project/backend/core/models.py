@@ -448,6 +448,36 @@ class SearchEvent(models.Model):
         return f"{owner}: {self.query}"
 
 
+class PushDevice(models.Model):
+    """A registered native/browser push token belonging to one authenticated account."""
+
+    PLATFORM_CHOICES = [
+        ("android", "Android"),
+        ("ios", "iOS"),
+        ("web", "Web"),
+    ]
+
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="push_devices",
+    )
+    token = models.TextField(unique=True)
+    platform = models.CharField(max_length=10, choices=PLATFORM_CHOICES)
+    active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    last_seen_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        indexes = [
+            models.Index(fields=["user", "active"]),
+        ]
+
+    def __str__(self):
+        return f"Push device {self.pk} ({self.platform}) for user {self.user_id}"
+
+
 class AboutPage(models.Model):
     hero_image = models.ImageField(upload_to="about/", blank=True, null=True)
     hero_title = models.CharField(max_length=255, blank=True, default="")
