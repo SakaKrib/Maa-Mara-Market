@@ -1,31 +1,36 @@
 # Maa Mara Market backend dependencies
-# Keep this file limited to pip package requirements; Django URL imports belong in project01/urls.py.
-
 # Keep Django and django-allauth on a compatible, reproducible pair.
-# Django 4.2.30 is the final 4.2 release; plan a separate upgrade to supported Django 5.2 LTS.
+# Django 4.2.30 is the final 4.2 release; schedule a separate migration to supported Django 5.2 LTS.
 Django==4.2.30
-daphne==4.2.3
-channels>=4.0,<5.0
-channels-redis>=4.2,<5.0
+django-allauth==65.19.7
 
+daphne==4.2.3
+channels==4.3.2
+channels-redis==4.3.0
 djangorestframework>=3.15,<4.0
 djangorestframework-simplejwt>=5.3,<6.0
-django-allauth==65.19.7
 django-cors-headers>=4.3,<5.0
 django-countries>=7.5,<8.0
 django-environ>=0.11,<1.0
 whitenoise>=6.6,<7.0
 
+# Used by the configured Bootstrap 4 crispy form renderer.
+django-crispy-forms>=2.1,<3.0
+crispy-bootstrap4>=2022.1,<2026.0
+
 psycopg2-binary>=2.9,<3.0
 Pillow>=10.0,<13.0
 python-dotenv>=1.0,<2.0
 requests>=2.31,<3.0
+python-dateutil>=2.8,<3.0
+cryptography>=42.0,<47.0
+bleach[css]>=6.1,<7.0
 
 celery>=5.3,<6.0
 redis>=5.0,<7.0
 
 # Server-side Firebase Cloud Messaging (FCM) delivery for Android/iOS push notifications.
-# Firebase credentials are configured via environment variables, not pip packages or committed files.
+# Firebase credentials are configured via environment variables, not committed files.
 firebase-admin>=6.5,<8.0
 google-api-python-client>=2.120,<3.0
 google-auth>=2.28,<3.0
