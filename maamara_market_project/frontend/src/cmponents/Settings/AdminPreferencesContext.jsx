@@ -167,6 +167,9 @@ export const AdminPreferencesProvider = ({ children }) => {
         const state = notificationStateRef.current;
 
         if (!state.initialized) {
+          // Do not treat an unauthenticated 401 as an empty baseline; wait for
+          // the first successful authenticated response before detecting new items.
+          if (notificationResponse.status !== "fulfilled") return;
           state.notificationIds = new Set(notifications.map((item) => item.id));
           state.messageUnread = new Map(
             conversations.map((conversation) => [
