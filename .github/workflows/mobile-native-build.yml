@@ -127,8 +127,6 @@ jobs:
               )
 
           root_gradle = Path("android/build.gradle")
-
-          root_gradle = Path("android/build.gradle")
           root_text = root_gradle.read_text()
           google_classpath = "classpath 'com.google.gms:google-services:4.4.2'"
           if google_classpath not in root_text:
