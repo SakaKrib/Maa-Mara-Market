@@ -289,7 +289,8 @@ def return_request_handler_api(request, item_id):
             response = Response({
                 "success": True,
                 "message": f"Refund prepared: {total_refund}. Awaiting admin approval.",
-                "refund_amount": str(total_refund)
+                "refund_amount": str(total_refund),
+                "return_request": ReturnRequestSerializer(return_request).data,
             }, status=status.HTTP_200_OK)
 
             response.set_cookie(
@@ -353,7 +354,8 @@ def return_request_handler_api(request, item_id):
             response = Response({
                 "success": True,
                 "message": "Exchange credit created. You can now select a replacement item.",
-                "exchange_credit": str(total_exchange_credit)
+                "exchange_credit": str(total_exchange_credit),
+                "return_request": ReturnRequestSerializer(return_request).data,
             }, status=status.HTTP_200_OK)
 
             response.set_cookie(
