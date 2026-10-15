@@ -49,22 +49,46 @@ services:
     volumes: !reset []
     command: ["nginx", "-g", "daemon off;"]
 
-  caddy:
-    image: caddy:2.10-alpine
+  nginx:
+    image: nginx:1.29-alpine
     restart: unless-stopped
-    environment:
-      ACME_EMAIL: ${ACME_EMAIL:?ACME_EMAIL must be set}
     ports:
       - "80:80"
       - "443:443"
     volumes:
-      - ./Caddyfile:/etc/caddy/Caddyfile:ro
-      - caddy_data:/data
-      - caddy_config:/config
+      - ./nginx/bootstrap.conf:/etc/nginx/templates/bootstrap.conf:ro
+      - ./nginx/production.conf:/etc/nginx/templates/production.conf:ro
+      - ./nginx/start.sh:/usr/local/bin/nginx-start.sh:ro
+      - letsencrypt_data:/etc/letsencrypt:ro
+      - certbot_webroot:/var/www/certbot:ro
+    entrypoint: ["/bin/sh", "/usr/local/bin/nginx-start.sh"]
     depends_on:
       - frontend
       - backend
 
+  certbot:
+    image: certbot/certbot:latest
+    restart: unless-stopped
+    environment:
+      CERTBOT_EMAIL: ${CERTBOT_EMAIL:?CERTBOT_EMAIL must be set}
+    volumes:
+      - letsencrypt_data:/etc/letsencrypt
+      - certbot_webroot:/var/www/certbot
+    depends_on:
+      - nginx
+    entrypoint: ["/bin/sh", "-c"]
+    command: >
+      while :; do
+        if [ ! -s /etc/letsencrypt/live/maamaramarket.com/fullchain.pem ]; then
+          certbot certonly --webroot -w /var/www/certbot
+            --email "$$CERTBOT_EMAIL" --agree-tos --no-eff-email
+            -d maamaramarket.com -d www.maamaramarket.com || sleep 60;
+        else
+          certbot renew --webroot -w /var/www/certbot --quiet || true;
+          sleep 12h;
+        fi;
+      done
+
 volumes:
-  caddy_data:
-  caddy_config:
+  letsencrypt_data:
+  certbot_webroot:
