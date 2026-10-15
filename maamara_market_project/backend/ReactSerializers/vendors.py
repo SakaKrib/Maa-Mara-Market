@@ -1572,13 +1572,25 @@ def approve_vendor(request, vendor_request_id):
 @permission_classes([IsAuthenticated, IsAdminUser])
 def deny_vendor(request, vendor_request_id):
     try:
-        vendor_request = VendorRequest.objects.get(id=vendor_request_id)
+        vendor_request = VendorRequest.objects.select_for_update().get(id=vendor_request_id)
     except VendorRequest.DoesNotExist:
         return Response({'error': 'Vendor request not found.'}, status=404)
 
-    # Update vendor request status to 'denied'
-    vendor_request.status = 'denied'
-    vendor_request.save()
+    # Match VendorRequest.status choices and prevent a rejected request from
+    # overwriting an already-approved vendor registration.
+    if vendor_request.status == 'approved':
+        return Response(
+            {'error': 'This vendor request has already been approved.'},
+            status=400,
+        )
+    if vendor_request.status == 'rejected':
+        return Response(
+            {'error': 'This vendor request has already been rejected.'},
+            status=400,
+        )
+
+    vendor_request.status = 'rejected'
+    vendor_request.save(update_fields=['status'])
 
     user = vendor_request.user
     from core.models import Notification
