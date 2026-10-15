@@ -98,8 +98,8 @@ const RequestReturnForm = ({ selectedItem = null }) => {
       const safeText = /^[=+@-]/.test(text) ? `'${text}` : text;
       return '"' + safeText.replace(/"/g, '""') + '"';
     };
-    const csv = rows.map((row) => row.map(csvCell).join(",")).join("\\r\\n");
-    const blob = new Blob(["\\uFEFF", csv], { type: "text/csv;charset=utf-8;" });
+    const csv = rows.map((row) => row.map(csvCell).join(",")).join("\r\n");
+    const blob = new Blob(["\uFEFF", csv], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
     const anchor = document.createElement("a");
     anchor.href = url;
@@ -189,6 +189,18 @@ const RequestReturnForm = ({ selectedItem = null }) => {
   return (
     <main className="mm-return-page">
       <div className="mm-return-shell">
+        {lastReturnRecord && (
+          <div className="mb-4 flex flex-col gap-3 rounded-2xl border border-blue-200 bg-blue-50 p-4 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <p className="font-semibold text-blue-900">Return request submitted</p>
+              <p className="text-sm text-blue-800">Keep a copy of your request details for your records.</p>
+            </div>
+            <Button type="button" variant="outline" className="rounded-full" onClick={() => downloadReturnRecord(lastReturnRecord)}>
+              <Download className="mr-2 h-4 w-4" aria-hidden="true" />
+              Download return record
+            </Button>
+          </div>
+        )}
         <section className="mm-return-intro">
           <p className="mm-return-eyebrow">Returns & exchanges</p>
           <h1 className="mm-return-title">Return Policy</h1>
