@@ -3,6 +3,7 @@ from . import views  # Make sure views.py exists
 from .Serializer import *
 from .views import *
 from .messaging import messaging_contacts, messaging_conversations, messaging_messages, messaging_mark_read
+from .push_views import PushDeviceRegistrationView
 from rest_framework.routers import DefaultRouter
 from .Referal import *
 from .SearchEngine import search_items
@@ -17,6 +18,7 @@ router = DefaultRouter()
 
 urlpatterns = [
     path("api/maintenance/status/", views.MaintenanceStatusView.as_view(), name="maintenance-status"),
+    path("api/push/devices/", PushDeviceRegistrationView.as_view(), name="push-device-registration"),
     path("api/maintenance/settings/", views.MaintenanceSettingsView.as_view(), name="maintenance-settings"),
 
     #path('', views.home, name='home'),  # Replace with your actual view
