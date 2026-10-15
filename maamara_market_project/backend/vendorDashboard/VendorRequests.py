@@ -567,7 +567,10 @@ def approve_request(request, pk):
         )
 
         Notification.objects.create(
-            user=item_request.created_by,
+            # The request creator is normally the vendor account, but use the
+            # vendor profile owner as a fallback so an optional/null creator
+            # never silently drops the approval push.
+            user=item_request.created_by or vendor_user.user,
             title="Item Request Approved",
             message=f"Your request for {item_request.name} has been approved.",
             url=f"/vendor/items/{item.id}/",
