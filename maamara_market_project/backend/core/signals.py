@@ -1,3 +1,4 @@
+from django.db import transaction
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 from .models import Notification, ActivityLog
@@ -7,6 +8,7 @@ from channels.layers import get_channel_layer
 from asgiref.sync import async_to_sync
 from django.contrib.auth.models import User
 from vendorDashboard.models import VendorRequest
+from core.push_notifications import send_notification_push
 
 
 # notify admin for anyincomig vendor requests
@@ -42,18 +44,21 @@ def notify_vendor(sender, instance, created, **kwargs):
     if not created:
         return
 
+    # Central delivery hook: every newly-created notification gets the same
+    # push path, including order updates, approvals, messages, returns and payouts.
+    # Defer until commit so a rolled-back transaction cannot send a false alert.
+    if instance.user_id:
+        notification_id = instance.pk
+        transaction.on_commit(lambda: send_notification_push(notification_id))
+
+    # Retain the existing vendor-specific serialization hook without making
+    # push delivery dependent on the recipient being a vendor.
     vendor = getattr(instance.user, "vendor", None)
     if not vendor:
         return
 
     instance.refresh_from_db()
-
     data = NotificationSerializer(instance).data
-    
-
-    print("SERIALIZED NOTIFICATION:", data)
-
-    #push_vendor_notification(vendor.id, [data])
 
 # activity
 @receiver(post_save, sender=ActivityLog)
