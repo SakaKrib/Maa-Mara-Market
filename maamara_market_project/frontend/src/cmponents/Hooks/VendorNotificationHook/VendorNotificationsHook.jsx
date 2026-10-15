@@ -36,6 +36,19 @@ export function useVendorNotifications({ enabled = true } = {}) {
     }
   }, [enabled]);
 
+  const markNotificationSeen = useCallback(async (notificationId) => {
+    await api.post(`/api/notifications/${notificationId}/mark_seen/`, {}, {
+      withCredentials: true,
+    });
+    if (!mountedRef.current) return;
+    setNotifications((current) => current.map((notification) => (
+      notification.id === notificationId
+        ? { ...notification, seen: true, is_read: true }
+        : notification
+    )));
+    setUnseenCount((current) => Math.max(0, current - 1));
+  }, []);
+
   const deleteNotification = useCallback(async (notificationId) => {
     await api.delete(`/api/notifications/${notificationId}/`, {
       withCredentials: true,
@@ -84,6 +97,7 @@ export function useVendorNotifications({ enabled = true } = {}) {
     loading,
     error,
     deleteNotification,
+    markNotificationSeen,
     clearAllNotifications,
   };
 }
