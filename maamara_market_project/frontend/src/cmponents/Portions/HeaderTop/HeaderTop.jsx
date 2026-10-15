@@ -160,7 +160,7 @@ const HeaderTop = ({ onMenuToggle }) => {
     } finally {
       localStorage.clear();
       sessionStorage.clear();
-      window.location.replace("/login");
+      window.location.replace("/customer-login");
     }
   };
 
