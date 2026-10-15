@@ -1,10 +1,23 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
+import { useLocation } from "react-router-dom";
 import { IonIcon } from "@ionic/react";
 import { chatbubbleEllipsesOutline } from "ionicons/icons";
 import Messaging from "./Messaging";
 
 const MessagingLauncher = () => {
+  const location = useLocation();
   const [open, setOpen] = useState(false);
+  const [messageTarget, setMessageTarget] = useState({ conversationId: null, messageId: null });
+
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    if (params.get("openMessage") !== "1" || !params.get("conversation")) return;
+    setMessageTarget({
+      conversationId: params.get("conversation"),
+      messageId: params.get("message"),
+    });
+    setOpen(true);
+  }, [location.search]);
   const isNativeApp = typeof window !== "undefined" && window.Capacitor?.isNativePlatform?.() === true;
 
   if (open) {
@@ -14,7 +27,12 @@ const MessagingLauncher = () => {
           className="fixed inset-0 z-40 bg-black/10 backdrop-blur-[2px]"
           aria-hidden="true"
         />
-        <Messaging floating onClose={() => setOpen(false)} />
+        <Messaging
+          floating
+          initialConversationId={messageTarget.conversationId}
+          initialMessageId={messageTarget.messageId}
+          onClose={() => setOpen(false)}
+        />
       </>
     );
   }
