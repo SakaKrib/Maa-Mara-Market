@@ -18,10 +18,10 @@ const csvCell = (value) => {
   return '"' + safeText.replace(/"/g, '""') + '"';
 };
 
-const downloadOrderHistory = (orders) => {
+const downloadOrderHistory = (orders, filename = null) => {
   const generatedAt = new Date().toLocaleString("en-KE", { timeZone: "Africa/Nairobi" });
   const rows = [
-    ["MAA MARA MARKET — CUSTOMER ORDER HISTORY"],
+    [orders.length === 1 ? "MAA MARA MARKET — ORDER DETAILS" : "MAA MARA MARKET — CUSTOMER ORDER HISTORY"],
     ["Generated at (Africa/Nairobi)", generatedAt],
     [],
     ["Order ID", "Order date", "Order status", "Payment status", "Item ID", "Item", "Quantity", "Unit price (KES)", "Line total (KES)", "Order total (KES)"],
@@ -43,7 +43,7 @@ const downloadOrderHistory = (orders) => {
     }
     items.forEach((line) => {
       const product = line.product || line.item || {};
-      const unitPrice = product.price ?? line.price ?? "";
+      const unitPrice = line.price_at_purchase ?? line.price ?? product.price ?? "";
       const quantity = Number(line.quantity) || 0;
       const lineTotal = line.final_price ?? line.total_item_price ?? (unitPrice !== "" ? Number(unitPrice) * quantity : "");
       rows.push([
@@ -66,11 +66,17 @@ const downloadOrderHistory = (orders) => {
   const url = URL.createObjectURL(blob);
   const anchor = document.createElement("a");
   anchor.href = url;
-  anchor.download = `maa-mara-customer-order-history-${new Date().toISOString().slice(0, 10)}.csv`;
+  anchor.download = filename || `maa-mara-customer-order-history-${new Date().toISOString().slice(0, 10)}.csv`;
   document.body.appendChild(anchor);
   anchor.click();
   anchor.remove();
   window.setTimeout(() => URL.revokeObjectURL(url), 1500);
+};
+
+const downloadSingleOrder = (order) => {
+  if (!order) return;
+  const orderNumber = order.id ?? order.paypal_order_id ?? "order";
+  downloadOrderHistory([order], `maa-mara-order-${orderNumber}.csv`);
 };
 
 const normalizeStatus = (status) => String(status || "").trim().toUpperCase();
@@ -268,9 +274,15 @@ const CustomerOrdersDashboard = ({ wallet: walletProp, vouchers: vouchersProp, o
                         <span className="font-semibold">
                           #{order.id ?? order.paypal_order_id ?? "—"}
                         </span>
-                        <Badge className="border border-[#e5dfd4] bg-white text-yellow-700">
-                          Pending Payment
-                        </Badge>
+                        <div className="flex items-center gap-2">
+                          <Button type="button" size="sm" variant="outline" className="rounded-full" onClick={() => downloadSingleOrder(order)}>
+                            <Download className="mr-1.5 h-4 w-4" aria-hidden="true" />
+                            Download
+                          </Button>
+                          <Badge className="border border-[#e5dfd4] bg-white text-yellow-700">
+                            Pending Payment
+                          </Badge>
+                        </div>
                       </div>
                       <div className="text-sm text-muted-foreground">
                         {(order.items || []).length} item(s)
@@ -314,9 +326,15 @@ const CustomerOrdersDashboard = ({ wallet: walletProp, vouchers: vouchersProp, o
                             {statusLabel(order.status)}
                           </p>
                         </div>
-                        <Badge className="border border-[#e5dfd4] bg-white text-blue-700">
-                          {statusLabel(order.status)}
-                        </Badge>
+                        <div className="flex items-center gap-2">
+                          <Button type="button" size="sm" variant="outline" className="rounded-full" onClick={() => downloadSingleOrder(order)}>
+                            <Download className="mr-1.5 h-4 w-4" aria-hidden="true" />
+                            Download
+                          </Button>
+                          <Badge className="border border-[#e5dfd4] bg-white text-blue-700">
+                            {statusLabel(order.status)}
+                          </Badge>
+                        </div>
                       </div>
 
                       <div className="text-sm text-muted-foreground">
@@ -365,9 +383,15 @@ const CustomerOrdersDashboard = ({ wallet: walletProp, vouchers: vouchersProp, o
                         <span className="font-semibold">
                           #{order.id ?? order.paypal_order_id ?? "—"}
                         </span>
-                        <Badge className="border border-[#e5dfd4] bg-white text-green-700">
-                          Completed
-                        </Badge>
+                        <div className="flex items-center gap-2">
+                          <Button type="button" size="sm" variant="outline" className="rounded-full" onClick={() => downloadSingleOrder(order)}>
+                            <Download className="mr-1.5 h-4 w-4" aria-hidden="true" />
+                            Download
+                          </Button>
+                          <Badge className="border border-[#e5dfd4] bg-white text-green-700">
+                            Completed
+                          </Badge>
+                        </div>
                       </div>
 
                       {(order.items || []).map((itemObj, index) => {
