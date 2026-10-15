@@ -18,7 +18,7 @@ def create_vendor_request_notification(sender, instance, created, **kwargs):
     frontend_review_url = "/admin-dashboard/vendor-requests"
 
     # Notify all admins (you can change this to a group or specific users)
-    admins = User.objects.filter(is_superuser=True)
+    admins = User.objects.filter(is_staff=True)
 
     if created:
         user = instance.user
