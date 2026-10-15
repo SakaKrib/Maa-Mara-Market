@@ -1,5 +1,5 @@
 from django.db import transaction
-from django.db.models.signals import post_save
+from django.db.models.signals import post_save, pre_save
 from django.dispatch import receiver
 from .models import Notification, ActivityLog
 from .notifications.ws import push_vendor_notification
@@ -143,3 +143,70 @@ def broadcast_activity_log(sender, instance, created, **kwargs):
     )
 
 
+# Important order lifecycle changes are persisted as notifications so the same
+# in-app, browser, and native push pipeline handles fulfillment updates.
+_ORDER_NOTIFICATION_COPY = {
+    "PROCESSING": ("Order processing", "is being processed"),
+    "PACKING": ("Order being packed", "is being packed for dispatch"),
+    "READY_TO_SHIP": ("Order ready to ship", "is ready to ship"),
+    "SHIPPED": ("Order shipped", "has been shipped"),
+    "IN_TRANSIT": ("Order in transit", "is in transit"),
+    "OUT_FOR_DELIVERY": ("Order out for delivery", "is out for delivery"),
+    "DELIVERED": ("Order delivered", "has been marked delivered"),
+    "AWAITING_CONFIRMATION": ("Delivery confirmation needed", "is awaiting your delivery confirmation"),
+    "COMPLETED": ("Order completed", "has been completed"),
+    "CANCELLED": ("Order cancelled", "has been cancelled"),
+}
+
+
+@receiver(pre_save, sender="order.Order")
+def remember_order_status_for_notifications(sender, instance, **kwargs):
+    if not instance.pk:
+        instance._notification_previous_status = None
+        return
+    instance._notification_previous_status = (
+        sender.objects.filter(pk=instance.pk).values_list("status", flat=True).first()
+    )
+
+
+@receiver(post_save, sender="order.Order")
+def notify_order_status_change(sender, instance, created, **kwargs):
+    previous = getattr(instance, "_notification_previous_status", None)
+    current = str(instance.status or "").upper()
+    if created or previous is None or str(previous).upper() == current:
+        return
+    if current not in _ORDER_NOTIFICATION_COPY:
+        # PAID is notified by complete_paid_order() exactly once; return/refund
+        # workflows already create audience-specific notifications of their own.
+        return
+
+    from core.models import Notification
+    from order.models import OrderItem
+
+    title, phrase = _ORDER_NOTIFICATION_COPY[current]
+    customer_message = f"Order #{instance.pk} {phrase}."
+    if instance.user_id:
+        Notification.objects.create(
+            user=instance.user,
+            title=title,
+            message=customer_message,
+            url=f"/customer-order?order={instance.pk}",
+        )
+
+    order_items = OrderItem.objects.filter(
+        order_id=instance.pk
+    ).select_related("item__vendor__user")
+    vendor_users = {}
+    for order_item in order_items:
+        vendor = getattr(order_item.item, "vendor", None)
+        vendor_user = getattr(vendor, "user", None) if vendor else None
+        if vendor_user:
+            vendor_users[vendor_user.pk] = vendor_user
+
+    for vendor_user in vendor_users.values():
+        Notification.objects.create(
+            user=vendor_user,
+            title=title,
+            message=f"Order #{instance.pk} {phrase}.",
+            url=f"/vendors-dashboard/orders?order={instance.pk}",
+        )
