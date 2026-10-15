@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import { ChevronDown, Download, FileSpreadsheet, ImageDown, Package, ShoppingCart, ChartNoAxesCombined } from "lucide-react";
-import api from "../../Services/Api";
+import api from "../../../Services/Api";
 import TopBox from "../Home/TopBox/TopBox";
 import ChartBox from "../ChartBox/CharBox";
 import CombinedVendorStatsChart from "../ChartBox/PieChart2";
@@ -236,14 +236,17 @@ const Home = ({ vendor_id }) => {
           `maa-mara-vendor-sales-report-${year}-${String(month).padStart(2, "0")}.csv`,
           `Vendor sales report — ${year}-${String(month).padStart(2, "0")}`,
           ["Sale ID", "Item", "Unit/line amount (KES)", "Quantity sold", "Quantity remaining", "Date sold"],
-          sales.map((sale) => [
-            sale.id ?? "",
-            sale.item_name ?? sale.item?.name ?? "",
-            sale.calculated_total_price ?? sale.total_price ?? sale.price ?? "",
-            sale.quantity ?? "",
-            sale.qty_remaining ?? "",
-            sale.date_sold ?? "",
-          ]),
+          [
+            ...sales.map((sale) => [
+              sale.id ?? "",
+              sale.item_name ?? sale.item?.name ?? "",
+              sale.calculated_total_price ?? sale.total_price ?? sale.price ?? "",
+              sale.quantity ?? "",
+              sale.qty_remaining ?? "",
+              sale.date_sold ?? "",
+            ]),
+            ["TOTAL", "", data.total_amount ?? sales.reduce((sum, sale) => sum + (Number(sale.calculated_total_price ?? sale.total_price ?? sale.price) || 0), 0), sales.reduce((sum, sale) => sum + (Number(sale.quantity) || 0), 0), "", ""],
+          ],
           producedAt,
           date
         );
