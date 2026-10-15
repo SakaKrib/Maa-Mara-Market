@@ -52,7 +52,7 @@ export function useVendorNotifications({ enabled = true } = {}) {
       );
       return wasUnseen ? Math.max(0, current - 1) : current;
     });
-  }, []);
+  }, [notifications]);
 
   const deleteNotification = useCallback(async (notificationId) => {
     await api.delete(`/api/notifications/${notificationId}/`, {
