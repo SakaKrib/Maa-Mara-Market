@@ -60,6 +60,49 @@ def notify_vendor(sender, instance, created, **kwargs):
     instance.refresh_from_db()
     data = NotificationSerializer(instance).data
 
+
+@receiver(post_save, sender=ActivityLog)
+def notify_item_owner_for_marketplace_activity(sender, instance, created, **kwargs):
+    """Turn important customer item actions into vendor-facing notifications."""
+    if not created or not instance.item_id or instance.action not in {
+        "item_added_to_cart",
+        "item_viewed",
+        "item_sold",
+    }:
+        return
+
+    item = instance.item
+    vendor = getattr(item, "vendor", None)
+    recipient = getattr(vendor, "user", None) if vendor else None
+    if recipient is None or recipient.pk == instance.user_id:
+        return
+
+    action_copy = {
+        "item_added_to_cart": (
+            "Item added to cart",
+            f"A customer added {item.name} to their cart.",
+            "/vendors-dashboard",
+        ),
+        "item_viewed": (
+            "Your item was viewed",
+            f"A customer viewed your item {item.name}.",
+            "/vendors-dashboard",
+        ),
+        "item_sold": (
+            "Your item was purchased",
+            f"Your item {item.name} was purchased.",
+            "/vendors-dashboard/orders",
+        ),
+    }
+    title, message, url = action_copy[instance.action]
+    Notification.objects.create(
+        user=recipient,
+        title=title,
+        message=message,
+        url=url,
+    )
+
+
 # activity
 @receiver(post_save, sender=ActivityLog)
 def broadcast_activity_log(sender, instance, created, **kwargs):
