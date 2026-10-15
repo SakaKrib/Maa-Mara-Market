@@ -177,8 +177,8 @@ jobs:
       - name: Keep Android system bars visible with full-screen content
         working-directory: ${{ env.FRONTEND_DIR }}
         run: |
-          cat > android/app/src/main/java/com/mamaramarket/app/MainActivity.java <<'JAVA'
-          package com.mamaramarket.app;
+          cat > android/app/src/main/java/com/maamaramarket/app/MainActivity.java <<'JAVA'
+          package com.maamaramarket.app;
 
           import android.graphics.Color;
           import android.net.Uri;
