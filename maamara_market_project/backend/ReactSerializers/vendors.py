@@ -1570,6 +1570,7 @@ def approve_vendor(request, vendor_request_id):
 # deny vendor
 @api_view(['POST'])
 @permission_classes([IsAuthenticated, IsAdminUser])
+@transaction.atomic
 def deny_vendor(request, vendor_request_id):
     try:
         vendor_request = VendorRequest.objects.select_for_update().get(id=vendor_request_id)
