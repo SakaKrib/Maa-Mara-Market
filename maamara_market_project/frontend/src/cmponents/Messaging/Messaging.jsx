@@ -60,12 +60,21 @@ export default function Messaging({ floating = false, onClose = null, initialCon
     const targetConversation = conversations.find(
       (conversation) => String(conversation.id) === String(initialConversationId)
     );
-    if (targetConversation && String(selectedRef.current?.id) !== String(targetConversation.id)) {
-      pendingTargetMessageRef.current = initialMessageId ? String(initialMessageId) : "";
+    if (!targetConversation) return;
+
+    // Set the message target even when this conversation is already open.
+    // Notifications for multiple messages in the same chat must still scroll
+    // to the newly selected message rather than leaving the user at the bottom.
+    pendingTargetMessageRef.current = initialMessageId ? String(initialMessageId) : "";
+
+    if (String(selectedRef.current?.id) !== String(targetConversation.id)) {
       setSelected(targetConversation);
       setMobileThread(true);
+    } else if (initialMessageId) {
+      setMobileThread(true);
+      loadMessages(targetConversation.id).catch(() => setError("Unable to load conversation."));
     }
-  }, [conversations, initialConversationId, initialMessageId]);
+  }, [conversations, initialConversationId, initialMessageId, loadMessages]);
 
   useEffect(() => {
     selectedRef.current = selected;
