@@ -478,7 +478,8 @@ jobs:
       - name: Apply Maa Mara Market triple-m icon to iOS app and notifications
         working-directory: ${{ env.FRONTEND_DIR }}
         run: |
-          python3 -m pip install --quiet cairosvg
+          python3 -m venv /tmp/maamara-icon-venv
+          /tmp/maamara-icon-venv/bin/pip install --quiet cairosvg
           mkdir -p ios/App/App/Assets.xcassets/AppIcon.appiconset
           cat > /tmp/maamara-icon.svg <<'SVG'
           <svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
