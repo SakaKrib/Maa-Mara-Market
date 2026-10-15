@@ -43,11 +43,18 @@ def direct_message_saved(sender, instance, created, **kwargs):
             preview = "Sent you an image."
         if not preview:
             preview = "You have a new message."
+        recipient_home = (
+            "/admin-dashboard"
+            if recipient.is_staff or recipient.is_superuser
+            else "/vendors-dashboard"
+            if getattr(recipient, "vendor", None) is not None
+            else "/"
+        )
         Notification.objects.create(
             user=recipient,
             title="New message",
             message=preview[:1000],
-            url=f"/?openMessage=1&conversation={conversation.pk}&message={instance.pk}",
+            url=f"{recipient_home}?openMessage=1&conversation={conversation.pk}&message={instance.pk}",
         )
 
     payload = {
