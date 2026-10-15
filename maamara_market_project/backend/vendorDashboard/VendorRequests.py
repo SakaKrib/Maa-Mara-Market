@@ -608,9 +608,12 @@ def approve_request(request, pk):
 
     elif action == "deny":
 
-        if item_request.status == "denied":
+        # A request may only be denied while it is pending. Without this
+        # guard, an already-approved request could be changed to denied while
+        # the newly-created Item remains active.
+        if item_request.status != "pending":
             return Response(
-                {"error": "Request already denied."},
+                {"error": f"This request is already {item_request.status}."},
                 status=status.HTTP_400_BAD_REQUEST
             )
 
