@@ -475,26 +475,76 @@ jobs:
 
       # iOS displays the app icon for notifications; unlike Android, it has no separate
       # custom monochrome status-bar notification icon. Brand the app icon with the same mmm mark.
-      - name: Apply Maa Mara Market triple-m icon to iOS app and notifications
+      - name: Apply Maa Mara Market triple-m monogram to iOS app icon
         working-directory: ${{ env.FRONTEND_DIR }}
         run: |
-          python3 -m venv /tmp/maamara-icon-venv
-          /tmp/maamara-icon-venv/bin/pip install --quiet cairosvg
           mkdir -p ios/App/App/Assets.xcassets/AppIcon.appiconset
-          cat > /tmp/maamara-icon.svg <<'SVG'
-          <svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
-            <rect width="1024" height="1024" rx="190" fill="#173C76"/>
-            <path d="M130 650 V400 C130 280 260 280 260 400 V650 C260 280 390 280 390 400 V650 C390 280 520 280 520 400 V650 C520 280 650 280 650 400 V650 C650 280 780 280 780 400 V650 C780 280 894 280 894 400 V650"
-              fill="none" stroke="#FFFFFF" stroke-width="38" stroke-linecap="round" stroke-linejoin="round"/>
-          </svg>
-          SVG
+          cat > /tmp/generate-maamara-icon.swift <<'SWIFT'
+          import AppKit
+          import Foundation
+
+          let size = 1024
+          let bitmap = NSBitmapImageRep(
+              bitmapDataPlanes: nil,
+              pixelsWide: size,
+              pixelsHigh: size,
+              bitsPerSample: 8,
+              samplesPerPixel: 4,
+              hasAlpha: true,
+              isPlanar: false,
+              colorSpaceName: .deviceRGB,
+              bytesPerRow: 0,
+              bitsPerPixel: 0
+          )!
+          NSGraphicsContext.saveGraphicsState()
+          NSGraphicsContext.current = NSGraphicsContext(bitmapImageRep: bitmap)
+          NSGraphicsContext.current?.imageInterpolation = .high
+
+          NSColor(calibratedRed: 23 / 255, green: 60 / 255, blue: 118 / 255, alpha: 1).setFill()
+          NSBezierPath(rect: NSRect(x: 0, y: 0, width: size, height: size)).fill()
+
+          NSColor.white.setStroke()
+          let monogram = NSBezierPath()
+          monogram.lineWidth = 38
+          monogram.lineCapStyle = .round
+          monogram.lineJoinStyle = .round
+          let baseline: CGFloat = 330
+          let top: CGFloat = 570
+          for letter in 0..<3 {
+              let x = CGFloat(130 + letter * 260)
+              monogram.move(to: NSPoint(x: x, y: baseline))
+              monogram.line(to: NSPoint(x: x, y: top))
+              monogram.curve(
+                  to: NSPoint(x: x + 130, y: top),
+                  controlPoint1: NSPoint(x: x, y: top + 105),
+                  controlPoint2: NSPoint(x: x + 130, y: top + 105)
+              )
+              monogram.line(to: NSPoint(x: x + 130, y: baseline))
+              monogram.line(to: NSPoint(x: x + 130, y: top))
+              monogram.curve(
+                  to: NSPoint(x: x + 260, y: top),
+                  controlPoint1: NSPoint(x: x + 130, y: top + 105),
+                  controlPoint2: NSPoint(x: x + 260, y: top + 105)
+              )
+              monogram.line(to: NSPoint(x: x + 260, y: baseline))
+          }
+          monogram.stroke()
+          NSGraphicsContext.restoreGraphicsState()
+
+          let output = "ios/App/App/Assets.xcassets/AppIcon.appiconset/AppIcon-1024.png"
+          let png = bitmap.representation(using: .png, properties: [:])!
+          try png.write(to: URL(fileURLWithPath: output))
+          print("Generated the iOS Maa Mara Market triple-m app icon using built-in macOS graphics.")
+          SWIFT
+          swift /tmp/generate-maamara-icon.swift
           python3 - <<'PY'
-          import cairosvg
           import json
           from pathlib import Path
 
           icon_dir = Path("ios/App/App/Assets.xcassets/AppIcon.appiconset")
-          cairosvg.svg2png(url="/tmp/maamara-icon.svg", write_to=str(icon_dir / "AppIcon-1024.png"), output_width=1024, output_height=1024)
+          icon_path = icon_dir / "AppIcon-1024.png"
+          if not icon_path.is_file() or icon_path.stat().st_size < 1000:
+              raise SystemExit("The iOS app icon image was not generated correctly.")
           (icon_dir / "Contents.json").write_text(json.dumps({
               "images": [{
                   "filename": "AppIcon-1024.png",
@@ -503,10 +553,9 @@ jobs:
                   "size": "1024x1024"
               }],
               "info": {"author": "xcode", "version": 1}
-          }, indent=2) + "\n")
-          print("Generated iOS Maa Mara Market triple-m app icon for notification identity.")
+          }, indent=2) + "\\n")
+          print("Validated iOS app icon asset catalog.")
           PY
-
 
       - name: Build iOS simulator app
         working-directory: ${{ env.FRONTEND_DIR }}/ios
