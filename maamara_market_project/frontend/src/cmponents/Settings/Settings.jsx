@@ -109,18 +109,22 @@ const Settings = () => {
     };
   }, []);
 
-  const saveMaintenance = async () => {
+  const saveMaintenance = async (nextMaintenance = maintenance) => {
     if (maintenanceSaving) return;
     setMaintenanceSaving(true);
     setMessage("");
     setError("");
     try {
-      const response = await api.patch("/api/maintenance/settings/", maintenance);
-      setMaintenance({
-        enabled: response.data?.enabled === true,
-        message: response.data?.message || maintenance.message,
+      const response = await api.patch("/api/maintenance/settings/", {
+        enabled: nextMaintenance.enabled === true,
+        message: nextMaintenance.message,
       });
-      setMessage(response.data?.enabled
+      const savedMaintenance = {
+        enabled: response.data?.enabled === true,
+        message: response.data?.message || nextMaintenance.message,
+      };
+      setMaintenance(savedMaintenance);
+      setMessage(savedMaintenance.enabled
         ? "Maintenance mode is now enabled."
         : "Maintenance mode is now disabled.");
     } catch (err) {
@@ -128,6 +132,15 @@ const Settings = () => {
     } finally {
       setMaintenanceSaving(false);
     }
+  };
+
+  const toggleMaintenance = () => {
+    const nextMaintenance = {
+      ...maintenance,
+      enabled: !maintenance.enabled,
+    };
+    // Persist the switch immediately; the backend database remains authoritative.
+    void saveMaintenance(nextMaintenance);
   };
 
   const openPasswordModal = () => {
@@ -281,7 +294,7 @@ const Settings = () => {
                 <button
                   type="button"
                   disabled={maintenanceLoading || maintenanceSaving}
-                  onClick={() => setMaintenance((current) => ({ ...current, enabled: !current.enabled }))}
+                  onClick={toggleMaintenance}
                   role="switch"
                   aria-checked={maintenance.enabled}
                   className="flex w-full items-center gap-3 rounded-xl border border-border p-3 text-left transition hover:bg-muted disabled:cursor-not-allowed disabled:opacity-60"
