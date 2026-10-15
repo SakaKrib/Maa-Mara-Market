@@ -175,13 +175,13 @@ jobs:
           manifest = Path("android/app/src/main/AndroidManifest.xml")
           source = manifest.read_text()
           metadata = '<meta-data android:name="com.google.firebase.messaging.default_notification_icon" android:resource="@drawable/ic_stat_maamara" />'
-          pattern = r'<meta-data\\s+android:name="com\\.google\\.firebase\\.messaging\\.default_notification_icon"[^>]*/>'
+          pattern = r'<meta-data\s+android:name="com\.google\.firebase\.messaging\.default_notification_icon"[^>]*/>'
           if re.search(pattern, source):
               source = re.sub(pattern, metadata, source, count=1)
           else:
               source, count = re.subn(
-                  r'<application\\b[^>]*>',
-                  lambda match: match.group(0) + '\\n        ' + metadata,
+                  r'<application\b[^>]*>',
+                  lambda match: match.group(0) + '\n        ' + metadata,
                   source,
                   count=1,
               )
