@@ -701,6 +701,19 @@ class ItemDetailView(generics.RetrieveAPIView):
             Item.objects.filter(pk=item.pk).update(views=F("views") + 1)
             item.refresh_from_db(fields=["views"])
 
+            # Alert the item owner once per new account/visitor view. The
+            # ItemView uniqueness rule prevents repeated page renders from
+            # creating a stream of duplicate view notifications.
+            vendor = getattr(item, "vendor", None)
+            vendor_user = getattr(vendor, "user", None) if vendor else None
+            if vendor_user and vendor_user.pk != getattr(user, "pk", None):
+                Notification.objects.create(
+                    user=vendor_user,
+                    title="Your item was viewed",
+                    message=f"A customer viewed your item {item.name}.",
+                    url="/vendors-dashboard",
+                )
+
         serializer = self.get_serializer(item)
         response = Response(serializer.data)
 
