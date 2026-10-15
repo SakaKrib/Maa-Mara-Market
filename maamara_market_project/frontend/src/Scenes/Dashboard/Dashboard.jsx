@@ -289,7 +289,7 @@ const Dashboard = () => {
           ? JSON.stringify(value)
           : String(value);
       // Prevent spreadsheet applications from treating exported text as formulas.
-      const safeValue = /^[=+@\\-]/.test(normalized) ? `'${normalized}` : normalized;
+      const safeValue = typeof value === "string" && /^[=+@-]/.test(normalized) ? `'${normalized}` : normalized;
       return '"' + safeValue.replace(/"/g, '""') + '"';
     };
 
@@ -329,8 +329,8 @@ const Dashboard = () => {
         [...headers, "Export generated at (Africa/Nairobi)"],
         ...rows.map((row) => [...row, producedAt]),
       ];
-      const csv = reportRows.map((row) => row.map(csvCell).join(",")).join("\\r\\n");
-      const blob = new Blob(["\\uFEFF", csv], { type: "text/csv;charset=utf-8;" });
+      const csv = reportRows.map((row) => row.map(csvCell).join(",")).join("\r\n");
+      const blob = new Blob(["\uFEFF", csv], { type: "text/csv;charset=utf-8;" });
       const url = URL.createObjectURL(blob);
       const anchor = document.createElement("a");
       anchor.href = url;
