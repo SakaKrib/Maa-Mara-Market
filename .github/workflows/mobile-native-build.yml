@@ -147,6 +147,56 @@ jobs:
           fi
           npx cap sync android
 
+      - name: Install Maa Mara Market status-bar notification icon
+        working-directory: ${{ env.FRONTEND_DIR }}
+        run: |
+          mkdir -p android/app/src/main/res/drawable
+          cat > android/app/src/main/res/drawable/ic_stat_maamara.xml <<'XML'
+          <?xml version="1.0" encoding="utf-8"?>
+          <vector xmlns:android="http://schemas.android.com/apk/res/android"
+              android:width="24dp"
+              android:height="24dp"
+              android:viewportWidth="96"
+              android:viewportHeight="48">
+              <path
+                  android:fillColor="#00000000"
+                  android:strokeColor="#FFFFFFFF"
+                  android:strokeWidth="4.5"
+                  android:strokeLineCap="round"
+                  android:strokeLineJoin="round"
+                  android:pathData="M12,36 V20 C12,10 24,10 24,20 V36 V20 C24,10 36,10 36,20 V36 V20 C36,10 48,10 48,20 V36 V20 C48,10 60,10 60,20 V36 V20 C60,10 72,10 72,20 V36 V20 C72,10 84,10 84,20 V36" />
+          </vector>
+          XML
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+          import xml.etree.ElementTree as ET
+
+          manifest = Path("android/app/src/main/AndroidManifest.xml")
+          source = manifest.read_text()
+          metadata = '<meta-data android:name="com.google.firebase.messaging.default_notification_icon" android:resource="@drawable/ic_stat_maamara" />'
+          pattern = r'<meta-data\\s+android:name="com\\.google\\.firebase\\.messaging\\.default_notification_icon"[^>]*/>'
+          if re.search(pattern, source):
+              source = re.sub(pattern, metadata, source, count=1)
+          else:
+              source, count = re.subn(
+                  r'<application\\b[^>]*>',
+                  lambda match: match.group(0) + '\\n        ' + metadata,
+                  source,
+                  count=1,
+              )
+              if count != 1:
+                  raise SystemExit("Could not locate the Android application element in AndroidManifest.xml")
+          manifest.write_text(source)
+
+          # Validate both resources before Gradle starts.
+          ET.parse(manifest)
+          ET.parse("android/app/src/main/res/drawable/ic_stat_maamara.xml")
+          if '@drawable/ic_stat_maamara' not in manifest.read_text():
+              raise SystemExit("Notification icon metadata was not installed")
+          print("Validated monochrome lowercase triple-m notification icon and Firebase default icon metadata.")
+          PY
+
       # GitHub development builds use HTTPS Tailscale Serve to avoid Android WebView mixed-content blocking.
       # Use https://maamaramarket.com only for an explicitly requested production build.
       - name: Allow HTTP API access only when explicitly configured
