@@ -2,6 +2,7 @@ import React, { createContext, useCallback, useContext, useEffect, useMemo, useR
 import { useLocation, useNavigate } from "react-router-dom";
 import { Bell } from "lucide-react";
 import MessagingLauncher from "../Messaging/MessagingLauncher";
+import NotificationCenter from "../Notifications/NotificationCenter";
 import { useAuth } from "../Auth/AuthContext/Context";
 import { setupNativePushNotifications, unregisterNativePushDevice } from "../Notifications/nativePushNotifications";
 import api from "../../Services/Api";
@@ -317,6 +318,11 @@ export const AdminPreferencesProvider = ({ children }) => {
     <AdminPreferencesContext.Provider value={value}>
       {children}
       <MessagingLauncher />
+      {isAuthenticated &&
+        !location.pathname.startsWith("/admin-dashboard") &&
+        !location.pathname.startsWith("/vendors-dashboard") && (
+          <NotificationCenter />
+        )}
       {toastNotification && preferences.notifications && (
         <div className="fixed right-4 top-4 z-[2500] w-[min(390px,calc(100vw-2rem))]">
           <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white text-slate-900 shadow-2xl">
