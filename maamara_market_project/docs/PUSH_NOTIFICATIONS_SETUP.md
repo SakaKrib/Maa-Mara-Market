@@ -8,7 +8,7 @@ Push delivery is intentionally disabled in generated native builds until the mat
 
 ### 1. Firebase Android app
 
-1. Create/select the Maa Mara Market Firebase project and add the Android app using the native package ID from `frontend/capacitor.config.ts` (currently `com.mamaramarket.app` in the generated Android project).
+1. Create/select the Maa Mara Market Firebase project and add the Android app using the native package ID from `frontend/capacitor.config.ts` (now `com.maamaramarket.app` from `frontend/capacitor.config.ts`).
 2. Download `google-services.json`.
 3. In GitHub repository **Settings → Secrets and variables → Actions**, create secret `FIREBASE_ANDROID_CONFIG` containing the full JSON file contents.
 
