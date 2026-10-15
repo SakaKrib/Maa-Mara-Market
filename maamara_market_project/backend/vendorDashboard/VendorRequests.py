@@ -268,10 +268,7 @@ class VendorItemRequestCreateView(generics.CreateAPIView):
             actor_type="vendor",
             action="item_request_created",
             description=f"You submitted an item request for {item_request.name}.",
-            related_url=(
-                f"/admin/vendorDashboard/"
-                f"vendoritemrequest/{item_request.id}/"
-            ),
+            related_url="/vendors-dashboard/add-item",
         )
 
         # =========================
