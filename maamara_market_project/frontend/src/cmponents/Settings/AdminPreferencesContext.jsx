@@ -1,5 +1,5 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
-import { useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import api from "../../Services/Api";
 
 const STORAGE_KEYS = {
@@ -38,6 +38,9 @@ const getConversationResults = (data) => (
 
 export const AdminPreferencesProvider = ({ children }) => {
   const location = useLocation();
+  const navigate = useNavigate();
+  const [toastNotification, setToastNotification] = useState(null);
+  const toastTimerRef = useRef(null);
   const workspaceRole = location.pathname.startsWith("/vendors-dashboard") ? "vendor" : "admin";
   const [preferences, setPreferences] = useState(() => readStoredPreferences(workspaceRole));
   const notificationStateRef = useRef({
@@ -124,16 +127,6 @@ export const AdminPreferencesProvider = ({ children }) => {
     const isAdminWorkspace = location.pathname.startsWith("/admin-dashboard");
     const isVendorWorkspace = location.pathname.startsWith("/vendors-dashboard");
 
-    if (!isAdminWorkspace && !isVendorWorkspace) {
-      notificationStateRef.current = {
-        initialized: false,
-        notificationIds: new Set(),
-        messageUnread: new Map(),
-        supportPending: 0,
-      };
-      return undefined;
-    }
-
     let active = true;
     let polling = false;
 
@@ -185,17 +178,29 @@ export const AdminPreferencesProvider = ({ children }) => {
           return;
         }
 
+        const newNotifications = notifications
+          .filter((item) => item.id != null && !state.notificationIds.has(item.id))
+          .sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0));
+
+        // Show an in-app toast for every signed-in role, independent of browser
+        // notification permission and native-platform status.
+        if (preferences.notifications && newNotifications.length > 0) {
+          setToastNotification(newNotifications[0]);
+          if (toastTimerRef.current) window.clearTimeout(toastTimerRef.current);
+          toastTimerRef.current = window.setTimeout(() => setToastNotification(null), 10000);
+        }
+
         if (preferences.browserAlerts) {
-          notifications
-            .filter((item) => item.id != null && !state.notificationIds.has(item.id))
-            .sort((a, b) => new Date(a.created_at || 0) - new Date(b.created_at || 0))
+          newNotifications
             .slice(0, 5)
             .forEach((item) => {
-              notifyBrowser(item.title || "Maa Mara Market", {
-                body: item.message || (
+              notifyBrowser(item.title || item.display_title || "Maa Mara Market", {
+                body: item.display_message || item.message || (
                   isVendorWorkspace
                     ? "You have a new vendor notification."
-                    : "You have a new admin notification."
+                    : isAdminWorkspace
+                      ? "You have a new admin notification."
+                      : "You have a new marketplace update."
                 ),
                 tag: `maamara-notification-${item.id}`,
               });
@@ -250,16 +255,61 @@ export const AdminPreferencesProvider = ({ children }) => {
       active = false;
       window.clearInterval(intervalId);
     };
-  }, [location.pathname, preferences.browserAlerts, notifyBrowser]);
+  }, [location.pathname, preferences.browserAlerts, preferences.notifications, notifyBrowser]);
 
   const value = useMemo(
     () => ({ preferences, updatePreference, resetPreferences, notifyBrowser }),
     [preferences, notifyBrowser]
   );
 
+  const openToastNotification = useCallback(async () => {
+    const notification = toastNotification;
+    if (!notification) return;
+    setToastNotification(null);
+    if (toastTimerRef.current) window.clearTimeout(toastTimerRef.current);
+    try {
+      await api.post(`/api/notifications/${notification.id}/mark_seen/`, {}, { withCredentials: true });
+    } catch {
+      // Navigation should still work if marking the notification read fails.
+    }
+    const target = notification.url || (
+      location.pathname.startsWith("/vendors-dashboard")
+        ? "/vendors-dashboard"
+        : location.pathname.startsWith("/admin-dashboard")
+          ? "/admin-dashboard"
+          : "/"
+    );
+    navigate(target);
+  }, [toastNotification, location.pathname, navigate]);
+
+  useEffect(() => () => {
+    if (toastTimerRef.current) window.clearTimeout(toastTimerRef.current);
+  }, []);
+
   return (
     <AdminPreferencesContext.Provider value={value}>
       {children}
+      {toastNotification && preferences.notifications && (
+        <div className="fixed right-4 top-4 z-[2500] w-[min(390px,calc(100vw-2rem))]">
+          <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white text-slate-900 shadow-2xl">
+            <div className="flex items-start gap-3 p-4">
+              <span className="mt-0.5 inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-blue-50 text-blue-700" aria-hidden="true">
+                <span className="text-lg">♧</span>
+              </span>
+              <button type="button" onClick={openToastNotification} className="min-w-0 flex-1 text-left">
+                <span className="block text-sm font-bold">
+                  {toastNotification.display_title || toastNotification.title || "Maa Mara Market update"}
+                </span>
+                <span className="mt-1 block text-sm leading-5 text-slate-600">
+                  {toastNotification.display_message || toastNotification.message || "You have a new update."}
+                </span>
+                <span className="mt-2 block text-xs font-semibold text-blue-700">Open update</span>
+              </button>
+              <button type="button" onClick={() => setToastNotification(null)} className="rounded-full px-2 py-1 text-slate-500 hover:bg-slate-100" aria-label="Dismiss notification">×</button>
+            </div>
+          </div>
+        </div>
+      )}
     </AdminPreferencesContext.Provider>
   );
 };
