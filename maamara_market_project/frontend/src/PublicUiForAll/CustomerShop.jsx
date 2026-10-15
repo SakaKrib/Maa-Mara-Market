@@ -4,7 +4,6 @@ import { Outlet } from "react-router-dom";
 import Header from "../PublicUiForAll/PublicUi/Customer/DesktopView/Header/Header";
 import Footer from "./PublicUi/Navigations/Footer/Footer";
 import MobileMenu from "./PublicUi/Navigations/Footer/MobileFooter";
-import MessagingLauncher from "../cmponents/Messaging/MessagingLauncher";
 import AnalyticsTracker from "./PublicUi/Customer/AnalyticsTracker";
 import MaintenancePage from "./MaintenancePage";
 import api from "../Services/Api";
