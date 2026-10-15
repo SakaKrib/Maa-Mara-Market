@@ -72,8 +72,20 @@ export async function setupNativePushNotifications() {
 }
 
 export async function unregisterNativePushDevice() {
-  if (!currentPushToken) return;
+  // Remove listeners as well as the server token so turning notifications off
+  // and back on during the same app session can register the device again.
+  const pendingSetup = setupPromise;
+  if (pendingSetup) {
+    try {
+      const cleanup = await pendingSetup;
+      await cleanup?.();
+    } catch {
+      setupPromise = null;
+    }
+  }
+
   const token = currentPushToken;
+  if (!token) return;
   try {
     await api.delete("/api/push/devices/", {
       data: { token },
