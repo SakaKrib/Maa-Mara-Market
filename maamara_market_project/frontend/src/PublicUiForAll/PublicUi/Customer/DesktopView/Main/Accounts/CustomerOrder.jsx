@@ -60,8 +60,8 @@ const downloadOrderHistory = (orders) => {
     });
   });
 
-  const csv = rows.map((row) => row.map(csvCell).join(",")).join("\\r\\n");
-  const blob = new Blob(["\\uFEFF", csv], { type: "text/csv;charset=utf-8;" });
+  const csv = rows.map((row) => row.map(csvCell).join(",")).join("\r\n");
+  const blob = new Blob(["\uFEFF", csv], { type: "text/csv;charset=utf-8;" });
   const url = URL.createObjectURL(blob);
   const anchor = document.createElement("a");
   anchor.href = url;
@@ -184,6 +184,22 @@ const CustomerOrdersDashboard = ({ wallet: walletProp, vouchers: vouchersProp, o
     <section className="mm-page min-h-screen text-[#29251f]">
       <div className="mm-container px-4 py-8 sm:px-6 sm:py-10">
         <div className="space-y-6">
+          <div className="flex flex-col gap-3 rounded-2xl border border-[#e5dfd4] bg-white p-4 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <h1 className="text-lg font-semibold">Your purchases</h1>
+              <p className="text-sm text-muted-foreground">Download a CSV copy of your order history and purchased item details.</p>
+            </div>
+            <Button
+              type="button"
+              variant="outline"
+              className="rounded-full"
+              onClick={() => downloadOrderHistory(safeOrders)}
+              disabled={safeOrders.length === 0}
+            >
+              <Download className="mr-2 h-4 w-4" aria-hidden="true" />
+              Download order history
+            </Button>
+          </div>
           <Card className="overflow-hidden rounded-3xl border border-[#e5dfd4] text-[#29251f] shadow-sm">
             <CardContent className="p-6 sm:p-7">
               <div className="mb-2 flex items-center gap-3">
