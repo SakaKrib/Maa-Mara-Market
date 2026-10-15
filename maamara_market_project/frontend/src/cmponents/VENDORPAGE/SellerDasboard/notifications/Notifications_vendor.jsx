@@ -13,6 +13,7 @@ export default function VendorNotifications() {
     notifications = [],
     unseenCount = 0,
     deleteNotification,
+    markNotificationSeen,
     clearAllNotifications,
   } = useVendorNotifications({ enabled: notificationsEnabled });
   const [actionError, setActionError] = useState("");
@@ -37,11 +38,14 @@ export default function VendorNotifications() {
     }
   };
 
-  const handleNotificationClick = (notification) => {
-    if (notification.url) {
-      navigate(notification.url);
-      setOpen(false);
+  const handleNotificationClick = async (notification) => {
+    try {
+      await markNotificationSeen(notification.id);
+    } catch {
+      // Keep the notification actionable even if the read receipt fails.
     }
+    if (notification.url) navigate(notification.url);
+    setOpen(false);
   };
 
   return (
