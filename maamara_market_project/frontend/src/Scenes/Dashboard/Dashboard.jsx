@@ -283,22 +283,73 @@ const Dashboard = () => {
 
   const exportDashboardData = async (reportType) => {
     const csvCell = (value) => {
-      const normalized = value == null ? "" : typeof value === "object" ? JSON.stringify(value) : String(value);
-      return '"' + normalized.replace(/"/g, '""') + '"';
+      const normalized = value == null
+        ? ""
+        : typeof value === "object"
+          ? JSON.stringify(value)
+          : String(value);
+      // Prevent spreadsheet applications from treating exported text as formulas.
+      const safeValue = /^[=+@\\-]/.test(normalized) ? `'${normalized}` : normalized;
+      return '"' + safeValue.replace(/"/g, '""') + '"';
     };
-    const downloadCsv = (filename, headers, rows) => {
-      const csv = [headers, ...rows].map((row) => row.map(csvCell).join(",")).join("\r\n");
-      const blob = new Blob(["\uFEFF", csv], { type: "text/csv;charset=utf-8;" });
+
+    const getNairobiTimestamp = () => {
+      const now = new Date();
+      const parts = new Intl.DateTimeFormat("en-CA", {
+        timeZone: "Africa/Nairobi",
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+      }).formatToParts(now);
+      const dateParts = Object.fromEntries(parts.map(({ type, value }) => [type, value]));
+      const dateStamp = `${dateParts.year}-${dateParts.month}-${dateParts.day}`;
+      const producedAt = new Intl.DateTimeFormat("en-KE", {
+        timeZone: "Africa/Nairobi",
+        year: "numeric",
+        month: "short",
+        day: "2-digit",
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit",
+        hour12: true,
+        timeZoneName: "short",
+      }).format(now);
+      return { dateStamp, producedAt };
+    };
+
+    const downloadCsv = (filename, reportTitle, headers, rows, producedAt, dateStamp) => {
+      const reportRows = [
+        ["MAA MARA MARKET"],
+        ["Email", "hello@maamaramarket.com"],
+        ["Location", "Nairobi, Kenya"],
+        ["Report", reportTitle],
+        ["Date produced (Africa/Nairobi)", producedAt],
+        ["Report date (Africa/Nairobi)", dateStamp],
+        [],
+        [...headers, "Export generated at (Africa/Nairobi)"],
+        ...rows.map((row) => [...row, producedAt]),
+      ];
+      const csv = reportRows.map((row) => row.map(csvCell).join(",")).join("\\r\\n");
+      const blob = new Blob(["\\uFEFF", csv], { type: "text/csv;charset=utf-8;" });
       const url = URL.createObjectURL(blob);
       const anchor = document.createElement("a");
       anchor.href = url;
       anchor.download = filename;
+      anchor.style.display = "none";
       document.body.appendChild(anchor);
-      anchor.click();
-      anchor.remove();
-      URL.revokeObjectURL(url);
+      try {
+        anchor.click();
+      } finally {
+        anchor.remove();
+        // Do not revoke the object URL synchronously; browsers may not have
+        // started consuming it yet, especially on mobile.
+        window.setTimeout(() => URL.revokeObjectURL(url), 1500);
+      }
     };
-    const listFromResponse = (data) => Array.isArray(data) ? data : Array.isArray(data?.results) ? data.results : [];
+
+    const listFromResponse = (data) =>
+      Array.isArray(data) ? data : Array.isArray(data?.results) ? data.results : [];
+
     const fetchAllPages = async (initialUrl) => {
       const records = [];
       let nextUrl = initialUrl;
@@ -310,15 +361,17 @@ const Dashboard = () => {
         nextUrl = Array.isArray(data) ? null : (data?.next || null);
         pageCount += 1;
       }
+      if (nextUrl) {
+        throw new Error("The report contains more than 100 pages. Please narrow the report and try again.");
+      }
       return records;
     };
 
+    const { dateStamp, producedAt } = getNairobiTimestamp();
     setExportingKey(reportType);
     try {
-      const dateStamp = new Date().toISOString().slice(0, 10);
       if (reportType === "summary") {
         const rows = [
-          ["Report date", dateStamp],
           ["Total revenue (KES)", Number(analytics.total_revenue || transactionSummary.total_revenue || 0)],
           ["Total transactions", Number(transactionSummary.total_transactions || transactions.length || 0)],
           ["Total sales", Number(stats?.total_sales || 0)],
@@ -334,27 +387,53 @@ const Dashboard = () => {
           ["Unseen job applications", jobsCount],
           ["Pending support messages", supportCount],
         ];
-        downloadCsv(`maa-mara-dashboard-summary-${dateStamp}.csv`, ["Metric", "Value"], rows);
+        downloadCsv(
+          `maa-mara-dashboard-summary-${dateStamp}.csv`,
+          "Dashboard summary",
+          ["Metric", "Value"],
+          rows,
+          producedAt,
+          dateStamp
+        );
       } else if (reportType === "transactions") {
         const records = await fetchAllPages("/api/admin-transactions/");
         if (!records.length) throw new Error("No transaction records were returned for export.");
-        downloadCsv(`maa-mara-payment-transactions-${dateStamp}.csv`,
+        downloadCsv(
+          `maa-mara-payment-transactions-${dateStamp}.csv`,
+          "Payment transactions",
           ["Transaction ID", "Reference", "Date", "Customer", "Email", "Amount (KES)", "Status", "Payment method"],
           records.map((item) => [
-            item.id ?? "", item.txid ?? item.reference ?? item.transaction_reference ?? "",
-            item.created_at ?? item.date ?? "", item.user?.username ?? item.username ?? "",
-            item.payer_email ?? item.user?.email ?? "", item.amount ?? "", item.status ?? item.payment_status ?? "",
+            item.id ?? "",
+            item.txid ?? item.reference ?? item.transaction_reference ?? "",
+            item.created_at ?? item.date ?? "",
+            item.user?.username ?? item.username ?? "",
+            item.payer_email ?? item.user?.email ?? "",
+            item.amount ?? "",
+            item.status ?? item.payment_status ?? "",
             item.payment_method ?? item.method ?? "",
-          ]));
+          ]),
+          producedAt,
+          dateStamp
+        );
       } else if (reportType === "emails") {
         const records = await fetchAllPages("/api/email/list/?status=all");
         if (!records.length) throw new Error("No email records were returned for export.");
-        downloadCsv(`maa-mara-email-delivery-${dateStamp}.csv`,
+        downloadCsv(
+          `maa-mara-email-delivery-${dateStamp}.csv`,
+          "Email delivery report",
           ["Email ID", "Recipient", "Subject", "Status", "Created", "Sent", "Message"],
           records.map((item) => [
-            item.id ?? "", item.recipient ?? item.to ?? "", item.subject ?? "", item.status ?? "",
-            item.created_at ?? "", item.sent_at ?? "", item.message ?? item.body ?? "",
-          ]));
+            item.id ?? "",
+            item.recipient ?? item.to ?? "",
+            item.subject ?? "",
+            item.status ?? "",
+            item.created_at ?? "",
+            item.sent_at ?? "",
+            item.message ?? item.body ?? "",
+          ]),
+          producedAt,
+          dateStamp
+        );
       } else if (reportType === "vendors") {
         const [pendingRecords, verifiedRecords] = await Promise.all([
           fetchAllPages("/api/vendor/requests/?status=pending"),
@@ -365,16 +444,34 @@ const Dashboard = () => {
           ...verifiedRecords.map((item) => ({ ...item, export_status: item.status || "verified" })),
         ];
         if (!records.length) throw new Error("No vendor approval requests were returned for export.");
-        const uniqueRecords = [...new Map(records.map((item) => [item.id ?? item.request_id ?? JSON.stringify(item), item])).values()];
-        downloadCsv(`maa-mara-vendor-requests-${dateStamp}.csv`,
+        const uniqueRecords = [...new Map(
+          records.map((item) => [item.id ?? item.request_id ?? JSON.stringify(item), item])
+        ).values()];
+        downloadCsv(
+          `maa-mara-vendor-requests-${dateStamp}.csv`,
+          "Vendor approval requests",
           ["Request ID", "Vendor", "Email", "Status", "Submitted", "Business name"],
           uniqueRecords.map((item) => [
-            item.id ?? item.request_id ?? "", item.username ?? item.vendor_name ?? item.vendor?.username ?? item.name ?? "",
-            item.email ?? item.vendor_email ?? item.vendor?.email ?? "", item.export_status ?? item.status ?? "",
-            item.created_at ?? item.submitted_at ?? "", item.business_name ?? item.vendor_data?.business_name ?? "",
-          ]));
+            item.id ?? item.request_id ?? "",
+            item.username ?? item.vendor_name ?? item.vendor?.username ?? item.name ?? "",
+            item.email ?? item.vendor_email ?? item.vendor?.email ?? "",
+            item.export_status ?? item.status ?? "",
+            item.created_at ?? item.submitted_at ?? "",
+            item.business_name ?? item.vendor_data?.business_name ?? "",
+          ]),
+          producedAt,
+          dateStamp
+        );
+      } else {
+        throw new Error("That report type is not supported.");
       }
-      toast({ title: "Export ready", description: "Your CSV report has been downloaded.", duration: 4000 });
+
+      setExportMenuOpen(false);
+      toast({
+        title: "Export ready",
+        description: "Your Maa Mara Market CSV spreadsheet has been prepared for download.",
+        duration: 4000,
+      });
     } catch (error) {
       toast({
         title: "Export failed",
