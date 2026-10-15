@@ -406,15 +406,18 @@ def add_to_cart_api(request, pk):
         cart_item.save()
 
     # --- Activity logs ---
-    ActivityLog.objects.create(
-        user=user,
-        visitor_id=visitor_id,
-        actor_type=actor_type,
-        action="item_added_to_cart",
-        item=item,
-        description=f"A customer added {item.name} to their cart.",
-        related_url=f"/item/{item.id}/"
-    )
+    # Only record a cart-add event when this item/variant is newly added.
+    # Repeated quantity increments should not generate duplicate vendor push alerts.
+    if created:
+        ActivityLog.objects.create(
+            user=user,
+            visitor_id=visitor_id,
+            actor_type=actor_type,
+            action="item_added_to_cart",
+            item=item,
+            description=f"A customer added {item.name} to their cart.",
+            related_url=f"/item/{item.id}/"
+        )
 
     # --- Build response ---
     message = "Item added to cart" if created else "Item quantity updated in cart"
