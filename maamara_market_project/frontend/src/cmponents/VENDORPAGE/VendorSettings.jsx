@@ -10,6 +10,9 @@ const VendorSettings = () => {
   const navigate = useNavigate();
   const { user, refreshAuth, logout } = useAuth();
   const { preferences, updatePreference, resetPreferences } = useAdminPreferences();
+  const isNativeApp =
+    typeof window !== "undefined" &&
+    window.Capacitor?.isNativePlatform?.() === true;
   const [showSignOutConfirm, setShowSignOutConfirm] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -38,8 +41,18 @@ const VendorSettings = () => {
           address: details.address || "",
         });
       } catch (err) {
-        console.error("Failed to load vendor settings:", err);
-        setError("We could not load your account settings.");
+        console.error("Failed to load vendor settings:", {
+          status: err.response?.status,
+          data: err.response?.data,
+          message: err.message,
+        });
+        setError(
+          err.response?.status === 401 || err.response?.status === 403
+            ? "Your session could not be verified. Please sign in again."
+            : err.response?.status
+              ? `We could not load your account settings (server returned ${err.response.status}). Please try again.`
+              : "We could not reach the server to load your account settings. Check your connection and try again."
+        );
       } finally {
         setLoading(false);
       }
@@ -137,9 +150,11 @@ const VendorSettings = () => {
               </div>
               <div className="space-y-2">
                 {[
-                  ["notifications", "Notifications", "Show workspace notification feedback.", Bell],
+                  ["notifications", "Notifications", "Show notifications inside your vendor workspace.", Bell],
                   ["compactMode", "Compact workspace", "Use a tighter layout where supported.", Monitor],
-                  ["browserAlerts", "Browser alerts", "Allow browser notification preferences when supported.", Globe2],
+                  ...(!isNativeApp
+                    ? [["browserAlerts", "Browser alerts", "Show browser notifications when this website supports them.", Globe2]]
+                    : []),
                 ].map(([key, title, description, Icon]) => (
                   <button key={key} type="button" onClick={() => updatePreference(key, !preferences[key])} className="flex w-full items-center gap-3 rounded-xl border border-[#e6e6e4] p-3 text-left transition hover:bg-gray-100">
                     <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${preferences[key] ? "bg-blue-50 text-[#2563eb]" : "bg-gray-100 text-gray-600"}`}><Icon size={16} /></div>
@@ -147,6 +162,20 @@ const VendorSettings = () => {
                     <span className={`h-5 w-9 rounded-full p-0.5 ${preferences[key] ? "bg-[#2563eb]" : "bg-gray-100"}`}><span className={`block h-4 w-4 rounded-full bg-white shadow ${preferences[key] ? "translate-x-4" : ""}`} /></span>
                   </button>
                 ))}
+                {isNativeApp && (
+                  <div className="flex items-start gap-3 rounded-xl border border-blue-100 bg-blue-50/60 p-3">
+                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-white text-[#2563eb]">
+                      <Bell size={16} />
+                    </div>
+                    <span className="min-w-0 flex-1">
+                      <strong className="block text-sm text-gray-900">App notifications</strong>
+                      <small className="mt-0.5 block text-xs leading-5 text-gray-600">
+                        System-bar alerts require native push notification setup. Your in-app notifications remain available.
+                      </small>
+                    </span>
+                    <span className="shrink-0 rounded-full bg-white px-2 py-1 text-[10px] font-semibold text-gray-600">Setup required</span>
+                  </div>
+                )}
               </div>
               <button type="button" onClick={() => { resetPreferences(); setMessage("Preferences restored to their defaults."); }} className="mt-4 inline-flex items-center gap-2 text-xs font-semibold text-gray-600 hover:text-gray-900">
                 <RefreshCw size={14} /> Restore defaults
