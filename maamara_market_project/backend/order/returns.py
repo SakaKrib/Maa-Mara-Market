@@ -180,13 +180,13 @@ def return_request_handler_api(request, item_id):
                         action="return_requested",
                         item=item.item,
                         description=f"A customer requested a return for {product_name}.",
-                        related_url=f"/admin/returns/{item.id}/"
+                        related_url=f"/admin-dashboard/customer-requests?return={return_request.id}"
                     )
                     Notification.objects.create(
                         user=admin,
                         title="New Return Request",
                         message="A customer submitted a return request for " + product_name + ".",
-                        url=f"/admin/returns/{item.id}/"
+                        url=f"/admin-dashboard/customer-requests?return={return_request.id}"
                     )
 
             else:
@@ -283,7 +283,7 @@ def return_request_handler_api(request, item_id):
                     user=admin,
                     title="Refund Pending Approval",
                     message=f"A customer requested a refund for {product_name} worth {total_refund}.",
-                    url=f"/admin-returns/{return_request.id}/"
+                    url=f"/admin-dashboard/customer-requests?return={return_request.id}"
                 )
 
             response = Response({
@@ -346,7 +346,7 @@ def return_request_handler_api(request, item_id):
                     user=admin,
                     title="Exchange Pending Approval",
                     message=f"A customer requested an exchange for {product_name}.",
-                    url=f"/admin-returns/{return_request.id}/"
+                    url=f"/admin-dashboard/customer-requests?return={return_request.id}"
                 )
 
             # ✅ Respond with exchange credit cookie
@@ -606,7 +606,7 @@ def approve_return_request_api(request, return_id):
                         action="refund_approved_admin",
                         item=product,
                         description=f"The administrator approved the refund for {product.name}.",
-                        related_url=f"/admin/vendorDashboard/returns/{return_request.id}/"
+                        related_url=f"/admin-dashboard/customer-requests?return={return_request.id}"
                     )
 
                 return Response({
@@ -694,7 +694,7 @@ def approve_return_request_api(request, return_id):
                         action="exchange_approved_admin",
                         item=product,
                         description=f"The administrator approved the exchange for {product.name}.",
-                        related_url=f"/admin/vendorDashboard/returns/{return_request.id}/"
+                        related_url=f"/admin-dashboard/customer-requests?return={return_request.id}"
                     )
 
                 return Response({
@@ -769,7 +769,7 @@ def approve_return_request_api(request, return_id):
                     action="return_rejected_admin",
                     item=product,
                     description=f"The administrator rejected the return request for {product.name}.",
-                    related_url=f"/admin/vendorDashboard/returns/{return_request.id}/"
+                    related_url=f"/admin-dashboard/customer-requests?return={return_request.id}"
                 )
 
             return Response({
