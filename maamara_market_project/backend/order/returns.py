@@ -647,7 +647,7 @@ def approve_return_request_api(request, return_id):
                         user=customer,
                         title="Exchange Approved",
                         message=f"Your exchange request for {product.name} has been approved.",
-                        url=f"/vendors-dashboard/orders?order={order.id}"
+                        url=f"/customer-order?order={order.id}"
                     )
 
                 elif visitor_id:
@@ -665,7 +665,7 @@ def approve_return_request_api(request, return_id):
                         visitor_id=visitor_id,
                         title="Exchange Approved",
                         message=f"Your exchange request for {product.name} has been approved.",
-                        url=f"/vendors-dashboard/orders?order={order.id}"
+                        url=f"/customer-order?order={order.id}"
                     )
 
                 # Vendor Notification
