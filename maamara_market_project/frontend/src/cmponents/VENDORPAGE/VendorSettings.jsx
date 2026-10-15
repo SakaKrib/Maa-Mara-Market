@@ -168,12 +168,12 @@ const VendorSettings = () => {
                       <Bell size={16} />
                     </div>
                     <span className="min-w-0 flex-1">
-                      <strong className="block text-sm text-gray-900">App notifications</strong>
+                      <strong className="block text-sm text-gray-900">{nativePushConfigured ? "App notifications" : "App notifications setup required"}</strong>
                       <small className="mt-0.5 block text-xs leading-5 text-gray-600">
-                        System-bar alerts require native push notification setup. Your in-app notifications remain available.
+                        {nativePushConfigured ? "Native push registration is enabled for this build. Allow notifications when prompted to receive important updates outside the app." : "System-bar alerts require Firebase configuration for this native build. Your in-app notifications remain available."}
                       </small>
                     </span>
-                    <span className="shrink-0 rounded-full bg-white px-2 py-1 text-[10px] font-semibold text-gray-600">Setup required</span>
+                    <span className="shrink-0 rounded-full bg-white px-2 py-1 text-[10px] font-semibold text-gray-600">{nativePushConfigured ? "Available" : "Setup required"}</span>
                   </div>
                 )}
               </div>
