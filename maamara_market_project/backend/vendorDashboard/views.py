@@ -7,7 +7,7 @@ import os
 from dateutil.relativedelta import relativedelta
 from django.db import transaction
 from django.utils import timezone
-from django.db.models import Count, ExpressionWrapper, F, FloatField, Sum
+from django.db.models import Count, ExpressionWrapper, F, FloatField, Q, Sum
 from django.db.models.functions import TruncMonth, TruncYear
 from django.utils.timezone import now
 from rest_framework import permissions, status
@@ -294,38 +294,55 @@ def monthly_sales_report(request):
     year = int(request.query_params.get('year', now().year))
     month = int(request.query_params.get('month', now().month))
 
-    # Calculate total price per item as an expression
+    # Vendor exports must only include sales for the authenticated vendor.
+    # Staff users may still use this endpoint for an all-vendor report.
+    vendor = Vendor.objects.filter(user=request.user).first()
+    is_staff = bool(request.user.is_staff or request.user.is_superuser)
+    if not vendor and not is_staff:
+        return Response(
+            {"detail": "Vendor profile not found."},
+            status=status.HTTP_403_FORBIDDEN,
+        )
+
+    scoped_sales = SoldItem.objects.all()
+    if vendor and not is_staff:
+        scoped_sales = scoped_sales.filter(
+            Q(item__created_by=request.user) | Q(item__vendor=vendor)
+        ).distinct()
+
+    month_sales = scoped_sales.filter(
+        date_sold__year=year,
+        date_sold__month=month,
+    )
     total_price_expr = ExpressionWrapper(
         F('sale_price') * F('quantity'),
-        output_field=FloatField()
+        output_field=FloatField(),
     )
 
-    # Query sales with annotation for calculated total price (rename to avoid conflict)
-    sales_qs = SoldItem.objects.filter(
-        date_sold__year=year,
-        date_sold__month=month
-    ).annotate(
-        item_name=F('item__name'),
-        vendor_price=F('sale_price'),
-        qty_remaining=F('item__in_stock'),
-        calculated_total_price=total_price_expr  # renamed annotation here
-    ).values(
-        'id', 'item_name', 'vendor_price', 'quantity', 'qty_remaining', 'date_sold', 'calculated_total_price'
-    ).order_by('-date_sold')
+    sales = list(
+        month_sales.annotate(
+            item_name=F('item__name'),
+            vendor_price=F('sale_price'),
+            qty_remaining=F('item__in_stock'),
+            calculated_total_price=total_price_expr,
+        )
+        .values(
+            'id',
+            'item_name',
+            'vendor_price',
+            'quantity',
+            'qty_remaining',
+            'date_sold',
+            'calculated_total_price',
+        )
+        .order_by('-date_sold')
+    )
 
-    sales = list(sales_qs)
+    total_amount = month_sales.aggregate(total=Sum(total_price_expr))['total'] or 0
 
-    # Aggregate total amount using the same expression
-    total_amount = SoldItem.objects.filter(
-        date_sold__year=year,
-        date_sold__month=month
-    ).aggregate(
-        total=Sum(total_price_expr)
-    )['total'] or 0
-
-    # Get available months with sales (distinct year+month)
+    # The month selector must be scoped to the same vendor as the sales rows.
     months_qs = (
-        SoldItem.objects
+        scoped_sales
         .annotate(year=TruncYear('date_sold'), month=TruncMonth('date_sold'))
         .values('year', 'month')
         .annotate(count=Count('id'))
