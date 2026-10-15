@@ -250,6 +250,49 @@ const Home = ({ vendor_id }) => {
           producedAt,
           date
         );
+      } else if (reportType === "payouts") {
+        const response = await api.get("/api/vendor-payouts/", { withCredentials: true });
+        const payouts = listFromResponse(response.data);
+        downloadCsv(
+          `maa-mara-vendor-payouts-${date}.csv`,
+          "Vendor payout history",
+          [
+            "Payout reference",
+            "Period start",
+            "Period end",
+            "Gross sales (KES)",
+            "Adjustments (KES)",
+            "Net payout (KES)",
+            "Income (KES)",
+            "Profit (KES)",
+            "Paid",
+            "Paid at",
+            "Created at",
+            "Payment provider status",
+            "M-Pesa transaction ID",
+            "Bank transfer reference",
+            "PayPal transaction ID",
+          ],
+          payouts.map((payout) => [
+            payout.reference ?? "",
+            payout.payout_period_start ?? "",
+            payout.payout_period_end ?? "",
+            payout.gross_sales ?? "",
+            payout.adjustment_amount ?? "",
+            payout.amount ?? payout.net_payout ?? "",
+            payout.income ?? "",
+            payout.profit ?? "",
+            payout.paid ?? false,
+            payout.paid_at ?? "",
+            payout.created_at ?? "",
+            payout.kcb_provider_status ?? payout.paypal_transaction_status ?? payout.mpesa_result_desc ?? "",
+            payout.mpesa_transaction_id ?? "",
+            payout.kcb_provider_reference ?? payout.kcb_transaction_reference ?? "",
+            payout.paypal_transaction_id ?? "",
+          ]),
+          producedAt,
+          date
+        );
       } else if (reportType === "chart-data") {
         const chartData = Array.isArray(monthlySales.chartData) ? monthlySales.chartData : [];
         downloadCsv(
@@ -315,6 +358,7 @@ const Home = ({ vendor_id }) => {
                   ["items", Package, "Item list (CSV)", "Your products, prices, stock and availability"],
                   ["orders", ShoppingCart, "Orders (CSV)", "Pending and completed order line items"],
                   ["sales", FileSpreadsheet, "Monthly sales report (CSV)", "Detailed sales for the current month"],
+                  ["payouts", FileSpreadsheet, "Payout history (CSV)", "Gross sales, adjustments, net payout and payment references"],
                   ["chart-data", ChartNoAxesCombined, "Sales chart data (CSV)", "Monthly values from your dashboard chart"],
                   ["chart-image", ImageDown, "Sales chart image (PNG)", "Download a shareable image of the chart"],
                 ].map(([key, Icon, label, description]) => (
