@@ -1,5 +1,6 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
+import { Bell } from "lucide-react";
 import api from "../../Services/Api";
 
 const STORAGE_KEYS = {
@@ -294,7 +295,7 @@ export const AdminPreferencesProvider = ({ children }) => {
           <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white text-slate-900 shadow-2xl">
             <div className="flex items-start gap-3 p-4">
               <span className="mt-0.5 inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-blue-50 text-blue-700" aria-hidden="true">
-                <span className="text-lg">♧</span>
+                <Bell className="h-5 w-5" aria-hidden="true" />
               </span>
               <button type="button" onClick={openToastNotification} className="min-w-0 flex-1 text-left">
                 <span className="block text-sm font-bold">
