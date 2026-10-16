@@ -101,7 +101,7 @@ jobs:
         working-directory: ${{ env.FRONTEND_DIR }}
         # Runtime plugins (including push notifications) are pinned in package.json and the lockfile.
         # Install project generators/platform wrappers and Status Bar temporarily.
-        run: npm install --no-save @capacitor/cli@7 @capacitor/android@7 @capacitor/ios@7 @capacitor/status-bar@7 typescript@5.8.3
+        run: npm install --no-save @capacitor/cli@7 @capacitor/android@7 @capacitor/ios@7 @capacitor/status-bar@7 typescript@5.8.3 sharp
 
       - name: Build mobile web bundle
         working-directory: ${{ env.FRONTEND_DIR }}
@@ -155,6 +155,10 @@ jobs:
             echo "Firebase Android config missing; this APK will build, but native push registration stays disabled."
           fi
           npx cap sync android
+
+      - name: Generate MaaMara Market Android launcher icon
+        working-directory: ${{ env.FRONTEND_DIR }}
+        run: node scripts/generate-native-app-icons.mjs android
 
       - name: Install Maa Mara Market status-bar notification icon
         working-directory: ${{ env.FRONTEND_DIR }}
@@ -421,7 +425,7 @@ jobs:
         working-directory: ${{ env.FRONTEND_DIR }}
         # Runtime plugins (including push notifications) are pinned in package.json and the lockfile.
         # Install project generators/platform wrappers and Status Bar temporarily.
-        run: npm install --no-save @capacitor/cli@7 @capacitor/android@7 @capacitor/ios@7 @capacitor/status-bar@7 typescript@5.8.3
+        run: npm install --no-save @capacitor/cli@7 @capacitor/android@7 @capacitor/ios@7 @capacitor/status-bar@7 typescript@5.8.3 sharp
 
       - name: Build mobile web bundle
         working-directory: ${{ env.FRONTEND_DIR }}
@@ -492,89 +496,9 @@ jobs:
           PY
           npx cap sync ios
 
-      # iOS displays the app icon for notifications; unlike Android, it has no separate
-      # custom monochrome status-bar notification icon. Brand the app icon with the same mmm mark.
-      - name: Apply Maa Mara Market triple-m monogram to iOS app icon
+      - name: Generate MaaMara Market iOS app icon
         working-directory: ${{ env.FRONTEND_DIR }}
-        run: |
-          mkdir -p ios/App/App/Assets.xcassets/AppIcon.appiconset
-          cat > /tmp/generate-maamara-icon.swift <<'SWIFT'
-          import AppKit
-          import Foundation
-
-          let size = 1024
-          let bitmap = NSBitmapImageRep(
-              bitmapDataPlanes: nil,
-              pixelsWide: size,
-              pixelsHigh: size,
-              bitsPerSample: 8,
-              samplesPerPixel: 4,
-              hasAlpha: true,
-              isPlanar: false,
-              colorSpaceName: .deviceRGB,
-              bytesPerRow: 0,
-              bitsPerPixel: 0
-          )!
-          NSGraphicsContext.saveGraphicsState()
-          NSGraphicsContext.current = NSGraphicsContext(bitmapImageRep: bitmap)
-          NSGraphicsContext.current?.imageInterpolation = .high
-
-          NSColor(calibratedRed: 23 / 255, green: 60 / 255, blue: 118 / 255, alpha: 1).setFill()
-          NSBezierPath(rect: NSRect(x: 0, y: 0, width: size, height: size)).fill()
-
-          NSColor.white.setStroke()
-          let monogram = NSBezierPath()
-          monogram.lineWidth = 38
-          monogram.lineCapStyle = .round
-          monogram.lineJoinStyle = .round
-          let baseline: CGFloat = 330
-          let top: CGFloat = 570
-          for letter in 0..<3 {
-              let x = CGFloat(130 + letter * 220)
-              monogram.move(to: NSPoint(x: x, y: baseline))
-              monogram.line(to: NSPoint(x: x, y: top))
-              monogram.curve(
-                  to: NSPoint(x: x + 130, y: top),
-                  controlPoint1: NSPoint(x: x, y: top + 105),
-                  controlPoint2: NSPoint(x: x + 130, y: top + 105)
-              )
-              monogram.line(to: NSPoint(x: x + 130, y: baseline))
-              monogram.line(to: NSPoint(x: x + 130, y: top))
-              monogram.curve(
-                  to: NSPoint(x: x + 260, y: top),
-                  controlPoint1: NSPoint(x: x + 130, y: top + 105),
-                  controlPoint2: NSPoint(x: x + 260, y: top + 105)
-              )
-              monogram.line(to: NSPoint(x: x + 260, y: baseline))
-          }
-          monogram.stroke()
-          NSGraphicsContext.restoreGraphicsState()
-
-          let output = "ios/App/App/Assets.xcassets/AppIcon.appiconset/AppIcon-1024.png"
-          let png = bitmap.representation(using: .png, properties: [:])!
-          try png.write(to: URL(fileURLWithPath: output))
-          print("Generated the iOS Maa Mara Market triple-m app icon using built-in macOS graphics.")
-          SWIFT
-          swift /tmp/generate-maamara-icon.swift
-          python3 - <<'PY'
-          import json
-          from pathlib import Path
-
-          icon_dir = Path("ios/App/App/Assets.xcassets/AppIcon.appiconset")
-          icon_path = icon_dir / "AppIcon-1024.png"
-          if not icon_path.is_file() or icon_path.stat().st_size < 1000:
-              raise SystemExit("The iOS app icon image was not generated correctly.")
-          (icon_dir / "Contents.json").write_text(json.dumps({
-              "images": [{
-                  "filename": "AppIcon-1024.png",
-                  "idiom": "universal",
-                  "platform": "ios",
-                  "size": "1024x1024"
-              }],
-              "info": {"author": "xcode", "version": 1}
-          }, indent=2) + "\n")
-          print("Validated iOS app icon asset catalog.")
-          PY
+        run: node scripts/generate-native-app-icons.mjs ios
 
       - name: Build iOS simulator app
         working-directory: ${{ env.FRONTEND_DIR }}/ios
