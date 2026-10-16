@@ -193,3 +193,89 @@ class ActivityAndNotificationScopeTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.data["deleted_count"], 2)
         self.assertFalse(Notification.objects.exists())
+
+
+class PushDeviceVisitorRegistrationTests(TestCase):
+    def setUp(self):
+        self.factory = APIRequestFactory()
+        self.user = User.objects.create_user(
+            username="push_registration_user",
+            email="push-registration@example.com",
+            password="test-password",
+        )
+
+    def test_authenticated_user_can_register_a_native_push_token(self):
+        from core.models import PushDevice
+        from core.push_views import PushDeviceRegistrationView
+
+        request = self.factory.post(
+            "/api/push/devices/",
+            {"token": "user-test-token", "platform": "android"},
+            format="json",
+        )
+        force_authenticate(request, user=self.user)
+
+        response = PushDeviceRegistrationView.as_view()(request)
+
+        self.assertEqual(response.status_code, 200)
+        device = PushDevice.objects.get(token="user-test-token")
+        self.assertEqual(device.user_id, self.user.pk)
+        self.assertIsNone(device.visitor_id)
+
+    def test_visitor_can_register_a_native_push_token_with_visitor_cookie(self):
+        from core.models import PushDevice
+        from core.push_views import PushDeviceRegistrationView
+
+        request = self.factory.post(
+            "/api/push/devices/",
+            {"token": "visitor-test-token", "platform": "android"},
+            format="json",
+        )
+        request.COOKIES["visitorId"] = "visitor-push-test-123"
+
+        response = PushDeviceRegistrationView.as_view()(request)
+
+        self.assertEqual(response.status_code, 200)
+        device = PushDevice.objects.get(token="visitor-test-token")
+        self.assertIsNone(device.user_id)
+        self.assertEqual(device.visitor_id, "visitor-push-test-123")
+
+    def test_anonymous_device_without_visitor_identity_is_rejected(self):
+        from core.push_views import PushDeviceRegistrationView
+
+        request = self.factory.post(
+            "/api/push/devices/",
+            {"token": "unowned-test-token", "platform": "android"},
+            format="json",
+        )
+
+        response = PushDeviceRegistrationView.as_view()(request)
+
+        self.assertEqual(response.status_code, 400)
+
+    def test_visitor_notification_is_sent_to_visitor_device(self):
+        from unittest.mock import MagicMock, patch
+        from core.models import Notification, PushDevice
+        from core.push_notifications import send_notification_push
+
+        notification = Notification.objects.create(
+            visitor_id="visitor-push-delivery-123",
+            title="Wishlist update",
+            message="Your wishlist has an update.",
+            url="/wishlist",
+        )
+        device = PushDevice.objects.create(
+            visitor_id="visitor-push-delivery-123",
+            token="visitor-delivery-token",
+            platform="android",
+            active=True,
+        )
+        fake_messaging = MagicMock()
+
+        with patch("core.push_notifications._firebase_messaging", return_value=fake_messaging):
+            send_notification_push(notification.pk)
+
+        fake_messaging.send.assert_called_once()
+        sent_message = fake_messaging.send.call_args.args[0]
+        self.assertEqual(sent_message.token, device.token)
+        self.assertEqual(sent_message.notification.title, "Wishlist update")
