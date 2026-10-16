@@ -254,6 +254,7 @@ class PushDeviceVisitorRegistrationTests(TestCase):
         self.assertEqual(response.status_code, 400)
 
     def test_visitor_notification_is_sent_to_visitor_device(self):
+        from types import SimpleNamespace
         from unittest.mock import MagicMock, patch
         from core.models import Notification, PushDevice
         from core.push_notifications import send_notification_push
@@ -271,6 +272,7 @@ class PushDeviceVisitorRegistrationTests(TestCase):
             active=True,
         )
         fake_messaging = MagicMock()
+        fake_messaging.Message.side_effect = lambda **kwargs: SimpleNamespace(**kwargs)
 
         with patch("core.push_notifications._firebase_messaging", return_value=fake_messaging):
             send_notification_push(notification.pk)
