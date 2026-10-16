@@ -364,3 +364,36 @@ class ActivityNotificationPresentationTests(TestCase):
         ).data
 
         self.assertEqual(data["display_message"], "You updated Bidets Tool.")
+
+
+    def test_customer_cart_activity_creates_vendor_notification(self):
+        notification_count = Notification.objects.filter(
+            user=self.vendor_user,
+            title="Item added to cart",
+        ).count()
+
+        ActivityLog.objects.create(
+            user=self.customer,
+            actor_type="user",
+            action="item_added_to_cart",
+            description=f"A customer added {self.item.name} to their cart.",
+            item=self.item,
+        )
+
+        notification = Notification.objects.filter(
+            user=self.vendor_user,
+            title="Item added to cart",
+        ).latest("created_at")
+
+        self.assertEqual(
+            Notification.objects.filter(
+                user=self.vendor_user,
+                title="Item added to cart",
+            ).count(),
+            notification_count + 1,
+        )
+        self.assertEqual(
+            notification.message,
+            f"A customer added {self.item.name} to their cart.",
+        )
+        self.assertEqual(notification.url, "/vendors-dashboard")
