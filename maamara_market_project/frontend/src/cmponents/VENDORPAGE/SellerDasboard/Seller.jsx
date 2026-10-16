@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import { ChevronDown, Download, FileSpreadsheet, ImageDown, Package, ShoppingCart, ChartNoAxesCombined } from "lucide-react";
 import api from "../../../Services/Api";
+import { downloadDataUrl, downloadFile } from "../../../Services/DownloadFile";
 import TopBox from "../Home/TopBox/TopBox";
 import ChartBox from "../ChartBox/CharBox";
 import CombinedVendorStatsChart from "../ChartBox/PieChart2";
@@ -62,19 +63,11 @@ const Home = ({ vendor_id }) => {
       [...headers, "Export generated at (Africa/Nairobi)"],
       ...rows.map((row) => [...row, producedAt]),
     ].map((row) => row.map(csvCell).join(",")).join("\r\n");
-    const blob = new Blob(["\uFEFF", content], { type: "text/csv;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-    const anchor = document.createElement("a");
-    anchor.href = url;
-    anchor.download = filename;
-    anchor.style.display = "none";
-    document.body.appendChild(anchor);
-    try {
-      anchor.click();
-    } finally {
-      anchor.remove();
-      window.setTimeout(() => URL.revokeObjectURL(url), 1500);
-    }
+    return downloadFile({
+      filename,
+      content: "\\uFEFF" + content,
+      mimeType: "text/csv;charset=utf-8;",
+    });
   };
 
   const listFromResponse = (data) =>
@@ -163,10 +156,10 @@ const Home = ({ vendor_id }) => {
       context.fillText(point.label, point.x, height - padding.bottom + 32);
     });
     context.textAlign = "start";
-    const anchor = document.createElement("a");
-    anchor.href = canvas.toDataURL("image/png");
-    anchor.download = `maa-mara-vendor-sales-chart-${date}.png`;
-    anchor.click();
+    return downloadDataUrl(
+      `maa-mara-vendor-sales-chart-${date}.png`,
+      canvas.toDataURL("image/png")
+    );
   };
 
   const exportVendorData = async (reportType) => {
@@ -176,7 +169,7 @@ const Home = ({ vendor_id }) => {
     try {
       if (reportType === "items") {
         const items = await fetchAllPages("/api/item-post/update/");
-        downloadCsv(
+        await downloadCsv(
           `maa-mara-vendor-items-${date}.csv`,
           "Vendor item list",
           ["Item ID", "Item name", "Category", "Subcategory", "Price (KES)", "Discount price (KES)", "Stock", "Available", "Created"],
@@ -205,7 +198,7 @@ const Home = ({ vendor_id }) => {
           ...pendingItems.map((item) => ({ ...item, export_status: item.order_status || "pending" })),
           ...completeItems.map((item) => ({ ...item, export_status: item.order_status || "completed" })),
         ];
-        downloadCsv(
+        await downloadCsv(
           `maa-mara-vendor-orders-${date}.csv`,
           "Vendor orders",
           ["Order ID", "Item", "Quantity", "Unit price (KES)", "Line total (KES)", "Customer", "Status", "Created"],
@@ -232,7 +225,7 @@ const Home = ({ vendor_id }) => {
         });
         const data = response.data || {};
         const sales = Array.isArray(data.sales) ? data.sales : [];
-        downloadCsv(
+        await downloadCsv(
           `maa-mara-vendor-sales-report-${year}-${String(month).padStart(2, "0")}.csv`,
           `Vendor sales report — ${year}-${String(month).padStart(2, "0")}`,
           ["Sale ID", "Item", "Unit/line amount (KES)", "Quantity sold", "Quantity remaining", "Date sold"],
@@ -253,7 +246,7 @@ const Home = ({ vendor_id }) => {
       } else if (reportType === "payouts") {
         const response = await api.get("/api/vendor-payouts/", { withCredentials: true });
         const payouts = listFromResponse(response.data);
-        downloadCsv(
+        await downloadCsv(
           `maa-mara-vendor-payouts-${date}.csv`,
           "Vendor payout history",
           [
@@ -295,7 +288,7 @@ const Home = ({ vendor_id }) => {
         );
       } else if (reportType === "chart-data") {
         const chartData = Array.isArray(monthlySales.chartData) ? monthlySales.chartData : [];
-        downloadCsv(
+        await downloadCsv(
           `maa-mara-vendor-sales-chart-data-${date}.csv`,
           "Monthly sales chart data",
           ["Month", "Amount (KES)"],
@@ -304,7 +297,7 @@ const Home = ({ vendor_id }) => {
           date
         );
       } else if (reportType === "chart-image") {
-        downloadSalesChartPng(Array.isArray(monthlySales.chartData) ? monthlySales.chartData : [], date);
+        await downloadSalesChartPng(Array.isArray(monthlySales.chartData) ? monthlySales.chartData : [], date);
       } else {
         throw new Error("That export type is not supported.");
       }
