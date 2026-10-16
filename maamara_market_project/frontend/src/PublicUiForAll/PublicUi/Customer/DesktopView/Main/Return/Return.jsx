@@ -34,6 +34,8 @@ const RequestReturnForm = ({ selectedItem = null }) => {
   const [loading, setLoading] = useState(false);
   const [snackbar, setSnackbar] = useState({ open: false, message: "" });
   const [lastReturnRecord, setLastReturnRecord] = useState(null);
+  const [returnHistory, setReturnHistory] = useState([]);
+  const [loadingReturnHistory, setLoadingReturnHistory] = useState(true);
 
   useEffect(() => {
     let active = true;
@@ -57,6 +59,26 @@ const RequestReturnForm = ({ selectedItem = null }) => {
       })
       .finally(() => {
         if (active) setLoadingOrders(false);
+      });
+    return () => { active = false; };
+  }, []);
+
+  useEffect(() => {
+    let active = true;
+    api.get("/api/returns/my/", { withCredentials: true })
+      .then(({ data }) => {
+        if (active) {
+          const records = Array.isArray(data?.results)
+            ? data.results
+            : Array.isArray(data) ? data : [];
+          setReturnHistory(records);
+        }
+      })
+      .catch((error) => {
+        console.error("Unable to load customer return history:", error);
+      })
+      .finally(() => {
+        if (active) setLoadingReturnHistory(false);
       });
     return () => { active = false; };
   }, []);
@@ -109,6 +131,44 @@ const RequestReturnForm = ({ selectedItem = null }) => {
     } catch (error) {
       console.error("Unable to export return record:", error);
       showMessage("We couldn't open the save/share sheet for this return record. Please try again.");
+    }
+  };
+
+  const downloadReturnHistory = async () => {
+    if (!returnHistory.length) return;
+    const rows = [
+      ["MAA MARA MARKET — CUSTOMER RETURN HISTORY"],
+      ["Generated at (Africa/Nairobi)", new Date().toLocaleString("en-KE", { timeZone: "Africa/Nairobi" })],
+      [],
+      ["Return request ID", "Order ID", "Item", "Quantity", "Reason", "Preference", "Status", "Description", "Refund amount (KES)", "Decision / response", "Submitted at"],
+      ...returnHistory.map((record) => [
+        record.id ?? "",
+        record.order_id ?? "",
+        record.item_name ?? "Purchased item",
+        record.quantity ?? "",
+        record.custom_reason || record.reason || "",
+        record.customer_preference || "",
+        record.status || "pending",
+        record.description || "",
+        record.refund_amount ?? "",
+        record.admin_response || record.decision_note || "",
+        record.created_at ?? "",
+      ]),
+    ];
+    const csvCell = (value) => {
+      const text = value == null ? "" : String(value);
+      const safeText = /^[=+@-]/.test(text) ? "'" + text : text;
+      return '"' + safeText.replace(/"/g, '""') + '"';
+    };
+    try {
+      await downloadFile({
+        filename: `maa-mara-customer-return-history-${new Date().toISOString().slice(0, 10)}.csv`,
+        content: "\uFEFF" + rows.map((row) => row.map(csvCell).join(",")).join("\\r\\n"),
+        mimeType: "text/csv;charset=utf-8;",
+      });
+    } catch (error) {
+      console.error("Unable to export customer return history:", error);
+      showMessage("We couldn't open the save/share sheet for your return history. Please try again.");
     }
   };
 
@@ -228,6 +288,32 @@ const RequestReturnForm = ({ selectedItem = null }) => {
             </Button>
           </div>
         )}
+        <section className="mm-return-card mb-4">
+          <div className="mm-return-card-header">
+            <div>
+              <p className="mm-return-eyebrow">Your records</p>
+              <h2>Return history</h2>
+              <p>
+                {loadingReturnHistory
+                  ? "Loading your previous return requests…"
+                  : `${returnHistory.length} return request${returnHistory.length === 1 ? "" : "s"} on record.`}
+              </p>
+            </div>
+            <Button
+              type="button"
+              variant="outline"
+              className="rounded-full"
+              onClick={downloadReturnHistory}
+              disabled={loadingReturnHistory || returnHistory.length === 0}
+            >
+              <Download className="mr-2 h-4 w-4" aria-hidden="true" />
+              Download return history
+            </Button>
+          </div>
+          {!loadingReturnHistory && returnHistory.length === 0 && (
+            <p className="text-sm text-muted-foreground">Your submitted return requests will appear here.</p>
+          )}
+        </section>
         <section className="mm-return-intro">
           <p className="mm-return-eyebrow">Returns & exchanges</p>
           <h1 className="mm-return-title">Return Policy</h1>
