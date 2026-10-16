@@ -147,7 +147,9 @@ if (platform === "android") {
   const drawable = path.join(res, "drawable");
   await fs.mkdir(drawable, { recursive: true });
 
-  // Adaptive foreground content must stay inside Android's central safe zone.
+  // Adaptive icon foregrounds must include a visible, contrast-safe base so the
+  // launcher cannot render a white-on-white or transparent-on-white icon.
+  const brandBackground = { r: 21, g: 34, b: 47, alpha: 255 };
   const foregroundLogoSize = 640;
   const foregroundLogo = await sharp(artworkBytes)
     .resize(foregroundLogoSize, foregroundLogoSize, {
@@ -162,7 +164,7 @@ if (platform === "android") {
       width: 1024,
       height: 1024,
       channels: 4,
-      background: { r: 255, g: 255, b: 255, alpha: 0 },
+      background: brandBackground,
     },
   })
     .composite([{ input: foregroundLogo, left: foregroundOffset, top: foregroundOffset }])
@@ -193,18 +195,29 @@ if (platform === "android") {
 `;
   await fs.writeFile(path.join(drawable, "ic_stat_maamara.xml"), notificationIcon);
 
+  const values = path.join(res, "values");
+  await fs.mkdir(values, { recursive: true });
+  await fs.writeFile(
+    path.join(values, "colors.xml"),
+    `<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="ic_launcher_background">#15232F</color>
+</resources>
+`
+  );
+
   const adaptive = path.join(res, "mipmap-anydpi-v26");
   await fs.mkdir(adaptive, { recursive: true });
   const xml = `<?xml version="1.0" encoding="utf-8"?>
 <adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
-    <background android:drawable="@android:color/white" />
+    <background android:drawable="@color/ic_launcher_background" />
     <foreground android:drawable="@drawable/ic_launcher_foreground" />
 </adaptive-icon>
 `;
   await fs.writeFile(path.join(adaptive, "ic_launcher.xml"), xml);
   await fs.writeFile(path.join(adaptive, "ic_launcher_round.xml"), xml);
 
-  console.log(`Generated Android launcher icons from ${artworkMetadata.width}x${artworkMetadata.height} cleaned logo artwork (source: ${decoded.info.width}x${decoded.info.height}, ${decoded.info.format ?? "detected"}).`);
+  console.log(`Generated Android launcher icons from ${artworkMetadata.width}x${artworkMetadata.height} cleaned logo artwork (source: ${decoded.info.width}x${decoded.info.height}, ${decoded.info.channels} channels).`);
 } else if (platform === "ios") {
   const dir = path.join(root, "ios", "App", "App", "Assets.xcassets", "AppIcon.appiconset");
   await fs.mkdir(dir, { recursive: true });
