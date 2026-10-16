@@ -15,6 +15,32 @@ const resolvePushTarget = (rawUrl) => {
   }
 };
 
+async function savePushToken(token = currentPushToken) {
+  if (!token) return false;
+  const platform = Capacitor.getPlatform();
+  if (platform !== "android" && platform !== "ios") return false;
+
+  try {
+    await api.post(
+      "/api/push/devices/",
+      { token, platform },
+      { withCredentials: true }
+    );
+    return true;
+  } catch (error) {
+    // Keep the token in memory so a subsequent app/auth lifecycle can retry.
+    console.warn(
+      "Push token registration was not saved:",
+      error?.response?.status || error?.message
+    );
+    return false;
+  }
+}
+
+export async function registerCurrentNativePushDevice() {
+  return savePushToken();
+}
+
 export async function setupNativePushNotifications() {
   if (!Capacitor.isNativePlatform()) return () => {};
   if (import.meta.env.VITE_NATIVE_PUSH_ENABLED === "false") return () => {};
@@ -23,21 +49,28 @@ export async function setupNativePushNotifications() {
   setupPromise = (async () => {
     const handles = [];
     try {
+      // Create a high-importance Android channel before asking FCM to deliver.
+      // Android controls the final notification appearance and user sound choice.
+      if (Capacitor.getPlatform() === "android") {
+        try {
+          await PushNotifications.createChannel({
+            id: "maamara_updates",
+            name: "Maa Mara Market notifications",
+            description: "Order, message, wishlist and marketplace updates",
+            importance: 5,
+            visibility: 1,
+            sound: "default",
+            vibration: true,
+            lights: true,
+          });
+        } catch (error) {
+          console.warn("Could not create Android push channel:", error?.message || error);
+        }
+      }
+
       handles.push(await PushNotifications.addListener("registration", async (token) => {
         currentPushToken = token?.value || "";
-        if (!currentPushToken) return;
-        const platform = Capacitor.getPlatform();
-        if (platform !== "android" && platform !== "ios") return;
-        try {
-          await api.post("/api/push/devices/", {
-            token: currentPushToken,
-            platform,
-          }, { withCredentials: true });
-        } catch (error) {
-          // The token event can occur before authentication is fully restored.
-          // A later app/login setup retries registration.
-          console.warn("Push token registration was not saved:", error?.response?.status || error?.message);
-        }
+        await savePushToken(currentPushToken);
       }));
 
       handles.push(await PushNotifications.addListener("registrationError", (error) => {
@@ -49,12 +82,25 @@ export async function setupNativePushNotifications() {
         if (target) window.location.assign(target.toString());
       }));
 
+      // Keep foreground notification events observable to the app without
+      // forcing a custom background/text colour over the operating-system theme.
+      handles.push(await PushNotifications.addListener("pushNotificationReceived", (notification) => {
+        if (typeof window !== "undefined") {
+          window.dispatchEvent(new CustomEvent("maamara:push-received", {
+            detail: notification,
+          }));
+        }
+      }));
+
       let permission = await PushNotifications.checkPermissions();
       if (permission.receive !== "granted") {
         permission = await PushNotifications.requestPermissions();
       }
       if (permission.receive === "granted") {
         await PushNotifications.register();
+        // If the native plugin already has a token, rebind it to the current
+        // visitor/account session. This also retries a previous failed POST.
+        if (currentPushToken) await savePushToken(currentPushToken);
       } else {
         console.info("Native push notifications were not permitted by the user.");
       }
@@ -72,8 +118,6 @@ export async function setupNativePushNotifications() {
 }
 
 export async function unregisterNativePushDevice() {
-  // Remove listeners as well as the server token so turning notifications off
-  // and back on during the same app session can register the device again.
   const pendingSetup = setupPromise;
   if (pendingSetup) {
     try {
@@ -92,7 +136,10 @@ export async function unregisterNativePushDevice() {
       withCredentials: true,
     });
   } catch (error) {
-    console.warn("Could not unregister this device's push token:", error?.response?.status || error?.message);
+    console.warn(
+      "Could not unregister this device's push token:",
+      error?.response?.status || error?.message
+    );
   } finally {
     currentPushToken = "";
   }
