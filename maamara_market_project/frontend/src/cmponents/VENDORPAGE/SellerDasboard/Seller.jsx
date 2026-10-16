@@ -191,16 +191,9 @@ const Home = ({ vendor_id }) => {
           date
         );
       } else if (reportType === "orders") {
-        const [pendingResponse, completeResponse] = await Promise.all([
-          api.get("/api/vendor-pending-order/items/", { withCredentials: true }),
-          api.get("/api/vendor-complete-order/items/", { withCredentials: true }),
-        ]);
-        const pendingItems = listFromResponse(pendingResponse.data?.pending_items ?? pendingResponse.data);
-        const completeItems = listFromResponse(completeResponse.data?.completed_items ?? completeResponse.data);
-        const rows = [
-          ...pendingItems.map((item) => ({ ...item, export_status: item.order_status || "pending" })),
-          ...completeItems.map((item) => ({ ...item, export_status: item.order_status || "completed" })),
-        ];
+        // Export every lifecycle state, not only pending and completed orders.
+        // The API scopes the result to the signed-in vendor's own catalog.
+        const rows = await fetchAllPages("/api/vendor-order-items/");
         await downloadCsv(
           `maa-mara-vendor-orders-${date}.csv`,
           "Vendor orders",
@@ -212,7 +205,7 @@ const Home = ({ vendor_id }) => {
             item.item_price ?? item.price ?? "",
             (Number(item.item_price ?? item.price) || 0) * (Number(item.quantity) || 0),
             item.customer ?? item.customer_name ?? "",
-            item.export_status,
+            item.order_status ?? item.export_status ?? "",
             item.created_at ?? "",
           ]),
           producedAt,
