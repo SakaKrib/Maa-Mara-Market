@@ -27,8 +27,18 @@ class PushDeviceRegistrationView(APIView):
             )
 
         user = request.user if request.user and request.user.is_authenticated else None
-        visitor_id = None if user else str(request.COOKIES.get("visitorId") or "").strip()
-        if not user and not visitor_id:
+        cookie_visitor_id = str(request.COOKIES.get("visitorId") or "").strip()
+        body_visitor_id = str(request.data.get("visitor_id") or "").strip()
+        visitor_id = None if user else (cookie_visitor_id or body_visitor_id)
+        # Native WebViews may not send the API's cross-site SameSite=Lax cookie
+        # on XHR. This ID comes from /api/vistor-token/; if a cookie is present,
+        # the explicit ID must match the current session.
+        if not user and cookie_visitor_id and body_visitor_id and cookie_visitor_id != body_visitor_id:
+            return Response(
+                {"detail": "Visitor identity does not match this session."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+        if not user and (not visitor_id or len(visitor_id) > 64):
             return Response(
                 {"detail": "Initialize the visitor session before registering push."},
                 status=status.HTTP_400_BAD_REQUEST,
