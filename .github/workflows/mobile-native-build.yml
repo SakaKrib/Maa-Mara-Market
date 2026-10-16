@@ -88,6 +88,15 @@ jobs:
         working-directory: ${{ env.FRONTEND_DIR }}
         run: npm ci
 
+      - name: Require Firebase Android client config for push-enabled APK
+        env:
+          FIREBASE_ANDROID_CONFIG: ${{ secrets.FIREBASE_ANDROID_CONFIG }}
+        run: |
+          if [ -z "$FIREBASE_ANDROID_CONFIG" ]; then
+            echo "::error::FIREBASE_ANDROID_CONFIG is missing. Add the Firebase Android google-services.json contents as a GitHub Actions secret before building an APK; otherwise push registration is disabled."
+            exit 1
+          fi
+
       - name: Install temporary Capacitor build tools
         working-directory: ${{ env.FRONTEND_DIR }}
         # Runtime plugins (including push notifications) are pinned in package.json and the lockfile.
@@ -398,6 +407,15 @@ jobs:
       - name: Install web dependencies
         working-directory: ${{ env.FRONTEND_DIR }}
         run: npm ci
+
+      - name: Require Firebase iOS client config for push-enabled app
+        env:
+          FIREBASE_IOS_CONFIG: ${{ secrets.FIREBASE_IOS_CONFIG }}
+        run: |
+          if [ -z "$FIREBASE_IOS_CONFIG" ]; then
+            echo "::error::FIREBASE_IOS_CONFIG is missing. Add the Firebase iOS GoogleService-Info.plist contents as a GitHub Actions secret before building an iOS app; APNs must also be configured in Firebase."
+            exit 1
+          fi
 
       - name: Install temporary Capacitor build tools
         working-directory: ${{ env.FRONTEND_DIR }}
