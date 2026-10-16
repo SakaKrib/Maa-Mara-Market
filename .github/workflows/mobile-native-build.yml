@@ -164,7 +164,7 @@ jobs:
                   android:strokeWidth="4.5"
                   android:strokeLineCap="round"
                   android:strokeLineJoin="round"
-                  android:pathData="M12,36 V20 C12,10 24,10 24,20 V36 C24,10 36,10 36,20 V36 C36,10 48,10 48,20 V36 C48,10 60,10 60,20 V36 C60,10 72,10 72,20 V36 C72,10 84,10 84,20 V36" />
+                  android:pathData="M12,36 V20 C12,10 24,10 24,20 V36 V20 C24,10 36,10 36,20 V36 V20 C36,10 48,10 48,20 V36 V20 C48,10 60,10 60,20 V36 V20 C60,10 72,10 72,20 V36 V20 C72,10 84,10 84,20 V36" />
           </vector>
           XML
           python3 - <<'PY'
@@ -175,24 +175,25 @@ jobs:
           manifest = Path("android/app/src/main/AndroidManifest.xml")
           source = manifest.read_text()
           metadata = '<meta-data android:name="com.google.firebase.messaging.default_notification_icon" android:resource="@drawable/ic_stat_maamara" />'
-          pattern = r'<meta-data\s+android:name="com\.google\.firebase\.messaging\.default_notification_icon"[^>]*/>'
-          if re.search(pattern, source):
-              source = re.sub(pattern, metadata, source, count=1)
-          else:
-              source, count = re.subn(
-                  r'<application\b[^>]*>',
-                  lambda match: match.group(0) + '\n        ' + metadata,
-                  source,
-                  count=1,
-              )
+          metadata_name = 'android:name="com.google.firebase.messaging.default_notification_icon"'
+          if metadata_name in source:
+              pattern = re.compile(r'<meta-data\\b(?=[^>]*android:name="com\\.google\\.firebase\\.messaging\\.default_notification_icon")[^>]*/>')
+              source, count = pattern.subn(metadata, source, count=1)
               if count != 1:
+                  raise SystemExit("Could not safely update the existing Firebase notification icon metadata")
+          else:
+              app_start = source.find("<application")
+              app_end = source.find(">", app_start)
+              if app_start < 0 or app_end < 0:
                   raise SystemExit("Could not locate the Android application element in AndroidManifest.xml")
+              source = source[:app_end + 1] + "\\n        " + metadata + source[app_end + 1:]
           manifest.write_text(source)
+
           ET.parse(manifest)
           ET.parse("android/app/src/main/res/drawable/ic_stat_maamara.xml")
-          if '@drawable/ic_stat_maamara' not in manifest.read_text():
-              raise SystemExit("Notification icon metadata was not installed")
-          print("Validated lowercase triple-m Android notification icon.")
+          if metadata_name not in manifest.read_text() or "@drawable/ic_stat_maamara" not in manifest.read_text():
+              raise SystemExit("Firebase notification icon metadata was not installed")
+          print("Validated the monochrome lowercase triple-m icon and Firebase default notification icon metadata.")
           PY
 
       # GitHub development builds use HTTPS Tailscale Serve to avoid Android WebView mixed-content blocking.
