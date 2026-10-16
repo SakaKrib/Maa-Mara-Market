@@ -191,7 +191,7 @@ if (platform === "android") {
         android:fillColor="#FFFFFFFF"
         android:pathData="M12.8,21.2 L14.3,13.5 L15.8,13.5 L17.9,17.1 L20.1,13.5 L21.6,13.5 L22.8,21.2 L20.8,21.2 L20.2,17 L17.9,20.4 L15.9,17 L15,21.2 Z" />
 </vector>
-
+`;
   await fs.writeFile(path.join(drawable, "ic_stat_maamara.xml"), notificationIcon);
 
   const adaptive = path.join(res, "mipmap-anydpi-v26");
