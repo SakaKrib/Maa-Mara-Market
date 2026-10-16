@@ -214,7 +214,7 @@ jobs:
               app_end = source.find(">", app_start)
               if app_start < 0 or app_end < 0:
                   raise SystemExit("Could not locate the Android application element in AndroidManifest.xml")
-              source = source[:app_end + 1] + "\\n        " + metadata + source[app_end + 1:]
+              source = source[:app_end + 1] + "\n        " + metadata + source[app_end + 1:]
           manifest.write_text(source)
 
           ET.parse(manifest)
