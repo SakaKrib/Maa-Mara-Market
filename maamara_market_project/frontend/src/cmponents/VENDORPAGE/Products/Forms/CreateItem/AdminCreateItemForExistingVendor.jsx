@@ -18,7 +18,7 @@ import api, { resolveApiAssetUrl } from "../../../../../Services/Api/";
 import { useForm } from "react-hook-form";
 import { organicAttributes, inorganicAttributes } from "../itemattribute";
 import { Controller } from "react-hook-form";
-import AppSnackbar from "../../../../../../components/ui/app-snackbar";
+import AppSnackbar, { notifySnackbar } from "../../../../../../components/ui/app-snackbar";
 
 
  // adjust path as needed
@@ -507,7 +507,8 @@ useEffect(() => {
     
         if (response.status === 200) {
           
-            showSnackbar("Item draft saved successfully", "success");
+            // onSave closes the modal, so raise the success message at app level.
+            notifySnackbar("Item draft saved successfully", "success");
             onSave?.(response.data);
         } else {
             showSnackbar("Failed to update item", "error");

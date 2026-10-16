@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 
 const ERROR_WORDS =
   /(fail|error|unable|couldn'?t|could not|cannot|can'?t|invalid|denied|unauthori[sz]ed|incorrect|wrong|required|not found|try again|rejected|missing)/i;
@@ -48,6 +48,35 @@ const AppSnackbar = ({ open, message, severity, onClose, autoHideDuration, child
         </button>
       )}
     </div>
+  );
+};
+
+
+// App-level snackbar for messages that must outlive the component that raised
+// them (e.g. a row that disappears, a modal that closes, or a route change).
+const GLOBAL_EVENT = "app-snackbar:notify";
+
+export const notifySnackbar = (message, severity) => {
+  if (typeof window === "undefined") return;
+  window.dispatchEvent(new CustomEvent(GLOBAL_EVENT, { detail: { message, severity } }));
+};
+
+export const GlobalSnackbarHost = () => {
+  const [state, setState] = useState({ open: false, message: "", severity: "success" });
+  useEffect(() => {
+    const handler = (event) =>
+      setState({ open: true, message: event.detail?.message || "", severity: event.detail?.severity });
+    window.addEventListener(GLOBAL_EVENT, handler);
+    return () => window.removeEventListener(GLOBAL_EVENT, handler);
+  }, []);
+  return (
+    <AppSnackbar
+      open={state.open}
+      message={state.message}
+      severity={state.severity}
+      onClose={() => setState((prev) => ({ ...prev, open: false }))}
+      autoHideDuration={4000}
+    />
   );
 };
 

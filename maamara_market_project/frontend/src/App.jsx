@@ -49,6 +49,7 @@ import SingleItem from "./PublicUiForAll/PublicUi/Customer/DesktopView/Main/Sing
 
 //popup and notifications
 import { Toaster } from "../components/ui/toaster";
+import { GlobalSnackbarHost } from "../components/ui/app-snackbar";
 import { ToastProvider } from "../components/ui/toast";
 
 // chat
@@ -489,6 +490,7 @@ function App() {
         </WishlistProvider>
       </CartProvider>
       <Toaster />
+      <GlobalSnackbarHost />
     </ToastProvider>
   );
 }

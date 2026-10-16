@@ -3,7 +3,7 @@ import api from "../../../../../../Services/Api";
 import { Button } from "@mui/material";
 import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
 import { useCartContext } from "../CartHook/cart";
-import AppSnackbar from "../../../../../../../components/ui/app-snackbar";
+import AppSnackbar, { notifySnackbar } from "../../../../../../../components/ui/app-snackbar";
 
 // Helper to read CSRF token from cookies
 function getCookie(name) {
@@ -43,11 +43,9 @@ const RemoveFromCartButton = ({ itemId, cartItemId, variantId, sizeId, ageVarian
 
       if (res.data.success) {
         // Notify user
-        setSnackbar({
-          open: true,
-          message: res.data.message || "Item removed from cart",
-          severity: "success",
-        });
+        // The cart line (and this button) unmounts after the cart refresh,
+        // so raise the success message at app level.
+        notifySnackbar(res.data.message || "Item removed from cart", "success");
 
         // Update local UI
         if (onRemoved) onRemoved(itemId);

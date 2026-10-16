@@ -18,10 +18,12 @@ const useSingleItem = () => {
   const [selectedImage, setSelectedImage] = useState(null);
   const [quantity, setQuantity] = useState(1);
 
-  const fetchItem = useCallback(async () => {
+  const fetchItem = useCallback(async (options) => {
     if (!itemId) return;
     const controller = new AbortController();
-    setLoading(true);
+    // A silent refresh keeps the page mounted (so e.g. the add-to-cart
+    // success snackbar is not unmounted by the "Loading product..." state).
+    if (options?.silent !== true) setLoading(true);
     setError(null);
     try {
       const response = await api.get(`/api/items/${itemId}/`, { signal: controller.signal });

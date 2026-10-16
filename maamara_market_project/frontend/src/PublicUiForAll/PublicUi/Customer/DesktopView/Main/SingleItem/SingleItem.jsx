@@ -202,7 +202,7 @@ const SingleItem = () => {
                   selectedWeight={selectedWeight}
                   selectedLength={selectedLength}
                   customPreferences={customPreferences}
-                  onAdded={refreshItem}
+                  onAdded={() => refreshItem({ silent: true })}
                 />
 
                 <div className="mt-4 flex w-full flex-col gap-3">
