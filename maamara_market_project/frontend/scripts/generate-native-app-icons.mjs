@@ -90,7 +90,7 @@ function removeConnectedDarkCanvas({ data, info }) {
   return sharp(data, { raw: { width, height, channels } }).png().toBuffer();
 }
 
-const knockedOut = removeConnectedDarkCanvas(decoded);
+const knockedOut = await removeConnectedDarkCanvas(decoded);
 const normalizedBytes = knockedOut ?? await sharp(sourceBytes).png().toBuffer();
 const artworkBytes = await sharp(normalizedBytes)
   .trim({ background: { r: 0, g: 0, b: 0, alpha: 0 }, threshold: 1 })
