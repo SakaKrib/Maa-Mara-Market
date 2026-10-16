@@ -47,7 +47,7 @@ def notify_vendor(sender, instance, created, **kwargs):
     # Central delivery hook: every newly-created notification gets the same
     # push path, including order updates, approvals, messages, returns and payouts.
     # Defer until commit so a rolled-back transaction cannot send a false alert.
-    if instance.user_id:
+    if instance.user_id or instance.visitor_id:
         notification_id = instance.pk
         transaction.on_commit(lambda: send_notification_push(notification_id))
 
