@@ -82,6 +82,11 @@ import BlogFeed from "./cmponents/VENDORPAGE/Blogs/BlogFeed";
 import SingleBlogPage from "./cmponents/VENDORPAGE/Blogs/SinglePageBlogPost";
 import { WishlistProvider } from "./cmponents/Hooks/WishListHook/Wishlist";
 import api from "./Services/Api";
+import { Capacitor } from "@capacitor/core";
+import {
+  setupNativePushNotifications,
+  registerCurrentNativePushDevice,
+} from "./cmponents/Notifications/nativePushNotifications";
 import ItemsOnsite from "./cmponents/VENDORPAGE/Products/VendorItems/ItemOnSite";
 import EditItemPage from "./cmponents/VENDORPAGE/Products/Forms/EditItemPage";
 import AddingNewItem from "./cmponents/VENDORPAGE/Products/Forms/AddingNewItem";
@@ -451,6 +456,7 @@ function AppContent() {
 
 function App() {
   useMobileMenu();
+  const { loading: authLoading, isAuthenticated, user } = useAuth();
 
   const [visitorReady, setVisitorReady] = useState(false);
 
@@ -470,6 +476,35 @@ function App() {
       active = false;
     };
   }, []);
+
+  useEffect(() => {
+    if (!visitorReady || authLoading || !Capacitor.isNativePlatform()) return undefined;
+    if (
+      typeof window !== "undefined" &&
+      window.localStorage.getItem("maamara-push-notifications-enabled") === "false"
+    ) return undefined;
+
+    let active = true;
+    let cleanup;
+    setupNativePushNotifications()
+      .then(async (removeListeners) => {
+        if (!active) {
+          await removeListeners?.();
+          return;
+        }
+        cleanup = removeListeners;
+        // Rebind an existing token after visitor identity or login state changes.
+        await registerCurrentNativePushDevice();
+      })
+      .catch((error) => {
+        console.warn("Native push setup failed:", error);
+      });
+
+    return () => {
+      active = false;
+      cleanup?.();
+    };
+  }, [visitorReady, authLoading, isAuthenticated, user?.id]);
 
   if (!visitorReady) {
     return (
