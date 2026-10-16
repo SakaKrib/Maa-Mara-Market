@@ -7,6 +7,7 @@ import { Button } from "../../../../../../../components/ui/button";
 import RequestReturnForm from "../Return/Return";
 import FormattedCurrency from "../Currency/FormattedCurrency";
 import api from "../../../../../../Services/Api";
+import { downloadFile } from "../../../../../../Services/DownloadFile";
 
 const csvCell = (value) => {
   const text = value == null
@@ -62,15 +63,11 @@ const downloadOrderHistory = (orders, filename = null) => {
   });
 
   const csv = rows.map((row) => row.map(csvCell).join(",")).join("\r\n");
-  const blob = new Blob(["\uFEFF", csv], { type: "text/csv;charset=utf-8;" });
-  const url = URL.createObjectURL(blob);
-  const anchor = document.createElement("a");
-  anchor.href = url;
-  anchor.download = filename || `maa-mara-customer-order-history-${new Date().toISOString().slice(0, 10)}.csv`;
-  document.body.appendChild(anchor);
-  anchor.click();
-  anchor.remove();
-  window.setTimeout(() => URL.revokeObjectURL(url), 1500);
+  return downloadFile({
+    filename: filename || `maa-mara-customer-order-history-${new Date().toISOString().slice(0, 10)}.csv`,
+    content: "\uFEFF" + csv,
+    mimeType: "text/csv;charset=utf-8;",
+  });
 };
 
 const downloadSingleOrder = (order) => {
