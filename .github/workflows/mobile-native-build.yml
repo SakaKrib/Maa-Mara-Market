@@ -511,7 +511,7 @@ jobs:
           let baseline: CGFloat = 330
           let top: CGFloat = 570
           for letter in 0..<3 {
-              let x = CGFloat(130 + letter * 260)
+              let x = CGFloat(130 + letter * 220)
               monogram.move(to: NSPoint(x: x, y: baseline))
               monogram.line(to: NSPoint(x: x, y: top))
               monogram.curve(
