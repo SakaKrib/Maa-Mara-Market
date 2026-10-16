@@ -19,6 +19,9 @@ const cardClass =
   "min-w-0 overflow-hidden rounded-2xl border border-[#e6e6e4] bg-white p-4 shadow-sm transition-shadow hover:shadow-md sm:p-5";
 
 const Home = ({ vendor_id }) => {
+  const isNativeApp =
+    typeof window !== "undefined" &&
+    window.Capacitor?.isNativePlatform?.() === true;
   const vendorStats = useVendorStatsBox({ vendorId: vendor_id });
   const monthlySales = useMonthlySales();
   const vendorGrowthStats = useVendorItemGrowthStats();
@@ -511,6 +514,7 @@ const Home = ({ vendor_id }) => {
         <Link
           to="/"
           className="pointer-events-auto inline-flex min-h-11 items-center justify-center rounded-full bg-black px-4 py-2 text-xs font-semibold text-white shadow-lg ring-1 ring-black/10 transition hover:bg-[#262626] focus:outline-none focus:ring-2 focus:ring-black/20"
+          style={isNativeApp ? { transform: "translateY(-5px)" } : undefined}
         >
           Go To Shop
         </Link>
