@@ -63,11 +63,18 @@ const downloadOrderHistory = (orders, filename = null) => {
   });
 
   const csv = rows.map((row) => row.map(csvCell).join(",")).join("\r\n");
-  return downloadFile({
-    filename: filename || `maa-mara-customer-order-history-${new Date().toISOString().slice(0, 10)}.csv`,
-    content: "\uFEFF" + csv,
-    mimeType: "text/csv;charset=utf-8;",
-  });
+  try {
+    await downloadFile({
+      filename: filename || `maa-mara-customer-order-history-${new Date().toISOString().slice(0, 10)}.csv`,
+      content: "\uFEFF" + csv,
+      mimeType: "text/csv;charset=utf-8;",
+    });
+  } catch (error) {
+    console.error("Unable to export customer order history:", error);
+    if (!/cancel/i.test(String(error?.message || ""))) {
+      window.alert("We couldn't open the save/share sheet for this order file. Please try again.");
+    }
+  }
 };
 
 const downloadSingleOrder = (order) => {
