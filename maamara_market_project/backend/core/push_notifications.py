@@ -111,11 +111,28 @@ def send_notification_push(notification_id):
                 )
                 messaging.send(message)
             except Exception as error:
-                error_code = getattr(error, "code", "")
-                error_text = str(error).lower()
-                if error_code in {"UNREGISTERED", "INVALID_ARGUMENT"} or (
-                    "registration-token-not-registered" in error_text
-                ):
+                # Firebase SDKs/providers do not always expose the same spelling:
+                # examples include "NotRegistered", "UNREGISTERED", and
+                # "messaging/registration-token-not-registered". Normalize the
+                # code and message, and retire a device only for an explicit
+                # unregistered-token response (not generic INVALID_ARGUMENT,
+                # which can also indicate a malformed message payload).
+                error_code = str(getattr(error, "code", "") or "").lower()
+                normalized_code = error_code.replace("_", "-").replace("/", "-")
+                error_text = str(error).lower().replace("_", "-")
+                unregistered_token = (
+                    "notregistered" in normalized_code
+                    or "unregistered" in normalized_code
+                    or "registration-token-not-registered" in normalized_code
+                    or "notregistered" in error_text
+                    or "registration-token-not-registered" in error_text
+                    or "requested entity was not found" in error_text
+                )
+                if unregistered_token:
+                    logger.info(
+                        "Removing stale push device %s after Firebase reported an unregistered token.",
+                        device.pk,
+                    )
                     device.delete()
                     continue
                 logger.warning(
