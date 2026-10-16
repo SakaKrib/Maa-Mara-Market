@@ -156,6 +156,10 @@ jobs:
           fi
           npx cap sync android
 
+      - name: Remove duplicate Android launcher background resource
+        working-directory: ${{ env.FRONTEND_DIR }}
+        run: rm -f android/app/src/main/res/values/ic_launcher_background.xml
+
       - name: Generate MaaMara Market Android launcher icon
         working-directory: ${{ env.FRONTEND_DIR }}
         run: node scripts/generate-native-app-icons.mjs android
@@ -411,7 +415,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Set up Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@4
         with:
           node-version: 22
           cache: npm
