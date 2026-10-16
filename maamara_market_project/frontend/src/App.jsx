@@ -459,13 +459,17 @@ function App() {
   const { loading: authLoading, isAuthenticated, user } = useAuth();
 
   const [visitorReady, setVisitorReady] = useState(false);
+  const [visitorId, setVisitorId] = useState("");
 
   useEffect(() => {
     let active = true;
 
     api.get("/api/vistor-token/")
-      .then(() => {
-        if (active) setVisitorReady(true);
+      .then(({ data }) => {
+        if (active) {
+          setVisitorId(data?.visitor_id || "");
+          setVisitorReady(true);
+        }
       })
       .catch((error) => {
         console.error("Visitor token initialization failed:", error);
@@ -486,7 +490,8 @@ function App() {
 
     let active = true;
     let cleanup;
-    setupNativePushNotifications()
+    const activeVisitorId = isAuthenticated ? "" : visitorId;
+    setupNativePushNotifications(activeVisitorId)
       .then(async (removeListeners) => {
         if (!active) {
           await removeListeners?.();
@@ -494,7 +499,7 @@ function App() {
         }
         cleanup = removeListeners;
         // Rebind an existing token after visitor identity or login state changes.
-        await registerCurrentNativePushDevice();
+        await registerCurrentNativePushDevice(activeVisitorId);
       })
       .catch((error) => {
         console.warn("Native push setup failed:", error);
@@ -504,7 +509,7 @@ function App() {
       active = false;
       cleanup?.();
     };
-  }, [visitorReady, authLoading, isAuthenticated, user?.id]);
+  }, [visitorReady, visitorId, authLoading, isAuthenticated, user?.id]);
 
   if (!visitorReady) {
     return (
