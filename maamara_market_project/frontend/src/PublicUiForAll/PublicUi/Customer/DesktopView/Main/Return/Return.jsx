@@ -163,7 +163,7 @@ const RequestReturnForm = ({ selectedItem = null }) => {
     try {
       await downloadFile({
         filename: `maa-mara-customer-return-history-${new Date().toISOString().slice(0, 10)}.csv`,
-        content: "\uFEFF" + rows.map((row) => row.map(csvCell).join(",")).join("\\r\\n"),
+        content: "\uFEFF" + rows.map((row) => row.map(csvCell).join(",")).join("\r\n"),
         mimeType: "text/csv;charset=utf-8;",
       });
     } catch (error) {
