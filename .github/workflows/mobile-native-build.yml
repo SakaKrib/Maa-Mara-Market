@@ -93,7 +93,7 @@ jobs:
           FIREBASE_ANDROID_CONFIG: ${{ secrets.FIREBASE_ANDROID_CONFIG }}
         run: |
           if [ -z "$FIREBASE_ANDROID_CONFIG" ]; then
-            echo "::error::FIREBASE_ANDROID_CONFIG is missing. Add the Firebase Android google-services.json contents as a GitHub Actions secret before building an APK; otherwise push registration is disabled."
+            echo "::error::FIREBASE_ANDROID_CONFIG is missing. Add the Firebase Android google-services.json contents as a GitHub Actions secret before building an APK; otherwise push registration[...]
             exit 1
           fi
 
@@ -306,86 +306,6 @@ jobs:
                   getWindow().getDecorView().post(this::applySystemBarSettings);
               }
 
-              @Override
-              @SuppressWarnings("deprecation")
-              public void onBackPressed() {
-                  WebView webView = bridge != null ? bridge.getWebView() : null;
-                  if (webView != null) {
-                      String currentUrl = webView.getUrl();
-                      String currentPath = currentUrl == null ? "/" : Uri.parse(currentUrl).getPath();
-                      boolean isHome = currentPath == null
-                          || currentPath.isEmpty()
-                          || "/".equals(currentPath)
-                          || "/index.html".equals(currentPath);
-
-                      // React Router uses the WebView's browser history. On
-                      // any non-home route, Back should navigate within the app.
-                      if (!isHome) {
-                          lastHomeBackPressAt = 0L;
-                          if (webView.canGoBack()) {
-                              webView.goBack();
-                          } else {
-                              webView.evaluateJavascript(
-                                  "window.history.length > 1 ? window.history.back() : window.location.assign('/')",
-                                  null
-                              );
-                          }
-                          return;
-                      }
-                  }
-
-                  long now = SystemClock.elapsedRealtime();
-                  if (now - lastHomeBackPressAt <= BACK_EXIT_INTERVAL_MS && lastHomeBackPressAt != 0L) {
-                      finish();
-                      return;
-                  }
-
-                  lastHomeBackPressAt = now;
-                  Toast.makeText(this, "Press back again to exit", Toast.LENGTH_SHORT).show();
-              }
-
-              private void applySystemBarSettings() {
-                  getWindow().clearFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN);
-
-                  // Draw edge-to-edge on all supported Android versions so there
-                  // is no artificial gap between the status bar and app content.
-                  WindowCompat.setDecorFitsSystemWindows(getWindow(), false);
-
-                  WindowInsetsControllerCompat controller =
-                      WindowCompat.getInsetsController(getWindow(), getWindow().getDecorView());
-                  controller.show(WindowInsetsCompat.Type.statusBars());
-                  controller.show(WindowInsetsCompat.Type.navigationBars());
-                  controller.setAppearanceLightStatusBars(true);
-                  controller.setAppearanceLightNavigationBars(true);
-                  // Use a true white surface for both Android system-bar areas.
-                  // With edge-to-edge enabled, these views also provide the
-                  // background visible behind the transparent system bars.
-                  getWindow().setStatusBarColor(Color.WHITE);
-                  getWindow().setNavigationBarColor(Color.WHITE);
-                  getWindow().getDecorView().setBackgroundColor(Color.WHITE);
-                  if (Build.VERSION.SDK_INT >= 29) {
-                      getWindow().setNavigationBarContrastEnforced(false);
-                  }
-
-                  // Explicitly clear top, bottom, and side inset padding so the
-                  // WebView uses the full screen height and width.
-                  View content = findViewById(android.R.id.content);
-                  if (content != null) {
-                      content.setBackgroundColor(Color.WHITE);
-                      ViewCompat.setOnApplyWindowInsetsListener(content, (view, insets) -> {
-                          view.setPadding(0, 0, 0, 0);
-                          return insets;
-                      });
-                      ViewCompat.requestApplyInsets(content);
-                  }
-                  WebView activeWebView = bridge != null ? bridge.getWebView() : null;
-                  if (activeWebView != null) {
-                      activeWebView.setBackgroundColor(Color.WHITE);
-                  }
-              }
-          }
-          JAVA
-
       - name: Build Android debug APK
         working-directory: ${{ env.FRONTEND_DIR }}/android
         run: ./gradlew assembleDebug
@@ -415,7 +335,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Set up Node.js
-        uses: actions/setup-node@4
+        uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
@@ -430,7 +350,7 @@ jobs:
           FIREBASE_IOS_CONFIG: ${{ secrets.FIREBASE_IOS_CONFIG }}
         run: |
           if [ -z "$FIREBASE_IOS_CONFIG" ]; then
-            echo "::error::FIREBASE_IOS_CONFIG is missing. Add the Firebase iOS GoogleService-Info.plist contents as a GitHub Actions secret before building an iOS app; APNs must also be configured in Firebase."
+            echo "::error::FIREBASE_IOS_CONFIG is missing. Add the Firebase iOS GoogleService-Info.plist contents as a GitHub Actions secret before building an iOS app; APNs must also be configur[...]
             exit 1
           fi
 
@@ -482,32 +402,6 @@ jobs:
           end
           project.save
           RUBY
-          else
-            echo "Firebase iOS config missing; this simulator build will not register for native push."
-          fi
-
-          python3 - <<'PY'
-          from pathlib import Path
-
-          app_delegate = Path("ios/App/App/AppDelegate.swift")
-          source = app_delegate.read_text()
-          if "capacitorDidRegisterForRemoteNotifications" not in source:
-              methods = """
-              func application(_ application: UIApplication, didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data) {
-                  NotificationCenter.default.post(name: .capacitorDidRegisterForRemoteNotifications, object: deviceToken)
-              }
-
-              func application(_ application: UIApplication, didFailToRegisterForRemoteNotificationsWithError error: Error) {
-                  NotificationCenter.default.post(name: .capacitorDidFailToRegisterForRemoteNotifications, object: error)
-              }
-          """
-              closing = source.rfind("}")
-              if closing < 0:
-                  raise SystemExit("Could not locate AppDelegate class closing brace")
-              source = source[:closing] + methods + source[closing:]
-              app_delegate.write_text(source)
-          PY
-          npx cap sync ios
 
       - name: Generate MaaMara Market iOS app icon
         working-directory: ${{ env.FRONTEND_DIR }}
