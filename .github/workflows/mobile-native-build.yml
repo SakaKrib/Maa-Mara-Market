@@ -402,6 +402,7 @@ jobs:
           end
           project.save
           RUBY
+          fi
 
       - name: Generate MaaMara Market iOS app icon
         working-directory: ${{ env.FRONTEND_DIR }}
