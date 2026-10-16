@@ -99,6 +99,7 @@ def send_notification_push(notification_id):
                         priority="high",
                         notification=messaging.AndroidNotification(
                             channel_id="maamara_updates",
+                            icon="ic_stat_maamara",
                             sound="default",
                         ),
                     ),
