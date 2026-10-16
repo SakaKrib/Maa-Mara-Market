@@ -77,6 +77,14 @@ export const setVisitorIdentity = (value) => {
 };
 export const getVisitorIdentity = () => visitorIdentity;
 
+api.interceptors.request.use((config) => {
+  const url = String(config.url || "");
+  if (visitorIdentity && /\/api\/(user-visitor-notifications|user-visitor-activity)\/?$/.test(url)) {
+    config.params = { ...(config.params || {}), visitor_id: visitorIdentity };
+  }
+  return config;
+});
+
 
 // Start Google OAuth with a CSRF-protected POST. Keep the origin and URL
 // construction here so auth components do not duplicate API/base-URL logic.
