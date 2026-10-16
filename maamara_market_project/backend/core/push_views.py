@@ -75,7 +75,11 @@ class PushDeviceRegistrationView(APIView):
         if user:
             devices = devices.filter(user=user)
         else:
-            visitor_id = str(request.COOKIES.get("visitorId") or "").strip()
+            visitor_id = str(
+                request.COOKIES.get("visitorId")
+                or request.data.get("visitor_id")
+                or ""
+            ).strip()
             if not visitor_id:
                 return Response(
                     {"detail": "A visitor session is required to unregister push."},
