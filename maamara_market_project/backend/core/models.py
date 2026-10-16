@@ -474,8 +474,8 @@ class PushDevice(models.Model):
 
     class Meta:
         indexes = [
-            models.Index(fields=["user", "active"]),
-            models.Index(fields=["visitor_id", "active"]),
+            models.Index(fields=["user", "active"], name="core_push_user_act_idx"),
+            models.Index(fields=["visitor_id", "active"], name="core_push_visitor_act_idx"),
         ]
 
     def __str__(self):
