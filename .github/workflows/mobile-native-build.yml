@@ -164,6 +164,51 @@ jobs:
         working-directory: ${{ env.FRONTEND_DIR }}
         run: node scripts/generate-native-app-icons.mjs android
 
+      - name: Explicitly bind generated launcher icons in AndroidManifest.xml
+        working-directory: ${{ env.FRONTEND_DIR }}
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import xml.etree.ElementTree as ET
+
+          android_ns = "{http://schemas.android.com/apk/res/android}"
+          # Preserve the required android: prefix when ElementTree serializes the manifest.
+          ET.register_namespace("android", "http://schemas.android.com/apk/res/android")
+          manifest = Path("android/app/src/main/AndroidManifest.xml")
+          tree = ET.parse(manifest)
+          application = tree.getroot().find("application")
+          if application is None:
+              raise SystemExit("AndroidManifest.xml has no application element")
+
+          # Do not rely on Capacitor's generated defaults: explicitly point the
+          # installed app and launcher to the Maa Mara resources generated above.
+          application.set(android_ns + "icon", "@mipmap/ic_launcher")
+          application.set(android_ns + "roundIcon", "@mipmap/ic_launcher_round")
+          tree.write(manifest, encoding="utf-8", xml_declaration=True)
+
+          res = Path("android/app/src/main/res")
+          for density in ("mdpi", "hdpi", "xhdpi", "xxhdpi", "xxxhdpi"):
+              for name in ("ic_launcher.png", "ic_launcher_round.png"):
+                  icon = res / f"mipmap-{density}" / name
+                  if not icon.is_file() or icon.stat().st_size == 0:
+                      raise SystemExit(f"Missing generated launcher icon: {icon}")
+
+          for icon in (
+              res / "mipmap-anydpi-v26/ic_launcher.xml",
+              res / "mipmap-anydpi-v26/ic_launcher_round.xml",
+              res / "drawable/maamara_launcher_foreground.png",
+          ):
+              if not icon.is_file() or icon.stat().st_size == 0:
+                  raise SystemExit(f"Missing adaptive launcher icon resource: {icon}")
+
+          checked = ET.parse(manifest).getroot().find("application")
+          if checked.get(android_ns + "icon") != "@mipmap/ic_launcher":
+              raise SystemExit("Manifest launcher icon does not reference @mipmap/ic_launcher")
+          if checked.get(android_ns + "roundIcon") != "@mipmap/ic_launcher_round":
+              raise SystemExit("Manifest round launcher icon does not reference @mipmap/ic_launcher_round")
+          print("Validated AndroidManifest.xml launcher references and generated Maa Mara icon resources.")
+          PY
+
       - name: Generate and validate the iOS app icon asset
         working-directory: ${{ env.FRONTEND_DIR }}
         run: |
