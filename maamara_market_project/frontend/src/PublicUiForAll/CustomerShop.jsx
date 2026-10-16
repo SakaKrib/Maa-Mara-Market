@@ -7,6 +7,7 @@ import MobileMenu from "./PublicUi/Navigations/Footer/MobileFooter";
 import AnalyticsTracker from "./PublicUi/Customer/AnalyticsTracker";
 import MaintenancePage from "./MaintenancePage";
 import api from "../Services/Api";
+import MessagingLauncher from "../cmponents/Messaging/MessagingLauncher";
 
 const MAINTENANCE_ALLOWED_PATHS = [
   /^\/customer-order\/?$/,
