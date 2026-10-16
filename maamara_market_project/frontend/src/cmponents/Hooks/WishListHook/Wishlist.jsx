@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
-import api from "../../../Services/Api";
+import api, { getVisitorIdentity } from "../../../Services/Api";
 
 const WishlistContext = createContext();
 
@@ -12,7 +12,10 @@ export const WishlistProvider = ({ children }) => {
   const fetchWishlist = async () => {
     try {
       setLoading(true);
-      const res = await api.get(`/api/wishlist/`, { withCredentials: true });
+      const res = await api.get(`/api/wishlist/`, {
+        params: { visitor_id: getVisitorIdentity() || undefined },
+        withCredentials: true,
+      });
       // extract items array
       const data = Array.isArray(res.data.items) ? res.data.items : [];
       setWishlist(data);
@@ -37,7 +40,7 @@ export const WishlistProvider = ({ children }) => {
     try {
       const res = await api.post(
         `/api/wishlist/add/${itemId}/`,
-        {},
+        { visitor_id: getVisitorIdentity() || undefined },
         { withCredentials: true }
       );
 
@@ -57,6 +60,7 @@ export const WishlistProvider = ({ children }) => {
   const removeFromWishlist = async (itemId) => {
     try {
       await api.delete(`/api/wishlist/remove/${itemId}/`, {
+        data: { visitor_id: getVisitorIdentity() || undefined },
         withCredentials: true,
       });
 
