@@ -81,7 +81,7 @@ import BlogCard from "./cmponents/VENDORPAGE/Blogs/BlogCard";
 import BlogFeed from "./cmponents/VENDORPAGE/Blogs/BlogFeed";
 import SingleBlogPage from "./cmponents/VENDORPAGE/Blogs/SinglePageBlogPost";
 import { WishlistProvider } from "./cmponents/Hooks/WishListHook/Wishlist";
-import api from "./Services/Api";
+import api, { setVisitorIdentity } from "./Services/Api";
 import { Capacitor } from "@capacitor/core";
 import {
   setupNativePushNotifications,
@@ -467,13 +467,19 @@ function App() {
     api.get("/api/vistor-token/")
       .then(({ data }) => {
         if (active) {
-          setVisitorId(data?.visitor_id || "");
+          const resolvedVisitorId = data?.visitor_id || "";
+          setVisitorId(resolvedVisitorId);
+          setVisitorIdentity(resolvedVisitorId);
           setVisitorReady(true);
         }
       })
       .catch((error) => {
         console.error("Visitor token initialization failed:", error);
-        if (active) setVisitorReady(true);
+        if (active) {
+          setVisitorId("");
+          setVisitorIdentity("");
+          setVisitorReady(true);
+        }
       });
 
     return () => {
