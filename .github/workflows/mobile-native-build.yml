@@ -557,49 +557,6 @@ jobs:
           print("Validated iOS app icon asset catalog.")
           PY
 
-      - name: Apply Maa Mara Market triple-m app icon for iOS notifications
-        working-directory: ${{ env.FRONTEND_DIR }}
-        run: |
-          python3 -m venv /tmp/maamara-icon-venv
-          /tmp/maamara-icon-venv/bin/pip install --quiet pillow
-          python3 - <<'PY'
-          import json
-          from pathlib import Path
-          from PIL import Image, ImageDraw
-
-          size = 1024
-          image = Image.new("RGB", (size, size), "#173C76")
-          draw = ImageDraw.Draw(image)
-          points = [(150, 690), (150, 435)]
-          # Six connected rounded arches form three lowercase m letters.
-          for index in range(6):
-              x0 = 150 + index * 120
-              x1 = x0 + 120
-              for step in range(1, 41):
-                  t = step / 40
-                  one_minus = 1 - t
-                  x = one_minus**3 * x0 + 3 * one_minus**2 * t * x0 + 3 * one_minus * t**2 * x1 + t**3 * x1
-                  y = one_minus**3 * 435 + 3 * one_minus**2 * t * 300 + 3 * one_minus * t**2 * 300 + t**3 * 435
-                  points.append((round(x), round(y)))
-              points.append((x1, 690))
-              if index < 5:
-                  points.append((x1, 435))
-          draw.line(points, fill="#FFFFFF", width=30, joint="curve")
-          icon_dir = Path("ios/App/App/Assets.xcassets/AppIcon.appiconset")
-          icon_dir.mkdir(parents=True, exist_ok=True)
-          image.save(icon_dir / "AppIcon-1024.png", format="PNG")
-          (icon_dir / "Contents.json").write_text(json.dumps({
-              "images": [{
-                  "filename": "AppIcon-1024.png",
-                  "idiom": "universal",
-                  "platform": "ios",
-                  "size": "1024x1024"
-              }],
-              "info": {"author": "xcode", "version": 1}
-          }, indent=2) + "\\n")
-          print("Generated the navy-background, white outline triple-m iOS app icon. iOS uses this app icon in notification banners and the notification center; it does not show a separate small notification icon beside the clock.")
-          PY
-
       - name: Build iOS simulator app
         working-directory: ${{ env.FRONTEND_DIR }}/ios
         run: xcodebuild -workspace App/App.xcworkspace -scheme App -configuration Debug -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' CODE_SIGNING_ALLOWED=NO build
