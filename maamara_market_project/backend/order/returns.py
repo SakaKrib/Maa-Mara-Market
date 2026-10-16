@@ -386,6 +386,42 @@ def return_request_handler_api(request, item_id):
 
 
 
+@api_view(["GET"])
+@permission_classes([IsAuthenticatedOrVisitor])
+def get_my_return_requests_api(request):
+    """Return only the signed-in customer's or current visitor's own return records."""
+    if request.user and request.user.is_authenticated:
+        records = ReturnRequest.objects.filter(customer=request.user)
+    else:
+        visitor_id = request.COOKIES.get("visitorId")
+        if not visitor_id:
+            return Response({"success": True, "results": []})
+        records = ReturnRequest.objects.filter(visitor_id=visitor_id)
+
+    records = records.select_related("item__item", "vendor_adjustment").order_by("-created_at")
+    results = []
+    for record in records:
+        order = Order.objects.filter(order_items=record.item).order_by("-created_at").only("id").first()
+        product = record.item.item
+        adjustment = record.vendor_adjustment
+        results.append({
+            "id": record.id,
+            "order_id": order.id if order else "",
+            "item_id": record.item_id,
+            "item_name": getattr(product, "name", "") or "Purchased item",
+            "quantity": record.item.quantity,
+            "reason": record.reason or "",
+            "custom_reason": record.custom_reason or "",
+            "customer_preference": record.customer_preference or "",
+            "status": record.status or "pending",
+            "description": record.description or "",
+            "refund_amount": getattr(adjustment, "amount", "") if adjustment else "",
+            "admin_response": record.admin_note or "",
+            "created_at": record.created_at.isoformat() if record.created_at else "",
+        })
+    return Response({"success": True, "results": results})
+
+
 # Admin approval rejecction
 
 
