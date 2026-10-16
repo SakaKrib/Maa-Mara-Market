@@ -13,6 +13,7 @@ const VendorSettings = () => {
   const isNativeApp =
     typeof window !== "undefined" &&
     window.Capacitor?.isNativePlatform?.() === true;
+  const nativePushConfigured = import.meta.env.VITE_NATIVE_PUSH_ENABLED === "true";
   const [showSignOutConfirm, setShowSignOutConfirm] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -146,11 +147,11 @@ const VendorSettings = () => {
             <div className="rounded-2xl border border-[#e6e6e4] bg-white p-4 shadow-sm sm:p-5">
               <div className="mb-3">
                 <h2 className="text-sm font-semibold text-gray-900">Workspace preferences</h2>
-                <p className="mt-1 text-xs text-gray-600">Saved for this browser and applied immediately.</p>
+                <p className="mt-1 text-xs text-gray-600">{isNativeApp ? "Saved on this device. System notification permissions are managed by your phone." : "Saved for this browser and applied immediately."}</p>
               </div>
               <div className="space-y-2">
                 {[
-                  ["notifications", "Notifications", "Show notifications inside your vendor workspace.", Bell],
+                  ["notifications", isNativeApp ? "App notifications" : "Notifications", isNativeApp ? "Show in-app updates and register this device for push alerts." : "Show notifications inside your vendor workspace.", Bell],
                   ["compactMode", "Compact workspace", "Use a tighter layout where supported.", Monitor],
                   ...(!isNativeApp
                     ? [["browserAlerts", "Browser alerts", "Show browser notifications when this website supports them.", Globe2]]
@@ -170,7 +171,7 @@ const VendorSettings = () => {
                     <span className="min-w-0 flex-1">
                       <strong className="block text-sm text-gray-900">{nativePushConfigured ? "App notifications" : "App notifications setup required"}</strong>
                       <small className="mt-0.5 block text-xs leading-5 text-gray-600">
-                        {nativePushConfigured ? "Native push registration is enabled for this build. Allow notifications when prompted to receive important updates outside the app." : "System-bar alerts require Firebase configuration for this native build. Your in-app notifications remain available."}
+                        {nativePushConfigured ? "Push registration is enabled for this build. Allow notifications in your phone settings to receive banners, lock-screen alerts and status-bar icons." : "Push registration is disabled for this build. Your in-app notifications remain available."}
                       </small>
                     </span>
                     <span className="shrink-0 rounded-full bg-white px-2 py-1 text-[10px] font-semibold text-gray-600">{nativePushConfigured ? "Available" : "Setup required"}</span>
