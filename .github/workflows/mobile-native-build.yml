@@ -183,41 +183,10 @@ jobs:
           console.log("Validated the generated 1024x1024 iOS app icon and asset catalog.");
           JS
 
-      - name: Install Maa Mara Market italic triple-M notification icon
+      - name: Configure Firebase default notification icon
         working-directory: ${{ env.FRONTEND_DIR }}
         run: |
-          mkdir -p android/app/src/main/res/drawable
-          cat > android/app/src/main/res/drawable/ic_stat_maamara.xml <<'XML'
-          <?xml version="1.0" encoding="utf-8"?>
-          <vector xmlns:android="http://schemas.android.com/apk/res/android"
-              android:width="24dp"
-              android:height="24dp"
-              android:viewportWidth="24"
-              android:viewportHeight="24">
-              <!-- Three italic M glyphs only: no border, badge, or background. -->
-              <path
-                  android:fillColor="@android:color/transparent"
-                  android:strokeColor="#FFFFFFFF"
-                  android:strokeWidth="1.8"
-                  android:strokeLineCap="round"
-                  android:strokeLineJoin="round"
-                  android:pathData="M6.1,9.8 L7.5,2.7 L11.3,7.5 L15.1,2.7 L16.5,9.8" />
-              <path
-                  android:fillColor="@android:color/transparent"
-                  android:strokeColor="#FFFFFFFF"
-                  android:strokeWidth="1.8"
-                  android:strokeLineCap="round"
-                  android:strokeLineJoin="round"
-                  android:pathData="M1.5,21.1 L3,13.4 L6.3,18.3 L9.6,13.4 L11.1,21.1" />
-              <path
-                  android:fillColor="@android:color/transparent"
-                  android:strokeColor="#FFFFFFFF"
-                  android:strokeWidth="1.8"
-                  android:strokeLineCap="round"
-                  android:strokeLineJoin="round"
-                  android:pathData="M12.9,21.1 L14.4,13.4 L17.7,18.3 L21,13.4 L22.5,21.1" />
-          </vector>
-          XML
+          test -s android/app/src/main/res/drawable/ic_stat_maamara.xml
           python3 - <<'PY'
           from pathlib import Path
           import re
@@ -244,7 +213,7 @@ jobs:
           icon = ET.parse("android/app/src/main/res/drawable/ic_stat_maamara.xml").getroot()
           if metadata_name not in manifest.read_text() or "@drawable/ic_stat_maamara" not in manifest.read_text():
               raise SystemExit("Firebase notification icon metadata was not installed")
-          if len(icon.findall("{http://schemas.android.com/apk/res/android}path")) != 3:
+          if len(icon.findall("path")) != 3:
               raise SystemExit("The notification icon must contain exactly three M glyphs")
           print("Validated the borderless triple-M notification icon and Firebase default icon metadata.")
           PY
