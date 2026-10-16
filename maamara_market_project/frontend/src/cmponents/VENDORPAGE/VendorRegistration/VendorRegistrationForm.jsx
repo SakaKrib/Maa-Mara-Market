@@ -30,7 +30,7 @@ import {
   getVendorDraft,
   saveVendorDraft,
 } from "../../../Services/VendorDrafts";
-import AppSnackbar from "../../../../components/ui/app-snackbar";
+import AppSnackbar, { notifySnackbar } from "../../../../components/ui/app-snackbar";
 
 // Zod Schema with conditional validation
 
@@ -898,9 +898,7 @@ const onSubmit = async (data) => {
     if (response.status === 201) {
      
 
-      setSnackbarSeverity("success");
-      setSnackbarMessage("Vendor request submitted successfully!");
-      setSnackbarOpen(true);
+      notifySnackbar("Vendor request submitted successfully!", "success");
 
       navigate("/otp-vendor-verification", {
         state: { email: data.email },

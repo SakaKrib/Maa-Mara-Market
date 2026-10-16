@@ -8,7 +8,7 @@ import api, { startGoogleLogin } from "../src/Services/Api";
 import { useNavigate } from "react-router-dom";
 import Maamara from "../src/assets/Logo/Maamara.jpg";
 import { Eye, EyeOff } from "lucide-react"
-import AppSnackbar from "./ui/app-snackbar";
+import AppSnackbar, { notifySnackbar } from "./ui/app-snackbar";
 
 
 
@@ -125,7 +125,7 @@ const RegistrationForm = () => {
 
       if (data.success) {
         setMessage(data.message)
-        setSnackbar({ open: true, severity: "success", message: data.message })
+        notifySnackbar(data.message, "success")
         const email = encodeURIComponent(formData.email.trim().toLowerCase())
         const expiresAt = data.expires_at ? `&expiresAt=${encodeURIComponent(data.expires_at)}` : ""
         navigate(`/verify-otp?email=${email}${expiresAt}`)
