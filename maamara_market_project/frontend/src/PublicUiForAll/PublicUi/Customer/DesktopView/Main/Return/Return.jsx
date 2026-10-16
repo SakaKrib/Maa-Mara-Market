@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import api from "../../../../../../Services/Api";
+import { downloadFile } from "../../../../../../Services/DownloadFile";
 import { Button } from "../../../../../../../components/ui/button";
 import { Download, Loader2, PackageCheck, UploadCloud, Undo2 } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
@@ -76,7 +77,7 @@ const RequestReturnForm = ({ selectedItem = null }) => {
   const showMessage = (message) =>
     setSnackbar({ open: true, message });
 
-  const downloadReturnRecord = (record) => {
+  const downloadReturnRecord = async (record) => {
     if (!record) return;
     const rows = [
       ["MAA MARA MARKET — RETURN / EXCHANGE REQUEST"],
@@ -98,15 +99,16 @@ const RequestReturnForm = ({ selectedItem = null }) => {
       return '"' + safeText.replace(/"/g, '""') + '"';
     };
     const csv = rows.map((row) => row.map(csvCell).join(",")).join("\r\n");
-    const blob = new Blob(["\uFEFF", csv], { type: "text/csv;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-    const anchor = document.createElement("a");
-    anchor.href = url;
-    anchor.download = `maa-mara-return-request-${record.id ?? orderId ?? "record"}.csv`;
-    document.body.appendChild(anchor);
-    anchor.click();
-    anchor.remove();
-    window.setTimeout(() => URL.revokeObjectURL(url), 1500);
+    try {
+      await downloadFile({
+        filename: `maa-mara-return-request-${record.id ?? orderId ?? "record"}.csv`,
+        content: "\uFEFF" + csv,
+        mimeType: "text/csv;charset=utf-8;",
+      });
+    } catch (error) {
+      console.error("Unable to export return record:", error);
+      showMessage("We couldn't open the save/share sheet for this return record. Please try again.");
+    }
   };
 
   const resetForm = () => {
