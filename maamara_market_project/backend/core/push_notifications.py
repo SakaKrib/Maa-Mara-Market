@@ -10,7 +10,6 @@ import os
 from functools import lru_cache
 
 from django.apps import apps
-from django.db.models import Q
 
 logger = logging.getLogger(__name__)
 
