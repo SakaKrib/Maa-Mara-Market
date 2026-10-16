@@ -1,7 +1,7 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
   <rect width="1024" height="1024" fill="#FFFFFF"/>
   <rect x="38" y="38" width="948" height="948" rx="96" fill="#FFFFFF" stroke="#C5A23D" stroke-width="10"/>
-  <rect x="136" y="438" width="424" height="132" rx="18" fill="#D9A0A0"/>
-  <text x="155" y="542" font-family="Poppins, Arial, sans-serif" font-size="90" font-weight="700" fill="#262626" textLength="390" lengthAdjust="spacingAndGlyphs">MaaMara</text>
-  <text x="572" y="542" font-family="Arial, sans-serif" font-size="90" font-weight="700" fill="#55A927" textLength="295" lengthAdjust="spacingAndGlyphs">Market</text>
+  <rect x="68" y="404" width="548" height="212" rx="22" fill="#D9A0A0"/>
+  <text x="82" y="565" font-family="Poppins, Arial, sans-serif" font-size="165" font-weight="700" fill="#262626" textLength="520" lengthAdjust="spacingAndGlyphs">MaaMara</text>
+  <text x="625" y="565" font-family="Arial, sans-serif" font-size="165" font-weight="700" fill="#55A927" textLength="350" lengthAdjust="spacingAndGlyphs">Market</text>
 </svg>
