@@ -209,23 +209,41 @@ if (platform === "android") {
 
   const values = path.join(res, "values");
   await fs.mkdir(values, { recursive: true });
-  await fs.writeFile(
-    path.join(values, "colors.xml"),
-    `<?xml version="1.0" encoding="utf-8"?>
-<resources>
-    <color name="ic_launcher_background">#15232F</color>
-</resources>
-`
-  );
+
+  // Avoid creating duplicate color resources. If any existing values file
+  // already defines ic_launcher_background, skip writing a new one.
+  const colorName = "ic_launcher_background";
+  let found = false;
+  try {
+    const files = await fs.readdir(values);
+    for (const f of files) {
+      const p = path.join(values, f);
+      try {
+        const txt = await fs.readFile(p, "utf8");
+        if (txt.includes(`name="${colorName}"`) || txt.includes(`<color name="${colorName}">`)) {
+          found = true;
+          break;
+        }
+      } catch (_) {
+        // ignore unreadable files
+      }
+    }
+  } catch (_) {
+    // ignore
+  }
+
+  if (!found) {
+    await fs.writeFile(
+      path.join(values, "maamara_colors.xml"),
+      `<?xml version="1.0" encoding="utf-8"?>\n<resources>\n    <color name="${colorName}">#15232F</color>\n</resources>\n`
+    );
+  } else {
+    console.log(`Skipping writing ${colorName}; already defined in values/`);
+  }
 
   const adaptive = path.join(res, "mipmap-anydpi-v26");
   await fs.mkdir(adaptive, { recursive: true });
-  const xml = `<?xml version="1.0" encoding="utf-8"?>
-<adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
-    <background android:drawable="@color/ic_launcher_background" />
-    <foreground android:drawable="@drawable/ic_launcher_foreground" />
-</adaptive-icon>
-`;
+  const xml = `<?xml version="1.0" encoding="utf-8"?>\n<adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">\n    <background android:drawable="@color/ic_launcher_background" />\n    <foreground android:drawable="@drawable/ic_launcher_foreground" />\n</adaptive-icon>\n`;
   await fs.writeFile(path.join(adaptive, "ic_launcher.xml"), xml);
   await fs.writeFile(path.join(adaptive, "ic_launcher_round.xml"), xml);
 
