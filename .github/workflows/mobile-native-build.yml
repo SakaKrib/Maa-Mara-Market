@@ -172,6 +172,8 @@ jobs:
           import xml.etree.ElementTree as ET
 
           android_ns = "{http://schemas.android.com/apk/res/android}"
+          # Preserve the required android: prefix when ElementTree serializes the manifest.
+          ET.register_namespace("android", "http://schemas.android.com/apk/res/android")
           manifest = Path("android/app/src/main/AndroidManifest.xml")
           tree = ET.parse(manifest)
           application = tree.getroot().find("application")
