@@ -174,8 +174,8 @@ if (platform === "android") {
   await fs.writeFile(path.join(drawable, "ic_launcher_foreground.png"), foreground);
 
   // Dedicated Android small-notification icon: transparent canvas, three
-  // italic M glyphs, and no enclosing outline or background. Android applies
-  // the notification tint when it renders this resource in the system tray.
+  // italic M glyphs drawn as stroked paths (no fill) so the system tint can
+  // adapt their color for different themes and backgrounds.
   const notificationIcon = `<?xml version="1.0" encoding="utf-8"?>
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="24dp"
@@ -183,14 +183,26 @@ if (platform === "android") {
     android:viewportWidth="24"
     android:viewportHeight="24">
     <path
-        android:fillColor="#FFFFFFFF"
-        android:pathData="M6.4,9.8 L7.8,2.4 L9.5,2.4 L11.4,5.8 L13.5,2.4 L15.2,2.4 L16.6,9.8 L14.4,9.8 L13.7,5.6 L11.5,9.1 L9.5,5.6 L8.6,9.8 Z" />
+        android:fillColor="#00000000"
+        android:strokeColor="#FFFFFFFF"
+        android:strokeWidth="2.6"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:pathData="M0,20 C1,12 2,8 2,6 C3.5,10 4.5,14 5,16 L7,6" />
     <path
-        android:fillColor="#FFFFFFFF"
-        android:pathData="M1.2,21.2 L2.7,13.5 L4.2,13.5 L6.3,17.1 L8.5,13.5 L10,13.5 L11.2,21.2 L9.2,21.2 L8.6,17 L6.3,20.4 L4.3,17 L3.4,21.2 Z" />
+        android:fillColor="#00000000"
+        android:strokeColor="#FFFFFFFF"
+        android:strokeWidth="2.6"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:pathData="M8,20 C9,12 10,8 10,6 C11.5,10 12.5,14 13,16 L15,6" />
     <path
-        android:fillColor="#FFFFFFFF"
-        android:pathData="M12.8,21.2 L14.3,13.5 L15.8,13.5 L17.9,17.1 L20.1,13.5 L21.6,13.5 L22.8,21.2 L20.8,21.2 L20.2,17 L17.9,20.4 L15.9,17 L15,21.2 Z" />
+        android:fillColor="#00000000"
+        android:strokeColor="#FFFFFFFF"
+        android:strokeWidth="2.6"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:pathData="M16,20 C17,12 18,8 18,6 C19.5,10 20.5,14 21,16 L23,6" />
 </vector>
 `;
   await fs.writeFile(path.join(drawable, "ic_stat_maamara.xml"), notificationIcon);
