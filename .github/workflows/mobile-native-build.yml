@@ -557,6 +557,46 @@ jobs:
           print("Validated iOS app icon asset catalog.")
           PY
 
+      - name: Apply Maa Mara Market triple-m app icon for iOS notifications
+        working-directory: ${{ env.FRONTEND_DIR }}
+        run: |
+          python3 -m venv /tmp/maamara-icon-venv
+          /tmp/maamara-icon-venv/bin/pip install --quiet cairosvg
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          import subprocess
+
+          svg = """<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+            <rect width="1024" height="1024" fill="#173C76"/>
+            <path d="M145 675 V430 C145 300 275 300 275 430 V675 M275 430 C275 300 405 300 405 430 V675
+                     M335 675 V430 C335 300 465 300 465 430 V675 M465 430 C465 300 595 300 595 430 V675
+                     M525 675 V430 C525 300 655 300 655 430 V675 M655 430 C655 300 785 300 785 430 V675
+                     M715 675 V430 C715 300 845 300 845 430 V675"
+                  fill="none" stroke="#FFFFFF" stroke-width="30" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>"""
+          icon_dir = Path("ios/App/App/Assets.xcassets/AppIcon.appiconset")
+          icon_dir.mkdir(parents=True, exist_ok=True)
+          svg_path = Path("/tmp/maamara-app-icon.svg")
+          png_path = icon_dir / "AppIcon-1024.png"
+          svg_path.write_text(svg)
+          subprocess.run([
+              "/tmp/maamara-icon-venv/bin/python", "-c",
+              "import cairosvg,sys; cairosvg.svg2png(url=sys.argv[1],write_to=sys.argv[2],output_width=1024,output_height=1024)",
+              str(svg_path), str(png_path)
+          ], check=True)
+          (icon_dir / "Contents.json").write_text(json.dumps({
+              "images": [{
+                  "filename": "AppIcon-1024.png",
+                  "idiom": "universal",
+                  "platform": "ios",
+                  "size": "1024x1024"
+              }],
+              "info": {"author": "xcode", "version": 1}
+          }, indent=2) + "\\n")
+          print("Generated the navy-background, white outline triple-m iOS app icon. iOS uses this app icon in notification banners and the notification center; it does not show a separate small notification icon beside the clock.")
+          PY
+
       - name: Build iOS simulator app
         working-directory: ${{ env.FRONTEND_DIR }}/ios
         run: xcodebuild -workspace App/App.xcworkspace -scheme App -configuration Debug -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' CODE_SIGNING_ALLOWED=NO build
