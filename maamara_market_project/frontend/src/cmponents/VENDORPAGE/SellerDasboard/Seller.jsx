@@ -65,7 +65,7 @@ const Home = ({ vendor_id }) => {
     ].map((row) => row.map(csvCell).join(",")).join("\r\n");
     return downloadFile({
       filename,
-      content: "\\uFEFF" + content,
+      content: "\uFEFF" + content,
       mimeType: "text/csv;charset=utf-8;",
     });
   };
