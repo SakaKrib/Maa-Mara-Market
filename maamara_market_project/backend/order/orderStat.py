@@ -212,6 +212,47 @@ def vendor_pending_order_items(request):
     })
 
 
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def vendor_all_order_items(request):
+    """Export every order line for the authenticated vendor, regardless of lifecycle status."""
+    user = request.user
+    vendor = getattr(user, "vendor", None)
+    if vendor is None:
+        return Response({"detail": "Access denied. User is not a vendor."}, status=403)
+
+    vendor_items = Item.objects.filter(Q(vendor=vendor) | Q(created_by=user)).distinct()
+    order_items = (
+        OrderItem.objects.filter(item__in=vendor_items, order__isnull=False)
+        .select_related("order", "item", "order__user")
+        .order_by("-order__created_at", "-order_id", "id")
+    )
+
+    rows = []
+    for order_item in order_items:
+        order = order_item.order
+        customer = getattr(order, "user", None)
+        if customer:
+            customer_name = customer.get_full_name().strip() or customer.username
+        elif getattr(order, "visitor_id", None):
+            customer_name = f"Visitor ({order.visitor_id[:8]})"
+        else:
+            customer_name = "Unknown"
+
+        rows.append({
+            "order_id": order.id,
+            "order_status": order.status or "",
+            "item_id": order_item.item_id,
+            "item_name": order_item.item.name,
+            "item_price": float(order_item.price_at_purchase or 0),
+            "quantity": order_item.quantity,
+            "customer": customer_name,
+            "created_at": order.created_at.isoformat() if order.created_at else None,
+        })
+
+    return Response({"vendor_id": vendor.id, "results": rows, "count": len(rows)})
+
+
 # complete orders
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
