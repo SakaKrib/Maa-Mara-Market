@@ -33,7 +33,13 @@ if (platform === "android") {
   }
   const drawable = path.join(res, "drawable");
   await fs.mkdir(drawable, { recursive: true });
-  const adaptiveArtwork = await sharp(svg).resize(700, 700).png().toBuffer();
+  // Adaptive icons get their white background from ic_launcher.xml. Keep the
+  // foreground transparent outside the artwork so Android's launcher mask
+  // doesn't turn the full-canvas white SVG into a clipped white square.
+  const foregroundSvg = Buffer.from(
+    svg.toString().replace('<rect width="1024" height="1024" fill="#FFFFFF"/>', "")
+  );
+  const adaptiveArtwork = await sharp(foregroundSvg).resize(700, 700).png().toBuffer();
   await fs.writeFile(
     path.join(drawable, "ic_launcher_foreground.png"),
     await sharp({
