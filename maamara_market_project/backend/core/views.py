@@ -1234,7 +1234,7 @@ def user_account_view(request):
 @permission_classes([IsAuthenticatedOrVisitor])
 def get_notifications(request):
     user = request.user if request.user.is_authenticated else None
-    visitor_id = request.COOKIES.get("visitorId")
+    visitor_id = request.COOKIES.get("visitorId") or request.query_params.get("visitor_id")
 
     if user:
         notifications = Notification.objects.filter(user=user).order_by("-created_at")
@@ -1251,7 +1251,7 @@ def get_notifications(request):
 @permission_classes([IsAuthenticatedOrVisitor])
 def get_activity(request):
     user = request.user if request.user.is_authenticated else None
-    visitor_id = request.COOKIES.get("visitorId")
+    visitor_id = request.COOKIES.get("visitorId") or request.query_params.get("visitor_id")
 
     if user:
         activities = ActivityLog.objects.filter(user=user).order_by("-timestamp")
