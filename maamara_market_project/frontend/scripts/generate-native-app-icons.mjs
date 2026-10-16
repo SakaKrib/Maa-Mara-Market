@@ -3,7 +3,7 @@ import path from "node:path";
 import sharp from "sharp";
 
 const root = process.cwd();
-const source = path.join(root, "public", "maamara-app-icon.svg");
+const source = path.join(root, "public", "maamara-app-icon.png");
 const svg = await fs.readFile(source);
 const platform = process.argv[2];
 
