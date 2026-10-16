@@ -174,8 +174,8 @@ if (platform === "android") {
   await fs.writeFile(path.join(drawable, "ic_launcher_foreground.png"), foreground);
 
   // Dedicated Android small-notification icon. Android tints this asset, so use
-  // a transparent canvas and a solid, high-contrast triple-M silhouette. Keep
-  // generous side/top/bottom padding so the mark remains legible at 24x24dp.
+  // a transparent canvas and three bold filled italic-M glyphs. Each glyph has
+  // safe spacing from its neighbors and the viewport edges for 24x24dp clarity.
   const notificationIcon = `<?xml version="1.0" encoding="utf-8"?>
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="24dp"
@@ -184,10 +184,13 @@ if (platform === "android") {
     android:viewportHeight="24">
     <path
         android:fillColor="#FFFFFFFF"
-        android:pathData="M3.0,19.5 L4.4,6.2 C4.5,5.3 5.7,5.1 6.0,6.0 L8.1,12.3 L10.2,6.0 C10.5,5.1 11.7,5.3 11.8,6.2 L13.2,19.5 L10.3,19.5 L9.5,12.8 L8.9,15.0 C8.6,16.0 7.6,16.0 7.3,15.0 L6.7,12.8 L5.9,19.5 Z" />
+        android:pathData="M1.0,20 L2.0,5.0 L3.3,5.0 L4.1,12.0 L5.0,5.0 L6.3,5.0 L7.1,20 L5.4,20 L5.0,10.5 L4.4,15.0 L3.5,15.0 L2.9,10.5 L2.7,20 Z" />
     <path
         android:fillColor="#FFFFFFFF"
-        android:pathData="M11.0,19.5 L12.4,6.2 C12.5,5.3 13.7,5.1 14.0,6.0 L16.1,12.3 L18.2,6.0 C18.5,5.1 19.7,5.3 19.8,6.2 L21.0,19.5 L18.2,19.5 L17.5,12.8 L16.9,15.0 C16.6,16.0 15.6,16.0 15.3,15.0 L14.7,12.8 L13.9,19.5 Z" />
+        android:pathData="M8.6,20 L9.6,5.0 L10.9,5.0 L11.7,12.0 L12.6,5.0 L13.9,5.0 L14.7,20 L13.0,20 L12.6,10.5 L12.0,15.0 L11.1,15.0 L10.5,10.5 L10.3,20 Z" />
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M16.2,20 L17.2,5.0 L18.5,5.0 L19.3,12.0 L20.2,5.0 L21.5,5.0 L22.3,20 L20.6,20 L20.2,10.5 L19.6,15.0 L18.7,15.0 L18.1,10.5 L17.9,20 Z" />
 </vector>
 `;
   await fs.writeFile(path.join(drawable, "ic_stat_maamara.xml"), notificationIcon);
