@@ -182,28 +182,16 @@ if (platform === "android") {
     android:viewportWidth="24"
     android:viewportHeight="24">
     <path
-        android:fillColor="@android:color/transparent"
-        android:strokeColor="#FFFFFFFF"
-        android:strokeWidth="1.8"
-        android:strokeLineCap="round"
-        android:strokeLineJoin="round"
-        android:pathData="M6.1,9.8 L7.5,2.7 L11.3,7.5 L15.1,2.7 L16.5,9.8" />
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M6.4,9.8 L7.8,2.4 L9.5,2.4 L11.4,5.8 L13.5,2.4 L15.2,2.4 L16.6,9.8 L14.4,9.8 L13.7,5.6 L11.5,9.1 L9.5,5.6 L8.6,9.8 Z" />
     <path
-        android:fillColor="@android:color/transparent"
-        android:strokeColor="#FFFFFFFF"
-        android:strokeWidth="1.8"
-        android:strokeLineCap="round"
-        android:strokeLineJoin="round"
-        android:pathData="M1.5,21.1 L3,13.4 L6.3,18.3 L9.6,13.4 L11.1,21.1" />
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M1.2,21.2 L2.7,13.5 L4.2,13.5 L6.3,17.1 L8.5,13.5 L10,13.5 L11.2,21.2 L9.2,21.2 L8.6,17 L6.3,20.4 L4.3,17 L3.4,21.2 Z" />
     <path
-        android:fillColor="@android:color/transparent"
-        android:strokeColor="#FFFFFFFF"
-        android:strokeWidth="1.8"
-        android:strokeLineCap="round"
-        android:strokeLineJoin="round"
-        android:pathData="M12.9,21.1 L14.4,13.4 L17.7,18.3 L21,13.4 L22.5,21.1" />
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M12.8,21.2 L14.3,13.5 L15.8,13.5 L17.9,17.1 L20.1,13.5 L21.6,13.5 L22.8,21.2 L20.8,21.2 L20.2,17 L17.9,20.4 L15.9,17 L15,21.2 Z" />
 </vector>
-`;
+
   await fs.writeFile(path.join(drawable, "ic_stat_maamara.xml"), notificationIcon);
 
   const adaptive = path.join(res, "mipmap-anydpi-v26");
