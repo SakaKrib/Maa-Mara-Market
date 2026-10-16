@@ -3,6 +3,7 @@ import { PushNotifications } from "@capacitor/push-notifications";
 import api from "../../Services/Api";
 
 let currentPushToken = "";
+let currentVisitorId = "";
 let setupPromise = null;
 
 const resolvePushTarget = (rawUrl) => {
@@ -23,7 +24,11 @@ async function savePushToken(token = currentPushToken) {
   try {
     await api.post(
       "/api/push/devices/",
-      { token, platform },
+      {
+        token,
+        platform,
+        ...(currentVisitorId ? { visitor_id: currentVisitorId } : {}),
+      },
       { withCredentials: true }
     );
     return true;
@@ -37,11 +42,13 @@ async function savePushToken(token = currentPushToken) {
   }
 }
 
-export async function registerCurrentNativePushDevice() {
+export async function registerCurrentNativePushDevice(visitorId = "") {
+  currentVisitorId = visitorId || "";
   return savePushToken();
 }
 
-export async function setupNativePushNotifications() {
+export async function setupNativePushNotifications(visitorId = "") {
+  currentVisitorId = visitorId || "";
   if (!Capacitor.isNativePlatform()) return () => {};
   if (import.meta.env.VITE_NATIVE_PUSH_ENABLED === "false") return () => {};
   if (setupPromise) return setupPromise;
