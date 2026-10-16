@@ -139,7 +139,10 @@ export async function unregisterNativePushDevice() {
   if (!token) return;
   try {
     await api.delete("/api/push/devices/", {
-      data: { token },
+      data: {
+        token,
+        ...(currentVisitorId ? { visitor_id: currentVisitorId } : {}),
+      },
       withCredentials: true,
     });
   } catch (error) {
