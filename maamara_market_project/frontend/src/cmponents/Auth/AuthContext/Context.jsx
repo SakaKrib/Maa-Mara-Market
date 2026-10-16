@@ -9,7 +9,7 @@ import React, {
 } from "react";
 import api from "../../../Services/Api";
 import { Capacitor } from "@capacitor/core";
-import { setupNativePushNotifications, unregisterNativePushDevice } from "../../Notifications/nativePushNotifications";
+import { unregisterNativePushDevice } from "../../Notifications/nativePushNotifications";
 
 const AuthContext = createContext(null);
 let authCheckPromise = null;
@@ -63,26 +63,6 @@ export const AuthProvider = ({ children }) => {
   useEffect(() => {
     void checkAuth();
   }, []);
-
-  useEffect(() => {
-    if (loading || !isAuthenticated || !user?.id || !Capacitor.isNativePlatform()) return undefined;
-    if (typeof window !== "undefined" && window.localStorage.getItem("maamara-push-notifications-enabled") === "false") return undefined;
-    let cleanup;
-    let cancelled = false;
-    setupNativePushNotifications().then((removeListeners) => {
-      if (cancelled) {
-        removeListeners?.();
-      } else {
-        cleanup = removeListeners;
-      }
-    }).catch((error) => {
-      console.warn("Native push setup failed:", error);
-    });
-    return () => {
-      cancelled = true;
-      cleanup?.();
-    };
-  }, [loading, isAuthenticated, user?.id]);
 
 
 
