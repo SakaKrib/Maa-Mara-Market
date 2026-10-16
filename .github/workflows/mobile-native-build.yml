@@ -160,6 +160,29 @@ jobs:
         working-directory: ${{ env.FRONTEND_DIR }}
         run: node scripts/generate-native-app-icons.mjs android
 
+      - name: Generate and validate the iOS app icon asset
+        working-directory: ${{ env.FRONTEND_DIR }}
+        run: |
+          node scripts/generate-native-app-icons.mjs ios
+          node --input-type=module <<'JS'
+          import fs from "node:fs/promises";
+          import sharp from "sharp";
+
+          const iconPath = "ios/App/App/Assets.xcassets/AppIcon.appiconset/AppIcon-1024.png";
+          const metadata = await sharp(iconPath).metadata();
+          if (metadata.width !== 1024 || metadata.height !== 1024) {
+            throw new Error(`iOS app icon must be 1024x1024; got ${metadata.width}x${metadata.height}`);
+          }
+          const catalog = JSON.parse(await fs.readFile(
+            "ios/App/App/Assets.xcassets/AppIcon.appiconset/Contents.json",
+            "utf8"
+          ));
+          if (!catalog.images?.some((image) => image.filename === "AppIcon-1024.png")) {
+            throw new Error("iOS AppIcon Contents.json does not reference AppIcon-1024.png");
+          }
+          console.log("Validated the generated 1024x1024 iOS app icon and asset catalog.");
+          JS
+
       - name: Install Maa Mara Market italic triple-M notification icon
         working-directory: ${{ env.FRONTEND_DIR }}
         run: |
