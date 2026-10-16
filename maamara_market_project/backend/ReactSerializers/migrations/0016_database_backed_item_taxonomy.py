@@ -141,6 +141,8 @@ def repair_item_category_links(apps, schema_editor):
 
 
 class Migration(migrations.Migration):
+    # Keep data-repair writes from sharing a transaction with later ALTER TABLE operations.
+    atomic = False
 
     dependencies = [
         ("ReactSerializers", "0015_remove_itemview_unique_item_user_lifetime_view_and_more"),
