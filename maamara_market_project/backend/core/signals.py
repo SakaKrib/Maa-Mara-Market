@@ -171,7 +171,7 @@ _ORDER_NOTIFICATION_COPY = {
 }
 
 
-@receiver(pre_save, sender="order.Order")
+@receiver(pre_save, sender="oder.Order")
 def remember_order_status_for_notifications(sender, instance, **kwargs):
     if not instance.pk:
         instance._notification_previous_status = None
@@ -181,7 +181,7 @@ def remember_order_status_for_notifications(sender, instance, **kwargs):
     )
 
 
-@receiver(post_save, sender="order.Order")
+@receiver(post_save, sender="oder.Order")
 def notify_order_status_change(sender, instance, created, **kwargs):
     previous = getattr(instance, "_notification_previous_status", None)
     current = str(instance.status or "").upper()
