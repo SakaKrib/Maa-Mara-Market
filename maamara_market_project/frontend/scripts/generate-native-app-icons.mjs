@@ -172,6 +172,40 @@ if (platform === "android") {
 
   await fs.writeFile(path.join(drawable, "ic_launcher_foreground.png"), foreground);
 
+  // Dedicated Android small-notification icon: transparent canvas, three
+  // italic M glyphs, and no enclosing outline or background. Android applies
+  // the notification tint when it renders this resource in the system tray.
+  const notificationIcon = `<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <path
+        android:fillColor="@android:color/transparent"
+        android:strokeColor="#FFFFFFFF"
+        android:strokeWidth="1.8"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:pathData="M6.1,9.8 L7.5,2.7 L11.3,7.5 L15.1,2.7 L16.5,9.8" />
+    <path
+        android:fillColor="@android:color/transparent"
+        android:strokeColor="#FFFFFFFF"
+        android:strokeWidth="1.8"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:pathData="M1.5,21.1 L3,13.4 L6.3,18.3 L9.6,13.4 L11.1,21.1" />
+    <path
+        android:fillColor="@android:color/transparent"
+        android:strokeColor="#FFFFFFFF"
+        android:strokeWidth="1.8"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:pathData="M12.9,21.1 L14.4,13.4 L17.7,18.3 L21,13.4 L22.5,21.1" />
+</vector>
+`;
+  await fs.writeFile(path.join(drawable, "ic_stat_maamara.xml"), notificationIcon);
+
   const adaptive = path.join(res, "mipmap-anydpi-v26");
   await fs.mkdir(adaptive, { recursive: true });
   const xml = `<?xml version="1.0" encoding="utf-8"?>
