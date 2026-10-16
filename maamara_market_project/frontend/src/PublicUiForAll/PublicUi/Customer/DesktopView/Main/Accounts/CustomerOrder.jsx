@@ -19,7 +19,7 @@ const csvCell = (value) => {
   return '"' + safeText.replace(/"/g, '""') + '"';
 };
 
-const downloadOrderHistory = (orders, filename = null) => {
+const downloadOrderHistory = async (orders, filename = null) => {
   const generatedAt = new Date().toLocaleString("en-KE", { timeZone: "Africa/Nairobi" });
   const rows = [
     [orders.length === 1 ? "MAA MARA MARKET — ORDER DETAILS" : "MAA MARA MARKET — CUSTOMER ORDER HISTORY"],
