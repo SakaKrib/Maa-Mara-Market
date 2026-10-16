@@ -231,7 +231,7 @@ const RequestReturnForm = ({ selectedItem = null }) => {
 
       if (response.data?.success) {
         const returned = response.data.return_request || {};
-        setLastReturnRecord({
+        const normalizedReturnRecord = {
           ...returned,
           id: returned.id ?? returned.return_request_id ?? response.data.return_request_id ?? "",
           order_id: selectedOrder.id,
@@ -255,7 +255,12 @@ const RequestReturnForm = ({ selectedItem = null }) => {
           description: returned.description || description.trim(),
           refund_amount: returned.refund_amount ?? response.data.refund_amount ?? "",
           admin_response: returned.admin_response || returned.decision_note || "",
-        });
+        };
+        setLastReturnRecord(normalizedReturnRecord);
+        setReturnHistory((current) => [
+          normalizedReturnRecord,
+          ...current.filter((record) => String(record.id) !== String(normalizedReturnRecord.id)),
+        ]);
         showMessage(response.data.message || "Your return request has been submitted.");
         resetForm();
       } else {
