@@ -6,20 +6,124 @@ const root = process.cwd();
 const source = path.join(root, "public", "maamara-app-icon.png");
 const platform = process.argv[2];
 
-// The source file may contain PNG, JPEG, WebP, or SVG data regardless of its
-// filename extension. Pass the original bytes to Sharp; do not decode them as
-// text or perform SVG-only string replacements on raster images.
+// The source filename has historically been .png while its bytes are JPEG.
+// Always decode by file signature instead of trusting the extension.
 const sourceBytes = await fs.readFile(source);
-const sourceImage = sharp(sourceBytes, { failOn: "error" });
-const metadata = await sourceImage.metadata();
+const decoded = await sharp(sourceBytes, { failOn: "error" })
+  .ensureAlpha()
+  .raw()
+  .toBuffer({ resolveWithObject: true });
 
-if (!metadata.width || !metadata.height) {
+if (!decoded.info.width || !decoded.info.height) {
   throw new Error(`Unable to read image dimensions from ${source}. Check that the app icon is a valid image.`);
 }
 
-async function renderIcon(size) {
-  return sharp(sourceBytes)
-    .resize(size, size, { fit: "contain", background: { r: 255, g: 255, b: 255, alpha: 0 } })
+// The approved source is a horizontal wordmark exported on a black canvas.
+// Remove only dark pixels connected to the outside edge; dark lettering inside
+// the enclosed logo plate is preserved. For other artwork with non-dark
+// corners, leave the source untouched.
+function removeConnectedDarkCanvas({ data, info }) {
+  const { width, height, channels } = info;
+  const pixelCount = width * height;
+  const dark = new Uint8Array(pixelCount);
+  const visited = new Uint8Array(pixelCount);
+  const queue = new Uint32Array(pixelCount);
+  let head = 0;
+  let tail = 0;
+
+  const isDark = (index) => {
+    const offset = index * channels;
+    if (data[offset + 3] === 0) return false;
+    const luminance = 0.2126 * data[offset] + 0.7152 * data[offset + 1] + 0.0722 * data[offset + 2];
+    return luminance < 72;
+  };
+
+  for (let i = 0; i < pixelCount; i += 1) dark[i] = isDark(i) ? 1 : 0;
+
+  const seed = (index) => {
+    if (dark[index] && !visited[index]) {
+      visited[index] = 1;
+      queue[tail++] = index;
+    }
+  };
+
+  for (let x = 0; x < width; x += 1) {
+    seed(x);
+    seed((height - 1) * width + x);
+  }
+  for (let y = 0; y < height; y += 1) {
+    seed(y * width);
+    seed(y * width + width - 1);
+  }
+
+  const edgeCorners = [
+    0,
+    width - 1,
+    (height - 1) * width,
+    pixelCount - 1,
+  ];
+  const darkCornerCount = edgeCorners.filter((index) => dark[index]).length;
+  if (darkCornerCount < 3) return null;
+
+  while (head < tail) {
+    const index = queue[head++];
+    const x = index % width;
+    const y = Math.floor(index / width);
+    const neighbours = [];
+    if (x > 0) neighbours.push(index - 1);
+    if (x + 1 < width) neighbours.push(index + 1);
+    if (y > 0) neighbours.push(index - width);
+    if (y + 1 < height) neighbours.push(index + width);
+
+    for (const neighbour of neighbours) {
+      if (dark[neighbour] && !visited[neighbour]) {
+        visited[neighbour] = 1;
+        queue[tail++] = neighbour;
+      }
+    }
+  }
+
+  for (let index = 0; index < pixelCount; index += 1) {
+    if (!visited[index]) continue;
+    data[index * channels + 3] = 0;
+  }
+  return sharp(data, { raw: info }).png().toBuffer();
+}
+
+const knockedOut = removeConnectedDarkCanvas(decoded);
+const normalizedBytes = knockedOut ?? sharp(sourceBytes).png().toBuffer();
+const resolvedNormalizedBytes = await normalizedBytes;
+const artworkBytes = await sharp(resolvedNormalizedBytes)
+  .trim({ background: { r: 0, g: 0, b: 0, alpha: 0 }, threshold: 1 })
+  .png()
+  .toBuffer();
+const artworkMetadata = await sharp(artworkBytes).metadata();
+
+// Keep the logo on a clean white square instead of scaling its original black
+// letterbox into the launcher tile. This retains the actual approved wordmark.
+async function renderIcon(size, logoScale = 0.92) {
+  const logoSize = Math.round(size * logoScale);
+  const logo = await sharp(artworkBytes)
+    .resize(logoSize, logoSize, {
+      fit: "contain",
+      background: { r: 255, g: 255, b: 255, alpha: 0 },
+    })
+    .png()
+    .toBuffer();
+
+  return sharp({
+    create: {
+      width: size,
+      height: size,
+      channels: 4,
+      background: { r: 255, g: 255, b: 255, alpha: 1 },
+    },
+  })
+    .composite([{
+      input: logo,
+      left: Math.round((size - logoSize) / 2),
+      top: Math.round((size - logoSize) / 2),
+    }])
     .png()
     .toBuffer();
 }
@@ -37,46 +141,23 @@ if (platform === "android") {
   for (const [density, size] of densities) {
     const dir = path.join(res, `mipmap-${density}`);
     await fs.mkdir(dir, { recursive: true });
-
-    const png = await renderIcon(size);
-    const inset = Math.round(size * 0.16);
-    const paddedArtwork = await sharp(sourceBytes)
-      .resize(size - inset * 2, size - inset * 2, {
-        fit: "contain",
-        background: { r: 255, g: 255, b: 255, alpha: 0 },
-      })
-      .png()
-      .toBuffer();
-
-    const roundPadded = await sharp({
-      create: {
-        width: size,
-        height: size,
-        channels: 4,
-        background: { r: 255, g: 255, b: 255, alpha: 1 },
-      },
-    })
-      .composite([{ input: paddedArtwork, left: inset, top: inset }])
-      .png()
-      .toBuffer();
-
-    await fs.writeFile(path.join(dir, "ic_launcher.png"), png);
-    await fs.writeFile(path.join(dir, "ic_launcher_round.png"), roundPadded);
+    await fs.writeFile(path.join(dir, "ic_launcher.png"), await renderIcon(size, 0.94));
+    await fs.writeFile(path.join(dir, "ic_launcher_round.png"), await renderIcon(size, 0.82));
   }
 
   const drawable = path.join(res, "drawable");
   await fs.mkdir(drawable, { recursive: true });
 
-  // Build a centered adaptive-icon foreground from the image's actual format.
-  // No SVG text manipulation is performed, so raster sources remain valid.
-  const adaptiveArtwork = await sharp(sourceBytes)
-    .resize(700, 700, {
+  // Adaptive foreground content must stay inside Android's central safe zone.
+  const foregroundLogoSize = 640;
+  const foregroundLogo = await sharp(artworkBytes)
+    .resize(foregroundLogoSize, foregroundLogoSize, {
       fit: "contain",
       background: { r: 255, g: 255, b: 255, alpha: 0 },
     })
     .png()
     .toBuffer();
-
+  const foregroundOffset = Math.round((1024 - foregroundLogoSize) / 2);
   const foreground = await sharp({
     create: {
       width: 1024,
@@ -85,7 +166,7 @@ if (platform === "android") {
       background: { r: 255, g: 255, b: 255, alpha: 0 },
     },
   })
-    .composite([{ input: adaptiveArtwork, left: 162, top: 162 }])
+    .composite([{ input: foregroundLogo, left: foregroundOffset, top: foregroundOffset }])
     .png()
     .toBuffer();
 
@@ -102,16 +183,16 @@ if (platform === "android") {
   await fs.writeFile(path.join(adaptive, "ic_launcher.xml"), xml);
   await fs.writeFile(path.join(adaptive, "ic_launcher_round.xml"), xml);
 
-  console.log(`Generated Android launcher icons from ${metadata.format ?? "detected"} source (${metadata.width}x${metadata.height}) for all densities and adaptive icons.`);
+  console.log(`Generated Android launcher icons from ${artworkMetadata.width}x${artworkMetadata.height} cleaned logo artwork (source: ${decoded.info.width}x${decoded.info.height}, ${decoded.info.format ?? "detected"}).`);
 } else if (platform === "ios") {
   const dir = path.join(root, "ios", "App", "App", "Assets.xcassets", "AppIcon.appiconset");
   await fs.mkdir(dir, { recursive: true });
-  await fs.writeFile(path.join(dir, "AppIcon-1024.png"), await renderIcon(1024));
+  await fs.writeFile(path.join(dir, "AppIcon-1024.png"), await renderIcon(1024, 0.94));
   await fs.writeFile(path.join(dir, "Contents.json"), JSON.stringify({
     images: [{ filename: "AppIcon-1024.png", idiom: "universal", platform: "ios", size: "1024x1024" }],
     info: { author: "xcode", version: 1 }
   }, null, 2) + "\n");
-  console.log(`Generated iOS app icon from ${metadata.format ?? "detected"} source (${metadata.width}x${metadata.height}).`);
+  console.log(`Generated iOS app icon from ${artworkMetadata.width}x${artworkMetadata.height} cleaned logo artwork.`);
 } else {
   throw new Error("Usage: node scripts/generate-native-app-icons.mjs <android|ios>");
 }
