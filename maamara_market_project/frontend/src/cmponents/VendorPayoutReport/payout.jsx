@@ -13,6 +13,7 @@ import {
 } from "ionicons/icons";
 import api from "../../Services/Api";
 import { useGenerateMonthlyPayouts } from "../Hooks/Payouts/GeneratePayoutHook";
+import AppSnackbar from "../../../components/ui/app-snackbar";
 
 const METHOD_META = {
   MOBILE_MONEY: {
@@ -391,17 +392,7 @@ export default function VendorReport() {
         </div>
       </header>
 
-      {notice && (
-        <div
-          className={`rounded-xl border p-3 text-sm ${
-            noticeType === "error"
-              ? "border-destructive/30 bg-destructive/5 text-destructive"
-              : "border-green-500/20 bg-green-500/5 text-green-700 dark:text-green-300"
-          }`}
-        >
-          {notice}
-        </div>
-      )}
+      <AppSnackbar open={Boolean(notice)} message={notice} severity={noticeType} onClose={() => setNotice("")} autoHideDuration={6000} />
 
       {error && (
         <div className="rounded-xl border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive">

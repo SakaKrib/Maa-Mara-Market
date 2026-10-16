@@ -4,6 +4,7 @@ import { addCircleOutline, calendarOutline, createOutline, trashOutline } from "
 import ConfirmDialog from "./ConfirmDialog";
 import AddPaymentModal from "./AddPaymentModal";
 import api from "../../../../Services/Api";
+import AppSnackbar from "../../../../../components/ui/app-snackbar";
 
 const badge = {
   Vendors: "bg-primary/10 text-primary",
@@ -156,11 +157,7 @@ export default function FastPayment({
         </button>
       </div>
 
-      {notice && (
-        <div className="mb-3 rounded-xl border border-primary/20 bg-primary/5 p-3 text-sm text-primary">
-          {notice}
-        </div>
-      )}
+      <AppSnackbar open={Boolean(notice)} message={notice} onClose={() => setNotice("")} autoHideDuration={6000} />
 
       {loading ? (
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">

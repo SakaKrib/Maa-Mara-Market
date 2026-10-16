@@ -11,6 +11,7 @@ import {
 } from "ionicons/icons";
 import { useNavigate } from "react-router-dom";
 import api, { getWebSocketUrl, resolveApiAssetUrl } from "../../../../Services/Api";
+import AppSnackbar from "../../../../../components/ui/app-snackbar";
 
 const statusClasses = {
   pending: "bg-amber-500/10 text-amber-700 dark:text-amber-300",
@@ -203,18 +204,7 @@ const VendorItemCreateRequests = ({ onCountChange }) => {
           </div>
         </header>
 
-        {(error || notice) && (
-          <div
-            role="alert"
-            className={`rounded-xl border px-4 py-3 text-sm ${
-              error
-                ? "border-destructive/30 bg-destructive/5 text-destructive"
-                : "border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300"
-            }`}
-          >
-            {error || notice}
-          </div>
-        )}
+        <AppSnackbar open={Boolean(error || notice)} message={error || notice} severity={error ? "error" : "success"} onClose={() => { setError(""); setNotice(""); }} />
 
         <section className="overflow-hidden rounded-2xl border border-border bg-card shadow-custom">
           <div className="flex flex-wrap gap-2 border-b border-border p-3 sm:p-4">
