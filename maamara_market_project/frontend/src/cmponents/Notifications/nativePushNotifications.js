@@ -116,8 +116,10 @@ export async function setupNativePushNotifications(visitorId = "") {
     }
 
     return async () => {
-      await Promise.all(handles.map((handle) => handle.remove().catch(() => {})));
+      // Clear the shared promise synchronously so an auth/visitor identity
+      // transition can start a fresh setup while these listeners are removed.
       setupPromise = null;
+      await Promise.all(handles.map((handle) => handle.remove().catch(() => {})));
     };
   })();
 
