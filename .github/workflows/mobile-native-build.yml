@@ -169,15 +169,24 @@ jobs:
           <vector xmlns:android="http://schemas.android.com/apk/res/android"
               android:width="24dp"
               android:height="24dp"
-              android:viewportWidth="96"
-              android:viewportHeight="48">
+              android:viewportWidth="24"
+              android:viewportHeight="24">
+              <!-- Transparent canvas; Android applies the status-bar icon tint. -->
               <path
                   android:fillColor="#00000000"
                   android:strokeColor="#FFFFFFFF"
-                  android:strokeWidth="4.5"
+                  android:strokeWidth="1.5"
                   android:strokeLineCap="round"
                   android:strokeLineJoin="round"
-                  android:pathData="M12,36 V20 C12,10 24,10 24,20 V36 V20 C24,10 36,10 36,20 V36 V20 C36,10 48,10 48,20 V36 V20 C48,10 60,10 60,20 V36 V20 C60,10 72,10 72,20 V36 V20 C72,10 84,10 84,20 V36" />
+                  android:pathData="M7,3.75 H17 A4.25,4.25 0,0 1,21.25,8 V16 A4.25,4.25 0,0 1,17,20.25 H7 A4.25,4.25 0,0 1,2.75,16 V8 A4.25,4.25 0,0 1,7,3.75 Z" />
+              <!-- Compact mmara-inspired monogram sized for the 24dp status bar. -->
+              <path
+                  android:fillColor="#00000000"
+                  android:strokeColor="#FFFFFFFF"
+                  android:strokeWidth="1.65"
+                  android:strokeLineCap="round"
+                  android:strokeLineJoin="round"
+                  android:pathData="M5.5,15.5 V9.25 H7.2 V10.2 C7.65,9.4 8.35,9 9.15,9 C10.05,9 10.65,9.45 10.95,10.2 C11.45,9.4 12.15,9 13,9 C14.35,9 15.1,9.95 15.1,11.4 V15.5 H13.35 V11.65 C13.35,10.85 13.05,10.45 12.4,10.45 C11.7,10.45 11.25,11.05 11.25,11.85 V15.5 H9.5 V11.65 C9.5,10.85 9.2,10.45 8.55,10.45 C7.85,10.45 7.25,11.05 7.25,11.85 V15.5 Z" />
           </vector>
           XML
           python3 - <<'PY'
