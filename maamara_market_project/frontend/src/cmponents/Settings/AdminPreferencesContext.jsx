@@ -49,6 +49,7 @@ export const AdminPreferencesProvider = ({ children }) => {
   const toastTimerRef = useRef(null);
   const workspaceRole = location.pathname.startsWith("/vendors-dashboard") ? "vendor" : "admin";
   const [preferences, setPreferences] = useState(() => readStoredPreferences(workspaceRole));
+  const [preferencesLoadedForRole, setPreferencesLoadedForRole] = useState(workspaceRole);
   const notificationStateRef = useRef({
     initialized: false,
     notificationIds: new Set(),
@@ -58,10 +59,11 @@ export const AdminPreferencesProvider = ({ children }) => {
 
   useEffect(() => {
     setPreferences(readStoredPreferences(workspaceRole));
+    setPreferencesLoadedForRole(workspaceRole);
   }, [workspaceRole]);
 
   useEffect(() => {
-    if (typeof window === "undefined") return;
+    if (typeof window === "undefined" || preferencesLoadedForRole !== workspaceRole) return;
 
     window.localStorage.setItem(STORAGE_KEYS[workspaceRole], JSON.stringify(preferences));
 
@@ -73,7 +75,7 @@ export const AdminPreferencesProvider = ({ children }) => {
       "maamara-compact-workspace",
       isWorkspace && preferences.compactMode
     );
-  }, [preferences, location.pathname, workspaceRole]);
+  }, [preferences, preferencesLoadedForRole, location.pathname, workspaceRole]);
 
   useEffect(() => () => {
     document.documentElement.classList.remove("maamara-compact-workspace");
