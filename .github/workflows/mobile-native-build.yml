@@ -306,6 +306,24 @@ jobs:
                   getWindow().getDecorView().post(this::applySystemBarSettings);
               }
 
+              private void applySystemBarSettings() {
+                  WindowCompat.setDecorFitsSystemWindows(getWindow(), false);
+                  getWindow().setStatusBarColor(Color.TRANSPARENT);
+                  getWindow().setNavigationBarColor(Color.TRANSPARENT);
+
+                  WindowInsetsControllerCompat controller =
+                      WindowCompat.getInsetsController(getWindow(), getWindow().getDecorView());
+                  // Keep system icons visible over the app's light header/background.
+                  controller.setAppearanceLightStatusBars(true);
+                  controller.setAppearanceLightNavigationBars(true);
+
+                  if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                      getWindow().setNavigationBarContrastEnforced(false);
+                  }
+              }
+          }
+          JAVA
+
       - name: Build Android debug APK
         working-directory: ${{ env.FRONTEND_DIR }}/android
         run: ./gradlew assembleDebug
