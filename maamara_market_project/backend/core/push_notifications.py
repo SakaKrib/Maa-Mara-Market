@@ -10,7 +10,7 @@ import os
 from functools import lru_cache
 
 from django.apps import apps
-from django.conf import settings
+from django.db.models import Q
 
 logger = logging.getLogger(__name__)
 
@@ -41,29 +41,43 @@ def _firebase_messaging():
 
 
 def send_notification_push(notification_id):
-    """Send a push to every active device registered to the notification recipient.
-
-    The in-app Notification row remains the source of truth. A Firebase failure
-    must never roll back an order, approval, message, or notification record.
-    """
+    """Send a saved notification to active devices owned by its user or visitor."""
     try:
         Notification = apps.get_model("core", "Notification")
         PushDevice = apps.get_model("core", "PushDevice")
         notification = (
             Notification.objects.select_related("user")
-            .filter(pk=notification_id, user__isnull=False)
+            .filter(pk=notification_id)
             .first()
         )
         if notification is None:
             return
 
-        devices = list(PushDevice.objects.filter(user_id=notification.user_id, active=True))
+        if notification.user_id:
+            devices_query = PushDevice.objects.filter(
+                user_id=notification.user_id,
+                active=True,
+            )
+        elif notification.visitor_id:
+            devices_query = PushDevice.objects.filter(
+                visitor_id=notification.visitor_id,
+                user__isnull=True,
+                active=True,
+            )
+        else:
+            return
+
+        devices = list(devices_query)
         if not devices:
+            logger.debug(
+                "Push delivery skipped for notification %s: no active device for recipient.",
+                notification_id,
+            )
             return
 
         messaging = _firebase_messaging()
         if messaging is None:
-            logger.info(
+            logger.warning(
                 "Push delivery skipped for notification %s: Firebase credentials are not configured.",
                 notification_id,
             )
@@ -74,18 +88,29 @@ def send_notification_push(notification_id):
         target_url = notification.url or "/"
         for device in devices:
             try:
-                messaging.send(
-                    messaging.Message(
-                        notification=messaging.Notification(title=title, body=body),
-                        data={
-                            "notification_id": str(notification.pk),
-                            "url": str(target_url)[:500],
-                            "title": title,
-                            "message": body,
-                        },
-                        token=device.token,
-                    )
+                message = messaging.Message(
+                    notification=messaging.Notification(title=title, body=body),
+                    data={
+                        "notification_id": str(notification.pk),
+                        "url": str(target_url)[:500],
+                        "title": title,
+                        "message": body,
+                    },
+                    android=messaging.AndroidConfig(
+                        priority="high",
+                        notification=messaging.AndroidNotification(
+                            channel_id="maamara_updates",
+                            sound="default",
+                        ),
+                    ),
+                    apns=messaging.APNSConfig(
+                        payload=messaging.APNSPayload(
+                            aps=messaging.Aps(sound="default"),
+                        ),
+                    ),
+                    token=device.token,
                 )
+                messaging.send(message)
             except Exception as error:
                 error_code = getattr(error, "code", "")
                 error_text = str(error).lower()
