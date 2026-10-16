@@ -449,7 +449,7 @@ class SearchEvent(models.Model):
 
 
 class PushDevice(models.Model):
-    """A registered native/browser push token belonging to one authenticated account."""
+    """A push token owned by either a registered account or an identified visitor."""
 
     PLATFORM_CHOICES = [
         ("android", "Android"),
@@ -461,7 +461,10 @@ class PushDevice(models.Model):
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
         related_name="push_devices",
+        null=True,
+        blank=True,
     )
+    visitor_id = models.CharField(max_length=64, null=True, blank=True, db_index=True)
     token = models.TextField(unique=True)
     platform = models.CharField(max_length=10, choices=PLATFORM_CHOICES)
     active = models.BooleanField(default=True)
@@ -472,10 +475,12 @@ class PushDevice(models.Model):
     class Meta:
         indexes = [
             models.Index(fields=["user", "active"]),
+            models.Index(fields=["visitor_id", "active"]),
         ]
 
     def __str__(self):
-        return f"Push device {self.pk} ({self.platform}) for user {self.user_id}"
+        owner = f"user {self.user_id}" if self.user_id else f"visitor {self.visitor_id}"
+        return f"Push device {self.pk} ({self.platform}) for {owner}"
 
 
 class AboutPage(models.Model):
