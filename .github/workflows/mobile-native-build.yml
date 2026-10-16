@@ -561,30 +561,33 @@ jobs:
         working-directory: ${{ env.FRONTEND_DIR }}
         run: |
           python3 -m venv /tmp/maamara-icon-venv
-          /tmp/maamara-icon-venv/bin/pip install --quiet cairosvg
+          /tmp/maamara-icon-venv/bin/pip install --quiet pillow
           python3 - <<'PY'
           import json
           from pathlib import Path
-          import subprocess
+          from PIL import Image, ImageDraw
 
-          svg = """<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
-            <rect width="1024" height="1024" fill="#173C76"/>
-            <path d="M145 675 V430 C145 300 275 300 275 430 V675 M275 430 C275 300 405 300 405 430 V675
-                     M335 675 V430 C335 300 465 300 465 430 V675 M465 430 C465 300 595 300 595 430 V675
-                     M525 675 V430 C525 300 655 300 655 430 V675 M655 430 C655 300 785 300 785 430 V675
-"
-                  fill="none" stroke="#FFFFFF" stroke-width="30" stroke-linecap="round" stroke-linejoin="round"/>
-          </svg>"""
+          size = 1024
+          image = Image.new("RGB", (size, size), "#173C76")
+          draw = ImageDraw.Draw(image)
+          points = [(150, 690), (150, 435)]
+          # Six connected rounded arches form three lowercase m letters.
+          for index in range(6):
+              x0 = 150 + index * 120
+              x1 = x0 + 120
+              for step in range(1, 41):
+                  t = step / 40
+                  one_minus = 1 - t
+                  x = one_minus**3 * x0 + 3 * one_minus**2 * t * x0 + 3 * one_minus * t**2 * x1 + t**3 * x1
+                  y = one_minus**3 * 435 + 3 * one_minus**2 * t * 300 + 3 * one_minus * t**2 * 300 + t**3 * 435
+                  points.append((round(x), round(y)))
+              points.append((x1, 690))
+              if index < 5:
+                  points.append((x1, 435))
+          draw.line(points, fill="#FFFFFF", width=30, joint="curve")
           icon_dir = Path("ios/App/App/Assets.xcassets/AppIcon.appiconset")
           icon_dir.mkdir(parents=True, exist_ok=True)
-          svg_path = Path("/tmp/maamara-app-icon.svg")
-          png_path = icon_dir / "AppIcon-1024.png"
-          svg_path.write_text(svg)
-          subprocess.run([
-              "/tmp/maamara-icon-venv/bin/python", "-c",
-              "import cairosvg,sys; cairosvg.svg2png(url=sys.argv[1],write_to=sys.argv[2],output_width=1024,output_height=1024)",
-              str(svg_path), str(png_path)
-          ], check=True)
+          image.save(icon_dir / "AppIcon-1024.png", format="PNG")
           (icon_dir / "Contents.json").write_text(json.dumps({
               "images": [{
                   "filename": "AppIcon-1024.png",
