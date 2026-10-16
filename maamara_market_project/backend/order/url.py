@@ -10,6 +10,7 @@ from .Mpesa.mpesaUtils import (
 )
 from .dashboardSummery import DashboardSummaryView
 from .orderStat import (
+    vendor_all_order_items,
     vendor_completed_order_items,
     vendor_pending_order_items,
     vendor_pending_orders,
@@ -76,6 +77,9 @@ urlpatterns = [
 
     # Customer return history (scoped to the authenticated user or visitor cookie)
     path("api/returns/my/", get_my_return_requests_api, name="my-return-requests"),
+
+    # Vendor export includes pending, paid, processing, shipped and completed order lines.
+    path("api/vendor-order-items/", vendor_all_order_items, name="vendor-all-order-items"),
 
     # Returns / refunds
     path(
