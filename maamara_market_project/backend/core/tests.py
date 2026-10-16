@@ -273,6 +273,7 @@ class PushDeviceVisitorRegistrationTests(TestCase):
         )
         fake_messaging = MagicMock()
         fake_messaging.Message.side_effect = lambda **kwargs: SimpleNamespace(**kwargs)
+        fake_messaging.Notification.side_effect = lambda **kwargs: SimpleNamespace(**kwargs)
 
         with patch("core.push_notifications._firebase_messaging", return_value=fake_messaging):
             send_notification_push(notification.pk)
