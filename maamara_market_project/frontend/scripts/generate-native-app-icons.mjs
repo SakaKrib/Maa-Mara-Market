@@ -20,14 +20,25 @@ if (platform === "android") {
     const dir = path.join(res, `mipmap-${density}`);
     await fs.mkdir(dir, { recursive: true });
     const png = await sharp(svg).resize(size, size).png().toBuffer();
+    const inset = Math.round(size * 0.16);
+    const roundPadded = await sharp({
+      create: { width: size, height: size, channels: 4, background: { r: 255, g: 255, b: 255, alpha: 1 } }
+    }).composite([{
+      input: await sharp(svg).resize(size - inset * 2, size - inset * 2).png().toBuffer(),
+      left: inset,
+      top: inset
+    }]).png().toBuffer();
     await fs.writeFile(path.join(dir, "ic_launcher.png"), png);
-    await fs.writeFile(path.join(dir, "ic_launcher_round.png"), png);
+    await fs.writeFile(path.join(dir, "ic_launcher_round.png"), roundPadded);
   }
   const drawable = path.join(res, "drawable");
   await fs.mkdir(drawable, { recursive: true });
+  const adaptiveArtwork = await sharp(svg).resize(700, 700).png().toBuffer();
   await fs.writeFile(
     path.join(drawable, "ic_launcher_foreground.png"),
-    await sharp(svg).resize(432, 432).png().toBuffer()
+    await sharp({
+      create: { width: 1024, height: 1024, channels: 4, background: { r: 255, g: 255, b: 255, alpha: 0 } }
+    }).composite([{ input: adaptiveArtwork, left: 162, top: 162 }]).png().toBuffer()
   );
   const adaptive = path.join(res, "mipmap-anydpi-v26");
   await fs.mkdir(adaptive, { recursive: true });
