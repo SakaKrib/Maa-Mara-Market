@@ -205,7 +205,7 @@ jobs:
           metadata = '<meta-data android:name="com.google.firebase.messaging.default_notification_icon" android:resource="@drawable/ic_stat_maamara" />'
           metadata_name = 'android:name="com.google.firebase.messaging.default_notification_icon"'
           if metadata_name in source:
-              pattern = re.compile(r'<meta-data\\b(?=[^>]*android:name="com\\.google\\.firebase\\.messaging\\.default_notification_icon")[^>]*/>')
+              pattern = re.compile(r'<meta-data\b(?=[^>]*android:name="com\.google\.firebase\.messaging\.default_notification_icon")[^>]*/>')
               source, count = pattern.subn(metadata, source, count=1)
               if count != 1:
                   raise SystemExit("Could not safely update the existing Firebase notification icon metadata")
