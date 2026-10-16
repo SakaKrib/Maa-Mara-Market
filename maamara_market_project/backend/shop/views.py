@@ -851,6 +851,11 @@ class WishlistAPIView(APIView):
         else:
             visitor_id = request.COOKIES.get("visitorId")
             if not visitor_id:
+                if request.method == "GET":
+                    visitor_id = request.query_params.get("visitor_id")
+                else:
+                    visitor_id = request.data.get("visitor_id")
+            if not visitor_id:
                 visitor_id = str(uuid.uuid4())
             return {
                 "user": None,
@@ -922,11 +927,22 @@ class WishlistAPIView(APIView):
             # "A customer ..." for other audiences.
             ActivityLog.objects.create(
                 user=actor["user"],
+                visitor_id=actor["visitor_id"],
                 actor_type=actor["actor_type"],
                 action="item_added_to_wishlist",
                 item=item,
                 description=f"A customer added {item.name} to their wishlist.",
                 related_url=f"/item/{item.id}/"
+            )
+
+            # Persist feedback for the actor too, so registered customers and
+            # visitors use the same in-app and native push notification pipeline.
+            Notification.objects.create(
+                user=actor["user"],
+                visitor_id=actor["visitor_id"],
+                title="Added to wishlist",
+                message=f"You added {item.name} to your wishlist.",
+                url="/wishlist",
             )
 
             # Vendor notification is created once by the ActivityLog signal above.
