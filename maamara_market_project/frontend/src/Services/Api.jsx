@@ -68,6 +68,16 @@ export const resolveApiAssetUrl = (value) => {
 
 const api = axios.create({ baseURL, withCredentials: true });
 
+// Visitor identity is held in memory from /api/vistor-token/ so native WebViews
+// can pass it explicitly to visitor-aware endpoints when cross-site cookies are
+// withheld by the platform. It is never persisted in browser storage.
+let visitorIdentity = "";
+export const setVisitorIdentity = (value) => {
+  visitorIdentity = typeof value === "string" ? value : "";
+};
+export const getVisitorIdentity = () => visitorIdentity;
+
+
 // Start Google OAuth with a CSRF-protected POST. Keep the origin and URL
 // construction here so auth components do not duplicate API/base-URL logic.
 export const startGoogleLogin = async () => {
