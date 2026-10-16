@@ -487,6 +487,9 @@ function App() {
     };
   }, []);
 
+  // Install native push listeners once per app lifecycle. Do not tear them
+  // down and recreate them on login/logout: doing so can race the FCM
+  // registration callback and leave the app without an active token listener.
   useEffect(() => {
     if (!visitorReady || authLoading || !Capacitor.isNativePlatform()) return undefined;
     if (
@@ -496,16 +499,13 @@ function App() {
 
     let active = true;
     let cleanup;
-    const activeVisitorId = isAuthenticated ? "" : visitorId;
-    setupNativePushNotifications(activeVisitorId)
+    setupNativePushNotifications("")
       .then(async (removeListeners) => {
         if (!active) {
           await removeListeners?.();
           return;
         }
         cleanup = removeListeners;
-        // Rebind an existing token after visitor identity or login state changes.
-        await registerCurrentNativePushDevice(activeVisitorId);
       })
       .catch((error) => {
         console.warn("Native push setup failed:", error);
@@ -515,6 +515,20 @@ function App() {
       active = false;
       cleanup?.();
     };
+  }, [visitorReady, authLoading]);
+
+  // Rebind the same FCM token whenever the authenticated account or visitor
+  // identity changes. The backend decides ownership from the authenticated
+  // request; the visitor ID is supplied only for anonymous visitor devices.
+  useEffect(() => {
+    if (!visitorReady || authLoading || !Capacitor.isNativePlatform()) return;
+    if (
+      typeof window !== "undefined" &&
+      window.localStorage.getItem("maamara-push-notifications-enabled") === "false"
+    ) return;
+
+    const activeVisitorId = isAuthenticated ? "" : visitorId;
+    void registerCurrentNativePushDevice(activeVisitorId);
   }, [visitorReady, visitorId, authLoading, isAuthenticated, user?.id]);
 
   if (!visitorReady) {
