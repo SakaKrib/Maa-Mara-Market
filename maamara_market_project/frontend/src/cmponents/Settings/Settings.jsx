@@ -9,6 +9,10 @@ const Settings = () => {
   const navigate = useNavigate();
   const { user, refreshAuth, logout } = useAuth();
   const { preferences, updatePreference, resetPreferences } = useAdminPreferences();
+  const isNativeApp =
+    typeof window !== "undefined" &&
+    window.Capacitor?.isNativePlatform?.() === true;
+  const nativePushConfigured = import.meta.env.VITE_NATIVE_PUSH_ENABLED === "true";
   const [showSignOutConfirm, setShowSignOutConfirm] = useState(false);
   const [profile, setProfile] = useState({
     first_name: "",
@@ -258,15 +262,17 @@ const Settings = () => {
                 <div className="mb-3 flex items-center justify-between">
                   <div>
                     <h2 className="text-sm font-semibold text-card-foreground">Workspace preferences</h2>
-                    <p className="mt-1 text-xs text-muted-foreground">Saved for this browser and applied immediately.</p>
+                    <p className="mt-1 text-xs text-muted-foreground">{isNativeApp ? "Saved on this device. System notification permissions are managed by your phone." : "Saved for this browser and applied immediately."}</p>
                   </div>
                   <Monitor size={19} className="text-primary" />
                 </div>
                 <div className="space-y-2">
                   {[
-                    ["notifications", "Admin notifications", "Show notification feedback in the workspace.", Bell],
+                    ["notifications", isNativeApp ? "App notifications" : "Admin notifications", isNativeApp ? "Show updates inside the app and enable push registration for this device." : "Show notification feedback in the workspace.", Bell],
                     ["compactMode", "Compact workspace", "Use a tighter layout where supported.", Monitor],
-                    ["browserAlerts", "Browser alerts", "Allow browser notification preferences when supported.", Globe2],
+                    ...(!isNativeApp
+                      ? [["browserAlerts", "Browser alerts", "Allow browser notification preferences when supported.", Globe2]]
+                      : []),
                   ].map(([key, title, description, Icon]) => (
                     <button key={key} type="button" onClick={() => updatePreference(key, !preferences[key])} className={`flex w-full items-center gap-3 rounded-xl border border-border p-3 text-left transition ${preferences[key] ? "bg-muted/80" : "bg-card"} hover:bg-muted`}>
                       <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${preferences[key] ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground"}`}><Icon size={17} /></div>
@@ -274,6 +280,20 @@ const Settings = () => {
                       <span className={`h-5 w-9 rounded-full p-0.5 transition ${preferences[key] ? "bg-primary" : "bg-muted"}`}><span className={`block h-4 w-4 rounded-full bg-white shadow transition ${preferences[key] ? "translate-x-4" : ""}`} /></span>
                     </button>
                   ))}
+                  {isNativeApp && (
+                    <div className="flex items-start gap-3 rounded-xl border border-primary/15 bg-primary/5 p-3">
+                      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-background text-primary">
+                        <Bell size={16} />
+                      </div>
+                      <span className="min-w-0 flex-1">
+                        <strong className="block text-sm text-card-foreground">{nativePushConfigured ? "Phone notifications" : "Push notifications unavailable in this build"}</strong>
+                        <small className="mt-0.5 block text-xs leading-5 text-muted-foreground">
+                          {nativePushConfigured ? "Allow notifications in your phone settings to receive banners, lock-screen alerts and status-bar icons. Your device controls how they appear." : "This build has push registration disabled. Admin updates still appear inside the app."}
+                        </small>
+                      </span>
+                      <span className="shrink-0 rounded-full bg-background px-2 py-1 text-[10px] font-semibold text-muted-foreground">{nativePushConfigured ? "Enabled" : "Unavailable"}</span>
+                    </div>
+                  )}
                 </div>
                 <button type="button" onClick={restoreDefaults} className="mt-4 inline-flex items-center gap-2 text-xs font-semibold text-muted-foreground hover:text-foreground"><RefreshCw size={14} /> Restore defaults</button>
               </div>
