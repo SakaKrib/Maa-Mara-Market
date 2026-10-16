@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { IonIcon } from "@ionic/react";
 import { megaphoneOutline, refreshOutline } from "ionicons/icons";
 import api from "../../../Services/Api";
+import AppSnackbar from "../../../../components/ui/app-snackbar";
 
 const POLL_INTERVAL = 10000;
 
@@ -56,19 +57,7 @@ export default function AdminBannerApprovalPage({ onCountChange }) {
 
   return (
     <>
-      {snackbar.open && (
-        <div className="fixed right-4 top-20 z-[1400] max-w-sm rounded-[20px] border border-gray-300 bg-card px-4 py-3 text-sm font-semibold text-card-foreground shadow-lg">
-          {snackbar.message}
-          <button
-            type="button"
-            onClick={() => setSnackbar((prev) => ({ ...prev, open: false }))}
-            className="ml-3 text-xs text-muted-foreground hover:text-card-foreground"
-            aria-label="Dismiss notification"
-          >
-            ×
-          </button>
-        </div>
-      )}
+      <AppSnackbar open={snackbar.open} message={snackbar.message} severity={snackbar.severity} onClose={() => setSnackbar((prev) => ({ ...prev, open: false }))} />
 
       <div className="min-h-[calc(100vh-72px)] w-full bg-background text-foreground">
         <div className="mx-auto w-full max-w-6xl px-4 py-6 sm:px-6 lg:px-8">

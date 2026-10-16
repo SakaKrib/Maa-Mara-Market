@@ -16,6 +16,7 @@ import MonetizationOnIcon from "@mui/icons-material/MonetizationOn";
 import PersonIcon from "@mui/icons-material/Person";
 import NotesIcon from "@mui/icons-material/Notes";
 import Inventory2Icon from "@mui/icons-material/Inventory2";
+import AppSnackbar from "../../../components/ui/app-snackbar";
 
 
 const AdminPriceApproval = ({ onCountChange }) => {
@@ -122,12 +123,7 @@ const AdminPriceApproval = ({ onCountChange }) => {
 
   return (
     <>
-      {snackbar.open && (
-        <div className="fixed right-4 top-20 z-[1400] max-w-sm rounded-[20px] border border-gray-300 bg-card px-4 py-3 text-sm font-semibold text-card-foreground shadow-lg">
-          {snackbar.message}
-          <button type="button" onClick={() => setSnackbar((prev) => ({ ...prev, open: false }))} className="ml-3 text-xs text-muted-foreground hover:text-card-foreground" aria-label="Dismiss notification">×</button>
-        </div>
-      )}
+      <AppSnackbar open={snackbar.open} message={snackbar.message} severity={snackbar.severity} onClose={() => setSnackbar((prev) => ({ ...prev, open: false }))} />
       <div className="min-w-0 space-y-4">
       <section className="rounded-2xl border border-border bg-card p-4 shadow-sm sm:p-5">
         <div className="flex items-start gap-3">

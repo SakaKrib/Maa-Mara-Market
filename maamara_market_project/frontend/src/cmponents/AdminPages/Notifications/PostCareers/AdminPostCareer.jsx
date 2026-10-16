@@ -4,6 +4,7 @@ import { Briefcase, Check, Edit3, Eye, Plus, Trash2, Users, X } from "lucide-rea
 import api from "../../../../Services/Api";
 import RichTextEditor from "../../../../cmponents/RichTextEditor/RichTextEdit";
 import NativeAwareSelect from "../../../../components/NativeAwareSelect";
+import AppSnackbar from "../../../../../components/ui/app-snackbar";
 
 const emptyForm = {
   title: "", department: "", location: "", employment_type: "full_time",
@@ -121,7 +122,7 @@ const AdminPostCareer = ({ open = true, onClose }) => {
         <button className={tab === "editor" ? "active" : ""} onClick={() => setTab("editor")}><Edit3 size={16}/> {editingId ? "Edit position" : "Create position"}</button>
       </div>
 
-      {snackbar.open && <div className="fixed right-4 top-20 z-[1400] max-w-sm rounded-[20px] border border-gray-300 bg-card px-4 py-3 text-sm font-semibold text-card-foreground shadow-lg">{snackbar.message}<button type="button" onClick={() => setSnackbar((prev) => ({ ...prev, open: false }))} className="ml-3 text-xs text-muted-foreground hover:text-card-foreground" aria-label="Dismiss notification">×</button></div>}
+      <AppSnackbar open={snackbar.open} message={snackbar.message} severity={snackbar.severity} onClose={() => setSnackbar((prev) => ({ ...prev, open: false }))} />
 
       {tab === "jobs" && (
         <div className="mm-admin-career-list">

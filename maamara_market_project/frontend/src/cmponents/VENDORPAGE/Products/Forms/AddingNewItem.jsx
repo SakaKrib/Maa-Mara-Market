@@ -22,6 +22,7 @@ import useItemDraftAutosave from "./useItemDraftAutosave";
 import VideoTrimmer from "./VideoTrimmer";
 import ItemAiButton from "./ItemAiButton";
 import { useAuth } from "../../../Auth/AuthContext/Context";
+import AppSnackbar from "../../../../../components/ui/app-snackbar";
 
 // Sizes
 const MAX_ITEM_IMAGES = 10;
@@ -4244,31 +4245,12 @@ const ItemAddNew = ({
      )}
    />
 
-            {submissionStatus.message && (
-              <div
-                role={submissionStatus.type === "error" ? "alert" : "status"}
-                aria-live={submissionStatus.type === "error" ? "assertive" : "polite"}
-                className={`fixed right-4 top-20 z-[1400] max-w-sm rounded-[20px] border px-4 py-3 text-sm font-semibold shadow-lg ${
-                  submissionStatus.type === "error"
-                    ? "border-red-200 bg-red-50 text-red-700"
-                    : "border-gray-300 bg-card text-card-foreground"
-                }`}
-              >
-                {submissionStatus.message}
-                <button
-                  type="button"
-                  onClick={() => setSubmissionStatus({ type: "", message: "" })}
-                  className={`ml-3 text-xs ${
-                    submissionStatus.type === "error"
-                      ? "text-red-600 hover:text-red-800"
-                      : "text-muted-foreground hover:text-card-foreground"
-                  }`}
-                  aria-label="Dismiss notification"
-                >
-                  ×
-                </button>
-              </div>
-            )}
+            <AppSnackbar
+              open={Boolean(submissionStatus.message)}
+              message={submissionStatus.message}
+              severity={submissionStatus.type}
+              onClose={() => setSubmissionStatus({ type: "", message: "" })}
+            />
 
             {successModal && (
               <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/60 p-4">

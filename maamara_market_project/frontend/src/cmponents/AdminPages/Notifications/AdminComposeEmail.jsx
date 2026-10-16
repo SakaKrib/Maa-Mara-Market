@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
 import {
-  Alert,
   Box,
   Button,
   CircularProgress,
@@ -9,7 +8,6 @@ import {
   DialogContent,
   DialogTitle,
   IconButton,
-  Snackbar,
   Stack,
   TextField,
   Typography,
@@ -18,6 +16,7 @@ import CloseIcon from "@mui/icons-material/Close";
 import AttachFileIcon from "@mui/icons-material/AttachFile";
 import { useSendEmail } from "../../Hooks/Emails/EmailSending";
 import api from "../../../Services/Api";
+import AppSnackbar from "../../../../components/ui/app-snackbar";
 
 const emptyForm = { to: "", subject: "", message: "" };
 
@@ -128,9 +127,7 @@ const ComposeEmail = ({ open, onClose, user = null }) => {
           </DialogActions>
         </Box>
       </Dialog>
-      <Snackbar open={notice.open} autoHideDuration={5000} onClose={() => setNotice((previous) => ({ ...previous, open: false }))} anchorOrigin={{ vertical: "top", horizontal: "right" }}>
-        <Alert severity={notice.severity} variant="filled" onClose={() => setNotice((previous) => ({ ...previous, open: false }))}>{notice.message}</Alert>
-      </Snackbar>
+      <AppSnackbar open={notice.open} message={notice.message} severity={notice.severity} onClose={() => setNotice((previous) => ({ ...previous, open: false }))} autoHideDuration={5000} />
     </>
   );
 };

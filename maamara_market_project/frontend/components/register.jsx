@@ -7,9 +7,8 @@ import { Label } from "./ui/label"
 import api, { startGoogleLogin } from "../src/Services/Api";
 import { useNavigate } from "react-router-dom";
 import Maamara from "../src/assets/Logo/Maamara.jpg";
-import Snackbar from '@mui/material/Snackbar'
-import Alert from '@mui/material/Alert'
 import { Eye, EyeOff } from "lucide-react"
+import AppSnackbar from "./ui/app-snackbar";
 
 
 
@@ -214,22 +213,7 @@ const RegistrationForm = () => {
         </Card>
 
         {/* MUI Snackbar */}
-        <Snackbar
-          open={snackbar.open}
-          autoHideDuration={6000}
-          onClose={handleSnackbarClose}
-          anchorOrigin={{ vertical: "top", horizontal: "right" }}
-        >
-          <Alert
-            onClose={handleSnackbarClose}
-            severity={snackbar.severity}
-            sx={{ width: "100%" }}
-            elevation={6}
-            variant="filled"
-          >
-            {snackbar.message}
-          </Alert>
-        </Snackbar>
+        <AppSnackbar open={snackbar.open} message={snackbar.message} severity={snackbar.severity} onClose={handleSnackbarClose} autoHideDuration={6000} />
       </div>
     </>
   )

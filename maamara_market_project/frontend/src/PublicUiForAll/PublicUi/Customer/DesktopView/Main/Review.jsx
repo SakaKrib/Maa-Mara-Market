@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import api from "../../../../../Services/Api";
 import Avatar from "@mui/material/Avatar";
 import NativeAwareSelect from "../../../../../components/NativeAwareSelect";
+import AppSnackbar from "../../../../../../components/ui/app-snackbar";
 
 // MUI Alert wrapper
 const ReviewSection = ({ item }) => {
@@ -71,12 +72,7 @@ const ReviewSection = ({ item }) => {
 
   return (
     <div className="mt-12 space-y-6">
-      {snackbar.open && (
-        <div className="fixed right-4 top-20 z-[1400] max-w-sm rounded-[20px] border border-gray-300 bg-card px-4 py-3 text-sm font-semibold text-card-foreground shadow-lg">
-          {snackbar.message}
-          <button type="button" onClick={handleSnackbarClose} className="ml-3 text-xs text-muted-foreground hover:text-card-foreground" aria-label="Dismiss notification">×</button>
-        </div>
-      )}
+      <AppSnackbar open={snackbar.open} message={snackbar.message} severity={snackbar.severity} onClose={handleSnackbarClose} />
 
       <section className="rounded-2xl border border-border bg-card p-4 shadow-custom sm:p-5">
         <div className="flex flex-wrap items-center justify-between gap-3">

@@ -5,6 +5,7 @@ import { Button } from "../../../../../../../components/ui/button";
 import { Download, Loader2, PackageCheck, UploadCloud, Undo2 } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 import NativeAwareSelect from "../../../../../../components/NativeAwareSelect";
+import AppSnackbar from "../../../../../../../components/ui/app-snackbar";
 
 const reasonOptions = [
   { value: "damaged", label: "The item was delivered broken." },
@@ -439,7 +440,7 @@ const RequestReturnForm = ({ selectedItem = null }) => {
         </section>
       </div>
 
-      {snackbar.open && (<div className="fixed right-4 top-20 z-[1400] max-w-sm rounded-[20px] border border-gray-300 bg-card px-4 py-3 text-sm font-semibold text-card-foreground shadow-lg">{snackbar.message}<button type="button" onClick={() => setSnackbar((previous) => ({ ...previous, open: false }))} className="ml-3 text-xs text-muted-foreground hover:text-card-foreground" aria-label="Dismiss notification">×</button></div>)}
+      <AppSnackbar open={snackbar.open} message={snackbar.message} severity={snackbar.severity} onClose={() => setSnackbar((previous) => ({ ...previous, open: false }))} />
     </main>
   );
 };

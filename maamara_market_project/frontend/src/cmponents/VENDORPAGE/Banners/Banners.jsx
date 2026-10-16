@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import NativeAwareSelect from "../../../components/NativeAwareSelect";
 import api from "../../../Services/Api";
 import { CircularProgress } from "@mui/material";
+import AppSnackbar from "../../../../components/ui/app-snackbar";
 
 const BANNER_COLORS = [
   { name: "Warm Ivory", value: "#f5f4f1", swatch: "bg-[#f5f4f1]" },
@@ -267,19 +268,7 @@ const BannerAdd = ({ items = [], onSave = () => {} }) => {
         </button>
       </form>
 
-      {snackbar.open && (
-        <div className="fixed right-4 top-20 z-[1400] max-w-sm rounded-[20px] border border-gray-300 bg-card px-4 py-3 text-sm font-semibold text-card-foreground shadow-lg">
-          {snackbar.message}
-          <button
-            type="button"
-            onClick={handleCloseSnackbar}
-            className="ml-3 text-xs text-muted-foreground hover:text-card-foreground"
-            aria-label="Dismiss notification"
-          >
-            ×
-          </button>
-        </div>
-      )}
+      <AppSnackbar open={snackbar.open} message={snackbar.message} severity={snackbar.severity} onClose={handleCloseSnackbar} />
     </div>
   );
 };
