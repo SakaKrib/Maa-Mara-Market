@@ -244,7 +244,7 @@ def update_account_view(request):
 @permission_classes([IsAuthenticatedOrVisitor])
 def user_visitor_notifications_view(request):
     """Return notifications for the signed-in user or current visitor."""
-    visitor_id = request.COOKIES.get("visitorId")
+    visitor_id = request.COOKIES.get("visitorId") or request.query_params.get("visitor_id")
     if request.user.is_authenticated:
         notifications = Notification.objects.filter(user=request.user)
     elif visitor_id:
@@ -274,7 +274,7 @@ def user_visitor_notifications_view(request):
 @permission_classes([IsAuthenticatedOrVisitor])
 def user_visitor_activity_view(request):
     """Return recent activity for the signed-in user or current visitor."""
-    visitor_id = request.COOKIES.get("visitorId")
+    visitor_id = request.COOKIES.get("visitorId") or request.query_params.get("visitor_id")
     if request.user.is_authenticated:
         activities = ActivityLog.objects.filter(user=request.user)
     elif visitor_id:
