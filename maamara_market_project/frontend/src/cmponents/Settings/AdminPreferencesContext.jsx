@@ -218,7 +218,10 @@ export const AdminPreferencesProvider = ({ children }) => {
           toastTimerRef.current = window.setTimeout(() => setToastNotification(null), 10000);
         }
 
-        if (preferences.browserAlerts) {
+        const isNativeApp =
+          typeof window !== "undefined" &&
+          window.Capacitor?.isNativePlatform?.() === true;
+        if (!isNativeApp && preferences.browserAlerts) {
           newNotifications
             .slice(0, 5)
             .forEach((item) => {
