@@ -171,7 +171,7 @@ if (platform === "android") {
     .png()
     .toBuffer();
 
-  await fs.writeFile(path.join(drawable, "ic_launcher_foreground.png"), foreground);
+  await fs.writeFile(path.join(drawable, "maamara_launcher_foreground.png"), foreground);
 
   // Dedicated Android small-notification icon. Android tints this asset, so use
   // a transparent canvas and three bold filled italic-M glyphs. Each glyph has
@@ -231,7 +231,7 @@ if (platform === "android") {
 
   const adaptive = path.join(res, "mipmap-anydpi-v26");
   await fs.mkdir(adaptive, { recursive: true });
-  const xml = `<?xml version="1.0" encoding="utf-8"?>\n<adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">\n    <background android:drawable="@color/ic_launcher_background" />\n    <foreground android:drawable="@drawable/ic_launcher_foreground" />\n</adaptive-icon>\n`;
+  const xml = `<?xml version="1.0" encoding="utf-8"?>\n<adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">\n    <background android:drawable="@color/ic_launcher_background" />\n    <foreground android:drawable="@drawable/maamara_launcher_foreground" />\n</adaptive-icon>\n`;
   await fs.writeFile(path.join(adaptive, "ic_launcher.xml"), xml);
   await fs.writeFile(path.join(adaptive, "ic_launcher_round.xml"), xml);
 
