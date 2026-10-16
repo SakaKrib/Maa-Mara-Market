@@ -18,6 +18,7 @@ from .paypalApis import get_customers, paypal_webhook
 from .returns import (
     approve_return_request_api,
     get_pending_returns_api,
+    get_my_return_requests_api,
     process_refund_api,
     return_request_handler_api,
 )
@@ -72,6 +73,9 @@ urlpatterns = [
 
     # invoices
     path("api/invoices/", invoice_list, name="invoice-list"),
+
+    # Customer return history (scoped to the authenticated user or visitor cookie)
+    path("api/returns/my/", get_my_return_requests_api, name="my-return-requests"),
 
     # Returns / refunds
     path(
