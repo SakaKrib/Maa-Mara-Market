@@ -45,7 +45,10 @@ const Settings = () => {
   useEffect(() => {
     const load = async () => {
       try {
-        const response = await api.get("/api/profile/");
+        // Use the same account response shape as the vendor settings page.
+        // /api/profile/ only returns the compact profile-picture serializer and
+        // does not expose the fields this form edits.
+        const response = await api.get("/api/user/account/", { withCredentials: true });
         const data = response.data || {};
         const account = data.user || {};
         const details = data.profile || {};
@@ -77,7 +80,9 @@ const Settings = () => {
     try {
       const body = new FormData();
       Object.entries(profile).forEach(([key, value]) => body.append(key, value || ""));
-      await api.patch("/api/profile/", Object.fromEntries(body.entries()));
+      // UpdateProfileView accepts multipart/form data via POST; ProfileView
+      // is read-only and a PATCH to /api/profile/ returns 405.
+      await api.post("/api/user/update/", body, { withCredentials: true });
       await refreshAuth();
       setMessage("Account details saved successfully.");
     } catch (err) {
