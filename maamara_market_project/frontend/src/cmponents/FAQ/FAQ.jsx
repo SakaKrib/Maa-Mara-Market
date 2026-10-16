@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { sanitizeRichText } from "../../utils/sanitizeRichText";
 import RichTextEditor from "../RichTextEditor/RichTextEdit";
 import api, { getWebSocketUrl } from "../../Services/Api";
+import AppSnackbar from "../../../components/ui/app-snackbar";
 
 const safeHtml = (value) => sanitizeRichText(value || "No answer yet.");
 
@@ -126,7 +127,7 @@ const FAQ = () => {
 
   return (
     <div className="min-h-full bg-background p-2 text-foreground sm:p-4 lg:p-6">
-      {snackbar.open && (<div className="fixed right-4 top-20 z-[1400] max-w-sm rounded-[20px] border border-gray-300 bg-card px-4 py-3 text-sm font-semibold text-card-foreground shadow-lg">{snackbar.message}<button type="button" onClick={() => setSnackbar((prev) => ({ ...prev, open: false }))} className="ml-3 text-xs text-muted-foreground hover:text-card-foreground" aria-label="Dismiss notification">×</button></div>)}
+      <AppSnackbar open={snackbar.open} message={snackbar.message} severity={snackbar.severity} onClose={() => setSnackbar((prev) => ({ ...prev, open: false }))} />
       <div className="mx-auto max-w-6xl">
         <header className="mb-5 rounded-2xl border border-border bg-card p-5 shadow-custom sm:p-6">
           <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">Content</p>

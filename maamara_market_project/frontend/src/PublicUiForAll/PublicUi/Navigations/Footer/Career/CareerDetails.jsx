@@ -3,6 +3,7 @@ import { ArrowLeft, Briefcase, CalendarDays, MapPin, Clock3, Upload, X } from "l
 import { useNavigate, useParams } from "react-router-dom";
 import { sanitizeRichText } from "../../../../../utils/sanitizeRichText";
 import api from "../../../../../Services/Api";
+import AppSnackbar from "../../../../../../components/ui/app-snackbar";
 
 const CareerDetails = () => {
   const { id } = useParams();
@@ -59,7 +60,7 @@ const CareerDetails = () => {
 
   return (
     <main className="mm-careers-page">
-      {snackbar.open && (<div className="fixed right-4 top-20 z-[1400] max-w-sm rounded-[20px] border border-gray-300 bg-card px-4 py-3 text-sm font-semibold text-card-foreground shadow-lg">{snackbar.message}<button type="button" onClick={() => setSnackbar((prev) => ({ ...prev, open: false }))} className="ml-3 text-xs text-muted-foreground hover:text-card-foreground" aria-label="Dismiss notification">×</button></div>)}
+      <AppSnackbar open={snackbar.open} message={snackbar.message} severity={snackbar.severity} onClose={() => setSnackbar((prev) => ({ ...prev, open: false }))} />
       <section className="mm-careers-detail-hero">
         <div className="mm-careers-container">
           <button type="button" className="mm-careers-back" onClick={() => navigate("/careers/jobs")}><ArrowLeft size={16} /> All careers</button>

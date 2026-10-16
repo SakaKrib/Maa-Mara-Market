@@ -7,6 +7,7 @@ import ItemAddNew from "../Forms/AddingNewItem";
 import { useVendor } from "../vendorhooks";
 import BannerAdd from "../../Banners/Banners";
 import CreateBlog from "../../Blogs/BlogCreate";
+import AppSnackbar from "../../../../../components/ui/app-snackbar";
 
 const truncateWords = (text, numWords) => {
   if (!text) return "";
@@ -390,19 +391,7 @@ const VendorItems = () => {
         </div>
       </section>
 
-      {snack.open && (
-        <div className="fixed right-4 top-20 z-[1400] max-w-sm rounded-full border border-border bg-card px-4 py-3 text-sm font-semibold text-card-foreground shadow-lg">
-          {snack.message}
-          <button
-            type="button"
-            onClick={() => setSnack((prev) => ({ ...prev, open: false }))}
-            className="ml-3 text-xs text-muted-foreground hover:text-card-foreground"
-            aria-label="Dismiss notification"
-          >
-            ×
-          </button>
-        </div>
-      )}
+      <AppSnackbar open={snack.open} message={snack.message} severity={snack.severity} onClose={() => setSnack((prev) => ({ ...prev, open: false }))} />
     </section>
   );
 };

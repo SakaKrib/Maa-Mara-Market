@@ -12,6 +12,7 @@ import { tokens } from "../../../../theme";
 import MpesaLogo from "../../../../assets/partnaship/mpesaLogo.png";
 import api, { getWebSocketUrl } from "../../../../Services/Api";
 import "../payout-workflows.css";
+import AppSnackbar from "../../../../../components/ui/app-snackbar";
 
 export default function MpesaB2CPayment({ onSuccess }) {
   const location = useLocation();
@@ -118,19 +119,7 @@ export default function MpesaB2CPayment({ onSuccess }) {
 
   return (
     <>
-      {snackbar.open && (
-        <div className="mm-payout-notice">
-          {snackbar.message}
-          <button
-            type="button"
-            onClick={() => setSnackbar((prev) => ({ ...prev, open: false }))}
-            className="mm-payout-notice-dismiss"
-            aria-label="Dismiss notification"
-          >
-            ×
-          </button>
-        </div>
-      )}
+      <AppSnackbar open={snackbar.open} message={snackbar.message} severity={snackbar.severity} onClose={() => setSnackbar((prev) => ({ ...prev, open: false }))} />
 
     <Box sx={{ p: 2, mt: -3 }}>
       <Box

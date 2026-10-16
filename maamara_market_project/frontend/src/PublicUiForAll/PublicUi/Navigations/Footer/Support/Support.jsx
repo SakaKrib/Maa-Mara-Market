@@ -5,6 +5,7 @@ import { Link } from "react-router-dom";
 import api from "../../../../../Services/Api";
 import { useAuth } from "../../../../../cmponents/Auth/AuthContext/Context";
 import NativeAwareSelect from "../../../../../components/NativeAwareSelect";
+import AppSnackbar from "../../../../../../components/ui/app-snackbar";
 
 const SUPPORT_ISSUES = [
   ["accounts", "Accounts"],
@@ -149,7 +150,7 @@ const Support = () => {
   if (sent) {
     return (
       <>
-        {snackbar.open && (<div className="fixed right-4 top-20 z-[1400] max-w-sm rounded-[20px] border border-gray-300 bg-card px-4 py-3 text-sm font-semibold text-card-foreground shadow-lg">{snackbar.message}<button type="button" onClick={() => setSnackbar((prev) => ({ ...prev, open: false }))} className="ml-3 text-xs text-muted-foreground hover:text-card-foreground" aria-label="Dismiss notification">×</button></div>)}
+        <AppSnackbar open={snackbar.open} message={snackbar.message} severity={snackbar.severity} onClose={() => setSnackbar((prev) => ({ ...prev, open: false }))} />
         <main className="min-h-[60vh] bg-background px-4 py-10 text-foreground sm:px-6 lg:px-8">
           <div className="mx-auto max-w-2xl rounded-2xl border border-border bg-card p-8 text-center shadow-sm sm:p-12">
             <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-primary/10 text-primary">

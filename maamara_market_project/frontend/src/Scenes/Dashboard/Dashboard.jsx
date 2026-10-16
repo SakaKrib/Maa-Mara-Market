@@ -475,6 +475,7 @@ const Dashboard = () => {
     } catch (error) {
       toast({
         title: "Export failed",
+        variant: "destructive",
         description: error?.response?.data?.detail || error?.response?.data?.error || error?.message || "We couldn't prepare this report. Please try again.",
         duration: 6000,
       });

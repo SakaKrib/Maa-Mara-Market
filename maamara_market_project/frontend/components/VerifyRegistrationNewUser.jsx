@@ -2,11 +2,10 @@ import React from "react";
 import { useEffect, useState } from "react"
 import { useNavigate, useSearchParams } from "react-router-dom"
 import { InputOTP, InputOTPGroup, InputOTPSlot, InputOTPSeparator } from "./ui/input-otp"
-import Snackbar from "@mui/material/Snackbar"
-import Alert from "@mui/material/Alert"
 import { Button } from "./ui/button"
 import Maamara from "../src/assets/Logo/Maamara.jpg"
 import api from "../src/Services/Api"
+import AppSnackbar from "./ui/app-snackbar";
 
 const getCookie = (name) => {
   const value = `; ${document.cookie}`
@@ -238,22 +237,7 @@ const VerifyRegistrationNewUser = () => {
           </Button>
         </div>
 
-        <Snackbar
-          open={snackbar.open}
-          autoHideDuration={6000}
-          onClose={() => setSnackbar((prev) => ({ ...prev, open: false }))}
-          anchorOrigin={{ vertical: "top", horizontal: "right" }}
-        >
-          <Alert
-            onClose={() => setSnackbar((prev) => ({ ...prev, open: false }))}
-            severity={snackbar.severity}
-            sx={{ width: "100%" }}
-            elevation={6}
-            variant="filled"
-          >
-            {snackbar.message}
-          </Alert>
-        </Snackbar>
+        <AppSnackbar open={snackbar.open} message={snackbar.message} severity={snackbar.severity} onClose={() => setSnackbar((prev) => ({ ...prev, open: false }))} autoHideDuration={6000} />
       </div>
     </div>
   )

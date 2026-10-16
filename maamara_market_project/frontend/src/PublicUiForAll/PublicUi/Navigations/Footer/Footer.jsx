@@ -16,8 +16,7 @@ import FedEx from "../../../../../src/assets/partnaship/fedex.png";
 import WellsFargo from "../../../../../src/assets/partnaship/wellfargo.jpeg";
 import { useAuth } from "../../../../cmponents/Auth/AuthContext/Context";
 import api from "../../../../Services/Api";
-import Snackbar from "@mui/material/Snackbar";
-import Alert from "@mui/material/Alert";
+import AppSnackbar from "../../../../../components/ui/app-snackbar";
 import "./footer.css";
 
 const Footer = () => {
@@ -180,12 +179,7 @@ const Footer = () => {
         </div>
       </div>
 
-      <Snackbar open={snackbar.open} autoHideDuration={3000} onClose={handleSnackbarClose}
-        anchorOrigin={{ vertical: "top", horizontal: "right" }}>
-        <Alert onClose={handleSnackbarClose} severity={snackbar.severity} sx={{ width: "100%" }} elevation={6} variant="filled">
-          {snackbar.message}
-        </Alert>
-      </Snackbar>
+      <AppSnackbar open={snackbar.open} message={snackbar.message} severity={snackbar.severity} onClose={handleSnackbarClose} autoHideDuration={3000} />
     </footer>
   );
 };

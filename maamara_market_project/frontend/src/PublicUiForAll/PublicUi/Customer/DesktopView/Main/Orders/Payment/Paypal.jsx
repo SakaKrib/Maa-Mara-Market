@@ -3,6 +3,7 @@ import { useCartContext } from "../../CartHook/cart";
 import { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import api from "../../../../../../../Services/Api";
+import AppSnackbar from "../../../../../../../../components/ui/app-snackbar";
 
 export default function CheckoutPaypalPayment() {
   const clientId = import.meta.env.VITE_PAYPAL_CLIENT_ID;
@@ -84,12 +85,7 @@ export default function CheckoutPaypalPayment() {
 
   return (
     <main className="mm-payment-page min-h-screen px-4 py-8 md:px-6 md:py-12">
-      {snackbar.open && (
-        <div className="fixed right-4 top-20 z-[1400] max-w-sm rounded-[20px] border border-gray-300 bg-card px-4 py-3 text-sm font-semibold text-card-foreground shadow-lg">
-          {snackbar.text}
-          <button type="button" onClick={() => setSnackbar((current) => ({ ...current, open: false }))} className="ml-3 text-xs text-muted-foreground hover:text-card-foreground" aria-label="Dismiss notification">×</button>
-        </div>
-      )}
+      <AppSnackbar open={snackbar.open} message={snackbar.text} severity={snackbar.severity} onClose={() => setSnackbar((current) => ({ ...current, open: false }))} />
 
       <div className="mm-container">
         <div className="mx-auto mb-6 max-w-xl">

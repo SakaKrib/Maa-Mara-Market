@@ -22,6 +22,7 @@ import {
   timeSharp,
 } from "ionicons/icons";
 import VendorProfileSheet from "./EditProfile";
+import AppSnackbar from "../../../../components/ui/app-snackbar";
 
 const infoValue = (value) =>
   value === null || value === undefined || value === "" ? "N/A" : value;
@@ -354,12 +355,7 @@ const SingleVendorProfile = () => {
 
   return (
     <>
-      {snackbar.open && (
-        <div className="fixed right-4 top-20 z-[1400] max-w-sm rounded-[20px] border border-gray-300 bg-card px-4 py-3 text-sm font-semibold text-card-foreground shadow-lg">
-          {snackbar.message}
-          <button type="button" onClick={handleCloseSnackbar} className="ml-3 text-xs text-muted-foreground hover:text-card-foreground" aria-label="Dismiss notification">×</button>
-        </div>
-      )}
+      <AppSnackbar open={snackbar.open} message={snackbar.message} severity={snackbar.severity} onClose={handleCloseSnackbar} />
       <div className="mx-auto w-full max-w-[1500px] space-y-6">
       <section className="flex flex-col gap-4 rounded-xl border border-gray-200 bg-white p-5 shadow-sm sm:p-6 lg:flex-row lg:items-center lg:justify-between">
         <div>

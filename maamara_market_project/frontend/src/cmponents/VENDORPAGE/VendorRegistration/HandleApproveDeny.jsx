@@ -6,6 +6,7 @@ import VendorRequestDetails from "./VendorRequestDetails";
 import VendorEditForm from "./VendorEditForm";
 import VendorItemList from "./VendorItemList";
 import ItemAddNew from "../Products/Forms/AddingNewItem";
+import AppSnackbar from "../../../../components/ui/app-snackbar";
 
 export default function VendorApprovalPanel() {
   const [vendorRequests, setVendorRequests] = useState([]);
@@ -186,24 +187,12 @@ export default function VendorApprovalPanel() {
 
   return (
     <>
-      {snackbar.open && (
-        <div className="fixed right-4 top-20 z-[1400] max-w-sm rounded-[20px] border border-gray-300 bg-card px-4 py-3 text-sm font-semibold text-card-foreground shadow-lg">
-          {snackbar.title && <div>{snackbar.title}</div>}
-          {snackbar.description && (
-            <div className="mt-1 text-sm font-normal text-card-foreground">
-              {snackbar.description}
-            </div>
-          )}
-          <button
-            type="button"
-            onClick={handleCloseSnackbar}
-            className="ml-3 text-xs text-muted-foreground hover:text-card-foreground"
-            aria-label="Dismiss notification"
-          >
-            ×
-          </button>
-        </div>
-      )}
+      <AppSnackbar open={snackbar.open} message={`${snackbar.title} ${snackbar.description || ""}`} onClose={handleCloseSnackbar}>
+        {snackbar.title && <div>{snackbar.title}</div>}
+        {snackbar.description && (
+          <div className="mt-1 text-sm font-normal">{snackbar.description}</div>
+        )}
+      </AppSnackbar>
 
       <div className="min-w-0 space-y-4">
       {view === "requests" && (

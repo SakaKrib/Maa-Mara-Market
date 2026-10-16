@@ -10,6 +10,7 @@ import { useNavigate, useLocation, Link } from "react-router-dom"
 import { useAuth } from "../src/cmponents/Auth/AuthContext/Context"
 import Maamara from "../src/assets/Logo/Maamara.jpg"
 import { Eye, EyeOff } from "lucide-react"
+import AppSnackbar from "./ui/app-snackbar";
 
 // Fetch the CSRF token returned by Django. The frontend origin cannot reliably
 // read a backend-origin csrftoken cookie with document.cookie.
@@ -291,19 +292,7 @@ export function LoginForm({ className, ...props }) {
         </div>
       </div>
 
-      {snackbar.open && (
-        <div className="fixed right-4 top-20 z-[1400] max-w-sm rounded-[20px] border border-gray-300 bg-card px-4 py-3 text-sm font-semibold text-card-foreground shadow-lg">
-          {snackbar.message}
-          <button
-            type="button"
-            onClick={handleSnackbarClose}
-            className="ml-3 text-xs text-muted-foreground hover:text-card-foreground"
-            aria-label="Dismiss notification"
-          >
-            ×
-          </button>
-        </div>
-      )}
+      <AppSnackbar open={snackbar.open} message={snackbar.message} severity={snackbar.severity} onClose={handleSnackbarClose} />
     </>
   )
 }

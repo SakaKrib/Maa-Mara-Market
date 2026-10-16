@@ -12,6 +12,7 @@ import api from "../../../Services/Api";
 import { tokens } from "../../../theme";
 import { useLocation } from "react-router-dom";
 import "./payout-workflows.css";
+import AppSnackbar from "../../../../components/ui/app-snackbar";
 
 export default function BankTransferBulkPayment({ onSuccess }) {
   const location = useLocation();
@@ -117,19 +118,7 @@ export default function BankTransferBulkPayment({ onSuccess }) {
 
   return (
     <>
-      {snackbar.open && (
-        <div className="mm-payout-notice">
-          {snackbar.message}
-          <button
-            type="button"
-            onClick={() => setSnackbar((prev) => ({ ...prev, open: false }))}
-            className="mm-payout-notice-dismiss"
-            aria-label="Dismiss notification"
-          >
-            ×
-          </button>
-        </div>
-      )}
+      <AppSnackbar open={snackbar.open} message={snackbar.message} severity={snackbar.severity} onClose={() => setSnackbar((prev) => ({ ...prev, open: false }))} />
 
       <Box sx={{ p: 6 }}>
         <Box

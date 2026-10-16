@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { IonIcon } from "@ionic/react";
 import { helpCircleOutline, sendOutline, refreshOutline, closeOutline } from "ionicons/icons";
 import api from "../../../../Services/Api";
+import AppSnackbar from "../../../../../components/ui/app-snackbar";
 
 const statusClasses = {
   answered: "bg-emerald-500/10 text-emerald-700 dark:text-emerald-300",
@@ -82,7 +83,7 @@ const SupportAdminPanel = ({ open = true, onClose }) => {
 
   return (
     <div className="min-h-[calc(100dvh-124px)] w-full bg-background p-2 pb-20 text-foreground sm:p-4 lg:p-6">
-      {snackbar.open && (<div className="fixed right-4 top-20 z-[1400] max-w-sm rounded-[20px] border border-gray-300 bg-card px-4 py-3 text-sm font-semibold text-card-foreground shadow-lg">{snackbar.message}<button type="button" onClick={() => setSnackbar((prev) => ({ ...prev, open: false }))} className="ml-3 text-xs text-muted-foreground hover:text-card-foreground" aria-label="Dismiss notification">×</button></div>)}
+      <AppSnackbar open={snackbar.open} message={snackbar.message} severity={snackbar.severity} onClose={() => setSnackbar((prev) => ({ ...prev, open: false }))} />
       <div className="relative mx-auto max-w-7xl rounded-2xl border border-border bg-background p-2 shadow-2xl sm:p-4">
         <button type="button" onClick={closePanel} aria-label="Close support" className="absolute right-3 top-3 z-10 rounded-xl p-2 text-muted-foreground hover:bg-muted">
           <IonIcon icon={closeOutline} />

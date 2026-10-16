@@ -3,6 +3,7 @@ import { Briefcase, MapPin, Clock3, Search, Users, Globe2, HeartHandshake, Arrow
 import { useNavigate } from "react-router-dom";
 import api from "../../../../../Services/Api";
 import { sanitizeRichText } from "../../../../../utils/sanitizeRichText";
+import AppSnackbar from "../../../../../../components/ui/app-snackbar";
 
 const initialForm = { full_name: "", email: "", phone: "", cover_letter: "", cv: null };
 
@@ -87,7 +88,7 @@ const CareerPage = () => {
 
   return (
     <main className="mm-careers-page">
-      {snackbar.open && (<div className="fixed right-4 top-20 z-[1400] max-w-sm rounded-[20px] border border-gray-300 bg-card px-4 py-3 text-sm font-semibold text-card-foreground shadow-lg">{snackbar.message}<button type="button" onClick={() => setSnackbar((prev) => ({ ...prev, open: false }))} className="ml-3 text-xs text-muted-foreground hover:text-card-foreground" aria-label="Dismiss notification">×</button></div>)}
+      <AppSnackbar open={snackbar.open} message={snackbar.message} severity={snackbar.severity} onClose={() => setSnackbar((prev) => ({ ...prev, open: false }))} />
       <section className="mm-careers-hero">
         <div className="mm-careers-container">
           <div className="mm-careers-hero-copy">

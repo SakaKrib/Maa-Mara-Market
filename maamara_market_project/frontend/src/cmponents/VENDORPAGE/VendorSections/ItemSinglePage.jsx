@@ -15,6 +15,7 @@ import { useAuth } from "../../Auth/AuthContext/Context";
 import useItemActivityLogs from "../../Hooks/ActivityHook/ItemActivityHook";
 import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
+import AppSnackbar from "../../../../components/ui/app-snackbar";
 
 dayjs.extend(relativeTime);
 
@@ -127,12 +128,7 @@ const SingleItemProfile = ({ viewMode = null }) => {
   };
   return (
     <>
-      {snackbar.open && (
-        <div className="fixed right-4 top-20 z-[1400] max-w-sm rounded-[20px] border border-gray-300 bg-card px-4 py-3 text-sm font-semibold text-card-foreground shadow-lg">
-          {snackbar.message}
-          <button type="button" onClick={handleCloseSnackbar} className="ml-3 text-xs text-muted-foreground hover:text-card-foreground" aria-label="Dismiss notification">×</button>
-        </div>
-      )}
+      <AppSnackbar open={snackbar.open} message={snackbar.message} severity={snackbar.severity} onClose={handleCloseSnackbar} />
     <section className="mx-auto w-full max-w-[1500px] space-y-6 p-2 sm:p-4">
       <div className="flex flex-col gap-4 rounded-2xl border border-gray-200 bg-white p-5 shadow-sm sm:flex-row sm:items-center sm:justify-between">
         <div>

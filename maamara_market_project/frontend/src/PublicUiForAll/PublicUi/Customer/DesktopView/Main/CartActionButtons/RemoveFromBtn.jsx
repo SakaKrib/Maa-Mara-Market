@@ -3,6 +3,7 @@ import api from "../../../../../../Services/Api";
 import { Button } from "@mui/material";
 import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
 import { useCartContext } from "../CartHook/cart";
+import AppSnackbar from "../../../../../../../components/ui/app-snackbar";
 
 // Helper to read CSRF token from cookies
 function getCookie(name) {
@@ -82,12 +83,7 @@ const RemoveFromCartButton = ({ itemId, cartItemId, variantId, sizeId, ageVarian
         <><DeleteOutlineIcon fontSize="small" /><span className="hidden sm:inline">{loading ? "Removing..." : "Remove"}</span></>
       </Button>
 
-      {snackbar.open && (
-        <div className="fixed right-4 top-20 z-[1400] max-w-sm rounded-[20px] border border-gray-300 bg-card px-4 py-3 text-sm font-semibold text-card-foreground shadow-lg">
-          {snackbar.message}
-          <button type="button" onClick={handleClose} className="ml-3 text-xs text-muted-foreground hover:text-card-foreground" aria-label="Dismiss notification">×</button>
-        </div>
-      )}
+      <AppSnackbar open={snackbar.open} message={snackbar.message} severity={snackbar.severity} onClose={handleClose} />
     </>
   );
 };

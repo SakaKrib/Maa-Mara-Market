@@ -18,7 +18,7 @@ import api, { resolveApiAssetUrl } from "../../../../../Services/Api/";
 import { useForm } from "react-hook-form";
 import { organicAttributes, inorganicAttributes } from "../itemattribute";
 import { Controller } from "react-hook-form";
-import { Snackbar, Alert } from "@mui/material";
+import AppSnackbar from "../../../../../../components/ui/app-snackbar";
 
 
  // adjust path as needed
@@ -2097,21 +2097,7 @@ useEffect(() => {
           </form>
           {/* SNACKBAR */}
       {/* SNACKBAR */}
-      <Snackbar
-    open={snackbar.open}
-    autoHideDuration={3000}
-    onClose={() => setSnackbar((prev) => ({ ...prev, open: false }))}
-    anchorOrigin={{ vertical: "top", horizontal: "right" }}
-    >
-    <Alert
-        onClose={() => setSnackbar((prev) => ({ ...prev, open: false }))}
-        severity={snackbar.severity}
-        variant="filled"
-        sx={{ width: "100%" }}
-    >
-        {snackbar.message}
-    </Alert>
-    </Snackbar>
+      <AppSnackbar open={snackbar.open} message={snackbar.message} severity={snackbar.severity} onClose={() => setSnackbar((prev) => ({ ...prev, open: false }))} autoHideDuration={4000} />
         </Form>
       );
     };

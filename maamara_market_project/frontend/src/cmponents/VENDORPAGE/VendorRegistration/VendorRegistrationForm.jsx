@@ -14,7 +14,6 @@ import { Input } from "../../../../components/ui/input";
 import { Button } from "../../../../components/ui/button";
 import { Textarea } from "../../../../components/ui/textarea";
 import {
-  Snackbar,
   Alert as MuiAlert
 } from '@mui/material';
 import NativeAwareSelect from "../../../components/NativeAwareSelect";
@@ -31,6 +30,7 @@ import {
   getVendorDraft,
   saveVendorDraft,
 } from "../../../Services/VendorDrafts";
+import AppSnackbar from "../../../../components/ui/app-snackbar";
 
 // Zod Schema with conditional validation
 
@@ -1694,24 +1694,7 @@ const onSubmit = async (data) => {
     </Form>
 
  {/* Snackbar Alert */}
- <Snackbar
-  open={snackbarOpen}
-  autoHideDuration={4000}
-  onClose={handleCloseSnackbar}
-  anchorOrigin={{ vertical: "top", horizontal: "right" }}
->
-  <div className="fixed right-4 top-20 z-[1400] max-w-sm rounded-[20px] border border-gray-300 bg-card px-4 py-3 text-sm font-semibold text-card-foreground shadow-lg">
-    {snackbarMessage}
-    <button
-      type="button"
-      onClick={handleCloseSnackbar}
-      className="ml-3 text-xs text-muted-foreground hover:text-card-foreground"
-      aria-label="Dismiss notification"
-    >
-      ×
-    </button>
-  </div>
- </Snackbar>
+ <AppSnackbar open={snackbarOpen} message={snackbarMessage} severity={snackbarSeverity} onClose={handleCloseSnackbar} autoHideDuration={4000} />
 
 
  {/* 🔥 DEBUG PANEL (PUT IT HERE) */}
