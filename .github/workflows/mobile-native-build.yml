@@ -572,7 +572,7 @@ jobs:
             <path d="M145 675 V430 C145 300 275 300 275 430 V675 M275 430 C275 300 405 300 405 430 V675
                      M335 675 V430 C335 300 465 300 465 430 V675 M465 430 C465 300 595 300 595 430 V675
                      M525 675 V430 C525 300 655 300 655 430 V675 M655 430 C655 300 785 300 785 430 V675
-                     M715 675 V430 C715 300 845 300 845 430 V675"
+"
                   fill="none" stroke="#FFFFFF" stroke-width="30" stroke-linecap="round" stroke-linejoin="round"/>
           </svg>"""
           icon_dir = Path("ios/App/App/Assets.xcassets/AppIcon.appiconset")
