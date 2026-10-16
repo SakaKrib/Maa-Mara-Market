@@ -173,9 +173,9 @@ if (platform === "android") {
 
   await fs.writeFile(path.join(drawable, "ic_launcher_foreground.png"), foreground);
 
-  // Dedicated Android small-notification icon: transparent canvas, three
-  // italic M glyphs drawn as stroked paths (no fill) so the system tint can
-  // adapt their color for different themes and backgrounds.
+  // Dedicated Android small-notification icon. Android tints this asset, so use
+  // a transparent canvas and a solid, high-contrast triple-M silhouette. Keep
+  // generous side/top/bottom padding so the mark remains legible at 24x24dp.
   const notificationIcon = `<?xml version="1.0" encoding="utf-8"?>
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="24dp"
@@ -183,26 +183,11 @@ if (platform === "android") {
     android:viewportWidth="24"
     android:viewportHeight="24">
     <path
-        android:fillColor="#00000000"
-        android:strokeColor="#FFFFFFFF"
-        android:strokeWidth="2.6"
-        android:strokeLineCap="round"
-        android:strokeLineJoin="round"
-        android:pathData="M0,20 C1,12 2,8 2,6 C3.5,10 4.5,14 5,16 L7,6" />
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M3.0,19.5 L4.4,6.2 C4.5,5.3 5.7,5.1 6.0,6.0 L8.1,12.3 L10.2,6.0 C10.5,5.1 11.7,5.3 11.8,6.2 L13.2,19.5 L10.3,19.5 L9.5,12.8 L8.9,15.0 C8.6,16.0 7.6,16.0 7.3,15.0 L6.7,12.8 L5.9,19.5 Z" />
     <path
-        android:fillColor="#00000000"
-        android:strokeColor="#FFFFFFFF"
-        android:strokeWidth="2.6"
-        android:strokeLineCap="round"
-        android:strokeLineJoin="round"
-        android:pathData="M8,20 C9,12 10,8 10,6 C11.5,10 12.5,14 13,16 L15,6" />
-    <path
-        android:fillColor="#00000000"
-        android:strokeColor="#FFFFFFFF"
-        android:strokeWidth="2.6"
-        android:strokeLineCap="round"
-        android:strokeLineJoin="round"
-        android:pathData="M16,20 C17,12 18,8 18,6 C19.5,10 20.5,14 21,16 L23,6" />
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M11.0,19.5 L12.4,6.2 C12.5,5.3 13.7,5.1 14.0,6.0 L16.1,12.3 L18.2,6.0 C18.5,5.1 19.7,5.3 19.8,6.2 L21.0,19.5 L18.2,19.5 L17.5,12.8 L16.9,15.0 C16.6,16.0 15.6,16.0 15.3,15.0 L14.7,12.8 L13.9,19.5 Z" />
 </vector>
 `;
   await fs.writeFile(path.join(drawable, "ic_stat_maamara.xml"), notificationIcon);
