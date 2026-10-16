@@ -20,3 +20,7 @@ entrypoint.prod.sh
 
 # Ctags tag database
 tags
+
+# Firebase service-account credentials
+/maamara_market_project/backend/*firebase-adminsdk*.json
+/maamara_market_project/backend/perm/
