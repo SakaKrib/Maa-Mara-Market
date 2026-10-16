@@ -32,6 +32,10 @@ Create a Firebase service account with permission to send Firebase Cloud Messagi
 
 Never put either credential in source control. Restart the backend after setting the environment variable.
 
+**Important for production:** the native GitHub Actions secrets `FIREBASE_ANDROID_CONFIG` and `FIREBASE_IOS_CONFIG` only configure the Android/iOS app builds. They do not authenticate Django with FCM. The production Compose service loads `backend/project01/.env`, so the backend service-account variable must also be set in that deployed environment (or supplied through your deployment platform's secret manager). Adding a GitHub Actions secret alone does not inject it into an already-running production backend.
+
+The authenticated app lifecycle already invokes `setupNativePushNotifications()` after the user is restored. If no device appears in `PushDevice`, inspect the app's registration logs and the `POST /api/push/devices/` response before changing startup code.
+
 ### 4. Apply the database migration
 
 Deploy the backend and run:
