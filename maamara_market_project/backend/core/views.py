@@ -711,7 +711,7 @@ class ItemDetailView(generics.RetrieveAPIView):
                     user=vendor_user,
                     title="Your item was viewed",
                     message=f"A customer viewed your item {item.name}.",
-                    url="/vendors-dashboard",
+                    url=f"/vendors-dashboard/item-onsite/items/{item.pk}",
                 )
 
         serializer = self.get_serializer(item)
