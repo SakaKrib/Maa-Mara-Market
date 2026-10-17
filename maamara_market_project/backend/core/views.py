@@ -1,5 +1,6 @@
 from django.conf import settings
 from django.http import HttpResponse
+from django.db import models
 from rest_framework.decorators import api_view, permission_classes, action
 from rest_framework.permissions import IsAuthenticated, IsAdminUser, IsAdminUser, AllowAny
 from rest_framework.response import Response
