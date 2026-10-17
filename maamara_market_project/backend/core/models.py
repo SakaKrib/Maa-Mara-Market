@@ -321,7 +321,7 @@ class Notification(models.Model):
             except Exception:
                 is_vendor = False
 
-        item_match = re.search(r"/item/(\\d+)(?:/|$)", url)
+        item_match = re.search(r"/item/(\d+)(?:/|$)", url)
         item = Item.objects.filter(pk=int(item_match.group(1))).only("id").first() if item_match else None
         if item and (is_admin or is_vendor):
             if is_admin:
