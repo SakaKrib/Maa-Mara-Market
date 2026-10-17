@@ -52,7 +52,7 @@ export default function NotificationCenter() {
       </button>
 
       {open && enabled && (
-        <aside className="fixed inset-y-4 right-4 z-[1500] flex w-[min(420px,calc(100vw-2rem))] flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white text-slate-900 shadow-2xl" role="dialog" aria-label="Notifications">
+        <aside className="fixed top-[calc(env(safe-area-inset-top,0px)+5rem)] bottom-[calc(env(safe-area-inset-bottom,0px)+5rem)] right-4 z-[1500] flex w-[min(420px,calc(100vw-2rem))] flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white text-slate-900 shadow-2xl" role="dialog" aria-label="Notifications">
           <div className="flex items-center justify-between border-b border-slate-200 px-5 py-4">
             <div>
               <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-blue-700">Updates</p>
