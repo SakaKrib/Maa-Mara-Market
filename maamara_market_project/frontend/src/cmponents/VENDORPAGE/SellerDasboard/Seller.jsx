@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import { ChevronDown, Download, FileSpreadsheet, ImageDown, Package, ShoppingCart, ChartNoAxesCombined } from "lucide-react";
 import api from "../../../Services/Api";
+import { useAuth } from "../../Auth/AuthContext/Context.jsx";
 import { downloadDataUrl, downloadFile } from "../../../Services/DownloadFile";
 import TopBox from "../Home/TopBox/TopBox";
 import ChartBox from "../ChartBox/CharBox";
@@ -19,6 +20,12 @@ const cardClass =
   "min-w-0 overflow-hidden rounded-2xl border border-[#e6e6e4] bg-white p-4 shadow-sm transition-shadow hover:shadow-md sm:p-5";
 
 const Home = ({ vendor_id }) => {
+  const { user } = useAuth();
+  const vendorName = [user?.first_name, user?.last_name].filter(Boolean).join(" ") || user?.business_name || user?.store_name || user?.name || user?.username || user?.email || "Not available";
+  const vendorIdForExport = vendor_id ?? user?.vendor_id ?? user?.id ?? "Not available";
+  const brandIconReference = typeof window !== "undefined"
+    ? `${window.location.origin}/maamara-app-icon.png`
+    : "https://maamaramarket.com/maamara-app-icon.png";
   const isNativeApp =
     typeof window !== "undefined" &&
     window.Capacitor?.isNativePlatform?.() === true;
@@ -59,6 +66,9 @@ const Home = ({ vendor_id }) => {
   const downloadCsv = (filename, title, headers, rows, producedAt, date) => {
     const content = [
       ["MAA MARA MARKET"],
+      ["Brand icon reference", brandIconReference],
+      ["Vendor name", vendorName],
+      ["Vendor ID", vendorIdForExport],
       ["Vendor report", title],
       ["Report date (Africa/Nairobi)", date],
       ["Generated at (Africa/Nairobi)", producedAt],
