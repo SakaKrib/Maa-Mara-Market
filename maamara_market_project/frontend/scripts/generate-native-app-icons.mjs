@@ -2,127 +2,58 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import sharp from "sharp";
 
+// Maa Mara Market native icons, drawn from vector shapes so the build does not
+// depend on a raster source, installed fonts or the network.
+//
+//   node scripts/generate-native-app-icons.mjs android
+//   node scripts/generate-native-app-icons.mjs ios
+//
+// Design ("V2 pink M"): flat brand pink (#FFBFBF, the "Mara" highlight in
+// maamara.css), the logo's #8DE02C accent bar, a bold ink "M", and the
+// "MAA MARA MARKET" caption in Market green.
 const root = process.cwd();
-const source = path.join(root, "public", "maamara-app-icon.png");
 const platform = process.argv[2];
 
-// The source filename has historically been .png while its bytes are JPEG.
-// Always decode by file signature instead of trusting the extension.
-const sourceBytes = await fs.readFile(source);
-const decoded = await sharp(sourceBytes, { failOn: "error" })
-  .ensureAlpha()
-  .raw()
-  .toBuffer({ resolveWithObject: true });
+const PINK = "#FFBFBF";
+const BAR_GREEN = "#8DE02C";
+const INK = "#0B0B1A";
+const MARKET_GREEN = "#128A12";
 
-if (!decoded.info.width || !decoded.info.height) {
-  throw new Error(`Unable to read image dimensions from ${source}. Check that the app icon is a valid image.`);
-}
+// "MAA MARA MARKET" in Poppins Bold, converted to outlines (1024 canvas).
+const CAPTION_PATH = "M183.3 804.6V858H170.3V826L158.4 858H147.9L135.9 825.9V858H122.9V804.6H138.2L153.2 841.6L168 804.6ZM227.8 848.6H207.9L204.7 858H191.1L210.4 804.6H225.5L244.8 858H231ZM224.5 838.5 217.9 819 211.4 838.5ZM285.9 848.6H265.9L262.8 858H249.1L268.5 804.6H283.5L302.8 858H289ZM282.5 838.5 275.9 819 269.4 838.5ZM389.2 804.6V858H376.2V826L364.3 858H353.8L341.8 825.9V858H328.8V804.6H344.1L359.1 841.6L373.9 804.6ZM433.7 848.6H413.8L410.6 858H397L416.3 804.6H431.4L450.7 858H436.9ZM430.4 838.5 423.8 819 417.3 838.5ZM485.8 858 474.7 837.9H471.5V858H458.5V804.6H480.4Q486.7 804.6 491.1 806.9Q495.6 809.1 497.8 812.9Q500 816.7 500 821.4Q500 826.8 497 830.9Q494 835.1 488.1 836.9L500.4 858ZM471.5 828.7H479.6Q483.2 828.7 485 826.9Q486.7 825.2 486.7 822Q486.7 818.9 485 817.2Q483.2 815.4 479.6 815.4H471.5ZM543.3 848.6H523.4L520.2 858H506.6L525.9 804.6H541L560.3 858H546.5ZM540 838.5 533.4 819 526.8 838.5ZM646.6 804.6V858H633.6V826L621.7 858H611.2L599.2 825.9V858H586.2V804.6H601.6L616.5 841.6L631.4 804.6ZM691.2 848.6H671.3L668.1 858H654.5L673.8 804.6H688.8L708.2 858H694.4ZM687.9 838.5 681.2 819 674.7 838.5ZM743.2 858 732.1 837.9H729V858H716V804.6H737.8Q744.1 804.6 748.6 806.9Q753 809.1 755.2 812.9Q757.4 816.7 757.4 821.4Q757.4 826.8 754.4 830.9Q751.4 835.1 745.6 836.9L757.9 858ZM729 828.7H737.1Q740.6 828.7 742.4 826.9Q744.2 825.2 744.2 822Q744.2 818.9 742.4 817.2Q740.6 815.4 737.1 815.4H729ZM798.5 858 780.6 834.4V858H767.6V804.6H780.6V828.1L798.3 804.6H813.6L792.9 830.8L814.4 858ZM835.5 815.1V825.9H852.9V835.9H835.5V847.6H855.2V858H822.5V804.6H855.2V815.1ZM904 804.6V815.1H889.9V858H876.9V815.1H862.8V804.6Z";
 
-// The approved source is a horizontal wordmark exported on a black canvas.
-// Remove only dark pixels connected to the outside edge; dark lettering inside
-// the enclosed logo plate is preserved. For other artwork with non-dark
-// corners, leave the source untouched.
-function removeConnectedDarkCanvas({ data, info }) {
-  const { width, height, channels } = info;
-  const pixelCount = width * height;
-  const dark = new Uint8Array(pixelCount);
-  const visited = new Uint8Array(pixelCount);
-  const queue = new Uint32Array(pixelCount);
-  let head = 0;
-  let tail = 0;
+const ACCENT_BAR = `<rect x="196" y="236" width="40" height="440" rx="20" fill="${BAR_GREEN}"/>`;
+const LETTER_M = `<path fill="${INK}" d="M292 676V236H378L512 456L646 236H732V676H646V398L512 618L378 398V676Z"/>`;
 
-  const isDark = (index) => {
-    const offset = index * channels;
-    if (data[offset + 3] === 0) return false;
-    const luminance = 0.2126 * data[offset] + 0.7152 * data[offset + 1] + 0.0722 * data[offset + 2];
-    return luminance < 72;
-  };
+// Full-bleed square artwork (iOS and the legacy square Android launcher icon).
+const fullIconSvg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
+  <rect width="1024" height="1024" fill="${PINK}"/>
+  ${ACCENT_BAR}
+  ${LETTER_M}
+  <path fill="${MARKET_GREEN}" d="${CAPTION_PATH}"/>
+</svg>`;
 
-  for (let i = 0; i < pixelCount; i += 1) dark[i] = isDark(i) ? 1 : 0;
+// Mark only (no caption), scaled into the launcher safe zone and centred on
+// 512,512. Content bounds are x 196..732, y 236..676 (centre 464,456).
+const markGroup = (scale) =>
+  `<g transform="translate(512 512) scale(${scale}) translate(-464 -456)">${ACCENT_BAR}${LETTER_M}</g>`;
 
-  const seed = (index) => {
-    if (dark[index] && !visited[index]) {
-      visited[index] = 1;
-      queue[tail++] = index;
-    }
-  };
+const markIconSvg = (scale, withBackground) => `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
+  ${withBackground ? `<rect width="1024" height="1024" fill="${PINK}"/>` : ""}
+  ${markGroup(scale)}
+</svg>`;
 
-  for (let x = 0; x < width; x += 1) {
-    seed(x);
-    seed((height - 1) * width + x);
-  }
-  for (let y = 0; y < height; y += 1) {
-    seed(y * width);
-    seed(y * width + width - 1);
-  }
+const render = (svg, size) =>
+  sharp(Buffer.from(svg), { density: 72 })
+    .resize(size, size)
+    .png();
 
-  const edgeCorners = [
-    0,
-    width - 1,
-    (height - 1) * width,
-    pixelCount - 1,
-  ];
-  const darkCornerCount = edgeCorners.filter((index) => dark[index]).length;
-  if (darkCornerCount < 3) return null;
-
-  while (head < tail) {
-    const index = queue[head++];
-    const x = index % width;
-    const y = Math.floor(index / width);
-    const neighbours = [];
-    if (x > 0) neighbours.push(index - 1);
-    if (x + 1 < width) neighbours.push(index + 1);
-    if (y > 0) neighbours.push(index - width);
-    if (y + 1 < height) neighbours.push(index + width);
-
-    for (const neighbour of neighbours) {
-      if (dark[neighbour] && !visited[neighbour]) {
-        visited[neighbour] = 1;
-        queue[tail++] = neighbour;
-      }
-    }
-  }
-
-  for (let index = 0; index < pixelCount; index += 1) {
-    if (!visited[index]) continue;
-    data[index * channels + 3] = 0;
-  }
-  return sharp(data, { raw: { width, height, channels } }).png().toBuffer();
-}
-
-const knockedOut = await removeConnectedDarkCanvas(decoded);
-const normalizedBytes = knockedOut ?? await sharp(sourceBytes).png().toBuffer();
-const artworkBytes = await sharp(normalizedBytes)
-  .trim({ background: { r: 0, g: 0, b: 0, alpha: 0 }, threshold: 1 })
-  .png()
-  .toBuffer();
-const artworkMetadata = await sharp(artworkBytes).metadata();
-
-// Keep the logo on a clean white square instead of scaling its original black
-// letterbox into the launcher tile. This retains the actual approved wordmark.
-async function renderIcon(size, logoScale = 0.92) {
-  const logoSize = Math.round(size * logoScale);
-  const logo = await sharp(artworkBytes)
-    .resize(logoSize, logoSize, {
-      fit: "contain",
-      background: { r: 255, g: 255, b: 255, alpha: 0 },
-    })
-    .png()
-    .toBuffer();
-
-  return sharp({
-    create: {
-      width: size,
-      height: size,
-      channels: 4,
-      background: { r: 255, g: 255, b: 255, alpha: 1 },
-    },
-  })
-    .composite([{
-      input: logo,
-      left: Math.round((size - logoSize) / 2),
-      top: Math.round((size - logoSize) / 2),
-    }])
+async function circleMasked(svg, size) {
+  const mask = Buffer.from(
+    `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}"><circle cx="${size / 2}" cy="${size / 2}" r="${size / 2}" fill="#fff"/></svg>`
+  );
+  return render(svg, size)
+    .composite([{ input: mask, blend: "dest-in" }])
     .png()
     .toBuffer();
 }
@@ -140,57 +71,40 @@ if (platform === "android") {
   for (const [density, size] of densities) {
     const dir = path.join(res, `mipmap-${density}`);
     await fs.mkdir(dir, { recursive: true });
-    await fs.writeFile(path.join(dir, "ic_launcher.png"), await renderIcon(size, 0.94));
-    await fs.writeFile(path.join(dir, "ic_launcher_round.png"), await renderIcon(size, 0.82));
+    await fs.writeFile(path.join(dir, "ic_launcher.png"), await render(fullIconSvg, size).toBuffer());
+    await fs.writeFile(path.join(dir, "ic_launcher_round.png"), await circleMasked(markIconSvg(0.8, true), size));
   }
 
   const drawable = path.join(res, "drawable");
   await fs.mkdir(drawable, { recursive: true });
 
-  // Adaptive icon foregrounds must include a visible, contrast-safe base so the
-  // launcher cannot render a white-on-white or transparent-on-white icon.
-  const brandBackground = { r: 21, g: 34, b: 47, alpha: 255 };
-  const foregroundLogoSize = 640;
-  const foregroundLogo = await sharp(artworkBytes)
-    .resize(foregroundLogoSize, foregroundLogoSize, {
-      fit: "contain",
-      background: { r: 255, g: 255, b: 255, alpha: 0 },
-    })
-    .png()
-    .toBuffer();
-  const foregroundOffset = Math.round((1024 - foregroundLogoSize) / 2);
-  const foreground = await sharp({
-    create: {
-      width: 1024,
-      height: 1024,
-      channels: 4,
-      background: brandBackground,
-    },
-  })
-    .composite([{ input: foregroundLogo, left: foregroundOffset, top: foregroundOffset }])
-    .png()
-    .toBuffer();
+  // Adaptive icon foreground: transparent canvas with the mark inside the safe
+  // zone (the launcher masks the outer ~1/3). The pink background colour below
+  // supplies the tile, so the icon cannot render transparent or white-on-white.
+  await fs.writeFile(
+    path.join(drawable, "maamara_launcher_foreground.png"),
+    await render(markIconSvg(0.8, false), 1024).toBuffer()
+  );
 
-  await fs.writeFile(path.join(drawable, "maamara_launcher_foreground.png"), foreground);
-
-  // Dedicated Android small-notification icon. Android tints this asset, so use
-  // a transparent canvas and three bold filled italic-M glyphs. Each glyph has
-  // safe spacing from its neighbors and the viewport edges for 24x24dp clarity.
+  // Small status-bar notification icon. Android only uses its alpha channel and
+  // tints it for the current theme (white in dark mode, dark in light mode), so
+  // this adapts to the system theme automatically. It is the logo pill with a
+  // solid block and a transparent "M". The block's "M" is wound in the opposite
+  // direction so the hole works with the default non-zero fill (API 23+).
   const notificationIcon = `<?xml version="1.0" encoding="utf-8"?>
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="24dp"
     android:height="24dp"
-    android:viewportWidth="24"
-    android:viewportHeight="24">
+    android:viewportWidth="96"
+    android:viewportHeight="96">
+    <path
+        android:fillColor="#00000000"
+        android:strokeColor="#FFFFFFFF"
+        android:strokeWidth="5"
+        android:pathData="M20,20 H76 A14,14 0 0 1 90,34 V62 A14,14 0 0 1 76,76 H20 A14,14 0 0 1 6,62 V34 A14,14 0 0 1 20,20 Z" />
     <path
         android:fillColor="#FFFFFFFF"
-        android:pathData="M1.0,20 L2.0,5.0 L3.3,5.0 L4.1,12.0 L5.0,5.0 L6.3,5.0 L7.1,20 L5.4,20 L5.0,10.5 L4.4,15.0 L3.5,15.0 L2.9,10.5 L2.7,20 Z" />
-    <path
-        android:fillColor="#FFFFFFFF"
-        android:pathData="M8.6,20 L9.6,5.0 L10.9,5.0 L11.7,12.0 L12.6,5.0 L13.9,5.0 L14.7,20 L13.0,20 L12.6,10.5 L12.0,15.0 L11.1,15.0 L10.5,10.5 L10.3,20 Z" />
-    <path
-        android:fillColor="#FFFFFFFF"
-        android:pathData="M16.2,20 L17.2,5.0 L18.5,5.0 L19.3,12.0 L20.2,5.0 L21.5,5.0 L22.3,20 L20.6,20 L20.2,10.5 L19.6,15.0 L18.7,15.0 L18.1,10.5 L17.9,20 Z" />
+        android:pathData="M23,30 H73 A7,7 0 0 1 80,37 V59 A7,7 0 0 1 73,66 H23 A7,7 0 0 1 16,59 V37 A7,7 0 0 1 23,30 Z M31,59 H38 V47 L48,59 L58,47 V59 H65 V37 H58 L48,49 L38,37 H31 Z" />
 </vector>
 `;
   await fs.writeFile(path.join(drawable, "ic_stat_maamara.xml"), notificationIcon);
@@ -223,7 +137,7 @@ if (platform === "android") {
   if (!found) {
     await fs.writeFile(
       path.join(values, "maamara_colors.xml"),
-      `<?xml version="1.0" encoding="utf-8"?>\n<resources>\n    <color name="${colorName}">#15232F</color>\n</resources>\n`
+      `<?xml version="1.0" encoding="utf-8"?>\n<resources>\n    <color name="${colorName}">${PINK}</color>\n</resources>\n`
     );
   } else {
     console.log(`Skipping writing ${colorName}; already defined in values/`);
@@ -235,16 +149,20 @@ if (platform === "android") {
   await fs.writeFile(path.join(adaptive, "ic_launcher.xml"), xml);
   await fs.writeFile(path.join(adaptive, "ic_launcher_round.xml"), xml);
 
-  console.log(`Generated Android launcher icons from ${artworkMetadata.width}x${artworkMetadata.height} cleaned logo artwork (source: ${decoded.info.width}x${decoded.info.height}, ${decoded.info.channels} channels).`);
+  console.log("Generated Android launcher icons, adaptive icon and notification icon (V2 pink M).");
 } else if (platform === "ios") {
   const dir = path.join(root, "ios", "App", "App", "Assets.xcassets", "AppIcon.appiconset");
   await fs.mkdir(dir, { recursive: true });
-  await fs.writeFile(path.join(dir, "AppIcon-1024.png"), await renderIcon(1024, 0.94));
+  // iOS rejects app icons with an alpha channel, so flatten to opaque pink.
+  await fs.writeFile(
+    path.join(dir, "AppIcon-1024.png"),
+    await render(fullIconSvg, 1024).flatten({ background: PINK }).removeAlpha().toBuffer()
+  );
   await fs.writeFile(path.join(dir, "Contents.json"), JSON.stringify({
     images: [{ filename: "AppIcon-1024.png", idiom: "universal", platform: "ios", size: "1024x1024" }],
     info: { author: "xcode", version: 1 }
   }, null, 2) + "\n");
-  console.log(`Generated iOS app icon from ${artworkMetadata.width}x${artworkMetadata.height} cleaned logo artwork.`);
+  console.log("Generated iOS app icon (V2 pink M).");
 } else {
   throw new Error("Usage: node scripts/generate-native-app-icons.mjs <android|ios>");
 }
