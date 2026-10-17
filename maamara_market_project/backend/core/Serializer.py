@@ -4,6 +4,7 @@ from django.db.models import Q
 from rest_framework import generics, serializers
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
+from core.permissions import IsAuthenticatedOrVisitor
 from rest_framework.response import Response
 import re
 
@@ -197,14 +198,20 @@ class NotificationSerializer(serializers.ModelSerializer):
 
 # mark as seen when opened
 @api_view(['POST'])
-@permission_classes([IsAuthenticated])
+@permission_classes([IsAuthenticatedOrVisitor])
 def mark_notification_seen(request, notification_id):
     try:
         notification = Notification.objects.get(id=notification_id)
 
-        # ✅ Prevent regular users from changing other users' notifications
-        if not request.user.is_staff and notification.user != request.user:
-            return Response({'error': 'Not authorized'}, status=403)
+        if request.user and request.user.is_authenticated:
+            # Staff may manage the full feed; regular users only their own.
+            if not request.user.is_staff and not request.user.is_superuser and notification.user != request.user:
+                return Response({'error': 'Not authorized'}, status=403)
+        else:
+            # Visitors may only mark notifications tied to their validated visitor cookie.
+            visitor_id = request.COOKIES.get("visitorId")
+            if not visitor_id or notification.visitor_id != visitor_id:
+                return Response({'error': 'Not authorized'}, status=403)
 
         notification.seen = True
         notification.is_read = True
