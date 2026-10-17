@@ -333,10 +333,13 @@ class Notification(models.Model):
             if is_vendor:
                 candidates = candidates.filter(vendor__user_id=self.user_id)
             notification_text = f"{self.title or ''} {self.message or ''}".casefold()
-            matching_item = next(
-                (candidate for candidate in candidates.iterator()
-                 if candidate.name and candidate.name.casefold() in notification_text),
-                None,
+            matching_item = max(
+                (
+                    candidate for candidate in candidates.iterator()
+                    if candidate.name and candidate.name.casefold() in notification_text
+                ),
+                key=lambda candidate: len(candidate.name),
+                default=None,
             )
             if matching_item:
                 if is_admin:
