@@ -424,3 +424,19 @@ class ActivityNotificationPresentationTests(TestCase):
             notification.url,
             f"/admin-dashboard/items/{self.item.id}",
         )
+
+    def test_existing_legacy_item_notification_url_is_resolved_when_serialized(self):
+        notification = Notification.objects.create(
+            user=self.vendor_user,
+            title="Your item was viewed",
+            message=f"A customer viewed your item {self.item.name}.",
+            url=f"/vendors-dashboard/item-onsite/items/{self.item.id}",
+        )
+        # Simulate a pre-fix row already stored with the generic dashboard URL.
+        Notification.objects.filter(pk=notification.pk).update(url="/vendors-dashboard")
+        notification.refresh_from_db()
+        data = NotificationSerializer(notification).data
+        self.assertEqual(
+            data["url"],
+            f"/vendors-dashboard/item-onsite/items/{self.item.id}",
+        )
