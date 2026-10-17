@@ -31,6 +31,12 @@ class NotificationSerializer(serializers.ModelSerializer):
     vendor_request = serializers.PrimaryKeyRelatedField(read_only=True)
     display_title = serializers.SerializerMethodField()
     display_message = serializers.SerializerMethodField()
+    url = serializers.SerializerMethodField()
+
+    def get_url(self, obj):
+        # Resolve legacy records at read time too, so existing in-app alerts
+        # open the source item without requiring a data migration.
+        return obj._resolve_navigation_url()
 
     class Meta:
         model = Notification
