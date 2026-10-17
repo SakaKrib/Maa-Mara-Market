@@ -396,4 +396,31 @@ class ActivityNotificationPresentationTests(TestCase):
             notification.message,
             f"A customer added {self.item.name} to their cart.",
         )
-        self.assertEqual(notification.url, "/vendors-dashboard")
+        self.assertEqual(
+            notification.url,
+            f"/vendors-dashboard/item-onsite/items/{self.item.id}",
+        )
+
+    def test_legacy_vendor_homepage_item_notification_routes_to_item(self):
+        notification = Notification.objects.create(
+            user=self.vendor_user,
+            title="Item added to cart",
+            message=f"A customer added {self.item.name} to their cart.",
+            url="/vendors-dashboard",
+        )
+        self.assertEqual(
+            notification.url,
+            f"/vendors-dashboard/item-onsite/items/{self.item.id}",
+        )
+
+    def test_item_notification_routes_admin_to_admin_item_performance(self):
+        notification = Notification.objects.create(
+            user=self.admin,
+            title="Item viewed",
+            message=f"A customer viewed {self.item.name}.",
+            url=f"/item/{self.item.id}/",
+        )
+        self.assertEqual(
+            notification.url,
+            f"/admin-dashboard/items/{self.item.id}",
+        )
