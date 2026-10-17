@@ -86,9 +86,9 @@ if (platform === "android") {
     await render(markIconSvg(0.8, false), 1024).toBuffer()
   );
 
-  // Small status-bar notification icon: exactly three solid M glyphs on a
-  // transparent canvas. Android applies the system notification tint to the
-  // alpha mask, so no brand-colour background or outline belongs in this asset.
+  // Small status-bar notification icon (Option B): the solid M tile and
+  // vertical accent bar on transparent canvas. Android uses the alpha mask and
+  // applies its own light/dark notification tint; do not bake in a background.
   const notificationIcon = `<?xml version="1.0" encoding="utf-8"?>
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="24dp"
@@ -97,13 +97,10 @@ if (platform === "android") {
     android:viewportHeight="96">
     <path
         android:fillColor="#FFFFFFFF"
-        android:pathData="M7,70 V26 H13 L19,41 L25,26 H31 V70 H25 V43 L19,57 L13,43 V70 Z" />
+        android:pathData="M8,20 H14 V76 H8 Z" />
     <path
         android:fillColor="#FFFFFFFF"
-        android:pathData="M36,70 V26 H42 L48,41 L54,26 H60 V70 H54 V43 L48,57 L42,43 V70 Z" />
-    <path
-        android:fillColor="#FFFFFFFF"
-        android:pathData="M65,70 V26 H71 L77,41 L83,26 H89 V70 H83 V43 L77,57 L71,43 V70 Z" />
+        android:pathData="M28,20 C17,20 17,31 17,40 V76 H30 V43 L42,59 H50 L62,43 V76 H75 V40 C75,31 75,20 64,20 H59 L46,39 L33,20 Z" />
 </vector>
 `;
   await fs.writeFile(path.join(drawable, "ic_stat_maamara.xml"), notificationIcon);
