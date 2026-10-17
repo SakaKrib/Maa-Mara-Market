@@ -18,7 +18,7 @@ from .UserVisitorSerializers import *
 import bleach # type: ignore
 from .CategorySerializers import SectionSerializerCat, CategorySerializerCat
 from django.db.models import F, Prefetch, Count, Min
-from order.views import IsAuthenticatedOrVisitor
+from core.permissions import IsAuthenticatedOrVisitor
 from django.core.mail import send_mail
 from rest_framework import generics
 from django.utils import timezone
