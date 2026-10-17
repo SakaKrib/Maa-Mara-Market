@@ -132,14 +132,22 @@ def home(request):
 # All notifications (admin)
 # -------------------------------
 class AllNotificationsView(APIView):
-    permission_classes = [IsAuthenticated]
+    # Visitors must pass the same cookie-bound visitor token check as the cart.
+    permission_classes = [IsAuthenticatedOrVisitor]
 
     def get(self, request):
-        # Administrators can review the full notification stream. Other
-        # authenticated users only receive notifications addressed to them.
         notifications = Notification.objects.all().order_by("-created_at")
-        if not request.user.is_staff and not request.user.is_superuser:
-            notifications = notifications.filter(user=request.user)
+        if request.user and request.user.is_authenticated:
+            if not request.user.is_staff and not request.user.is_superuser:
+                notifications = notifications.filter(user=request.user)
+        else:
+            # Never return the global feed to an anonymous visitor.
+            visitor_id = request.COOKIES.get("visitorId")
+            notifications = (
+                notifications.filter(visitor_id=visitor_id)
+                if visitor_id
+                else notifications.none()
+            )
         serializer = NotificationSerializer(notifications, many=True, context={"request": request})
         data = serializer.data
         for notification in data:
@@ -151,13 +159,21 @@ class AllNotificationsView(APIView):
 class NotificationDeleteView(APIView):
     """Delete one visible notification or clear the current role's notification feed."""
 
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticatedOrVisitor]
 
     def get_queryset(self, request):
-        if request.user.is_staff or request.user.is_superuser:
-            # The admin feed currently exposes the full notification stream.
-            return Notification.objects.all()
-        return Notification.objects.filter(user=request.user)
+        if request.user and request.user.is_authenticated:
+            if request.user.is_staff or request.user.is_superuser:
+                # The admin feed currently exposes the full notification stream.
+                return Notification.objects.all()
+            return Notification.objects.filter(user=request.user)
+
+        visitor_id = request.COOKIES.get("visitorId")
+        return (
+            Notification.objects.filter(visitor_id=visitor_id)
+            if visitor_id
+            else Notification.objects.none()
+        )
 
     def delete(self, request, notification_id=None):
         notifications = self.get_queryset(request)
