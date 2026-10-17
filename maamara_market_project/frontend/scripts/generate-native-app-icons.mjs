@@ -86,11 +86,9 @@ if (platform === "android") {
     await render(markIconSvg(0.8, false), 1024).toBuffer()
   );
 
-  // Small status-bar notification icon. Android only uses its alpha channel and
-  // tints it for the current theme (white in dark mode, dark in light mode), so
-  // this adapts to the system theme automatically. It is the logo pill with a
-  // solid block and a transparent "M". The block's "M" is wound in the opposite
-  // direction so the hole works with the default non-zero fill (API 23+).
+  // Small status-bar notification icon: exactly three solid M glyphs on a
+  // transparent canvas. Android applies the system notification tint to the
+  // alpha mask, so no brand-colour background or outline belongs in this asset.
   const notificationIcon = `<?xml version="1.0" encoding="utf-8"?>
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="24dp"
@@ -98,13 +96,14 @@ if (platform === "android") {
     android:viewportWidth="96"
     android:viewportHeight="96">
     <path
-        android:fillColor="#00000000"
-        android:strokeColor="#FFFFFFFF"
-        android:strokeWidth="5"
-        android:pathData="M20,20 H76 A14,14 0 0 1 90,34 V62 A14,14 0 0 1 76,76 H20 A14,14 0 0 1 6,62 V34 A14,14 0 0 1 20,20 Z" />
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M7,70 V26 H13 L19,41 L25,26 H31 V70 H25 V43 L19,57 L13,43 V70 Z" />
     <path
         android:fillColor="#FFFFFFFF"
-        android:pathData="M23,30 H73 A7,7 0 0 1 80,37 V59 A7,7 0 0 1 73,66 H23 A7,7 0 0 1 16,59 V37 A7,7 0 0 1 23,30 Z M31,59 H38 V47 L48,59 L58,47 V59 H65 V37 H58 L48,49 L38,37 H31 Z" />
+        android:pathData="M36,70 V26 H42 L48,41 L54,26 H60 V70 H54 V43 L48,57 L42,43 V70 Z" />
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M65,70 V26 H71 L77,41 L83,26 H89 V70 H83 V43 L77,57 L71,43 V70 Z" />
 </vector>
 `;
   await fs.writeFile(path.join(drawable, "ic_stat_maamara.xml"), notificationIcon);
