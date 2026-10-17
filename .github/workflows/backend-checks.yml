@@ -39,6 +39,25 @@ jobs:
       POSTGRES_HOST: "127.0.0.1"
       POSTGRES_PORT: "5432"
       REDIS_URL: "redis://127.0.0.1:6379/0"
+      # Non-secret placeholders satisfy import-time settings in CI only.
+      # Real payment/provider credentials remain in the deployment environment.
+      MPESA_CONSUMER_KEY: "ci-placeholder"
+      MPESA_CONSUMER_SECRET: "ci-placeholder"
+      MPESA_AUTH_URL: "https://example.invalid/mpesa-auth"
+      MPESA_URL: "https://example.invalid/mpesa"
+      MPESA_STK_URL: "https://example.invalid/mpesa-stk"
+      PAYPAL_API_BASE: "https://example.invalid/paypal"
+      PAYPAL_PAYOUT_URL: "https://example.invalid/paypal-payout"
+      PAYPAL_AUTH_URL: "https://example.invalid/paypal-auth"
+      PAYPAL_CLIENT_ID: "ci-placeholder"
+      PAYPAL_CLIENT_SECRET: "ci-placeholder"
+      KCB_API_BASE_URL: "https://example.invalid/kcb"
+      KCB_OAUTH_URL: "https://example.invalid/kcb-auth"
+      KCB_API_KEY: "ci-placeholder"
+      KCB_API_SECRET: "ci-placeholder"
+      KCB_CALLBACK_URL: "https://example.invalid/kcb-callback"
+      EXCHANGE_RATE_API_URL: "https://example.invalid/exchange-rate"
+      GEMINI_API_KEY: "ci-placeholder"
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
