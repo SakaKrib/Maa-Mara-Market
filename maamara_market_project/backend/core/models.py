@@ -304,8 +304,54 @@ class Notification(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     vendor_request = models.ForeignKey('vendorDashboard.VendorRequest', on_delete=models.CASCADE, null=True, blank=True)
 
+    def _resolve_navigation_url(self):
+        """Normalize legacy item notification destinations to their source item."""
+        import re
+
+        url = (self.url or "").strip()
+        if not self.user_id:
+            return url or None
+
+        user = self.user
+        is_admin = bool(user.is_staff or user.is_superuser)
+        is_vendor = False
+        if not is_admin:
+            try:
+                is_vendor = user.vendor is not None
+            except Exception:
+                is_vendor = False
+
+        item_match = re.search(r"/item/(\\d+)(?:/|$)", url)
+        item = Item.objects.filter(pk=int(item_match.group(1))).only("id").first() if item_match else None
+        if item and (is_admin or is_vendor):
+            if is_admin:
+                return f"/admin-dashboard/items/{item.pk}"
+            return f"/vendors-dashboard/item-onsite/items/{item.pk}"
+
+        if url in {"", "/", "/vendors-dashboard", "/admin-dashboard"} and (is_admin or is_vendor):
+            candidates = Item.objects.all().only("id", "name")
+            if is_vendor:
+                candidates = candidates.filter(vendor__user_id=self.user_id)
+            notification_text = f"{self.title or ''} {self.message or ''}".casefold()
+            matching_item = next(
+                (candidate for candidate in candidates.iterator()
+                 if candidate.name and candidate.name.casefold() in notification_text),
+                None,
+            )
+            if matching_item:
+                if is_admin:
+                    return f"/admin-dashboard/items/{matching_item.pk}"
+                return f"/vendors-dashboard/item-onsite/items/{matching_item.pk}"
+
+        return url or None
+
+    def save(self, *args, **kwargs):
+        self.url = self._resolve_navigation_url()
+        super().save(*args, **kwargs)
+
     def __str__(self):
-        return f"Notification for {self.user.username}: {self.title}"
+        username = getattr(self.user, "username", "visitor")
+        return f"Notification for {username}: {self.title}"
 
 
 # calendar
