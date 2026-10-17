@@ -30,6 +30,7 @@ import Home from "./cmponents/VENDORPAGE/SellerDasboard/Seller";
 // Customer Pages
 import CustomerShop from "./PublicUiForAll/CustomerShop";
 import NativeAppLaunchScreen from "./PublicUiForAll/PublicUi/Customer/DesktopView/Header/NativeAppLaunchScreen";
+import MobileAppDownloadPrompt from "./PublicUiForAll/PublicUi/Customer/DesktopView/Header/MobileAppDownloadPrompt";
 
 // Layouts
 import AdminLayout from "./cmponents/Auth/Routes/RoutesLayout/AdminLayot";
@@ -448,6 +449,7 @@ function AppContent() {
             </Routes>
 
           </div>
+          <MobileAppDownloadPrompt isNativeApp={isNativeApp} />
         </div>
         </>
       </ThemeProvider>
