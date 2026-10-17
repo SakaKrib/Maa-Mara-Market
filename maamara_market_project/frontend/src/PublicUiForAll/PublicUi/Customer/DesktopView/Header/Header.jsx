@@ -5,7 +5,6 @@ import SearchBar from "../../../Navigations/Search/Search";
 import NavIcons from "../../../Navigations/Search/NavIcons/NavIcon";
 import { Link } from "react-router-dom";
 import useNewBlogs from "../../../../../cmponents/Hooks/BlogHooksNew/NewBlogs";
-import Maamara from "../../../../../assets/Logo/Maamara.jpg";
 import CategoryNavigation from "./CategoryNavigation";
 import MegaMenuWomen from "./WomenCat";
 import MegaMenuMen from "./MenCat";
@@ -112,7 +111,7 @@ const Header = () => {
           </button>
 
           <div className="w-full flex flex-row gap-4 items-center">
-            <img src={Maamara} alt="maamara-logo" className="w-[50px] h-[50px] rounded-full ring p-1 ring-green-500 xxs:-mt-20 xxs:relative xxs:-top-10 lg:mt-0 lg:top-0 z-[10] mobile-hide" />
+            <img src="/maamara-brand-artwork.svg" alt="Maa Mara Market" className="w-[50px] h-[50px] object-contain xxs:-mt-20 xxs:relative xxs:-top-10 lg:mt-0 lg:top-0 z-[10] mobile-hide" />
             <div>
               <div className="logo xxs:-mt-20 xxs:relative xxs:-top-10 lg:mt-0 lg:top-0">
                 <a href="/">Maa <span className="it-name">Mara</span> <span className="mkrt">Market</span></a>
