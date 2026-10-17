@@ -1,0 +1,249 @@
+.mm-app-prompt-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 3000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: rgba(15, 23, 42, 0.58);
+  -webkit-backdrop-filter: blur(5px);
+  backdrop-filter: blur(5px);
+  animation: mm-app-prompt-fade-in 180ms ease-out;
+}
+
+.mm-app-prompt {
+  position: relative;
+  width: min(100%, 390px);
+  max-height: min(88dvh, 720px);
+  overflow-y: auto;
+  padding: 25px 24px 20px;
+  border: 1px solid rgba(255, 255, 255, 0.8);
+  border-radius: 28px;
+  background: #fff;
+  color: #111827;
+  text-align: center;
+  box-shadow: 0 28px 90px rgba(0, 0, 0, 0.28);
+  animation: mm-app-prompt-rise-in 220ms ease-out;
+}
+
+.mm-app-prompt-close {
+  position: absolute;
+  top: 13px;
+  right: 13px;
+  z-index: 1;
+  display: grid;
+  width: 36px;
+  height: 36px;
+  place-items: center;
+  border: 1px solid #e5e7eb;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.92);
+  color: #374151;
+}
+
+.mm-app-prompt-close:focus-visible,
+.mm-app-prompt-primary:focus-visible,
+.mm-app-prompt-secondary:focus-visible {
+  outline: 3px solid rgba(37, 99, 235, 0.45);
+  outline-offset: 3px;
+}
+
+.mm-app-prompt-art {
+  position: relative;
+  display: grid;
+  width: 118px;
+  height: 118px;
+  margin: 0 auto 17px;
+  place-items: center;
+  border-radius: 32px;
+  background: #ffbfbf;
+}
+
+.mm-app-prompt-logo {
+  display: grid;
+  width: 74px;
+  height: 74px;
+  place-items: center;
+  border: 3px solid #0b0b1a;
+  border-radius: 23px 23px 23px 7px;
+  background: #fff0f0;
+  color: #0b0b1a;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 49px;
+  font-weight: 800;
+  line-height: 1;
+  box-shadow: 5px 5px 0 #8de02c;
+}
+
+.mm-app-prompt-spark {
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+  background: #8de02c;
+  transform: rotate(45deg);
+}
+
+.mm-app-prompt-spark-one {
+  top: 16px;
+  left: 17px;
+}
+
+.mm-app-prompt-spark-two {
+  right: 15px;
+  bottom: 18px;
+  width: 7px;
+  height: 7px;
+  background: #0b0b1a;
+}
+
+.mm-app-prompt-device {
+  position: absolute;
+  right: -11px;
+  bottom: -8px;
+  display: grid;
+  width: 43px;
+  height: 43px;
+  place-items: center;
+  border: 3px solid #fff;
+  border-radius: 15px;
+  background: #0b0b1a;
+  color: #fff;
+  box-shadow: 0 5px 15px rgba(15, 23, 42, 0.16);
+}
+
+.mm-app-prompt-eyebrow {
+  margin: 0 0 8px;
+  color: #128a12;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.2em;
+}
+
+.mm-app-prompt h2 {
+  margin: 0 auto;
+  max-width: 300px;
+  color: #111827;
+  font-size: clamp(23px, 6vw, 29px);
+  font-weight: 800;
+  letter-spacing: -0.045em;
+  line-height: 1.12;
+}
+
+.mm-app-prompt-description {
+  margin: 12px auto 19px;
+  max-width: 310px;
+  color: #64748b;
+  font-size: 14px;
+  line-height: 1.55;
+}
+
+.mm-app-prompt-platform {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 0 0 13px;
+  padding: 12px 14px;
+  border: 1px solid #e5e7eb;
+  border-radius: 16px;
+  background: #f8fafc;
+  text-align: left;
+}
+
+.mm-app-prompt-platform > svg {
+  flex: 0 0 auto;
+  color: #128a12;
+}
+
+.mm-app-prompt-platform div {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.mm-app-prompt-platform strong {
+  color: #111827;
+  font-size: 13px;
+  font-weight: 750;
+}
+
+.mm-app-prompt-platform span {
+  color: #64748b;
+  font-size: 12px;
+}
+
+.mm-app-prompt-primary,
+.mm-app-prompt-coming-soon {
+  display: flex;
+  min-height: 49px;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  width: 100%;
+  box-sizing: border-box;
+  border: 0;
+  border-radius: 999px;
+  background: #0b0b1a;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 750;
+  text-decoration: none;
+}
+
+.mm-app-prompt-primary:active {
+  transform: translateY(1px);
+}
+
+.mm-app-prompt-coming-soon {
+  padding: 0 14px;
+  background: #f1f5f9;
+  color: #64748b;
+  font-size: 13px;
+}
+
+.mm-app-prompt-secondary {
+  width: 100%;
+  min-height: 44px;
+  margin-top: 8px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: #475569;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.mm-app-prompt-secondary:hover {
+  background: #f8fafc;
+}
+
+.mm-app-prompt-footnote {
+  margin: 8px 0 0;
+  color: #94a3b8;
+  font-size: 10px;
+  line-height: 1.4;
+}
+
+@keyframes mm-app-prompt-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes mm-app-prompt-rise-in {
+  from { opacity: 0; transform: translateY(10px) scale(0.985); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@media (max-width: 380px) {
+  .mm-app-prompt-backdrop { padding: 12px; }
+  .mm-app-prompt { padding: 22px 18px 17px; border-radius: 24px; }
+  .mm-app-prompt-art { width: 102px; height: 102px; border-radius: 28px; }
+  .mm-app-prompt-logo { width: 65px; height: 65px; font-size: 43px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mm-app-prompt-backdrop,
+  .mm-app-prompt { animation: none; }
+}
