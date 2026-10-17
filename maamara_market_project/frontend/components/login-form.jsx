@@ -148,7 +148,7 @@ export function LoginForm({ className, ...props }) {
       <div className={cn("flex flex-col gap-6", className)} {...props}>
         <div className="flex justify-center mm-auth-brand">
           <div className="flex gap-4 items-center">
-            <img src="/maamara-app-icon.png" alt="Maa Mara Market" className="h-7 w-7 rounded-md object-contain" />
+            <img src="/maamara-brand-artwork.svg" alt="Maa Mara Market" className="h-7 w-7 rounded-md object-contain" />
             <h2 className="text-lg">Maamara Market</h2>
           </div>
         </div>
