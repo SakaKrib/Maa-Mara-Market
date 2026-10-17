@@ -16,7 +16,6 @@ from rest_framework.parsers import MultiPartParser, FormParser
 from core.Serializer import *
 from .UserVisitorSerializers import *
 import bleach # type: ignore
-from order.views import IsAuthenticatedOrVisitor
 from .CategorySerializers import SectionSerializerCat, CategorySerializerCat
 from django.db.models import F, Prefetch, Count, Min
 from order.views import IsAuthenticatedOrVisitor
