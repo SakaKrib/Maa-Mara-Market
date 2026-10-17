@@ -83,12 +83,12 @@ def notify_item_owner_for_marketplace_activity(sender, instance, created, **kwar
         "item_added_to_cart": (
             "Item added to cart",
             f"A customer added {item.name} to their cart.",
-            "/vendors-dashboard",
+            f"/vendors-dashboard/item-onsite/items/{item.pk}",
         ),
         "item_viewed": (
             "Your item was viewed",
             f"A customer viewed your item {item.name}.",
-            "/vendors-dashboard",
+            f"/vendors-dashboard/item-onsite/items/{item.pk}",
         ),
         "item_sold": (
             "Your item was purchased",
@@ -98,12 +98,12 @@ def notify_item_owner_for_marketplace_activity(sender, instance, created, **kwar
         "item_reviewed": (
             "New customer review",
             f"A customer left a review for {item.name}.",
-            f"/item/{item.pk}/",
+            f"/vendors-dashboard/item-onsite/items/{item.pk}",
         ),
         "item_added_to_wishlist": (
             "Your item was wishlisted",
             f"A customer added {item.name} to their wishlist.",
-            "/vendors-dashboard",
+            f"/vendors-dashboard/item-onsite/items/{item.pk}",
         ),
     }
     title, message, url = action_copy[instance.action]
