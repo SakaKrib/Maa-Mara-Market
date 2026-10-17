@@ -6,7 +6,7 @@ import { Input } from "./ui/input"
 import { Label } from "./ui/label"
 import api, { startGoogleLogin } from "../src/Services/Api";
 import { useNavigate } from "react-router-dom";
-import Maamara from "../src/assets/Logo/Maamara.jpg";
+
 import { Eye, EyeOff } from "lucide-react"
 import AppSnackbar, { notifySnackbar } from "./ui/app-snackbar";
 
@@ -156,7 +156,7 @@ const RegistrationForm = () => {
       <div>
         <div className="flex justify-center mm-auth-brand">
           <div className="flex gap-4 items-center">
-            <img src={Maamara} alt="maamara-logo" className="w-[20px] h-[20px]" />
+            <img src="/maamara-app-icon.png" alt="Maa Mara Market" className="h-7 w-7 rounded-md object-contain" />
             <h2 className="text-lg">Maamara Market</h2>
           </div>
         </div>
