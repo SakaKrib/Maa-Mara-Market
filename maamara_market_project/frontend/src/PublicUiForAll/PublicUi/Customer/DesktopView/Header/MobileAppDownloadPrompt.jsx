@@ -136,7 +136,7 @@ const MobileAppDownloadPrompt = ({ isNativeApp = false }) => {
             rel="noreferrer"
           >
             <Download size={18} />
-            {isAndroid ? "Download Android APK" : "Get it on the App Store"}
+            {isAndroid ? "Download Android APK (Beta)" : "Get it on the App Store"}
           </a>
         ) : (
           <div className="mm-app-prompt-coming-soon" role="status">
@@ -148,7 +148,7 @@ const MobileAppDownloadPrompt = ({ isNativeApp = false }) => {
           Continue browsing
         </button>
         <p className="mm-app-prompt-footnote">
-          This reminder will stay dismissed after you close it.
+          We will remember your choice and keep this reminder dismissed.
         </p>
       </section>
     </div>
