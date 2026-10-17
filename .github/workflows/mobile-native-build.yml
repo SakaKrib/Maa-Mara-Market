@@ -16,7 +16,7 @@ on:
         default: "https://opondo-thinkpad-t14-gen-1.tail34bca9.ts.net"
 
 permissions:
-  contents: read
+  contents: write
 
 concurrency:
   group: mobile-native-build-${{ github.ref }}
@@ -405,6 +405,23 @@ jobs:
           path: ${{ env.FRONTEND_DIR }}/android/app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
           retention-days: 14
+
+      # Keep a stable public beta APK URL for direct Android testing downloads.
+      # This is a debug APK, not a production-signed Play Store release.
+      - name: Publish latest Android beta APK
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: mobile-latest
+          name: Maa Mara Market Android APK (Beta)
+          body: |
+            Automatically generated Android debug APK from the ui-redesign-foundation branch.
+            This is a beta/testing build, not a production-signed Play Store release.
+            Android may require the user to explicitly allow installation from the browser.
+          target_commitish: ${{ github.sha }}
+          prerelease: true
+          make_latest: false
+          overwrite_files: true
+          files: ${{ env.FRONTEND_DIR }}/android/app/build/outputs/apk/debug/app-debug.apk
 
       - name: Upload generated Android project
         uses: actions/upload-artifact@v4
