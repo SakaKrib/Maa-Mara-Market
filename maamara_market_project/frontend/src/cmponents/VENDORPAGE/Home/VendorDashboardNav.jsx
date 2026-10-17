@@ -80,7 +80,7 @@ const VendorDashboardNav = ({ open = false, onClose }) => {
             aria-label="Maa Mara Market"
             className="vendor-sidebar-logo"
           >
-            <img src="/maamara-app-icon.png" alt="Maa Mara Market" />
+            <img src="/maamara-brand-artwork.svg" alt="Maa Mara Market" />
           </a>
           <div className="min-w-0">
              <div className="">
