@@ -17,7 +17,7 @@ import {
 } from "ionicons/icons";
 import { Link, useLocation } from "react-router-dom";
 import { useAuth } from "../../Auth/AuthContext/Context";
-import Maamara from "../../../assets/Logo/Maamara.jpg";
+
 import { useVendorOrdersCombined } from "../../Hooks/Order/CombinedOrderHook";
 import LogoutConfirmationModal from "../../Auth/LogoutConfirmationModal";
 
@@ -80,7 +80,7 @@ const VendorDashboardNav = ({ open = false, onClose }) => {
             aria-label="Maa Mara Market"
             className="vendor-sidebar-logo"
           >
-            <img src={Maamara} alt="Maa Mara Market" />
+            <img src="/maamara-app-icon.png" alt="Maa Mara Market" />
           </a>
           <div className="min-w-0">
              <div className="">
