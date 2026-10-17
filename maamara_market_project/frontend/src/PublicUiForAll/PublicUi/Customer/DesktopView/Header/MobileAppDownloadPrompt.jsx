@@ -107,7 +107,7 @@ const MobileAppDownloadPrompt = ({ isNativeApp = false }) => {
         </button>
 
         <div className="mm-app-prompt-art" aria-hidden="true">
-          <div className="mm-app-prompt-logo">M</div>
+          <img className="mm-app-prompt-logo-image" src="/maamara-brand-artwork.svg" alt="" />
           <span className="mm-app-prompt-spark mm-app-prompt-spark-one" />
           <span className="mm-app-prompt-spark mm-app-prompt-spark-two" />
           <span className="mm-app-prompt-device"><Smartphone size={24} /></span>
