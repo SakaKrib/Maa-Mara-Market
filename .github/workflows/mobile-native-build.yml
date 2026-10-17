@@ -369,6 +369,28 @@ jobs:
                       getWindow().setNavigationBarContrastEnforced(false);
                   }
               }
+
+              @Override
+              @SuppressWarnings("deprecation")
+              public void onBackPressed() {
+                  WebView webView = bridge != null ? bridge.getWebView() : null;
+                  // Let WebView/React Router history handle Back before considering app exit.
+                  if (webView != null && webView.canGoBack()) {
+                      webView.goBack();
+                      lastHomeBackPressAt = 0L;
+                      return;
+                  }
+
+                  long now = SystemClock.elapsedRealtime();
+                  if (lastHomeBackPressAt > 0L && now - lastHomeBackPressAt <= BACK_EXIT_INTERVAL_MS) {
+                      lastHomeBackPressAt = 0L;
+                      super.onBackPressed();
+                      return;
+                  }
+
+                  lastHomeBackPressAt = now;
+                  Toast.makeText(this, "Press Back again to exit Maa Mara Market", Toast.LENGTH_SHORT).show();
+              }
           }
           JAVA
 
