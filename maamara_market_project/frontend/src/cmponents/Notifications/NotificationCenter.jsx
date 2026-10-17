@@ -3,12 +3,16 @@ import { Bell, Trash2, X } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useVendorNotifications } from "../Hooks/VendorNotificationHook/VendorNotificationsHook";
 import { useAdminPreferences } from "../Settings/AdminPreferencesContext";
+import { useAuth } from "../Auth/AuthContext/Context";
 
 export default function NotificationCenter() {
   const [open, setOpen] = useState(false);
   const navigate = useNavigate();
   const { preferences } = useAdminPreferences();
-  const enabled = preferences.notifications;
+  const { isAuthenticated, loading: authLoading } = useAuth();
+  // Do not request the protected admin/vendor notification feed until the
+  // auth cookie check has completed and a signed-in user is confirmed.
+  const enabled = Boolean(preferences.notifications && !authLoading && isAuthenticated);
   const {
     notifications = [],
     unseenCount = 0,
