@@ -401,17 +401,39 @@ const Dashboard = () => {
         downloadCsv(
           `maa-mara-payment-transactions-${dateStamp}.csv`,
           "Payment transactions",
-          ["Transaction ID", "Reference", "Date", "Customer", "Email", "Amount (KES)", "Status", "Payment method"],
-          records.map((item) => [
-            item.id ?? "",
-            item.txid ?? item.reference ?? item.transaction_reference ?? "",
-            item.created_at ?? item.date ?? "",
-            item.user?.username ?? item.username ?? "",
-            item.payer_email ?? item.user?.email ?? "",
-            item.amount ?? "",
-            item.status ?? item.payment_status ?? "",
-            item.payment_method ?? item.method ?? "",
-          ]),
+          ["Transaction ID", "Reference", "Date", "Vendor", "Order ID", "Items sold", "Units sold", "Customer", "Email", "Amount (KES)", "Status", "Payment method"],
+          records.map((item) => {
+            const soldItems = Array.isArray(item.items) ? item.items : [];
+            const vendorName = item.vendor_name
+              ?? item.vendor?.company_name
+              ?? item.vendor?.business_name
+              ?? item.vendor?.name
+              ?? item.vendor?.username
+              ?? "Unknown vendor";
+            const itemSummary = soldItems.map((soldItem) => {
+              const name = soldItem.name ?? soldItem.item_name ?? (soldItem.id ? `Item #${soldItem.id}` : "Item");
+              const quantity = Number(soldItem.quantity_sold ?? soldItem.quantity ?? 0);
+              return quantity > 0 ? `${name} × ${quantity}` : name;
+            }).join("; ");
+            const unitsSold = soldItems.reduce(
+              (total, soldItem) => total + Number(soldItem.quantity_sold ?? soldItem.quantity ?? 0),
+              0
+            );
+            return [
+              item.id ?? "",
+              item.txid ?? item.reference ?? item.transaction_reference ?? "",
+              item.created_at ?? item.date ?? "",
+              vendorName,
+              item.order_id ?? item.order?.id ?? "",
+              itemSummary,
+              unitsSold,
+              item.user?.username ?? item.username ?? item.customer_name ?? "",
+              item.payer_email ?? item.user?.email ?? item.customer_email ?? "",
+              item.amount ?? "",
+              item.status ?? item.payment_status ?? "",
+              item.payment_method ?? item.method ?? "",
+            ];
+          }),
           producedAt,
           dateStamp
         );
