@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024" role="img" aria-labelledby="title desc">
+  <title id="title">Maa Mara Market</title>
+  <desc id="desc">Pink square with a large dark M, green accent bar, and green Maa Mara Market caption.</desc>
+  <rect width="1024" height="1024" fill="#FFBFBF"/>
+  <rect x="196" y="236" width="40" height="440" rx="20" fill="#8DE02C"/>
+  <path fill="#0B0B1A" d="M292 676V236H378L512 456L646 236H732V676H646V398L512 618L378 398V676Z"/>
+  <text x="512" y="858" text-anchor="middle" fill="#128A12" font-family="Poppins, Arial, sans-serif" font-size="54" font-weight="700" letter-spacing="0">MAA MARA MARKET</text>
+</svg>
