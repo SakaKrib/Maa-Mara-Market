@@ -24,8 +24,8 @@ const Home = ({ vendor_id }) => {
   const vendorName = [user?.first_name, user?.last_name].filter(Boolean).join(" ") || user?.business_name || user?.store_name || user?.name || user?.username || user?.email || "Not available";
   const vendorIdForExport = vendor_id ?? user?.vendor_id ?? user?.id ?? "Not available";
   const brandIconReference = typeof window !== "undefined"
-    ? `${window.location.origin}/maamara-app-icon.png`
-    : "https://maamaramarket.com/maamara-app-icon.png";
+    ? `${window.location.origin}/maamara-brand-artwork.svg`
+    : "https://maamaramarket.com/maamara-brand-artwork.svg";
   const isNativeApp =
     typeof window !== "undefined" &&
     window.Capacitor?.isNativePlatform?.() === true;
