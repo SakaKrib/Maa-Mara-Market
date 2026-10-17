@@ -34,14 +34,14 @@ const AppSnackbar = ({ open, message, severity, onClose, autoHideDuration, child
   return (
     <div
       role={isError ? "alert" : "status"}
-      className={`fixed right-4 top-20 z-[1400] max-w-sm rounded-[20px] border px-4 py-3 text-sm font-semibold shadow-lg ${tone}`}
+      className={`fixed right-4 top-20 z-[1400] flex w-max max-w-[min(24rem,calc(100vw-2rem))] items-start gap-3 rounded-[20px] border px-4 py-3 text-sm font-semibold shadow-lg ${tone}`}
     >
-      {children ?? message}
+      <div className="min-w-0 break-words [text-wrap:balance]">{children ?? message}</div>
       {onClose && (
         <button
           type="button"
           onClick={onClose}
-          className={`ml-3 text-xs ${dismiss}`}
+          className={`shrink-0 text-xs leading-5 ${dismiss}`}
           aria-label="Dismiss notification"
         >
           ×

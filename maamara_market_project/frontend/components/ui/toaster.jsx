@@ -15,7 +15,7 @@ export function Toaster() {
 
   return (
     <>
-      <div className="fixed right-4 top-20 z-[1400] w-full max-w-sm space-y-3 px-4 sm:px-0">
+      <div className="fixed right-4 top-20 z-[1400] flex max-w-[min(24rem,calc(100vw-2rem))] flex-col items-end space-y-3">
         {toasts.map(({ id, title, description, action, variant, ...props }) => {
           const severity = resolveSnackbarSeverity(
             variant === "destructive" || variant === "warning" ? "error" : variant === "success" ? "success" : "",
@@ -26,7 +26,7 @@ export function Toaster() {
             ? "border-red-200 bg-red-50 text-red-700 dark:bg-red-50 dark:text-red-700"
             : "border-gray-300 bg-card text-green-700 dark:bg-card dark:text-green-700";
           return (
-            <Toast key={id} {...props} className={`relative w-full rounded-[20px] border px-4 py-3 text-sm font-semibold shadow-lg ${tone}`}>
+            <Toast key={id} {...props} className={`relative !w-max max-w-full rounded-[20px] border px-4 py-3 text-sm font-semibold shadow-lg ${tone}`}>
               <div className="min-w-0 pr-6">
                 {title && <ToastTitle className="text-sm font-semibold text-inherit">{title}</ToastTitle>}
                 {description && <ToastDescription className="mt-1 text-sm font-normal text-inherit">{description}</ToastDescription>}
