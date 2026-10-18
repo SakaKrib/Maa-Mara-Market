@@ -98,7 +98,7 @@ export default function DateOfBirthPicker({ value = "", onChange, disabled = fal
         <div
           role="dialog"
           aria-label="Choose date of birth"
-          className="absolute left-0 top-[calc(100%+8px)] z-[85] w-[min(21rem,calc(100vw-3rem))] rounded-2xl border border-border bg-background p-3 text-foreground shadow-2xl"
+          className="absolute bottom-[calc(100%+8px)] left-0 z-[85] w-[min(21rem,calc(100vw-3rem))] rounded-2xl border border-border bg-background p-3 text-foreground shadow-2xl"
         >
           <div className="mb-3 grid grid-cols-[auto_minmax(0,1fr)_minmax(0,1fr)_auto] items-center gap-1.5">
             <button
@@ -129,7 +129,11 @@ export default function DateOfBirthPicker({ value = "", onChange, disabled = fal
               <span className="sr-only">Year</span>
               <select
                 value={year}
-                onChange={(event) => setVisibleMonth(new Date(Number(event.target.value), month, 1, 12))}
+                onChange={(event) => {
+                  const nextYear = Number(event.target.value);
+                  const safeMonth = nextYear === currentYear && month > today.getMonth() ? today.getMonth() : month;
+                  setVisibleMonth(new Date(nextYear, safeMonth, 1, 12));
+                }}
                 className="h-9 w-full appearance-none rounded-lg border border-border bg-background pl-2 pr-6 text-xs font-semibold text-foreground outline-none focus:border-primary focus:ring-2 focus:ring-primary/15"
               >
                 {yearOptions.map((optionYear) => (
