@@ -299,15 +299,11 @@ def user_visitor_activity_view(request):
 
 class HybridCheckAuthView(APIView):
     """
-    Resolve the current browser identity from, in order:
-    1. Django admin session
-    2. User access JWT
-    3. User refresh JWT (and issue fresh cookies)
-    4. Visitor access JWT
-    5. Visitor refresh JWT (and issue a fresh access cookie)
+    Resolve the current browser identity from the Django admin session,
+    user access JWT, or visitor access JWT. Expired tokens return 401 so the
+    shared API interceptor performs one coordinated refresh and retries.
 
-    The endpoint intentionally returns 200 for an anonymous browser. This keeps
-    initial storefront auth discovery from becoming an error path.
+    The endpoint intentionally returns 200 for a truly anonymous browser.
     """
 
     authentication_classes = [SessionAuthentication]
