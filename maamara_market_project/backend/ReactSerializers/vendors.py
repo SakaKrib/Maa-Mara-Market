@@ -981,6 +981,16 @@ def approve_vendor(request, vendor_request_id):
                 defaults={"description": description}
             )
 
+            # Do not mutate or reuse a brand that already belongs to another vendor.
+            existing_brand_owner = Vendor.objects.filter(
+                brand=brand_instance
+            ).exclude(user=user).first()
+            if existing_brand_owner:
+                return Response(
+                    {"brand": ["This brand is already associated with another vendor."]},
+                    status=400,
+                )
+
             # Save the raw brand JSON data
             vendor_request.brand_object = brand_data
             vendor_request.save(update_fields=["brand_object"])
@@ -1032,15 +1042,6 @@ def approve_vendor(request, vendor_request_id):
     if brand_instance is None:
         return Response(
             {"brand": ["A valid brand name is required before approving this vendor."]},
-            status=400,
-        )
-
-    # A Brand is one-to-one with Vendor. Never reuse a brand owned by another
-    # vendor, even when the submitted brand names match.
-    existing_brand_owner = Vendor.objects.filter(brand=brand_instance).exclude(user=user).first()
-    if existing_brand_owner:
-        return Response(
-            {"brand": ["This brand is already associated with another vendor."]},
             status=400,
         )
 
