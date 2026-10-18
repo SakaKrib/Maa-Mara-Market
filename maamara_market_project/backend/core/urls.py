@@ -113,8 +113,9 @@ urlpatterns = [
     # calendar url
     path("api/calendar-events/", UserCalendarEventsView.as_view(), name="user-calendar-events"),
 
-    # admin password change (requires current password)
+    # Admin and vendor credential changes (both verify the current password).
     path("api/admin/change-password/", AdminChangePasswordView.as_view(), name="admin-change-password"),
+    path("api/vendor/account-security/", VendorAccountSecurityView.as_view(), name="vendor-account-security"),
 
     # reset forgotten password
     path("api/password-reset/", RequestPasswordReset.as_view()),
