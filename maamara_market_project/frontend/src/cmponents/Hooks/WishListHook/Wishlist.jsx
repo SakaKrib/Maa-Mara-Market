@@ -1,5 +1,6 @@
-import React, { createContext, useContext, useState, useEffect } from "react";
+import React, { createContext, useContext, useState, useEffect, useRef } from "react";
 import api, { getVisitorIdentity } from "../../../Services/Api";
+import { useAuth } from "../../Auth/AuthContext/Context";
 
 const WishlistContext = createContext();
 
@@ -7,33 +8,35 @@ export const WishlistProvider = ({ children }) => {
   const [wishlist, setWishlist] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const requestSequence = useRef(0);
+  const { loading: authLoading, isAuthenticated, isVisitor, user } = useAuth();
 
-  // 📥 Fetch wishlist items
   const fetchWishlist = async () => {
+    const requestId = ++requestSequence.current;
     try {
       setLoading(true);
-      const res = await api.get(`/api/wishlist/`, {
+      const res = await api.get("/api/wishlist/", {
         params: { visitor_id: getVisitorIdentity() || undefined },
         withCredentials: true,
       });
-      // extract items array
-      const data = Array.isArray(res.data.items) ? res.data.items : [];
+      if (requestId !== requestSequence.current) return;
+      const data = Array.isArray(res.data?.items) ? res.data.items : [];
       setWishlist(data);
+      setError(null);
     } catch (err) {
-      console.error("❌ Wishlist fetch error:", err);
-      setWishlist([]);
+      if (requestId !== requestSequence.current) return;
+      console.error("Wishlist fetch error:", err);
+      // Do not turn a temporary request failure into an apparently empty list.
+      setError(err);
     } finally {
-      setLoading(false);
+      if (requestId === requestSequence.current) setLoading(false);
     }
   };
-  
+
   useEffect(() => {
-    fetchWishlist();
-  }, []);
-  
-  
-
-
+    if (authLoading) return;
+    void fetchWishlist();
+  }, [authLoading, isAuthenticated, isVisitor, user?.id]);
 
   // ➕ Add
   const addToWishlist = async (itemId) => {
