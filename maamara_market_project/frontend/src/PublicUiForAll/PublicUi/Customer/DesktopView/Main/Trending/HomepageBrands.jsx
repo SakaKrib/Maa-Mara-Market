@@ -24,7 +24,7 @@ const HomepageBrands = () => {
         </div>
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-4 lg:grid-cols-8">
           {featured.map((brand) => {
-            const logo = resolveApiAssetUrl(brand.logo_url || brand.vendor_logo_url);
+            const logo = resolveApiAssetUrl(brand.vendor_logo_url || brand.logo_url);
             return (
               <Link key={brand.id} to={`/brands/${brand.id}`} className="group flex min-w-0 flex-col items-center rounded-2xl border border-gray-200 bg-white p-3 text-center transition hover:-translate-y-0.5 hover:border-gray-300 hover:shadow-md sm:p-4">
                 <div className="flex aspect-square w-full max-w-28 items-center justify-center overflow-hidden rounded-xl bg-gray-50 p-3">
