@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { Search, Store } from "lucide-react";
 import useBrands from "../../../../../../cmponents/Hooks/Brand/BrandHook";
 import { resolveApiAssetUrl } from "../../../../../../Services/Api";
+import BrandSelect from "./BrandSelect";
 
 const shortDescription = (value, maxWords = 5) => {
   const words = String(value || "").trim().split(/\s+/).filter(Boolean);
@@ -19,6 +20,7 @@ const BrandList = () => {
   const filteredBrands = useMemo(() => {
     const term = search.trim().toLowerCase();
     return (brands || [])
+      .filter((brand) => brand && typeof brand === "object")
       .filter((brand) => !term || String(brand.name || "").toLowerCase().includes(term) || String(brand.description || "").toLowerCase().includes(term))
       .filter((brand) => !letter || String(brand.name || "").trim().toUpperCase().startsWith(letter))
       .sort((a, b) => String(a.name || "").localeCompare(String(b.name || "")) * (sortOrder === "za" ? -1 : 1));
@@ -47,16 +49,27 @@ const BrandList = () => {
           </label>
           <label>
             <span className="sr-only">Filter brands by first letter</span>
-            <select value={letter} onChange={(event) => setLetter(event.target.value)} className="w-full rounded-2xl border border-gray-200 bg-white px-3 py-3.5 text-sm outline-none focus:border-gray-500 focus:ring-2 focus:ring-gray-200">
-              <option value="">All letters</option>
-              {"ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("").map((value) => <option key={value} value={value}>Starts with {value}</option>)}
-            </select>
+            <BrandSelect
+              value={letter}
+              onChange={setLetter}
+              ariaLabel="Filter brands by first letter"
+              options={[
+                { value: "", label: "All letters" },
+                ...("ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("").map((value) => ({ value, label: `Starts with ${value}` }))),
+              ]}
+            />
           </label>
           <label>
             <span className="sr-only">Sort brands</span>
-            <select value={sortOrder} onChange={(event) => setSortOrder(event.target.value)} className="w-full rounded-2xl border border-gray-200 bg-white px-3 py-3.5 text-sm outline-none focus:border-gray-500 focus:ring-2 focus:ring-gray-200">
-              <option value="az">Name: A to Z</option><option value="za">Name: Z to A</option>
-            </select>
+            <BrandSelect
+              value={sortOrder}
+              onChange={setSortOrder}
+              ariaLabel="Sort brands"
+              options={[
+                { value: "az", label: "Name: A to Z" },
+                { value: "za", label: "Name: Z to A" },
+              ]}
+            />
           </label>
         </div>
 
