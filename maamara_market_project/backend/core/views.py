@@ -1324,6 +1324,76 @@ from django.contrib.auth import get_user_model, update_session_auth_hash, authen
 
 User = get_user_model()
 
+
+class VendorAccountSecurityView(APIView):
+    """Allow a signed-in vendor to change credentials after verifying their password."""
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        user = request.user
+        if not getattr(user, "is_authenticated", False) or not getattr(user, "vendor", None):
+            return Response({"detail": "Only authenticated vendor accounts can use this endpoint."}, status=status.HTTP_403_FORBIDDEN)
+
+        current_password = str(request.data.get("current_password") or "")
+        if not current_password or not authenticate(
+            request=request, username=user.get_username(), password=current_password
+        ):
+            return Response({"detail": "Your current password is incorrect."}, status=status.HTTP_400_BAD_REQUEST)
+
+        new_password = str(request.data.get("new_password") or "")
+        confirm_password = str(request.data.get("confirm_password") or "")
+        username = str(request.data.get("username") or "").strip()
+        email = str(request.data.get("email") or "").strip()
+
+        change_password = bool(new_password or confirm_password)
+        change_username = bool(username and username != user.username)
+        change_email = bool(email and email.casefold() != (user.email or "").casefold())
+
+        if not (change_password or change_username or change_email):
+            return Response({"detail": "Enter a new username, email address, or password to update."}, status=status.HTTP_400_BAD_REQUEST)
+
+        if change_password:
+            if len(new_password) < 8:
+                return Response({"detail": "The new password must contain at least 8 characters."}, status=status.HTTP_400_BAD_REQUEST)
+            if new_password != confirm_password:
+                return Response({"detail": "The new passwords do not match."}, status=status.HTTP_400_BAD_REQUEST)
+            if new_password == current_password:
+                return Response({"detail": "The new password must be different from the current password."}, status=status.HTTP_400_BAD_REQUEST)
+
+        if change_username and User.objects.filter(username__iexact=username).exclude(pk=user.pk).exists():
+            return Response({"detail": "That username is already in use."}, status=status.HTTP_400_BAD_REQUEST)
+
+        if change_email:
+            from django.core.validators import validate_email
+            from django.core.exceptions import ValidationError
+            try:
+                validate_email(email)
+            except ValidationError:
+                return Response({"detail": "Enter a valid email address."}, status=status.HTTP_400_BAD_REQUEST)
+            if User.objects.filter(email__iexact=email).exclude(pk=user.pk).exists():
+                return Response({"detail": "That email address is already in use."}, status=status.HTTP_400_BAD_REQUEST)
+
+        update_fields = []
+        if change_username:
+            user.username = username
+            update_fields.append("username")
+        if change_email:
+            user.email = email
+            update_fields.append("email")
+        if change_password:
+            user.set_password(new_password)
+            update_fields.append("password")
+        if update_fields:
+            user.save(update_fields=update_fields)
+            update_session_auth_hash(request, user)
+
+        return Response({
+            "success": True,
+            "message": "Account security details updated successfully.",
+            "username": user.username,
+            "email": user.email,
+        })
+
 @api_view(["POST"])
 @permission_classes([IsAuthenticated, IsAdminUser])
 def send_email(request):
