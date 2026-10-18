@@ -15,7 +15,7 @@ export function Toaster() {
 
   return (
     <>
-      <div className="fixed right-4 top-20 z-[1400] flex max-w-[min(24rem,calc(100vw-2rem))] flex-col items-end space-y-3">
+      <div className="fixed right-4 top-[8.5rem] z-[1400] flex max-w-[min(24rem,calc(100vw-2rem))] flex-col items-end space-y-3">
         {toasts.map(({ id, title, description, action, variant, ...props }) => {
           const severity = resolveSnackbarSeverity(
             variant === "destructive" || variant === "warning" ? "error" : variant === "success" ? "success" : "",
