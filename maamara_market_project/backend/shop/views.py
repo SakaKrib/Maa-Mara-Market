@@ -373,7 +373,9 @@ class BannerListView(generics.ListAPIView):
 @api_view(["GET"])
 @permission_classes([AllowAny])
 def list_brands(request):
-    brands = Brand.objects.all()
+    # The reverse one-to-one vendor relation provides the company logo.
+    # Join it up front so the directory avoids one extra query per brand.
+    brands = Brand.objects.select_related("vendor").all()
     serializer = BrandSerializer(brands, many=True, context={'request': request})
     return Response(serializer.data)  
 
