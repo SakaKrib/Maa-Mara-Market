@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useRef } from "react";
+import React, { createContext, useContext, useState, useEffect, useRef, useCallback } from "react";
 import api, { getVisitorIdentity } from "../../../Services/Api";
 import { useAuth } from "../../Auth/AuthContext/Context";
 
@@ -11,7 +11,7 @@ export const WishlistProvider = ({ children }) => {
   const requestSequence = useRef(0);
   const { loading: authLoading, isAuthenticated, isVisitor, user } = useAuth();
 
-  const fetchWishlist = async () => {
+  const fetchWishlist = useCallback(async () => {
     const requestId = ++requestSequence.current;
     try {
       setLoading(true);
@@ -31,12 +31,12 @@ export const WishlistProvider = ({ children }) => {
     } finally {
       if (requestId === requestSequence.current) setLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     if (authLoading) return;
     void fetchWishlist();
-  }, [authLoading, isAuthenticated, isVisitor, user?.id]);
+  }, [authLoading, isAuthenticated, isVisitor, user?.id, fetchWishlist]);
 
   // ➕ Add
   const addToWishlist = async (itemId) => {
