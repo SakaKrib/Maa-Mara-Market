@@ -104,16 +104,21 @@ export const AuthProvider = ({ children }) => {
       scheduleResumeCheck();
     };
 
+    const handleBlur = () => {
+      wasHidden = true;
+    };
     const handleFocus = () => scheduleResumeCheck();
     const handlePageShow = () => scheduleResumeCheck();
 
     document.addEventListener("visibilitychange", handleVisibilityChange);
+    window.addEventListener("blur", handleBlur);
     window.addEventListener("focus", handleFocus);
     window.addEventListener("pageshow", handlePageShow);
 
     return () => {
       window.clearTimeout(resumeTimer);
       document.removeEventListener("visibilitychange", handleVisibilityChange);
+      window.removeEventListener("blur", handleBlur);
       window.removeEventListener("focus", handleFocus);
       window.removeEventListener("pageshow", handlePageShow);
     };
