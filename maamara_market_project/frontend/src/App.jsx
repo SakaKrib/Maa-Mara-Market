@@ -45,6 +45,7 @@ import LoginPage from "./PublicUiForAll/PublicUi/Customer/LoginForm";
 import RegisterPage from "./PublicUiForAll/PublicUi/Customer/DesktopView/Main/Register";
 import VerifyRegistrationNewUser from "../components/VerifyRegistrationNewUser";
 import Main from "./PublicUiForAll/PublicUi/Customer/DesktopView/Main/Main";
+import DiscoveryCollectionPage from "./PublicUiForAll/PublicUi/Customer/DesktopView/Main/Discovery/DiscoveryCollectionPage";
 import OTPVerification from "./cmponents/VENDORPAGE/VendorRegistration/VendorOTP";
 import SingleItem from "./PublicUiForAll/PublicUi/Customer/DesktopView/Main/SingleItem/SingleItem";
 
@@ -219,6 +220,7 @@ function AppContent() {
               {/* Public Customer View */}
               <Route path="/" element={<CustomerShop />}>
                 <Route index element={<Main />} />
+                <Route path="discovery" element={<DiscoveryCollectionPage />} />
                 
                 <Route path="vendor-register-form" element={<VendorRegistration />} />
                 
