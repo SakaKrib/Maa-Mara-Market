@@ -1,6 +1,8 @@
 import { useRef, useState, useEffect } from "react";
 import { IonIcon } from "@ionic/react";
 import { Search, Store } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import DateOfBirthPicker from "./DateOfBirthPicker";
 import { menuOutline, closeOutline, cameraOutline } from "ionicons/icons";
 import { useAuth } from "../../Auth/AuthContext/Context";
 import { useCsrfToken } from "../../Hooks/AccessCRF/UseCSRFToken";
@@ -8,6 +10,7 @@ import api from "../../../Services/Api";
 import SearchBarForVendorAdmin from "../../SearchPage/GlobalSearchPage";
 
 const HeaderTop = ({ onMenuToggle }) => {
+  const navigate = useNavigate();
   const { isAuthenticated, loading, user } = useAuth();
   const csrfToken = useCsrfToken();
 
@@ -380,18 +383,13 @@ const HeaderTop = ({ onMenuToggle }) => {
                       </span>
                     </label>
                   ))}
-                  <label className="grid gap-2 text-[11px] font-semibold uppercase tracking-[0.1em] text-[#595959]">
+                  <label className="grid gap-2 text-[11px] font-semibold uppercase tracking-[0.1em] text-muted-foreground">
                     Date of birth
-                    <span className="rounded-2xl border border-gray-300 bg-[#f8f8f6] p-1.5">
-                      <input
-                        type="date"
-                        name="date_of_birth"
-                        value={form.date_of_birth || ""}
-                        onChange={handleChange}
-                        disabled={!editMode}
-                        className="h-11 w-full rounded-[18px] border border-gray-200 bg-white px-4 py-3 text-sm font-medium normal-case tracking-normal text-gray-900 outline-none transition focus:border-[#2563eb] focus:ring-4 focus:ring-[#2563eb]/10 disabled:cursor-not-allowed disabled:opacity-60"
-                      />
-                    </span>
+                    <DateOfBirthPicker
+                      value={form.date_of_birth || ""}
+                      onChange={handleChange}
+                      disabled={!editMode}
+                    />
                   </label>
                 </div>
 
@@ -413,7 +411,16 @@ const HeaderTop = ({ onMenuToggle }) => {
                   <h3 className="mt-1 text-sm font-semibold text-[#222] sm:text-base">Account settings</h3>
                   <p className="mt-1 text-xs leading-5 text-[#595959]">Manage security, password changes, notifications, and other administrator preferences.</p>
                 </div>
-                <a href={settingsPath} onClick={closeProfile} className="mt-4 inline-flex w-full items-center justify-center rounded-full border border-border bg-transparent px-4 py-3 text-sm font-semibold text-foreground transition hover:bg-muted">Open account settings</a>
+                <button
+                  type="button"
+                  onClick={() => {
+                    closeProfile();
+                    navigate(settingsPath);
+                  }}
+                  className="mt-4 inline-flex w-full items-center justify-center rounded-full border border-border bg-transparent px-4 py-3 text-sm font-semibold text-foreground transition hover:bg-muted"
+                >
+                  Open account settings
+                </button>
                 <button type="button" onClick={() => setActiveView("main")} className="mt-4 w-full rounded-full bg-black px-5 py-3 text-sm font-semibold text-white transition hover:bg-[#262626]">Back</button>
               </div>
             )}
