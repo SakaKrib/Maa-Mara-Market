@@ -1,14 +1,19 @@
 import React from "react";
 import { Link } from "react-router-dom";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, Store } from "lucide-react";
 import useBrands from "../../../../../../cmponents/Hooks/Brand/BrandHook";
 import { resolveApiAssetUrl } from "../../../../../../Services/Api";
+
+const shortDescription = (value, maxWords = 5) => {
+  const words = String(value || "").trim().split(/\s+/).filter(Boolean);
+  if (!words.length) return "Discover products from this maker.";
+  return words.length > maxWords ? `${words.slice(0, maxWords).join(" ")}…` : words.join(" ");
+};
 
 const HomepageBrands = () => {
   const { brands, loading, error } = useBrands();
   if (loading || error || !brands?.length) return null;
 
-  const featured = brands.slice(0, 8);
   return (
     <section className="mm-section">
       <div className="mm-container">
@@ -22,16 +27,32 @@ const HomepageBrands = () => {
             Explore all <ArrowRight size={16} />
           </Link>
         </div>
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-4 lg:grid-cols-8">
-          {featured.map((brand) => {
+
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 lg:grid-cols-4 xl:grid-cols-6">
+          {brands.slice(0, 6).map((brand) => {
             const logo = resolveApiAssetUrl(brand.vendor_logo_url || brand.logo_url);
             return (
-              <Link key={brand.id} to={`/brands/${brand.id}`} className="group flex min-w-0 flex-col items-center rounded-2xl border border-gray-200 bg-white p-3 text-center transition hover:-translate-y-0.5 hover:border-gray-300 hover:shadow-md sm:p-4">
-                <div className="flex aspect-square w-full max-w-28 items-center justify-center overflow-hidden rounded-xl bg-gray-50 p-3">
-                  {logo ? <img src={logo} alt={brand.name + " logo"} loading="lazy" className="h-full w-full object-contain transition-transform duration-300 group-hover:scale-105" /> : <span className="text-xs font-semibold text-gray-400">{brand.name}</span>}
+              <article key={brand.id} className="group min-w-0 overflow-hidden rounded-2xl border border-gray-200 bg-white p-2.5 transition-shadow hover:shadow-md sm:p-3">
+                <Link to={`/brands/${brand.id}`} className="block overflow-hidden rounded-xl bg-gray-50" aria-label={`View ${brand.name} brand details`}>
+                  <div className="flex aspect-square w-full items-center justify-center overflow-hidden p-4 sm:p-5">
+                    {logo ? (
+                      <img src={logo} alt={`${brand.name} company logo`} loading="lazy" className="h-full w-full object-contain transition-transform duration-300 group-hover:scale-105" />
+                    ) : (
+                      <div className="flex h-full w-full flex-col items-center justify-center gap-2 text-gray-400">
+                        <Store size={28} strokeWidth={1.5} />
+                        <span className="px-2 text-center text-xs font-semibold">{brand.name}</span>
+                      </div>
+                    )}
+                  </div>
+                </Link>
+                <div className="px-1 pb-1 pt-3">
+                  <h3 className="truncate text-sm font-semibold text-gray-900" title={brand.name}>{brand.name}</h3>
+                  <p className="mt-1 min-h-10 text-[11px] leading-5 text-gray-500">{shortDescription(brand.description)}</p>
+                  <Link to={`/brands/${brand.id}`} className="mt-3 inline-flex rounded-full border border-gray-200 bg-white px-3 py-1.5 text-[11px] font-semibold text-gray-800 transition-colors hover:bg-gray-50">
+                    View brand
+                  </Link>
                 </div>
-                <span className="mt-2 w-full truncate text-sm font-semibold text-gray-900">{brand.name}</span>
-              </Link>
+              </article>
             );
           })}
         </div>
