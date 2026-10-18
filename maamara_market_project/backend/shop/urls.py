@@ -37,6 +37,7 @@ urlpatterns = [
     path("filters/", filters_view, name="filters"),
     path("filter-products/", products_view, name="products"),
     path("api/brands/", list_brands, name="list_brands"),
+    path("api/brands/<int:brand_id>/categories/", brand_categories, name="brand-categories"),
     path("api/discovery/", discovery_feed, name="discovery-feed"),
     path("api/discovery-collection/", discovery_collection, name="discovery-collection"),
     path("api/recommendations/", recommendations, name="recommendations"),
