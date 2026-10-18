@@ -30,14 +30,20 @@ const MarketplaceDiscovery = () => {
 
   const uniqueFeed = useMemo(() => {
     const used = new Set(mobileCollectionIds.map(String));
-    const takeUnique = (items = []) => items.filter((item) => {
-      const id = getId(item);
-      if (!id || used.has(id)) return false;
-      used.add(id);
-      return true;
-    });
+    const takeUnique = (items = [], limit = 8) => {
+      const selected = [];
+      for (const item of items) {
+        if (selected.length >= limit) break;
+        const id = getId(item);
+        if (!id || used.has(id)) continue;
+        used.add(id);
+        selected.push(item);
+      }
+      return selected;
+    };
 
     // This order is intentional: earlier sections have display priority.
+    // Extra API candidates let later sections replace overlaps rather than shrink.
     const trending = takeUnique(feed.trending);
     const best_selling = takeUnique(feed.best_selling);
     const most_wanted = takeUnique(feed.most_wanted);
