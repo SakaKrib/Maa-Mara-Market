@@ -5,6 +5,7 @@ import React, {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from "react";
 import api from "../../../Services/Api";
@@ -29,6 +30,7 @@ export const AuthProvider = ({ children }) => {
   const [authType, setAuthType] = useState("anonymous");
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const refreshAuthRef = useRef(null);
 
   const applyAuthResponse = (data) => {
     const visitor = data?.authType === "visitor";
@@ -38,7 +40,13 @@ export const AuthProvider = ({ children }) => {
       Boolean(data?.user?.id);
 
     setIsVisitor(visitor);
-    setAuthType(visitor ? "visitor" : authenticatedUser ? (data?.authType || "user") : "anonymous");
+    setAuthType(
+      visitor
+        ? "visitor"
+        : authenticatedUser
+          ? data?.authType || "user"
+          : "anonymous"
+    );
     setIsAuthenticated(authenticatedUser);
     setUser(authenticatedUser ? data.user : null);
 
@@ -50,10 +58,14 @@ export const AuthProvider = ({ children }) => {
       const { data } = await requestAuthCheck();
       return applyAuthResponse(data);
     } catch (error) {
-      setIsAuthenticated(false);
-      setIsVisitor(false);
-      setAuthType("anonymous");
-      setUser(null);
+      // A network/server failure is not proof that the user's session ended.
+      // Preserve the last known identity unless the server explicitly rejects it.
+      if (error?.response?.status === 401) {
+        setIsAuthenticated(false);
+        setIsVisitor(false);
+        setAuthType("anonymous");
+        setUser(null);
+      }
       return null;
     } finally {
       setLoading(false);
@@ -64,12 +76,48 @@ export const AuthProvider = ({ children }) => {
     void checkAuth();
   }, []);
 
+  const refreshAuth = async () => checkAuth();
+  refreshAuthRef.current = refreshAuth;
 
+  // Mobile WebViews can suspend networking while the screen is off. Re-check
+  // the existing cookie session only when the app becomes visible again.
+  useEffect(() => {
+    if (typeof document === "undefined") return undefined;
 
-  const refreshAuth = async () => {
-    setLoading(true);
-    return checkAuth();
-  };
+    let wasHidden = document.visibilityState === "hidden";
+    let resumeTimer;
+
+    const scheduleResumeCheck = () => {
+      if (!wasHidden || document.visibilityState === "hidden") return;
+      wasHidden = false;
+      window.clearTimeout(resumeTimer);
+      resumeTimer = window.setTimeout(() => {
+        void refreshAuthRef.current?.();
+      }, 250);
+    };
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "hidden") {
+        wasHidden = true;
+        return;
+      }
+      scheduleResumeCheck();
+    };
+
+    const handleFocus = () => scheduleResumeCheck();
+    const handlePageShow = () => scheduleResumeCheck();
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    window.addEventListener("focus", handleFocus);
+    window.addEventListener("pageshow", handlePageShow);
+
+    return () => {
+      window.clearTimeout(resumeTimer);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+      window.removeEventListener("focus", handleFocus);
+      window.removeEventListener("pageshow", handlePageShow);
+    };
+  }, []);
 
   const login = (userData) => {
     setIsAuthenticated(Boolean(userData?.id));
