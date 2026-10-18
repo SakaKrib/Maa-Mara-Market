@@ -275,9 +275,17 @@ def products_view(request):
             Q(name__icontains=search_term) | Q(description__icontains=search_term)
         )
 
-    # ✅ Brand filter
+    # Brand pages may be populated through the vendor-brand relationship even
+    # when legacy Item.brand values were never assigned. Keep the ordinary
+    # product-filter behaviour unchanged, but include either association when
+    # a brand filter is requested.
     if brands := request.GET.get("brands"):
-        queryset = queryset.filter(brand__id__in=brands.split(","))
+        brand_ids = [value.strip() for value in brands.split(",") if value.strip()]
+        queryset = queryset.filter(
+            Q(brand__id__in=brand_ids) | Q(vendor__brand__id__in=brand_ids)
+        ).select_related("brand", "vendor", "vendor__brand").prefetch_related(
+            "variants", "reviews"
+        )
 
     # ✅ Color filter
     if color := request.GET.get("color"):
