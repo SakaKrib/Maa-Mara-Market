@@ -63,8 +63,12 @@ def get_cart_view(request):
         if request.user and request.user.is_authenticated:
             user = request.user
         else:
-            # The permission class has already bound visitorId to visitorAccessToken.
-            visitor_id = request.COOKIES.get("visitorId")
+            # Native WebViews may withhold the cross-origin visitor cookie;
+            # accept the same server-issued visitor ID passed by the shared API client.
+            visitor_id = (
+                request.COOKIES.get("visitorId")
+                or request.query_params.get("visitor_id")
+            )
 
             # If still no visitor ID → no cart exists
             if not visitor_id:
@@ -237,7 +241,11 @@ def add_to_cart_api(request, pk):
         actor_type = "user"
         actor_name = user.username
     else:
-        visitor_id = request.COOKIES.get("visitorId")
+        visitor_id = (
+            request.COOKIES.get("visitorId")
+            or request.data.get("visitor_id")
+            or request.query_params.get("visitor_id")
+        )
         if not visitor_id:
             visitor_id = str(uuid.uuid4())
         user = None
