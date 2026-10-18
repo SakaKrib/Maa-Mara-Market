@@ -269,6 +269,12 @@ def products_view(request):
     if subcategories := request.GET.get("subcategories"):
         queryset = queryset.filter(subcategory__id__in=subcategories.split(","))
 
+    # Optional server-side search keeps brand catalogue search accurate across pages.
+    if search_term := request.GET.get("search", "").strip():
+        queryset = queryset.filter(
+            Q(name__icontains=search_term) | Q(description__icontains=search_term)
+        )
+
     # ✅ Brand filter
     if brands := request.GET.get("brands"):
         queryset = queryset.filter(brand__id__in=brands.split(","))
