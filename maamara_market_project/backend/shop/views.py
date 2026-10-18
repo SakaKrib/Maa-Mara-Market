@@ -314,6 +314,8 @@ def products_view(request):
     sort_by = request.GET.get("sortBy", "Default")
     if sort_by == "Product Name":
         queryset = queryset.order_by("name")
+    elif sort_by == "Oldest":
+        queryset = queryset.order_by("created_at", "id")
     elif sort_by == "Price":
         queryset = queryset.order_by("price")
     elif sort_by == "Brand":
@@ -377,7 +379,25 @@ def list_brands(request):
     # Join it up front so the directory avoids one extra query per brand.
     brands = Brand.objects.select_related("vendor").all()
     serializer = BrandSerializer(brands, many=True, context={'request': request})
-    return Response(serializer.data)  
+    return Response(serializer.data)
+
+
+@api_view(["GET"])
+@permission_classes([AllowAny])
+def brand_categories(request, brand_id):
+    """Return only categories represented by available products in this brand."""
+    brand = get_object_or_404(Brand, pk=brand_id)
+    categories = (
+        Item.objects.filter(available=True, in_stock__gt=0, category__isnull=False)
+        .filter(Q(brand_id=brand.pk) | Q(vendor__brand_id=brand.pk))
+        .values("category_id", "category__name")
+        .annotate(count=Count("id", distinct=True))
+        .order_by("category__name")
+    )
+    return Response([
+        {"id": row["category_id"], "name": row["category__name"], "count": row["count"]}
+        for row in categories
+    ])  
 
  
 
