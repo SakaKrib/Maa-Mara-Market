@@ -16,7 +16,22 @@ const MobileHomepageCollections = () => {
       .get("/api/homepage-collections/?items=10&sections=8")
       .then((response) => {
         if (!active) return;
-        setCollections(Array.isArray(response.data) ? response.data : []);
+        const usedIds = new Set();
+        const uniqueCollections = (Array.isArray(response.data) ? response.data : []).map((collection) => ({
+          ...collection,
+          items: (Array.isArray(collection.items) ? collection.items : []).filter((item) => {
+            const id = String(item?.id ?? "");
+            if (!id || usedIds.has(id)) return false;
+            usedIds.add(id);
+            return true;
+          }),
+        })).filter((collection) => collection.items.length);
+        setCollections(uniqueCollections);
+
+        if (window.matchMedia("(max-width: 767px)").matches) {
+          window.__mmHomepageCollectionIds = Array.from(usedIds);
+          window.dispatchEvent(new Event("mm:homepage-collections-updated"));
+        }
       })
       .catch(() => {
         if (!active) return;
