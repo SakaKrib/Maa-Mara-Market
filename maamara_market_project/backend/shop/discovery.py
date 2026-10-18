@@ -138,7 +138,16 @@ def discovery_feed(request):
     trend_since = now - timedelta(days=TRENDING_WINDOW_DAYS)
     sales_since = now - timedelta(days=BEST_SELLER_WINDOW_DAYS)
 
-    base = _catalog_queryset().annotate(
+    exclude_ids = [
+        int(value)
+        for value in request.query_params.get("exclude_ids", "").split(",")
+        if value.strip().isdigit()
+    ]
+    catalog = _catalog_queryset()
+    if exclude_ids:
+        catalog = catalog.exclude(id__in=exclude_ids)
+
+    base = catalog.annotate(
         recent_views=Coalesce(_recent_view_subquery(trend_since), Value(0)),
         recent_sales=Coalesce(_completed_sales_subquery(sales_since), Value(0)),
     )
