@@ -65,14 +65,19 @@ def _merge_customer(user, visitor_id):
 
 def _merge_pending_cart(user, visitor_id):
     cart_status = getattr(Order, "CART_STATUS", "pending")
+    cart_statuses = [cart_status, "pending"]
     visitor_carts = list(
         Order.objects.select_for_update()
-        .filter(visitor_id=visitor_id, user__isnull=True, status=cart_status)
+        .filter(
+            visitor_id=visitor_id,
+            user__isnull=True,
+            status__in=cart_statuses,
+        )
         .order_by("created_at", "id")
     )
     user_cart = (
         Order.objects.select_for_update()
-        .filter(user=user, status=cart_status)
+        .filter(user=user, status__in=cart_statuses)
         .order_by("created_at", "id")
         .first()
     )
@@ -94,6 +99,7 @@ def _merge_pending_cart(user, visitor_id):
                 shoe_size=line.shoe_size,
                 selected_weight=line.selected_weight,
                 selected_length=line.selected_length,
+                custom_preferences=line.custom_preferences or {},
             ).first()
             if duplicate:
                 duplicate.quantity += line.quantity
