@@ -58,7 +58,7 @@ const BrandList = () => {
   if (error) return <section className="mm-page"><div className="mm-container py-16 text-center"><h1 className="text-xl font-semibold text-gray-900">Unable to load brands</h1><p className="mt-2 text-sm text-gray-600">Please check your connection and try again.</p></div></section>;
 
   return (
-    <section className="brands mm-page mm-section">
+    <section className="mm-page mm-section">
       <div className="mm-container">
         <header className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
           <div>
