@@ -180,6 +180,7 @@ def discovery_feed(request):
                 distinct=True,
             )
         )
+        .filter(recent_wishlist_count__gt=0)
         .order_by(
             F("recent_wishlist_count").desc(nulls_last=True),
             F("recent_views").desc(nulls_last=True),
@@ -237,6 +238,75 @@ def discovery_feed(request):
 
 @api_view(["GET"])
 @permission_classes([AllowAny])
+@api_view(["GET"])
+@permission_classes([AllowAny])
+def discovery_collection(request):
+    """Paginated full catalogue for a single homepage discovery collection."""
+    section = (request.query_params.get("section") or "trending").strip().lower()
+    key = (request.query_params.get("key") or "").strip()
+    try:
+        page_size = min(max(int(request.query_params.get("page_size", 12)), 1), 48)
+    except (TypeError, ValueError):
+        page_size = 12
+
+    now = timezone.now()
+    trend_since = now - timedelta(days=TRENDING_WINDOW_DAYS)
+    sales_since = now - timedelta(days=BEST_SELLER_WINDOW_DAYS)
+    base = _catalog_queryset().annotate(
+        recent_views=Coalesce(_recent_view_subquery(trend_since), Value(0)),
+        recent_sales=Coalesce(_completed_sales_subquery(sales_since), Value(0)),
+    )
+
+    if section == "trending":
+        queryset = base.annotate(
+            trend_interactions=F("recent_views") + F("recent_sales")
+        ).filter(
+            trend_interactions__gte=TRENDING_MIN_INTERACTIONS
+        ).order_by(
+            F("trend_interactions").desc(nulls_last=True),
+            F("recent_sales").desc(nulls_last=True),
+            F("recent_views").desc(nulls_last=True),
+            "-updated",
+        )
+    elif section == "best_selling":
+        queryset = base.filter(sales_count__gte=BEST_SELLER_MIN_UNITS).order_by(
+            F("sales_count").desc(nulls_last=True),
+            F("recent_sales").desc(nulls_last=True),
+            "-updated",
+        )
+    elif section == "most_wanted":
+        queryset = base.annotate(
+            recent_wishlist_count=Count(
+                "wishlisted_by",
+                filter=Q(wishlisted_by__created_at__gte=trend_since),
+                distinct=True,
+            )
+        ).filter(recent_wishlist_count__gt=0).order_by(
+            F("recent_wishlist_count").desc(nulls_last=True),
+            F("recent_views").desc(nulls_last=True),
+            "-updated",
+        )
+    elif section == "featured":
+        queryset = base.filter(featured_items__isnull=False).order_by(
+            "featured_items__priority", "-updated"
+        ).distinct()
+    elif section == "occasion":
+        if not key:
+            return Response({"detail": "An occasion key is required."}, status=400)
+        queryset = base.filter(occasions__key=key, occasions__is_active=True).order_by(
+            F("recent_sales").desc(nulls_last=True),
+            F("recent_views").desc(nulls_last=True),
+            "-updated",
+        )
+    else:
+        return Response({"detail": "Unknown discovery collection."}, status=400)
+
+    paginator = PageNumberPagination()
+    paginator.page_size = page_size
+    page_items = paginator.paginate_queryset(queryset, request)
+    return paginator.get_paginated_response(_serialize_discovery(page_items, request))
+
+
 def multi_collections(request):
     from ReactSerializers.models import Department
 
