@@ -26,7 +26,35 @@ const BrandList = () => {
       .sort((a, b) => String(a.name || "").localeCompare(String(b.name || "")) * (sortOrder === "za" ? -1 : 1));
   }, [brands, search, letter, sortOrder]);
 
-  if (loading) return <section className="mm-page"><div className="mm-container py-12"><div className="h-8 w-56 animate-pulse rounded bg-gray-100" /><div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">{Array.from({ length: 10 }, (_, i) => <div key={i} className="h-64 animate-pulse rounded-2xl bg-gray-100" />)}</div></div></section>;
+  if (loading) return (
+    <section className="mm-page mm-section">
+      <div className="mm-container">
+        <header className="mb-6 space-y-3">
+          <div className="h-3 w-28 animate-pulse rounded bg-gray-200" />
+          <div className="h-9 w-64 max-w-full animate-pulse rounded bg-gray-200" />
+          <div className="h-4 w-full max-w-2xl animate-pulse rounded bg-gray-200" />
+        </header>
+        <div className="mb-6 grid grid-cols-1 gap-3 sm:grid-cols-[minmax(220px,1fr)_180px_180px]">
+          <div className="h-12 animate-pulse rounded-2xl bg-gray-200" />
+          <div className="h-12 animate-pulse rounded-2xl bg-gray-200" />
+          <div className="h-12 animate-pulse rounded-2xl bg-gray-200" />
+        </div>
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
+          {Array.from({ length: 12 }, (_, i) => (
+            <article key={i} className="overflow-hidden rounded-2xl border border-gray-200 bg-white p-2.5 sm:p-3">
+              <div className="aspect-square animate-pulse rounded-xl bg-gray-200" />
+              <div className="space-y-2 px-1 pb-1 pt-3">
+                <div className="h-4 w-4/5 animate-pulse rounded bg-gray-200" />
+                <div className="h-3 w-full animate-pulse rounded bg-gray-200" />
+                <div className="h-3 w-2/3 animate-pulse rounded bg-gray-200" />
+                <div className="mt-3 h-7 w-24 animate-pulse rounded-full bg-gray-200" />
+              </div>
+            </article>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
   if (error) return <section className="mm-page"><div className="mm-container py-16 text-center"><h1 className="text-xl font-semibold text-gray-900">Unable to load brands</h1><p className="mt-2 text-sm text-gray-600">Please check your connection and try again.</p></div></section>;
 
   return (
