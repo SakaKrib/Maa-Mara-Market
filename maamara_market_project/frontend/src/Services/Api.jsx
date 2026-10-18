@@ -79,9 +79,26 @@ export const getVisitorIdentity = () => visitorIdentity;
 
 api.interceptors.request.use((config) => {
   const url = String(config.url || "");
-  if (visitorIdentity && /\/api\/(user-visitor-notifications|user-visitor-activity)\/?$/.test(url)) {
+  const method = String(config.method || "get").toLowerCase();
+
+  if (visitorIdentity && /\\/api\\/(user-visitor-notifications|user-visitor-activity)\\/?$/.test(url)) {
     config.params = { ...(config.params || {}), visitor_id: visitorIdentity };
   }
+
+  // Keep guest cart requests attached to the server-issued visitor identity
+  // in native WebViews where cross-origin cookies may not be available.
+  if (visitorIdentity && /\\/api\\/cart(?:\\/|$)/.test(url)) {
+    if (method === "get") {
+      config.params = { ...(config.params || {}), visitor_id: visitorIdentity };
+    } else if (typeof FormData !== "undefined" && config.data instanceof FormData) {
+      if (!config.data.has("visitor_id")) config.data.append("visitor_id", visitorIdentity);
+    } else if (config.data && typeof config.data === "object" && !Array.isArray(config.data)) {
+      config.data = { ...config.data, visitor_id: config.data.visitor_id || visitorIdentity };
+    } else if (config.data == null) {
+      config.data = { visitor_id: visitorIdentity };
+    }
+  }
+
   return config;
 });
 
