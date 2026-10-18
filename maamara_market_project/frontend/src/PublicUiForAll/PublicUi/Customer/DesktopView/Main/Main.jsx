@@ -6,6 +6,7 @@ import AccountHighlights from "./AccountHighlights";
 import Banners from "./Trending/Banner";
 import AdvertBlogs from "../../../../../cmponents/Hooks/BlogHooksNew/BlogAdvert";
 import MobileHomepageFlow from "./MobileHomepageFlow";
+import HomepageBrands from "./Trending/HomepageBrands";
 
 const Main = () => (
   <main className="mm-page">
@@ -24,6 +25,7 @@ const Main = () => (
       <AdvertBlogs />
     </div>
     <MarketplaceDiscovery />
+    <HomepageBrands />
   </main>
 );
 
