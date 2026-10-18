@@ -11,7 +11,7 @@ const useMarketplaceDiscovery = () => {
   const fetchFeed = useCallback(async () => {
     try {
       setError(null);
-      const response = await api.get("/api/discovery/?limit=8");
+      const response = await api.get("/api/discovery/?limit=24");
       setFeed({
         popular: response.data?.popular || [],
         trending: response.data?.trending || [],
