@@ -368,50 +368,15 @@ class HybridCheckAuthView(APIView):
             except (InvalidToken, TokenError):
                 pass
 
-        refresh_token = request.COOKIES.get("refreshToken")
-        if refresh_token:
-            try:
-                serializer = TokenRefreshSerializer(data={"refresh": refresh_token})
-                serializer.is_valid(raise_exception=True)
-                refreshed = serializer.validated_data
-
-                refresh = RefreshToken(
-                    refreshed.get("refresh") or refresh_token
-                )
-                user_id = refresh.payload.get("user_id")
-                if not user_id:
-                    raise TokenError("Refresh token has no user identity")
-
-                user = User.objects.get(pk=user_id)
-                response = Response(
-                    self._user_payload(user),
-                    status=status.HTTP_200_OK,
-                )
-                response.set_cookie(
-                    "accessToken",
-                    refreshed["access"],
-                    httponly=True,
-                    secure=request.is_secure(),
-                    samesite="Lax",
-                    max_age=5 * 60,
-                    path="/",
-                )
-                if refreshed.get("refresh"):
-                    response.set_cookie(
-                        "refreshToken",
-                        refreshed["refresh"],
-                        httponly=True,
-                        secure=request.is_secure(),
-                        samesite="Lax",
-                        max_age=30 * 24 * 3600,
-                        path="/",
-                    )
-
-                self._clear_visitor_identity(response)
-                self._clear_user_session_cookies(response)
-                return response
-            except (InvalidToken, TokenError, User.DoesNotExist, ValueError):
-                pass
+        # Do not rotate refresh tokens inside check-auth. The shared Axios
+        # interceptor owns refresh and retries this request, preventing a
+        # startup/resume auth check from racing other requests for the same
+        # rotating refresh token.
+        if request.COOKIES.get("refreshToken"):
+            return Response(
+                {"detail": "Access token expired; refresh required."},
+                status=status.HTTP_401_UNAUTHORIZED,
+            )
 
         visitor_id_cookie = request.COOKIES.get("visitorId")
         visitor_token = request.COOKIES.get("visitorAccessToken")
@@ -438,45 +403,13 @@ class HybridCheckAuthView(APIView):
             except (InvalidToken, TokenError):
                 pass
 
-        visitor_refresh = request.COOKIES.get("visitorRefreshToken")
-        if visitor_refresh:
-            try:
-                refresh = RefreshToken(visitor_refresh)
-                refresh.check_exp()
-
-                token_visitor_id = refresh.payload.get("visitor_id")
-                if (
-                    not refresh.payload.get("visitor")
-                    or not token_visitor_id
-                    or not visitor_id_cookie
-                    or str(token_visitor_id) != str(visitor_id_cookie)
-                ):
-                    raise TokenError("Visitor identity mismatch")
-
-                new_access = refresh.access_token
-                new_access["visitor"] = True
-                new_access["visitor_id"] = token_visitor_id
-
-                response = Response(
-                    {
-                        "isAuthenticated": False,
-                        "authType": "visitor",
-                        "user": None,
-                    },
-                    status=status.HTTP_200_OK,
-                )
-                response.set_cookie(
-                    "visitorAccessToken",
-                    str(new_access),
-                    httponly=True,
-                    secure=request.is_secure(),
-                    samesite="Lax",
-                    max_age=30 * 24 * 3600,
-                    path="/",
-                )
-                return response
-            except (InvalidToken, TokenError):
-                pass
+        # Visitor refreshes are also handled only by the shared refresh
+        # interceptor. It will call /api/token/refresh/ and retry this check.
+        if request.COOKIES.get("visitorRefreshToken"):
+            return Response(
+                {"detail": "Visitor access token expired; refresh required."},
+                status=status.HTTP_401_UNAUTHORIZED,
+            )
 
         return Response(
             {"isAuthenticated": False, "user": None},
