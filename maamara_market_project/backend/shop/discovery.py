@@ -306,6 +306,8 @@ def discovery_collection(request):
     return paginator.get_paginated_response(_serialize_discovery(page_items, request))
 
 
+@api_view(["GET"])
+@permission_classes([AllowAny])
 def multi_collections(request):
     from ReactSerializers.models import Department
 
