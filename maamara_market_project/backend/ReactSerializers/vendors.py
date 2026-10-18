@@ -991,26 +991,58 @@ def approve_vendor(request, vendor_request_id):
 
             logo_file = request.FILES.get("vendor_company_logo") or request.FILES.get("brand_logo")
             if logo_file:
+                # The company logo is the authoritative brand logo when supplied.
                 brand_instance.logo.save(logo_file.name, logo_file, save=True)
-            elif decoded_path and (not brand_instance.logo or not brand_instance.logo.name):
+            elif decoded_path:
+                # The logo was uploaded when the vendor request was submitted.
+                # Resolve its stored path through Django storage instead of
+                # assuming every deployment uses a local MEDIA_ROOT.
                 try:
                     parsed_url = urlparse(decoded_path)
+                    media_path = parsed_url.path if parsed_url.scheme else decoded_path
+                    relative_path = media_path
+                    if relative_path.startswith(settings.MEDIA_URL):
+                        relative_path = relative_path[len(settings.MEDIA_URL):]
+                    relative_path = relative_path.lstrip("/")
+                    if relative_path.startswith("media/"):
+                        relative_path = relative_path[len("media/"):]
 
-                    if decoded_path.startswith("/media"):
-                        relative_path = decoded_path.replace("/media/", "", 1)
-                        file_path = os.path.join(settings.MEDIA_ROOT, relative_path)
-                        if os.path.exists(file_path):
-                            with open(file_path, "rb") as f:
-                                brand_instance.logo.save(os.path.basename(file_path), File(f), save=True)
-
+                    if relative_path and default_storage.exists(relative_path):
+                        with default_storage.open(relative_path, "rb") as logo_stream:
+                            brand_instance.logo.save(
+                                os.path.basename(relative_path),
+                                File(logo_stream),
+                                save=True,
+                            )
                     elif parsed_url.scheme in ["http", "https"]:
                         response = requests.get(decoded_path, timeout=10)
                         if response.status_code == 200:
-                            filename = os.path.basename(parsed_url.path)
-                            brand_instance.logo.save(filename, ContentFile(response.content), save=True)
+                            filename = os.path.basename(parsed_url.path) or "company-logo"
+                            brand_instance.logo.save(
+                                filename,
+                                ContentFile(response.content),
+                                save=True,
+                            )
+                except Exception:
+                    logger.exception(
+                        "Could not copy vendor company logo to brand %s",
+                        brand_instance.pk,
+                    )
 
-                except Exception as e:
-                    pass
+    if brand_instance is None:
+        return Response(
+            {"brand": ["A valid brand name is required before approving this vendor."]},
+            status=400,
+        )
+
+    # A Brand is one-to-one with Vendor. Never reuse a brand owned by another
+    # vendor, even when the submitted brand names match.
+    existing_brand_owner = Vendor.objects.filter(brand=brand_instance).exclude(user=user).first()
+    if existing_brand_owner:
+        return Response(
+            {"brand": ["This brand is already associated with another vendor."]},
+            status=400,
+        )
 
     # Clean vendor data. draft_id is only an internal approval reference.
     for field in ['social_media_links', 'item_list', 'item_pdf', 'draft_id']:
@@ -1185,32 +1217,10 @@ def approve_vendor(request, vendor_request_id):
                 category = taxonomy["category"]
                 subcategory = taxonomy["subcategory"]
 
-                brand = None
-                raw_brand = item.get('brand')
-
-                # The frontend may submit the selected Brand as an ID, while
-                # older vendor-request payloads may contain a brand name/object.
-                # Resolve all supported forms to an actual Brand instance before
-                # creating the Item.
-                if isinstance(raw_brand, dict):
-                    brand_id = raw_brand.get('id') or raw_brand.get('pk')
-                    brand_name = sanitize(raw_brand.get('name', '')).strip()
-                else:
-                    brand_id = raw_brand if isinstance(raw_brand, (int, str)) else None
-                    brand_name = sanitize(raw_brand).strip() if raw_brand else None
-
-                if brand_id not in (None, ''):
-                    try:
-                        brand = Brand.objects.filter(pk=int(brand_id)).first()
-                    except (TypeError, ValueError):
-                        brand = None
-
-                if brand is None and brand_name:
-                    if not brand_name.isdigit():
-                        brand, _ = Brand.objects.get_or_create(name=brand_name)
-
-                if brand is None:
-                    brand = brand_instance
+                # Vendor approval owns the brand assignment. Do not trust an
+                # item-level brand supplied in the request: every item created
+                # here must use this vendor's one-to-one brand.
+                brand = brand_instance
 
                 relative_path = normalize_media_path(raw_path)
                 video_relative_path = normalize_media_path(item.get("video"))
