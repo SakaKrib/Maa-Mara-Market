@@ -239,8 +239,6 @@ def discovery_feed(request):
 
 @api_view(["GET"])
 @permission_classes([AllowAny])
-@api_view(["GET"])
-@permission_classes([AllowAny])
 def discovery_collection(request):
     """Paginated full catalogue for a single homepage discovery collection."""
     section = (request.query_params.get("section") or "trending").strip().lower()
