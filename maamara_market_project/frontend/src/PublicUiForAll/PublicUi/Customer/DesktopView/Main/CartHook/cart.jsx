@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useRef } from "react";
+import React, { createContext, useContext, useState, useEffect, useRef, useCallback } from "react";
 import api, { getVisitorIdentity } from "../../../../../../Services/Api";
 import { useAuth } from "../../../../../../cmponents/Auth/AuthContext/Context";
 
@@ -11,7 +11,7 @@ export const CartProvider = ({ children }) => {
   const requestSequence = useRef(0);
   const { loading: authLoading, isAuthenticated, isVisitor, user } = useAuth();
 
-  const fetchCart = async () => {
+  const fetchCart = useCallback(async () => {
     const requestId = ++requestSequence.current;
     try {
       setLoading(true);
@@ -35,7 +35,7 @@ export const CartProvider = ({ children }) => {
     } finally {
       if (requestId === requestSequence.current) setLoading(false);
     }
-  };
+  }, []);
 
   // Wait for auth restoration, then reload whenever the identity changes.
   // This prevents an anonymous/visitor response from becoming the signed-in
@@ -43,7 +43,7 @@ export const CartProvider = ({ children }) => {
   useEffect(() => {
     if (authLoading) return;
     void fetchCart();
-  }, [authLoading, isAuthenticated, isVisitor, user?.id]);
+  }, [authLoading, isAuthenticated, isVisitor, user?.id, fetchCart]);
 
   return (
     <CartContext.Provider value={{ order, loading, error, refreshCart: fetchCart }}>
