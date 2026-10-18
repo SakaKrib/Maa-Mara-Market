@@ -10,7 +10,7 @@ from PIL import Image
 from rest_framework.test import APIRequestFactory, force_authenticate
 
 from vendorDashboard.models import Vendor, VendorRequest
-from .models import Brand, Item
+from .models import Brand, Department, Item, Section
 from .vendors import approve_vendor
 
 
@@ -43,6 +43,11 @@ class VendorApprovalBrandRegressionTests(TestCase):
             password="test-password",
         )
         self.factory = APIRequestFactory()
+        self.section = Section.objects.create(name="inorganic")
+        Department.objects.create(
+            name="Approval Test Department",
+            section=self.section,
+        )
 
     @classmethod
     def tearDownClass(cls):
