@@ -5,7 +5,7 @@ import { Button } from "./ui/button"
 import { Card, CardContent } from "./ui/card"
 import { Input } from "./ui/input"
 import { Label } from "./ui/label"
-import api, { startGoogleLogin } from "../src/Services/Api"
+import api, { startGoogleLogin, getVisitorIdentity } from "../src/Services/Api"
 import { useNavigate, useLocation, Link } from "react-router-dom"
 import { useAuth } from "../src/cmponents/Auth/AuthContext/Context"
 import { Eye, EyeOff } from "lucide-react"
@@ -96,6 +96,10 @@ export function LoginForm({ className, ...props }) {
     const formData = new FormData()
     formData.append("username", username)
     formData.append("password", password)
+    // The visitor cookie may not be included by native WebViews. Send the
+    // in-memory server-issued ID so the backend can merge guest cart/wishlist.
+    const visitorId = getVisitorIdentity()
+    if (visitorId) formData.append("visitorId", visitorId)
 
     try {
       const response = await api.post("/api/login/", formData, {
