@@ -92,7 +92,7 @@ const BrandPage = () => {
     return result.sort((a, b) => String(a.name).localeCompare(String(b.name)));
   }, [filters]);
 
-  const logo = resolveApiAssetUrl(brand?.logo_url || brand?.vendor_logo_url);
+  const logo = resolveApiAssetUrl(brand?.vendor_logo_url || brand?.logo_url);
   const heroImage = resolveApiAssetUrl(brand?.vendor_logo_url || brand?.logo_url);
   const totalPages = Math.max(1, Math.ceil(totalCount / PAGE_SIZE));
 
