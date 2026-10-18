@@ -5,7 +5,7 @@ import DiscoverySection from "./DiscoverySection";
 const getId = (item) => String(item?.id ?? "");
 
 const MarketplaceDiscovery = () => {
-  const { feed, loading } = useMarketplaceDiscovery();
+  const { feed, loading, refresh } = useMarketplaceDiscovery();
   const [mobileCollectionIds, setMobileCollectionIds] = useState(() => (
     typeof window !== "undefined" && window.matchMedia("(max-width: 767px)").matches
       ? (window.__mmHomepageCollectionIds || [])
@@ -14,19 +14,19 @@ const MarketplaceDiscovery = () => {
 
   useEffect(() => {
     const refreshCollectionIds = () => {
-      setMobileCollectionIds(
-        window.matchMedia("(max-width: 767px)").matches
-          ? (window.__mmHomepageCollectionIds || [])
-          : []
-      );
+      const isMobile = window.matchMedia("(max-width: 767px)").matches;
+      const ids = isMobile ? (window.__mmHomepageCollectionIds || []) : [];
+      setMobileCollectionIds(ids);
+      if (isMobile && ids.length) refresh(ids);
     };
     window.addEventListener("mm:homepage-collections-updated", refreshCollectionIds);
     window.addEventListener("resize", refreshCollectionIds);
+    refreshCollectionIds();
     return () => {
       window.removeEventListener("mm:homepage-collections-updated", refreshCollectionIds);
       window.removeEventListener("resize", refreshCollectionIds);
     };
-  }, []);
+  }, [refresh]);
 
   const uniqueFeed = useMemo(() => {
     const used = new Set(mobileCollectionIds.map(String));
