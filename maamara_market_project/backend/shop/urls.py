@@ -1,6 +1,6 @@
 from django.urls import path, include
 from .views import *
-from .discovery import discovery_feed, multi_collections, recommendations, homepage_collections
+from .discovery import discovery_feed, discovery_collection, multi_collections, recommendations, homepage_collections
 from .marketplace_context import item_marketplace_context_v2
 from rest_framework.routers import DefaultRouter
 
@@ -38,6 +38,7 @@ urlpatterns = [
     path("filter-products/", products_view, name="products"),
     path("api/brands/", list_brands, name="list_brands"),
     path("api/discovery/", discovery_feed, name="discovery-feed"),
+    path("api/discovery-collection/", discovery_collection, name="discovery-collection"),
     path("api/recommendations/", recommendations, name="recommendations"),
     path("api/homepage-collections/", homepage_collections, name="homepage-collections"),
     path("api/items/<int:pk>/marketplace-context/", item_marketplace_context_v2, name="item-marketplace-context"),
