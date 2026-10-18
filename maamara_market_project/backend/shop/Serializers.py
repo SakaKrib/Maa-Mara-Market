@@ -272,7 +272,8 @@ class BrandSerializer(serializers.ModelSerializer):
         # the reverse OneToOne relation (related_name="vendor").
         try:
             vendor = obj.vendor
-        except Vendor.DoesNotExist:
+        except Exception:
+            # A brand may exist without an associated vendor.
             return None
         return vendor.website_url or None
 
