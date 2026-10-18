@@ -190,7 +190,7 @@ const BrandPage = () => {
                 rel="noopener noreferrer"
                 className="break-all text-sm font-semibold text-blue-700 underline decoration-blue-200 underline-offset-4 transition hover:text-blue-900"
               >
-                {String(brand.website_url).replace(/^https?:\\/\\//i, "").replace(/\\/$/, "")}
+                {brand.website_url}
               </a>
             ) : (
               <span className="text-sm text-gray-500">Website not provided</span>
