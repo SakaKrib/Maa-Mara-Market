@@ -248,15 +248,23 @@ class BrandSerializer(serializers.ModelSerializer):
         return None
 
     def get_vendor_logo_url(self, obj):
-        vendor = getattr(obj, "vendor", None)  # 👈 this works because of related_name
-        if vendor and vendor.vendor_company_logo:
-            request = self.context.get("request")
-            return (
-                request.build_absolute_uri(vendor.vendor_company_logo.url)
-                if request
-                else vendor.vendor_company_logo.url
-            )
-        return None
+        # Brand.vendor is a reverse OneToOne relation. Accessing it raises
+        # Vendor.DoesNotExist when no vendor is linked, so guard that case
+        # rather than allowing one unlinked brand to break the whole directory.
+        try:
+            vendor = obj.vendor
+        except Exception:
+            vendor = None
+
+        if not vendor or not vendor.vendor_company_logo:
+            return None
+
+        request = self.context.get("request")
+        try:
+            logo_url = vendor.vendor_company_logo.url
+        except (ValueError, AttributeError):
+            return None
+        return request.build_absolute_uri(logo_url) if request else logo_url
 
 
 
