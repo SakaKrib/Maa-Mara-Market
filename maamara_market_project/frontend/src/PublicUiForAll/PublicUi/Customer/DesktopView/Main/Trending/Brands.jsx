@@ -53,7 +53,7 @@ const BrandList = () => {
         </div>
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
           {filteredBrands.map((brand) => {
-            const displayLogo = resolveApiAssetUrl(brand.logo_url || brand.vendor_logo_url);
+            const displayLogo = resolveApiAssetUrl(brand.vendor_logo_url || brand.logo_url);
             return (
               <Link key={brand.id} to={`/brands/${brand.id}`} className="group overflow-hidden rounded-2xl border border-gray-200 bg-white p-3 text-center shadow-sm transition hover:-translate-y-0.5 hover:border-gray-300 hover:shadow-md sm:p-4" title={brand.name}>
                 <div className="mx-auto flex aspect-square w-full max-w-36 items-center justify-center overflow-hidden rounded-xl bg-gray-50 p-3">
