@@ -17,13 +17,31 @@ export const resolveSnackbarSeverity = (severity, message) => {
  * Shared snackbar used across the whole site.
  * success: white background, green text. error: light red background, red text.
  */
-const AppSnackbar = ({ open, message, severity, onClose, autoHideDuration, children }) => {
+const DEFAULT_AUTO_HIDE_MS = 5000;
+
+const AppSnackbar = ({
+  open,
+  message,
+  severity,
+  onClose,
+  autoHideDuration = DEFAULT_AUTO_HIDE_MS,
+  children,
+}) => {
+  const [paused, setPaused] = useState(false);
+
+  // A snackbar closed while hovered never gets its mouseleave; reset so the next one is not stuck paused.
   useEffect(() => {
-    if (!open || !onClose || !autoHideDuration) return undefined;
+    if (!open) setPaused(false);
+  }, [open]);
+
+  // Close by itself (default 5s) so a snackbar can never get stuck on screen.
+  // The timer is paused while the pointer is over it and restarts when it leaves.
+  useEffect(() => {
+    if (!open || !onClose || !autoHideDuration || paused) return undefined;
     const timer = setTimeout(() => onClose(), autoHideDuration);
     return () => clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, message, autoHideDuration]);
+  }, [open, message, autoHideDuration, paused]);
 
   if (!open) return null;
   const isError = resolveSnackbarSeverity(severity, message) === "error";
@@ -34,7 +52,9 @@ const AppSnackbar = ({ open, message, severity, onClose, autoHideDuration, child
   return (
     <div
       role={isError ? "alert" : "status"}
-      className={`fixed right-4 top-20 z-[1400] flex w-max max-w-[min(24rem,calc(100vw-2rem))] items-start gap-3 rounded-[20px] border px-4 py-3 text-sm font-semibold shadow-lg ${tone}`}
+      onMouseEnter={() => setPaused(true)}
+      onMouseLeave={() => setPaused(false)}
+      className={`fixed right-4 top-[8.5rem] z-[1400] flex w-max max-w-[min(24rem,calc(100vw-2rem))] items-start gap-3 rounded-[20px] border px-4 py-3 text-sm font-semibold shadow-lg ${tone}`}
     >
       <div className="min-w-0 break-words [text-wrap:balance]">{children ?? message}</div>
       {onClose && (
