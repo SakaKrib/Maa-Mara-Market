@@ -8,6 +8,22 @@ from ReactSerializers.models import Department, Item, Section
 
 
 class ProductFilterEndpointTests(TestCase):
+    def test_discovery_collection_endpoint_is_registered_and_paginated(self):
+        response = self.client.get(
+            "/api/discovery-collection/",
+            {"section": "trending", "page": 1, "page_size": 12},
+        )
+
+        self.assertEqual(
+            response.status_code,
+            200,
+            response.content.decode("utf-8", errors="replace"),
+        )
+        payload = response.json()
+        self.assertIn("count", payload)
+        self.assertIn("results", payload)
+        self.assertIsInstance(payload["results"], list)
+
     def test_filters_endpoint_supports_free_text_item_attributes(self):
         response = self.client.get("/filters/")
 
