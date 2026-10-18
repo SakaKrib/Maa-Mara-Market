@@ -167,12 +167,25 @@ const VendorOrdersPage = () => {
     inProcess = [],
     completed = [],
     loading,
+    error,
   } = useVendorOrdersCombined();
 
   if (loading) {
     return (
       <div className="rounded-xl border border-gray-200 bg-white p-10 text-center shadow-sm">
         <p className="text-sm font-medium text-gray-600">Loading orders...</p>
+      </div>
+    );
+  }
+
+  if (error && !pending.length && !inProcess.length && !completed.length) {
+    return (
+      <div className="rounded-xl border border-red-200 bg-red-50 p-6 text-center shadow-sm">
+        <p className="text-sm font-semibold text-red-700">Unable to load orders</p>
+        <p className="mt-2 text-sm text-red-600">{error}</p>
+        <button type="button" onClick={() => window.location.reload()} className="mt-4 rounded-full border border-red-200 bg-white px-4 py-2 text-sm font-semibold text-red-700 hover:bg-red-100">
+          Try again
+        </button>
       </div>
     );
   }
