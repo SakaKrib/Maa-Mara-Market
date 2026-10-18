@@ -8,10 +8,12 @@ const useMarketplaceDiscovery = () => {
   const [error, setError] = useState(null);
   const refreshTimer = useRef(null);
 
-  const fetchFeed = useCallback(async () => {
+  const fetchFeed = useCallback(async (excludeIds = []) => {
     try {
       setError(null);
-      const response = await api.get("/api/discovery/?limit=24");
+      const response = await api.get("/api/discovery/?limit=24", {
+        params: excludeIds.length ? { exclude_ids: excludeIds.join(",") } : {},
+      });
       setFeed({
         popular: response.data?.popular || [],
         trending: response.data?.trending || [],
