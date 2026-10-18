@@ -43,11 +43,16 @@ class VendorApprovalBrandRegressionTests(TestCase):
             password="test-password",
         )
         self.factory = APIRequestFactory()
-        self.section = Section.objects.create(name="inorganic")
-        Department.objects.create(
+        # Some test databases seed the standard sections during migrations.
+        # Reuse the unique section instead of failing setup on duplicate names.
+        self.section, _ = Section.objects.get_or_create(name="inorganic")
+        self.department, _ = Department.objects.get_or_create(
             name="Approval Test Department",
-            section=self.section,
+            defaults={"section": self.section},
         )
+        if self.department.section_id != self.section.pk:
+            self.department.section = self.section
+            self.department.save(update_fields=["section"])
 
     @classmethod
     def tearDownClass(cls):
