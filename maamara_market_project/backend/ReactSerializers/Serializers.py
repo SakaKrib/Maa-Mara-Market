@@ -56,9 +56,16 @@ class ItemAdditionalImageSerializer(serializers.ModelSerializer):
 
 # --- Brand Serializer ---
 class BrandSerializer(serializers.ModelSerializer):
+    website_url = serializers.SerializerMethodField()
+
     class Meta:
         model = Brand
-        fields = ["id", "name", "description", "logo"]
+        fields = ["id", "name", "description", "logo", "website_url"]
+
+    def get_website_url(self, obj):
+        # The website is stored on the brand's associated vendor, not Brand itself.
+        vendor = getattr(obj, "vendor", None)
+        return getattr(vendor, "website_url", None) if vendor else None
 
 
 
