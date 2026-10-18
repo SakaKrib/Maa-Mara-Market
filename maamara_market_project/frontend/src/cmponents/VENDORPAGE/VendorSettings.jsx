@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Bell, Check, Globe2, Monitor, RefreshCw, Save, Settings as SettingsIcon, UserRound } from "lucide-react";
+import { Bell, Check, Globe2, KeyRound, Monitor, RefreshCw, Save, Settings as SettingsIcon, UserRound } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../Auth/AuthContext/Context.jsx";
 import { useAdminPreferences } from "../Settings/AdminPreferencesContext";
@@ -23,6 +23,14 @@ const VendorSettings = () => {
     first_name: "", last_name: "", email: "", phone_number: "",
     location: "", city: "", country: "", address: "",
   });
+  const [securityForm, setSecurityForm] = useState({
+    username: user?.username || "",
+    email: user?.email || "",
+    current_password: "",
+    new_password: "",
+    confirm_password: "",
+  });
+  const [securitySaving, setSecuritySaving] = useState(false);
 
   useEffect(() => {
     const load = async () => {
@@ -41,6 +49,11 @@ const VendorSettings = () => {
           country: details.country || "",
           address: details.address || "",
         });
+        setSecurityForm((current) => ({
+          ...current,
+          username: account.username || user?.username || "",
+          email: account.email || user?.email || "",
+        }));
       } catch (err) {
         console.error("Failed to load vendor settings:", {
           status: err.response?.status,
@@ -77,6 +90,24 @@ const VendorSettings = () => {
       setError(err.response?.data?.detail || "Could not save your account details.");
     } finally {
       setSaving(false);
+    }
+  };
+
+  const updateSecurity = async (event) => {
+    event.preventDefault();
+    if (securitySaving) return;
+    setSecuritySaving(true);
+    setMessage("");
+    setError("");
+    try {
+      await api.post("/api/vendor/account-security/", securityForm, { withCredentials: true });
+      await refreshAuth();
+      setSecurityForm((current) => ({ ...current, current_password: "", new_password: "", confirm_password: "" }));
+      setMessage("Account security details updated successfully.");
+    } catch (err) {
+      setError(err.response?.data?.detail || "Could not update your account security details.");
+    } finally {
+      setSecuritySaving(false);
     }
   };
 
@@ -131,7 +162,11 @@ const VendorSettings = () => {
             <div className="grid gap-3 sm:grid-cols-2">
               {field("First name", "first_name")}
               {field("Last name", "last_name")}
-              {field("Email", "email", "email")}
+              <div className="block">
+                <span className="mb-1.5 block text-xs font-semibold text-gray-600">Email address</span>
+                <p className="rounded-xl border border-[#e6e6e4] bg-gray-50 px-3 py-2.5 text-sm text-gray-600">{profile.email || "Not set"}</p>
+                <span className="mt-1 block text-[11px] text-gray-500">Change your email in Account security below.</span>
+              </div>
               {field("Phone number", "phone_number")}
               {field("Location", "location")}
               {field("City", "city")}
@@ -181,6 +216,43 @@ const VendorSettings = () => {
               <button type="button" onClick={() => { resetPreferences(); setMessage("Preferences restored to their defaults."); }} className="mt-4 inline-flex items-center gap-2 text-xs font-semibold text-gray-600 hover:text-gray-900">
                 <RefreshCw size={14} /> Restore defaults
               </button>
+            </div>
+
+            <div className="rounded-2xl border border-[#e6e6e4] bg-white p-4 shadow-sm sm:p-5">
+              <div className="mb-4 flex items-center gap-3 border-b border-[#e6e6e4] pb-3">
+                <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-50 text-[#2563eb]"><KeyRound size={17} /></div>
+                <div>
+                  <h2 className="text-sm font-semibold text-gray-900">Account security</h2>
+                  <p className="mt-1 text-xs text-gray-600">Verify your current password before changing your password, username, or email.</p>
+                </div>
+              </div>
+              <form onSubmit={updateSecurity} className="space-y-3">
+                <label className="block">
+                  <span className="mb-1.5 block text-xs font-semibold text-gray-600">Username</span>
+                  <input autoComplete="username" value={securityForm.username} onChange={(event) => setSecurityForm((current) => ({ ...current, username: event.target.value }))} className="w-full rounded-xl border border-[#e6e6e4] px-3 py-2.5 text-sm outline-none focus:border-[#2563eb] focus:ring-4 focus:ring-[#2563eb]/10" />
+                </label>
+                <label className="block">
+                  <span className="mb-1.5 block text-xs font-semibold text-gray-600">Email address</span>
+                  <input type="email" autoComplete="email" value={securityForm.email} onChange={(event) => setSecurityForm((current) => ({ ...current, email: event.target.value }))} className="w-full rounded-xl border border-[#e6e6e4] px-3 py-2.5 text-sm outline-none focus:border-[#2563eb] focus:ring-4 focus:ring-[#2563eb]/10" />
+                </label>
+                <label className="block">
+                  <span className="mb-1.5 block text-xs font-semibold text-gray-600">Current password (required)</span>
+                  <input type="password" autoComplete="current-password" required value={securityForm.current_password} onChange={(event) => setSecurityForm((current) => ({ ...current, current_password: event.target.value }))} className="w-full rounded-xl border border-[#e6e6e4] px-3 py-2.5 text-sm outline-none focus:border-[#2563eb] focus:ring-4 focus:ring-[#2563eb]/10" />
+                </label>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <label className="block">
+                    <span className="mb-1.5 block text-xs font-semibold text-gray-600">New password (optional)</span>
+                    <input type="password" autoComplete="new-password" minLength={8} value={securityForm.new_password} onChange={(event) => setSecurityForm((current) => ({ ...current, new_password: event.target.value }))} placeholder="At least 8 characters" className="w-full rounded-xl border border-[#e6e6e4] px-3 py-2.5 text-sm outline-none focus:border-[#2563eb] focus:ring-4 focus:ring-[#2563eb]/10" />
+                  </label>
+                  <label className="block">
+                    <span className="mb-1.5 block text-xs font-semibold text-gray-600">Confirm new password</span>
+                    <input type="password" autoComplete="new-password" value={securityForm.confirm_password} onChange={(event) => setSecurityForm((current) => ({ ...current, confirm_password: event.target.value }))} placeholder="Repeat new password" className="w-full rounded-xl border border-[#e6e6e4] px-3 py-2.5 text-sm outline-none focus:border-[#2563eb] focus:ring-4 focus:ring-[#2563eb]/10" />
+                  </label>
+                </div>
+                <button type="submit" disabled={securitySaving} className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-[#2563eb] px-4 py-2.5 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-60">
+                  <KeyRound size={15} /> {securitySaving ? "Updating..." : "Update account security"}
+                </button>
+              </form>
             </div>
 
             <div className="rounded-2xl border border-[#e6e6e4] bg-white p-4 shadow-sm sm:p-5">
