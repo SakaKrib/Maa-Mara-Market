@@ -179,6 +179,25 @@ const BrandPage = () => {
           </div>
         </header>
 
+        <section className="mt-5 rounded-2xl border border-gray-200 bg-white p-4 shadow-sm sm:p-5" aria-labelledby="brand-information-heading">
+          <h2 id="brand-information-heading" className="text-base font-bold text-gray-900">Brand information</h2>
+          <div className="mt-3 flex flex-col gap-1 sm:flex-row sm:items-start sm:gap-8">
+            <span className="text-sm font-medium text-gray-500">Website</span>
+            {brand.website_url ? (
+              <a
+                href={brand.website_url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="break-all text-sm font-semibold text-blue-700 underline decoration-blue-200 underline-offset-4 transition hover:text-blue-900"
+              >
+                {String(brand.website_url).replace(/^https?:\\/\\//i, "").replace(/\\/$/, "")}
+              </a>
+            ) : (
+              <span className="text-sm text-gray-500">Website not provided</span>
+            )}
+          </div>
+        </section>
+
         <section className="mt-8 sm:mt-10" aria-labelledby="brand-products-heading">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
             <div>
