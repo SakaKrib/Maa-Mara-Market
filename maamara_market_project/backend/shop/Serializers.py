@@ -236,10 +236,11 @@ class BannerSerializer(serializers.ModelSerializer):
 class BrandSerializer(serializers.ModelSerializer):
     logo_url = serializers.SerializerMethodField()
     vendor_logo_url = serializers.SerializerMethodField()
+    website_url = serializers.SerializerMethodField()
 
     class Meta:
         model = Brand
-        fields = ["id", "name", "description", "logo_url", "vendor_logo_url"]
+        fields = ["id", "name", "description", "logo_url", "vendor_logo_url", "website_url"]
 
     def get_logo_url(self, obj):
         if obj.logo:
@@ -265,6 +266,15 @@ class BrandSerializer(serializers.ModelSerializer):
         except (ValueError, AttributeError):
             return None
         return request.build_absolute_uri(logo_url) if request else logo_url
+
+    def get_website_url(self, obj):
+        # website_url belongs to Vendor; Brand exposes its owning vendor via
+        # the reverse OneToOne relation (related_name="vendor").
+        try:
+            vendor = obj.vendor
+        except Vendor.DoesNotExist:
+            return None
+        return vendor.website_url or None
 
 
 
