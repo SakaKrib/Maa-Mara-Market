@@ -28,10 +28,8 @@ const MobileHomepageCollections = () => {
         })).filter((collection) => collection.items.length);
         setCollections(uniqueCollections);
 
-        if (window.matchMedia("(max-width: 767px)").matches) {
-          window.__mmHomepageCollectionIds = Array.from(usedIds);
-          window.dispatchEvent(new Event("mm:homepage-collections-updated"));
-        }
+        window.__mmHomepageCollectionIds = Array.from(usedIds);
+        window.dispatchEvent(new Event("mm:homepage-collections-updated"));
       })
       .catch(() => {
         if (!active) return;
