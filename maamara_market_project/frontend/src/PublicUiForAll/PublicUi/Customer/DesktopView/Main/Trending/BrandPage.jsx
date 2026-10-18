@@ -4,13 +4,14 @@ import { Search, SlidersHorizontal, ChevronLeft, ChevronRight } from "lucide-rea
 import api, { resolveApiAssetUrl } from "../../../../../../Services/Api";
 import useBrands from "../../../../../../cmponents/Hooks/Brand/BrandHook";
 import TrendingProductCard from "./TrendingProductCard";
+import BrandSelect from "./BrandSelect";
 
-const PAGE_SIZE = 12;
+const PAGE_SIZE = 10;
 
 const BrandPage = () => {
   const { id } = useParams();
   const { brands, loading: brandsLoading, error: brandsError } = useBrands();
-  const [filters, setFilters] = useState(null);
+  const [brandCategories, setBrandCategories] = useState([]);
   const [products, setProducts] = useState([]);
   const [totalCount, setTotalCount] = useState(0);
   const [loadingProducts, setLoadingProducts] = useState(true);
@@ -29,12 +30,20 @@ const BrandPage = () => {
   );
 
   useEffect(() => {
-    let active = true;
-    api.get("/filters/")
-      .then((response) => { if (active) setFilters(response.data || {}); })
-      .catch(() => { if (active) setFilters({}); });
-    return () => { active = false; };
-  }, []);
+    if (!brand?.id) {
+      setBrandCategories([]);
+      return undefined;
+    }
+    const controller = new AbortController();
+    api.get(`/api/brands/${brand.id}/categories/`, { signal: controller.signal })
+      .then(({ data }) => {
+        if (!controller.signal.aborted) setBrandCategories(Array.isArray(data) ? data : []);
+      })
+      .catch((error) => {
+        if (error?.code !== "ERR_CANCELED" && !controller.signal.aborted) setBrandCategories([]);
+      });
+    return () => controller.abort();
+  }, [brand?.id]);
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
@@ -80,24 +89,56 @@ const BrandPage = () => {
     return () => controller.abort();
   }, [brand, page, search, category, sortBy, minPrice, maxPrice]);
 
-  const categories = useMemo(() => {
-    const result = [];
-    (filters?.sections || []).forEach((section) => {
-      (section.departments || []).forEach((department) => {
-        (department.categories || []).forEach((entry) => {
-          if (!result.some((item) => String(item.id) === String(entry.id))) result.push(entry);
-        });
-      });
-    });
-    return result.sort((a, b) => String(a.name).localeCompare(String(b.name)));
-  }, [filters]);
+  const categories = brandCategories;
 
   const logo = resolveApiAssetUrl(brand?.vendor_logo_url || brand?.logo_url);
   const heroImage = resolveApiAssetUrl(brand?.vendor_logo_url || brand?.logo_url);
   const totalPages = Math.max(1, Math.ceil(totalCount / PAGE_SIZE));
 
   if (brandsLoading) {
-    return <section className="mm-page"><div className="mm-container py-12"><div className="h-64 animate-pulse rounded-3xl bg-gray-100" /><div className="mt-8 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">{Array.from({ length: 8 }, (_, i) => <div key={i} className="aspect-[3/4] animate-pulse rounded-xl bg-gray-100" />)}</div></div></section>;
+    return (
+      <section className="mm-page pb-10">
+        <div className="mm-container py-5 sm:py-6">
+          <div className="mb-4 h-4 w-24 animate-pulse rounded bg-gray-200" />
+          <div className="overflow-hidden rounded-[1.75rem] border border-gray-200 bg-white">
+            <div className="h-36 animate-pulse bg-gray-200 sm:h-44" />
+            <div className="flex flex-col gap-4 p-5 sm:flex-row sm:items-start sm:p-8">
+              <div className="h-24 w-24 shrink-0 animate-pulse rounded-2xl bg-gray-200" />
+              <div className="w-full space-y-3 pt-1">
+                <div className="h-3 w-32 animate-pulse rounded bg-gray-200" />
+                <div className="h-8 w-2/3 animate-pulse rounded bg-gray-200" />
+                <div className="h-3 w-full max-w-2xl animate-pulse rounded bg-gray-200" />
+                <div className="h-3 w-4/5 max-w-xl animate-pulse rounded bg-gray-200" />
+              </div>
+            </div>
+          </div>
+          <div className="mt-8 space-y-3">
+            <div className="h-3 w-28 animate-pulse rounded bg-gray-200" />
+            <div className="h-7 w-56 animate-pulse rounded bg-gray-200" />
+            <div className="h-4 w-36 animate-pulse rounded bg-gray-200" />
+          </div>
+          <div className="mt-5 grid grid-cols-1 gap-3 rounded-2xl border border-gray-200 bg-white p-3 sm:grid-cols-2 lg:grid-cols-5">
+            <div className="h-11 animate-pulse rounded-xl bg-gray-200 lg:col-span-1" />
+            <div className="h-11 animate-pulse rounded-xl bg-gray-200" />
+            <div className="h-11 animate-pulse rounded-xl bg-gray-200" />
+            <div className="h-11 animate-pulse rounded-xl bg-gray-200" />
+            <div className="h-11 animate-pulse rounded-xl bg-gray-200" />
+          </div>
+          <div className="mt-6 grid grid-cols-2 gap-2 sm:grid-cols-3 sm:gap-4 lg:grid-cols-4 lg:gap-6">
+            {Array.from({ length: 8 }, (_, i) => (
+              <article key={i} className="overflow-hidden rounded-xl border border-gray-200 bg-white p-2">
+                <div className="aspect-square animate-pulse rounded-lg bg-gray-200" />
+                <div className="space-y-2 p-2 pt-3">
+                  <div className="h-4 w-4/5 animate-pulse rounded bg-gray-200" />
+                  <div className="h-3 w-1/2 animate-pulse rounded bg-gray-200" />
+                  <div className="h-5 w-2/5 animate-pulse rounded bg-gray-200" />
+                </div>
+              </article>
+            ))}
+          </div>
+        </div>
+      </section>
+    );
   }
 
   if (brandsError || !brand) {
@@ -156,10 +197,15 @@ const BrandPage = () => {
               </label>
               <label className="relative">
                 <span className="sr-only">Filter by category</span>
-                <select value={category} onChange={(event) => { setCategory(event.target.value); setPage(1); }} className="w-full rounded-xl border border-gray-200 bg-white px-3 py-3 text-sm outline-none focus:border-gray-500 focus:ring-2 focus:ring-gray-200">
-                  <option value="">All categories</option>
-                  {categories.map((entry) => <option key={entry.id} value={entry.id}>{entry.name}</option>)}
-                </select>
+                <BrandSelect
+                  value={category}
+                  onChange={(value) => { setCategory(value); setPage(1); }}
+                  ariaLabel="Filter by category"
+                  options={[
+                    { value: "", label: "All categories" },
+                    ...categories.map((entry) => ({ value: String(entry.id), label: entry.name })),
+                  ]}
+                />
               </label>
               <label>
                 <span className="sr-only">Minimum price</span>
@@ -172,9 +218,17 @@ const BrandPage = () => {
               <label className="relative">
                 <span className="sr-only">Sort products</span>
                 <SlidersHorizontal size={16} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-                <select value={sortBy} onChange={(event) => { setSortBy(event.target.value); setPage(1); }} className="w-full rounded-xl border border-gray-200 bg-white py-3 pl-9 pr-3 text-sm outline-none focus:border-gray-500 focus:ring-2 focus:ring-gray-200">
-                  <option value="Default">Newest</option><option value="Product Name">Name A–Z</option><option value="Price">Price: low to high</option><option value="Brand">Brand</option>
-                </select>
+                <BrandSelect
+                  value={sortBy}
+                  onChange={(value) => { setSortBy(value); setPage(1); }}
+                  ariaLabel="Sort products"
+                  options={[
+                    { value: "Default", label: "Newest" },
+                    { value: "Oldest", label: "Oldest" },
+                    { value: "Product Name", label: "Name A–Z" },
+                    { value: "Price", label: "Price: low to high" },
+                  ]}
+                />
               </label>
             </div>
             <div className="mt-3 flex flex-wrap items-center justify-between gap-2 border-t border-gray-100 pt-3">
@@ -185,19 +239,32 @@ const BrandPage = () => {
 
           {productError && <p role="alert" className="mt-5 rounded-xl bg-red-50 p-4 text-sm text-red-700">{productError}</p>}
           {loadingProducts ? (
-            <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 lg:grid-cols-4 lg:gap-6">{Array.from({ length: 8 }, (_, i) => <div key={i} className="aspect-[3/4] animate-pulse rounded-xl bg-gray-100" />)}</div>
+            <div className="mt-6 grid grid-cols-2 gap-2 sm:grid-cols-3 sm:gap-4 lg:grid-cols-4 lg:gap-6">
+              {Array.from({ length: 8 }, (_, i) => (
+                <article key={i} className="overflow-hidden rounded-xl border border-gray-200 bg-white p-2">
+                  <div className="aspect-square animate-pulse rounded-lg bg-gray-200" />
+                  <div className="space-y-2 p-2 pt-3">
+                    <div className="h-4 w-4/5 animate-pulse rounded bg-gray-200" />
+                    <div className="h-3 w-1/2 animate-pulse rounded bg-gray-200" />
+                    <div className="h-5 w-2/5 animate-pulse rounded bg-gray-200" />
+                  </div>
+                </article>
+              ))}
+            </div>
           ) : products.length ? (
             <>
               <div className="mt-6 grid grid-cols-2 gap-2 sm:grid-cols-3 sm:gap-4 lg:grid-cols-4 lg:gap-6">
                 {products.map((item) => <TrendingProductCard key={item.id} item={item} />)}
               </div>
-              <div className="mt-8 flex flex-col items-center justify-between gap-3 border-t border-gray-200 pt-5 sm:flex-row">
-                <p className="text-sm text-gray-600">Page {page} of {totalPages}</p>
-                <div className="flex items-center gap-2">
-                  <button type="button" disabled={page <= 1} onClick={() => { setPage((current) => Math.max(1, current - 1)); window.scrollTo({ top: 0, behavior: "smooth" }); }} className="inline-flex items-center gap-1 rounded-full border border-gray-300 px-4 py-2 text-sm font-semibold text-gray-800 disabled:cursor-not-allowed disabled:opacity-40"><ChevronLeft size={16} /> Previous</button>
-                  <button type="button" disabled={page >= totalPages} onClick={() => { setPage((current) => Math.min(totalPages, current + 1)); window.scrollTo({ top: 0, behavior: "smooth" }); }} className="inline-flex items-center gap-1 rounded-full border border-gray-300 px-4 py-2 text-sm font-semibold text-gray-800 disabled:cursor-not-allowed disabled:opacity-40">Next <ChevronRight size={16} /></button>
+              {totalCount > PAGE_SIZE && (
+                <div className="mt-8 flex flex-col items-center justify-between gap-3 border-t border-gray-200 pt-5 sm:flex-row">
+                  <p className="text-sm text-gray-600">Page {page} of {totalPages}</p>
+                  <div className="flex items-center gap-2">
+                    <button type="button" disabled={page <= 1} onClick={() => { setPage((current) => Math.max(1, current - 1)); window.scrollTo({ top: 0, behavior: "smooth" }); }} className="inline-flex items-center gap-1 rounded-full border border-gray-300 px-4 py-2 text-sm font-semibold text-gray-800 disabled:cursor-not-allowed disabled:opacity-40"><ChevronLeft size={16} /> Previous</button>
+                    <button type="button" disabled={page >= totalPages} onClick={() => { setPage((current) => Math.min(totalPages, current + 1)); window.scrollTo({ top: 0, behavior: "smooth" }); }} className="inline-flex items-center gap-1 rounded-full border border-gray-300 px-4 py-2 text-sm font-semibold text-gray-800 disabled:cursor-not-allowed disabled:opacity-40">Next <ChevronRight size={16} /></button>
+                  </div>
                 </div>
-              </div>
+              )}
             </>
           ) : (
             <div className="mt-6 rounded-2xl border border-dashed border-gray-300 px-5 py-14 text-center">
