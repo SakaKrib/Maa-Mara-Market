@@ -36,12 +36,12 @@ const MobileMenu = () => {
   const close = () => setActiveSheet(null);
 
   const items = useMemo(() => [
-    { key: "trending", label: "Trending", Icon: TrendingUp, action: () => navigate("/") },
+    { key: "trending", label: "Trending", Icon: TrendingUp, action: () => navigate("/discovery?section=trending") },
     { key: "account", label: "Account", Icon: UserRound, badge: notificationCount, action: () => open("account") },
     { key: "wishlist", label: "Wishlist", Icon: Heart, badge: wishlistCount, action: () => open("wishlist") },
     { key: "search", label: "Search", Icon: Search, action: () => open("search") },
     { key: "cart", label: "Cart", Icon: ShoppingCart, badge: cartCount, action: () => open("cart") },
-  ], [cartCount, wishlistCount]);
+  ], [cartCount, wishlistCount, notificationCount, navigate]);
 
   return (
     <>
