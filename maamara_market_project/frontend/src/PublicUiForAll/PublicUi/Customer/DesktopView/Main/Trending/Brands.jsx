@@ -1,40 +1,52 @@
-import React from "react";
+import React, { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
+import { Search } from "lucide-react";
 import useBrands from "../../../../../../cmponents/Hooks/Brand/BrandHook";
+import { resolveApiAssetUrl } from "../../../../../../Services/Api";
 
 const BrandList = () => {
   const { brands, loading, error } = useBrands();
+  const [search, setSearch] = useState("");
+  const filteredBrands = useMemo(() => {
+    const term = search.trim().toLowerCase();
+    return (brands || [])
+      .filter((brand) => !term || String(brand.name || "").toLowerCase().includes(term) || String(brand.description || "").toLowerCase().includes(term))
+      .sort((a, b) => String(a.name || "").localeCompare(String(b.name || "")));
+  }, [brands, search]);
 
-  if (loading) return <p className="text-center mt-10 text-gray-600">Loading brands...</p>;
-  if (error) return <p className="text-center mt-10 text-red-500">Error fetching brands.</p>;
+  if (loading) return <section className="mm-page"><div className="mm-container py-12"><div className="h-8 w-56 animate-pulse rounded bg-gray-100" /><div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6">{Array.from({ length: 12 }, (_, i) => <div key={i} className="h-44 animate-pulse rounded-2xl bg-gray-100" />)}</div></div></section>;
+  if (error) return <section className="mm-page"><div className="mm-container py-16 text-center"><h1 className="text-xl font-semibold text-gray-900">Unable to load brands</h1><p className="mt-2 text-sm text-gray-600">Please check your connection and try again.</p></div></section>;
 
   return (
-    <section className="brands mm-section">
+    <section className="brands mm-page mm-section">
       <div className="mm-container">
-        <header className="mm-section-heading">
+        <header className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
           <div>
-            <h2>Companies &amp; Brands</h2>
-            <p>Explore makers and sellers available on Maa Mara Market.</p>
+            <p className="text-xs font-bold uppercase tracking-[0.16em] text-gray-500">Meet the makers</p>
+            <h1 className="mt-1 text-3xl font-bold tracking-tight text-gray-950 sm:text-4xl">Companies &amp; brands</h1>
+            <p className="mt-2 max-w-2xl text-sm leading-6 text-gray-600">Discover the makers and companies behind products on Maa Mara Market.</p>
           </div>
+          <p className="text-sm text-gray-500">{filteredBrands.length} {filteredBrands.length === 1 ? "brand" : "brands"}</p>
         </header>
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 sm:gap-4 lg:gap-6">
-          {brands.length > 0 ? brands.map((brand) => {
-            const displayLogo = brand.logo_url || brand.vendor_logo_url;
+        <label className="relative mb-6 block max-w-xl">
+          <span className="sr-only">Search brands</span>
+          <Search size={18} className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
+          <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search by brand or company name…" className="w-full rounded-2xl border border-gray-200 bg-white py-3.5 pl-11 pr-4 text-sm outline-none transition focus:border-gray-500 focus:ring-2 focus:ring-gray-200" />
+        </label>
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
+          {filteredBrands.map((brand) => {
+            const displayLogo = resolveApiAssetUrl(brand.logo_url || brand.vendor_logo_url);
             return (
-              <Link key={brand.id} to={`/brands/${brand.id}`} className="mm-card mm-card-interactive group flex flex-col items-center p-3 sm:p-4 cursor-pointer" title={brand.name}>
-                <div className="w-20 h-20 sm:w-28 sm:h-28 flex items-center justify-center rounded-full bg-gray-100 overflow-hidden mb-3">
-                  {displayLogo ? (
-                    <img src={displayLogo} alt={brand.name} className="object-contain w-full h-full transform group-hover:scale-105 transition-transform duration-300" loading="lazy" />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center text-gray-400 text-sm font-medium select-none">No Logo</div>
-                  )}
+              <Link key={brand.id} to={`/brands/${brand.id}`} className="group overflow-hidden rounded-2xl border border-gray-200 bg-white p-3 text-center shadow-sm transition hover:-translate-y-0.5 hover:border-gray-300 hover:shadow-md sm:p-4" title={brand.name}>
+                <div className="mx-auto flex aspect-square w-full max-w-36 items-center justify-center overflow-hidden rounded-xl bg-gray-50 p-3">
+                  {displayLogo ? <img src={displayLogo} alt={brand.name + " logo"} className="h-full w-full object-contain transition-transform duration-300 group-hover:scale-105" loading="lazy" /> : <span className="px-2 text-xs font-semibold text-gray-400">{brand.name}</span>}
                 </div>
-                <h4 className="text-center text-sm font-semibold text-gray-900 truncate w-full">{brand.name}</h4>
+                <h2 className="mt-3 truncate text-sm font-semibold text-gray-900">{brand.name}</h2>
+                {brand.description && <p className="mt-1 line-clamp-2 text-xs leading-5 text-gray-500">{brand.description}</p>}
               </Link>
             );
-          }) : (
-            <p className="text-center text-gray-500 col-span-full py-8">No brands available yet.</p>
-          )}
+          })}
+          {!filteredBrands.length && <div className="col-span-full rounded-2xl border border-dashed border-gray-300 px-5 py-14 text-center"><h2 className="font-semibold text-gray-900">No brands found</h2><p className="mt-2 text-sm text-gray-600">Try a different search term.</p></div>}
         </div>
       </div>
     </section>
