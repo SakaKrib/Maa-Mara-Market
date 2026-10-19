@@ -223,9 +223,9 @@ export default function PaypalBulkPayment({ onSuccess }) {
           borderRadius: "20px",
           p: { xs: 2, sm: 3 },
           mt: 1,
-          backgroundColor: "var(--mm-surface, var(--background, #fff))",
-          color: "var(--mm-foreground, var(--foreground, #222))",
-          border: "1px solid var(--mm-border, var(--border, #e5e7eb))",
+          backgroundColor: theme.palette.background.paper,
+          color: theme.palette.text.primary,
+          border: `1px solid ${theme.palette.divider}`,
           boxShadow: "0 4px 14px rgba(0,0,0,.06)",
         }}
       >
@@ -248,7 +248,7 @@ export default function PaypalBulkPayment({ onSuccess }) {
             spacing={1.5}
             alignItems="center"
             key={payment.reference || index}
-            sx={{ mb: 2, p: { xs: 1.5, sm: 2 }, border: "1px solid var(--mm-border, #d1d5db)", borderRadius: "16px" }}
+            sx={{ mb: 2, p: { xs: 1.5, sm: 2 }, border: `1px solid ${theme.palette.divider}`, borderRadius: "16px" }}
           >
             <Grid item xs={12} md={3}>
               <TextField
