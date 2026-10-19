@@ -35,13 +35,36 @@ export default function AdminPayoutTriggerPayment() {
     0
   );
 
+  const getVendorDetails = (payout) => {
+    // Merge legacy/detail snapshots over the full generated Vendor payload so a
+    // partial vendor_details object cannot hide saved payment destinations.
+    const vendor = { ...(payout?.vendor || {}), ...(payout?.vendor_details || {}) };
+    const phone =
+      vendor.mpesa_number ||
+      vendor.MpesaNo ||
+      vendor.mpesa_no ||
+      payout?.mpesa_number ||
+      payout?.MpesaNo ||
+      payout?.phone ||
+      "";
+    return {
+      ...vendor,
+      mpesa_number: vendor.mpesa_number || phone,
+      mpesa_type: vendor.mpesa_type || payout?.mpesa_type || (phone ? "PHONE" : ""),
+      mpesa_till: vendor.mpesa_till || payout?.mpesa_till || "",
+      mpesa_paybill: vendor.mpesa_paybill || payout?.mpesa_paybill || "",
+      paypal_email: vendor.paypal_email || vendor.PaypalEmail || payout?.paypal_email || "",
+      bank_account_number: vendor.bank_account_number || vendor.BankAccountNo || payout?.bank_account_number || "",
+    };
+  };
+
   const handlePayVendor = (payout) => {
-    const vendor = payout.vendor_details || payout.vendor || {};
+    const vendor = getVendorDetails(payout);
     const { payment_method, reference, amount } = payout;
-    const phone = vendor.mpesa_number || vendor.MpesaNo || vendor.mpesa_no || "";
+    const phone = vendor.mpesa_number || "";
 
     if (payment_method === "MOBILE_MONEY") {
-      navigate("mpesa-payment/single-vendor", { state: { reference, amount, vendor, phone } });
+      navigate("mpesa-payment/single-vendor", { state: { reference, amount, vendor, phone, mpesa_type: vendor.mpesa_type, mpesa_number: vendor.mpesa_number, mpesa_till: vendor.mpesa_till, mpesa_paybill: vendor.mpesa_paybill } });
     } else if (payment_method === "PAYPAL") {
       navigate("paypal-payment/single-vendor", { state: { reference, amount, vendor } });
     } else if (payment_method === "BANK_TRANSFER") {
@@ -56,10 +79,16 @@ export default function AdminPayoutTriggerPayment() {
 
   const handlePayGroup = (paymentMethod, payouts) => {
     const payments = payouts.map((payout) => {
-      const vendor = payout.vendor_details || payout.vendor || {};
+      const vendor = getVendorDetails(payout);
       return {
         vendor,
-        phone: vendor.mpesa_number || vendor.MpesaNo || vendor.mpesa_no || "",
+        phone: vendor.mpesa_number || "",
+        mpesa_type: vendor.mpesa_type || "",
+        mpesa_number: vendor.mpesa_number || "",
+        mpesa_till: vendor.mpesa_till || "",
+        mpesa_paybill: vendor.mpesa_paybill || "",
+        paypal_email: vendor.paypal_email || "",
+        bank_account_number: vendor.bank_account_number || "",
         amount: payout.amount,
         reference: payout.reference,
       };
