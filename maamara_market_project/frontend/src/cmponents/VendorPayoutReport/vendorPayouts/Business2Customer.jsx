@@ -38,7 +38,7 @@ export default function AdminPayoutTriggerPayment() {
   const handlePayVendor = (payout) => {
     const vendor = payout.vendor_details || payout.vendor || {};
     const { payment_method, reference, amount } = payout;
-    const phone = vendor.MpesaNo || vendor.mpesa_no || "";
+    const phone = vendor.mpesa_number || vendor.MpesaNo || vendor.mpesa_no || "";
 
     if (payment_method === "MOBILE_MONEY") {
       navigate("mpesa-payment/single-vendor", { state: { reference, amount, vendor, phone } });
@@ -59,7 +59,7 @@ export default function AdminPayoutTriggerPayment() {
       const vendor = payout.vendor_details || payout.vendor || {};
       return {
         vendor,
-        phone: vendor.MpesaNo || vendor.mpesa_no || "",
+        phone: vendor.mpesa_number || vendor.MpesaNo || vendor.mpesa_no || "",
         amount: payout.amount,
         reference: payout.reference,
       };
