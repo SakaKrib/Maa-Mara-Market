@@ -36,25 +36,31 @@ export default function AdminPayoutTriggerPayment() {
   );
 
   const getVendorDetails = (payout) => {
-    // Merge legacy/detail snapshots over the full generated Vendor payload so a
-    // partial vendor_details object cannot hide saved payment destinations.
-    const vendor = { ...(payout?.vendor || {}), ...(payout?.vendor_details || {}) };
+    // Merge legacy/detail snapshots without allowing empty fields in a partial
+    // snapshot to overwrite the full Vendor model's saved payout destinations.
+    const fullVendor = payout?.vendor || {};
+    const detailVendor = payout?.vendor_details || {};
+    const vendor = { ...fullVendor, ...detailVendor };
     const phone =
-      vendor.mpesa_number ||
-      vendor.MpesaNo ||
-      vendor.mpesa_no ||
+      detailVendor.mpesa_number ||
+      fullVendor.mpesa_number ||
+      detailVendor.MpesaNo ||
+      fullVendor.MpesaNo ||
+      detailVendor.mpesa_no ||
+      fullVendor.mpesa_no ||
       payout?.mpesa_number ||
       payout?.MpesaNo ||
       payout?.phone ||
       "";
     return {
       ...vendor,
-      mpesa_number: vendor.mpesa_number || phone,
-      mpesa_type: vendor.mpesa_type || payout?.mpesa_type || (phone ? "PHONE" : ""),
-      mpesa_till: vendor.mpesa_till || payout?.mpesa_till || "",
-      mpesa_paybill: vendor.mpesa_paybill || payout?.mpesa_paybill || "",
-      paypal_email: vendor.paypal_email || vendor.PaypalEmail || payout?.paypal_email || "",
-      bank_account_number: vendor.bank_account_number || vendor.BankAccountNo || payout?.bank_account_number || "",
+      company_name: detailVendor.company_name || fullVendor.company_name || vendor.company_name || "",
+      mpesa_number: phone,
+      mpesa_type: detailVendor.mpesa_type || fullVendor.mpesa_type || payout?.mpesa_type || (phone ? "PHONE" : ""),
+      mpesa_till: detailVendor.mpesa_till || fullVendor.mpesa_till || payout?.mpesa_till || "",
+      mpesa_paybill: detailVendor.mpesa_paybill || fullVendor.mpesa_paybill || payout?.mpesa_paybill || "",
+      paypal_email: detailVendor.paypal_email || fullVendor.paypal_email || detailVendor.PaypalEmail || fullVendor.PaypalEmail || payout?.paypal_email || "",
+      bank_account_number: detailVendor.bank_account_number || fullVendor.bank_account_number || detailVendor.BankAccountNo || fullVendor.BankAccountNo || payout?.bank_account_number || "",
     };
   };
 
