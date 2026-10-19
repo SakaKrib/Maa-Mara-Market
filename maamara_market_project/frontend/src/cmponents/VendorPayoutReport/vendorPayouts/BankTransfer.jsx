@@ -129,9 +129,9 @@ export default function BankTransferBulkPayment({ onSuccess }) {
             borderRadius: "12px",
             p: { xs: 2, sm: 3 },
             mt: 1,
-            backgroundColor: "var(--card, #fff)",
-            color: "var(--card-foreground, var(--foreground, #222))",
-            border: "1px solid var(--border, #e6e6e4)",
+            backgroundColor: "hsl(var(--card, 0 0% 100%))",
+            color: "hsl(var(--card-foreground, var(--foreground, 0 0% 3.9%)))",
+            border: "1px solid hsl(var(--border, 0 0% 89.8%))",
             boxShadow: "0 4px 14px rgba(0,0,0,.06)",
           }}
           className="mm-payout-shadow"
@@ -161,9 +161,9 @@ export default function BankTransferBulkPayment({ onSuccess }) {
               sx={{
                 mb: 2,
                 p: { xs: 1.5, sm: 2 },
-                border: "1px solid var(--border, #e6e6e4)",
+                border: "1px solid hsl(var(--border, 0 0% 89.8%))",
                 borderRadius: "12px",
-                backgroundColor: "var(--card, #fff)",
+                backgroundColor: "hsl(var(--card, 0 0% 100%))",
               }}
             >
               <Typography variant="subtitle2" fontWeight={700} sx={{ mb: 1.5 }}>
@@ -216,7 +216,7 @@ export default function BankTransferBulkPayment({ onSuccess }) {
             disabled={loading}
             fullWidth
             sx={{
-              "&:hover": { backgroundColor: "var(--primary-hover, #1d4ed8)", border: "none" },
+              "&:hover": { backgroundColor: "color-mix(in srgb, hsl(var(--primary, 0 0% 9%)) 90%, white)", border: "none" },
               py: 1.2,
               mt: 3,
               borderRadius: "12px",
