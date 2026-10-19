@@ -6,18 +6,14 @@ import {
   TextField,
   Typography,
   Grid,
-  useTheme,
 } from "@mui/material";
 import api from "../../../Services/Api";
-import { tokens } from "../../../theme";
 import { useLocation } from "react-router-dom";
 import "./payout-workflows.css";
 import AppSnackbar from "../../../../components/ui/app-snackbar";
 
 export default function BankTransferBulkPayment({ onSuccess }) {
   const location = useLocation();
-  const theme = useTheme();
-  const colors = tokens(theme.palette.mode);
 
   // Prefilled payments passed via navigation state or empty array
   const prefilledPayments = location.state?.payments || [];
@@ -130,12 +126,12 @@ export default function BankTransferBulkPayment({ onSuccess }) {
       <Box className="mm-payout-page" sx={{ p: { xs: 1, sm: 2 }, maxWidth: 1100, mx: "auto", width: "100%" }}>
         <Box
           sx={{
-            borderRadius: "20px",
+            borderRadius: "12px",
             p: { xs: 2, sm: 3 },
             mt: 1,
-            backgroundColor: theme.palette.background.paper,
-            color: theme.palette.text.primary,
-            border: `1px solid ${theme.palette.divider}`,
+            backgroundColor: "var(--card, #fff)",
+            color: "var(--card-foreground, var(--foreground, #222))",
+            border: "1px solid var(--border, #e6e6e4)",
             boxShadow: "0 4px 14px rgba(0,0,0,.06)",
           }}
           className="mm-payout-shadow"
@@ -165,7 +161,7 @@ export default function BankTransferBulkPayment({ onSuccess }) {
               sx={{
                 mb: 2,
                 p: { xs: 1.5, sm: 2 },
-                border: `1px solid ${theme.palette.divider}`,
+                border: "1px solid var(--border, #e6e6e4)",
                 borderRadius: "16px",
                 backgroundColor: theme.palette.background.paper,
               }}
@@ -220,10 +216,10 @@ export default function BankTransferBulkPayment({ onSuccess }) {
             disabled={loading}
             fullWidth
             sx={{
-              "&:hover": { backgroundColor: colors.greenAccent[600], border: "none" },
+              "&:hover": { backgroundColor: "var(--primary-hover, #1d4ed8)", border: "none" },
               py: 1.2,
               mt: 3,
-              borderRadius: "50px",
+              borderRadius: "12px",
               border: "1px solid",
             }}
             className="mm-payout-rounded-control"
