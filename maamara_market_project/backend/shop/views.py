@@ -617,7 +617,7 @@ class BlogPostViewSet(viewsets.ModelViewSet):
                 "visitorId",
                 visitor_id,
                 max_age=60 * 60 * 24 * 365,
-                httponly=True,
+                httponly=False,
                 secure=request.is_secure(),
                 samesite="Lax",
             )
@@ -691,7 +691,7 @@ class BlogPostViewSet(viewsets.ModelViewSet):
                 "visitorId",
                 visitor_id,
                 max_age=60 * 60 * 24 * 365,
-                httponly=True,
+                httponly=False,
                 secure=request.is_secure(),
                 samesite="Lax",
             )
