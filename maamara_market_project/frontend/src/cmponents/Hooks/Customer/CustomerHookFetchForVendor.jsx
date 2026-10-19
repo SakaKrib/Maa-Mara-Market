@@ -16,7 +16,7 @@ export function useVendorCustomers(vendorUserId) {
     setError(null);
 
     api
-      .get(`/api/customers/?vendor_user_id=${userId}`, {
+      .get("/api/customers/", {
         withCredentials: true, // include cookies if needed
       })
       .then((response) => {
