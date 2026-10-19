@@ -569,118 +569,133 @@ class BlogPostViewSet(viewsets.ModelViewSet):
     # 💬 POST /api/blogs/{id}/comment/
     @action(detail=True, methods=['post'], permission_classes=[IsAuthenticatedOrVisitor])
     def comment(self, request, pk=None):
+        from uuid import uuid4
+
         post = self.get_object()
         serializer = CommentSerializer(data=request.data)
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-        if serializer.is_valid():
-            if request.user.is_authenticated:
-                comment = serializer.save(post=post, user=request.user)
-
-                # --- Notify the vendor if available ---
-                vendor = getattr(post, "vendor", None)
-                if vendor and vendor.user:
-                    Notification.objects.create(
-                        user=vendor.user,
-                        title="New Comment on Your Blog",
-                        message=f"Your blog {post.title} received a new comment from a customer.",
-                        url=f"/vendor/blogs/{post.id}/"
-                    )
-                    print(f"📢 Vendor {vendor.user.username} notified")
-
-                # --- Log activity for user ---
+        generated_visitor_id = False
+        if request.user.is_authenticated:
+            comment = serializer.save(post=post, user=request.user)
+            vendor = getattr(post, "vendor", None)
+            if vendor and vendor.user:
+                Notification.objects.create(
+                    user=vendor.user,
+                    title="New Comment on Your Blog",
+                    message=f"Your blog {post.title} received a new comment from a customer.",
+                    url=f"/vendor/blogs/{post.id}/",
+                )
+            ActivityLog.objects.create(
+                user=request.user,
+                actor_type="user",
+                action="comment_created",
+                item=None,
+                description=f"You commented on the blog {post.title}.",
+                related_url=f"/blog/{post.id}/",
+            )
+            for admin in User.objects.filter(is_superuser=True):
                 ActivityLog.objects.create(
-                    user=request.user,
-                    actor_type='user',
+                    user=admin,
+                    actor_type="admin",
                     action="comment_created",
                     item=None,
-                    description=f"You commented on the blog {post.title}.",
-                    related_url=f"/blog/{post.id}/"
+                    description=f"A customer commented on the blog {post.title}.",
+                    related_url=f"/admin-dashboard/blogs/{post.id}/",
                 )
+        else:
+            visitor_id = request.COOKIES.get("visitorId") or request.COOKIES.get("visitor_id")
+            if not visitor_id:
+                visitor_id = uuid4().hex
+                generated_visitor_id = True
+            comment = serializer.save(post=post, visitor_id=visitor_id, user=None)
 
-                # --- Log activity for admins ---
-                admins = User.objects.filter(is_superuser=True)
-                for admin in admins:
-                    ActivityLog.objects.create(
-                        user=admin,
-                        actor_type='admin',
-                        action="comment_created",
-                        item=None,
-                        description=f"A customer commented on the blog {post.title}.",
-                        related_url=f"/admin-dashboard/blogs/{post.id}/"
-                    )
-                    print(f"📝 Admin {admin.username} activity logged")
-            else:
-                # Anonymous comment
-                visitor_id = request.COOKIES.get("visitorId")
-                serializer.save(post=post, visitor_id=visitor_id, user=None)
-
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        response = Response(CommentSerializer(comment).data, status=status.HTTP_201_CREATED)
+        if generated_visitor_id:
+            response.set_cookie(
+                "visitorId",
+                visitor_id,
+                max_age=60 * 60 * 24 * 365,
+                httponly=True,
+                secure=request.is_secure(),
+                samesite="Lax",
+            )
+        return response
 
     # ❤️ POST /api/blogs/{id}/react/
     @action(detail=True, methods=['post'], permission_classes=[IsAuthenticatedOrVisitor])
     def react(self, request, pk=None):
-        post = self.get_object()
-        reaction_type = request.data.get('type')
+        from uuid import uuid4
 
+        post = self.get_object()
+        reaction_type = request.data.get("type")
         valid_choices = dict(ReactionBlog.REACTION_CHOICES)
         if reaction_type not in valid_choices:
             return Response({"detail": "Invalid reaction type"}, status=status.HTTP_400_BAD_REQUEST)
 
+        generated_visitor_id = False
         if request.user.is_authenticated:
-            reaction, created = ReactionBlog.objects.update_or_create(
+            reaction, created = ReactionBlog.objects.get_or_create(
                 post=post,
                 user=request.user,
-                defaults={'type': reaction_type}
+                defaults={"type": reaction_type},
+            )
+        else:
+            visitor_id = request.COOKIES.get("visitorId") or request.COOKIES.get("visitor_id")
+            if not visitor_id:
+                visitor_id = uuid4().hex
+                generated_visitor_id = True
+            reaction, created = ReactionBlog.objects.get_or_create(
+                post=post,
+                visitor_id=visitor_id,
+                defaults={"type": reaction_type, "user": None},
             )
 
-            # --- Notify the vendor if available ---
+        # A repeat request returns the original reaction unchanged. It does not
+        # create a second reaction or duplicate activity/notification records.
+        if created:
             vendor = getattr(post, "vendor", None)
             if vendor and vendor.user:
                 Notification.objects.create(
                     user=vendor.user,
                     title="New Reaction on Your Blog",
-                    message=f"Your blog {post.title} received a {reaction_type} reaction from a customer.",
-                    url=f"/vendors-dashboard/vendor/blogs/{post.id}/"
+                    message=f"Your blog {post.title} received a {reaction.type} reaction from a customer.",
+                    url=f"/vendors-dashboard/vendor/blogs/{post.id}/",
                 )
-                print(f"📢 Vendor {vendor.user.username} notified")
-
-            # --- Log activity for user ---
-            ActivityLog.objects.create(
-                user=request.user,
-                actor_type='user',
-                action="react_created",
-                item=None,
-                description=f"You reacted with {reaction_type} to the blog {post.title}.",
-                related_url=f"/blog/{post.id}/"
-            )
-
-            # --- Log activity for admins ---
-            admins = User.objects.filter(is_superuser=True)
-            for admin in admins:
+            if request.user.is_authenticated:
                 ActivityLog.objects.create(
-                    user=admin,
-                    actor_type='admin',
+                    user=request.user,
+                    actor_type="user",
                     action="react_created",
                     item=None,
-                    description=f"A customer reacted with {reaction_type} to the blog {post.title}.",
-                    related_url=f"/admin-dashboard/blogs/{post.id}/"
+                    description=f"You reacted with {reaction.type} to the blog {post.title}.",
+                    related_url=f"/blog/{post.id}/",
                 )
-                print(f"📝 Admin {admin.username} activity logged")
-        else:
-            # Anonymous reaction
-            visitor_id = request.COOKIES.get("visitorId")
-            reaction, created = ReactionBlog.objects.update_or_create(
-                post=post,
-                visitor_id=visitor_id,
-                defaults={'type': reaction_type}
-            )
+            for admin in User.objects.filter(is_superuser=True):
+                ActivityLog.objects.create(
+                    user=admin,
+                    actor_type="admin",
+                    action="react_created",
+                    item=None,
+                    description=f"A customer reacted with {reaction.type} to the blog {post.title}.",
+                    related_url=f"/admin-dashboard/blogs/{post.id}/",
+                )
 
-        return Response(
+        response = Response(
             ReactionSerializer(reaction).data,
-            status=status.HTTP_201_CREATED if created else status.HTTP_200_OK
+            status=status.HTTP_201_CREATED if created else status.HTTP_200_OK,
         )
+        if generated_visitor_id:
+            response.set_cookie(
+                "visitorId",
+                visitor_id,
+                max_age=60 * 60 * 24 * 365,
+                httponly=True,
+                secure=request.is_secure(),
+                samesite="Lax",
+            )
+        return response
 
     # 💔 DELETE /api/blogs/{id}/remove_reaction/
     @action(detail=True, methods=['delete'], permission_classes=[IsAuthenticatedOrVisitor])
