@@ -184,9 +184,9 @@ export default function MpesaB2CMultiPayment({ onSuccess }) {
             borderRadius: "12px",
             p: { xs: 2, sm: 3 },
             mt: 1,
-            backgroundColor: "var(--card, #fff)",
-            color: "var(--card-foreground, var(--foreground, #222))",
-            border: "1px solid var(--border, #e6e6e4)",
+            backgroundColor: "hsl(var(--card, 0 0% 100%))",
+            color: "hsl(var(--card-foreground, var(--foreground, 0 0% 3.9%)))",
+            border: "1px solid hsl(var(--border, 0 0% 89.8%))",
             boxShadow: "0 4px 14px rgba(0,0,0,.06)",
           }}
           className="mm-payout-shadow"
@@ -194,7 +194,7 @@ export default function MpesaB2CMultiPayment({ onSuccess }) {
           <Typography variant="h6" fontWeight="bold" gutterBottom>
             M-Pesa Bulk Payouts
           </Typography>
-          <Typography variant="body2" sx={{ color: "var(--muted-foreground, #686868)", mb: 2 }}>
+          <Typography variant="body2" sx={{ color: "hsl(var(--muted-foreground, 0 0% 45.1%))", mb: 2 }}>
             Phone numbers use B2C. Registered Till / Buy Goods and PayBill destinations use the Daraja B2B payout flow.
           </Typography>
 
@@ -216,7 +216,7 @@ export default function MpesaB2CMultiPayment({ onSuccess }) {
               spacing={1.5}
               alignItems="center"
               key={payment.reference || index}
-              sx={{ mb: 2, p: { xs: 1.5, sm: 2 }, border: "1px solid var(--border, #e6e6e4)", borderRadius: "12px" }}
+              sx={{ mb: 2, p: { xs: 1.5, sm: 2 }, border: "1px solid hsl(var(--border, 0 0% 89.8%))", borderRadius: "12px" }}
             >
               <Grid item xs={12} sm={4}>
                 <TextField
@@ -263,7 +263,7 @@ export default function MpesaB2CMultiPayment({ onSuccess }) {
             fullWidth
             sx={{
               "&:hover": {
-                backgroundColor: "var(--primary-hover, #1d4ed8)",
+                backgroundColor: "color-mix(in srgb, hsl(var(--primary, 0 0% 9%)) 90%, white)",
                 border: "none",
               },
               py: 1.2,
