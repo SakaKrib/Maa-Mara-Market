@@ -508,3 +508,16 @@ class ActivityNotificationPresentationTests(TestCase):
 
         self.assertEqual(data["display_message"], "You updated Aluminum Accents.")
         self.assertNotEqual(data["display_message"], "You updated the item.")
+
+    def test_legacy_generic_item_update_resolves_name_from_related_url(self):
+        activity = ActivityLog.objects.create(
+            user=self.vendor_user,
+            actor_type="vendor",
+            action="item_updated",
+            description="You updated the item.",
+            related_url=f"/vendors-dashboard/item-onsite/items/{self.item.id}",
+        )
+
+        data = self.serialize_activity(activity, self.vendor_user)
+
+        self.assertEqual(data["display_message"], "You updated Bidets Tool.")
