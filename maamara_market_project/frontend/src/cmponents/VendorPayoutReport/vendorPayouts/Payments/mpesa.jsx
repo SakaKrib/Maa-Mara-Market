@@ -19,7 +19,17 @@ export default function MpesaB2CPayment({ onSuccess }) {
   const navigate = useNavigate();
   const { reference, amount, vendor, phone } = location.state || {};
 
-  const initialPhone = vendor?.mpesa_number || vendor?.MpesaNo || vendor?.mpesa_no || phone || "";
+  const mpesaType = vendor?.mpesa_type || "PHONE";
+  const initialPhone = mpesaType === "TILL"
+    ? vendor?.mpesa_till || ""
+    : mpesaType === "LIPA_NA_MPESA"
+      ? vendor?.mpesa_paybill || ""
+      : vendor?.mpesa_number || vendor?.MpesaNo || vendor?.mpesa_no || phone || "";
+  const destinationLabel = mpesaType === "TILL"
+    ? "M-Pesa Till number"
+    : mpesaType === "LIPA_NA_MPESA"
+      ? "M-Pesa Paybill number"
+      : "M-Pesa phone number (2547XXXXXXXX)";
   const initialAmount = amount || "";
   const vendorName = vendor?.company_name || vendor?.name || [vendor?.first_name, vendor?.surname_name].filter(Boolean).join(" ") || "Vendor";
 
@@ -64,15 +74,21 @@ export default function MpesaB2CPayment({ onSuccess }) {
     setError(null);
     setMessage(null);
 
-    const normalizedPhone = normalizePhone(inputPhone);
+    const normalizedPhone = mpesaType === "PHONE" ? normalizePhone(inputPhone) : "";
+    const normalizedDestination = String(inputPhone || "").replace(/\D/g, "");
 
-    if (!normalizedPhone || !inputAmount) {
-      setError("⚠️ Please enter both phone number and amount.");
+    if (!inputPhone || !inputAmount) {
+      setError("⚠️ The vendor's registered M-Pesa destination and payout amount are required.");
       return;
     }
 
-    if (!/^2547\d{8}$/.test(normalizedPhone)) {
+    if (mpesaType === "PHONE" && !/^2547\d{8}$/.test(normalizedPhone)) {
       setError("⚠️ Invalid phone format. Use 2547XXXXXXXX.");
+      return;
+    }
+
+    if ((mpesaType === "TILL" || mpesaType === "LIPA_NA_MPESA") && !/^\d{5,20}$/.test(normalizedDestination)) {
+      setError("⚠️ The vendor's registered Till or Paybill number is invalid.");
       return;
     }
 
@@ -82,6 +98,10 @@ export default function MpesaB2CPayment({ onSuccess }) {
       // ✅ Call backend endpoint for single vendor payment
       const res = await api.post(`/api/vendor/payout/${reference}/pay/`, {
         phone: normalizedPhone,
+        mpesa_type: mpesaType,
+        mpesa_number: mpesaType === "PHONE" ? normalizedPhone : "",
+        mpesa_till: mpesaType === "TILL" ? normalizedDestination : "",
+        mpesa_paybill: mpesaType === "LIPA_NA_MPESA" ? normalizedDestination : "",
         amount: inputAmount,
       });
 
@@ -124,11 +144,12 @@ export default function MpesaB2CPayment({ onSuccess }) {
     <Box className="mm-payout-page" sx={{ p: { xs: 1, sm: 2 }, mt: { xs: 0, sm: -1 }, maxWidth: 760, mx: "auto", width: "100%" }}>
       <Box
         sx={{
-          borderRadius: 2,
-          p: 2,
-          mt: 2,
-          backgroundColor: colors.primary[800],
-          color: colors.gray[100],
+          borderRadius: "20px",
+          p: { xs: 2, sm: 3 },
+          mt: 1,
+          backgroundColor: "var(--mm-surface, var(--background, #fff))",
+          color: "var(--mm-foreground, var(--foreground, #222))",
+          border: "1px solid var(--mm-border, var(--border, #e5e7eb))",
         }}
         className="mm-payout-shadow"
       >
