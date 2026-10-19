@@ -440,3 +440,58 @@ class ActivityNotificationPresentationTests(TestCase):
             data["url"],
             f"/vendors-dashboard/item-onsite/items/{self.item.id}",
         )
+
+    def test_vendor_sees_named_item_approval_not_approval_action(self):
+        activity = ActivityLog.objects.create(
+            user=self.vendor_user,
+            actor_type="vendor",
+            action="item_request_approved",
+            description="Your item request for Bidets Tool was approved by the admin.",
+            item=self.item,
+        )
+
+        data = self.serialize_activity(activity, self.vendor_user)
+
+        self.assertEqual(data["display_message"], "Your item Bidets Tool was approved.")
+        self.assertNotIn("You approved", data["display_message"])
+
+    def test_admin_sees_the_approval_decision_and_item_name(self):
+        activity = ActivityLog.objects.create(
+            user=self.admin,
+            actor_type="admin",
+            action="item_request_approved",
+            description="The administrator approved the vendor item request for Bidets Tool.",
+            item=self.item,
+        )
+
+        data = self.serialize_activity(activity, self.admin)
+
+        self.assertEqual(data["display_message"], "You approved the item request for Bidets Tool.")
+
+    def test_vendor_sees_named_item_decline_not_decline_action(self):
+        activity = ActivityLog.objects.create(
+            user=self.vendor_user,
+            actor_type="vendor",
+            action="item_request_denied",
+            description="Your item request for Bidets Tool was declined by the administrator.",
+        )
+
+        data = self.serialize_activity(activity, self.vendor_user)
+
+        self.assertEqual(
+            data["display_message"],
+            "Your item Bidets Tool was declined by the administrator.",
+        )
+        self.assertNotIn("You declined", data["display_message"])
+
+    def test_admin_sees_the_decline_decision_and_item_name(self):
+        activity = ActivityLog.objects.create(
+            user=self.admin,
+            actor_type="admin",
+            action="item_request_denied",
+            description="The administrator declined the vendor request for Bidets Tool.",
+        )
+
+        data = self.serialize_activity(activity, self.admin)
+
+        self.assertEqual(data["display_message"], "You declined the item request for Bidets Tool.")
