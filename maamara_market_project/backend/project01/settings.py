@@ -237,7 +237,7 @@ SIMPLE_JWT = {
 
 # The native Capacitor WebView is served from https://localhost.
 # Keep these origins in addition to the configurable website origins.
-NATIVE_WEBVIEW_ORIGINS = ["https://localhost"]
+NATIVE_WEBVIEW_ORIGINS = ["https://localhost", "capacitor://localhost", "ionic://localhost"]
 
 CORS_ALLOWED_ORIGINS = list(dict.fromkeys([
     *[
