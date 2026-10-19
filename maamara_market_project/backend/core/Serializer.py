@@ -707,29 +707,34 @@ class ActivityLogSerializer(serializers.ModelSerializer):
 
         description = (getattr(obj, "description", None) or "").strip()
         patterns = {
-            "item_created": r"\badded\s+(.+?)(?:[.!]|$)",
-            "item_updated": r"\bupdated\s+(.+?)(?:[.!]|$)",
-            "item_updated_qty": r"\bupdated the stock for\s+(.+?)(?:[.!]|$)",
+            "item_created": r"(?:added|created)\s+(?:item\s+)?(.+?)(?:[.!]|$)",
+            "item_updated": r"(?:updated|edited)\s+(?:item\s+)?(.+?)(?:[.!]|$)",
+            "item_updated_qty": r"updated the stock for\s+(.+?)(?:[.!]|$)",
             "item_request_created": r"(?:item request for|vendor item request for|vendor request for)\s+(.+?)(?=\s+(?:was|has been|is)\s+(?:approved|declined|denied|rejected)|[.!]?$)",
             "item_request_approved": r"(?:item request for|vendor item request for|vendor request for)\s+(.+?)(?=\s+(?:was|has been|is)\s+(?:approved|declined|denied|rejected)|[.!]?$)",
             "item_request_denied": r"(?:item request for|vendor item request for|vendor request for)\s+(.+?)(?=\s+(?:was|has been|is)\s+(?:approved|declined|denied|rejected)|[.!]?$)",
             "item_added_to_cart": r"added\s+(.+?)\s+to (?:their|your) cart",
             "item_removed_from_cart": r"removed\s+(.+?)\s+from (?:their|your) cart",
+            "cart_item_removed_notification": r"removed\s+(.+?)\s+from (?:their|your) cart",
             "item_added_to_wishlist": r"added\s+(.+?)\s+to (?:their|your) wishlist",
             "item_removed_from_wishlist": r"removed\s+(.+?)\s+from (?:their|your) wishlist",
             "item_viewed": r"viewed (?:your item )?(.+?)(?:[.!]|$)",
             "item_shared": r"shared (.+?)(?:[.!]|$)",
             "item_reviewed": r"review for (.+?)(?:[.!]|$)",
+            "item_sold": r"(.+?)\s+was purchased(?:[.!]|$)",
             "Price Change Requested": r"price change(?: request)?\s+for\s+(.+?)(?=\.?\s*(?:Reason:|$))",
             "Price Change Approved": r"(?:price change(?: request)? for|new price [^ ]+ for)\s+(.+?)(?:[.!]|$)",
-            "return_requested": r"return (?:request )?for\s+(.+?)(?:[.!]|$)",
+            "return_requested": r"(?:return (?:request )?for|requested a return for)\s+(.+?)(?:[.!]|$)",
             "return_rejected": r"return request for\s+(.+?)(?:[.!]|$)",
-            "refund_requested": r"refund (?:request )?for\s+(.+?)(?:[.!]|$)",
+            "refund_requested": r"(?:refund (?:request )?for|requested a refund for)\s+(.+?)(?:[.!]|$)",
             "refund_approved": r"refund for\s+(.+?)(?:[.!]|$)",
-            "exchange_requested": r"exchange (?:request )?for\s+(.+?)(?:[.!]|$)",
+            "exchange_requested": r"(?:exchange (?:request )?for|requested an exchange for)\s+(.+?)(?:[.!]|$)",
             "exchange_approved": r"exchange for\s+(.+?)(?:[.!]|$)",
         }
         pattern = patterns.get(obj.action)
+        if not pattern:
+            base_action = re.sub(r"_(?:vendor|admin)$", "", str(obj.action or ""))
+            pattern = patterns.get(base_action)
         match = re.search(pattern, description, flags=re.I) if pattern else None
         name = match.group(1).strip().strip(".").strip(chr(34) + chr(39) + "“”‘’") if match else ""
         return name or "the item"
