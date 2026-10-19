@@ -133,9 +133,9 @@ export default function BankTransferBulkPayment({ onSuccess }) {
             borderRadius: "20px",
             p: { xs: 2, sm: 3 },
             mt: 1,
-            backgroundColor: "var(--mm-surface, var(--background, #fff))",
-            color: "var(--mm-foreground, var(--foreground, #222))",
-            border: "1px solid var(--mm-border, var(--border, #e5e7eb))",
+            backgroundColor: theme.palette.background.paper,
+            color: theme.palette.text.primary,
+            border: `1px solid ${theme.palette.divider}`,
             boxShadow: "0 4px 14px rgba(0,0,0,.06)",
           }}
           className="mm-payout-shadow"
@@ -165,9 +165,9 @@ export default function BankTransferBulkPayment({ onSuccess }) {
               sx={{
                 mb: 2,
                 p: { xs: 1.5, sm: 2 },
-                border: "1px solid var(--mm-border, #d1d5db)",
+                border: `1px solid ${theme.palette.divider}`,
                 borderRadius: "16px",
-                backgroundColor: "var(--mm-surface, #fff)",
+                backgroundColor: theme.palette.background.paper,
               }}
             >
               <Typography variant="subtitle2" fontWeight={700} sx={{ mb: 1.5 }}>
