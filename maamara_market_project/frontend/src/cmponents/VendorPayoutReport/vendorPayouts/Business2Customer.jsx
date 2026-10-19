@@ -219,7 +219,7 @@ export default function AdminPayoutTriggerPayment() {
                             <button
                               type="button"
                               disabled={paid}
-                              onClick={() => handlePayVendor(payout)}
+                              onClick={() => handlePayVendor({ ...payout, payment_method: payout.payment_method || method })}
                               className="inline-flex min-h-10 items-center gap-2 rounded-xl bg-primary px-4 py-2 text-xs font-semibold text-primary-foreground transition hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50"
                             >
                               {paid ? "Paid" : "Review & pay"}
