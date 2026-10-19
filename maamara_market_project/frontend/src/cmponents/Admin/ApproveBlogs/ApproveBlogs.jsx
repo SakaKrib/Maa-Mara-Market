@@ -65,16 +65,16 @@ export default function AdminBlogApprovalPage({ onCountChange }) {
 
       <section className="min-h-[calc(100vh-72px)] w-full bg-background text-foreground">
         <div className="mx-auto w-full max-w-6xl px-4 py-6 sm:px-6 lg:px-8">
-          <header className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <header className="mb-6 flex flex-col gap-4 rounded-2xl border border-border bg-gradient-to-br from-card via-card to-muted/50 p-5 shadow-sm sm:flex-row sm:items-center sm:justify-between sm:p-6 lg:p-7">
             <div className="flex min-w-0 items-center gap-3">
-              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-muted">
-                <IonIcon icon={newspaperOutline} className="text-xl" />
+              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-primary/10 text-primary ring-1 ring-primary/10 sm:h-14 sm:w-14">
+                <IonIcon icon={newspaperOutline} className="text-2xl sm:text-[27px]" />
               </div>
               <div className="min-w-0">
-                <p className="text-sm text-muted-foreground">Content management</p>
-                <h1 className="text-xl font-semibold tracking-tight sm:text-2xl">Blog Approvals</h1>
-                <p className="mt-1 text-xs text-muted-foreground sm:text-sm">
-                  Review vendor blog submissions before they are published.
+                <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-primary">Content management</p>
+                <h1 className="mt-1 text-2xl font-bold tracking-tight text-foreground sm:text-3xl">Blog approvals</h1>
+                <p className="mt-1.5 max-w-2xl text-sm leading-6 text-muted-foreground">
+                  Review each vendor submission and decide what is ready to publish.
                 </p>
               </div>
             </div>
@@ -82,7 +82,7 @@ export default function AdminBlogApprovalPage({ onCountChange }) {
               type="button"
               onClick={fetchBlogs}
               disabled={loading}
-              className="inline-flex min-h-10 items-center justify-center gap-2 rounded-xl border border-border bg-card px-4 text-sm font-medium text-card-foreground shadow-sm hover:bg-muted disabled:cursor-not-allowed disabled:opacity-60"
+              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-[20px] border border-border bg-card px-5 text-sm font-semibold text-card-foreground shadow-sm transition hover:border-primary/30 hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30 disabled:cursor-not-allowed disabled:opacity-60"
             >
               <IonIcon icon={refreshOutline} />
               Refresh
@@ -90,9 +90,9 @@ export default function AdminBlogApprovalPage({ onCountChange }) {
           </header>
 
           <div className="overflow-hidden rounded-2xl border border-border bg-card shadow-sm">
-            <div className="border-b border-border px-4 py-4 sm:px-6">
+            <div className="border-b border-border bg-muted/30 px-4 py-4 sm:px-6">
               <h2 className="text-base font-semibold sm:text-lg">Pending blog approvals</h2>
-              <p className="mt-1 text-sm text-muted-foreground">
+              <p className="mt-2 text-sm text-muted-foreground">
                 {blogs.length} {blogs.length === 1 ? "blog" : "blogs"} awaiting review.
               </p>
             </div>
@@ -110,10 +110,10 @@ export default function AdminBlogApprovalPage({ onCountChange }) {
             ) : (
               <div className="divide-y divide-border">
                 {blogs.map((blog) => (
-                  <article key={blog.id} className="p-4 sm:p-6">
+                  <article key={blog.id} className="p-4 transition-colors hover:bg-muted/20 sm:p-6">
                     <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                       <div className="min-w-0 flex-1">
-                        <h3 className="break-words text-lg font-semibold tracking-tight">
+                        <h3 className="break-words text-xl font-bold leading-snug tracking-tight sm:text-2xl">
                           {blog.title || "Untitled blog"}
                         </h3>
                         <p className="mt-1 text-sm text-muted-foreground">
@@ -130,7 +130,7 @@ export default function AdminBlogApprovalPage({ onCountChange }) {
                         )}
 
                         <div
-                          className="blog-rich-text mt-4 max-w-none break-words text-sm leading-6 text-foreground [&_p]:mb-3 [&_h1]:mb-3 [&_h1]:text-2xl [&_h1]:font-bold [&_h2]:mb-2 [&_h2]:mt-4 [&_h2]:text-xl [&_h2]:font-semibold [&_h3]:mb-2 [&_h3]:mt-3 [&_h3]:text-lg [&_h3]:font-semibold [&_ul]:mb-3 [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:mb-3 [&_ol]:list-decimal [&_ol]:pl-5 [&_blockquote]:my-3 [&_blockquote]:border-l-4 [&_blockquote]:border-primary [&_blockquote]:pl-4 [&_blockquote]:italic [&_a]:text-primary [&_a]:underline"
+                          className="blog-rich-text mt-4 max-w-none break-words text-[15px] leading-7 text-foreground [&_p]:mb-4 [&_h1]:mb-3 [&_h1]:mt-5 [&_h1]:text-2xl [&_h1]:font-bold [&_h2]:mb-2 [&_h2]:mt-5 [&_h2]:text-xl [&_h2]:font-bold [&_h3]:mb-2 [&_h3]:mt-4 [&_h3]:text-lg [&_h3]:font-semibold [&_ul]:mb-4 [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:mb-4 [&_ol]:list-decimal [&_ol]:pl-5 [&_blockquote]:my-4 [&_blockquote]:rounded-r-lg [&_blockquote]:border-l-4 [&_blockquote]:border-primary [&_blockquote]:bg-background [&_blockquote]:py-2 [&_blockquote]:pl-4 [&_blockquote]:italic [&_a]:font-medium [&_a]:text-primary [&_a]:underline"
                           dangerouslySetInnerHTML={{ __html: sanitizeRichText(blog.content || "") }}
                         />
 
@@ -150,7 +150,7 @@ export default function AdminBlogApprovalPage({ onCountChange }) {
                           type="button"
                           onClick={() => handleAction(blog, "approve")}
                           disabled={processingId === blog.id}
-                          className="min-h-10 rounded-xl bg-primary px-4 text-sm font-medium text-primary-foreground transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
+                          className="min-h-11 rounded-[20px] bg-primary px-5 text-sm font-semibold text-primary-foreground shadow-sm transition hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60"
                         >
                           {processingId === blog.id ? "Processing…" : "Approve"}
                         </button>
@@ -162,7 +162,7 @@ export default function AdminBlogApprovalPage({ onCountChange }) {
                             }
                           }}
                           disabled={processingId === blog.id}
-                          className="min-h-10 rounded-xl border border-destructive/30 bg-card px-4 text-sm font-medium text-destructive transition hover:bg-destructive/10 disabled:cursor-not-allowed disabled:opacity-60"
+                          className="min-h-11 rounded-[20px] border border-destructive/30 bg-card px-5 text-sm font-semibold text-destructive transition hover:bg-destructive/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-destructive/30 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60"
                         >
                           Deny
                         </button>
