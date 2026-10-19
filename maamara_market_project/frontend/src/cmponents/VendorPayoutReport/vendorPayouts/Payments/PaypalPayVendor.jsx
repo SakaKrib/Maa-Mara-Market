@@ -305,7 +305,7 @@ export default function PaypalBulkPayment({ onSuccess }) {
           variant="text"
           onClick={addPaymentRow}
           disabled={loading}
-          sx={{ mt: 2, borderRadius: "20px", textTransform: "none" }}
+          sx={{ mt: 2, borderRadius: "12px", textTransform: "none" }}
         >
           + Add another payment
         </Button>
