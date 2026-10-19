@@ -26,6 +26,7 @@ blog_react = BlogPostViewSet.as_view({"post": "react"})
 blog_remove_reaction = BlogPostViewSet.as_view({"delete": "remove_reaction"})
 admin_blog_list = AdminBlogApprovalViewSet.as_view({"get": "list"})
 admin_blog_approve = AdminBlogApprovalViewSet.as_view({"post": "approve"})
+admin_blog_deny = AdminBlogApprovalViewSet.as_view({"post": "deny"})
 
 urlpatterns = [
     path("", include(router.urls)),
@@ -53,6 +54,7 @@ urlpatterns = [
     path("api/blogs/popular/", PopularBlogPostsViewSet.as_view({"get": "list"}), name="popular_blogs"),
     path("api/admin/blogs/", admin_blog_list, name="admin_blog_list"),
     path("api/admin-approve/blogs/<int:pk>/approve/", admin_blog_approve, name="admin_blog_approve"),
+    path("api/admin-approve/blogs/<int:pk>/deny/", admin_blog_deny, name="admin_blog_deny"),
     path("api/banners-list/", BannerListView.as_view(), name="banners-all"),
     path("api/upload/", FileUploadView.as_view(), name="file-upload"),
     path("api/faqs/", FAQListCreateView.as_view(), name="faq-list-create"),
