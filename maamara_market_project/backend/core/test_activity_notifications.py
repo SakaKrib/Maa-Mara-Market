@@ -452,7 +452,7 @@ class ActivityNotificationPresentationTests(TestCase):
 
         data = self.serialize_activity(activity, self.vendor_user)
 
-        self.assertEqual(data["display_message"], "Your item Bidets Tool was approved.")
+        self.assertEqual(data["display_message"], "Your item “Bidets Tool” was approved.")
         self.assertNotIn("You approved", data["display_message"])
 
     def test_admin_sees_the_approval_decision_and_item_name(self):
@@ -466,7 +466,7 @@ class ActivityNotificationPresentationTests(TestCase):
 
         data = self.serialize_activity(activity, self.admin)
 
-        self.assertEqual(data["display_message"], "You approved the item request for Bidets Tool.")
+        self.assertEqual(data["display_message"], "Admin admin_one approved item “Bidets Tool”.")
 
     def test_vendor_sees_named_item_decline_not_decline_action(self):
         activity = ActivityLog.objects.create(
@@ -480,7 +480,7 @@ class ActivityNotificationPresentationTests(TestCase):
 
         self.assertEqual(
             data["display_message"],
-            "Your item Bidets Tool was declined by the administrator.",
+            "Your item request for “Bidets Tool” was declined.",
         )
         self.assertNotIn("You declined", data["display_message"])
 
@@ -494,7 +494,7 @@ class ActivityNotificationPresentationTests(TestCase):
 
         data = self.serialize_activity(activity, self.admin)
 
-        self.assertEqual(data["display_message"], "You declined the item request for Bidets Tool.")
+        self.assertEqual(data["display_message"], "Admin admin_one declined item request for “Bidets Tool”.")
 
     def test_legacy_item_update_without_item_relation_keeps_item_name(self):
         activity = ActivityLog.objects.create(
@@ -521,3 +521,36 @@ class ActivityNotificationPresentationTests(TestCase):
         data = self.serialize_activity(activity, self.vendor_user)
 
         self.assertEqual(data["display_message"], "You updated Bidets Tool.")
+
+    def test_admin_price_approval_names_admin_and_item(self):
+        activity = ActivityLog.objects.create(
+            user=self.admin,
+            actor_type="admin",
+            action="Price Change Approved",
+            description="The administrator approved the new price 125 for Bidets Tool.",
+            item=self.item,
+        )
+
+        data = self.serialize_activity(activity, self.admin)
+
+        self.assertEqual(
+            data["display_message"],
+            "Admin admin_one approved the price change for “Bidets Tool”.",
+        )
+
+    def test_vendor_price_approval_names_item_without_claiming_to_approve(self):
+        activity = ActivityLog.objects.create(
+            user=self.vendor_user,
+            actor_type="vendor",
+            action="Price Change Approved",
+            description="Your price change request for Bidets Tool has been approved.",
+            item=self.item,
+        )
+
+        data = self.serialize_activity(activity, self.vendor_user)
+
+        self.assertEqual(
+            data["display_message"],
+            "Your price change for “Bidets Tool” was approved.",
+        )
+        self.assertNotIn("You approved", data["display_message"])
