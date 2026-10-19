@@ -28,7 +28,8 @@ export default function PaypalBulkPayment({ onSuccess }) {
       location.state?.reference
         ? {
             vendor: location.state?.vendor || {},
-            amount: location.state?.amount || 0,
+            amount: location.state?.amount ?? "",
+            payment_method: "PAYPAL",
             reference: location.state.reference,
           }
         : null,
@@ -43,9 +44,10 @@ export default function PaypalBulkPayment({ onSuccess }) {
   const [payments, setPayments] = useState(() => {
     if (vendorPayouts.length > 0) {
       return vendorPayouts.map((p) => ({
-        vendor_name: p.vendor?.company_name || [p.vendor?.first_name, p.vendor?.surname_name].filter(Boolean).join(" ") || "",
+        vendor_name: p.vendor?.company_name || [p.vendor?.first_name, p.vendor?.middle_name, p.vendor?.surname_name].filter(Boolean).join(" ") || "",
         email: p.vendor?.paypal_email || p.vendor?.PaypalEmail || "",
-        amount: p.amount || 0,
+        payment_method: p.vendor?.payment_method || "PAYPAL",
+        amount: p.amount ?? "",
         reference: p.reference || "",
       }));
     }
@@ -231,8 +233,8 @@ export default function PaypalBulkPayment({ onSuccess }) {
           PayPal Bulk Payment
         </Typography>
 
-        <Grid container spacing={10} sx={{ fontWeight: "bold", mb: 1 }}>
-          <Grid item xs={3}>
+        <Grid container spacing={2} sx={{ fontWeight: "bold", mb: 1, display: { xs: "none", md: "flex" } }}>
+          <Grid item md={3}>
             Vendor Name
           </Grid>
           <Grid item xs={3}>
@@ -263,19 +265,20 @@ export default function PaypalBulkPayment({ onSuccess }) {
                 fullWidth
                 variant="outlined"
                 size="small"
-                disabled={loading || vendorPayouts?.length > 0} // disable editing if loaded
+                disabled={loading || vendorPayouts?.length > 0}
                 placeholder="Vendor Name"
               />
             </Grid>
 
             <Grid item xs={3}>
               <TextField
+                label="Saved PayPal account email"
                 value={payment.email}
                 onChange={(e) => handleChange(index, "email", e.target.value)}
                 fullWidth
                 variant="outlined"
                 size="small"
-                disabled={loading}
+                disabled={loading || vendorPayouts?.length > 0}
                 placeholder="Vendor PayPal email"
               />
             </Grid>
