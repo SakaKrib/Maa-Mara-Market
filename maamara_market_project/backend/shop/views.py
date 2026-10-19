@@ -1604,67 +1604,72 @@ class VendorHistoryTimelineView(APIView):
         if not vendor:
             return Response([])
 
-        # ======================
-        # BANNERS
-        # ======================
-        banners = Banner.objects.filter(vendor=vendor)
-
-        banner_list = [
-            {
-                "id": b.id,
-                "type": "banners",
-                "title": b.title,
-                "description": b.subtitle or "",
-                "status": "approved" if b.is_approved else "pending",
-                "created_at": b.created_at,
-            }
-            for b in banners
-        ]
-
-        # ======================
-        # BLOGS
-        # ======================
-        blogs = BlogPost.objects.filter(vendor=vendor)
-
-        blog_list = [
-            {
-                "id": b.id,
-                "type": "blogs",
-                "title": b.title,
-                "description": b.content,
-                "status": "approved" if b.approved else "pending",
-                "created_at": b.created_at,
-            }
-            for b in blogs
-        ]
-
-        # ======================
-        # ITEM REQUESTS
-        # ======================
-        items = VendorItemRequest.objects.filter(vendor=vendor)
-
+        # Item submissions belong in the Items filter, not the Prices filter.
+        item_requests = VendorItemRequest.objects.filter(vendor=vendor)
         item_list = [
             {
-                "id": i.id,
-                "type": "prices",
-                "title": i.name,
-                "description": i.description,
-                "status": i.status,
-                "created_at": i.created_at,
+                "id": item_request.id,
+                "type": "items",
+                "title": item_request.name,
+                "description": item_request.description or "",
+                "status": item_request.status,
+                "created_at": item_request.created_at,
             }
-            for i in items
+            for item_request in item_requests
         ]
 
-        # ======================
-        # MERGE + SORT
-        # ======================
-        timeline = banner_list + blog_list + item_list
+        banners = Banner.objects.filter(vendor=vendor)
+        banner_list = [
+            {
+                "id": banner.id,
+                "type": "banners",
+                "title": banner.title,
+                "description": banner.subtitle or "",
+                "status": "approved" if banner.is_approved else "pending",
+                "created_at": banner.created_at,
+            }
+            for banner in banners
+        ]
 
+        blogs = BlogPost.objects.filter(vendor=vendor)
+        blog_list = [
+            {
+                "id": blog.id,
+                "type": "blogs",
+                "title": blog.title,
+                # Blog content may contain rich-text HTML; the frontend must
+                # render it through the shared DOMPurify-backed renderer.
+                "description": blog.content or "",
+                "status": "approved" if blog.approved else "pending",
+                "created_at": blog.created_at,
+            }
+            for blog in blogs
+        ]
+
+        price_changes = PriceChangeRequest.objects.filter(
+            item__vendor=vendor,
+            requested_by=request.user,
+        ).select_related("item")
+        price_list = [
+            {
+                "id": price_change.id,
+                "type": "prices",
+                "title": price_change.item.name,
+                "description": (
+                    f"Requested price change to {price_change.new_price:g}."
+                    + (f" Reason: {price_change.reason}" if price_change.reason else "")
+                ),
+                "status": "approved" if price_change.approved else "pending",
+                "created_at": price_change.created_at,
+            }
+            for price_change in price_changes
+        ]
+
+        timeline = item_list + banner_list + blog_list + price_list
         timeline.sort(
-            key=lambda x: x["created_at"] or "",
-            reverse=True
+            key=lambda entry: entry["created_at"],
+            reverse=True,
         )
-
         return Response(timeline)
 
 # -------------------------------
