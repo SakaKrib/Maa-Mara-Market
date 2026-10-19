@@ -63,12 +63,16 @@ def mpesa_result(request):
     result = data.get("Result") or {}
     conversation_id = result.get("ConversationID")
     originator_conversation_id = result.get("OriginatorConversationID")
-    result_code = result.get("ResultCode")
+    raw_result_code = result.get("ResultCode")
+    try:
+        result_code = int(raw_result_code) if raw_result_code is not None else None
+    except (TypeError, ValueError):
+        result_code = None
     result_desc = str(result.get("ResultDesc") or "")[:255]
     transaction_id = result.get("TransactionID")
 
     if not conversation_id and not originator_conversation_id:
-        logger.warning("M-Pesa B2C callback missing correlation identifiers.")
+        logger.warning("M-Pesa payout callback missing correlation identifiers.")
         return JsonResponse({"ResultCode": 0, "ResultDesc": "Accepted"})
 
     try:
@@ -86,7 +90,7 @@ def mpesa_result(request):
 
             if payout is None:
                 logger.warning(
-                    "M-Pesa B2C callback did not match a payout.",
+                    "M-Pesa payout callback did not match a payout.",
                     extra={"conversation_id": conversation_id},
                 )
                 return JsonResponse({"ResultCode": 0, "ResultDesc": "Accepted"})
@@ -115,7 +119,7 @@ def mpesa_result(request):
 
             if result_code == 0 and not transaction_id:
                 logger.error(
-                    "M-Pesa B2C success callback missing transaction identifier.",
+                    "M-Pesa payout success callback missing transaction identifier.",
                     extra={"payout_reference": payout.reference},
                 )
                 return JsonResponse({"ResultCode": 0, "ResultDesc": "Accepted"})
@@ -161,13 +165,13 @@ def mpesa_result(request):
                 Transaction.objects.update_or_create(
                     mpesa_receipt_number=transaction_id,
                     defaults={
-                        "transaction_type": "B2C",
+                        "transaction_type": "B2B" if payout.vendor.mpesa_type in {"TILL", "LIPA_NA_MPESA"} else "B2C",
                         "amount": payout.amount,
                         "account_reference": payout.reference,
                         "status": "Completed" if result_code == 0 else "Failed",
                         "payout": payout,
                         "vendor": payout.vendor,
-                        "phone_number": getattr(payout.vendor, "mpesa_number", None),
+                        "phone_number": getattr(payout.vendor, "mpesa_number", None) if payout.vendor.mpesa_type == "PHONE" else None,
                         "raw_data": {},
                     },
                 )
@@ -205,7 +209,7 @@ def mpesa_result(request):
 
     except Exception:
         logger.exception(
-            "M-Pesa B2C callback processing failed.",
+            "M-Pesa payout callback processing failed.",
             extra={"conversation_id": conversation_id},
         )
         return JsonResponse({"ResultCode": 1, "ResultDesc": "Temporary processing failure"}, status=500)
