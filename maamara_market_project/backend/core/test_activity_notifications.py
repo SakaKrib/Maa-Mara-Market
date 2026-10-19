@@ -495,3 +495,16 @@ class ActivityNotificationPresentationTests(TestCase):
         data = self.serialize_activity(activity, self.admin)
 
         self.assertEqual(data["display_message"], "You declined the item request for Bidets Tool.")
+
+    def test_legacy_item_update_without_item_relation_keeps_item_name(self):
+        activity = ActivityLog.objects.create(
+            user=self.vendor_user,
+            actor_type="vendor",
+            action="item_updated",
+            description="You updated Aluminum Accents.",
+        )
+
+        data = self.serialize_activity(activity, self.vendor_user)
+
+        self.assertEqual(data["display_message"], "You updated Aluminum Accents.")
+        self.assertNotEqual(data["display_message"], "You updated the item.")
