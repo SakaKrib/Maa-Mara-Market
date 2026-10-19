@@ -397,32 +397,46 @@ def create_or_update_customer_from_order(order):
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def get_customers(request):
-    vendor_user_id = request.query_params.get("vendor_user_id")
-
-    if vendor_user_id:
-        vendor_user = User.objects.filter(id=vendor_user_id).first()
-    else:
-        vendor_user = request.user
-
-    if not vendor_user:
-        return Response({"error": "Vendor user not found"}, status=404)
-
-    vendor = Vendor.objects.filter(user=vendor_user).first()
+    # Customer records are private to the authenticated vendor. Do not trust a
+    # vendor_user_id query parameter to select another vendor's customers.
+    vendor = Vendor.objects.filter(user=request.user).first()
     if not vendor:
         return Response({"customers": []})
 
-    customers_qs = Customer.objects.filter(vendor=vendor.user)  # <-- Here is the fix
+    customers_qs = (
+        Customer.objects.filter(vendor=request.user)
+        .select_related("billing_address")
+        .order_by("-created_at")
+    )
 
     customers = []
     for customer in customers_qs:
-        data = model_to_dict(customer)
-        for k, v in data.items():
-            if hasattr(v, "isoformat"):
-                data[k] = v.isoformat()
-        customers.append(data)
+        billing = customer.billing_address
+        billing_data = None
+        if billing:
+            # Only expose delivery-relevant address fields. Never return billing
+            # email, phone, visitor/user IDs, or the customer's database ID.
+            billing_data = {
+                "street_address": billing.street_address or "",
+                "apartment_address": billing.appartment_address or "",
+                "city": billing.city or "",
+                "state": billing.state or "",
+                "country": str(billing.country) if billing.country else "",
+                "postal_code": billing.zip or "",
+            }
+
+        customers.append({
+            "full_name": customer.full_name
+            or " ".join(part for part in [customer.first_name, customer.last_name] if part).strip()
+            or "Customer",
+            "city": customer.city or "",
+            "country": customer.country or "",
+            "loyalty_points": customer.loyalty_points,
+            "created_at": customer.created_at.isoformat() if customer.created_at else None,
+            "billing_address": billing_data,
+        })
 
     return Response({"customers": customers}, status=200)
-
 
 
 
