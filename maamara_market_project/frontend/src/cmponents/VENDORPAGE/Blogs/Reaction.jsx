@@ -4,7 +4,7 @@ import { useAuth } from "../../Auth/AuthContext/Context";
 
 const readVisitorId = () => {
   if (typeof document === "undefined") return "";
-  const match = document.cookie.match(/(?:^|;\\s*)visitorId=([^;]*)/);
+  const match = document.cookie.match(/(?:^|;\s*)visitorId=([^;]*)/);
   return match ? decodeURIComponent(match[1]) : "";
 };
 
