@@ -48,7 +48,7 @@ const WishlistModal = () => {
   };
 
   const handleShare = (item) => {
-    const itemUrl = `${window.location.origin}/product/${item.slug || item.id}`;
+    const itemUrl = `${window.location.origin}/item/${item.id}`;
     navigator.clipboard.writeText(itemUrl);
     alert("Item link copied to clipboard!");
   };

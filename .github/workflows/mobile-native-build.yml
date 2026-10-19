@@ -101,7 +101,7 @@ jobs:
         working-directory: ${{ env.FRONTEND_DIR }}
         # Runtime plugins (including push notifications) are pinned in package.json and the lockfile.
         # Install project generators/platform wrappers and Status Bar temporarily.
-        run: npm install --no-save @capacitor/cli@7 @capacitor/android@7 @capacitor/ios@7 @capacitor/status-bar@7 typescript@5.8.3 sharp
+        run: npm install --no-save @capacitor/cli@7 @capacitor/android@7 @capacitor/ios@7 @capacitor/status-bar@7 @capacitor/app@7 typescript@5.8.3 sharp
 
       - name: Build mobile web bundle
         working-directory: ${{ env.FRONTEND_DIR }}
@@ -470,7 +470,7 @@ jobs:
         working-directory: ${{ env.FRONTEND_DIR }}
         # Runtime plugins (including push notifications) are pinned in package.json and the lockfile.
         # Install project generators/platform wrappers and Status Bar temporarily.
-        run: npm install --no-save @capacitor/cli@7 @capacitor/android@7 @capacitor/ios@7 @capacitor/status-bar@7 typescript@5.8.3 sharp
+        run: npm install --no-save @capacitor/cli@7 @capacitor/android@7 @capacitor/ios@7 @capacitor/status-bar@7 @capacitor/app@7 typescript@5.8.3 sharp
 
       - name: Build mobile web bundle
         working-directory: ${{ env.FRONTEND_DIR }}
