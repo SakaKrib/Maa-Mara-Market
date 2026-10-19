@@ -4,8 +4,7 @@ import {
   CircularProgress,
   Box,
   TextField,
-  Typography,
-  useTheme,
+  Typography
 } from "@mui/material";
 import { useLocation, useNavigate } from "react-router-dom";
 import MpesaLogo from "../../../../assets/partnaship/mpesaLogo.png";
@@ -44,7 +43,6 @@ export default function MpesaB2CPayment({ onSuccess }) {
     window.setTimeout(() => setSnackbar((prev) => ({ ...prev, open: false })), 3000);
   };
 
-  const theme = useTheme();
 
   const normalizePhone = (phone) => {
     if (!phone) return "";
