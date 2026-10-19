@@ -12,17 +12,20 @@ export default function ReactionButton({ postId, reactions: initialReactions = [
   const [reactions, setReactions] = useState(initialReactions || []);
   const [submitting, setSubmitting] = useState(false);
   const [message, setMessage] = useState("");
+  const [myReactionId, setMyReactionId] = useState(null);
   const { user } = useAuth();
   const visitorId = readVisitorId();
 
   useEffect(() => setReactions(initialReactions || []), [initialReactions]);
 
   const myReaction = useMemo(() => {
+    const savedByThisComponent = reactions.find((reaction) => reaction.id === myReactionId);
+    if (savedByThisComponent) return savedByThisComponent;
     if (user?.id) {
       return reactions.find((reaction) => Number(reaction.user_id ?? reaction.user) === Number(user.id));
     }
     return visitorId ? reactions.find((reaction) => reaction.visitor_id === visitorId) : null;
-  }, [reactions, user?.id, visitorId]);
+  }, [reactions, user?.id, visitorId, myReactionId]);
 
   const counts = useMemo(() => reactions.reduce((result, reaction) => {
     if (reaction.type) result[reaction.type] = (result[reaction.type] || 0) + 1;
@@ -36,6 +39,7 @@ export default function ReactionButton({ postId, reactions: initialReactions = [
     try {
       const response = await api.post(`/api/blogs/${postId}/react/`, { type });
       const savedReaction = response.data;
+      setMyReactionId(savedReaction.id);
       setReactions((current) => {
         if (current.some((reaction) => reaction.id === savedReaction.id)) return current;
         return [...current, savedReaction];
