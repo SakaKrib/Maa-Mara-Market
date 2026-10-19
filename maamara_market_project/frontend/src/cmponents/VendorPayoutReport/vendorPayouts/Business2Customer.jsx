@@ -52,13 +52,14 @@ export default function AdminPayoutTriggerPayment() {
       payout?.MpesaNo ||
       payout?.phone ||
       "";
-    const inferredMpesaType = phone
-      ? "PHONE"
-      : detailVendor.mpesa_till || fullVendor.mpesa_till || payout?.mpesa_till
+    const inferredMpesaType =
+      detailVendor.mpesa_till || fullVendor.mpesa_till || payout?.mpesa_till
         ? "TILL"
         : detailVendor.mpesa_paybill || fullVendor.mpesa_paybill || payout?.mpesa_paybill
           ? "LIPA_NA_MPESA"
-          : "";
+          : phone
+            ? "PHONE"
+            : "";
     return {
       ...vendor,
       company_name: detailVendor.company_name || fullVendor.company_name || vendor.company_name || "",
