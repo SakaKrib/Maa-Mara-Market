@@ -1529,9 +1529,17 @@ class VendorBlogViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated, IsVendor]
 
     def get_queryset(self):
-        return BlogPost.objects.filter(
-            vendor=self.request.user.vendor
-        ).order_by("-created_at")
+        vendor = getattr(self.request.user, "vendor", None)
+        if vendor is None:
+            return BlogPost.objects.none()
+        return BlogPost.objects.filter(vendor=vendor).order_by("-created_at")
+
+    def perform_create(self, serializer):
+        user = self.request.user
+        vendor = getattr(user, "vendor", None)
+        if vendor is None:
+            raise PermissionDenied("Only vendors can create blogs")
+        serializer.save(user=user, vendor=vendor)
 
     def perform_update(self, serializer):
         # ❌ DO NOT reset approval on edit anymore
