@@ -8,7 +8,6 @@ import {
   useTheme,
 } from "@mui/material";
 import { useLocation, useNavigate } from "react-router-dom";
-import { tokens } from "../../../../theme";
 import MpesaLogo from "../../../../assets/partnaship/mpesaLogo.png";
 import api, { getWebSocketUrl } from "../../../../Services/Api";
 import "../payout-workflows.css";
@@ -19,12 +18,13 @@ export default function MpesaB2CPayment({ onSuccess }) {
   const navigate = useNavigate();
   const { reference, amount, vendor, phone } = location.state || {};
 
-  const mpesaType = vendor?.mpesa_type || "PHONE";
+  const rawMpesaType = String(vendor?.mpesa_type || location.state?.mpesa_type || "PHONE").toUpperCase();
+  const mpesaType = rawMpesaType === "PAYBILL" ? "LIPA_NA_MPESA" : rawMpesaType === "BUY_GOODS" ? "TILL" : rawMpesaType === "PHONE_NUMBER" || rawMpesaType === "MSISDN" ? "PHONE" : rawMpesaType;
   const initialPhone = mpesaType === "TILL"
-    ? vendor?.mpesa_till || ""
+    ? vendor?.mpesa_till || location.state?.mpesa_till || ""
     : mpesaType === "LIPA_NA_MPESA"
-      ? vendor?.mpesa_paybill || ""
-      : vendor?.mpesa_number || vendor?.MpesaNo || vendor?.mpesa_no || phone || "";
+      ? vendor?.mpesa_paybill || location.state?.mpesa_paybill || ""
+      : vendor?.mpesa_number || vendor?.MpesaNo || vendor?.mpesa_no || location.state?.mpesa_number || location.state?.MpesaNo || location.state?.mpesa_no || phone || "";
   const destinationLabel = mpesaType === "TILL"
     ? "M-Pesa Till number"
     : mpesaType === "LIPA_NA_MPESA"
@@ -33,7 +33,7 @@ export default function MpesaB2CPayment({ onSuccess }) {
   const initialAmount = amount || "";
   const vendorName = vendor?.company_name || vendor?.name || [vendor?.first_name, vendor?.surname_name].filter(Boolean).join(" ") || "Vendor";
 
-  const [inputPhone] = useState(initialPhone);
+  const [inputPhone] = useState(String(initialPhone || "").trim());
   const [inputAmount, setInputAmount] = useState(initialAmount);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState(null);
@@ -45,7 +45,6 @@ export default function MpesaB2CPayment({ onSuccess }) {
   };
 
   const theme = useTheme();
-  const colors = tokens(theme.palette.mode);
 
   const normalizePhone = (phone) => {
     if (!phone) return "";
@@ -137,12 +136,12 @@ export default function MpesaB2CPayment({ onSuccess }) {
     <Box className="mm-payout-page" sx={{ p: { xs: 1, sm: 2 }, mt: { xs: 0, sm: -1 }, maxWidth: 760, mx: "auto", width: "100%" }}>
       <Box
         sx={{
-          borderRadius: "20px",
+          borderRadius: "12px",
           p: { xs: 2, sm: 3 },
           mt: 1,
-          backgroundColor: theme.palette.background.paper,
-          color: theme.palette.text.primary,
-          border: `1px solid ${theme.palette.divider}`,
+          backgroundColor: "var(--card, #fff)",
+          color: "var(--card-foreground, var(--foreground, #222))",
+          border: "1px solid var(--border, #e6e6e4)",
         }}
         className="mm-payout-shadow"
       >
