@@ -216,7 +216,7 @@ export default function MpesaB2CMultiPayment({ onSuccess }) {
               spacing={1.5}
               alignItems="center"
               key={payment.reference || index}
-              sx={{ mb: 2, p: { xs: 1.5, sm: 2 }, border: "1px solid var(--border, #e6e6e4)", borderRadius: "16px" }}
+              sx={{ mb: 2, p: { xs: 1.5, sm: 2 }, border: "1px solid var(--border, #e6e6e4)", borderRadius: "12px" }}
             >
               <Grid item xs={12} sm={4}>
                 <TextField
@@ -268,7 +268,7 @@ export default function MpesaB2CMultiPayment({ onSuccess }) {
               },
               py: 1.2,
               mt: 3,
-              borderRadius: "20px",
+              borderRadius: "12px",
               textTransform: "none",
               fontWeight: 700,
               border: "1px solid",
