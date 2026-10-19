@@ -580,6 +580,7 @@ class Transaction(models.Model):
     TRANSACTION_TYPES = (
         ("C2B", "Customer to Business"),
         ("B2C", "Business to Customer"),
+        ("B2B", "Business to Business"),
         ("PayPal", "PayPal Payment"),
         ("BANK_TRANSFER", "Bank Transfer"),
     )
