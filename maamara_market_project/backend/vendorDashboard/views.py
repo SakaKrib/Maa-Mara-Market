@@ -1,3 +1,5 @@
+from django.core.files.storage import default_storage
+from django.utils.text import get_valid_filename
 from datetime import date, timedelta
 from decimal import Decimal
 import uuid
@@ -637,6 +639,25 @@ class VendorDraftView(APIView):
             created = True
 
         items = list(data.get("item_list") or [])
+
+        # Company logo and profile picture are stored with the draft so they
+        # survive a reload/resume. A File serialises to {} in the JSON payload,
+        # so only the uploaded file or the value already stored is trusted.
+        previous_data = dict(draft.data or {})
+        for media_field, media_folder in (
+            ("vendor_company_logo", "vendor_logos"),
+            ("profile_picture", "vendor_profiles"),
+        ):
+            upload = request.FILES.get(media_field)
+            if upload:
+                saved_path = default_storage.save(
+                    f"vendor_drafts/{media_folder}/{get_valid_filename(upload.name)}",
+                    upload,
+                )
+                data[media_field] = default_storage.url(saved_path)
+            else:
+                previous = previous_data.get(media_field)
+                data[media_field] = previous if isinstance(previous, str) and previous else None
 
         # Remove draft images for items that no longer exist.
         valid_indexes = set(range(len(items)))

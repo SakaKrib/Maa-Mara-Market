@@ -127,6 +127,16 @@ import AppSnackbar, { notifySnackbar } from "../../../../components/ui/app-snack
     // 🔁 Conditional logic and custom validation
     .superRefine((data, ctx) => {
 
+      // Company logo and profile picture: a newly chosen file or an already
+      // saved image (restored from the draft) is required.
+      const hasMedia = (v) => v instanceof File || (typeof v === "string" && v.trim() !== "");
+      if (!hasMedia(data.vendor_company_logo)) {
+        ctx.addIssue({ path: ["vendor_company_logo"], code: z.ZodIssueCode.custom, message: "Company logo is required" });
+      }
+      if (!hasMedia(data.profile_picture)) {
+        ctx.addIssue({ path: ["profile_picture"], code: z.ZodIssueCode.custom, message: "Profile picture is required" });
+      }
+
       // ❗ Require either PDF or item list
       if (!data.item_pdf && (!data.item_list || data.item_list.length === 0)) {
         ctx.addIssue({
@@ -586,8 +596,14 @@ useEffect(() => {
 const persistVendorDraft = async () => {
   const draftFormData = new FormData();
 
+  const currentValues = form.getValues();
+  const savedMedia = (v) => (typeof v === "string" && v ? v : null);
   const draftData = {
-    ...form.getValues(),
+    ...currentValues,
+    // Files are uploaded separately below; keep only already-saved URLs here.
+    vendor_company_logo: savedMedia(currentValues.vendor_company_logo),
+    profile_picture: savedMedia(currentValues.profile_picture),
+    brand_logo: savedMedia(currentValues.brand_logo),
     item_list: items.map((item, index) => ({
       name: item.name || "",
       description: item.description || "",
@@ -607,6 +623,13 @@ const persistVendorDraft = async () => {
 
   // File objects cannot be JSON serialized; they are uploaded separately.
   draftFormData.append("data", JSON.stringify(draftData));
+
+  if (currentValues.vendor_company_logo instanceof File) {
+    draftFormData.append("vendor_company_logo", currentValues.vendor_company_logo);
+  }
+  if (currentValues.profile_picture instanceof File) {
+    draftFormData.append("profile_picture", currentValues.profile_picture);
+  }
 
   items.forEach((item, index) => {
     if (item.image instanceof File) {
@@ -835,6 +858,14 @@ const onSubmit = async (data) => {
 
     // Append vendor_data JSON
     formData.append("vendor_data", JSON.stringify(vendorData));
+
+    // Reuse images already saved in the draft when no new file was chosen.
+    if (typeof vendor_company_logo === "string" && vendor_company_logo) {
+      vendorData.vendor_company_logo = vendor_company_logo;
+    }
+    if (typeof profile_picture === "string" && profile_picture) {
+      vendorData.profile_picture = profile_picture;
+    }
 
     // Handle brand_logo
     if (brand_logo instanceof File) {

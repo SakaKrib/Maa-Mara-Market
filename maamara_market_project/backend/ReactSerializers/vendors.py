@@ -976,10 +976,11 @@ def approve_vendor(request, vendor_request_id):
         description = sanitize(brand_data.get("description", ""))
 
         if name:
-            brand_instance, created = Brand.objects.get_or_create(
-                name=name,
-                defaults={"description": description}
-            )
+            # Brand names are unique; match case-insensitively so "Mara Crafts"
+            # and "mara crafts" resolve to the same brand.
+            brand_instance = Brand.objects.filter(name__iexact=name).first()
+            if brand_instance is None:
+                brand_instance = Brand.objects.create(name=name, description=description)
 
             # Do not mutate or reuse a brand that already belongs to another vendor.
             existing_brand_owner = Vendor.objects.filter(
@@ -1161,6 +1162,22 @@ def approve_vendor(request, vendor_request_id):
 
     # 🏪 Create Vendor
     vendor = Vendor.objects.create(user=user, brand=brand_instance, **vendor_data)
+
+    # Mirror the vendor profile picture onto the user's own profile so screens
+    # that read the profile show it too (without overwriting an existing one).
+    profile_picture_path = vendor_data.get("profile_picture")
+    if profile_picture_path:
+        try:
+            user_profile, _ = Profile.objects.get_or_create(user=user)
+            if not user_profile.profile_picture:
+                with default_storage.open(profile_picture_path, "rb") as picture_stream:
+                    user_profile.profile_picture.save(
+                        os.path.basename(profile_picture_path),
+                        File(picture_stream),
+                        save=True,
+                    )
+        except Exception:
+            logger.exception("Could not copy vendor profile picture to profile for user %s", user.pk)
 
     def normalize_media_path(value):
         if isinstance(value, dict):
