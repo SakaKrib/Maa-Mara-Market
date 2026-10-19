@@ -165,7 +165,13 @@ def mpesa_result(request):
                 Transaction.objects.update_or_create(
                     mpesa_receipt_number=transaction_id,
                     defaults={
-                        "transaction_type": "B2B" if payout.vendor.mpesa_type in {"TILL", "LIPA_NA_MPESA"} else "B2C",
+                        "transaction_type": "B2B" if (
+                            payout.vendor.mpesa_type in {"TILL", "LIPA_NA_MPESA"}
+                            or (
+                                not payout.vendor.mpesa_type
+                                and (payout.vendor.mpesa_till or payout.vendor.mpesa_paybill)
+                            )
+                        ) else "B2C",
                         "amount": payout.amount,
                         "account_reference": payout.reference,
                         "status": "Completed" if result_code == 0 else "Failed",
