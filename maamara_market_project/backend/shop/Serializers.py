@@ -9,7 +9,6 @@ from .sanitizers import sanitize_rich_text
 from .models import *
 from ReactSerializers.Serializers import VendorSerializer
 from core.models import Profile
-from vendorDashboard.models import Vendor
 
 
 
@@ -285,6 +284,9 @@ class BrandSerializer(serializers.ModelSerializer):
         return request.build_absolute_uri(logo_url) if request else logo_url
 
     def get_website_url(self, obj):
+        # Import lazily to avoid a model import cycle during Django startup.
+        from vendorDashboard.models import Vendor
+
         # The website is stored on Vendor, not Brand. Prefer the explicit
         # reverse OneToOne relation, then query the FK directly as a fallback.
         try:
