@@ -46,10 +46,36 @@ def generate_monthly_payouts(request):
     active_vendors = Vendor.objects.filter(is_active=True)
     for vendor in active_vendors:
 
+        # Return the vendor's configured payout destination to the admin review
+        # screens. Keep legacy aliases temporarily for existing frontend callers.
         vendor_data = {
             "id": vendor.id,
+            "vendor_id": vendor.vendor_id,
             "company_name": vendor.company_name,
+            "first_name": vendor.first_name,
+            "middle_name": vendor.middle_name,
+            "surname_name": vendor.surname_name,
             "email": vendor.email,
+            "payment_method": vendor.payment_method,
+            # Bank transfer
+            "bank_name": vendor.bank_name,
+            "bank_branch": vendor.bank_branch,
+            "bank_account_name": vendor.bank_account_name,
+            "bank_account_number": vendor.bank_account_number,
+            "bank_swift_code": vendor.bank_swift_code,
+            "bank_iban": vendor.bank_iban,
+            "bank_country": vendor.bank_country,
+            "bank_currency": vendor.bank_currency,
+            "intermediary_bank_name": vendor.intermediary_bank_name,
+            "intermediary_swift_code": vendor.intermediary_swift_code,
+            # M-Pesa
+            "mpesa_type": vendor.mpesa_type,
+            "mpesa_number": vendor.mpesa_number,
+            "mpesa_till": vendor.mpesa_till,
+            "mpesa_paybill": vendor.mpesa_paybill,
+            # PayPal
+            "paypal_email": vendor.paypal_email,
+            # Legacy aliases used by older payout views
             "MpesaNo": vendor.mpesa_number,
             "PaypalEmail": vendor.paypal_email,
             "BankAccountNo": vendor.bank_account_number,
