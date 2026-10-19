@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from "react";
-import { Mail, MapPin, Phone, Search, Users } from "lucide-react";
+import { MapPin, Search, Users } from "lucide-react";
 import { useVendorCustomers } from "../../Hooks/Customer/CustomerHookFetchForVendor";
 
 const getInitials = (name) =>
@@ -22,12 +22,11 @@ const Customer = () => {
       const name =
         customer.full_name ||
         `${customer.first_name || ""} ${customer.last_name || ""}`.trim();
+      const billing = customer.billing_address || {};
       return [
-        name,
-        customer.email,
-        customer.phone_number,
-        customer.city,
-        customer.country,
+        name, customer.city, customer.country,
+        billing.street_address, billing.apartment_address,
+        billing.city, billing.state, billing.country, billing.postal_code,
       ].some((value) => String(value || "").toLowerCase().includes(term));
     });
   }, [customers, search]);
@@ -43,7 +42,7 @@ const Customer = () => {
             Customers
           </h1>
           <p className="mt-1 max-w-2xl text-sm leading-6 text-[#595959]">
-            View the customers associated with your shop and their available contact details.
+            View customer profiles and billing details relevant to your shop orders.
           </p>
         </div>
         <div className="flex w-fit items-center gap-3 rounded-xl border border-[#e6e6e4] bg-[#f8f8f6] px-4 py-3">
@@ -66,7 +65,7 @@ const Customer = () => {
             type="search"
             value={search}
             onChange={(event) => setSearch(event.target.value)}
-            placeholder="Search by name, email, phone or location"
+            placeholder="Search by name, billing address or location"
             className="min-h-11 w-full rounded-xl border border-[#d9d9d6] bg-white py-2.5 pl-10 pr-3 text-sm outline-none transition focus:border-blue-600 focus:ring-2 focus:ring-blue-600/15"
           />
         </div>
@@ -113,7 +112,7 @@ const Customer = () => {
 
             return (
               <article
-                key={customer.email || customer.phone_number || name + index}
+                key={name + (customer.created_at || index)}
                 className="min-w-0 rounded-2xl border border-[#e6e6e4] bg-white p-5 shadow-sm transition-shadow hover:shadow-md"
               >
                 <div className="flex min-w-0 items-center gap-3 border-b border-[#eeeeeb] pb-4">
@@ -135,26 +134,27 @@ const Customer = () => {
                 </div>
 
                 <dl className="mt-4 grid gap-3 sm:grid-cols-2">
-                  <div className="flex min-w-0 items-start gap-2.5 rounded-xl bg-[#f8f8f6] p-3">
-                    <Mail className="mt-0.5 h-4 w-4 shrink-0 text-[#666]" aria-hidden="true" />
-                    <div className="min-w-0">
-                      <dt className="text-xs font-medium text-[#777]">Email</dt>
-                      <dd className="mt-1 break-words text-sm font-medium">{customer.email || "Not provided"}</dd>
-                    </div>
-                  </div>
-                  <div className="flex min-w-0 items-start gap-2.5 rounded-xl bg-[#f8f8f6] p-3">
-                    <Phone className="mt-0.5 h-4 w-4 shrink-0 text-[#666]" aria-hidden="true" />
-                    <div className="min-w-0">
-                      <dt className="text-xs font-medium text-[#777]">Phone</dt>
-                      <dd className="mt-1 break-words text-sm font-medium">{customer.phone_number || "Not provided"}</dd>
-                    </div>
-                  </div>
                   <div className="flex min-w-0 items-start gap-2.5 rounded-xl bg-[#f8f8f6] p-3 sm:col-span-2">
+                    <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-[#666]" aria-hidden="true" />
+                    <div className="min-w-0">
+                      <dt className="text-xs font-medium text-[#777]">Billing address</dt>
+                      <dd className="mt-1 break-words text-sm font-medium leading-6">
+                        {customer.billing_address
+                          ? [customer.billing_address.street_address, customer.billing_address.apartment_address, customer.billing_address.city, customer.billing_address.state, customer.billing_address.postal_code, customer.billing_address.country].filter(Boolean).join(", ") || "Not provided"
+                          : "Not provided"}
+                      </dd>
+                    </div>
+                  </div>
+                  <div className="flex min-w-0 items-start gap-2.5 rounded-xl bg-[#f8f8f6] p-3">
                     <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-[#666]" aria-hidden="true" />
                     <div className="min-w-0">
                       <dt className="text-xs font-medium text-[#777]">Location</dt>
                       <dd className="mt-1 break-words text-sm font-medium">{location || "Not provided"}</dd>
                     </div>
+                  </div>
+                  <div className="rounded-xl bg-[#f8f8f6] p-3">
+                    <dt className="text-xs font-medium text-[#777]">Loyalty points</dt>
+                    <dd className="mt-1 text-sm font-semibold">{customer.loyalty_points ?? 0}</dd>
                   </div>
                 </dl>
               </article>
