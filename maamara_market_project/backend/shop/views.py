@@ -2,7 +2,9 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 from rest_framework.permissions import AllowAny
 from rest_framework.pagination import PageNumberPagination
-from django.db.models import Min, Max, Count,Prefetch
+from django.db.models import Min, Max, Count, Prefetch, F
+from rest_framework.throttling import AnonRateThrottle
+from rest_framework.decorators import throttle_classes
 from ReactSerializers.models import *
 from .Serializers import *
 from rest_framework import viewsets, permissions
@@ -856,17 +858,40 @@ class AdminBannerApprovalViewSet(viewsets.ModelViewSet):
     
 
 #popular blogs
+class BlogViewRateThrottle(AnonRateThrottle):
+    scope = "blog_view"
+    rate = "60/hour"
+
+
+@api_view(["POST"])
+@permission_classes([AllowAny])
+@throttle_classes([BlogViewRateThrottle])
+def record_blog_view(request, pk):
+    """Count one read of an approved blog (the client sends it once per session)."""
+    updated = BlogPost.objects.filter(pk=pk, approved=True).update(
+        view_count=F("view_count") + 1
+    )
+    if not updated:
+        return Response({"detail": "Blog not found."}, status=status.HTTP_404_NOT_FOUND)
+    return Response({"detail": "ok"})
+
+
 class PopularBlogPostsViewSet(viewsets.ViewSet):
     """
-    Return blogs ordered by total engagement (comments + reactions)
+    Return approved blogs ordered by views, then engagement (comments + reactions).
     """
     def list(self, request):
         qs = BlogPost.objects.filter(approved=True).annotate(
             total_comments=Count('comments_blog'),
             total_reactions=Count('reactions_blog'),
-        ).order_by('-total_comments', '-total_reactions')[:3]
+        ).order_by('-view_count', '-total_comments', '-total_reactions', '-created_at')
 
-        serializer = BlogPostSerializer(qs, many=True)
+        try:
+            limit = max(1, min(int(request.query_params.get("limit", 3)), 12))
+        except (TypeError, ValueError):
+            limit = 3
+
+        serializer = BlogPostSerializer(qs[:limit], many=True, context={"request": request})
         return Response(serializer.data)
     
 #wishlist view add an remove

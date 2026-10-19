@@ -49,6 +49,7 @@ urlpatterns = [
     path("api/blogs/<int:pk>/comment/", blog_comment, name="blog_comment"),
     path("api/blogs/<int:pk>/react/", blog_react, name="blog_react"),
     path("api/blogs/<int:pk>/remove_reaction/", blog_remove_reaction, name="blog_remove_reaction"),
+    path("api/blogs/<int:pk>/view/", record_blog_view, name="blog_record_view"),
     path("api/blogs/popular/", PopularBlogPostsViewSet.as_view({"get": "list"}), name="popular_blogs"),
     path("api/admin/blogs/", admin_blog_list, name="admin_blog_list"),
     path("api/admin-approve/blogs/<int:pk>/approve/", admin_blog_approve, name="admin_blog_approve"),

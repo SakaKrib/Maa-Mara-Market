@@ -55,6 +55,15 @@ const BannerAdd = ({ items = [], onSave = () => {} }) => {
       return;
     }
 
+    if (!(image instanceof File) && !backgroundColor) {
+      setSnackbar({
+        open: true,
+        message: "Please upload a banner image or choose a banner colour.",
+        severity: "error",
+      });
+      return;
+    }
+
     if (ctaType === "item" && !ctaItem) {
       setSnackbar({
         open: true,

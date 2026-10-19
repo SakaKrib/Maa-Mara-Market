@@ -32,6 +32,19 @@ export default function SingleBlogPage() {
     fetchPost();
   }, [id]);
 
+  // Count one read per browser session so refreshes do not inflate views.
+  useEffect(() => {
+    if (!id) return;
+    const key = `blog-viewed-${id}`;
+    try {
+      if (window.sessionStorage.getItem(key)) return;
+      window.sessionStorage.setItem(key, "1");
+    } catch {
+      // Storage unavailable: still count this view once.
+    }
+    api.post(`/api/blogs/${id}/view/`).catch(() => {});
+  }, [id]);
+
   if (loading) return <div className="p-6 text-center">Loading post...</div>;
   if (!post) return <div className="p-6 text-center">Post not found.</div>;
 

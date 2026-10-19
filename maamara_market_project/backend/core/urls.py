@@ -9,6 +9,7 @@ from .Referal import *
 from .SearchEngine import search_items
 from .item_ai import GenerateItemAIAPIView
 from .vendor_registration_ai import GenerateVendorRegistrationAIAPIView
+from .blog_ai import GenerateBlogAIAPIView
 from core.PasswordRecovery import *
 from django.views.generic.base import TemplateView
 
@@ -105,6 +106,7 @@ urlpatterns = [
 
     # open api url
     path('api/ai/generate-item/', GenerateItemAIAPIView.as_view(), name='ai-generate-item'),
+    path('api/ai/generate-blog/', GenerateBlogAIAPIView.as_view(), name='ai-generate-blog'),
     path('api/ai/vendor-registration/', GenerateVendorRegistrationAIAPIView.as_view(), name='ai-vendor-registration'),
 
     #organic products page

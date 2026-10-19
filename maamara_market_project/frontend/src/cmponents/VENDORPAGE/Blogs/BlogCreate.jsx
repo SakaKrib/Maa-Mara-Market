@@ -2,6 +2,8 @@ import React, { useState } from "react";
 import NativeAwareSelect from "../../../components/NativeAwareSelect";
 import api from "../../../Services/Api";
 import RichTextEditor from "../../RichTextEditor/RichTextEdit";
+import { Sparkles } from "lucide-react";
+import { generateBlogWithAI } from "../../../Services/AI/blogAiService";
 
 const inputClass =
   "w-full rounded-[20px] border border-gray-300 bg-white px-4 py-3 text-sm text-gray-900 outline-none transition placeholder:text-gray-400 focus:border-[#2563eb] focus:ring-2 focus:ring-[#2563eb]/10";
@@ -15,6 +17,7 @@ const BlogCreate = ({ items = [] }) => {
   const [image, setImage] = useState(null);
   const [video, setVideo] = useState(null);
   const [submitting, setSubmitting] = useState(false);
+  const [aiLoading, setAiLoading] = useState(false);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
 
@@ -29,6 +32,34 @@ const BlogCreate = ({ items = [] }) => {
     const videoInput = document.getElementById("blog-video");
     if (imageInput) imageInput.value = "";
     if (videoInput) videoInput.value = "";
+  };
+
+  const handleGenerateAI = async () => {
+    setMessage("");
+    setError("");
+
+    if (!title.trim()) {
+      setError("Enter a blog title first so the AI knows what to write about.");
+      return;
+    }
+
+    const hasText = content.replace(/<[^>]*>/g, "").trim().length > 0;
+    if (hasText && !window.confirm("Replace the current text with AI-written text?")) {
+      return;
+    }
+
+    try {
+      setAiLoading(true);
+      const result = await generateBlogWithAI({ title: title.trim(), item, image, video });
+      if (result?.content) {
+        setContent(result.content);
+        setMessage("AI draft added. Review and edit it before submitting.");
+      }
+    } catch (err) {
+      setError(err?.response?.data?.detail || "Unable to generate the blog text right now.");
+    } finally {
+      setAiLoading(false);
+    }
   };
 
   const handleSubmit = async (event) => {
@@ -131,7 +162,21 @@ const BlogCreate = ({ items = [] }) => {
           </div>
 
           <div>
-            <label className={labelClass}>Blog Content</label>
+            <div className="mb-2 flex items-center justify-between gap-3">
+              <label className="block text-xs font-semibold text-gray-700">Blog Content</label>
+              <button
+                type="button"
+                onClick={handleGenerateAI}
+                disabled={submitting || aiLoading || !title.trim()}
+                className="inline-flex items-center gap-2 rounded-full border border-gray-300 bg-white px-3 py-1.5 text-xs font-semibold text-gray-800 transition hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                <Sparkles className="h-4 w-4" />
+                {aiLoading ? "Generating..." : "Generate with AI"}
+              </button>
+            </div>
+            <p className="mb-2 text-[11px] text-gray-500">
+              Uses the title, the related item, and the image or video (video up to 12 MB) to write the text.
+            </p>
             <div className="overflow-hidden rounded-[20px] border border-gray-300 bg-white focus-within:border-[#2563eb] focus-within:ring-2 focus-within:ring-[#2563eb]/10">
               <RichTextEditor value={content} onChange={setContent} />
             </div>

@@ -20,10 +20,10 @@ export default function AdvertBlogs() {
               FROM THE COMMUNITY
             </p>
             <h2 className="mt-1 text-lg font-bold text-card-foreground sm:text-xl">
-              Latest from our blog
+              Most read on our blog
             </h2>
             <p className="mt-1 text-xs leading-5 text-muted-foreground">
-              Stories, ideas, and useful reads from the Maa Mara community.
+              The stories our community is reading the most.
             </p>
           </div>
 
@@ -33,7 +33,7 @@ export default function AdvertBlogs() {
                 key={blog.id}
                 className="overflow-hidden rounded-2xl border border-border bg-background mm-mobile-blog-card"
               >
-                {blog.image && (
+                {blog.image ? (
                   <div className="m-2 overflow-hidden rounded-xl">
                     <img
                       src={resolveApiAssetUrl(blog.image)}
@@ -42,14 +42,24 @@ export default function AdvertBlogs() {
                       className="aspect-[16/9] w-full rounded-xl object-cover"
                     />
                   </div>
-                )}
+                ) : blog.video ? (
+                  <div className="m-2 overflow-hidden rounded-xl bg-muted">
+                    <video
+                      src={resolveApiAssetUrl(blog.video)}
+                      preload="metadata"
+                      muted
+                      playsInline
+                      className="aspect-[16/9] w-full rounded-xl object-cover"
+                    />
+                  </div>
+                ) : null}
 
                 <div className="px-4 pb-4 pt-2">
                   <h3 className="line-clamp-2 text-sm font-semibold text-card-foreground">
                     {blog.title || "Community story"}
                   </h3>
                   <p className="mt-1 line-clamp-2 text-[11px] leading-5 text-muted-foreground">
-                    {blog.description || blog.excerpt || "Read more from the Maa Mara community."}
+                    {blog.excerpt || "Read more from the Maa Mara community."}
                   </p>
                   <button
                     type="button"
@@ -61,6 +71,16 @@ export default function AdvertBlogs() {
                 </div>
               </article>
             ))}
+          </div>
+
+          <div className="mt-4 flex justify-center">
+            <button
+              type="button"
+              onClick={() => navigate("/blogs")}
+              className="inline-flex rounded-full border border-border bg-background px-4 py-2 text-xs font-semibold text-card-foreground transition-colors hover:bg-muted"
+            >
+              View more
+            </button>
           </div>
         </div>
       </div>

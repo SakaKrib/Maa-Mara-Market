@@ -1,3 +1,6 @@
+import html
+
+import bleach
 from rest_framework import serializers
 from django.utils import timezone
 from ReactSerializers.models import Section, Department, Category, SubCategory, Brand, Item
@@ -179,7 +182,20 @@ class ProductSerializer(serializers.ModelSerializer):
 
 from .models import Banner
 
+# Curated banner palette (must match BANNER_COLORS in the vendor banner form).
+ALLOWED_BANNER_COLORS = {
+    "#f5f4f1", "#eef3f8", "#edf4ea", "#f6efe7",
+    "#f8eaea", "#f3eef7", "#eaf4f4", "#efefec",
+}
+
+
 class BannerSerializer(serializers.ModelSerializer):
+    def validate_background_color(self, value):
+        value = (value or "").strip().lower()
+        if value and value not in ALLOWED_BANNER_COLORS:
+            raise serializers.ValidationError("Choose a colour from the banner palette.")
+        return value or None
+
     class Meta:
         model = Banner
         fields = [
@@ -315,8 +331,37 @@ class CommentSerializer(serializers.ModelSerializer):
 
 # 📝 Blog Post Serializer
 class BlogPostSerializer(serializers.ModelSerializer):
+    MAX_BLOG_IMAGE_BYTES = 10 * 1024 * 1024
+    MAX_BLOG_VIDEO_BYTES = 100 * 1024 * 1024
+    ALLOWED_VIDEO_TYPES = {"video/mp4", "video/webm", "video/quicktime", "video/ogg"}
+
     def validate_content(self, value):
         return sanitize_rich_text(value)
+
+    def validate_image(self, value):
+        # Image and video are optional; only validate when a file is supplied.
+        if value and hasattr(value, "content_type"):
+            if not (value.content_type or "").startswith("image/"):
+                raise serializers.ValidationError("The blog image must be an image file.")
+            if value.size > self.MAX_BLOG_IMAGE_BYTES:
+                raise serializers.ValidationError("The blog image must be 10 MB or smaller.")
+        return value
+
+    def validate_video(self, value):
+        if value and hasattr(value, "content_type"):
+            if (value.content_type or "").lower() not in self.ALLOWED_VIDEO_TYPES:
+                raise serializers.ValidationError("The blog video must be MP4, WebM, MOV or OGG.")
+            if value.size > self.MAX_BLOG_VIDEO_BYTES:
+                raise serializers.ValidationError("The blog video must be 100 MB or smaller.")
+        return value
+
+    excerpt = serializers.SerializerMethodField()
+
+    def get_excerpt(self, obj):
+        # Plain-text preview for cards: all markup stripped, never raw HTML.
+        text = bleach.clean(obj.content or "", tags=[], strip=True)
+        text = " ".join(html.unescape(text).split())
+        return text[:160] + ("..." if len(text) > 160 else "")
 
     user_name = serializers.CharField(source='user.username', read_only=True)
     user = UserSerializer(read_only=True)  
@@ -339,8 +384,11 @@ class BlogPostSerializer(serializers.ModelSerializer):
             'created_at',
             'comments',
             'reactions',
-            'user'
+            'user',
+            'view_count',
+            'excerpt',
         ]
+        read_only_fields = ['view_count', 'approved']
 
 
 # wishlist

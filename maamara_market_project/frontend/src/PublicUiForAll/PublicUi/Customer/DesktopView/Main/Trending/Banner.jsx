@@ -1,21 +1,63 @@
 import React from "react";
+import { useNavigate } from "react-router-dom";
 import useBanners from "../../../../../../cmponents/Hooks/BannerHook/BannerHook";
 import { resolveApiAssetUrl } from "../../../../../../Services/Api";
+
+// Curated palette only (mirrors the vendor banner form and the API check), so a
+// colour from the server can never inject arbitrary CSS.
+const BANNER_COLORS = new Set([
+  "#f5f4f1", "#eef3f8", "#edf4ea", "#f6efe7",
+  "#f8eaea", "#f3eef7", "#eaf4f4", "#efefec",
+]);
+
+const safeBannerColor = (value) => {
+  const color = String(value || "").trim().toLowerCase();
+  return BANNER_COLORS.has(color) ? color : "";
+};
+
+const bannerLink = (banner) => {
+  if (banner.cta_type === "external" && /^https?:\/\//i.test(banner.cta_url || "")) {
+    return { href: banner.cta_url, external: true };
+  }
+  const itemId = banner.cta_item?.id ?? banner.cta_item ?? banner.item?.id ?? banner.item;
+  if (itemId) return { href: `/item/${itemId}`, external: false };
+  return null;
+};
 
 const BannerMedia = ({ banner, bannerImage }) => {
   const [imageLoaded, setImageLoaded] = React.useState(false);
   const [imageFailed, setImageFailed] = React.useState(false);
+  const color = safeBannerColor(banner.background_color);
+
+  // No image: show the vendor's themed colour panel with the banner text.
+  if (!bannerImage || imageFailed) {
+    return (
+      <div
+        className="relative m-2 flex aspect-[16/9] flex-col items-center justify-center gap-1 overflow-hidden rounded-xl border border-border bg-muted px-5 text-center"
+        style={color ? { backgroundColor: color } : undefined}
+      >
+        <p className="line-clamp-2 text-base font-bold" style={{ color: "#1f2937" }}>
+          {banner.title || "Marketplace highlight"}
+        </p>
+        {banner.subtitle && (
+          <p className="line-clamp-2 text-xs" style={{ color: "#4b5563" }}>
+            {banner.subtitle}
+          </p>
+        )}
+      </div>
+    );
+  }
 
   return (
     <div className="relative m-2 aspect-[16/9] overflow-hidden rounded-xl bg-gray-200">
-      {(!bannerImage || !imageLoaded || imageFailed) && (
+      {!imageLoaded && (
         <div
-          className="absolute inset-0 animate-pulse bg-gray-200"
-          aria-label={imageFailed ? "Banner image unavailable" : "Loading banner image"}
+          className="absolute inset-0 animate-pulse"
+          style={{ backgroundColor: color || "#e5e7eb" }}
+          aria-label="Loading banner image"
         />
       )}
-      {bannerImage && !imageFailed && (
-        <img
+      <img
           src={bannerImage}
           alt={banner.title || "Marketplace banner"}
           loading="lazy"
@@ -26,13 +68,13 @@ const BannerMedia = ({ banner, bannerImage }) => {
             setImageFailed(true);
           }}
         />
-      )}
     </div>
   );
 };
 
 const Banners = () => {
   const { banners, loading, error } = useBanners();
+  const navigate = useNavigate();
 
   if (loading || error || !Array.isArray(banners) || banners.length === 0) {
     return null;
@@ -72,14 +114,21 @@ const Banners = () => {
                     <p className="mt-1 line-clamp-2 text-[11px] leading-5 text-muted-foreground">
                       {banner.subtitle || banner.item?.name || banner.product_name || "Discover this marketplace highlight."}
                     </p>
-                    {banner.call_to_action_url && (
-                      <a
-                        href={banner.call_to_action_url}
-                        className="mt-3 inline-flex rounded-full border border-border bg-background px-3 py-1.5 text-[11px] font-semibold text-card-foreground transition-colors hover:bg-muted"
-                      >
-                        Shop now
-                      </a>
-                    )}
+                    {(() => {
+                      const link = bannerLink(banner);
+                      if (!link) return null;
+                      const cls =
+                        "mt-3 inline-flex rounded-full border border-border bg-background px-3 py-1.5 text-[11px] font-semibold text-card-foreground transition-colors hover:bg-muted";
+                      return link.external ? (
+                        <a href={link.href} target="_blank" rel="noopener noreferrer" className={cls}>
+                          Shop now
+                        </a>
+                      ) : (
+                        <button type="button" onClick={() => navigate(link.href)} className={cls}>
+                          Shop now
+                        </button>
+                      );
+                    })()}
                   </div>
                 </article>
               );
