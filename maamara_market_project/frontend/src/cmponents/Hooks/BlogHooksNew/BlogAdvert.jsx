@@ -79,7 +79,7 @@ export default function AdvertBlogs() {
               onClick={() => navigate("/blogs")}
               className="inline-flex rounded-full border border-border bg-background px-4 py-2 text-xs font-semibold text-card-foreground transition-colors hover:bg-muted"
             >
-              View more
+              View all
             </button>
           </div>
         </div>
