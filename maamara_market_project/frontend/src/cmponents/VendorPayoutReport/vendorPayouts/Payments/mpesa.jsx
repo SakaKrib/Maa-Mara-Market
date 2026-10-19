@@ -144,7 +144,7 @@ export default function MpesaB2CPayment({ onSuccess }) {
         className="mm-payout-shadow"
       >
         <Typography variant="subtitle1" fontWeight="bold" gutterBottom sx={{ color: "var(--mm-foreground, var(--foreground, #222))" }}>
-          M-Pesa B2C Payment
+          M-Pesa Vendor Payout
         </Typography>
 
         <Box className="mm-payout-logo-row mm-payout-logo-row--large">
@@ -153,6 +153,9 @@ export default function MpesaB2CPayment({ onSuccess }) {
 
         <Typography variant="body1" gutterBottom>
           Paying vendor: <strong>{vendorName}</strong>
+        </Typography>
+        <Typography variant="body2" sx={{ color: "var(--muted-foreground, #686868)", mb: 1 }}>
+          {mpesaType === "PHONE" ? "B2C phone-number payout" : mpesaType === "TILL" ? "B2B Buy Goods / Till payout" : "B2B PayBill payout"}
         </Typography>
 
         <TextField
