@@ -249,6 +249,16 @@ def call_mpesa_b2b(vendor, amount, mpesa_config, payout=None):
         label = "Till" if mpesa_type == "TILL" else "PayBill"
         return {"success": False, "error": f"Vendor's saved M-Pesa {label} number is missing or invalid."}
 
+    if payout.mpesa_result_desc and (
+        payout.mpesa_result_desc.startswith("B2B submission outcome unknown")
+        or payout.mpesa_result_desc.startswith("B2B submission response lacked correlation IDs")
+    ):
+        return {
+            "success": False,
+            "retryable": False,
+            "error": "This M-Pesa B2B submission has an uncertain outcome. Reconcile with Safaricom before retrying to avoid paying twice.",
+        }
+
     # Shared initiator credentials may be used only if they are also authorized
     # for the B2B product. The B2B endpoint and callback URLs remain separate.
     initiator_name = cfg.get("initiator_name") or b2c_cfg.get("initiator_name")
@@ -325,8 +335,14 @@ def call_mpesa_b2b(vendor, amount, mpesa_config, payout=None):
             "code": data.get("errorCode") or data.get("ResponseCode"),
         }
     except requests.exceptions.RequestException:
-        logger.warning("M-Pesa B2B payout network request failed.")
-        return {"success": False, "error": "M-Pesa B2B payout request failed."}
+        logger.warning("M-Pesa B2B payout network request failed; submission outcome may be ambiguous.")
+        payout.mpesa_result_desc = "B2B submission outcome unknown; reconcile with Safaricom before retrying."
+        payout.save(update_fields=["mpesa_result_desc"])
+        return {
+            "success": False,
+            "retryable": False,
+            "error": "M-Pesa B2B submission outcome is unknown. Reconcile with Safaricom before retrying.",
+        }
     except Exception:
         logger.exception("Unexpected M-Pesa B2B payout error.")
         return {"success": False, "error": "M-Pesa B2B payout failed."}
@@ -346,6 +362,34 @@ def call_mpesa_b2c_bulk(payouts, mpesa_config):
     for payout in payouts:
         vendor = payout.vendor
         amount = payout.amount
+
+        # Never submit a second payment while the first one awaits a provider
+        # callback. Failed attempts can be retried with fresh correlation IDs.
+        if (
+            (payout.mpesa_conversation_id or payout.mpesa_originator_conversation_id)
+            and payout.mpesa_result_code is None
+        ):
+            results.append({
+                "vendor": vendor.company_name,
+                "reference": payout.reference,
+                "status": "Already submitted; awaiting provider confirmation",
+                "payment_method": "MOBILE_MONEY",
+            })
+            continue
+
+        if payout.mpesa_result_code not in (None, 0):
+            payout.mpesa_conversation_id = None
+            payout.mpesa_originator_conversation_id = None
+            payout.mpesa_transaction_id = None
+            payout.mpesa_result_code = None
+            payout.mpesa_result_desc = None
+            payout.save(update_fields=[
+                "mpesa_conversation_id",
+                "mpesa_originator_conversation_id",
+                "mpesa_transaction_id",
+                "mpesa_result_code",
+                "mpesa_result_desc",
+            ])
 
         response = call_mpesa_payout(vendor, amount, mpesa_config, payout=payout)
         status = "Sent to M-Pesa" if response.get('success') else f"Failed: {response.get('error', 'Unknown error')}"
@@ -901,7 +945,7 @@ def payment_processors(start_date, end_date, payment_method=None):
 
             # Assuming 'status' in response holds the status message from call_mpesa_b2c_bulk
             status = res.get('status')
-            if status != "Sent to M-Pesa":
+            if status != "Sent to M-Pesa" and not str(status or "").startswith("Already submitted"):
                 status = f"Failed: {status or 'Unknown error'}"
 
             results.append({
