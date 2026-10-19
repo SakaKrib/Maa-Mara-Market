@@ -49,10 +49,16 @@
 .mm-payout-page .MuiFormHelperText-root { color: var(--muted-foreground, #686868); margin-left: 0; }
 .mm-payout-page .MuiButton-root {
   min-height: 42px; border-radius: .75rem; text-transform:none; font-weight:700;
-  box-shadow:none; background:var(--primary, #2563eb); color:var(--primary-foreground, #fff);
+  box-shadow:none;
 }
-.mm-payout-page .MuiButton-root:hover { background:var(--primary-hover, #1d4ed8); box-shadow:none; }
+.mm-payout-page .MuiButton-contained {
+  background:var(--primary, #2563eb); color:var(--primary-foreground, #fff);
+}
+.mm-payout-page .MuiButton-contained:hover { background:var(--primary-hover, #1d4ed8); box-shadow:none; }
+.mm-payout-page .MuiButton-text { background:transparent; color:var(--primary, #2563eb); }
+.mm-payout-page .MuiButton-text:hover { background:color-mix(in srgb, var(--primary, #2563eb) 8%, transparent); }
 .mm-payout-page .MuiButton-outlined { background:transparent; color:var(--foreground, #222); border-color:var(--border, #d7d7d3); }
+.mm-payout-page .MuiButton-outlined:hover { background:var(--muted, #f3f4f6); border-color:var(--border, #d7d7d3); }
 .mm-payout-page .MuiGrid-container { margin-top:0; }
 @media (min-width: 640px) { .mm-payout-card { padding: 1.25rem; } }
 @media (max-width: 600px) {
