@@ -447,7 +447,7 @@ def login_view(request):
     # case-sensitive, so resolve the canonical stored username before authenticating.
     if "@" in identifier:
         user_matches = list(
-            User.objects.filter(email__iexact=identifier).order_by("pk")[:2]
+            User.objects.filter(email__iexact=identifier).order_by("pk")
         )
         # Usernames may legally contain "@", so only fall back to username
         # matching when no email account matches the supplied identifier.
