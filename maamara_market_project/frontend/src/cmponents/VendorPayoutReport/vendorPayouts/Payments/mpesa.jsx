@@ -19,9 +19,9 @@ export default function MpesaB2CPayment({ onSuccess }) {
   const navigate = useNavigate();
   const { reference, amount, vendor, phone } = location.state || {};
 
-  const initialPhone = vendor?.mpesa_number || phone || "";
+  const initialPhone = vendor?.mpesa_number || vendor?.MpesaNo || vendor?.mpesa_no || phone || "";
   const initialAmount = amount || "";
-  const vendorName = vendor?.company_name || vendor?.name || "Vendor";
+  const vendorName = vendor?.company_name || vendor?.name || [vendor?.first_name, vendor?.surname_name].filter(Boolean).join(" ") || "Vendor";
 
   const [inputPhone, setInputPhone] = useState(initialPhone);
   const [inputAmount, setInputAmount] = useState(initialAmount);
@@ -121,7 +121,7 @@ export default function MpesaB2CPayment({ onSuccess }) {
     <>
       <AppSnackbar open={snackbar.open} message={snackbar.message} severity={snackbar.severity} onClose={() => setSnackbar((prev) => ({ ...prev, open: false }))} />
 
-    <Box sx={{ p: 2, mt: -3 }}>
+    <Box className="mm-payout-page" sx={{ p: { xs: 1, sm: 2 }, mt: { xs: 0, sm: -1 }, maxWidth: 760, mx: "auto", width: "100%" }}>
       <Box
         sx={{
           borderRadius: 2,
@@ -132,7 +132,7 @@ export default function MpesaB2CPayment({ onSuccess }) {
         }}
         className="mm-payout-shadow"
       >
-        <Typography variant="subtitle1" fontWeight="bold" gutterBottom>
+        <Typography variant="subtitle1" fontWeight="bold" gutterBottom sx={{ color: "var(--mm-foreground, var(--foreground, #222))" }}>
           M-Pesa B2C Payment
         </Typography>
 
@@ -145,7 +145,7 @@ export default function MpesaB2CPayment({ onSuccess }) {
         </Typography>
 
         <TextField
-          label="Phone (2547XXXXXXXX)"
+          label="Vendor M-Pesa number (2547XXXXXXXX)"
           value={inputPhone}
           onChange={handlePhoneChange}
           fullWidth
@@ -154,7 +154,7 @@ export default function MpesaB2CPayment({ onSuccess }) {
         />
 
         <TextField
-          label="Amount"
+          label="Payout amount (KES)"
           type="number"
           value={inputAmount}
           onChange={handleAmountChange}
