@@ -237,26 +237,20 @@ export default function PaypalBulkPayment({ onSuccess }) {
           <Grid item md={3}>
             Vendor Name
           </Grid>
-          <Grid item xs={3}>
-            Email
-          </Grid>
-          <Grid item xs={3}>
-            Amount (KES → USD)
-          </Grid>
-          <Grid item xs={3}>
-            Actions
-          </Grid>
+          <Grid item md={3}>Saved PayPal account</Grid>
+          <Grid item md={3}>Amount (KES → USD)</Grid>
+          <Grid item md={3}>Actions</Grid>
         </Grid>
 
         {payments.map((payment, index) => (
           <Grid
             container
-            spacing={2}
+            spacing={1.5}
             alignItems="center"
-            key={index}
-            sx={{ mb: 1 }}
+            key={payment.reference || index}
+            sx={{ mb: 2, p: { xs: 1.5, sm: 2 }, border: "1px solid var(--mm-border, #d1d5db)", borderRadius: "16px" }}
           >
-            <Grid item xs={3}>
+            <Grid item xs={12} md={3}>
               <TextField
                 value={payment.vendor_name}
                 onChange={(e) =>
@@ -270,7 +264,7 @@ export default function PaypalBulkPayment({ onSuccess }) {
               />
             </Grid>
 
-            <Grid item xs={3}>
+            <Grid item xs={12} md={3}>
               <TextField
                 label="Saved PayPal account email"
                 value={payment.email}
@@ -283,9 +277,10 @@ export default function PaypalBulkPayment({ onSuccess }) {
               />
             </Grid>
 
-            <Grid item xs={3}>
+            <Grid item xs={12} sm={6} md={3}>
               <TextField
                 type="number"
+                label="Payout amount (KES)"
                 value={payment.amount}
                 onChange={(e) => handleChange(index, "amount", e.target.value)}
                 fullWidth
@@ -296,7 +291,7 @@ export default function PaypalBulkPayment({ onSuccess }) {
               />
             </Grid>
 
-            <Grid item xs={3}>
+            <Grid item xs={12} sm={6} md={3}>
               <Button
                 variant="outlined"
                 color="error"
