@@ -374,6 +374,18 @@ PAYMENT_GATEWAYS = {
             "timeout_url": env("MPESA_B2C_TIMEOUT_URL", default=""),
         },
 
+        # B2B disbursements to registered merchant Till/Buy Goods and PayBill
+        # destinations. These are separate Daraja products from B2C phone payouts.
+        "b2b": {
+            "initiator_name": env("MPESA_B2B_INITIATOR_NAME", default=""),
+            "short_code": env("MPESA_B2B_SHORT_CODE", default=""),
+            "initiator_password": env("MPESA_B2B_INITIATOR_PASSWORD", default=""),
+            "certificate_path": env("MPESA_B2B_CERTIFICATE_PATH", default=""),
+            "url": env("MPESA_B2B_URL", default=""),
+            "result_url": env("MPESA_B2B_RESULT_URL", default=env("MPESA_B2C_RESULT_URL", default="")),
+            "timeout_url": env("MPESA_B2B_TIMEOUT_URL", default=env("MPESA_B2C_TIMEOUT_URL", default="")),
+        },
+
         "c2b": {
             "short_code": env("MPESA_C2B_SHORT_CODE", default="600977"),
         },
