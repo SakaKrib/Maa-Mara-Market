@@ -262,7 +262,7 @@ const VideoTrimmer = ({ file, duration, onApply, onCancel, purpose = "product" }
 
         {effectiveDuration < MIN_DURATION && (
           <p className="text-xs font-semibold text-red-600">
-            This video is shorter than the required 3 seconds and cannot be trimmed to a valid {mediaLabel} video.
+            {`This video is shorter than the required 3 seconds and cannot be trimmed to a valid ${mediaLabel} video.`}
           </p>
         )}
 
