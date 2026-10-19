@@ -75,6 +75,11 @@ const BlogCreate = ({ items = [] }) => {
   const handleVideoChange = (event) => {
     const file = event.target.files?.[0];
     if (!file) return;
+    if (video) {
+      setError("Remove the current blog video before selecting a replacement.");
+      clearFileInput("blog-video");
+      return;
+    }
     const extension = "." + (file.name.split(".").pop() || "").toLowerCase();
     if (!VIDEO_TYPES.includes(file.type) && !VIDEO_EXTENSIONS.includes(extension)) {
       setError("Blog videos must be MP4, MOV, or WEBM.");
