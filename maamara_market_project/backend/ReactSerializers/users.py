@@ -460,28 +460,29 @@ def login_view(request):
             User.objects.filter(username__iexact=identifier).order_by("pk")[:2]
         )
 
-    if len(user_matches) > 1:
-        logger.warning("Login blocked because the identifier matches multiple local users")
+    # Email values can exist on both the Django User and separate Vendor
+    # records, and legacy databases may contain duplicate User email values.
+    # Authenticate each candidate and proceed only when exactly one account
+    # matches the supplied password.
+    authenticated_users = []
+    for matched_user in user_matches:
+        authenticated_user = authenticate(
+            request,
+            username=matched_user.get_username(),
+            password=password,
+        )
+        if authenticated_user is not None:
+            authenticated_users.append(authenticated_user)
+
+    if len(authenticated_users) > 1:
+        logger.warning("Login blocked because the identifier and password match multiple local users")
         return JsonResponse(
             {"success": False, "error": "Invalid credentials"},
             status=401,
         )
 
-    if user_matches:
-        matched_user = user_matches[0]
-        user = authenticate(
-            request,
-            username=matched_user.get_username(),
-            password=password,
-        )
-        # Do not fall through to a separate vendor record if a local account
-        # matched the identifier but its password was incorrect.
-        if user is None:
-            return JsonResponse(
-                {"success": False, "error": "Invalid credentials"},
-                status=401,
-            )
-
+    if authenticated_users:
+        user = authenticated_users[0]
         auth_login(request, user)
         role = (
             "admin"
