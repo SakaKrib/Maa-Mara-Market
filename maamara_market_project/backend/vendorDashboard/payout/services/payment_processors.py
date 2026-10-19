@@ -151,12 +151,14 @@ def get_vendor_mpesa_type(vendor):
     value = str(getattr(vendor, "mpesa_type", "") or "").upper()
     if value in {"PHONE", "TILL", "LIPA_NA_MPESA"}:
         return value
-    if getattr(vendor, "mpesa_number", None):
-        return "PHONE"
+    # When legacy rows have no explicit type, merchant destinations should
+    # take precedence over an old phone number that may also be populated.
     if getattr(vendor, "mpesa_till", None):
         return "TILL"
     if getattr(vendor, "mpesa_paybill", None):
         return "LIPA_NA_MPESA"
+    if getattr(vendor, "mpesa_number", None):
+        return "PHONE"
     return ""
 
 
