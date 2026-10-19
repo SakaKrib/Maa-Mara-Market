@@ -7,17 +7,13 @@ import {
   TextField,
   Typography,
   Grid,
-  useTheme,
 } from "@mui/material";
 import api, { getWebSocketUrl } from "../../../../Services/Api";
-import { tokens } from "../../../../theme";
 import "../payout-workflows.css";
 import { useNavigate } from "react-router-dom";
 import AppSnackbar from "../../../../../components/ui/app-snackbar";
 
 export default function PaypalBulkPayment({ onSuccess }) {
-  const theme = useTheme();
-  const colors = tokens(theme.palette.mode);
 
   const navigate = useNavigate()
 
@@ -220,12 +216,12 @@ export default function PaypalBulkPayment({ onSuccess }) {
       <Box className="mm-payout-page" sx={{ p: { xs: 1, sm: 2 }, maxWidth: 1100, mx: "auto", width: "100%" }}>
       <Box
         sx={{
-          borderRadius: "20px",
+          borderRadius: "12px",
           p: { xs: 2, sm: 3 },
           mt: 1,
-          backgroundColor: theme.palette.background.paper,
-          color: theme.palette.text.primary,
-          border: `1px solid ${theme.palette.divider}`,
+          backgroundColor: "var(--card, #fff)",
+          color: "var(--card-foreground, var(--foreground, #222))",
+          border: "1px solid var(--border, #e6e6e4)",
           boxShadow: "0 4px 14px rgba(0,0,0,.06)",
         }}
       >
@@ -248,7 +244,7 @@ export default function PaypalBulkPayment({ onSuccess }) {
             spacing={1.5}
             alignItems="center"
             key={payment.reference || index}
-            sx={{ mb: 2, p: { xs: 1.5, sm: 2 }, border: `1px solid ${theme.palette.divider}`, borderRadius: "16px" }}
+            sx={{ mb: 2, p: { xs: 1.5, sm: 2 }, border: "1px solid var(--border, #e6e6e4)", borderRadius: "12px" }}
           >
             <Grid item xs={12} md={3}>
               <TextField
@@ -321,8 +317,8 @@ export default function PaypalBulkPayment({ onSuccess }) {
           disabled={loading}
           fullWidth
           sx={{
-            backgroundColor: colors.greenAccent[500],
-            "&:hover": { backgroundColor: colors.greenAccent[600] },
+            backgroundColor: "var(--primary, #2563eb)",
+            "&:hover": { backgroundColor: "var(--primary-hover, #1d4ed8)" },
             py: 1.2,
             mt: 3,
           }}
