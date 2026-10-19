@@ -9,6 +9,7 @@ from .sanitizers import sanitize_rich_text
 from .models import *
 from ReactSerializers.Serializers import VendorSerializer
 from core.models import Profile
+from vendorDashboard.models import Vendor
 
 
 
@@ -284,14 +285,37 @@ class BrandSerializer(serializers.ModelSerializer):
         return request.build_absolute_uri(logo_url) if request else logo_url
 
     def get_website_url(self, obj):
-        # website_url belongs to Vendor; Brand exposes its owning vendor via
-        # the reverse OneToOne relation (related_name="vendor").
+        # The website is stored on Vendor, not Brand. Prefer the explicit
+        # reverse OneToOne relation, then query the FK directly as a fallback.
         try:
             vendor = obj.vendor
-        except Exception:
-            # A brand may exist without an associated vendor.
-            return None
-        return vendor.website_url or None
+        except Vendor.DoesNotExist:
+            vendor = None
+
+        website_url = (getattr(vendor, "website_url", None) or "").strip()
+        if website_url:
+            return website_url
+
+        # Older vendor records may have a website and matching company name
+        # but no brand FK. Only use an exact company/brand-name match.
+        website_url = (
+            Vendor.objects.filter(brand_id=obj.pk)
+            .exclude(website_url__isnull=True)
+            .exclude(website_url="")
+            .values_list("website_url", flat=True)
+            .first()
+        )
+        if website_url:
+            return website_url.strip()
+
+        return (
+            Vendor.objects.filter(company_name__iexact=obj.name)
+            .exclude(website_url__isnull=True)
+            .exclude(website_url="")
+            .order_by("-date_updated")
+            .values_list("website_url", flat=True)
+            .first()
+        ) or None
 
 
 
