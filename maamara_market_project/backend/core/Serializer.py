@@ -166,7 +166,7 @@ class NotificationSerializer(serializers.ModelSerializer):
         # readable without exposing usernames or quoted item names.
         if title == "item added to wishlist":
             match = re.search(r"added ['\"]?(.+?)['\"]? (?:from )?wishlist", message, re.I)
-            item_name = match.group(1).strip(" .\"'") if match else None
+        name = match.group(1).strip().strip(".").strip(chr(34) + chr(39) + "“”‘’") if match else ""
             if item_name:
                 return f"A customer added {item_name} to their wishlist."
         if title == "wishlist update":
@@ -762,20 +762,36 @@ class ActivityLogSerializer(serializers.ModelSerializer):
         )
 
         item_name = self._item_name(obj)
-        if obj.action == "item_request_created" and is_own_vendor_activity:
-            return f"You submitted an item request for {item_name}."
+        if obj.action == "item_request_created":
+            if obj.actor_type == "vendor":
+                return f"You submitted an item request for “{item_name}”."
+            return f"{self._vendor_label(obj)} submitted an item request for “{item_name}”."
+
         if obj.action == "item_request_approved":
-            if is_admin_viewer and obj.actor_type == "admin":
-                return f"You approved the item request for {item_name}."
-            if is_own_vendor_activity:
-                return f"Your item {item_name} was approved."
-            return f"The administrator approved the item request for {item_name}."
+            if obj.actor_type == "admin":
+                return f"{self._admin_label(obj)} approved item “{item_name}”."
+            if obj.actor_type == "vendor":
+                return f"Your item “{item_name}” was approved."
+            return f"The administrator approved item “{item_name}”."
+
         if obj.action == "item_request_denied":
-            if is_admin_viewer and obj.actor_type == "admin":
-                return f"You declined the item request for {item_name}."
-            if is_own_vendor_activity:
-                return f"Your item {item_name} was declined by the administrator."
-            return f"The administrator declined the item request for {item_name}."
+            if obj.actor_type == "admin":
+                return f"{self._admin_label(obj)} declined item request for “{item_name}”."
+            if obj.actor_type == "vendor":
+                return f"Your item request for “{item_name}” was declined."
+            return f"The administrator declined item request for “{item_name}”."
+
+        if obj.action == "Price Change Approved":
+            if obj.actor_type == "admin":
+                return f"{self._admin_label(obj)} approved the price change for “{item_name}”."
+            if obj.actor_type == "vendor":
+                return f"Your price change for “{item_name}” was approved."
+
+        if obj.action == "Price Change Requested":
+            if obj.actor_type == "vendor":
+                return f"You requested a price change for “{item_name}”."
+            if obj.actor_type == "admin":
+                return f"A vendor requested a price change for “{item_name}”."
 
         actor = self._actor_phrase(obj)
 
