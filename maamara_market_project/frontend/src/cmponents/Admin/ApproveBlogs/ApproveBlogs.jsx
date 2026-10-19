@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { IonIcon } from "@ionic/react";
 import { newspaperOutline, refreshOutline } from "ionicons/icons";
-import api from "../../../Services/Api";
+import api, { resolveApiAssetUrl } from "../../../Services/Api";
 import AppSnackbar from "../../../../components/ui/app-snackbar";
 import { sanitizeRichText } from "../../../utils/sanitizeRichText";
 
@@ -123,7 +123,7 @@ export default function AdminBlogApprovalPage({ onCountChange }) {
 
                         {blog.image && (
                           <img
-                            src={blog.image}
+                            src={resolveApiAssetUrl(blog.image)}
                             alt={blog.title || "Blog cover"}
                             className="mt-4 max-h-64 w-full rounded-xl border border-border object-cover sm:max-w-xl"
                           />
@@ -139,7 +139,7 @@ export default function AdminBlogApprovalPage({ onCountChange }) {
                             controls
                             playsInline
                             preload="metadata"
-                            src={blog.video}
+                            src={resolveApiAssetUrl(blog.video)}
                             className="mt-4 max-h-80 w-full rounded-xl border border-border bg-black sm:max-w-xl"
                           />
                         )}
