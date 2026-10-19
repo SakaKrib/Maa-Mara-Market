@@ -26,8 +26,11 @@ export default function MpesaB2CMultiPayment({ onSuccess }) {
   const [payments, setPayments] = useState(
     prefilledPayments.map((p) => ({
       vendor: p.vendor?.company_name || p.vendor?.name || [p.vendor?.first_name, p.vendor?.surname_name].filter(Boolean).join(" ") || "Unknown Vendor",
-      phone: p.vendor?.mpesa_number || p.vendor?.MpesaNo || p.vendor?.mpesa_no || p.phone || "",
-      amount: p.amount || 0,
+      mpesaType: p.vendor?.mpesa_type || "PHONE",
+      phone: p.vendor?.mpesa_number || p.vendor?.MpesaNo || p.vendor?.mpesa_no || "",
+      till: p.vendor?.mpesa_till || "",
+      paybill: p.vendor?.mpesa_paybill || "",
+      amount: p.amount ?? "",
       reference: p.reference || "",
     }))
   );
@@ -115,18 +118,25 @@ export default function MpesaB2CMultiPayment({ onSuccess }) {
 
   const validatePayments = () => {
     for (let i = 0; i < payments.length; i++) {
-      const { phone, amount } = payments[i];
+      const { mpesaType, phone, till, paybill, amount } = payments[i];
+      const destination = mpesaType === "TILL" ? till : mpesaType === "LIPA_NA_MPESA" ? paybill : phone;
       const normalizedPhone = normalizePhone(phone);
 
-      if (!normalizedPhone || !amount) {
-        showSnackbar(`⚠️ Please enter phone and amount for row ${i + 1}.`);
-        setError(`⚠️ Please enter phone and amount for row ${i + 1}.`);
+      if (!destination || !amount) {
+        showSnackbar(`⚠️ Missing M-Pesa destination or amount at row ${i + 1}.`);
+        setError(`⚠️ Missing M-Pesa destination or amount at row ${i + 1}.`);
         return false;
       }
 
-      if (!/^2547\d{8}$/.test(normalizedPhone)) {
+      if (mpesaType === "PHONE" && !/^2547\d{8}$/.test(normalizedPhone)) {
         showSnackbar(`⚠️ Invalid phone format at row ${i + 1}. Use 2547XXXXXXXX.`);
         setError(`⚠️ Invalid phone format at row ${i + 1}. Use 2547XXXXXXXX.`);
+        return false;
+      }
+
+      if ((mpesaType === "TILL" || mpesaType === "LIPA_NA_MPESA") && !/^\d{5,20}$/.test(String(destination).replace(/\D/g, ""))) {
+        showSnackbar(`⚠️ Invalid Till/Paybill number at row ${i + 1}.`);
+        setError(`⚠️ Invalid Till/Paybill number at row ${i + 1}.`);
         return false;
       }
 
@@ -193,8 +203,8 @@ export default function MpesaB2CMultiPayment({ onSuccess }) {
             <img src={MpesaLogo} alt="mpesalog.png" className="mm-payout-logo-image mm-payout-logo-image--cover" />
           </div>
 
-          <Grid container spacing={25} sx={{ fontWeight: "bold", mb: 1 }}>
-            <Grid item xs={4}>
+          <Grid container spacing={2} sx={{ fontWeight: "bold", mb: 1, display: { xs: "none", sm: "flex" } }}>
+            <Grid item sm={4}>
               Vendor
             </Grid>
             <Grid item xs={4}>
@@ -208,10 +218,10 @@ export default function MpesaB2CMultiPayment({ onSuccess }) {
           {payments.map((payment, index) => (
             <Grid
               container
-              spacing={2}
+              spacing={1.5}
               alignItems="center"
-              key={index}
-              sx={{ mb: 1 }}
+              key={payment.reference || index}
+              sx={{ mb: 2, p: { xs: 1.5, sm: 2 }, border: "1px solid var(--mm-border, #d1d5db)", borderRadius: "16px" }}
             >
               <Grid item xs={4}>
                 <TextField
@@ -238,6 +248,7 @@ export default function MpesaB2CMultiPayment({ onSuccess }) {
               <Grid item xs={4}>
                 <TextField
                   type="number"
+                  label="Payout amount (KES)"
                   value={payment.amount}
                   onChange={(e) => handleChange(index, "amount", e.target.value)}
                   fullWidth
@@ -261,7 +272,9 @@ export default function MpesaB2CMultiPayment({ onSuccess }) {
               },
               py: 1.2,
               mt: 3,
-              borderRadius: "50px",
+              borderRadius: "20px",
+              textTransform: "none",
+              fontWeight: 700,
               border: "1px solid",
             }}
           >
