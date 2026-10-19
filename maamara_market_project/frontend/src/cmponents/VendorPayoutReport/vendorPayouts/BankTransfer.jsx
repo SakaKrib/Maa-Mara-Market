@@ -163,7 +163,7 @@ export default function BankTransferBulkPayment({ onSuccess }) {
                 p: { xs: 1.5, sm: 2 },
                 border: "1px solid var(--border, #e6e6e4)",
                 borderRadius: "16px",
-                backgroundColor: theme.palette.background.paper,
+                backgroundColor: "var(--card, #fff)",
               }}
             >
               <Typography variant="subtitle2" fontWeight={700} sx={{ mb: 1.5 }}>
