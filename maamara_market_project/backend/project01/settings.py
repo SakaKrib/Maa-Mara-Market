@@ -222,9 +222,11 @@ SIMPLE_JWT = {
     "ALGORITHM": "HS256",
     "SIGNING_KEY": SECRET_KEY,
     "ACCESS_TOKEN_LIFETIME": timedelta(minutes=5),
-    "REFRESH_TOKEN_LIFETIME": timedelta(days=30),
+    "REFRESH_TOKEN_LIFETIME": timedelta(days=365),
     "ROTATE_REFRESH_TOKENS": True,
-    "BLACKLIST_AFTER_ROTATION": True,
+    # Do not blacklist on rotation: a refresh response lost to a suspended app or a
+    # parallel request must not log the user out. Logout still blacklists the token.
+    "BLACKLIST_AFTER_ROTATION": False,
     "UPDATE_LAST_LOGIN": False,
     "AUTH_HEADER_TYPES": ("Bearer",),
 }
@@ -235,7 +237,7 @@ SIMPLE_JWT = {
 
 # The native Capacitor WebView is served from https://localhost.
 # Keep these origins in addition to the configurable website origins.
-NATIVE_WEBVIEW_ORIGINS = ["https://localhost"]
+NATIVE_WEBVIEW_ORIGINS = ["https://localhost", "capacitor://localhost", "ionic://localhost"]
 
 CORS_ALLOWED_ORIGINS = list(dict.fromkeys([
     *[

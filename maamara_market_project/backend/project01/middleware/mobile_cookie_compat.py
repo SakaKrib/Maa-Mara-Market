@@ -10,7 +10,7 @@ is unchanged.
 
 
 class NativeWebViewCookieMiddleware:
-    NATIVE_ORIGINS = {"https://localhost"}
+    NATIVE_ORIGINS = {"https://localhost", "capacitor://localhost", "ionic://localhost"}  # Android, iOS (default Capacitor scheme), legacy iOS
 
     def __init__(self, get_response):
         self.get_response = get_response
