@@ -551,17 +551,30 @@ class ActivityLogSerializer(serializers.ModelSerializer):
         vendor = None
 
         if obj.actor_type == "admin":
-            # Legacy admin rows retained the item-request id in related_url.
-            match = re.search(r"vendoritemrequest/(\d+)", obj.related_url or "", re.I)
-            if not match:
-                return "A vendor"
+            related_url = obj.related_url or ""
+            request_match = re.search(
+                r"vendoritemrequest/(\d+)", related_url, re.I
+            )
+            price_match = re.search(
+                r"vendoritemPricerequest/(\d+)", related_url, re.I
+            )
             try:
-                from vendorDashboard.models import VendorItemRequest
-                item_request = VendorItemRequest.objects.select_related("vendor__user").get(
-                    pk=int(match.group(1))
-                )
-                vendor = item_request.vendor
-                user = getattr(vendor, "user", None)
+                if request_match:
+                    from vendorDashboard.models import VendorItemRequest
+                    item_request = VendorItemRequest.objects.select_related(
+                        "vendor__user"
+                    ).get(pk=int(request_match.group(1)))
+                    vendor = item_request.vendor
+                    user = getattr(vendor, "user", None)
+                elif price_match:
+                    from ReactSerializers.models import PriceChangeRequest
+                    price_request = PriceChangeRequest.objects.select_related(
+                        "item__vendor__user"
+                    ).get(pk=int(price_match.group(1)))
+                    vendor = getattr(price_request.item, "vendor", None)
+                    user = getattr(vendor, "user", None) if vendor else None
+                else:
+                    return "A vendor"
             except Exception:
                 return "A vendor"
         else:
@@ -602,13 +615,16 @@ class ActivityLogSerializer(serializers.ModelSerializer):
         )
         description = (obj.description or "").strip().lower()
 
-        # The actor must be named for administrative item decisions.
+        # Name the admin who made a decision, and the vendor who initiated
+        # a price-change request shown in the admin activity feed.
         if obj.actor_type == "admin" and obj.action in {
             "item_request_approved", "item_request_denied",
             "Price Change Approved", "banner_approved", "banner_rejected",
             "blog_approved",
         }:
             return self._admin_label(obj)
+        if obj.actor_type == "admin" and obj.action == "Price Change Requested":
+            return self._vendor_label(obj)
 
         # Admin feeds identify the vendor who performed vendor-side actions.
         if obj.actor_type == "vendor" and is_admin_viewer:
@@ -791,7 +807,9 @@ class ActivityLogSerializer(serializers.ModelSerializer):
             if obj.actor_type == "vendor":
                 return f"You requested a price change for “{item_name}”."
             if obj.actor_type == "admin":
-                return f"A vendor requested a price change for “{item_name}”."
+                vendor_label = self._vendor_label(obj)
+                actor = vendor_label if vendor_label != "A vendor" else "A vendor"
+                return f"{actor} requested a price change for “{item_name}”."
 
         actor = self._actor_phrase(obj)
 
