@@ -54,9 +54,9 @@ const AppSnackbar = ({
       role={isError ? "alert" : "status"}
       onMouseEnter={() => setPaused(true)}
       onMouseLeave={() => setPaused(false)}
-      className={`fixed right-4 top-[8.5rem] z-[1400] flex w-max max-w-[min(24rem,calc(100vw-2rem))] items-start gap-3 rounded-[20px] border px-4 py-3 text-sm font-semibold shadow-lg ${tone}`}
+      className={`fixed right-4 top-[8.1rem] z-[1400] flex w-fit max-w-[min(22rem,calc(100vw-2rem))] items-start gap-3 rounded-[20px] border px-4 py-3 text-sm font-semibold shadow-lg ${tone}`}
     >
-      <div className="min-w-0 break-words [text-wrap:balance]">{children ?? message}</div>
+      <div className="min-w-0 flex-initial break-words [text-wrap:balance]">{children ?? message}</div>
       {onClose && (
         <button
           type="button"

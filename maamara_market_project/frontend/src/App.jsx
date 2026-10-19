@@ -72,6 +72,7 @@ import CheckoutPage from "./PublicUiForAll/PublicUi/Customer/DesktopView/Main/Or
 
 // interactions
 import useMobileMenu from "./MobileInterractions";
+import useNativeBackButton from "./cmponents/Hooks/useNativeBackButton";
 import SingleCategory from "./PublicUiForAll/PublicUi/Customer/DesktopView/Main/CategoryFilter";
 import ScrollTop from "./cmponents/Scroll/ScrollToTheTop";
 import PesapalCallback from "./PublicUiForAll/PublicUi/Customer/DesktopView/Main/Orders/Payment/PesapalCallback";
@@ -459,6 +460,7 @@ function AppContent() {
 
 function App() {
   useMobileMenu();
+  useNativeBackButton();
   const { loading: authLoading, isAuthenticated, user } = useAuth();
 
   const [visitorReady, setVisitorReady] = useState(false);

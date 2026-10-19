@@ -28,7 +28,7 @@ const MobileWishlistModal = ({ open, onClose }) => {
   };
 
   const handleShare = async (item) => {
-    const url = `${window.location.origin}/item/${item.slug || item.id}`;
+    const url = `${window.location.origin}/item/${item.id}`;
     try {
       if (navigator.share) {
         await navigator.share({ title: item.name || "Maa Mara Market", text: `Check out ${item.name || "this item"}`, url });
@@ -63,7 +63,7 @@ const MobileWishlistModal = ({ open, onClose }) => {
                     <span><FormattedCurrency value={Number(item.final_price || 0)} /></span>
                   </div>
                   <div className="mm-mobile-line-actions">
-                    <button type="button" onClick={() => { navigate(`/item/${item.slug || item.id}`); onClose?.(); }}>View</button>
+                    <button type="button" onClick={() => { navigate(`/item/${item.id}`); onClose?.(); }}>View</button>
                     <button type="button" aria-label="Share item" onClick={() => handleShare(item)}><Share2 size={15} /></button>
                   </div>
                 </div>
