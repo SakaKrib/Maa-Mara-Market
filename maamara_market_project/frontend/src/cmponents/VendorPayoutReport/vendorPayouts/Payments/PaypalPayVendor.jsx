@@ -218,12 +218,13 @@ export default function PaypalBulkPayment({ onSuccess }) {
       <Box className="mm-payout-page" sx={{ p: { xs: 1, sm: 2 }, maxWidth: 1100, mx: "auto", width: "100%" }}>
       <Box
         sx={{
-          borderRadius: 3,
-          p: 4,
-          mt: 2,
-          backgroundColor: colors.primary[800],
-          color: colors.gray[100],
-          boxShadow: 3,
+          borderRadius: "20px",
+          p: { xs: 2, sm: 3 },
+          mt: 1,
+          backgroundColor: "var(--mm-surface, var(--background, #fff))",
+          color: "var(--mm-foreground, var(--foreground, #222))",
+          border: "1px solid var(--mm-border, var(--border, #e5e7eb))",
+          boxShadow: "0 4px 14px rgba(0,0,0,.06)",
         }}
       >
         <Typography variant="h6" fontWeight="bold" gutterBottom>
@@ -310,13 +311,14 @@ export default function PaypalBulkPayment({ onSuccess }) {
           variant="text"
           onClick={addPaymentRow}
           disabled={loading}
-          sx={{ mt: 2 }}
+          sx={{ mt: 2, borderRadius: "20px", textTransform: "none" }}
         >
           + Add another payment
         </Button>
 
         <Button
           variant="contained"
+          className="mm-payout-rounded-control"
           onClick={handlePayment}
           disabled={loading}
           fullWidth
