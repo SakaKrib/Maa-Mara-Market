@@ -43,8 +43,8 @@ export default function PaypalBulkPayment({ onSuccess }) {
   const [payments, setPayments] = useState(() => {
     if (vendorPayouts.length > 0) {
       return vendorPayouts.map((p) => ({
-        vendor_name: p.vendor?.company_name || "",
-        email: p.vendor?.PaypalEmail || p.vendor?.email || "",
+        vendor_name: p.vendor?.company_name || [p.vendor?.first_name, p.vendor?.surname_name].filter(Boolean).join(" ") || "",
+        email: p.vendor?.paypal_email || p.vendor?.PaypalEmail || "",
         amount: p.amount || 0,
         reference: p.reference || "",
       }));
@@ -215,7 +215,7 @@ export default function PaypalBulkPayment({ onSuccess }) {
   return (
     <>
       <AppSnackbar open={snackbar.open} message={snackbar.message} severity={snackbar.severity} onClose={() => setSnackbar((prev) => ({ ...prev, open: false }))} />
-      <Box sx={{ p: 6 }}>
+      <Box className="mm-payout-page" sx={{ p: { xs: 1, sm: 2 }, maxWidth: 1100, mx: "auto", width: "100%" }}>
       <Box
         sx={{
           borderRadius: 3,
@@ -275,7 +275,7 @@ export default function PaypalBulkPayment({ onSuccess }) {
                 variant="outlined"
                 size="small"
                 disabled={loading}
-                placeholder="recipient@example.com"
+                placeholder="Vendor PayPal email"
               />
             </Grid>
 
