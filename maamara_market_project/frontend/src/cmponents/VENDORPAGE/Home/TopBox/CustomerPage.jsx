@@ -139,7 +139,7 @@ const CustomerPage = () => {
                   <div className="rounded-xl bg-[#f8f8f6] p-3">
                     <dt className="text-xs font-medium text-[#777]">City</dt>
                     <dd className="mt-1 break-words text-sm font-semibold text-[#222]">
-                      {customer.city || "Nairobi"}
+                      {customer.city || "N/A"}
                     </dd>
                   </div>
 
@@ -154,29 +154,6 @@ const CustomerPage = () => {
                     <dt className="text-xs font-medium text-[#777]">Loyalty points</dt>
                     <dd className="mt-1 text-sm font-semibold text-[#222]">
                       {customer.loyalty_points ?? 0}
-                    </dd>
-                  </div>
-
-                  <div className="rounded-xl bg-[#f8f8f6] p-3 sm:col-span-2">
-                    <dt className="text-xs font-medium text-[#777]">Address</dt>
-                    <dd className="mt-1 break-words text-sm font-semibold text-[#222]">
-                      {customer.address || "N/A"}
-                    </dd>
-                  </div>
-
-                  <div className="rounded-xl bg-[#f8f8f6] p-3 sm:col-span-2">
-                    <dt className="text-xs font-medium text-[#777]">Billing address</dt>
-                    <dd className="mt-1 break-words text-sm font-semibold text-[#222]">
-                      {customer.billing_address
-                        ? JSON.stringify(customer.billing_address)
-                        : "N/A"}
-                    </dd>
-                  </div>
-
-                  <div className="rounded-xl bg-[#f8f8f6] p-3 sm:col-span-2">
-                    <dt className="text-xs font-medium text-[#777]">Visitor ID</dt>
-                    <dd className="mt-1 break-all font-mono text-xs font-semibold text-[#222]">
-                      {customer.visitor_id || "N/A"}
                     </dd>
                   </div>
                 </dl>
