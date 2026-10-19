@@ -335,7 +335,14 @@ class ReactionBlog(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        unique_together = ('post', 'user')  # ✅ prevents duplicate reactions
+        unique_together = ('post', 'user')  # Prevent duplicate reactions for signed-in users.
+        constraints = [
+            models.UniqueConstraint(
+                fields=("post", "visitor_id"),
+                condition=models.Q(visitor_id__isnull=False) & ~models.Q(visitor_id=""),
+                name="uniq_blog_reaction_visitor_per_post",
+            ),
+        ]
 
     def __str__(self):
         return f"{self.user} reacted {self.type} on {self.post}"
