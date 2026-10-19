@@ -178,7 +178,7 @@ export default function MpesaB2CMultiPayment({ onSuccess }) {
     <>
       <AppSnackbar open={snackbar.open} message={snackbar.message} severity={snackbar.severity} onClose={() => setSnackbar((prev) => ({ ...prev, open: false }))} />
 
-      <Box className="mm-payout-page" sx={{ p: { xs: 1, sm: 2 }, maxWidth: 1100, mx: "auto", width: "100%" }}>
+      <Box className="mm-payout-page" sx={{ px: 2, py: { xs: 1, sm: 2 }, maxWidth: 1100, mx: "auto", width: "100%" }}>
         <Box
           sx={{
             borderRadius: "12px",
