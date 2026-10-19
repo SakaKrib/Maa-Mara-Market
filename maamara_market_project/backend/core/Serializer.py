@@ -697,7 +697,16 @@ class ActivityLogSerializer(serializers.ModelSerializer):
         if (
             obj.action in {"item_created", "item_updated", "vendor_item_request_received"}
             and description.lower().startswith("vendor ")
+            and (obj.actor_type == "admin" or bool(
+                self.context.get("request")
+                and getattr(self.context["request"], "user", None)
+                and (
+                    self.context["request"].user.is_staff
+                    or self.context["request"].user.is_superuser
+                )
+            ))
         ):
+            # Keep the named vendor wording in the administrator's feed only.
             return re.sub(r"'([^']+)'", r"\1", description)
         if (
             obj.action == "vendor_item_request_received"
