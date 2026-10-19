@@ -1,7 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
-import { sanitizeRichText } from "../../../utils/sanitizeRichText";
 import { resolveApiAssetUrl } from "../../../Services/Api";
 import ReactionButton from "./Reaction";
 import CommentBox from "./Comment";
@@ -16,7 +15,7 @@ export default function BlogCard({ post }) {
 
   const vendor = post.vendor || {};
   const openPost = () => navigate(`/blogs/${post.id}`);
-  const excerpt = post.excerpt || stripMarkup(post.content || "");
+  const excerpt = (post.excerpt || stripMarkup(post.content || "")).slice(0, 180).trim();
   const hasMedia = Boolean(post.image || post.video);
 
   return (
@@ -36,13 +35,18 @@ export default function BlogCard({ post }) {
       </div>
 
       {hasMedia && (
-        <button type="button" onClick={openPost} aria-label={`Read ${post.title || "blog post"}`} className="block w-full overflow-hidden bg-muted text-left">
-          {post.image ? (
-            <img src={resolveApiAssetUrl(post.image)} alt={post.title || "Blog post"} loading="lazy" className="aspect-[16/9] w-full object-cover transition-transform duration-300 hover:scale-[1.02]" />
-          ) : (
-            <video src={resolveApiAssetUrl(post.video)} preload="metadata" muted playsInline className="aspect-[16/9] w-full object-cover" />
+        <div className="space-y-2 bg-muted p-2 sm:p-3">
+          {post.image && (
+            <button type="button" onClick={openPost} aria-label={"Read " + (post.title || "blog post")} className="block w-full overflow-hidden rounded-xl text-left">
+              <img src={resolveApiAssetUrl(post.image)} alt={post.title || "Blog post"} loading="lazy" className="aspect-[16/9] w-full object-cover transition-transform duration-300 hover:scale-[1.02]" />
+            </button>
           )}
-        </button>
+          {post.video && (
+            <button type="button" onClick={openPost} aria-label={"Watch " + (post.title || "blog video")} className="block w-full overflow-hidden rounded-xl text-left">
+              <video src={resolveApiAssetUrl(post.video)} preload="metadata" muted playsInline className="aspect-[16/9] w-full object-cover" />
+            </button>
+          )}
+        </div>
       )}
 
       <div className="flex flex-1 flex-col px-4 pb-4 pt-4 sm:px-5">
