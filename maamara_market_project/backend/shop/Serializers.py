@@ -324,11 +324,12 @@ class BrandSerializer(serializers.ModelSerializer):
 # blog serialzer
 # 🧡 Reaction Serializer
 class ReactionSerializer(serializers.ModelSerializer):
-    user_name = serializers.CharField(source='user.username', read_only=True)
+    user_name = serializers.CharField(source="user.username", read_only=True)
+    user_id = serializers.IntegerField(read_only=True)
 
     class Meta:
         model = ReactionBlog
-        fields = ['id', 'user_name', 'type', 'created_at', 'visitor_id']
+        fields = ["id", "user_id", "user_name", "type", "created_at", "visitor_id"]
 
 # profile
 
