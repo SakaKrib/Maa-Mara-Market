@@ -192,6 +192,19 @@ def pay_single_vendor_payout(request, reference):
     try:
         # Do not submit a second provider request while an earlier submission
         # has a provider correlation that is still awaiting settlement.
+        if method == "MOBILE_MONEY" and vendor.mpesa_type in {"TILL", "LIPA_NA_MPESA"} and payout.mpesa_result_desc and (
+            payout.mpesa_result_desc.startswith("B2B submission outcome unknown")
+            or payout.mpesa_result_desc.startswith("B2B submission response lacked correlation IDs")
+        ):
+            return Response(
+                {
+                    "error": "M-Pesa B2B submission outcome is uncertain. Reconcile with Safaricom before retrying to avoid a duplicate payout.",
+                    "reference": payout.reference,
+                    "retryable": False,
+                },
+                status=409,
+            )
+
         if method == "MOBILE_MONEY" and (
             payout.mpesa_conversation_id or payout.mpesa_originator_conversation_id
         ):
