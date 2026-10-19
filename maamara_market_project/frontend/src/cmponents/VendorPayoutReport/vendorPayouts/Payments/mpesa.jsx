@@ -137,13 +137,13 @@ export default function MpesaB2CPayment({ onSuccess }) {
           borderRadius: "12px",
           p: { xs: 2, sm: 3 },
           mt: 1,
-          backgroundColor: "var(--card, #fff)",
-          color: "var(--card-foreground, var(--foreground, #222))",
-          border: "1px solid var(--border, #e6e6e4)",
+          backgroundColor: "hsl(var(--card, 0 0% 100%))",
+          color: "hsl(var(--card-foreground, var(--foreground, 0 0% 3.9%)))",
+          border: "1px solid hsl(var(--border, 0 0% 89.8%))",
         }}
         className="mm-payout-shadow"
       >
-        <Typography variant="subtitle1" fontWeight="bold" gutterBottom sx={{ color: "var(--mm-foreground, var(--foreground, #222))" }}>
+        <Typography variant="subtitle1" fontWeight="bold" gutterBottom sx={{ color: "var(--mm-foreground, hsl(var(--foreground, 0 0% 3.9%)))" }}>
           M-Pesa Vendor Payout
         </Typography>
 
@@ -154,7 +154,7 @@ export default function MpesaB2CPayment({ onSuccess }) {
         <Typography variant="body1" gutterBottom>
           Paying vendor: <strong>{vendorName}</strong>
         </Typography>
-        <Typography variant="body2" sx={{ color: "var(--muted-foreground, #686868)", mb: 1 }}>
+        <Typography variant="body2" sx={{ color: "hsl(var(--muted-foreground, 0 0% 45.1%))", mb: 1 }}>
           {mpesaType === "PHONE" ? "B2C phone-number payout" : mpesaType === "TILL" ? "B2B Buy Goods / Till payout" : "B2B PayBill payout"}
         </Typography>
 
@@ -189,8 +189,8 @@ export default function MpesaB2CPayment({ onSuccess }) {
             borderRadius: "12px",
             textTransform: "none",
             fontWeight: 700,
-            backgroundColor: "var(--primary, #2563eb)",
-            "&:hover": { backgroundColor: "var(--primary-hover, #1d4ed8)" },
+            backgroundColor: "hsl(var(--primary, 0 0% 9%))",
+            "&:hover": { backgroundColor: "color-mix(in srgb, hsl(var(--primary, 0 0% 9%)) 90%, white)" },
           }}
         >
           {loading ? <CircularProgress size={24} /> : "Send Payment"}
