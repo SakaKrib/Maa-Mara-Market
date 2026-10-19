@@ -170,8 +170,12 @@ export default function MpesaB2CPayment({ onSuccess }) {
           fullWidth
           sx={{
             mt: 2,
-            backgroundColor: colors.greenAccent[700],
-            "&:hover": { backgroundColor: colors.greenAccent[800] },
+            minHeight: 44,
+            borderRadius: "20px",
+            textTransform: "none",
+            fontWeight: 700,
+            backgroundColor: "var(--primary, #2563eb)",
+            "&:hover": { backgroundColor: "var(--primary-hover, #1d4ed8)" },
           }}
         >
           {loading ? <CircularProgress size={24} /> : "Send Payment"}
