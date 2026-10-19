@@ -123,12 +123,13 @@ export default function BankTransferBulkPayment({ onSuccess }) {
       <Box className="mm-payout-page" sx={{ p: { xs: 1, sm: 2 }, maxWidth: 1100, mx: "auto", width: "100%" }}>
         <Box
           sx={{
-            borderRadius: 3,
-            p: 4,
-            mt: 2,
-            backgroundColor: colors.primary[800],
-            color: colors.gray[100],
-            boxShadow: 3,
+            borderRadius: "20px",
+            p: { xs: 2, sm: 3 },
+            mt: 1,
+            backgroundColor: "var(--mm-surface, var(--background, #fff))",
+            color: "var(--mm-foreground, var(--foreground, #222))",
+            border: "1px solid var(--mm-border, var(--border, #e5e7eb))",
+            boxShadow: "0 4px 14px rgba(0,0,0,.06)",
           }}
           className="mm-payout-shadow"
         >
