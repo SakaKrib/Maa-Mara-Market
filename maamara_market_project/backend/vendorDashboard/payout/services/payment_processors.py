@@ -128,160 +128,222 @@ def get_mpesa_token():
 # ============================================================
 # 3️⃣  CALL M-PESA B2C ENDPOINT
 # ============================================================
-def call_mpesa_b2c(vendor, amount, mpesa_config, payout=None):
-    """
-    Execute a B2C payment (payout to vendor) through Safaricom Daraja API.
-    """
-    mpesa_b2c_config = mpesa_config.get("b2c", {})
+def _persist_mpesa_submission(payout, originator_id, response_data):
+    """Persist callback correlation before/after the provider acknowledges a payout."""
+    if payout is None:
+        return
+    payout.mpesa_originator_conversation_id = originator_id
+    payout.mpesa_result_desc = str(
+        response_data.get("ResponseDescription") or "Submitted to M-Pesa"
+    )[:255]
+    conversation_id = response_data.get("ConversationID")
+    if conversation_id:
+        payout.mpesa_conversation_id = conversation_id
+    payout.save(update_fields=[
+        "mpesa_originator_conversation_id",
+        "mpesa_conversation_id",
+        "mpesa_result_desc",
+    ])
 
+
+def call_mpesa_b2c(vendor, amount, mpesa_config, payout=None):
+    """Send an M-Pesa B2C payout to a vendor's registered phone number only."""
     if payout is None:
         return {"success": False, "error": "A payout record is required."}
+    if vendor.mpesa_type != "PHONE":
+        return {
+            "success": False,
+            "error": "B2C only supports phone-number payouts. Till and PayBill destinations require the configured Daraja B2B product.",
+        }
+
+    cfg = mpesa_config.get("b2c", {})
+    recipient = str(vendor.mpesa_number or "").strip()
+    digits = "".join(ch for ch in recipient if ch.isdigit())
+    if digits.startswith("0"):
+        digits = "254" + digits[1:]
+    elif digits.startswith("7"):
+        digits = "254" + digits
+    if not digits.startswith("254") or len(digits) != 12:
+        return {"success": False, "error": "Vendor's saved M-Pesa phone number is missing or invalid."}
+
+    required = {
+        "url": cfg.get("url"),
+        "initiator_name": cfg.get("initiator_name"),
+        "short_code": cfg.get("short_code"),
+        "initiator_password": cfg.get("initiator_password"),
+        "certificate_path": cfg.get("certificate_path"),
+        "result_url": cfg.get("result_url"),
+        "timeout_url": cfg.get("timeout_url"),
+    }
+    missing = [key for key, value in required.items() if not value]
+    if missing:
+        return {"success": False, "error": "M-Pesa B2C is not fully configured: " + ", ".join(missing)}
 
     try:
-        # ----------------------------------------------------------------------
-        # 1️⃣ Get Access Token
-        # ----------------------------------------------------------------------
         access_token = get_mpesa_token()
-        if not access_token:
-            return {"success": False, "error": "Failed to obtain access token"}
+        originator_id = str(uuid.uuid4())
+        payout.mpesa_originator_conversation_id = originator_id
+        payout.mpesa_result_desc = "Submitted to M-Pesa"
+        payout.save(update_fields=["mpesa_originator_conversation_id", "mpesa_result_desc"])
 
-        # ----------------------------------------------------------------------
-        # 2️⃣ Map Vendor M-Pesa Payment Type → CommandID
-        # ----------------------------------------------------------------------
-        command_map = {
-            "PHONE": "SalaryPayment",          # Send to M-Pesa number
-            "TILL": "PromotionPayment",          # Send to M-Pesa till
-            "LIPA_NA_MPESA": "BusinessPayBill",        # Send to PayBill
-        }
-
-        command_id = command_map.get(vendor.mpesa_type)
-        if not command_id:
-            raise ValueError(f"Invalid M-Pesa payment type for vendor: {vendor.company_name}")
-
-        # ----------------------------------------------------------------------
-        # 3️⃣ Prepare Recipient (PartyB)
-        # ----------------------------------------------------------------------
-        if vendor.mpesa_type == "PHONE":
-            recipient = vendor.mpesa_number.strip()
-            if recipient.startswith("0"):
-                recipient = "254" + recipient[1:]
-            elif not recipient.startswith("254"):
-                recipient = "254" + recipient
-
-        elif vendor.mpesa_type == "TILL":
-            recipient = int(vendor.mpesa_till)
-
-        elif vendor.mpesa_type == "LIPA_NA_MPESA":
-            recipient = int(vendor.mpesa_paybill)
-
-        else:
-            return {"success": False, "error": "Invalid vendor payment type."}
-
-        # ----------------------------------------------------------------------
-        # 4️⃣ Generate Security Credential
-        # ----------------------------------------------------------------------
-        initiator_password = mpesa_b2c_config.get("initiator_password")
-        cert_path = mpesa_b2c_config.get("certificate_path")
-
-        if not initiator_password or not cert_path:
-            return {"success": False, "error": "Missing initiator password or certificate path."}
-        
-
-        originator_conversation_id = str(uuid.uuid4())
-
-        # Persist the correlation id before contacting Daraja so a very fast
-        # callback can always be matched to this payout.
-        if payout is not None:
-            payout.mpesa_originator_conversation_id = originator_conversation_id
-            payout.mpesa_result_desc = "Submitted to M-Pesa"
-            payout.save(update_fields=["mpesa_originator_conversation_id", "mpesa_result_desc"])
-
-        security_credential = generate_security_credential(initiator_password, cert_path)
-
-
+        security_credential = generate_security_credential(
+            cfg["initiator_password"], cfg["certificate_path"]
+        )
         payload = {
-            "OriginatorConversationID": originator_conversation_id,
-            "InitiatorName": mpesa_b2c_config.get("initiator_name"),
+            "OriginatorConversationID": originator_id,
+            "InitiatorName": cfg["initiator_name"],
             "SecurityCredential": security_credential,
-            "CommandID": command_id,
+            "CommandID": "BusinessPayment",
             "Amount": int(amount),
-            "PartyA": mpesa_b2c_config.get("short_code"),
-            "PartyB": recipient,
-            "Remarks": "ok",
-            "QueueTimeOutURL": mpesa_b2c_config.get("timeout_url"),
-            "ResultURL": mpesa_b2c_config.get("result_url"),
-            "Occasion": "salaryPayee",
+            "PartyA": cfg["short_code"],
+            "PartyB": digits,
+            "Remarks": "Vendor payout",
+            "QueueTimeOutURL": cfg["timeout_url"],
+            "ResultURL": cfg["result_url"],
+            "Occasion": str(payout.reference or "Vendor payout")[:100],
         }
-
-
-
-        headers = {
-            "Authorization": f"Bearer {access_token}",
-            "Content-Type": "application/json",
-        }
-
-        logger.info("Sending M-Pesa B2C payout request", extra={"vendor_id": vendor.id, "payout_reference": getattr(payout, "reference", None)})
-
-        # ----------------------------------------------------------------------
-        # 6️⃣ Send Request
-        # ----------------------------------------------------------------------
-        
-        response = requests.post(mpesa_b2c_config.get("url"), json=payload, headers=headers, timeout=30)
-
-
-
+        response = requests.post(
+            cfg["url"],
+            json=payload,
+            headers={"Authorization": f"Bearer {access_token}", "Content-Type": "application/json"},
+            timeout=30,
+        )
         response.raise_for_status()
-
         data = response.json()
-
-
-
-        # ----------------------------------------------------------------------
-        # 7️⃣ Handle M-Pesa Response
-        # ----------------------------------------------------------------------
         if data.get("ResponseCode") == "0":
-            conversation_id = data.get("ConversationID")
-            returned_originator_id = data.get("OriginatorConversationID")
-            payout.mpesa_conversation_id = conversation_id
-            if returned_originator_id:
-                payout.mpesa_originator_conversation_id = returned_originator_id
-            payout.mpesa_result_desc = str(data.get("ResponseDescription") or "")[:255]
-            payout.save(update_fields=["mpesa_conversation_id", "mpesa_originator_conversation_id", "mpesa_result_desc"])
-            logger.info("Updated payout with M-Pesa conversation IDs.", extra={"payout_reference": payout.reference})
-            return {"success": True, "ConversationID": conversation_id, "OriginatorConversationID": returned_originator_id, "ResponseDescription": data.get("ResponseDescription", "")}
-
-        # Handle Daraja error format
-        if "errorCode" in data:
+            _persist_mpesa_submission(payout, originator_id, data)
             return {
-                "success": False,
-                "error": data.get("errorMessage", "Daraja Error"),
-                "code": data.get("errorCode"),
+                "success": True,
+                "ConversationID": data.get("ConversationID"),
+                "OriginatorConversationID": data.get("OriginatorConversationID") or originator_id,
+                "ResponseDescription": data.get("ResponseDescription", ""),
             }
-
-        return {"success": False, "error": "Unknown M-Pesa error"}
-
-    # ----------------------------------------------------------------------
-    # 8️⃣ EXCEPTION HANDLING
-    # ----------------------------------------------------------------------
-    except requests.exceptions.RequestException as e:
-        logger.warning("M-Pesa payout network request failed.")
-        return {"success": False, "error": "M-Pesa payout request failed."}
-    except Exception as e:
+        return {
+            "success": False,
+            "error": data.get("errorMessage") or data.get("ResponseDescription") or "M-Pesa B2C request was rejected.",
+            "code": data.get("errorCode") or data.get("ResponseCode"),
+        }
+    except requests.exceptions.RequestException:
+        logger.warning("M-Pesa B2C payout network request failed.")
+        return {"success": False, "error": "M-Pesa B2C payout request failed."}
+    except Exception:
         logger.exception("Unexpected M-Pesa B2C payout error.")
-        return {"success": False, "error": "M-Pesa payout failed."}
+        return {"success": False, "error": "M-Pesa B2C payout failed."}
 
 
+def call_mpesa_b2b(vendor, amount, mpesa_config, payout=None):
+    """Pay a registered Till/Buy Goods or PayBill merchant through Daraja B2B."""
+    if payout is None:
+        return {"success": False, "error": "A payout record is required."}
+    mpesa_type = str(vendor.mpesa_type or "").upper()
+    if mpesa_type not in {"TILL", "LIPA_NA_MPESA"}:
+        return {"success": False, "error": "Daraja B2B supports registered Till or PayBill destinations only."}
 
-# --------------------------------------------------------
-# 4️⃣ Bulk M-Pesa B2C Payment Call
-# --------------------------------------------------------
+    cfg = mpesa_config.get("b2b", {})
+    b2c_cfg = mpesa_config.get("b2c", {})
+    destination = (
+        vendor.mpesa_till if mpesa_type == "TILL" else vendor.mpesa_paybill
+    )
+    destination = "".join(ch for ch in str(destination or "") if ch.isdigit())
+    if not destination or not (5 <= len(destination) <= 20):
+        label = "Till" if mpesa_type == "TILL" else "PayBill"
+        return {"success": False, "error": f"Vendor's saved M-Pesa {label} number is missing or invalid."}
+
+    # Shared initiator credentials may be used only if they are also authorized
+    # for the B2B product. The B2B endpoint and callback URLs remain separate.
+    initiator_name = cfg.get("initiator_name") or b2c_cfg.get("initiator_name")
+    short_code = cfg.get("short_code") or b2c_cfg.get("short_code")
+    initiator_password = cfg.get("initiator_password") or b2c_cfg.get("initiator_password")
+    certificate_path = cfg.get("certificate_path") or b2c_cfg.get("certificate_path")
+    result_url = cfg.get("result_url")
+    timeout_url = cfg.get("timeout_url")
+    required = {
+        "url": cfg.get("url"),
+        "initiator_name": initiator_name,
+        "short_code": short_code,
+        "initiator_password": initiator_password,
+        "certificate_path": certificate_path,
+        "result_url": result_url,
+        "timeout_url": timeout_url,
+    }
+    missing = [key for key, value in required.items() if not value]
+    if missing:
+        return {
+            "success": False,
+            "error": "M-Pesa B2B is not configured for merchant payouts. Set the B2B endpoint and callback URLs, and ensure the initiator is authorized: " + ", ".join(missing),
+        }
+
+    try:
+        access_token = get_mpesa_token()
+        originator_id = str(uuid.uuid4())
+        payout.mpesa_originator_conversation_id = originator_id
+        payout.mpesa_result_desc = "Submitted to M-Pesa B2B"
+        payout.save(update_fields=["mpesa_originator_conversation_id", "mpesa_result_desc"])
+
+        security_credential = generate_security_credential(
+            initiator_password, certificate_path
+        )
+        is_till = mpesa_type == "TILL"
+        payload = {
+            "Initiator": initiator_name,
+            "SecurityCredential": security_credential,
+            "CommandID": "BusinessBuyGoods" if is_till else "BusinessPayBill",
+            "SenderIdentifierType": "4",
+            "RecieverIdentifierType": "2" if is_till else "4",
+            "Amount": int(amount),
+            "PartyA": short_code,
+            "PartyB": destination,
+            "AccountReference": str(payout.reference or "Vendor payout")[:20],
+            "Remarks": "Vendor payout",
+            "QueueTimeOutURL": timeout_url,
+            "ResultURL": result_url,
+            "OriginatorConversationID": originator_id,
+        }
+        response = requests.post(
+            cfg["url"],
+            json=payload,
+            headers={"Authorization": f"Bearer {access_token}", "Content-Type": "application/json"},
+            timeout=30,
+        )
+        response.raise_for_status()
+        data = response.json()
+        if data.get("ResponseCode") == "0":
+            _persist_mpesa_submission(payout, originator_id, data)
+            return {
+                "success": True,
+                "ConversationID": data.get("ConversationID"),
+                "OriginatorConversationID": data.get("OriginatorConversationID") or originator_id,
+                "ResponseDescription": data.get("ResponseDescription", ""),
+            }
+        return {
+            "success": False,
+            "error": data.get("errorMessage") or data.get("ResponseDescription") or "M-Pesa B2B request was rejected.",
+            "code": data.get("errorCode") or data.get("ResponseCode"),
+        }
+    except requests.exceptions.RequestException:
+        logger.warning("M-Pesa B2B payout network request failed.")
+        return {"success": False, "error": "M-Pesa B2B payout request failed."}
+    except Exception:
+        logger.exception("Unexpected M-Pesa B2B payout error.")
+        return {"success": False, "error": "M-Pesa B2B payout failed."}
+
+
+def call_mpesa_payout(vendor, amount, mpesa_config, payout=None):
+    """Route each saved vendor destination to the correct Daraja product."""
+    if vendor.mpesa_type == "PHONE":
+        return call_mpesa_b2c(vendor, amount, mpesa_config, payout=payout)
+    if vendor.mpesa_type in {"TILL", "LIPA_NA_MPESA"}:
+        return call_mpesa_b2b(vendor, amount, mpesa_config, payout=payout)
+    return {"success": False, "error": "Vendor has no supported saved M-Pesa destination type."}
+
+
 def call_mpesa_b2c_bulk(payouts, mpesa_config):
     results = []
     for payout in payouts:
         vendor = payout.vendor
         amount = payout.amount
 
-        response = call_mpesa_b2c(vendor, amount, mpesa_config, payout=payout)
+        response = call_mpesa_payout(vendor, amount, mpesa_config, payout=payout)
         status = "Sent to M-Pesa" if response.get('success') else f"Failed: {response.get('error', 'Unknown error')}"
 
         results.append({
@@ -964,7 +1026,7 @@ def payment_processors(start_date, end_date, payment_method=None):
         amount = payout.amount
         try:
             if method == "MOBILE_MONEY":
-                response = call_mpesa_b2c(vendor, amount, mpesa_config, payout=payout)
+                response = call_mpesa_payout(vendor, amount, mpesa_config, payout=payout)
                 status = "Sent to M-Pesa" if response.get('success') else f"Failed: {response.get('error', 'Unknown error')}"
 
             elif method == "PAYPAL":
