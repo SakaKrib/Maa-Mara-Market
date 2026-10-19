@@ -207,12 +207,8 @@ export default function MpesaB2CMultiPayment({ onSuccess }) {
             <Grid item sm={4}>
               Vendor
             </Grid>
-            <Grid item xs={4}>
-              Phone
-            </Grid>
-            <Grid item xs={4}>
-              Amount (KES)
-            </Grid>
+            <Grid item sm={4}>Registered M-Pesa destination</Grid>
+            <Grid item sm={4}>Amount (KES)</Grid>
           </Grid>
 
           {payments.map((payment, index) => (
@@ -223,8 +219,9 @@ export default function MpesaB2CMultiPayment({ onSuccess }) {
               key={payment.reference || index}
               sx={{ mb: 2, p: { xs: 1.5, sm: 2 }, border: "1px solid var(--mm-border, #d1d5db)", borderRadius: "16px" }}
             >
-              <Grid item xs={4}>
+              <Grid item xs={12} sm={4}>
                 <TextField
+                  label="Vendor"
                   value={payment.vendor}
                   fullWidth
                   disabled
@@ -233,19 +230,19 @@ export default function MpesaB2CMultiPayment({ onSuccess }) {
                 />
               </Grid>
 
-              <Grid item xs={4}>
+              <Grid item xs={12} sm={4}>
                 <TextField
-                  value={payment.phone}
-                  onChange={(e) => handleChange(index, "phone", e.target.value)}
+                  label={payment.mpesaType === "TILL" ? "M-Pesa Till number" : payment.mpesaType === "LIPA_NA_MPESA" ? "M-Pesa Paybill number" : "M-Pesa phone number"}
+                  value={payment.mpesaType === "TILL" ? payment.till : payment.mpesaType === "LIPA_NA_MPESA" ? payment.paybill : payment.phone}
                   fullWidth
+                  disabled
                   variant="outlined"
                   size="small"
-                  disabled={loading}
-                  placeholder="2547XXXXXXXX"
+                  helperText={payment.mpesaType === "TILL" ? "Registered Till destination" : payment.mpesaType === "LIPA_NA_MPESA" ? "Registered Paybill destination" : "Registered phone destination"}
                 />
               </Grid>
 
-              <Grid item xs={4}>
+              <Grid item xs={12} sm={4}>
                 <TextField
                   type="number"
                   label="Payout amount (KES)"
