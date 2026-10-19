@@ -25,8 +25,8 @@ export default function MpesaB2CMultiPayment({ onSuccess }) {
 
   const [payments, setPayments] = useState(
     prefilledPayments.map((p) => ({
-      vendor: p.vendor.company_name || p.vendor.name || "Unknown Vendor",
-      phone: p.vendor?.MpesaNo || "",
+      vendor: p.vendor?.company_name || p.vendor?.name || [p.vendor?.first_name, p.vendor?.surname_name].filter(Boolean).join(" ") || "Unknown Vendor",
+      phone: p.vendor?.mpesa_number || p.vendor?.MpesaNo || p.vendor?.mpesa_no || p.phone || "",
       amount: p.amount || 0,
       reference: p.reference || "",
     }))
@@ -172,7 +172,7 @@ export default function MpesaB2CMultiPayment({ onSuccess }) {
     <>
       <AppSnackbar open={snackbar.open} message={snackbar.message} severity={snackbar.severity} onClose={() => setSnackbar((prev) => ({ ...prev, open: false }))} />
 
-      <Box sx={{ p: 6 }}>
+      <Box className="mm-payout-page" sx={{ p: { xs: 1, sm: 2 }, maxWidth: 1100, mx: "auto", width: "100%" }}>
         <Box
           sx={{
             borderRadius: 3,
