@@ -33,22 +33,36 @@ export default function ReactionButton({ postId, reactions: initialReactions = [
   }, {}), [reactions]);
 
   const handleReact = async (type) => {
-    if (submitting || myReaction) return;
+    if (submitting) return;
+
     setSubmitting(true);
     setMessage("");
     try {
-      const response = await api.post(`/api/blogs/${postId}/react/`, { type });
+      if (myReaction?.type === type) {
+        await api.delete("/api/blogs/" + postId + "/remove_reaction/");
+        setReactions((current) => current.filter((reaction) => reaction.id !== myReaction.id));
+        setMyReactionId(null);
+        setMessage("Reaction removed.");
+        return;
+      }
+
+      const response = await api.post("/api/blogs/" + postId + "/react/", { type });
       const savedReaction = response.data;
       setMyReactionId(savedReaction.id);
       setReactions((current) => {
-        if (current.some((reaction) => reaction.id === savedReaction.id)) return current;
-        return [...current, savedReaction];
+        const existingIndex = current.findIndex((reaction) =>
+          reaction.id === savedReaction.id ||
+          (user?.id && Number(reaction.user_id ?? reaction.user) === Number(user.id)) ||
+          (!user?.id && visitorId && reaction.visitor_id === visitorId)
+        );
+        if (existingIndex < 0) return [...current, savedReaction];
+        return current.map((reaction, index) => index === existingIndex ? savedReaction : reaction);
       });
-      setMessage("Thanks for reacting.");
+      setMessage(myReaction ? "Reaction updated." : "Thanks for reacting.");
     } catch (error) {
       const detail = error.response?.data?.detail;
-      setMessage(detail || "Your reaction couldn't be saved. Please try again.");
-      console.error("Failed to react to blog:", error);
+      setMessage(detail || "Your reaction couldn't be updated. Please try again.");
+      console.error("Failed to update blog reaction:", error);
     } finally {
       setSubmitting(false);
     }
@@ -65,16 +79,15 @@ export default function ReactionButton({ postId, reactions: initialReactions = [
       <div className="flex flex-wrap items-center gap-2" aria-label="Blog reactions">
         {choices.map(({ type, label, emoji }) => {
           const selected = myReaction?.type === type;
-          const disabled = submitting || Boolean(myReaction);
           return (
             <button
               key={type}
               type="button"
               onClick={() => handleReact(type)}
-              disabled={disabled}
+              disabled={submitting}
               aria-pressed={selected}
-              title={myReaction && !selected ? "You have already reacted to this post" : label}
-              className={`inline-flex min-h-9 items-center gap-1.5 rounded-full border px-3 text-xs font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-70 ${selected ? "border-primary bg-primary/10 text-primary" : "border-border bg-background text-card-foreground hover:bg-muted"}`}
+              title={selected ? "Click again to remove your reaction" : label}
+              className={"inline-flex min-h-9 items-center gap-1.5 rounded-full border px-3 text-xs font-semibold transition-colors disabled:cursor-wait disabled:opacity-70 " + (selected ? "border-primary bg-primary/10 text-primary" : "border-border bg-background text-card-foreground hover:bg-muted")}
             >
               <span aria-hidden="true">{emoji}</span>
               <span>{label}</span>
