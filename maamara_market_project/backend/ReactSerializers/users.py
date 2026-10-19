@@ -50,6 +50,9 @@ def get_csrf_token(request):
     })
 
 
+# Stay signed in until the user logs out: refresh cookie lasts a year and is renewed on every use.
+REFRESH_COOKIE_MAX_AGE = 365 * 24 * 3600
+
 class ProfileView(APIView):
     permission_classes = [IsAuthenticated]
 
@@ -403,7 +406,7 @@ class HybridCheckAuthView(APIView):
                         httponly=True,
                         secure=request.is_secure(),
                         samesite="Lax",
-                        max_age=30 * 24 * 3600,
+                        max_age=REFRESH_COOKIE_MAX_AGE,
                         path="/",
                     )
 
@@ -590,7 +593,7 @@ def login_view(request):
         response.set_cookie(
             "refreshToken", refresh_token, httponly=True,
             secure=request.is_secure(), samesite="Lax",
-            max_age=2592000, path="/",
+            max_age=REFRESH_COOKIE_MAX_AGE, path="/",
         )
         return response
 
@@ -648,7 +651,7 @@ def login_view(request):
     response.set_cookie(
         "refreshToken", str(refresh), httponly=True,
         secure=request.is_secure(), samesite="Lax",
-        max_age=2592000, path="/",
+        max_age=REFRESH_COOKIE_MAX_AGE, path="/",
     )
     return response
 
@@ -736,7 +739,7 @@ def google_login_success(request):
         httponly=True,
         secure=request.is_secure(),
         samesite="Lax",
-        max_age=2592000,
+        max_age=REFRESH_COOKIE_MAX_AGE,
         path="/",
     )
     return response
@@ -880,7 +883,7 @@ class CookieRefreshView(APIView):
                         httponly=True,
                         secure=request.is_secure(),
                         samesite="Lax",
-                        max_age=30 * 24 * 3600,
+                        max_age=REFRESH_COOKIE_MAX_AGE,
                         path="/",
                     )
                 return response

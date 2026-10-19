@@ -50,10 +50,8 @@ export const AuthProvider = ({ children }) => {
       const { data } = await requestAuthCheck();
       return applyAuthResponse(data);
     } catch (error) {
-      setIsAuthenticated(false);
-      setIsVisitor(false);
-      setAuthType("anonymous");
-      setUser(null);
+      // A network/server hiccup is not a logout: keep the current identity.
+      // Only an explicit "not authenticated" answer (above) clears the user.
       return null;
     } finally {
       setLoading(false);
@@ -62,6 +60,15 @@ export const AuthProvider = ({ children }) => {
 
   useEffect(() => {
     void checkAuth();
+  }, []);
+
+  // Quietly re-verify (and renew) the session when the app/tab comes back.
+  useEffect(() => {
+    const onVisible = () => {
+      if (document.visibilityState === "visible") void checkAuth();
+    };
+    document.addEventListener("visibilitychange", onVisible);
+    return () => document.removeEventListener("visibilitychange", onVisible);
   }, []);
 
 
