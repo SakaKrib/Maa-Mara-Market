@@ -162,7 +162,7 @@ export default function BankTransferBulkPayment({ onSuccess }) {
                 mb: 2,
                 p: { xs: 1.5, sm: 2 },
                 border: "1px solid var(--border, #e6e6e4)",
-                borderRadius: "16px",
+                borderRadius: "12px",
                 backgroundColor: "var(--card, #fff)",
               }}
             >
