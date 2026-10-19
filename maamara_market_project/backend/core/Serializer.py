@@ -166,7 +166,7 @@ class NotificationSerializer(serializers.ModelSerializer):
         # readable without exposing usernames or quoted item names.
         if title == "item added to wishlist":
             match = re.search(r"added ['\"]?(.+?)['\"]? (?:from )?wishlist", message, re.I)
-            item_name = match.group(1).strip(" .\\\"\'") if match else None
+            item_name = match.group(1).strip(" .\"'") if match else None
             if item_name:
                 return f"A customer added {item_name} to their wishlist."
         if title == "wishlist update":
