@@ -28,13 +28,20 @@ export default function BankTransferBulkPayment({ onSuccess }) {
       const vendor = p.vendor || {};
       // Use fallback empty strings if keys are missing
       const bankAccount = vendor.bank_account_number || vendor.BankAccountNo || "";
-      const bankName = vendor.bank_account_name || vendor.bank_name || vendor.BankAccountName || "";
-      const vendorName = vendor.company_name || [vendor.first_name, vendor.surname_name].filter(Boolean).join(" ") || "Unknown Vendor";
+      const vendorName = vendor.company_name || [vendor.first_name, vendor.middle_name, vendor.surname_name].filter(Boolean).join(" ") || "Unknown Vendor";
 
       return {
         vendor: vendorName,
         bankAccount,
-        bankName,
+        bankName: vendor.bank_name || "",
+        bankBranch: vendor.bank_branch || "",
+        bankAccountName: vendor.bank_account_name || vendor.BankAccountName || "",
+        bankSwiftCode: vendor.bank_swift_code || "",
+        bankIban: vendor.bank_iban || "",
+        bankCountry: vendor.bank_country || "",
+        bankCurrency: vendor.bank_currency || "",
+        intermediaryBankName: vendor.intermediary_bank_name || "",
+        intermediarySwiftCode: vendor.intermediary_swift_code || "",
         amount: p.amount ?? "",
         reference: p.reference || "",
       };
@@ -153,53 +160,58 @@ export default function BankTransferBulkPayment({ onSuccess }) {
           </Grid> */}
 
           {payments.map((payment, index) => (
-            <Grid container spacing={2} alignItems="center" key={index} sx={{ mb: 1 }}>
-              <Grid item xs={3}>
-                <TextField
-                  value={payment.vendor}
-                  fullWidth
-                  disabled
-                  variant="outlined"
-                  size="small"
-                />
+            <Box
+              key={payment.reference || index}
+              sx={{
+                mb: 2,
+                p: { xs: 1.5, sm: 2 },
+                border: "1px solid var(--mm-border, #d1d5db)",
+                borderRadius: "16px",
+                backgroundColor: "var(--mm-surface, #fff)",
+              }}
+            >
+              <Typography variant="subtitle2" fontWeight={700} sx={{ mb: 1.5 }}>
+                {payment.vendor} · Bank transfer
+              </Typography>
+              <Grid container spacing={1.5}>
+                {[
+                  ["Bank name", payment.bankName],
+                  ["Bank branch", payment.bankBranch],
+                  ["Account name", payment.bankAccountName],
+                  ["Account number", payment.bankAccount],
+                  ["SWIFT / BIC", payment.bankSwiftCode],
+                  ["IBAN", payment.bankIban],
+                  ["Bank country", payment.bankCountry],
+                  ["Bank currency", payment.bankCurrency],
+                  ["Intermediary bank", payment.intermediaryBankName],
+                  ["Intermediary SWIFT", payment.intermediarySwiftCode],
+                ].map(([label, value]) => (
+                  <Grid item xs={12} sm={6} md={4} key={label}>
+                    <TextField
+                      label={label}
+                      value={value || "Not provided"}
+                      fullWidth
+                      variant="outlined"
+                      size="small"
+                      InputProps={{ readOnly: true }}
+                    />
+                  </Grid>
+                ))}
+                <Grid item xs={12} sm={6} md={4}>
+                  <TextField
+                    label="Payout amount (KES)"
+                    type="number"
+                    value={payment.amount}
+                    onChange={(e) => handleChange(index, "amount", e.target.value)}
+                    fullWidth
+                    variant="outlined"
+                    size="small"
+                    disabled={loading}
+                    inputProps={{ min: 0, step: "0.01" }}
+                  />
+                </Grid>
               </Grid>
-
-              <Grid item xs={3}>
-                <TextField
-                  value={payment.bankAccount}
-                  onChange={(e) => handleChange(index, "bankAccount", e.target.value)}
-                  fullWidth
-                  variant="outlined"
-                  size="small"
-                  disabled={loading}
-                  placeholder="Vendor bank account number"
-                />
-              </Grid>
-
-              <Grid item xs={3}>
-                <TextField
-                  value={payment.bankName}
-                  onChange={(e) => handleChange(index, "bankName", e.target.value)}
-                  fullWidth
-                  variant="outlined"
-                  size="small"
-                  disabled={loading}
-                  placeholder="Vendor bank name"
-                />
-              </Grid>
-
-              <Grid item xs={3}>
-                <TextField
-                  type="number"
-                  value={payment.amount}
-                  onChange={(e) => handleChange(index, "amount", e.target.value)}
-                  fullWidth
-                  variant="outlined"
-                  size="small"
-                  disabled={loading}
-                />
-              </Grid>
-            </Grid>
+            </Box>
           ))}
 
           <Button
