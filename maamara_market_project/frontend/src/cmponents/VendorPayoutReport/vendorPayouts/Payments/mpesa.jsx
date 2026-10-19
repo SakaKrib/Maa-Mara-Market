@@ -186,7 +186,7 @@ export default function MpesaB2CPayment({ onSuccess }) {
           sx={{
             mt: 2,
             minHeight: 44,
-            borderRadius: "20px",
+            borderRadius: "12px",
             textTransform: "none",
             fontWeight: 700,
             backgroundColor: "var(--primary, #2563eb)",
