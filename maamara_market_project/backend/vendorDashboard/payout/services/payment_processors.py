@@ -211,21 +211,11 @@ def call_mpesa_b2c(vendor, amount, mpesa_config, payout=None):
         response.raise_for_status()
         data = response.json()
         if data.get("ResponseCode") == "0":
-            provider_originator_id = data.get("OriginatorConversationID")
-            provider_conversation_id = data.get("ConversationID")
-            if not provider_originator_id or not provider_conversation_id:
-                logger.error(
-                    "M-Pesa B2B accepted response omitted correlation identifiers.",
-                    extra={"payout_reference": payout.reference},
-                )
-                payout.mpesa_result_desc = "B2B submission response lacked correlation IDs; reconcile before retrying."
-                payout.save(update_fields=["mpesa_result_desc"])
-                return {"success": False, "retryable": True, "error": "M-Pesa accepted the request without returning correlation IDs. Reconcile with Safaricom before retrying."}
-            _persist_mpesa_submission(payout, provider_originator_id, data)
+            _persist_mpesa_submission(payout, originator_id, data)
             return {
                 "success": True,
-                "ConversationID": provider_conversation_id,
-                "OriginatorConversationID": provider_originator_id,
+                "ConversationID": data.get("ConversationID"),
+                "OriginatorConversationID": data.get("OriginatorConversationID") or originator_id,
                 "ResponseDescription": data.get("ResponseDescription", ""),
             }
         return {
@@ -312,11 +302,21 @@ def call_mpesa_b2b(vendor, amount, mpesa_config, payout=None):
         response.raise_for_status()
         data = response.json()
         if data.get("ResponseCode") == "0":
-            _persist_mpesa_submission(payout, originator_id, data)
+            provider_originator_id = data.get("OriginatorConversationID")
+            provider_conversation_id = data.get("ConversationID")
+            if not provider_originator_id or not provider_conversation_id:
+                logger.error(
+                    "M-Pesa B2B accepted response omitted correlation identifiers.",
+                    extra={"payout_reference": payout.reference},
+                )
+                payout.mpesa_result_desc = "B2B submission response lacked correlation IDs; reconcile before retrying."
+                payout.save(update_fields=["mpesa_result_desc"])
+                return {"success": False, "retryable": True, "error": "M-Pesa accepted the request without returning correlation IDs. Reconcile with Safaricom before retrying."}
+            _persist_mpesa_submission(payout, provider_originator_id, data)
             return {
                 "success": True,
-                "ConversationID": data.get("ConversationID"),
-                "OriginatorConversationID": data.get("OriginatorConversationID") or originator_id,
+                "ConversationID": provider_conversation_id,
+                "OriginatorConversationID": provider_originator_id,
                 "ResponseDescription": data.get("ResponseDescription", ""),
             }
         return {
