@@ -146,11 +146,25 @@ def _persist_mpesa_submission(payout, originator_id, response_data):
     ])
 
 
+def get_vendor_mpesa_type(vendor):
+    """Resolve saved destination type, inferring legacy rows when the type is blank."""
+    value = str(getattr(vendor, "mpesa_type", "") or "").upper()
+    if value in {"PHONE", "TILL", "LIPA_NA_MPESA"}:
+        return value
+    if getattr(vendor, "mpesa_number", None):
+        return "PHONE"
+    if getattr(vendor, "mpesa_till", None):
+        return "TILL"
+    if getattr(vendor, "mpesa_paybill", None):
+        return "LIPA_NA_MPESA"
+    return ""
+
+
 def call_mpesa_b2c(vendor, amount, mpesa_config, payout=None):
     """Send an M-Pesa B2C payout to a vendor's registered phone number only."""
     if payout is None:
         return {"success": False, "error": "A payout record is required."}
-    if vendor.mpesa_type != "PHONE":
+    if get_vendor_mpesa_type(vendor) != "PHONE":
         return {
             "success": False,
             "error": "B2C only supports phone-number payouts. Till and PayBill destinations require the configured Daraja B2B product.",
@@ -235,7 +249,7 @@ def call_mpesa_b2b(vendor, amount, mpesa_config, payout=None):
     """Pay a registered Till/Buy Goods or PayBill merchant through Daraja B2B."""
     if payout is None:
         return {"success": False, "error": "A payout record is required."}
-    mpesa_type = str(vendor.mpesa_type or "").upper()
+    mpesa_type = get_vendor_mpesa_type(vendor)
     if mpesa_type not in {"TILL", "LIPA_NA_MPESA"}:
         return {"success": False, "error": "Daraja B2B supports registered Till or PayBill destinations only."}
 
@@ -350,9 +364,9 @@ def call_mpesa_b2b(vendor, amount, mpesa_config, payout=None):
 
 def call_mpesa_payout(vendor, amount, mpesa_config, payout=None):
     """Route each saved vendor destination to the correct Daraja product."""
-    if vendor.mpesa_type == "PHONE":
+    if get_vendor_mpesa_type(vendor) == "PHONE":
         return call_mpesa_b2c(vendor, amount, mpesa_config, payout=payout)
-    if vendor.mpesa_type in {"TILL", "LIPA_NA_MPESA"}:
+    if get_vendor_mpesa_type(vendor) in {"TILL", "LIPA_NA_MPESA"}:
         return call_mpesa_b2b(vendor, amount, mpesa_config, payout=payout)
     return {"success": False, "error": "Vendor has no supported saved M-Pesa destination type."}
 
