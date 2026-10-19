@@ -192,7 +192,10 @@ export default function MpesaB2CMultiPayment({ onSuccess }) {
           className="mm-payout-shadow"
         >
           <Typography variant="h6" fontWeight="bold" gutterBottom>
-            M-Pesa B2C Bulk Payment
+            M-Pesa Bulk Payouts
+          </Typography>
+          <Typography variant="body2" sx={{ color: "var(--muted-foreground, #686868)", mb: 2 }}>
+            Phone numbers use B2C. Registered Till / Buy Goods and PayBill destinations use the Daraja B2B payout flow.
           </Typography>
 
           <div className="mm-payout-logo-row mm-payout-logo-row--compact">
