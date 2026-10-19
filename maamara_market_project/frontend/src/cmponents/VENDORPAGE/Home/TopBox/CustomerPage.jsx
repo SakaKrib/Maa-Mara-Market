@@ -99,7 +99,7 @@ const CustomerPage = () => {
 
             return (
               <article
-                key={customer.id}
+                key={`${fullName}-${customer.created_at || "customer"}`}
                 className="rounded-2xl border border-[#e6e6e4] bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
               >
                 <div className="flex min-w-0 items-center gap-4 border-b border-[#eeeeeb] pb-4">
@@ -123,16 +123,25 @@ const CustomerPage = () => {
                       {fullName || "Guest User"}
                     </h2>
                     <p className="mt-0.5 truncate text-sm text-[#595959]">
-                      {customer.email || "No email"}
+                      Customer overview
                     </p>
                   </div>
                 </div>
 
                 <dl className="mt-4 grid gap-3 sm:grid-cols-2">
-                  <div className="rounded-xl bg-[#f8f8f6] p-3">
-                    <dt className="text-xs font-medium text-[#777]">Phone</dt>
-                    <dd className="mt-1 break-words text-sm font-semibold text-[#222]">
-                      {customer.phone_number || "N/A"}
+                  <div className="rounded-xl bg-[#f8f8f6] p-3 sm:col-span-2">
+                    <dt className="text-xs font-medium text-[#777]">Billing address</dt>
+                    <dd className="mt-1 break-words text-sm font-semibold leading-6 text-[#222]">
+                      {customer.billing_address
+                        ? [
+                            customer.billing_address.street_address,
+                            customer.billing_address.apartment_address,
+                            customer.billing_address.city,
+                            customer.billing_address.state,
+                            customer.billing_address.postal_code,
+                            customer.billing_address.country,
+                          ].filter(Boolean).join(", ") || "Not provided"
+                        : "Not provided"}
                     </dd>
                   </div>
 
