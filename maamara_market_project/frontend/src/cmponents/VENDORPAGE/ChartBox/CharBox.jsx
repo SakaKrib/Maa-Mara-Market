@@ -26,7 +26,7 @@ const ChartBox = ({ title, value, percentage, duration, link, chartData = [], pe
         {link && (
           <Link
             to={link}
-            className="mt-2 inline-flex items-center justify-center rounded-lg border border-[#dbeafe] bg-[#eff6ff] px-3 py-2 text-xs font-semibold text-[#1d4ed8] transition hover:border-[#93c5fd] hover:bg-[#dbeafe] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2563eb] focus-visible:ring-offset-2"
+            className="mt-2 inline-flex items-center justify-center rounded-[20px] border border-[#dbeafe] bg-[#eff6ff] px-3 py-2 text-xs font-semibold text-[#1d4ed8] transition hover:border-[#93c5fd] hover:bg-[#dbeafe] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2563eb] focus-visible:ring-offset-2"
           >
             {link === "vendor-sales" ? "View sales report" : "View all"}
           </Link>
