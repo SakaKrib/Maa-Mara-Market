@@ -1,9 +1,15 @@
-import React, { useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import NativeAwareSelect from "../../../components/NativeAwareSelect";
 import api from "../../../Services/Api";
 import RichTextEditor from "../../RichTextEditor/RichTextEdit";
 import { Sparkles } from "lucide-react";
 import { generateBlogWithAI } from "../../../Services/AI/blogAiService";
+import VideoTrimmer from "../Products/Forms/VideoTrimmer";
+
+const MAX_IMAGE_BYTES = 10 * 1024 * 1024;
+const MAX_VIDEO_BYTES = 100 * 1024 * 1024;
+const VIDEO_TYPES = ["video/mp4", "video/quicktime", "video/webm"];
+const VIDEO_EXTENSIONS = [".mp4", ".mov", ".webm"];
 
 const inputClass =
   "w-full rounded-[20px] border border-gray-300 bg-white px-4 py-3 text-sm text-gray-900 outline-none transition placeholder:text-gray-400 focus:border-[#2563eb] focus:ring-2 focus:ring-[#2563eb]/10";
@@ -16,10 +22,110 @@ const BlogCreate = ({ items = [] }) => {
   const [item, setItem] = useState("");
   const [image, setImage] = useState(null);
   const [video, setVideo] = useState(null);
+  const [videoTrimSource, setVideoTrimSource] = useState(null);
   const [submitting, setSubmitting] = useState(false);
   const [aiLoading, setAiLoading] = useState(false);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
+
+  const imagePreviewUrl = useMemo(
+    () => (image instanceof File ? URL.createObjectURL(image) : ""),
+    [image]
+  );
+  const videoPreviewUrl = useMemo(
+    () => (video instanceof File ? URL.createObjectURL(video) : ""),
+    [video]
+  );
+
+  useEffect(() => {
+    return () => {
+      if (imagePreviewUrl) URL.revokeObjectURL(imagePreviewUrl);
+    };
+  }, [imagePreviewUrl]);
+
+  useEffect(() => {
+    return () => {
+      if (videoPreviewUrl) URL.revokeObjectURL(videoPreviewUrl);
+    };
+  }, [videoPreviewUrl]);
+
+  const clearFileInput = (id) => {
+    const input = document.getElementById(id);
+    if (input) input.value = "";
+  };
+
+  const handleImageChange = (event) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith("image/")) {
+      setError("Please select an image file.");
+      clearFileInput("blog-image");
+      return;
+    }
+    if (file.size > MAX_IMAGE_BYTES) {
+      setError("Blog images must be 10 MB or smaller.");
+      clearFileInput("blog-image");
+      return;
+    }
+    setImage(file);
+    setError("");
+    setMessage("");
+  };
+
+  const handleVideoChange = (event) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    const extension = "." + (file.name.split(".").pop() || "").toLowerCase();
+    if (!VIDEO_TYPES.includes(file.type) && !VIDEO_EXTENSIONS.includes(extension)) {
+      setError("Blog videos must be MP4, MOV, or WEBM.");
+      clearFileInput("blog-video");
+      return;
+    }
+    if (file.size > MAX_VIDEO_BYTES) {
+      setError("Blog videos must be 100 MB or smaller.");
+      clearFileInput("blog-video");
+      return;
+    }
+
+    const sourceUrl = URL.createObjectURL(file);
+    const videoElement = document.createElement("video");
+    videoElement.preload = "metadata";
+    videoElement.onloadedmetadata = () => {
+      const duration = videoElement.duration;
+      URL.revokeObjectURL(sourceUrl);
+      if (!Number.isFinite(duration) || duration < 3) {
+        setError("Blog videos must be at least 3 seconds long.");
+        clearFileInput("blog-video");
+        return;
+      }
+      setVideo(null);
+      setVideoTrimSource({ file, duration });
+      setError("");
+      setMessage("");
+    };
+    videoElement.onerror = () => {
+      URL.revokeObjectURL(sourceUrl);
+      setError("The selected blog video could not be read.");
+      clearFileInput("blog-video");
+    };
+    videoElement.src = sourceUrl;
+  };
+
+  const handleTrimmedVideo = (file) => {
+    if (file.size > MAX_VIDEO_BYTES) {
+      setError("The trimmed blog video must be 100 MB or smaller.");
+      return;
+    }
+    setVideo(file);
+    setVideoTrimSource(null);
+    setError("");
+    setMessage("");
+  };
+
+  const cancelVideoTrim = () => {
+    setVideoTrimSource(null);
+    clearFileInput("blog-video");
+  };
 
   const resetForm = () => {
     setTitle("");
@@ -27,11 +133,9 @@ const BlogCreate = ({ items = [] }) => {
     setItem("");
     setImage(null);
     setVideo(null);
-
-    const imageInput = document.getElementById("blog-image");
-    const videoInput = document.getElementById("blog-video");
-    if (imageInput) imageInput.value = "";
-    if (videoInput) videoInput.value = "";
+    setVideoTrimSource(null);
+    clearFileInput("blog-image");
+    clearFileInput("blog-video");
   };
 
   const handleGenerateAI = async () => {
@@ -175,7 +279,7 @@ const BlogCreate = ({ items = [] }) => {
               </button>
             </div>
             <p className="mb-2 text-[11px] text-gray-500">
-              Uses the title, the related item, and the image or video (video up to 12 MB) to write the text.
+              Uses the title, related item, and media to write the text. For AI text generation, videos must be 12 MB or smaller.
             </p>
             <div className="overflow-hidden rounded-[20px] border border-gray-300 bg-white focus-within:border-[#2563eb] focus-within:ring-2 focus-within:ring-[#2563eb]/10">
               <RichTextEditor value={content} onChange={setContent} />
@@ -209,10 +313,21 @@ const BlogCreate = ({ items = [] }) => {
               id="blog-image"
               type="file"
               accept="image/*"
-              onChange={(event) => setImage(event.target.files?.[0] || null)}
+              onChange={handleImageChange}
               className={inputClass}
               disabled={submitting}
             />
+            <p className="mt-1 text-xs text-gray-500">JPG, PNG, WEBP and other browser-supported image formats; 10 MB maximum.</p>
+            {image && imagePreviewUrl && (
+              <div className="mt-3 flex flex-wrap items-start gap-3 rounded-2xl border border-gray-200 bg-gray-50 p-3">
+                <img src={imagePreviewUrl} alt="Blog image preview" className="h-28 w-28 rounded-xl object-cover" />
+                <div className="min-w-0 flex-1">
+                  <p className="break-all text-sm font-semibold text-gray-800">{image.name}</p>
+                  <p className="mt-1 text-xs text-gray-500">{(image.size / (1024 * 1024)).toFixed(2)} MB</p>
+                  <button type="button" onClick={() => { setImage(null); clearFileInput("blog-image"); }} className="mt-2 rounded-full border border-gray-300 bg-white px-3 py-1.5 text-xs font-semibold text-gray-700 hover:bg-gray-100">Remove image</button>
+                </div>
+              </div>
+            )}
           </div>
 
           <div>
@@ -222,11 +337,35 @@ const BlogCreate = ({ items = [] }) => {
             <input
               id="blog-video"
               type="file"
-              accept="video/*"
-              onChange={(event) => setVideo(event.target.files?.[0] || null)}
+              accept="video/mp4,video/quicktime,video/webm,.mp4,.mov,.webm"
+              onChange={handleVideoChange}
               className={inputClass}
               disabled={submitting}
             />
+            <p className="mt-1 text-xs text-gray-500">MP4, MOV or WEBM; 100 MB maximum; trim to a 3–15 second clip.</p>
+            {videoTrimSource && (
+              <div className="mt-3">
+                <VideoTrimmer
+                  file={videoTrimSource.file}
+                  duration={videoTrimSource.duration}
+                  purpose="blog"
+                  onApply={handleTrimmedVideo}
+                  onCancel={cancelVideoTrim}
+                />
+              </div>
+            )}
+            {video && videoPreviewUrl && (
+              <div className="mt-3 overflow-hidden rounded-2xl border border-gray-300 bg-black">
+                <video src={videoPreviewUrl} controls playsInline preload="metadata" className="max-h-[360px] w-full bg-black" />
+                <div className="flex items-center justify-between gap-3 bg-white px-3 py-2">
+                  <div className="min-w-0">
+                    <p className="break-all text-xs font-semibold text-gray-800">{video.name}</p>
+                    <p className="text-xs text-gray-500">{(video.size / (1024 * 1024)).toFixed(2)} MB</p>
+                  </div>
+                  <button type="button" onClick={() => { setVideo(null); clearFileInput("blog-video"); }} className="shrink-0 rounded-full border border-gray-300 px-3 py-1.5 text-xs font-semibold text-gray-700 hover:bg-gray-100">Remove video</button>
+                </div>
+              </div>
+            )}
           </div>
 
           <button
