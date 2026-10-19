@@ -8,7 +8,6 @@ from django.db import transaction
 from django.conf import settings
 
 from vendorDashboard.payout.services.payment_processors import (
-    call_mpesa_b2c,
     call_mpesa_payout,
     call_paypal_payout,
     call_bank_transfer,
