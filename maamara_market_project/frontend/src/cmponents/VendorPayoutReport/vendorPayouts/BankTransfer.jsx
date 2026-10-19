@@ -27,9 +27,9 @@ export default function BankTransferBulkPayment({ onSuccess }) {
       // Check if vendor is an object and has the keys you want
       const vendor = p.vendor || {};
       // Use fallback empty strings if keys are missing
-      const bankAccount = vendor.BankAccountNo || "";
-      const bankName = vendor.BankAccountName || "";
-      const vendorName = vendor.company_name || "Unknown Vendor";
+      const bankAccount = vendor.bank_account_number || vendor.BankAccountNo || "";
+      const bankName = vendor.bank_account_name || vendor.bank_name || vendor.BankAccountName || "";
+      const vendorName = vendor.company_name || [vendor.first_name, vendor.surname_name].filter(Boolean).join(" ") || "Unknown Vendor";
 
       return {
         vendor: vendorName,
@@ -120,7 +120,7 @@ export default function BankTransferBulkPayment({ onSuccess }) {
     <>
       <AppSnackbar open={snackbar.open} message={snackbar.message} severity={snackbar.severity} onClose={() => setSnackbar((prev) => ({ ...prev, open: false }))} />
 
-      <Box sx={{ p: 6 }}>
+      <Box className="mm-payout-page" sx={{ p: { xs: 1, sm: 2 }, maxWidth: 1100, mx: "auto", width: "100%" }}>
         <Box
           sx={{
             borderRadius: 3,
@@ -171,7 +171,7 @@ export default function BankTransferBulkPayment({ onSuccess }) {
                   variant="outlined"
                   size="small"
                   disabled={loading}
-                  placeholder="Enter bank account number"
+                  placeholder="Vendor bank account number"
                 />
               </Grid>
 
@@ -183,7 +183,7 @@ export default function BankTransferBulkPayment({ onSuccess }) {
                   variant="outlined"
                   size="small"
                   disabled={loading}
-                  placeholder="Enter bank name"
+                  placeholder="Vendor bank name"
                 />
               </Grid>
 
