@@ -3,6 +3,7 @@ import { useState } from "react";
 import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
 import { useVendorActivityLogs } from "../../Hooks/ActivityHook/ActivityHook";
+import SafeActivityContent from "./SafeActivityContent";
 
 dayjs.extend(relativeTime);
 
@@ -115,9 +116,10 @@ const VendorActivitiesPage = () => {
                           <h3 className="text-sm font-semibold text-[#222] sm:text-[15px]">
                             {log.display_title || log.action || "Store activity"}
                           </h3>
-                          <p className="mt-1 text-sm leading-6 text-[#374151]">
-                            {log.display_message || log.description || "An activity was recorded on your account."}
-                          </p>
+                          <SafeActivityContent
+                            content={log.display_message || log.description || "An activity was recorded on your account."}
+                            className="activity-rich-content mt-1 text-sm leading-6 text-[#374151] break-words [&_h1]:my-2 [&_h1]:text-xl [&_h1]:font-bold [&_h2]:my-2 [&_h2]:text-lg [&_h2]:font-semibold [&_h3]:my-2 [&_h3]:text-base [&_h3]:font-semibold [&_p]:my-1 [&_ul]:my-2 [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:my-2 [&_ol]:list-decimal [&_ol]:pl-5 [&_a]:text-blue-700 [&_a]:underline"
+/>
                         </div>
                         <div className="flex shrink-0 items-center gap-2 text-xs text-[#6b7280]">
                           <div className="flex items-center gap-1.5">
