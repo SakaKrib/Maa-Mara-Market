@@ -52,11 +52,18 @@ export default function AdminPayoutTriggerPayment() {
       payout?.MpesaNo ||
       payout?.phone ||
       "";
+    const inferredMpesaType = phone
+      ? "PHONE"
+      : detailVendor.mpesa_till || fullVendor.mpesa_till || payout?.mpesa_till
+        ? "TILL"
+        : detailVendor.mpesa_paybill || fullVendor.mpesa_paybill || payout?.mpesa_paybill
+          ? "LIPA_NA_MPESA"
+          : "";
     return {
       ...vendor,
       company_name: detailVendor.company_name || fullVendor.company_name || vendor.company_name || "",
       mpesa_number: phone,
-      mpesa_type: detailVendor.mpesa_type || fullVendor.mpesa_type || payout?.mpesa_type || (phone ? "PHONE" : ""),
+      mpesa_type: detailVendor.mpesa_type || fullVendor.mpesa_type || payout?.mpesa_type || inferredMpesaType,
       mpesa_till: detailVendor.mpesa_till || fullVendor.mpesa_till || payout?.mpesa_till || "",
       mpesa_paybill: detailVendor.mpesa_paybill || fullVendor.mpesa_paybill || payout?.mpesa_paybill || "",
       paypal_email: detailVendor.paypal_email || fullVendor.paypal_email || detailVendor.PaypalEmail || fullVendor.PaypalEmail || payout?.paypal_email || "",
