@@ -54,7 +54,7 @@ const Activities = () => {
             <h2 className="text-base font-semibold text-[#222] sm:text-lg">Recent activities</h2>
             <p className="mt-1 text-xs text-[#595959]">A record of actions taken by your vendor account.</p>
           </div>
-          <Link to="/vendors-dashboard/activities" className="shrink-0 rounded-full border border-[#d9d9d6] bg-white px-3.5 py-2 text-xs font-semibold text-[#222] transition hover:bg-[#f8f8f6] focus:outline-none focus:ring-2 focus:ring-[#2563eb]/20">
+          <Link to="/vendors-dashboard/activities" className="shrink-0 rounded-[20px] border border-[#d9d9d6] bg-white px-3.5 py-2 text-xs font-semibold text-[#222] transition hover:bg-[#f8f8f6] focus:outline-none focus:ring-2 focus:ring-[#2563eb]/20">
             View All
           </Link>
         </div>
@@ -71,7 +71,7 @@ const Activities = () => {
             <h2 className="text-base font-semibold text-[#222] sm:text-lg">Recent activities</h2>
             <p className="mt-1 text-xs text-[#595959]">A record of actions taken by your vendor account.</p>
           </div>
-          <Link to="/vendors-dashboard/activities" className="shrink-0 rounded-full border border-[#d9d9d6] bg-white px-3.5 py-2 text-xs font-semibold text-[#222] transition hover:bg-[#f8f8f6] focus:outline-none focus:ring-2 focus:ring-[#2563eb]/20">
+          <Link to="/vendors-dashboard/activities" className="shrink-0 rounded-[20px] border border-[#d9d9d6] bg-white px-3.5 py-2 text-xs font-semibold text-[#222] transition hover:bg-[#f8f8f6] focus:outline-none focus:ring-2 focus:ring-[#2563eb]/20">
             View All
           </Link>
         </div>
@@ -98,7 +98,7 @@ const Activities = () => {
               Clear all
             </button>
           )}
-          <Link to="/vendors-dashboard/activities" className="shrink-0 rounded-full border border-[#d9d9d6] bg-white px-3.5 py-2 text-xs font-semibold text-[#222] transition hover:bg-[#f8f8f6] focus:outline-none focus:ring-2 focus:ring-[#2563eb]/20">
+          <Link to="/vendors-dashboard/activities" className="shrink-0 rounded-[20px] border border-[#d9d9d6] bg-white px-3.5 py-2 text-xs font-semibold text-[#222] transition hover:bg-[#f8f8f6] focus:outline-none focus:ring-2 focus:ring-[#2563eb]/20">
             View All
           </Link>
         </div>
