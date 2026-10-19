@@ -674,29 +674,49 @@ class ActivityLogSerializer(serializers.ModelSerializer):
         if item_name:
             return item_name
 
-        # Older activity rows may not have an Item FK. First resolve an
-        # item id from its navigation URL, then fall back to the saved message.
+        # Legacy rows may not have an Item FK. Resolve IDs from the common
+        # product destinations before trying to recover a name from the message.
         related_url = (getattr(obj, "related_url", None) or "").strip()
-        item_match = re.search(r"/(?:items?|item-onsite/items)/(\d+)(?:/|$)", related_url, re.I)
+        item_match = re.search(
+            r"/(?:items?|item-onsite/items|edit-item|item)/(\\d+)(?:/|$)",
+            related_url,
+            re.I,
+        )
         if item_match:
-            linked_name = Item.objects.filter(pk=int(item_match.group(1))).values_list("name", flat=True).first()
+            linked_name = Item.objects.filter(
+                pk=int(item_match.group(1))
+            ).values_list("name", flat=True).first()
             if linked_name:
                 return linked_name.strip()
 
         description = (getattr(obj, "description", None) or "").strip()
         patterns = {
-            "item_created": r"\badded\s+(.+?)(?:[.!]|$)",
-            "item_updated": r"\bupdated\s+(.+?)(?:[.!]|$)",
-            "item_updated_qty": r"\bupdated the stock for\s+(.+?)(?:[.!]|$)",
-            "item_request_created": r"(?:item request for|vendor request for)\s+(.+?)(?=\s+(?:was|has been)\s+(?:approved|declined|denied)|[.!]?$)",
-            "item_request_approved": r"(?:item request for|vendor request for)\s+(.+?)(?=\s+(?:was|has been)\s+(?:approved|declined|denied)|[.!]?$)",
-            "item_request_denied": r"(?:item request for|vendor request for)\s+(.+?)(?=\s+(?:was|has been)\s+(?:approved|declined|denied)|[.!]?$)",
-            "Price Change Requested": r"price change for\s+(.+?)(?:[.!]|$)",
-            "Price Change Approved": r"price change(?: request)? for\s+(.+?)(?:[.!]|$)",
+            "item_created": r"\\badded\\s+(.+?)(?:[.!]|$)",
+            "item_updated": r"\\bupdated\\s+(.+?)(?:[.!]|$)",
+            "item_updated_qty": r"\\bupdated the stock for\\s+(.+?)(?:[.!]|$)",
+            "item_request_created": r"(?:item request for|item request for|vendor item request for|vendor request for)\\s+[\\u201c\\u2018\\\"']?(.+?)[\\u201d\\u2019\\\"']?(?=\\s+(?:was|has been|is)\\s+(?:approved|declined|denied|rejected)|[.!]?$)",
+            "item_request_approved": r"(?:item request for|vendor item request for|vendor request for)\\s+[\\u201c\\u2018\\\"']?(.+?)[\\u201d\\u2019\\\"']?(?=\\s+(?:was|has been|is)\\s+(?:approved|declined|denied|rejected)|[.!]?$)",
+            "item_request_denied": r"(?:item request for|vendor item request for|vendor request for)\\s+[\\u201c\\u2018\\\"']?(.+?)[\\u201d\\u2019\\\"']?(?=\\s+(?:was|has been|is)\\s+(?:approved|declined|denied|rejected)|[.!]?$)",
+            "item_added_to_cart": r"added\\s+[\\u201c\\u2018\\\"']?(.+?)[\\u201d\\u2019\\\"']?\\s+to (?:their|your) cart",
+            "item_removed_from_cart": r"removed\\s+[\\u201c\\u2018\\\"']?(.+?)[\\u201d\\u2019\\\"']?\\s+from (?:their|your) cart",
+            "item_added_to_wishlist": r"added\\s+[\\u201c\\u2018\\\"']?(.+?)[\\u201d\\u2019\\\"']?\\s+to (?:their|your) wishlist",
+            "item_removed_from_wishlist": r"removed\\s+[\\u201c\\u2018\\\"']?(.+?)[\\u201d\\u2019\\\"']?\\s+from (?:their|your) wishlist",
+            "item_viewed": r"viewed (?:your item )?[\\u201c\\u2018\\\"']?(.+?)[\\u201d\\u2019\\\"']?(?:[.!]|$)",
+            "item_shared": r"shared [\\u201c\\u2018\\\"']?(.+?)[\\u201d\\u2019\\\"']?(?:[.!]|$)",
+            "item_reviewed": r"review for [\\u201c\\u2018\\\"']?(.+?)[\\u201d\\u2019\\\"']?(?:[.!]|$)",
+            "Price Change Requested": r"price change(?: request)?\\s+for\\s+[\\u201c\\u2018\\\"']?(.+?)[\\u201d\\u2019\\\"']?(?=\\.?(?:\\s+Reason:|$))",
+            "Price Change Approved": r"(?:price change(?: request)? for|new price [^ ]+ for)\\s+[\\u201c\\u2018\\\"']?(.+?)[\\u201d\\u2019\\\"']?(?:[.!]|$)",
+            "return_requested": r"return (?:request )?for\\s+[\\u201c\\u2018\\\"']?(.+?)[\\u201d\\u2019\\\"']?(?:[.!]|$)",
+            "return_rejected": r"return request for\\s+[\\u201c\\u2018\\\"']?(.+?)[\\u201d\\u2019\\\"']?(?:[.!]|$)",
+            "refund_requested": r"refund (?:request )?for\\s+[\\u201c\\u2018\\\"']?(.+?)[\\u201d\\u2019\\\"']?(?:[.!]|$)",
+            "refund_approved": r"refund for\\s+[\\u201c\\u2018\\\"']?(.+?)[\\u201d\\u2019\\\"']?(?:[.!]|$)",
+            "exchange_requested": r"exchange (?:request )?for\\s+[\\u201c\\u2018\\\"']?(.+?)[\\u201d\\u2019\\\"']?(?:[.!]|$)",
+            "exchange_approved": r"exchange for\\s+[\\u201c\\u2018\\\"']?(.+?)[\\u201d\\u2019\\\"']?(?:[.!]|$)",
         }
         pattern = patterns.get(obj.action)
         match = re.search(pattern, description, flags=re.I) if pattern else None
-        return (match.group(1).strip(" .\\\"'") if match else "") or "the item"
+        name = match.group(1).strip(" .\\\"'\\u201c\\u201d\\u2018\\u2019") if match else ""
+        return name or "the item"
 
     def get_display_title(self, obj):
         return self.FRIENDLY_TITLES.get(
