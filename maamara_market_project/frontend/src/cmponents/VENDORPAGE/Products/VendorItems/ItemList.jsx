@@ -8,6 +8,7 @@ import { useVendor } from "../vendorhooks";
 import BannerAdd from "../../Banners/Banners";
 import CreateBlog from "../../Blogs/BlogCreate";
 import AppSnackbar from "../../../../../components/ui/app-snackbar";
+import SafeActivityContent from "../../SellerDasboard/SafeActivityContent";
 
 const truncateWords = (text, numWords) => {
   if (!text) return "";
@@ -376,14 +377,13 @@ const VendorItems = () => {
                 <h3 className="text-sm font-semibold text-card-foreground">
                   {truncateWords(h.title || h.name || h.type, 8)}
                 </h3>
-                <p className="mt-1 text-xs leading-5 text-muted-foreground">
-                  {truncateWords(
-                    h.subtitle || h.description || h.message || "No details",
-                    14
-                  )}
-                </p>
+                <SafeActivityContent
+                  content={h.subtitle || h.description || h.message || "No details"}
+                  className="activity-rich-content mt-1 max-h-36 overflow-hidden break-words text-xs leading-5 text-muted-foreground [&_h1]:my-1 [&_h1]:text-base [&_h1]:font-bold [&_h2]:my-1 [&_h2]:text-sm [&_h2]:font-semibold [&_h3]:my-1 [&_h3]:text-sm [&_h3]:font-semibold [&_p]:my-1 [&_ul]:my-1 [&_ul]:list-disc [&_ul]:pl-4 [&_ol]:my-1 [&_ol]:list-decimal [&_ol]:pl-4 [&_a]:text-primary [&_a]:underline"
+                />
                 <p className="mt-2 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
                   Type: {h.type}
+                  {h.status ? ` · Status: ${String(h.status).replace(/_/g, " ")}` : ""}
                 </p>
               </article>
             ))
