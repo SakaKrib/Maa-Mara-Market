@@ -652,8 +652,13 @@ class BlogPostViewSet(viewsets.ModelViewSet):
                 defaults={"type": reaction_type, "user": None},
             )
 
-        # A repeat request returns the original reaction unchanged. It does not
-        # create a second reaction or duplicate activity/notification records.
+        # Keep one reaction row per actor and post. Selecting a different
+        # reaction changes that row instead of incrementing another count.
+        if not created and reaction.type != reaction_type:
+            reaction.type = reaction_type
+            reaction.save(update_fields=["type"])
+
+        # Only a first-time reaction creates activity/notification records.
         if created:
             vendor = getattr(post, "vendor", None)
             if vendor and vendor.user:
@@ -704,7 +709,7 @@ class BlogPostViewSet(viewsets.ModelViewSet):
         if request.user.is_authenticated:
             reaction = ReactionBlog.objects.filter(post=post, user=request.user).first()
         else:
-            visitor_id = request.COOKIES.get("visitorId")
+            visitor_id = request.COOKIES.get("visitorId") or request.COOKIES.get("visitor_id")
             reaction = ReactionBlog.objects.filter(post=post, visitor_id=visitor_id).first()
 
         if reaction:
