@@ -166,12 +166,13 @@ export default function MpesaB2CPayment({ onSuccess }) {
         </Typography>
 
         <TextField
-          label="Vendor M-Pesa number (2547XXXXXXXX)"
+          label={destinationLabel}
           value={inputPhone}
-          onChange={handlePhoneChange}
           fullWidth
           margin="normal"
           disabled={loading}
+          InputProps={{ readOnly: true }}
+          helperText={mpesaType === "TILL" ? "Destination from the vendor's saved Till details." : mpesaType === "LIPA_NA_MPESA" ? "Destination from the vendor's saved Paybill details." : "Destination from the vendor's saved phone number."}
         />
 
         <TextField
