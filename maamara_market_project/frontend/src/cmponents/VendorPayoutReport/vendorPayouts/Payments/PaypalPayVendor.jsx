@@ -219,9 +219,9 @@ export default function PaypalBulkPayment({ onSuccess }) {
           borderRadius: "12px",
           p: { xs: 2, sm: 3 },
           mt: 1,
-          backgroundColor: "var(--card, #fff)",
-          color: "var(--card-foreground, var(--foreground, #222))",
-          border: "1px solid var(--border, #e6e6e4)",
+          backgroundColor: "hsl(var(--card, 0 0% 100%))",
+          color: "hsl(var(--card-foreground, var(--foreground, 0 0% 3.9%)))",
+          border: "1px solid hsl(var(--border, 0 0% 89.8%))",
           boxShadow: "0 4px 14px rgba(0,0,0,.06)",
         }}
       >
@@ -244,7 +244,7 @@ export default function PaypalBulkPayment({ onSuccess }) {
             spacing={1.5}
             alignItems="center"
             key={payment.reference || index}
-            sx={{ mb: 2, p: { xs: 1.5, sm: 2 }, border: "1px solid var(--border, #e6e6e4)", borderRadius: "12px" }}
+            sx={{ mb: 2, p: { xs: 1.5, sm: 2 }, border: "1px solid hsl(var(--border, 0 0% 89.8%))", borderRadius: "12px" }}
           >
             <Grid item xs={12} md={3}>
               <TextField
@@ -317,8 +317,8 @@ export default function PaypalBulkPayment({ onSuccess }) {
           disabled={loading}
           fullWidth
           sx={{
-            backgroundColor: "var(--primary, #2563eb)",
-            "&:hover": { backgroundColor: "var(--primary-hover, #1d4ed8)" },
+            backgroundColor: "hsl(var(--primary, 0 0% 9%))",
+            "&:hover": { backgroundColor: "color-mix(in srgb, hsl(var(--primary, 0 0% 9%)) 90%, white)" },
             py: 1.2,
             mt: 3,
           }}
