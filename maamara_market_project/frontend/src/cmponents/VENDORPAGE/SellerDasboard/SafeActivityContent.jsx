@@ -14,7 +14,7 @@ export const getSafeActivityText = (value = "") => {
     FORBID_ATTR: ["style", "onerror", "onclick", "onload"],
   });
   const documentFragment = new DOMParser().parseFromString(sanitized, "text/html");
-  return (documentFragment.body.textContent || "").replace(/\\s+/g, " ").trim();
+  return (documentFragment.body.textContent || "").replace(/\s+/g, " ").trim();
 };
 
 const SafeActivityContent = ({ content, className = "" }) => {
