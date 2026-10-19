@@ -669,15 +669,21 @@ class ActivityLogSerializer(serializers.ModelSerializer):
         if item_name:
             return item_name
 
-        # Older item-request activity rows do not always link the Item FK.
-        # Recover the submitted name from their saved description instead of
-        # displaying the generic phrase "the item".
+        # Older activity rows may not have an Item FK. Recover the item name
+        # from the saved message so legacy records remain specific and useful.
         description = (getattr(obj, "description", None) or "").strip()
-        match = re.search(
-            r"(?:item request for|vendor request for)\\s+(.+?)(?=\\s+(?:was|has been)\\s+(?:approved|declined|denied)|[.!]?$)",
-            description,
-            flags=re.I,
-        )
+        patterns = {
+            "item_created": r"\badded\s+(.+?)(?:[.!]|$)",
+            "item_updated": r"\bupdated\s+(.+?)(?:[.!]|$)",
+            "item_updated_qty": r"\bupdated the stock for\s+(.+?)(?:[.!]|$)",
+            "item_request_created": r"(?:item request for|vendor request for)\s+(.+?)(?=\s+(?:was|has been)\s+(?:approved|declined|denied)|[.!]?$)",
+            "item_request_approved": r"(?:item request for|vendor request for)\s+(.+?)(?=\s+(?:was|has been)\s+(?:approved|declined|denied)|[.!]?$)",
+            "item_request_denied": r"(?:item request for|vendor request for)\s+(.+?)(?=\s+(?:was|has been)\s+(?:approved|declined|denied)|[.!]?$)",
+            "Price Change Requested": r"price change for\s+(.+?)(?:[.!]|$)",
+            "Price Change Approved": r"price change(?: request)? for\s+(.+?)(?:[.!]|$)",
+        }
+        pattern = patterns.get(obj.action)
+        match = re.search(pattern, description, flags=re.I) if pattern else None
         return (match.group(1).strip(" .\\\"'") if match else "") or "the item"
 
     def get_display_title(self, obj):
