@@ -586,6 +586,13 @@ class ActivityLogSerializer(serializers.ModelSerializer):
             return "A vendor"
         return name if name.lower().startswith("vendor ") else f"Vendor {name}"
 
+    def _admin_label(self, obj):
+        user = getattr(obj, "user", None)
+        if user is None:
+            return "An administrator"
+        name = (user.get_full_name() or "").strip() or (getattr(user, "username", "") or "").strip()
+        return f"Admin {name}" if name else "An administrator"
+
     def _actor_phrase(self, obj):
         request = self.context.get("request")
         current_user = getattr(request, "user", None) if request else None
@@ -595,8 +602,19 @@ class ActivityLogSerializer(serializers.ModelSerializer):
         )
         description = (obj.description or "").strip().lower()
 
-        # A vendor's own activity should read in first person in the vendor
-        # feed, including legacy records written with third-person wording.
+        # The actor must be named for administrative item decisions.
+        if obj.actor_type == "admin" and obj.action in {
+            "item_request_approved", "item_request_denied",
+            "Price Change Approved", "banner_approved", "banner_rejected",
+            "blog_approved",
+        }:
+            return self._admin_label(obj)
+
+        # Admin feeds identify the vendor who performed vendor-side actions.
+        if obj.actor_type == "vendor" and is_admin_viewer:
+            return self._vendor_label(obj)
+
+        # A vendor's own event should read naturally in their authenticated feed.
         if description.startswith("you "):
             return "You"
         if (
@@ -607,9 +625,6 @@ class ActivityLogSerializer(serializers.ModelSerializer):
         ):
             return "You"
 
-        # The administrator feed identifies which vendor performed the action.
-        if obj.actor_type == "vendor" and is_admin_viewer:
-            return self._vendor_label(obj)
         if description.startswith("the administrator"):
             return "The administrator"
         if description.startswith("a customer"):
@@ -625,14 +640,10 @@ class ActivityLogSerializer(serializers.ModelSerializer):
                     return vendor_label
             return "A vendor"
         if description.startswith("your ") and obj.action in {
-            "item_request_approved",
-            "item_request_denied",
-            "Price Change Approved",
-            "refund_approved",
-            "refund_approved_vendor",
-            "exchange_approved",
-            "exchange_approved_vendor",
-            "return_rejected",
+            "item_request_approved", "item_request_denied",
+            "Price Change Approved", "refund_approved",
+            "refund_approved_vendor", "exchange_approved",
+            "exchange_approved_vendor", "return_rejected",
             "return_rejected_vendor",
         }:
             return "The administrator"
@@ -641,16 +652,10 @@ class ActivityLogSerializer(serializers.ModelSerializer):
             and obj.user_id == current_user.id
             and obj.actor_type in {"user", "vendor"}
             and obj.action in {
-                "item_added_to_cart",
-                "item_removed_from_cart",
-                "item_updated_qty",
-                "item_added_to_wishlist",
-                "item_removed_from_wishlist",
-                "item_viewed",
-                "item_shared",
-                "item_reviewed",
-                "return_requested",
-                "refund_requested",
+                "item_added_to_cart", "item_removed_from_cart",
+                "item_updated_qty", "item_added_to_wishlist",
+                "item_removed_from_wishlist", "item_viewed", "item_shared",
+                "item_reviewed", "return_requested", "refund_requested",
                 "exchange_requested",
             }
         ):
@@ -658,7 +663,7 @@ class ActivityLogSerializer(serializers.ModelSerializer):
         return {
             "user": "A customer",
             "vendor": "A vendor",
-            "admin": "An administrator",
+            "admin": self._admin_label(obj),
             "visitor": "A customer",
             "guest": "A customer",
         }.get(obj.actor_type, "A user")
