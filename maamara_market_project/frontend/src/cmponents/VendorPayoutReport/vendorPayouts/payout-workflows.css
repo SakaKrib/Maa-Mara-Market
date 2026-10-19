@@ -39,3 +39,22 @@
 @media (max-width: 480px) {
   .mm-payout-notice { right: 0.75rem; left: 0.75rem; max-width: none; }
 }
+
+/* Admin payout forms use the same neutral surface, borders and rounded controls
+   as the current Maa Mara dashboard, including on small screens. */
+.mm-payout-page .MuiTypography-root { color: inherit; }
+.mm-payout-page .MuiInputLabel-root { color: var(--mm-muted, #6b7280); }
+.mm-payout-page .MuiOutlinedInput-root {
+  border-radius: 12px;
+  color: var(--mm-foreground, #222);
+  background: var(--mm-surface, #fff);
+}
+.mm-payout-page .MuiOutlinedInput-notchedOutline { border-color: var(--mm-border, #d1d5db); }
+.mm-payout-page .MuiOutlinedInput-root:hover .MuiOutlinedInput-notchedOutline { border-color: var(--primary, #2563eb); }
+.mm-payout-page .MuiButton-root { min-height: 42px; border-radius: 20px; text-transform: none; font-weight: 700; }
+.mm-payout-page .MuiGrid-container { margin-top: 0; }
+@media (max-width: 600px) {
+  .mm-payout-page .MuiGrid-container { row-gap: 0.5rem; }
+  .mm-payout-page .MuiGrid-item { min-width: 0; }
+  .mm-payout-page .MuiTextField-root { width: 100%; }
+}
