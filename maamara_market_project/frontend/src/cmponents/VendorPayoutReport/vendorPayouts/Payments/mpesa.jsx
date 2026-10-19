@@ -33,7 +33,7 @@ export default function MpesaB2CPayment({ onSuccess }) {
   const initialAmount = amount || "";
   const vendorName = vendor?.company_name || vendor?.name || [vendor?.first_name, vendor?.surname_name].filter(Boolean).join(" ") || "Vendor";
 
-  const [inputPhone, setInputPhone] = useState(initialPhone);
+  const [inputPhone] = useState(initialPhone);
   const [inputAmount, setInputAmount] = useState(initialAmount);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState(null);
@@ -55,13 +55,6 @@ export default function MpesaB2CPayment({ onSuccess }) {
     if (p.startsWith("+254")) return p.replace("+", "");
     if (p.startsWith("254")) return p;
     return p;
-  };
-
-  const handlePhoneChange = (e) => {
-    const normalized = normalizePhone(e.target.value);
-    setInputPhone(normalized);
-    setMessage(null);
-    setError(null);
   };
 
   const handleAmountChange = (e) => {
