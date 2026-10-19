@@ -669,8 +669,15 @@ class ActivityLogSerializer(serializers.ModelSerializer):
         if item_name:
             return item_name
 
-        # Older activity rows may not have an Item FK. Recover the item name
-        # from the saved message so legacy records remain specific and useful.
+        # Older activity rows may not have an Item FK. First resolve an
+        # item id from its navigation URL, then fall back to the saved message.
+        related_url = (getattr(obj, "related_url", None) or "").strip()
+        item_match = re.search(r"/(?:items?|item-onsite/items)/(\\d+)(?:/|$)", related_url, re.I)
+        if item_match:
+            linked_name = Item.objects.filter(pk=int(item_match.group(1))).values_list("name", flat=True).first()
+            if linked_name:
+                return linked_name.strip()
+
         description = (getattr(obj, "description", None) or "").strip()
         patterns = {
             "item_created": r"\badded\s+(.+?)(?:[.!]|$)",
