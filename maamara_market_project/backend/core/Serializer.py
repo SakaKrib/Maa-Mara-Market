@@ -665,7 +665,20 @@ class ActivityLogSerializer(serializers.ModelSerializer):
 
     def _item_name(self, obj):
         item = getattr(obj, "item", None)
-        return (getattr(item, "name", None) or "").strip() or "the item"
+        item_name = (getattr(item, "name", None) or "").strip()
+        if item_name:
+            return item_name
+
+        # Older item-request activity rows do not always link the Item FK.
+        # Recover the submitted name from their saved description instead of
+        # displaying the generic phrase "the item".
+        description = (getattr(obj, "description", None) or "").strip()
+        match = re.search(
+            r"(?:item request for|vendor request for)\\s+(.+?)(?=\\s+(?:was|has been)\\s+(?:approved|declined|denied)|[.!]?$)",
+            description,
+            flags=re.I,
+        )
+        return (match.group(1).strip(" .\\\"'") if match else "") or "the item"
 
     def get_display_title(self, obj):
         return self.FRIENDLY_TITLES.get(
@@ -688,8 +701,36 @@ class ActivityLogSerializer(serializers.ModelSerializer):
             if vendor_label != "A vendor":
                 return re.sub(r"^A vendor\b", vendor_label, description, count=1, flags=re.I)
 
-        actor = self._actor_phrase(obj)
+        request = self.context.get("request")
+        viewer = getattr(request, "user", None) if request else None
+        is_authenticated = bool(viewer and getattr(viewer, "is_authenticated", False))
+        is_admin_viewer = bool(
+            is_authenticated and (viewer.is_staff or viewer.is_superuser)
+        )
+        is_own_vendor_activity = bool(
+            is_authenticated
+            and not is_admin_viewer
+            and obj.actor_type == "vendor"
+            and obj.user_id == viewer.id
+        )
+
         item_name = self._item_name(obj)
+        if obj.action == "item_request_created" and is_own_vendor_activity:
+            return f"You submitted an item request for {item_name}."
+        if obj.action == "item_request_approved":
+            if is_admin_viewer and obj.actor_type == "admin":
+                return f"You approved the item request for {item_name}."
+            if is_own_vendor_activity:
+                return f"Your item {item_name} was approved."
+            return f"The administrator approved the item request for {item_name}."
+        if obj.action == "item_request_denied":
+            if is_admin_viewer and obj.actor_type == "admin":
+                return f"You declined the item request for {item_name}."
+            if is_own_vendor_activity:
+                return f"Your item {item_name} was declined by the administrator."
+            return f"The administrator declined the item request for {item_name}."
+
+        actor = self._actor_phrase(obj)
 
         templates = {
             "item_added_to_wishlist": f"{actor} added {item_name} to your wishlist." if actor == "You" else f"{actor} added {item_name} to their wishlist.",
