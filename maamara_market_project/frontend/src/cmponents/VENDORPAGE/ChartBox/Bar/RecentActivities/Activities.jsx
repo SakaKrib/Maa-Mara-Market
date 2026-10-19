@@ -4,6 +4,7 @@ import { Trash2 } from "lucide-react";
 import relativeTime from "dayjs/plugin/relativeTime";
 import { Link } from "react-router-dom";
 import { useVendorActivityLogs } from "../../../../../cmponents/Hooks/ActivityHook/ActivityHook";
+import SafeActivityContent, { getSafeActivityText } from "../../../SellerDasboard/SafeActivityContent";
 
 dayjs.extend(relativeTime);
 
@@ -115,7 +116,7 @@ const Activities = () => {
                   <span aria-hidden="true" className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-[#9ca3af]" />
                   <div className="min-w-0 flex-1">
                     <p className="text-xs font-semibold uppercase tracking-[0.08em] text-[#595959]">{log.display_title || "Store activity"}</p>
-                    <p className="mt-1 text-sm leading-6 text-[#222]">{truncateWords(log.display_message || log.description, 16)}</p>
+                    <SafeActivityContent content={truncateWords(getSafeActivityText(log.display_message || log.description), 16)} className="mt-1 text-sm leading-6 text-[#222] break-words" />
                     <p className="mt-1 text-xs text-[#6b7280]">{log.timestamp ? dayjs(log.timestamp).fromNow() : "Recently"}</p>
                   </div>
                   <button
