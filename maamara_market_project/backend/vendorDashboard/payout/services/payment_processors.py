@@ -211,11 +211,21 @@ def call_mpesa_b2c(vendor, amount, mpesa_config, payout=None):
         response.raise_for_status()
         data = response.json()
         if data.get("ResponseCode") == "0":
-            _persist_mpesa_submission(payout, originator_id, data)
+            provider_originator_id = data.get("OriginatorConversationID")
+            provider_conversation_id = data.get("ConversationID")
+            if not provider_originator_id or not provider_conversation_id:
+                logger.error(
+                    "M-Pesa B2B accepted response omitted correlation identifiers.",
+                    extra={"payout_reference": payout.reference},
+                )
+                payout.mpesa_result_desc = "B2B submission response lacked correlation IDs; reconcile before retrying."
+                payout.save(update_fields=["mpesa_result_desc"])
+                return {"success": False, "retryable": True, "error": "M-Pesa accepted the request without returning correlation IDs. Reconcile with Safaricom before retrying."}
+            _persist_mpesa_submission(payout, provider_originator_id, data)
             return {
                 "success": True,
-                "ConversationID": data.get("ConversationID"),
-                "OriginatorConversationID": data.get("OriginatorConversationID") or originator_id,
+                "ConversationID": provider_conversation_id,
+                "OriginatorConversationID": provider_originator_id,
                 "ResponseDescription": data.get("ResponseDescription", ""),
             }
         return {
@@ -275,11 +285,6 @@ def call_mpesa_b2b(vendor, amount, mpesa_config, payout=None):
 
     try:
         access_token = get_mpesa_token()
-        originator_id = str(uuid.uuid4())
-        payout.mpesa_originator_conversation_id = originator_id
-        payout.mpesa_result_desc = "Submitted to M-Pesa B2B"
-        payout.save(update_fields=["mpesa_originator_conversation_id", "mpesa_result_desc"])
-
         security_credential = generate_security_credential(
             initiator_password, certificate_path
         )
@@ -297,7 +302,6 @@ def call_mpesa_b2b(vendor, amount, mpesa_config, payout=None):
             "Remarks": "Vendor payout",
             "QueueTimeOutURL": timeout_url,
             "ResultURL": result_url,
-            "OriginatorConversationID": originator_id,
         }
         response = requests.post(
             cfg["url"],
