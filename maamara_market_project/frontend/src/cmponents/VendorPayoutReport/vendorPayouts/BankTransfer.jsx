@@ -35,7 +35,7 @@ export default function BankTransferBulkPayment({ onSuccess }) {
         vendor: vendorName,
         bankAccount,
         bankName,
-        amount: p.amount || 500,
+        amount: p.amount ?? "",
         reference: p.reference || "",
       };
     })
