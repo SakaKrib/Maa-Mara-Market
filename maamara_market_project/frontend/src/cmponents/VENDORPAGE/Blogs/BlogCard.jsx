@@ -1,127 +1,74 @@
-import CommentBox from "./Comment";
-import ReactionButton from "./Reaction";
 import { useNavigate } from "react-router-dom";
 import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
 import { sanitizeRichText } from "../../../utils/sanitizeRichText";
 import { resolveApiAssetUrl } from "../../../Services/Api";
+import ReactionButton from "./Reaction";
+import CommentBox from "./Comment";
 
 dayjs.extend(relativeTime);
 
-// ✂️ Safe text truncation (ONLY for plain text fields)
-const truncateWords = (text, numWords) => {
-  if (!text) return "";
-  const words = text.split(" ");
-  return words.length > numWords
-    ? words.slice(0, numWords).join(" ") + "..."
-    : text;
-};
+const stripMarkup = (html = "") => html.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
 
 export default function BlogCard({ post }) {
   const navigate = useNavigate();
-
   if (!post) return null;
 
   const vendor = post.vendor || {};
-
-  const goToPost = () => {
-    navigate(`/blogs/${post.id}`);
-  };
+  const openPost = () => navigate(`/blogs/${post.id}`);
+  const excerpt = post.excerpt || stripMarkup(post.content || "");
+  const hasMedia = Boolean(post.image || post.video);
 
   return (
-    <div>
-      <div className="blog-card lg:w-full shadow rounded-[8px] bg-white">
-
-        {/* 🧑 Vendor Header */}
-        <div className="flex gap-4 items-center mb-4 p-2 border-b">
-          {vendor.profile_picture && (
-            <img
-              src={resolveApiAssetUrl(vendor.profile_picture)}
-              alt={vendor.company_name || "Vendor"}
-              style={{
-                width: "50px",
-                height: "50px",
-                borderRadius: "50%",
-              }}
-            />
-          )}
-
-          <div>
-            <h5 className="font-semibold">
-              {vendor.company_name || "Unknown Vendor"}
-            </h5>
-
-            <p className="text-gray-500 text-sm">
-              {dayjs(post.created_at).fromNow()}
-            </p>
+    <article className="flex min-w-0 flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-custom transition-shadow hover:shadow-lg">
+      <div className="flex items-center gap-3 px-4 pb-3 pt-4 sm:px-5">
+        {vendor.profile_picture ? (
+          <img src={resolveApiAssetUrl(vendor.profile_picture)} alt="" className="h-10 w-10 shrink-0 rounded-full object-cover ring-1 ring-border" />
+        ) : (
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-muted text-sm font-semibold text-muted-foreground">
+            {(vendor.company_name || "M").trim().charAt(0).toUpperCase()}
           </div>
-        </div>
-
-        {/* 📝 Blog Content */}
-        <div className="p-2 space-y-2">
-
-          {/* 🖼️ Image */}
-          {post.image && (
-            <div
-              onClick={goToPost}
-              className="cursor-pointer hover:opacity-90 transition"
-            >
-              <img
-                src={resolveApiAssetUrl(post.image)}
-                alt={post.title || "blog image"}
-                className="w-full max-w-[200px] max-h-[200px] object-cover rounded-md"
-              />
-            </div>
-          )}
-
-          {/* 📰 Title */}
-          <h3
-            onClick={goToPost}
-            className="font-bold text-lg cursor-pointer hover:text-green-600 transition"
-          >
-            {truncateWords(post.title, 10) || "Untitled Blog"}
-          </h3>
-
-          {/* 🧠 CONTENT (SAFE RENDER) */}
-          <div
-            className="blog-rich-text mt-2 text-sm leading-6 text-gray-700 [&_p]:mb-3 [&_h1]:mb-3 [&_h1]:text-2xl [&_h1]:font-bold [&_h2]:mb-3 [&_h2]:text-xl [&_h2]:font-bold [&_h3]:mb-2 [&_h3]:text-lg [&_h3]:font-semibold [&_ul]:mb-3 [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:mb-3 [&_ol]:list-decimal [&_ol]:pl-5 [&_blockquote]:my-3 [&_blockquote]:border-l-4 [&_blockquote]:border-[#2563eb] [&_blockquote]:pl-4 [&_blockquote]:italic [&_a]:text-[#2563eb] [&_a]:underline"
-            dangerouslySetInnerHTML={{
-              __html: sanitizeRichText(post.content || ""),
-            }}
-          />
-
-          {/* 🎥 Video */}
-          {post.video && (
-            <video
-              controls
-              src={resolveApiAssetUrl(post.video)}
-              className="w-full rounded-md mt-2"
-            />
-          )}
-
-          {/* 🛒 Item Link */}
-          {post.item && (
-            <button
-              onClick={() => navigate(`/item/${post.item}`)}
-              className="mt-2 light-button ring-1 text-gray-500 px-3 py-2 rounded-md hover:bg-green-700 transition"
-            >
-              🛒 Buy Now
-            </button>
-          )}
-
-          {/* 💬 Reactions */}
-          <ReactionButton
-            postId={post.id}
-            reactions={post.reactions || []}
-          />
-
-          {/* 💬 Comments */}
-          <CommentBox
-            postId={post.id}
-            comments={post.comments || []}
-          />
+        )}
+        <div className="min-w-0 flex-1">
+          <p className="truncate text-sm font-semibold text-card-foreground">{vendor.company_name || "Maamara Market community"}</p>
+          <p className="mt-0.5 text-xs text-muted-foreground">{post.created_at ? dayjs(post.created_at).fromNow() : "Community story"}</p>
         </div>
       </div>
-    </div>
+
+      {hasMedia && (
+        <button type="button" onClick={openPost} aria-label={`Read ${post.title || "blog post"}`} className="block w-full overflow-hidden bg-muted text-left">
+          {post.image ? (
+            <img src={resolveApiAssetUrl(post.image)} alt={post.title || "Blog post"} loading="lazy" className="aspect-[16/9] w-full object-cover transition-transform duration-300 hover:scale-[1.02]" />
+          ) : (
+            <video src={resolveApiAssetUrl(post.video)} preload="metadata" muted playsInline className="aspect-[16/9] w-full object-cover" />
+          )}
+        </button>
+      )}
+
+      <div className="flex flex-1 flex-col px-4 pb-4 pt-4 sm:px-5">
+        <button type="button" onClick={openPost} className="text-left font-serif text-xl font-semibold leading-snug text-card-foreground transition-colors hover:text-primary">
+          {post.title || "Community story"}
+        </button>
+
+        <p className="mt-2 line-clamp-4 text-sm leading-6 text-muted-foreground">
+          {excerpt || "Read the latest story from our marketplace community."}
+        </p>
+
+        {!post.image && post.video && (
+          <p className="mt-2 text-xs text-muted-foreground">Video story · Open the article to watch</p>
+        )}
+
+        <div className="mt-4">
+          <button type="button" onClick={openPost} className="inline-flex min-h-9 items-center rounded-full border border-border bg-background px-4 text-xs font-semibold text-card-foreground transition-colors hover:bg-muted">
+            Read article
+          </button>
+        </div>
+
+        <div className="mt-4 border-t border-border pt-3">
+          <ReactionButton postId={post.id} reactions={post.reactions || []} />
+          <CommentBox postId={post.id} comments={post.comments || []} compact />
+        </div>
+      </div>
+    </article>
   );
 }
