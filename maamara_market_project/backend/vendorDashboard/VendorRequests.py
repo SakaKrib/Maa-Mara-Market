@@ -552,13 +552,11 @@ def approve_request(request, pk):
         # 🔴 FIXED LINE (CRASH FIX)
         # =========================
         ActivityLog.objects.create(
-            user=vendor_user.user,   # 🔴 FIXED HERE
+            user=vendor_user.user,
             actor_type="vendor",
             action="item_request_approved",
-            description=(
-                f"Your item request for {item_request.name} "
-                f"was approved by the admin."
-            ),
+            description=f"Your item request for {item_request.name} was approved.",
+            item=item,
             related_url=f"/vendors-dashboard/item-onsite/items/{item.id}",
         )
 
@@ -981,29 +979,25 @@ class CreatePriceChangeRequestView(APIView):
 
         current_year = timezone.now().year
 
-        # =========================
-        # 5. ACTIVITY LOG (ADMIN BULK OPTIMIZED)
-        # =========================
-        admin_users = User.objects.filter(is_staff=True)
+        # One admin activity record identifies the administrator feed event;
+        # it must not be duplicated once per admin account.
+        ActivityLog.objects.create(
+            user=request.user,
+            actor_type="admin",
+            action="Price Change Requested",
+            item=item,
+            description=(
+                "A vendor requested a price change "
+                f"for {item.name}. Reason: {reason or 'No reason provided'}"
+            ),
+            related_url=f"/admin-dashboard/vendorDashboard/vendoritemPricerequest/{price_request.id}"
+        )
 
-        for admin in admin_users:
-            ActivityLog.objects.create(
-                user=admin,
-                actor_type="admin",
-                action="Price Change Requested",
-                item=item,
-                description=(
-                    "A vendor requested a price change "
-                    f"for {item.name}. Reason: {reason or 'No reason provided'}"
-                ),
-                related_url=f"/admin-dashboard/vendorDashboard/vendoritemPricerequest/{price_request.id}"
-            )
-
-        # Vendor activity log
         ActivityLog.objects.create(
             user=request.user,
             actor_type="vendor",
             action="Price Change Requested",
+            item=item,
             description=(
                 "You requested a price change "
                 f"for {item.name}. Reason: {reason or 'No reason provided'}"
@@ -1118,30 +1112,24 @@ class ApprovePriceChangeRequestView(APIView):
 
         current_year = timezone.now().year
 
-        # =========================
-        # 3. ACTIVITY LOG (ADMIN SIDE)
-        # =========================
-        admin_users = User.objects.filter(is_staff=True)
+        # One admin-side event, attributed to the administrator who approved it.
+        ActivityLog.objects.create(
+            user=request.user,
+            actor_type="admin",
+            action="Price Change Approved",
+            item=item,
+            description=(
+                f"The administrator approved the new price {price_request.new_price} for "
+                f"{item.name}."
+            ),
+            related_url=f"/admin-dashboard/vendorDashboard/vendoritemPricerequest/{price_request.id}"
+        )
 
-        for admin in admin_users:
-            ActivityLog.objects.create(
-                user=admin,
-                actor_type="admin",
-                action="Price Change Approved",
-                description=(
-                    f"The administrator approved the new price {price_request.new_price} for "
-                    f"{item.name}."
-                ),
-                related_url=f"/admin-dashboard/vendorDashboard/vendoritemPricerequest/{price_request.id}"
-            )
-
-        # =========================
-        # 4. ACTIVITY LOG (VENDOR SIDE)
-        # =========================
         ActivityLog.objects.create(
             user=price_request.requested_by,
             actor_type="vendor",
             action="Price Change Approved",
+            item=item,
             description=(
                 f"Your price change request for {item.name} "
                 f"has been approved. New price: {price_request.new_price}"
