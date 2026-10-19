@@ -979,10 +979,11 @@ class CreatePriceChangeRequestView(APIView):
 
         current_year = timezone.now().year
 
-        # One admin activity record identifies the administrator feed event;
-        # it must not be duplicated once per admin account.
+        # One admin-feed record only; the serializer resolves the vendor who
+        # submitted the request from the related price-request record.
+        admin_activity_user = User.objects.filter(is_staff=True).order_by("id").first()
         ActivityLog.objects.create(
-            user=request.user,
+            user=admin_activity_user or request.user,
             actor_type="admin",
             action="Price Change Requested",
             item=item,
