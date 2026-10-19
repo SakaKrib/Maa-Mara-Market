@@ -4,6 +4,8 @@ import api from "../../../Services/Api";
 import { CircularProgress } from "@mui/material";
 import AppSnackbar from "../../../../components/ui/app-snackbar";
 
+const MAX_IMAGE_BYTES = 10 * 1024 * 1024;
+
 const BANNER_COLORS = [
   { name: "Warm Ivory", value: "#f5f4f1", swatch: "bg-[#f5f4f1]" },
   { name: "Soft Blue", value: "#eef3f8", swatch: "bg-[#eef3f8]" },
@@ -42,6 +44,25 @@ const BannerAdd = ({ items = [], onSave = () => {} }) => {
     setSnackbar((prev) => ({ ...prev, open: false }));
   };
 
+  const handleImageChange = (event) => {
+    const file = event.target.files?.[0] || null;
+    if (!file) {
+      setImage(null);
+      return;
+    }
+    if (!file.type.startsWith("image/")) {
+      setSnackbar({ open: true, message: "Please select an image file.", severity: "error" });
+      event.target.value = "";
+      return;
+    }
+    if (file.size > MAX_IMAGE_BYTES) {
+      setSnackbar({ open: true, message: "Banner images must be 10 MB or smaller.", severity: "error" });
+      event.target.value = "";
+      return;
+    }
+    setImage(file);
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (submitting) return;
@@ -50,6 +71,15 @@ const BannerAdd = ({ items = [], onSave = () => {} }) => {
       setSnackbar({
         open: true,
         message: "Please enter a banner title.",
+        severity: "error",
+      });
+      return;
+    }
+
+    if (image instanceof File && (!image.type.startsWith("image/") || image.size > MAX_IMAGE_BYTES)) {
+      setSnackbar({
+        open: true,
+        message: image.size > MAX_IMAGE_BYTES ? "Banner images must be 10 MB or smaller." : "Please select an image file.",
         severity: "error",
       });
       return;
@@ -255,10 +285,17 @@ const BannerAdd = ({ items = [], onSave = () => {} }) => {
           <input
             type="file"
             accept="image/*"
-            onChange={(e) => setImage(e.target.files?.[0] || null)}
+            onChange={handleImageChange}
             required
             className="block w-full rounded-[20px] border border-gray-300 bg-background px-4 py-3 text-sm text-foreground file:mr-3 file:rounded-full file:border-0 file:bg-primary file:px-4 file:py-2 file:text-xs file:font-semibold file:text-primary-foreground"
           />
+          <p className="mt-1 text-xs text-muted-foreground">Image size limit: 10 MB.</p>
+          {image instanceof File && (
+            <div className="mt-2 flex items-center justify-between gap-3 rounded-xl border border-gray-200 bg-gray-50 px-3 py-2">
+              <span className="min-w-0 break-all text-xs text-gray-700">{image.name} · {(image.size / (1024 * 1024)).toFixed(2)} MB</span>
+              <button type="button" onClick={() => { setImage(null); const input = document.querySelector('input[type="file"][accept="image/*"]'); if (input) input.value = ""; }} className="shrink-0 rounded-full border border-gray-300 bg-white px-3 py-1.5 text-xs font-semibold text-gray-700 hover:bg-gray-100">Remove</button>
+            </div>
+          )}
         </div>
 
         <button
