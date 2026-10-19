@@ -140,9 +140,9 @@ export default function MpesaB2CPayment({ onSuccess }) {
           borderRadius: "20px",
           p: { xs: 2, sm: 3 },
           mt: 1,
-          backgroundColor: "var(--mm-surface, var(--background, #fff))",
-          color: "var(--mm-foreground, var(--foreground, #222))",
-          border: "1px solid var(--mm-border, var(--border, #e5e7eb))",
+          backgroundColor: theme.palette.background.paper,
+          color: theme.palette.text.primary,
+          border: `1px solid ${theme.palette.divider}`,
         }}
         className="mm-payout-shadow"
       >
