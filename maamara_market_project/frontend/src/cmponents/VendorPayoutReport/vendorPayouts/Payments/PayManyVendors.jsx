@@ -6,10 +6,8 @@ import {
   TextField,
   Typography,
   Grid,
-  useTheme,
 } from "@mui/material";
 import api, { getWebSocketUrl } from "../../../../Services/Api";
-import { tokens } from "../../../../theme";
 import { useLocation, useNavigate } from "react-router-dom";
 import MpesaLogo from "../../../../assets/partnaship/mpesaLogo.png";
 import "../payout-workflows.css";
@@ -17,19 +15,17 @@ import AppSnackbar from "../../../../../components/ui/app-snackbar";
 
 export default function MpesaB2CMultiPayment({ onSuccess }) {
   const location = useLocation();
-  const theme = useTheme();
-  const colors = tokens(theme.palette.mode);
   const navigate = useNavigate();
 
   const prefilledPayments = location.state?.payments || [];
 
   const [payments, setPayments] = useState(
     prefilledPayments.map((p) => ({
-      vendor: p.vendor?.company_name || p.vendor?.name || [p.vendor?.first_name, p.vendor?.surname_name].filter(Boolean).join(" ") || "Unknown Vendor",
-      mpesaType: p.vendor?.mpesa_type || "PHONE",
-      phone: p.vendor?.mpesa_number || p.vendor?.MpesaNo || p.vendor?.mpesa_no || "",
-      till: p.vendor?.mpesa_till || "",
-      paybill: p.vendor?.mpesa_paybill || "",
+      vendor: p.vendor?.company_name || p.vendor?.name || p.vendor_name || [p.vendor?.first_name, p.vendor?.middle_name, p.vendor?.surname_name].filter(Boolean).join(" ") || "Unknown Vendor",
+      mpesaType: (() => { const raw = String(p.vendor?.mpesa_type || p.mpesa_type || "PHONE").toUpperCase(); return raw === "PAYBILL" ? "LIPA_NA_MPESA" : raw === "BUY_GOODS" ? "TILL" : raw === "PHONE_NUMBER" || raw === "MSISDN" ? "PHONE" : raw; })(),
+      phone: p.vendor?.mpesa_number || p.vendor?.MpesaNo || p.vendor?.mpesa_no || p.mpesa_number || p.phone || "",
+      till: p.vendor?.mpesa_till || p.mpesa_till || "",
+      paybill: p.vendor?.mpesa_paybill || p.mpesa_paybill || "",
       amount: p.amount ?? "",
       reference: p.reference || "",
     }))
@@ -185,12 +181,12 @@ export default function MpesaB2CMultiPayment({ onSuccess }) {
       <Box className="mm-payout-page" sx={{ p: { xs: 1, sm: 2 }, maxWidth: 1100, mx: "auto", width: "100%" }}>
         <Box
           sx={{
-            borderRadius: "20px",
+            borderRadius: "12px",
             p: { xs: 2, sm: 3 },
             mt: 1,
-            backgroundColor: theme.palette.background.paper,
-            color: theme.palette.text.primary,
-            border: `1px solid ${theme.palette.divider}`,
+            backgroundColor: "var(--card, #fff)",
+            color: "var(--card-foreground, var(--foreground, #222))",
+            border: "1px solid var(--border, #e6e6e4)",
             boxShadow: "0 4px 14px rgba(0,0,0,.06)",
           }}
           className="mm-payout-shadow"
@@ -217,14 +213,14 @@ export default function MpesaB2CMultiPayment({ onSuccess }) {
               spacing={1.5}
               alignItems="center"
               key={payment.reference || index}
-              sx={{ mb: 2, p: { xs: 1.5, sm: 2 }, border: `1px solid ${theme.palette.divider}`, borderRadius: "16px" }}
+              sx={{ mb: 2, p: { xs: 1.5, sm: 2 }, border: "1px solid var(--border, #e6e6e4)", borderRadius: "16px" }}
             >
               <Grid item xs={12} sm={4}>
                 <TextField
                   label="Vendor"
                   value={payment.vendor}
                   fullWidth
-                  disabled
+                  InputProps={{ readOnly: true }}
                   variant="outlined"
                   size="small"
                 />
@@ -233,7 +229,7 @@ export default function MpesaB2CMultiPayment({ onSuccess }) {
               <Grid item xs={12} sm={4}>
                 <TextField
                   label={payment.mpesaType === "TILL" ? "M-Pesa Till number" : payment.mpesaType === "LIPA_NA_MPESA" ? "M-Pesa Paybill number" : "M-Pesa phone number"}
-                  value={payment.mpesaType === "TILL" ? payment.till : payment.mpesaType === "LIPA_NA_MPESA" ? payment.paybill : payment.phone}
+                  value={(payment.mpesaType === "TILL" ? payment.till : payment.mpesaType === "LIPA_NA_MPESA" ? payment.paybill : payment.phone) || "Not provided"}
                   fullWidth
                   disabled
                   variant="outlined"
@@ -264,7 +260,7 @@ export default function MpesaB2CMultiPayment({ onSuccess }) {
             fullWidth
             sx={{
               "&:hover": {
-                backgroundColor: colors.greenAccent[600],
+                backgroundColor: "var(--primary-hover, #1d4ed8)",
                 border: "none",
               },
               py: 1.2,
