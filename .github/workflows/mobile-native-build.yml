@@ -1,4 +1,4 @@
-name: Maa Mara Market native app build
+name: Maa Mara Market Android Debug APK + Mobile Builds
 
 on:
   push:
@@ -6,6 +6,7 @@ on:
       - ui-redesign-foundation
     paths:
       - "maamara_market_project/frontend/**"
+      - "maamara_market_project/backend/**"
       - ".github/workflows/mobile-native-build.yml"
   workflow_dispatch:
     inputs:
