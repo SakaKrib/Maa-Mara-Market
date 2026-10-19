@@ -100,7 +100,7 @@ const StockSummaryBox = () => {
       <button
         type="button"
         onClick={() => handleOpen(allItems)}
-        className="mt-3 inline-flex w-full items-center justify-center rounded-full border border-[#d9d9d6] bg-white px-4 py-2 text-xs font-semibold text-[#222] transition hover:bg-[#f8f8f6]"
+        className="mt-3 inline-flex w-full items-center justify-center rounded-[20px] border border-[#d9d9d6] bg-white px-4 py-2 text-xs font-semibold text-[#222] transition hover:bg-[#f8f8f6]"
       >
         View all items
       </button>
