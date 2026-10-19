@@ -740,44 +740,76 @@ class BlogPostViewSet(viewsets.ModelViewSet):
 # Admin approve blogs is approved = false
 class AdminBlogApprovalViewSet(viewsets.ModelViewSet):
     """
-    Fetch blogs that are pending approval for admin review.
+    List pending blogs and allow admins to approve or deny vendor submissions.
     """
     serializer_class = BlogPostSerializer
-    permission_classes = [permissions.IsAdminUser]  # Only admins can access
+    permission_classes = [permissions.IsAdminUser]
 
     def get_queryset(self):
-        # Only return blogs that are not yet approved
-        return BlogPost.objects.filter(approved=False).select_related('user', 'vendor')
+        return BlogPost.objects.filter(approved=False).select_related("user", "vendor")
 
-    @action(detail=True, methods=['post'])
+    @action(detail=True, methods=["post"])
     def approve(self, request, pk=None):
         blog = self.get_object()
         blog.approved = True
         blog.save()
 
-        # Notify the vendor
         if blog.vendor and blog.vendor.user:
             Notification.objects.create(
                 user=blog.vendor.user,
                 title="Your blog was approved",
                 message=f"Your blog {blog.title} has been approved by the administrator.",
-                url=f"/vendors-dashboard/vendor/blogs/{blog.id}/"
+                url=f"/vendors-dashboard/vendor/blogs/{blog.id}/",
             )
 
-        # Log admin activity
         ActivityLog.objects.create(
             user=request.user,
-            actor_type='admin',
+            actor_type="admin",
             action="blog_approved",
             item=None,
             description=f"The administrator approved the blog {blog.title}.",
-            related_url=f"/blog/{blog.id}/"
+            related_url=f"/blog/{blog.id}/",
         )
 
-        return Response({
-            "detail": f"Blog '{blog.title}' has been approved."
-        })    
-    
+        return Response({"detail": f"Blog '{blog.title}' has been approved."}, status=status.HTTP_200_OK)
+
+    @action(detail=True, methods=["post"])
+    def deny(self, request, pk=None):
+        blog = self.get_object()
+        blog_id = blog.id
+        title = blog.title or "Untitled blog"
+        vendor = blog.vendor
+        vendor_user = vendor.user if vendor else None
+        reason = str(request.data.get("reason") or "").strip()[:500]
+
+        # A denied blog has no separate rejected state in the current model,
+        # so remove the pending submission after preserving its audit details.
+        blog.delete()
+
+        if vendor_user:
+            message = f"Your blog {title} was denied by the administrator."
+            if reason:
+                message += f" Reason: {reason}"
+            Notification.objects.create(
+                user=vendor_user,
+                title="Your blog was denied",
+                message=message,
+                url="/vendors-dashboard/vendor/blogs/",
+            )
+
+        ActivityLog.objects.create(
+            user=request.user,
+            actor_type="admin",
+            action="blog_denied",
+            item=None,
+            description=f"The administrator denied the blog {title}."
+            + (f" Reason: {reason}" if reason else ""),
+            related_url="/vendors-dashboard/vendor/blogs/",
+        )
+
+        return Response({"detail": f"Blog '{title}' was denied and the vendor was notified."}, status=status.HTTP_200_OK)
+
+
 #Admin approve Banner
 class AdminBannerApprovalViewSet(viewsets.ModelViewSet):
     """
