@@ -166,7 +166,7 @@ class NotificationSerializer(serializers.ModelSerializer):
         # readable without exposing usernames or quoted item names.
         if title == "item added to wishlist":
             match = re.search(r"added ['\"]?(.+?)['\"]? (?:from )?wishlist", message, re.I)
-        name = match.group(1).strip().strip(".").strip(chr(34) + chr(39) + "“”‘’") if match else ""
+            item_name = match.group(1).strip(" .\\\"\'") if match else None
             if item_name:
                 return f"A customer added {item_name} to their wishlist."
         if title == "wishlist update":
@@ -715,7 +715,7 @@ class ActivityLogSerializer(serializers.ModelSerializer):
         }
         pattern = patterns.get(obj.action)
         match = re.search(pattern, description, flags=re.I) if pattern else None
-        name = match.group(1).strip(" .\\"'\u201c\u201d\u2018\u2019") if match else ""
+        name = match.group(1).strip().strip(".").strip(chr(34) + chr(39) + "“”‘’") if match else ""
         return name or "the item"
 
     def get_display_title(self, obj):
