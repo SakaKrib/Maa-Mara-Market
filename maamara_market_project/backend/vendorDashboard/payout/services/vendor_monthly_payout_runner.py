@@ -9,6 +9,7 @@ from django.conf import settings
 
 from vendorDashboard.payout.services.payment_processors import (
     call_mpesa_b2c,
+    call_mpesa_payout,
     call_paypal_payout,
     call_bank_transfer,
 )
@@ -252,7 +253,7 @@ def pay_single_vendor_payout(request, reference):
                     "mpesa_result_desc",
                 ])
 
-            response = call_mpesa_b2c(vendor, amount, mpesa_config, payout=payout)
+            response = call_mpesa_payout(vendor, amount, mpesa_config, payout=payout)
         elif method == "PAYPAL":
             response = call_paypal_payout(payout, vendor.paypal_email, amount, paypal_config)
         elif method == "BANK_TRANSFER":
