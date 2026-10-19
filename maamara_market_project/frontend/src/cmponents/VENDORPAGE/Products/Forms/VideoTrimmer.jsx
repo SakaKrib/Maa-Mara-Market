@@ -21,7 +21,8 @@ const getSupportedRecorderMimeType = () => {
   return candidates.find((type) => MediaRecorder.isTypeSupported(type)) || "";
 };
 
-const VideoTrimmer = ({ file, duration, onApply, onCancel }) => {
+const VideoTrimmer = ({ file, duration, onApply, onCancel, purpose = "product" }) => {
+  const mediaLabel = purpose === "blog" ? "blog" : "product";
   const videoRef = useRef(null);
   const objectUrlRef = useRef(null);
   const recorderRef = useRef(null);
@@ -148,7 +149,7 @@ const VideoTrimmer = ({ file, duration, onApply, onCancel }) => {
             return;
           }
 
-          const baseName = file.name.replace(/.[^/.]+$/, "") || "product-video";
+          const baseName = file.name.replace(/.[^/.]+$/, "") || `${mediaLabel}-video`;
           resolve(
             new File([blob], `${baseName}-trimmed.webm`, {
               type: "video/webm",
@@ -205,7 +206,7 @@ const VideoTrimmer = ({ file, duration, onApply, onCancel }) => {
     <div className="rounded-2xl border border-gray-300 bg-[#f8f8f6] p-4">
       <div className="flex items-start justify-between gap-4">
         <div>
-          <p className="text-sm font-semibold text-gray-900">Trim product video</p>
+          <p className="text-sm font-semibold text-gray-900">Trim {mediaLabel} video</p>
           <p className="mt-1 text-xs leading-5 text-gray-500">
             Choose any section from 3 to 15 seconds. Trimming happens on this device before the video enters the existing upload/draft flow.
           </p>
@@ -261,7 +262,7 @@ const VideoTrimmer = ({ file, duration, onApply, onCancel }) => {
 
         {effectiveDuration < MIN_DURATION && (
           <p className="text-xs font-semibold text-red-600">
-            This video is shorter than the required 3 seconds and cannot be trimmed to a valid product video.
+            This video is shorter than the required 3 seconds and cannot be trimmed to a valid {mediaLabel} video.
           </p>
         )}
 
