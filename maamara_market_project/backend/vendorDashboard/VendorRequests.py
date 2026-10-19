@@ -544,6 +544,7 @@ def approve_request(request, pk):
                 "The administrator approved "
                 f"the vendor item request for {item_request.name}."
             ),
+            item=item,
             related_url=f"/admin-dashboard/items/{item.id}",
         )
 
