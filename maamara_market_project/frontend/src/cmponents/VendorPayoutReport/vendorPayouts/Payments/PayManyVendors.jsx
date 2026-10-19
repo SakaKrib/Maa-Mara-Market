@@ -231,7 +231,7 @@ export default function MpesaB2CMultiPayment({ onSuccess }) {
                   label={payment.mpesaType === "TILL" ? "M-Pesa Till number" : payment.mpesaType === "LIPA_NA_MPESA" ? "M-Pesa Paybill number" : "M-Pesa phone number"}
                   value={(payment.mpesaType === "TILL" ? payment.till : payment.mpesaType === "LIPA_NA_MPESA" ? payment.paybill : payment.phone) || "Not provided"}
                   fullWidth
-                  disabled
+                  InputProps={{ readOnly: true }}
                   variant="outlined"
                   size="small"
                   helperText={payment.mpesaType === "TILL" ? "Registered Till destination" : payment.mpesaType === "LIPA_NA_MPESA" ? "Registered Paybill destination" : "Registered phone destination"}
