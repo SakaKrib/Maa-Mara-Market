@@ -82,3 +82,6 @@ jobs:
 
       - name: Run Django system checks
         run: python manage.py check
+
+      - name: Run fulfilment tracking regression tests
+        run: python manage.py test order.test_fulfillment_tracking --verbosity 2
