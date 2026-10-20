@@ -90,7 +90,7 @@ def get_vendor_earnings(vendor, start_date, end_date):
 
     # Get all completed orders within date range
     completed_orders = Order.objects.filter(
-        status="completed",
+        status__in=["COMPLETED", "completed"],
         ordered_date__gte=start_date,
         ordered_date__lt=end_date + timedelta(days=1)
     )
