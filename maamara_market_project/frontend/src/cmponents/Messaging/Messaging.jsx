@@ -29,6 +29,7 @@ export default function Messaging({ floating = false, onClose = null, initialCon
   const socketRef = useRef(null);
   const selectedRef = useRef(null);
   const endRef = useRef(null);
+  const messageInputRef = useRef(null);
   const messageElementRefs = useRef(new Map());
   const pendingTargetMessageRef = useRef(targetMessageId ? String(targetMessageId) : "");
   const processedNotificationTargetRef = useRef("");
@@ -89,6 +90,15 @@ export default function Messaging({ floating = false, onClose = null, initialCon
   useEffect(() => {
     selectedRef.current = selected;
   }, [selected]);
+
+  useEffect(() => {
+    const input = messageInputRef.current;
+    if (!input) return;
+    input.style.height = "0px";
+    const nextHeight = Math.min(input.scrollHeight, 144);
+    input.style.height = `${nextHeight}px`;
+    input.style.overflowY = input.scrollHeight > 144 ? "auto" : "hidden";
+  }, [body]);
 
   useEffect(() => {
     let socket;
@@ -319,7 +329,7 @@ export default function Messaging({ floating = false, onClose = null, initialCon
               <form onSubmit={sendMessage} className="border-t border-[#e6e6e4] p-3">
                 <div className="flex items-center gap-2 rounded-2xl border border-[#222222] bg-white p-2">
                   <label className="flex h-10 w-10 shrink-0 cursor-pointer items-center justify-center rounded-full text-[#222222] transition hover:bg-[#f1f1ef]" aria-label="Attach an image"><IonIcon icon={attachOutline} className="text-xl" /><input type="file" accept="image/jpeg,image/png,image/webp" className="hidden" onChange={selectImage} /></label>
-                  <textarea value={body} onChange={(e) => setBody(e.target.value)} rows={1} placeholder="Write a message..." className="min-h-10 min-w-0 flex-1 resize-none self-center bg-transparent px-2 py-2 text-sm leading-5 outline-none" />
+                  <textarea ref={messageInputRef} value={body} onChange={(e) => setBody(e.target.value)} rows={1} placeholder="Write a message..." aria-label="Write a message" className="min-h-10 max-h-36 min-w-0 flex-1 resize-none self-center rounded-xl border border-[#222222] bg-white px-3 py-2 text-sm leading-5 text-[#222222] outline-none focus:border-black focus:ring-1 focus:ring-black" />
                   <button type="submit" disabled={sending || (!body.trim() && !image)} className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#2563eb] text-white transition hover:bg-[#1d4ed8] disabled:opacity-50" aria-label="Send message"><IonIcon icon={sendOutline} /></button>
                 </div>
               </form>
