@@ -64,6 +64,7 @@ class BillingAddress(models.Model):
 
 from django.conf import settings
 from django.db import models
+from django.db.models import Q
 
 
 class Payment(models.Model):
@@ -415,7 +416,7 @@ class Order(models.Model):
     def payment_confirmed(self):
         if not self.payment:
             return False
-        return self.payment.status in ("PAID", "completed", "COMPLETED")
+        return str(self.payment.status or "").strip().lower() in {"paid", "completed"}
 
 
 
