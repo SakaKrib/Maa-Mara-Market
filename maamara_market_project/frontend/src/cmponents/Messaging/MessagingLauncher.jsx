@@ -20,6 +20,7 @@ const MessagingLauncher = () => {
   }, [location.search]);
   const isNativeApp = typeof window !== "undefined" && window.Capacitor?.isNativePlatform?.() === true;
   const isBlogRoute = /^\/blogs(?:\/|$)/.test(location.pathname);
+  const isMessagingRoute = /^\/messages(?:\/|$)/.test(location.pathname);
 
   if (open) {
     return (
@@ -38,7 +39,7 @@ const MessagingLauncher = () => {
     );
   }
 
-  if (isBlogRoute) return null;
+  if (isBlogRoute || isMessagingRoute) return null;
 
   return (
     <div className={"fixed right-5 sm:bottom-8 sm:right-6 " + (isNativeApp ? "bottom-[calc(6rem+env(safe-area-inset-bottom))] z-[950]" : "bottom-28 z-40")}>
