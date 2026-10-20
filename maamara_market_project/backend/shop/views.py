@@ -553,7 +553,7 @@ class BlogPostViewSet(viewsets.ModelViewSet):
             action="blog_created",
             item=None,  # Not an item, can use blog.id in description
             description=f"You created the blog {blog.title}. The blog is awaiting publication.",
-            related_url=f"/blog/{blog.id}/"
+            related_url=f"/blogs/{blog.id}"
         )
 
         # log admin
@@ -563,7 +563,7 @@ class BlogPostViewSet(viewsets.ModelViewSet):
             action="blog_created",
             item=None,  # Not an item, can use blog.id in description
             description=f"A vendor created the blog {blog.title}.",
-            related_url=f"/blog/{blog.id}/"
+            related_url=f"/blogs/{blog.id}"
         )
         
 
@@ -594,7 +594,7 @@ class BlogPostViewSet(viewsets.ModelViewSet):
                 action="comment_created",
                 item=None,
                 description=f"You commented on the blog {post.title}.",
-                related_url=f"/blog/{post.id}/",
+                related_url=f"/blogs/{post.id}",
             )
             for admin in User.objects.filter(is_superuser=True):
                 ActivityLog.objects.create(
@@ -698,7 +698,7 @@ class BlogPostViewSet(viewsets.ModelViewSet):
                     action="react_created",
                     item=None,
                     description=f"You reacted with {reaction.type} to the blog {post.title}.",
-                    related_url=f"/blog/{post.id}/",
+                    related_url=f"/blogs/{post.id}",
                 )
             for admin in User.objects.filter(is_superuser=True):
                 Notification.objects.create(
@@ -765,7 +765,7 @@ class BlogPostViewSet(viewsets.ModelViewSet):
                     action="react_removed",
                     item=None,
                     description=f"You removed your {reaction_type} reaction from the blog {post.title}.",
-                    related_url=f"/blog/{post.id}/"
+                    related_url=f"/blogs/{post.id}"
                 )
 
             # --- Log activity for admins ---
@@ -824,7 +824,7 @@ class AdminBlogApprovalViewSet(viewsets.ModelViewSet):
             action="blog_approved",
             item=None,
             description=f"The administrator approved the blog {blog.title}.",
-            related_url=f"/blog/{blog.id}/",
+            related_url=f"/blogs/{blog.id}",
         )
 
         return Response({"detail": f"Blog '{blog.title}' has been approved."}, status=status.HTTP_200_OK)
