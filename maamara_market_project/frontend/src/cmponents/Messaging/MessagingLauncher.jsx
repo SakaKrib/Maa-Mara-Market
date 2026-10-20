@@ -10,6 +10,11 @@ const MessagingLauncher = () => {
   const [messageTarget, setMessageTarget] = useState({ conversationId: null, messageId: null });
 
   useEffect(() => {
+    document.body.classList.toggle("maamara-messaging-open", open);
+    return () => document.body.classList.remove("maamara-messaging-open");
+  }, [open]);
+
+  useEffect(() => {
     const params = new URLSearchParams(location.search);
     if (params.get("openMessage") !== "1" || !params.get("conversation")) return;
     setMessageTarget({
@@ -22,9 +27,12 @@ const MessagingLauncher = () => {
   const isBlogRoute = /^\/blogs(?:\/|$)/.test(location.pathname);
   const isMessagingRoute = /^\/messages(?:\/|$)/.test(location.pathname);
 
+  if (isBlogRoute || isMessagingRoute) return null;
+
   if (open) {
     return (
       <>
+        <style>{"body.maamara-messaging-open .maamara-message-launcher { display: none !important; }"}</style>
         <div
           className="fixed inset-0 z-40 bg-black/10 backdrop-blur-[2px]"
           aria-hidden="true"
@@ -39,10 +47,8 @@ const MessagingLauncher = () => {
     );
   }
 
-  if (isBlogRoute || isMessagingRoute) return null;
-
   return (
-    <div className={"fixed right-5 sm:bottom-8 sm:right-6 " + (isNativeApp ? "bottom-[calc(6rem+env(safe-area-inset-bottom))] z-[950]" : "bottom-28 z-40")}>
+    <div className={"maamara-message-launcher fixed right-5 sm:bottom-8 sm:right-6 " + (isNativeApp ? "bottom-[calc(6rem+env(safe-area-inset-bottom))] z-[950]" : "bottom-28 z-40")}>
       <button
         type="button"
         onClick={() => setOpen(true)}
