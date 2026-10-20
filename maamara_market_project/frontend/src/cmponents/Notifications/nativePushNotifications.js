@@ -86,7 +86,11 @@ export async function setupNativePushNotifications(visitorId = "") {
 
       handles.push(await PushNotifications.addListener("pushNotificationActionPerformed", (event) => {
         const target = resolvePushTarget(event?.notification?.data?.url);
-        if (target) window.location.assign(target.toString());
+        if (!target) return;
+        // Dispatch an in-app route change instead of reloading the native WebView.
+        window.dispatchEvent(new CustomEvent("maamara:push-navigation", {
+          detail: { path: `${target.pathname}${target.search}${target.hash}` },
+        }));
       }));
 
       // Keep foreground notification events observable to the app without
