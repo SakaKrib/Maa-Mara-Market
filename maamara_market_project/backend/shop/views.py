@@ -611,6 +611,27 @@ class BlogPostViewSet(viewsets.ModelViewSet):
                 generated_visitor_id = True
             comment = serializer.save(post=post, visitor_id=visitor_id, user=None)
 
+            # Visitor comments need the same vendor push as authenticated comments.
+            vendor = getattr(post, "vendor", None)
+            if vendor and vendor.user:
+                Notification.objects.create(
+                    user=vendor.user,
+                    title="New Comment on Your Blog",
+                    message=f"Your blog {post.title} received a new comment from a visitor.",
+                    url=f"/vendor/blogs/{post.id}/",
+                )
+
+        # Admins should receive a push for comments from both registered customers
+        # and visitors; the ActivityLog alone does not trigger Firebase delivery.
+        actor_label = "a customer" if request.user.is_authenticated else "a visitor"
+        for admin in User.objects.filter(is_superuser=True):
+            Notification.objects.create(
+                user=admin,
+                title="New Comment on Blog",
+                message=f"{actor_label.capitalize()} commented on the blog {post.title}.",
+                url=f"/admin-dashboard/blogs/{post.id}/",
+            )
+
         response = Response(CommentSerializer(comment).data, status=status.HTTP_201_CREATED)
         if generated_visitor_id:
             response.set_cookie(
@@ -678,6 +699,12 @@ class BlogPostViewSet(viewsets.ModelViewSet):
                     related_url=f"/blog/{post.id}/",
                 )
             for admin in User.objects.filter(is_superuser=True):
+                Notification.objects.create(
+                    user=admin,
+                    title="New Reaction on Blog",
+                    message=f"A customer reacted with {reaction.type} to the blog {post.title}.",
+                    url=f"/admin-dashboard/blogs/{post.id}/",
+                )
                 ActivityLog.objects.create(
                     user=admin,
                     actor_type="admin",
@@ -741,6 +768,12 @@ class BlogPostViewSet(viewsets.ModelViewSet):
             # --- Log activity for admins ---
             admins = User.objects.filter(is_superuser=True)
             for admin in admins:
+                Notification.objects.create(
+                    user=admin,
+                    title="Reaction Removed from Blog",
+                    message=f"A customer removed a {reaction_type} reaction from the blog {post.title}.",
+                    url=f"/admin-dashboard/blogs/{post.id}/",
+                )
                 ActivityLog.objects.create(
                     user=admin,
                     actor_type='admin',
