@@ -43,12 +43,20 @@ This implementation records `payout_eligible_at`; it has not replaced the curren
 - Investigate the existing return/payment status case mismatch and vendor catalogue ownership inconsistency.
 - Handle existing historical completed orders carefully. Do not fabricate historical customer-acceptance timestamps or silently pay old orders just because the migration adds new fulfilment records.
 
+## Known audit work already added to this branch (verify rather than assume)
+- Payment callback replay normalization was adjusted so an already `COMPLETED` order is not downgraded to `PAID`; unit regression tests were added.
+- Added `project01/celery.py`, imported the Celery app from `project01/__init__.py`, configured Redis as the broker, and added worker/Beat services to both development Compose and the production Compose overlay. Confirm tasks are discovered and Beat actually schedules the 72-hour and tracking-sync tasks.
+- The backend GitHub workflow now includes `python manage.py test order.test_fulfillment_tracking --verbosity 2`. Inspect the current workflow run and its logs; do not report tests passing solely because the earlier syntax/system-check job passed.
+- Updated implementation log: `docs/ORDER_SHIPMENT_TRACKING_IMPLEMENTATION_LOG.md`.
+- The production Compose overlay still contains a Caddy service even though the project's stated production preference is Nginx; that pre-existing deployment discrepancy was not changed by this focused fulfilment work.
+
 ## Workflow
 1. First report findings with exact file/function references; label confirmed bugs separately from risks.
-2. Run Django checks, migration checks, backend tests, and frontend build. Provide actual results, not assumptions.
-3. Fix clear defects within this approved fulfilment/payout scope, while preserving unrelated work.
-4. Add regression tests for the relevant transitions and financial cases.
-5. Inspect the final diff for unrelated changes and inspect the branch status.
-6. Do not sync to production GitLab.
+2. Run Python compilation, Django system checks, fulfilment unit tests, `makemigrations --check --dry-run`, `migrate --plan`, and frontend builds. Provide actual results, not assumptions. Run DB-backed tests against a safe disposable test database if configured.
+3. Validate Compose merges/configuration with both development and production overlays; confirm worker and Beat services inherit the correct application image, environment, Redis connection, and persistent Beat schedule.
+4. Fix clear defects within this approved fulfilment/payout scope, while preserving unrelated work.
+5. Add regression tests for the relevant transitions and financial cases.
+6. Inspect the final diff for unrelated changes and inspect the branch status.
+7. Do not sync to production GitLab.
 
 At completion, provide the changed-file list, commit(s), test logs, unresolved risks, required environment configuration, and an end-to-end example showing a customer payment through dispatch, carrier tracking, customer acceptance/72-hour resolution, weekly payout eligibility, and final provider-confirmed vendor payment.
