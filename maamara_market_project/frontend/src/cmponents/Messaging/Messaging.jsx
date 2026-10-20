@@ -248,13 +248,13 @@ export default function Messaging({ floating = false, onClose = null, initialCon
 
   return (
     <div
-      className="fixed inset-0 z-[900] box-border overflow-hidden bg-[#f8f8f6] pt-[env(safe-area-inset-top,0px)] pb-[calc(5rem+env(safe-area-inset-bottom,0px))] text-[#222] sm:pb-0"
+      className="fixed inset-0 z-[900] box-border overflow-hidden bg-transparent pt-[env(safe-area-inset-top,0px)] pb-[calc(5rem+env(safe-area-inset-bottom,0px))] text-[#222] sm:pb-0"
     >
       {floating && onClose && (
         <button
           type="button"
           onClick={onClose}
-          className="absolute right-3 top-3 z-20 flex h-9 w-9 items-center justify-center rounded-full border border-[#e6e6e4] bg-white text-[#595959] shadow-sm transition hover:bg-[#f8f8f6] hover:text-[#222] focus:outline-none focus:ring-2 focus:ring-[#2563eb] focus:ring-offset-1"
+          className="absolute right-3 top-[calc(env(safe-area-inset-top,0px)+0.75rem)] z-20 flex h-9 w-9 items-center justify-center rounded-full border border-[#e6e6e4] bg-white text-[#595959] shadow-sm transition hover:bg-[#f8f8f6] hover:text-[#222] focus:outline-none focus:ring-2 focus:ring-[#2563eb] focus:ring-offset-1"
           aria-label="Close messages"
           title="Close"
         >
