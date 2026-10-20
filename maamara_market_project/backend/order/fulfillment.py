@@ -730,7 +730,12 @@ def _advance_from_carrier(shipment, carrier_status, description, *, occurred_at=
 
     for fulfillment in shipment.order_items.select_related("order_item__order").all():
         current = fulfillment.status
-        if current in {"COMPLETED", "ISSUE_REPORTED", "CANCELLED"}:
+        # A late carrier return is a conflicting financial/delivery signal; it
+        # must place even a previously completed item back on hold for review.
+        # Other late carrier events must not undo an accepted/completed item.
+        if current == "CANCELLED" or current == "ISSUE_REPORTED":
+            continue
+        if current == "COMPLETED" and carrier_status != "RETURNED":
             continue
         if carrier_status == "DELIVERED":
             if current != "AWAITING_CONFIRMATION":
@@ -765,6 +770,37 @@ def _advance_from_carrier(shipment, carrier_status, description, *, occurred_at=
                     note=event.description,
                     metadata={"shipment_id": shipment.pk, "tracking_number": shipment.tracking_number},
                 )
+        elif carrier_status == "RETURNED" or (
+            carrier_status == "EXCEPTION" and current == "AWAITING_CONFIRMATION"
+        ):
+            held_status = "ISSUE_REPORTED"
+            hold_reason = (
+                "Carrier reported the parcel returned to sender; staff review is required."
+                if carrier_status == "RETURNED"
+                else "Carrier reported a delivery exception during the customer-confirmation window; staff review is required."
+            )
+            fulfillment.status = held_status
+            fulfillment.hold_reason = hold_reason
+            fulfillment.confirmation_deadline = None
+            # A conflicting return event invalidates current payout eligibility
+            # until staff reconciliation; retain the audit events/completed_at.
+            if carrier_status == "RETURNED":
+                fulfillment.payout_eligible_at = None
+            fields = ["status", "hold_reason", "confirmation_deadline", "updated_at"]
+            if carrier_status == "RETURNED":
+                fields.append("payout_eligible_at")
+            fulfillment.save(update_fields=fields)
+            _record_event(
+                order=fulfillment.order_item.order,
+                fulfillment=fulfillment,
+                shipment=shipment,
+                source=source,
+                event_type="carrier_return_hold" if carrier_status == "RETURNED" else "carrier_exception_hold",
+                from_status=current,
+                to_status=held_status,
+                note=hold_reason,
+                metadata={"shipment_id": shipment.pk, "tracking_number": shipment.tracking_number},
+            )
         _sync_order_status(fulfillment.order_item.order)
     transaction.on_commit(lambda order=shipment.order: _publish_order_update(order))
     return True
