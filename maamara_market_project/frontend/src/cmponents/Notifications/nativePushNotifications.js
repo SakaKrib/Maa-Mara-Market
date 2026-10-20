@@ -17,32 +17,32 @@ const resolvePushTarget = (rawUrl) => {
 };
 
 const normalizePushPath = (target, title = "") => {
-  const pathname = target.pathname.replace(/\\/+$/, "") || "/";
+  const pathname = target.pathname.replace(/\/+$/, "") || "/";
   const query = target.search || "";
   const hash = target.hash || "";
   const normalizedTitle = String(title || "").toLowerCase();
 
   // Older notifications used routes that no longer exist. Keep already-delivered
   // push alerts usable after route fixes have shipped.
-  let match = pathname.match(/^\\/admin-dashboard\\/blogs\\/(\\d+)$/);
+  let match = pathname.match(/^\/admin-dashboard\/blogs\/(\d+)$/);
   if (match) {
     return normalizedTitle.includes("new blog created")
       ? `/admin-dashboard/blog-approvals?blog=${match[1]}`
       : `/blogs/${match[1]}`;
   }
 
-  match = pathname.match(/^\\/vendor\\/blogs\\/(\\d+)$/)
-    || pathname.match(/^\\/vendors-dashboard\\/vendor\\/blogs\\/(\\d+)$/);
+  match = pathname.match(/^\/vendor\/blogs\/(\d+)$/)
+    || pathname.match(/^\/vendors-dashboard\/vendor\/blogs\/(\d+)$/);
   if (match) {
     return normalizedTitle.includes("created") || normalizedTitle.includes("denied")
       ? `/vendors-dashboard/vendor/blogs?blog=${match[1]}`
       : `/blogs/${match[1]}`;
   }
 
-  match = pathname.match(/^\\/blog\\/(\\d+)$/);
+  match = pathname.match(/^\/blog\/(\d+)$/);
   if (match) return `/blogs/${match[1]}${query}${hash}`;
 
-  match = pathname.match(/^\\/product\\/(\\d+)$/);
+  match = pathname.match(/^\/product\/(\d+)$/);
   if (match) return `/item/${match[1]}${query}${hash}`;
 
   // A previous wishlist notification route was never registered in the app.
