@@ -18,6 +18,7 @@ from rest_framework import status
 from rest_framework.decorators import action
 from .Serializers import BlogPostSerializer
 from .models import BlogPost, CareerVacancy, JobApplication, FAQ
+from core.models import ActivityLog, Notification
 from order.views import IsAuthenticatedOrVisitor
 from order.models import OrderItem, Order, Customer
 from django.shortcuts import get_object_or_404
