@@ -682,11 +682,12 @@ class BlogPostViewSet(viewsets.ModelViewSet):
         # Only a first-time reaction creates activity/notification records.
         if created:
             vendor = getattr(post, "vendor", None)
+            actor_label = "a customer" if request.user.is_authenticated else "a visitor"
             if vendor and vendor.user:
                 Notification.objects.create(
                     user=vendor.user,
                     title="New Reaction on Your Blog",
-                    message=f"Your blog {post.title} received a {reaction.type} reaction from a customer.",
+                    message=f"Your blog {post.title} received a {reaction.type} reaction from {actor_label}.",
                     url=f"/vendors-dashboard/vendor/blogs/{post.id}/",
                 )
             if request.user.is_authenticated:
@@ -702,7 +703,7 @@ class BlogPostViewSet(viewsets.ModelViewSet):
                 Notification.objects.create(
                     user=admin,
                     title="New Reaction on Blog",
-                    message=f"A customer reacted with {reaction.type} to the blog {post.title}.",
+                    message=f"{actor_label.capitalize()} reacted with {reaction.type} to the blog {post.title}.",
                     url=f"/admin-dashboard/blogs/{post.id}/",
                 )
                 ActivityLog.objects.create(
@@ -745,11 +746,12 @@ class BlogPostViewSet(viewsets.ModelViewSet):
 
             # --- Notify vendor if available ---
             vendor = getattr(post, "vendor", None)
+            actor_label = "a customer" if request.user.is_authenticated else "a visitor"
             if vendor and vendor.user:
                 Notification.objects.create(
                     user=vendor.user,
                     title="Reaction Removed from Your Blog",
-                    message=f"A {reaction_type} reaction was removed from your blog {post.title}.",
+                    message=f"A {reaction_type} reaction from {actor_label} was removed from your blog {post.title}.",
                     url=f"/vendors-dashboard/vendor/blogs/{post.id}/"
                 )
                 print(f"📢 Vendor {vendor.user.username} notified of removed reaction")
@@ -771,7 +773,7 @@ class BlogPostViewSet(viewsets.ModelViewSet):
                 Notification.objects.create(
                     user=admin,
                     title="Reaction Removed from Blog",
-                    message=f"A customer removed a {reaction_type} reaction from the blog {post.title}.",
+                    message=f"{actor_label.capitalize()} removed a {reaction_type} reaction from the blog {post.title}.",
                     url=f"/admin-dashboard/blogs/{post.id}/",
                 )
                 ActivityLog.objects.create(
