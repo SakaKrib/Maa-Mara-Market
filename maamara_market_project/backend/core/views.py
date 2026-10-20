@@ -325,6 +325,16 @@ def support_messages(request):
         message=message,
     )
 
+    # Support tickets are important user events too: persist notifications so
+    # the shared Firebase signal reaches every staff admin, independently of email.
+    for admin in get_user_model().objects.filter(is_staff=True):
+        Notification.objects.create(
+            user=admin,
+            title="New Support Request",
+            message=f"{ticket.name or ticket.email} submitted a support request: {ticket.subject}.",
+            url=f"/admin-dashboard/support?ticket={ticket.pk}",
+        )
+
     # Keep support staff informed when the deployment has an email backend configured.
     try:
         from django.conf import settings
@@ -421,6 +431,22 @@ def support_reply(request, pk):
     ticket.status = "answered"
     ticket.answered_at = timezone.now()
     ticket.save(update_fields=["support_reply", "status", "answered_at"])
+
+    # Notify the original audience through the same in-app and FCM pipeline.
+    if ticket.user_id:
+        Notification.objects.create(
+            user=ticket.user,
+            title="Support replied",
+            message=f"Our support team replied to your request: {ticket.subject}.",
+            url=f"/support?ticket={ticket.pk}",
+        )
+    elif ticket.visitor_id:
+        Notification.objects.create(
+            visitor_id=ticket.visitor_id,
+            title="Support replied",
+            message=f"Our support team replied to your request: {ticket.subject}.",
+            url=f"/support?ticket={ticket.pk}",
+        )
 
     email_sent = False
     email_error = None
