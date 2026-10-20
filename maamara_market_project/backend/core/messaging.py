@@ -10,7 +10,7 @@ from django.core.exceptions import ValidationError
 from PIL import Image, UnidentifiedImageError
 
 from order.views import IsAuthenticatedOrVisitor
-from .models import ActivityLog, Conversation, DirectMessage, SupportMessage
+from .models import ActivityLog, Conversation, DirectMessage, Notification, SupportMessage
 
 User = get_user_model()
 MAX_IMAGE_BYTES = 5 * 1024 * 1024
@@ -368,6 +368,51 @@ def messaging_messages(request, conversation_id):
         image=image,
     )
     conversation.save(update_fields=["updated_at"])
+
+    # Persist a normal Notification for the other conversation participant.
+    # core.signals dispatches every new Notification through the shared FCM
+    # pipeline, so message pushes use the same token/configuration path as
+    # order, approval, and marketplace notifications.
+    sender_is_admin = bool(
+        request.user.is_authenticated and request.user.pk == conversation.admin_id
+    )
+    if sender_is_admin:
+        recipient_user = conversation.participant
+        recipient_visitor_id = conversation.visitor_id if recipient_user is None else None
+        sender_name = "Maa Mara Market support"
+    else:
+        recipient_user = conversation.admin
+        recipient_visitor_id = None
+        if request.user.is_authenticated:
+            sender_vendor = getattr(request.user, "vendor", None)
+            sender_name = (
+                getattr(sender_vendor, "company_name", "")
+                or request.user.get_full_name()
+                or request.user.get_username()
+            )
+        else:
+            sender_name = "A visitor"
+
+    preview = "sent you an image" if image and not body else body.strip()
+    if len(preview) > 140:
+        preview = preview[:137].rstrip() + "..."
+    notification_message = f"{sender_name}: {preview}" if preview else f"{sender_name} sent you a message."
+    message_url = f"/messages?conversation={conversation.pk}&message={message.pk}"
+    if recipient_user is not None:
+        Notification.objects.create(
+            user=recipient_user,
+            title="New message",
+            message=notification_message,
+            url=message_url,
+        )
+    elif recipient_visitor_id:
+        Notification.objects.create(
+            visitor_id=str(recipient_visitor_id),
+            title="New message",
+            message=notification_message,
+            url=message_url,
+        )
+
     return Response(
         _message_payload(message, request),
         status=status.HTTP_201_CREATED,
