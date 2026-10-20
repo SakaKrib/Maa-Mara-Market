@@ -95,14 +95,18 @@ const IN_PROCESS_STATUSES = [
   "OUT_FOR_DELIVERY",
   "DELIVERED",
   "AWAITING_CONFIRMATION",
+  "DISPUTED",
 ];
 
-const statusLabel = (status) =>
-  String(status || "Processing")
+const statusLabel = (status) => {
+  const normalized = normalizeStatus(status);
+  if (normalized === "DISPUTED") return "Issue Under Review";
+  return String(status || "Processing")
     .toLowerCase()
     .split("_")
     .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
     .join(" ");
+};
 
 const CustomerOrdersDashboard = ({ wallet: walletProp, vouchers: vouchersProp, orders: ordersProp }) => {
   const navigate = useNavigate();
