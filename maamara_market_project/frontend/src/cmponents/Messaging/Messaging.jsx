@@ -327,10 +327,10 @@ export default function Messaging({ floating = false, onClose = null, initialCon
               {error && <div className="bg-red-50 px-4 py-2 text-xs text-red-700">{error}</div>}
               {preview && <div className="border-t border-[#e6e6e4] p-2"><div className="relative inline-block"><img src={preview} alt="Preview" className="h-20 rounded-xl" /><button type="button" onClick={() => { if (preview) URL.revokeObjectURL(preview); setImage(null); setPreview(""); }} className="absolute -right-2 -top-2 rounded-full bg-white p-1 shadow"><IonIcon icon={closeOutline} /></button></div></div>}
               <form onSubmit={sendMessage} className="border-t border-[#e6e6e4] p-3">
-                <div className="flex items-end gap-2 rounded-2xl border border-[#e6e6e4] bg-[#f8f8f6] p-2">
-                  <label className="grid h-10 w-10 shrink-0 cursor-pointer place-items-center rounded-xl text-[#595959] hover:bg-[#f8f8f6]"><IonIcon icon={attachOutline} className="text-xl" /><input type="file" accept="image/jpeg,image/png,image/webp" className="hidden" onChange={selectImage} /></label>
-                  <textarea value={body} onChange={(e) => setBody(e.target.value)} rows={1} placeholder="Write a message..." className="min-h-10 flex-1 resize-none bg-transparent px-2 py-2 text-sm outline-none" />
-                  <button type="submit" disabled={sending || (!body.trim() && !image)} className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-[#2563eb] px-2.5 text-white transition hover:bg-[#1d4ed8] disabled:opacity-50"><IonIcon icon={sendOutline} /></button>
+                <div className="flex items-center gap-2 rounded-2xl border border-[#222222] bg-white p-2">
+                  <label className="flex h-10 w-10 shrink-0 cursor-pointer items-center justify-center rounded-full text-[#222222] transition hover:bg-[#f1f1ef]" aria-label="Attach an image"><IonIcon icon={attachOutline} className="text-xl" /><input type="file" accept="image/jpeg,image/png,image/webp" className="hidden" onChange={selectImage} /></label>
+                  <textarea value={body} onChange={(e) => setBody(e.target.value)} rows={1} placeholder="Write a message..." className="min-h-10 min-w-0 flex-1 resize-none self-center bg-transparent px-2 py-2 text-sm leading-5 outline-none" />
+                  <button type="submit" disabled={sending || (!body.trim() && !image)} className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#2563eb] text-white transition hover:bg-[#1d4ed8] disabled:opacity-50" aria-label="Send message"><IonIcon icon={sendOutline} /></button>
                 </div>
               </form>
             </>
