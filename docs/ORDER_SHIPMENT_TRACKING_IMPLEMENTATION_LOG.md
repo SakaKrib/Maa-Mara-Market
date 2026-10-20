@@ -54,7 +54,7 @@ The normalized webhook endpoint is not a plug-and-play DHL/FedEx webhook adapter
 
 - Source changes are committed only to GitHub branch `ui-redesign-foundation`; production GitLab was not modified.
 - The earlier GitHub CI runs passed the website/mobile build, Android debug APK build, iOS simulator project build, Python compilation, and Django system checks. Those earlier build results predate the final audit fixes below.
-- The backend workflow now runs `python manage.py test order.test_fulfillment_tracking --verbosity 2` after the Python and Django checks. The result for the latest audit commit must be inspected before considering the regression tests verified.
+- The backend workflow now uses disposable PostgreSQL, runs Python compilation and Django checks, checks model/migration consistency with `makemigrations --check --dry-run`, applies migrations with `migrate --noinput`, and runs `python manage.py test order.test_fulfillment_tracking --verbosity 2`. The latest run triggered by the final backend edits must be inspected before considering those checks verified.
 - No production database migration has been run from this review, and no local browser/device run has been performed.
 - Carrier API behavior remains unverified against live DHL/FedEx credentials and account entitlements.
 - Do not deploy to production until the current revision's CI is green, the migration is checked/applied in a safe test environment, the end-to-end workflow is exercised, carrier credentials are verified, and the separate payout audit is complete.
@@ -76,7 +76,8 @@ A second source review found and addressed two operational correctness gaps:
 
 1. **Payment callback replay:** a replayed successful-payment callback could normalize a previously completed order back to `PAID`. The replay branch now canonicalizes the casing of `PAID`/`COMPLETED` without downgrading `COMPLETED`, and unit regression tests cover the completed/lowercase cases.
 2. **Scheduled tasks would not run automatically:** the repository had Beat schedule entries and task functions, but did not have a Celery application module or worker/Beat services in Compose. Added `project01/celery.py`, imported its app in `project01/__init__.py`, configured Redis as the default broker, and added worker/Beat services to development Compose and the production Compose overlay. The Beat schedule file is persisted in a named volume.
+3. **Legacy payment casing:** order-level payment confirmation and vendor/admin fulfillment queues now recognize paid/completed statuses case-insensitively. Regression tests cover `paid`, `Paid`, `completed`, and negative payment states.
 
-The backend GitHub Actions workflow now runs the fulfilment regression tests. Verify the current workflow run rather than relying on the earlier system-check-only result. This audit did not start containers, apply the migration, or test live carrier APIs.
+Backend CI was strengthened to use disposable PostgreSQL, compare model state against migrations, apply all migrations, and run the fulfilment regression tests. Verify the current workflow run rather than relying on the earlier system-check-only result. This audit did not start containers or run end-to-end UI interactions or live carrier API calls.
 
 The production Compose overlay still contains the pre-existing Caddy reverse-proxy service even though the preferred production setup is Nginx. It was not changed as part of this targeted fulfilment audit; resolve that separate deployment discrepancy before using the production overlay if the Nginx-only requirement still applies.
