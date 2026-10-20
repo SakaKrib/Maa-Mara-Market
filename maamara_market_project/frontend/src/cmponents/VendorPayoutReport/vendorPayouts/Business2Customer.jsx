@@ -17,6 +17,12 @@ const METHOD_LABELS = {
   BANK_TRANSFER: "Bank transfer",
 };
 
+const MPESA_TYPE_NAMES = {
+  PHONE: "Phone",
+  TILL: "Buy Goods / Till",
+  LIPA_NA_MPESA: "Paybill",
+};
+
 const METHOD_ICONS = {
   MOBILE_MONEY: cashOutline,
   PAYPAL: walletOutline,
@@ -157,6 +163,17 @@ export default function AdminPayoutTriggerPayment() {
                       <div>
                         <h2 className="text-base font-bold text-card-foreground">{METHOD_LABELS[method] || method.replaceAll("_", " ")}</h2>
                         <p className="text-xs text-muted-foreground">{payouts.length} vendor payment{payouts.length === 1 ? "" : "s"}</p>
+                        {method === "MOBILE_MONEY" && (
+                          <p className="mt-0.5 text-[11px] text-muted-foreground">
+                            {["PHONE", "TILL", "LIPA_NA_MPESA"]
+                              .map((type) => {
+                                const count = payouts.filter((p) => p.review?.destination?.type === type).length;
+                                return count ? `${count} ${MPESA_TYPE_NAMES[type]}` : null;
+                              })
+                              .filter(Boolean)
+                              .join(" · ")}
+                          </p>
+                        )}
                       </div>
                     </div>
                     <button
@@ -172,7 +189,10 @@ export default function AdminPayoutTriggerPayment() {
                   <div className="divide-y divide-border">
                     {payouts.map((payout) => {
                       const vendor = payout.vendor_details || payout.vendor || {};
+                      const review = payout.review || null;
                       const paid = Boolean(payout.payout_status);
+                      const needsAttention = review && !paid && review.state === "blocked";
+                      const warningCount = review?.warnings?.length || 0;
                       return (
                         <div key={payout.reference} className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5">
                           <div className="min-w-0">
@@ -185,6 +205,10 @@ export default function AdminPayoutTriggerPayment() {
                                   <IonIcon icon={checkmarkCircleOutline} />
                                   Paid
                                 </span>
+                              ) : needsAttention ? (
+                                <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-destructive/10 px-2 py-1 text-[10px] font-semibold text-destructive">
+                                  Needs attention
+                                </span>
                               ) : (
                                 <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-amber-500/10 px-2 py-1 text-[10px] font-semibold text-amber-700 dark:text-amber-300">
                                   <IonIcon icon={timeOutline} />
@@ -195,6 +219,19 @@ export default function AdminPayoutTriggerPayment() {
                             <p className="mt-1 truncate text-xs text-muted-foreground">
                               {vendor.email || vendor.company_email || "No vendor email"}
                             </p>
+                            {review?.destination?.summary && (
+                              <p className="mt-1 truncate text-xs font-medium text-card-foreground">
+                                {review.destination.summary}
+                              </p>
+                            )}
+                            {needsAttention && (
+                              <p className="mt-1 text-[11px] text-destructive">{review.problems[0]}</p>
+                            )}
+                            {warningCount > 0 && !paid && (
+                              <p className="mt-1 text-[11px] text-amber-700 dark:text-amber-300">
+                                ⚠ {warningCount} unusual {warningCount === 1 ? "signal" : "signals"} to check before paying
+                              </p>
+                            )}
                             <p className="mt-1 text-[10px] text-muted-foreground">{payout.reference || "No reference"}</p>
                           </div>
 

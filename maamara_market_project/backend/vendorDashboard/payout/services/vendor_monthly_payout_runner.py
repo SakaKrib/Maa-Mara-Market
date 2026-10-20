@@ -14,6 +14,7 @@ from vendorDashboard.payout.services.payment_processors import (
 )
 
 from vendorDashboard.models import Vendor, VendorPayout
+from vendorDashboard.payout.services.payout_review import build_payout_review
 from vendorDashboard.payout.services.payment_processors import payment_processors
 from vendorDashboard.payout.services.paypal_payouts import reconcile_paypal_payout
 from vendorDashboard.payout.services.kcb_payouts import reconcile_kcb_payout
@@ -91,6 +92,8 @@ def generate_monthly_payouts(request):
                 "reference": payout.reference,
                 "payment_method": vendor.payment_method,
                 "payout_status": payout.paid,
+                # Server-computed verification (destination summary, problems, warnings).
+                "review": build_payout_review(payout),
             })
 
         except Exception as e:

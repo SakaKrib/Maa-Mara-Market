@@ -2,6 +2,7 @@ import React from "react";
 import { Button } from "../../../../components/ui/button";
 import { Card, CardContent } from "../../../../components/ui/card";
 import { resolveApiAssetUrl } from "../../../Services/Api";
+import { MEDIA_KEYS, PAYMENT_KEYS, mediaProblems, paymentSummary } from "./vendorRequestChecks";
 
 export default function VendorRequestDetails({
   vendor,
@@ -13,6 +14,13 @@ export default function VendorRequestDetails({
   onBack,
 }) {
   if (!vendor) return null;
+
+  const vendorData = vendor.vendor_data || {};
+  const payment = paymentSummary(vendorData);
+  const problems = [...mediaProblems(vendorData), ...payment.problems];
+  const logo = resolveApiAssetUrl(vendorData.vendor_company_logo);
+  const profile = resolveApiAssetUrl(vendorData.profile_picture);
+  const brand = vendorData.brand && typeof vendorData.brand === "object" ? vendorData.brand : null;
 
   return (
     <section className="min-w-0 space-y-3 rounded-[12px] border border-border bg-card p-2 text-card-foreground">
@@ -33,9 +41,49 @@ export default function VendorRequestDetails({
         </Button>
       </div>
 
+      {problems.length > 0 && (
+        <ul className="space-y-1 rounded-[12px] border border-destructive/30 bg-destructive/5 px-3 py-2 text-xs text-destructive">
+          <li className="font-semibold">Check before approving:</li>
+          {problems.map((problem) => (
+            <li key={problem}>• {problem}</li>
+          ))}
+        </ul>
+      )}
+
+      <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+        {[["Company logo", logo], ["Profile picture", profile]].map(([label, src]) => (
+          <div key={label} className="rounded-[12px] border border-border bg-muted/40 p-2">
+            <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">{label}</p>
+            {src ? (
+              <img src={src} alt={label} className="mt-1 h-24 w-24 rounded-[12px] border border-border bg-white object-cover" />
+            ) : (
+              <p className="mt-1 text-sm text-destructive">Not uploaded</p>
+            )}
+          </div>
+        ))}
+        <div className="rounded-[12px] border border-border bg-muted/40 p-2">
+          <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Brand</p>
+          <p className="mt-1 break-words text-sm font-semibold">{brand?.name || "Not provided"}</p>
+          {brand?.description && <p className="mt-1 line-clamp-3 break-words text-xs text-muted-foreground">{brand.description}</p>}
+        </div>
+      </div>
+
+      <div className="rounded-[12px] border border-border bg-muted/40 p-2">
+        <p className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Payment details (used for payouts)</p>
+        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+          {payment.rows.map(([label, value]) => (
+            <div key={label}>
+              <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">{label}</p>
+              <p className={`mt-0.5 break-words text-sm ${value === "Not saved" ? "text-destructive" : ""}`}>{value}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+
       <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
         {vendor.vendor_data &&
           Object.entries(vendor.vendor_data).map(([key, value]) => {
+            if (PAYMENT_KEYS.has(key) || MEDIA_KEYS.has(key) || key === "draft_id") return null;
             if (Array.isArray(value) || (typeof value === "object" && value !== null)) return null;
             return (
               <div key={key} className="rounded-[12px] border border-border bg-muted/40 p-2">

@@ -332,10 +332,17 @@ const SingleVendorProfile = () => {
 
   if (vendor.payment_method === "MOBILE_MONEY") {
     detailRows.push(["M-Pesa Type", infoValue(vendor.mpesa_type)]);
-    detailRows.push([
-      "M-Pesa Number",
-      infoValue(vendor.mpesa_number || vendor.mpesa_till || vendor.mpesa_paybill),
-    ]);
+    if (vendor.mpesa_type === "TILL") {
+      detailRows.push(["Buy Goods Till", infoValue(vendor.mpesa_till)]);
+    } else if (vendor.mpesa_type === "LIPA_NA_MPESA") {
+      detailRows.push(["Paybill Number", infoValue(vendor.mpesa_paybill)]);
+      detailRows.push(["Paybill Account Number", infoValue(vendor.mpesa_paybill_account)]);
+    } else {
+      detailRows.push([
+        "M-Pesa Number",
+        infoValue(vendor.mpesa_number || vendor.mpesa_till || vendor.mpesa_paybill),
+      ]);
+    }
   }
 
   if (vendor.payment_method === "PAYPAL") {

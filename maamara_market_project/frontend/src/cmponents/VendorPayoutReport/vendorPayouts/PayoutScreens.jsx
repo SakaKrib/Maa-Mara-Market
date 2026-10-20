@@ -82,6 +82,9 @@ export function PayoutDetails({ item }) {
         <div className="min-w-0">
           <p className="truncate text-base font-bold text-card-foreground">{item.vendor.company_name || "Vendor"}</p>
           <p className="mt-0.5 truncate text-xs text-muted-foreground">{item.vendor.email || "No vendor email"}</p>
+          {item.destination.summary && (
+            <p className="mt-1 truncate text-xs font-medium text-card-foreground">{item.destination.summary}</p>
+          )}
           <p className="mt-0.5 text-[10px] text-muted-foreground">{item.reference}</p>
         </div>
         <span className={`inline-flex shrink-0 items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-semibold ${badge.cls}`}>
@@ -104,6 +107,17 @@ export function PayoutDetails({ item }) {
             <li key={note}>• {note}</li>
           ))}
         </ul>
+      )}
+
+      {item.warnings?.length > 0 && !item.paid && (
+        <div className="mt-4 rounded-xl border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-xs text-amber-800 dark:text-amber-200">
+          <p className="font-semibold">Unusual — check before paying</p>
+          <ul className="mt-1 space-y-1">
+            {item.warnings.map((warning) => (
+              <li key={warning}>• {warning}</li>
+            ))}
+          </ul>
+        </div>
       )}
 
       {item.problems.length > 0 && !item.paid && (
@@ -207,7 +221,9 @@ export function SinglePayoutScreen({ title, subtitle, logo, successPath, watchRe
   const handleSend = async () => {
     if (!item?.can_pay) return;
     const ok = window.confirm(
-      `Send ${formatKes(item.amount)} to ${item.vendor.company_name} via ${item.payment_method_label}?`
+      `Send ${formatKes(item.amount)} to ${item.vendor.company_name}\n${item.destination.summary}\n` +
+        (item.warnings?.length ? `\nCheck first:\n- ${item.warnings.join("\n- ")}\n` : "") +
+        "\nContinue?"
     );
     if (!ok) return;
 
@@ -293,8 +309,10 @@ export function GroupPayoutScreen({ method, title, subtitle, logo }) {
 
   const handleSendAll = async () => {
     if (!summary?.ready_count) return;
+    const flagged = items.filter((i) => i.can_pay && i.warnings?.length).length;
     const ok = window.confirm(
-      `Send all ${data.payment_method_label} payouts for this period (${summary.ready_count} ready, ${formatKes(summary.ready_amount)})?`
+      `Send all ${data.payment_method_label} payouts for this period (${summary.ready_count} ready, ${formatKes(summary.ready_amount)})?` +
+        (flagged ? `\n\n${flagged} of them have unusual signals. Review them above first.` : "")
     );
     if (!ok) return;
 

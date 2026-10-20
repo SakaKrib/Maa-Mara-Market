@@ -16,7 +16,7 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAdminUser
 from rest_framework.response import Response
 
-from vendorDashboard.models import VendorPayout
+from vendorDashboard.models import Vendor, VendorPayout
 from vendorDashboard.payout.services.payment_processors import get_vendor_mpesa_type
 
 METHOD_LABELS = {
@@ -167,6 +167,77 @@ def _pending_problem(payout, method):
     return ""
 
 
+def _destination_summary(method, destination, vendor):
+    value = destination.get("value") or ""
+    mpesa_type = destination.get("type")
+    if method == "MOBILE_MONEY":
+        if mpesa_type == "LIPA_NA_MPESA":
+            account = _clean(getattr(vendor, "mpesa_paybill_account", "")) or "no account saved"
+            return f"Paybill {value or 'not saved'} · Account {account}"
+        if mpesa_type == "TILL":
+            return f"Buy Goods Till {value or 'not saved'}"
+        if mpesa_type == "PHONE":
+            return f"Phone {value or 'not saved'}"
+        return "No M-Pesa destination saved"
+    if method == "PAYPAL":
+        return f"PayPal {value or 'not saved'}"
+    if method == "BANK_TRANSFER":
+        bank = _clean(vendor.bank_name)
+        return f"{bank + ' · ' if bank else ''}Account {value or 'not saved'}"
+    return "No payment destination saved"
+
+
+def _other_vendors_with_same_destination(vendor, method, destination):
+    """Names of other vendors that saved the very same payout destination (a fraud signal)."""
+    value = destination.get("value") or ""
+    if not value:
+        return []
+    others = Vendor.objects.exclude(pk=vendor.pk)
+    if method == "MOBILE_MONEY":
+        mpesa_type = destination.get("type")
+        if mpesa_type == "PHONE":
+            others = others.filter(mpesa_number__endswith=value[-9:])
+        elif mpesa_type == "TILL":
+            others = others.filter(mpesa_till=value)
+        elif mpesa_type == "LIPA_NA_MPESA":
+            others = others.filter(
+                mpesa_paybill=value,
+                mpesa_paybill_account=_clean(getattr(vendor, "mpesa_paybill_account", "")),
+            )
+        else:
+            return []
+    elif method == "PAYPAL":
+        others = others.filter(paypal_email__iexact=value)
+    elif method == "BANK_TRANSFER":
+        others = others.filter(bank_account_number=value)
+    else:
+        return []
+    return list(others.values_list("company_name", flat=True)[:3])
+
+
+def _unusual_signals(payout, vendor, method, destination, amount):
+    """Non-blocking things an admin should look at before paying."""
+    warnings = []
+    shared = _other_vendors_with_same_destination(vendor, method, destination)
+    if shared:
+        warnings.append(
+            "The same payout destination is also saved for: " + ", ".join(shared) + "."
+        )
+    previous = list(
+        VendorPayout.objects.filter(vendor=vendor, paid=True)
+        .exclude(pk=payout.pk)
+        .order_by("-payout_period_end")
+        .values_list("amount", flat=True)[:6]
+    )
+    if previous:
+        average = sum(previous, Decimal("0")) / len(previous)
+        if average > 0 and amount > average * 3:
+            warnings.append(
+                f"This amount is {amount / average:.1f}× this vendor's recent average payout (KES {average:,.2f})."
+            )
+    return warnings
+
+
 def build_payout_review(payout):
     vendor = payout.vendor
     method = vendor.payment_method
@@ -190,6 +261,8 @@ def build_payout_review(payout):
         problems.append("The payout amount must be greater than zero.")
     if not vendor.is_active:
         problems.append("This vendor is inactive and cannot receive a payout.")
+
+    warnings = _unusual_signals(payout, vendor, method, destination, amount) if amount > 0 else []
 
     pending = _pending_problem(payout, method)
     if pending and not payout.paid:
@@ -226,10 +299,12 @@ def build_payout_review(payout):
         "destination": {
             "type": destination["type"],
             "value": destination["value"],
+            "summary": _destination_summary(method, destination, vendor),
             "fields": [{"label": label, "value": value} for label, value in destination["fields"]],
         },
         "problems": problems,
         "notes": notes,
+        "warnings": warnings,
         "can_pay": state == "ready",
     }
 
