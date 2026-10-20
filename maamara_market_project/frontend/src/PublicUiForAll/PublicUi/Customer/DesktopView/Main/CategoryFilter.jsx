@@ -11,9 +11,11 @@ import "../../../maamara.css";
 const SingleCategory = () => {
   const {
     filters, selectedFilters, setSelectedFilters, products, nextUrl, prevUrl,
+    currentPage, totalCount, goToPage,
     loadingFilters, loadingProducts, error, fetchProducts, resetFilters, toggleFilter,
   } = useCategoryFilters();
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
+  const [desktopFiltersOpen, setDesktopFiltersOpen] = useState(false);
 
   // Keep the page behind the filter drawer still while allowing its own
   // category list to scroll. Preserve the exact scroll position on close.
@@ -66,8 +68,8 @@ const SingleCategory = () => {
     <main className="mm-page">
       <section className="mm-section">
         <div className="mm-container">
-          <div className="flex flex-col lg:flex-row gap-5 lg:items-start">
-            <div className={`mm-mobile-filter-drawer ${mobileFiltersOpen ? "is-open" : ""}`} role="dialog" aria-modal="true" aria-label="Product filters">
+          <div className="mm-shop-layout flex flex-col lg:flex-row gap-5 lg:items-start">
+            <div id="mm-mobile-filter-panel" className={`mm-mobile-filter-drawer ${mobileFiltersOpen ? "is-open" : ""}`} role="dialog" aria-modal="true" aria-label="Product filters">
               <div className="mm-mobile-filter-head">
                 <strong>Filters</strong>
                 <button type="button" onClick={() => setMobileFiltersOpen(false)} aria-label="Close filters">
@@ -82,8 +84,22 @@ const SingleCategory = () => {
             </div>
             <div className={`mm-mobile-filter-backdrop ${mobileFiltersOpen ? "is-open" : ""}`} onClick={() => setMobileFiltersOpen(false)} aria-hidden="true" />
 
-            <aside className="mm-desktop-filter">
+            <aside id="mm-desktop-filter-panel" className={`mm-desktop-filter ${desktopFiltersOpen ? "is-open" : ""}`} aria-hidden={!desktopFiltersOpen}>
+              {desktopFiltersOpen && (
+                <div className="mm-desktop-filter-head">
+                  <strong>Filters</strong>
+                  <button type="button" onClick={() => setDesktopFiltersOpen(false)} aria-label="Close filters">
+                    <IonIcon icon={closeOutline} />
+                  </button>
+                </div>
+              )}
               <CategoryFilterSidebar filters={filters} selectedFilters={selectedFilters} toggleFilter={toggleFilter} />
+              {desktopFiltersOpen && (
+                <div className="mm-desktop-filter-actions">
+                  <button type="button" className="mm-filter-clear-button" onClick={resetFilters}>Clear all</button>
+                  <button type="button" className="mm-filter-apply-button" onClick={() => setDesktopFiltersOpen(false)}>Done</button>
+                </div>
+              )}
             </aside>
 
             <div className="w-full lg:flex-1 min-w-0">
@@ -92,10 +108,26 @@ const SingleCategory = () => {
                   <div>
                     <p className="text-xs uppercase tracking-wide text-gray-500">Maa Mara Market</p>
                     <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Shop products</h1>
-                    <p className="text-sm text-gray-500 mt-1">{products.length ? `${products.length} products on this page` : "No products match these filters"}</p>
+                    <p className="text-sm text-gray-500 mt-1">
+                      {totalCount != null && totalCount > 0
+                        ? `Showing ${((currentPage - 1) * Number(selectedFilters.perPage)) + 1}–${Math.min(currentPage * Number(selectedFilters.perPage), totalCount)} of ${totalCount} products`
+                        : products.length ? `${products.length} products on this page` : "No products match these filters"}
+                    </p>
                   </div>
                   <div className="flex flex-wrap items-center gap-2">
-                    <button type="button" className="mm-mobile-filter-button" onClick={() => setMobileFiltersOpen(true)}>
+                    <button
+                      type="button"
+                      className="mm-mobile-filter-button"
+                      onClick={() => {
+                        if (window.matchMedia("(max-width: 639px)").matches) {
+                          setMobileFiltersOpen(true);
+                        } else {
+                          setDesktopFiltersOpen((open) => !open);
+                        }
+                      }}
+                      aria-expanded={window.matchMedia("(max-width: 639px)").matches ? mobileFiltersOpen : desktopFiltersOpen}
+                      aria-controls={window.matchMedia("(max-width: 639px)").matches ? "mm-mobile-filter-panel" : "mm-desktop-filter-panel"}
+                    >
                       <IonIcon icon={filterOutline} /><span>Filter</span>
                     </button>
                     <NativeAwareSelect
@@ -136,11 +168,20 @@ const SingleCategory = () => {
                 <div className="mm-card p-10 text-center text-gray-500">No products found for the selected filters.</div>
               )}
 
-              {(prevUrl || nextUrl) && !loadingProducts && (
-                <div className="flex justify-center items-center gap-3 mt-6">
-                  <button type="button" disabled={!prevUrl} onClick={() => prevUrl && fetchProducts(prevUrl)} className="secondary-button px-4 py-2 rounded-md text-white disabled:opacity-50">Previous</button>
-                  <button type="button" disabled={!nextUrl} onClick={() => nextUrl && fetchProducts(nextUrl)} className="secondary-button px-4 py-2 rounded-md text-white disabled:opacity-50">Next</button>
-                </div>
+              {(prevUrl || nextUrl || (totalCount != null && totalCount > Number(selectedFilters.perPage))) && !loadingProducts && (
+                <nav className="mm-shop-pagination mt-6" aria-label="Product pages">
+                  <button type="button" disabled={!prevUrl} onClick={() => prevUrl && fetchProducts(prevUrl)} className="mm-shop-page-button">Previous</button>
+                  {totalCount != null && Array.from({ length: Math.min(5, Math.ceil(totalCount / Number(selectedFilters.perPage))) }, (_, index) => {
+                    const totalPages = Math.ceil(totalCount / Number(selectedFilters.perPage));
+                    const firstPage = Math.max(1, Math.min(currentPage - 2, totalPages - 4));
+                    return firstPage + index;
+                  }).map((page) => (
+                    <button key={page} type="button" onClick={() => goToPage(page)} aria-current={page === currentPage ? "page" : undefined} className={`mm-shop-page-button ${page === currentPage ? "is-current" : ""}`}>
+                      {page}
+                    </button>
+                  ))}
+                  <button type="button" disabled={!nextUrl} onClick={() => nextUrl && fetchProducts(nextUrl)} className="mm-shop-page-button">Next</button>
+                </nav>
               )}
             </div>
           </div>
