@@ -365,7 +365,10 @@ def vendor_fulfillment_list(request):
     vendor_items = OrderItem.objects.filter(
         Q(item__vendor=vendor) | Q(item__created_by=request.user),
         order__isnull=False,
-    ).filter(order__payment__status__in=["PAID", "completed", "COMPLETED"]).select_related(
+    ).filter(
+        Q(order__payment__status__iexact="PAID")
+        | Q(order__payment__status__iexact="COMPLETED")
+    ).select_related(
         "order", "item", "order__payment"
     )
     items = []
@@ -400,7 +403,8 @@ def admin_fulfillment_queue(request):
     # customer-acceptance or payout-eligibility timestamps.
     legacy_items = (
         OrderItem.objects.filter(
-            order__payment__status__in=["PAID", "completed", "COMPLETED"],
+            Q(order__payment__status__iexact="PAID")
+            | Q(order__payment__status__iexact="COMPLETED"),
             fulfillment__isnull=True,
             order__isnull=False,
         )
