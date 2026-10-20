@@ -1,24 +1,10 @@
-import React, { useEffect, useMemo, useState } from "react";
-import { ArrowLeft, CheckCircle2, Loader2, MapPin } from "lucide-react";
+import React, { useCallback, useEffect, useState } from "react";
+import { ArrowLeft, Loader2 } from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "../../../../../../../components/ui/card";
-import { Badge } from "../../../../../../../components/ui/badge";
 import { Button } from "../../../../../../../components/ui/button";
-import FormattedCurrency from "../Currency/FormattedCurrency";
 import api from "../../../../../../Services/Api";
-
-const TRACKING_STEPS = [
-  "PAID",
-  "PROCESSING",
-  "PACKING",
-  "READY_TO_SHIP",
-  "SHIPPED",
-  "IN_TRANSIT",
-  "OUT_FOR_DELIVERY",
-  "DELIVERED",
-  "AWAITING_CONFIRMATION",
-  "COMPLETED",
-];
+import FulfillmentTrackingPanel from "../../../../../../cmponents/Hooks/Order/FulfillmentTrackingPanel";
 
 const normalizeStatus = (status) => String(status || "").trim().toUpperCase();
 
@@ -68,10 +54,11 @@ export default function OrderTracking() {
   }, [orderId]);
 
   const currentStatus = normalizeStatus(order?.status);
-  const currentIndex = useMemo(
-    () => TRACKING_STEPS.indexOf(currentStatus),
-    [currentStatus]
-  );
+  const updateTrackingStatus = useCallback((status) => {
+    setOrder((current) => (
+      current && current.status !== status ? { ...current, status } : current
+    ));
+  }, []);
 
   if (loading) {
     return (
@@ -130,78 +117,14 @@ export default function OrderTracking() {
                     Order #{order.id}
                   </CardTitle>
                 </div>
-                <Badge className="border border-[#e5dfd4] bg-white text-blue-700">
+                <span className="inline-flex rounded-full border border-[#e5dfd4] bg-white px-3 py-1 text-sm font-semibold text-blue-700">
                   {statusLabel(currentStatus)}
-                </Badge>
+                </span>
               </div>
             </CardHeader>
 
             <CardContent className="p-6 pt-3">
-              <div className="mb-6 grid gap-3 sm:grid-cols-2">
-                <div className="rounded-2xl bg-[#faf8f4] p-4">
-                  <p className="text-xs text-muted-foreground">Items</p>
-                  <p className="mt-1 font-semibold">
-                    {(order.items || []).length} item(s)
-                  </p>
-                </div>
-                <div className="rounded-2xl bg-[#faf8f4] p-4">
-                  <p className="text-xs text-muted-foreground">Order total</p>
-                  <p className="mt-1 font-semibold">
-                    <FormattedCurrency value={order.final_total || 0} />
-                  </p>
-                </div>
-              </div>
-
-              {currentStatus === "PENDING_PAYMENT" ? (
-                <div className="mb-6 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
-                  Payment for this order is still pending. Tracking will begin once payment is confirmed.
-                </div>
-              ) : (
-                <div className="space-y-5">
-                  {TRACKING_STEPS.map((step, index) => {
-                    const completed = currentIndex >= index;
-                    const current = currentIndex === index;
-
-                    return (
-                      <div key={step} className="flex gap-4">
-                        <div className="flex flex-col items-center">
-                          <span
-                            className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full border ${
-                              completed
-                                ? "border-green-200 bg-green-50 text-green-700"
-                                : "border-[#e5dfd4] bg-white text-gray-400"
-                            }`}
-                          >
-                            {completed ? (
-                              <CheckCircle2 className="h-5 w-5" aria-hidden="true" />
-                            ) : (
-                              <MapPin className="h-4 w-4" aria-hidden="true" />
-                            )}
-                          </span>
-                          {index < TRACKING_STEPS.length - 1 && (
-                            <span
-                              className={`mt-1 min-h-7 w-px ${
-                                currentIndex > index ? "bg-green-300" : "bg-[#e5dfd4]"
-                              }`}
-                            />
-                          )}
-                        </div>
-
-                        <div className="pb-4">
-                          <p className={`font-semibold ${current ? "text-blue-700" : "text-gray-800"}`}>
-                            {statusLabel(step)}
-                          </p>
-                          {current && (
-                            <p className="mt-1 text-sm text-muted-foreground">
-                              Your order is currently at this stage.
-                            </p>
-                          )}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
+              <FulfillmentTrackingPanel orderId={orderId} onOrderStatusChange={updateTrackingStatus} />
             </CardContent>
           </Card>
         </div>

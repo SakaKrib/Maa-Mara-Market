@@ -156,6 +156,10 @@ def complete_paid_order(order, payment, *, transaction_id=None):
                 fields.append("transaction_id")
             locked_payment.save(update_fields=fields)
 
+        # Seed durable per-item tracking records even when a provider callback is replayed.
+        from .fulfillment import ensure_order_fulfillments
+        ensure_order_fulfillments(locked_order)
+
         _, invoice_created = create_customer_invoice(
             locked_order,
             locked_payment,
@@ -218,6 +222,10 @@ def complete_paid_order(order, payment, *, transaction_id=None):
     locked_order.status = "PAID"
     locked_order.payment = locked_payment
     locked_order.save(update_fields=["status", "payment"])
+
+    # Start an auditable, per-order-item fulfilment timeline at verified payment.
+    from .fulfillment import ensure_order_fulfillments
+    ensure_order_fulfillments(locked_order)
 
     # Customer-facing persistence happens only after payment has been
     # positively reconciled. The checkout endpoint may stage a pending

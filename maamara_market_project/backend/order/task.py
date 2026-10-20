@@ -32,3 +32,17 @@ def cleanup_expired_checkout_sessions():
         expires_at__lt=timezone.now() - timedelta(days=1),
         status__in=["expired", "failed", "completed"],
     ).delete()
+
+
+@shared_task
+def auto_complete_unconfirmed_fulfillment():
+    """Complete eligible delivered items after the three-day customer window."""
+    from .fulfillment import auto_complete_unconfirmed_items
+    return auto_complete_unconfirmed_items()
+
+
+@shared_task
+def sync_shipment_tracking():
+    """Refresh configured DHL/FedEx tracking records; unconfigured carriers are skipped."""
+    from .fulfillment import sync_pending_shipments
+    return sync_pending_shipments()

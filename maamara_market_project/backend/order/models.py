@@ -846,3 +846,201 @@ class CheckoutSession(models.Model):
 
     def __str__(self):
         return f"Checkout {self.id} ({self.status})"
+
+
+# Shipment fulfilment is tracked independently from the legacy Order status.
+# A single order may contain multiple items whose preparation and delivery
+# progress differs, so each OrderItem gets a durable fulfilment record.
+class OrderItemFulfillment(models.Model):
+    STATUS_CHOICES = [
+        ("PAID", "Paid - awaiting vendor processing"),
+        ("PROCESSING", "Processing"),
+        ("PACKING", "Packing"),
+        ("READY_TO_SHIP", "Ready for dispatch inspection"),
+        ("DISPATCH_INSPECTED", "Dispatch inspection passed"),
+        ("SHIPPED", "Handed to carrier"),
+        ("IN_TRANSIT", "In transit"),
+        ("OUT_FOR_DELIVERY", "Out for delivery"),
+        ("DELIVERED", "Delivered"),
+        ("AWAITING_CONFIRMATION", "Awaiting customer confirmation"),
+        ("COMPLETED", "Customer accepted or acceptance window elapsed"),
+        ("ISSUE_REPORTED", "Customer reported a problem"),
+        ("CANCELLED", "Cancelled"),
+    ]
+    INSPECTION_CHOICES = [
+        ("PENDING", "Pending inspection"),
+        ("PASSED", "Passed"),
+        ("FAILED", "Failed"),
+    ]
+
+    order_item = models.OneToOneField(
+        "oder.OrderItem",
+        on_delete=models.CASCADE,
+        related_name="fulfillment",
+    )
+    status = models.CharField(max_length=32, choices=STATUS_CHOICES, default="PAID", db_index=True)
+    inspection_status = models.CharField(max_length=16, choices=INSPECTION_CHOICES, default="PENDING")
+    dispatch_inspected_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="+",
+    )
+    dispatch_inspected_at = models.DateTimeField(null=True, blank=True)
+    dispatch_notes = models.TextField(blank=True, default="")
+    delivery_reported_at = models.DateTimeField(null=True, blank=True)
+    confirmation_deadline = models.DateTimeField(null=True, blank=True, db_index=True)
+    customer_confirmed_at = models.DateTimeField(null=True, blank=True)
+    completed_at = models.DateTimeField(null=True, blank=True)
+    payout_eligible_at = models.DateTimeField(null=True, blank=True, db_index=True)
+    hold_reason = models.TextField(blank=True, default="")
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-updated_at"]
+        indexes = [
+            models.Index(fields=["status", "confirmation_deadline"], name="fulfill_status_deadline_idx"),
+        ]
+
+    def __str__(self):
+        return f"Fulfilment for order item {self.order_item_id}: {self.status}"
+
+
+class Shipment(models.Model):
+    CARRIER_CHOICES = [
+        ("DHL", "DHL"),
+        ("FEDEX", "FedEx"),
+        ("OTHER", "Other carrier"),
+    ]
+    STATUS_CHOICES = [
+        ("LABEL_CREATED", "Shipment recorded"),
+        ("SHIPPED", "Handed to carrier"),
+        ("IN_TRANSIT", "In transit"),
+        ("OUT_FOR_DELIVERY", "Out for delivery"),
+        ("DELIVERED", "Delivered"),
+        ("EXCEPTION", "Carrier exception"),
+        ("RETURNED", "Returned to sender"),
+    ]
+
+    order = models.ForeignKey("oder.Order", on_delete=models.CASCADE, related_name="shipments")
+    order_items = models.ManyToManyField(
+        "oder.OrderItemFulfillment",
+        related_name="shipments",
+        blank=True,
+    )
+    carrier = models.CharField(max_length=16, choices=CARRIER_CHOICES)
+    service = models.CharField(max_length=120, blank=True, default="")
+    tracking_number = models.CharField(max_length=120)
+    tracking_url = models.URLField(max_length=500, blank=True, default="")
+    status = models.CharField(max_length=24, choices=STATUS_CHOICES, default="LABEL_CREATED", db_index=True)
+    latest_event_description = models.CharField(max_length=500, blank=True, default="")
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="+",
+    )
+    handed_over_at = models.DateTimeField(null=True, blank=True)
+    estimated_delivery_at = models.DateTimeField(null=True, blank=True)
+    delivered_at = models.DateTimeField(null=True, blank=True)
+    last_synced_at = models.DateTimeField(null=True, blank=True)
+    provider_payload = models.JSONField(default=dict, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["carrier", "tracking_number"],
+                condition=~models.Q(tracking_number=""),
+                name="uniq_carrier_tracking_number",
+            ),
+        ]
+
+    def __str__(self):
+        return f"{self.carrier} {self.tracking_number} for order {self.order_id}"
+
+
+class ShipmentEvent(models.Model):
+    SOURCE_CHOICES = [
+        ("CARRIER_API", "Carrier API"),
+        ("CARRIER_WEBHOOK", "Carrier webhook"),
+        ("STAFF", "Staff update"),
+        ("SYSTEM", "System"),
+    ]
+
+    shipment = models.ForeignKey(Shipment, on_delete=models.CASCADE, related_name="events")
+    carrier_event_id = models.CharField(max_length=160, null=True, blank=True)
+    status = models.CharField(max_length=24)
+    description = models.CharField(max_length=500, blank=True, default="")
+    source = models.CharField(max_length=24, choices=SOURCE_CHOICES, default="SYSTEM")
+    occurred_at = models.DateTimeField(null=True, blank=True)
+    received_at = models.DateTimeField(auto_now_add=True)
+    payload = models.JSONField(default=dict, blank=True)
+
+    class Meta:
+        ordering = ["occurred_at", "received_at"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["shipment", "carrier_event_id"],
+                condition=models.Q(carrier_event_id__isnull=False) & ~models.Q(carrier_event_id=""),
+                name="uniq_shipment_carrier_event",
+            ),
+        ]
+
+    def __str__(self):
+        return f"{self.shipment_id}: {self.status} - {self.description}"
+
+
+class FulfillmentEvent(models.Model):
+    SOURCE_CHOICES = [
+        ("VENDOR", "Vendor"),
+        ("STAFF", "Dispatch/admin"),
+        ("CUSTOMER", "Customer"),
+        ("CARRIER_API", "Carrier API"),
+        ("CARRIER_WEBHOOK", "Carrier webhook"),
+        ("SYSTEM", "System"),
+    ]
+
+    order = models.ForeignKey("oder.Order", on_delete=models.CASCADE, related_name="fulfillment_events")
+    fulfillment = models.ForeignKey(
+        OrderItemFulfillment,
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name="events",
+    )
+    shipment = models.ForeignKey(
+        Shipment,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="fulfillment_events",
+    )
+    actor = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="+",
+    )
+    source = models.CharField(max_length=24, choices=SOURCE_CHOICES, default="SYSTEM")
+    event_type = models.CharField(max_length=64)
+    from_status = models.CharField(max_length=32, blank=True, default="")
+    to_status = models.CharField(max_length=32, blank=True, default="")
+    note = models.TextField(blank=True, default="")
+    metadata = models.JSONField(default=dict, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["created_at", "id"]
+        indexes = [
+            models.Index(fields=["order", "created_at"], name="fulfill_event_order_time_idx"),
+        ]
+
+    def __str__(self):
+        return f"Order {self.order_id}: {self.event_type}"

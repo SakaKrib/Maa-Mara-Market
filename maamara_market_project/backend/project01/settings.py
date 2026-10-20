@@ -307,6 +307,10 @@ CHANNEL_LAYERS = {
     }
 }
 
+# The task module uses the legacy singular name order.task; import it explicitly
+# so its cleanup, customer-confirmation timeout, and carrier-sync tasks are registered.
+CELERY_IMPORTS = ("order.task",)
+
 # =========================================================
 # CELERY
 # =========================================================
@@ -320,7 +324,19 @@ CELERY_BEAT_SCHEDULE = {
         "task": "order.task.cleanup_expired_checkout_sessions",
         "schedule": crontab(minute=30),
     },
+    "auto_complete_unconfirmed_fulfillment_every_30_minutes": {
+        "task": "order.task.auto_complete_unconfirmed_fulfillment",
+        "schedule": crontab(minute="*/30"),
+    },
+    "sync_shipment_tracking_every_30_minutes": {
+        "task": "order.task.sync_shipment_tracking",
+        "schedule": crontab(minute="*/30"),
+    },
 }
+
+# Shipment carrier webhooks use a shared normalized payload and a dedicated secret.
+# Configure a high-entropy secret in the environment before enabling the webhook URL.
+SHIPMENT_TRACKING_WEBHOOK_TOKEN = env("SHIPMENT_TRACKING_WEBHOOK_TOKEN", default="")
 
 # =========================================================
 # STATIC / MEDIA
@@ -442,6 +458,9 @@ PAYMENT_GATEWAYS = {
         "dhl": {
             "api_url": env("DHL_RATES_URL", default=""),
             "api_key": env("DHL_API_KEY", default=""),
+            # Tracking endpoint is separate from the rate-quote endpoint.
+            "tracking_api_url": env("DHL_TRACKING_API_URL", default="https://api-eu.dhl.com/track/shipments"),
+            "tracking_api_key": env("DHL_TRACKING_API_KEY", default=env("DHL_API_KEY", default="")),
             "origin_postal_code": env("SHIPPING_ORIGIN_POSTAL_CODE", default="00100"),
             "origin_city": env("SHIPPING_ORIGIN_CITY", default="Nairobi"),
             "origin_country": env("SHIPPING_ORIGIN_COUNTRY", default="KE"),
@@ -449,6 +468,8 @@ PAYMENT_GATEWAYS = {
         "fedex": {
             "auth_url": env("FEDEX_OAUTH_URL", default=""),
             "api_url": env("FEDEX_RATES_URL", default=""),
+            # Tracking endpoint is separate from the rate-quote endpoint.
+            "tracking_api_url": env("FEDEX_TRACKING_API_URL", default="https://apis.fedex.com/track/v1/trackingnumbers"),
             "client_id": env("FEDEX_CLIENT_ID", default=""),
             "client_secret": env("FEDEX_CLIENT_SECRET", default=""),
             "account_number": env("FEDEX_ACCOUNT_NUMBER", default=""),

@@ -113,3 +113,37 @@ urlpatterns = [
     path("api/mpesa/stk-timeout/", mpesa_stk_timeout, name="mpesa_stk_timeout"),
 
 ]
+
+  
+# Durable fulfilment, dispatch inspection, and shipment-tracking workflow.
+from .fulfillment import (
+    admin_fulfillment_queue,
+    carrier_tracking_webhook,
+    confirm_carrier_handover,
+    create_shipment,
+    customer_accept_item,
+    customer_fulfillment_detail,
+    customer_report_item_issue,
+    dispatch_inspection,
+    manual_shipment_event,
+    refresh_shipment_tracking,
+    resolve_fulfillment_issue,
+    vendor_advance_fulfillment,
+    vendor_fulfillment_list,
+)
+
+urlpatterns += [
+    path("api/fulfillment/vendor/", vendor_fulfillment_list, name="vendor-fulfillment-list"),
+    path("api/fulfillment/customer/<int:order_id>/", customer_fulfillment_detail, name="customer-fulfillment-detail"),
+    path("api/fulfillment/admin/", admin_fulfillment_queue, name="admin-fulfillment-queue"),
+    path("api/fulfillment/items/<int:order_item_id>/advance/", vendor_advance_fulfillment, name="vendor-advance-fulfillment"),
+    path("api/fulfillment/items/<int:order_item_id>/dispatch-inspection/", dispatch_inspection, name="dispatch-inspection"),
+    path("api/fulfillment/shipments/", create_shipment, name="create-shipment"),
+    path("api/fulfillment/shipments/<int:shipment_id>/handover/", confirm_carrier_handover, name="confirm-carrier-handover"),
+    path("api/fulfillment/shipments/<int:shipment_id>/refresh/", refresh_shipment_tracking, name="refresh-shipment-tracking"),
+    path("api/fulfillment/shipments/<int:shipment_id>/events/", manual_shipment_event, name="manual-shipment-event"),
+    path("api/fulfillment/items/<int:order_item_id>/accept/", customer_accept_item, name="customer-accept-item"),
+    path("api/fulfillment/items/<int:order_item_id>/report-issue/", customer_report_item_issue, name="customer-report-item-issue"),
+    path("api/fulfillment/items/<int:order_item_id>/resolve-issue/", resolve_fulfillment_issue, name="resolve-fulfillment-issue"),
+    path("api/fulfillment/carriers/<str:carrier>/webhook/", carrier_tracking_webhook, name="carrier-tracking-webhook"),
+]

@@ -93,11 +93,22 @@ def return_request_handler_api(request, item_id):
                 "error": "The ordered item is not attached to an order.",
             }, status=status.HTTP_409_CONFLICT)
 
-        # Returns/refunds are only valid for paid, completed orders.
-        if order.status not in {"COMPLETED", "completed"} or not order.payment or order.payment.status != "completed":
+        # Item-level completion is authoritative for a split/multi-vendor order:
+        # another item may still be in transit while this item has been accepted.
+        fulfillment = getattr(item, "fulfillment", None)
+        item_completed = (
+            str(fulfillment.status).upper() == "COMPLETED"
+            if fulfillment is not None
+            else str(order.status).upper() == "COMPLETED"
+        )
+        payment_confirmed = bool(
+            order.payment
+            and str(order.payment.status).lower() in {"paid", "completed"}
+        )
+        if not item_completed or not payment_confirmed:
             return Response({
                 "success": False,
-                "error": "Only completed, paid orders can be returned.",
+                "error": "Only a completed, paid order item can be returned.",
             }, status=status.HTTP_409_CONFLICT)
 
         # A line can only be returned/exchanged once.

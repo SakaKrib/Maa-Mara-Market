@@ -1,6 +1,7 @@
 import React from "react";
 import { CheckCircle2, Clock3, PackageCheck, Truck } from "lucide-react";
 import { useVendorOrdersCombined } from "./CombinedOrderHook";
+import VendorFulfillmentWorkflow from "./VendorFulfillmentWorkflow";
 
 const truncate = (text, length = 40) => {
   if (!text || typeof text !== "string") return "Item unavailable";
@@ -205,6 +206,7 @@ const VendorOrdersPage = () => {
 
   return (
     <div className="mx-auto w-full max-w-[1500px] space-y-6">
+      <VendorFulfillmentWorkflow />
       <section className="flex flex-col gap-4 rounded-xl border border-gray-200 bg-white p-5 shadow-sm sm:p-6 lg:flex-row lg:items-center lg:justify-between">
         <div>
           <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#b94b13]">

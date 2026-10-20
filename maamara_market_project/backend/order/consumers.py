@@ -76,6 +76,12 @@ class OrderConsumer(AsyncWebsocketConsumer):
             "message": event.get("message", {})
         }))
 
+    async def fulfillment_update(self, event):
+        await self.send(text_data=json.dumps({
+            "type": "fulfillment_update",
+            "order_id": event.get("order_id", self.order_id),
+        }))
+
 
 class CheckoutPaymentConsumer(AsyncWebsocketConsumer):
     """Realtime payment channel for a short-lived customer checkout session."""

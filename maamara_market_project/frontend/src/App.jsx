@@ -132,6 +132,7 @@ import VendorActivitiesPage from "./cmponents/VENDORPAGE/SellerDasboard/VendorAc
 import { Link } from "react-router-dom";
 import ReviewsPage from "./cmponents/VENDORPAGE/Home/TopBox/VendorReviewPage";
 import VendorOrdersPage from "./cmponents/Hooks/Order/OrderPage";
+import ShipmentDispatchPage from "./cmponents/Hooks/Order/ShipmentDispatchPage";
 import SalesReportPage from "./cmponents/VENDORPAGE/Home/Orders/SalesRegister";
 import SubcategoryProducts from "./PublicUiForAll/PublicUi/Customer/DesktopView/Header/subcategoryListItem";
 import SearchResultsPage from "./PublicUiForAll/PublicUi/Navigations/Search/NavIcons/ResultsPage";
@@ -311,6 +312,7 @@ function AppContent() {
               <Route path="inbound-traffic" element={<InboundTraffic />} />
               <Route path="vendors" element={<Vendors />} />
               <Route path="vendor-payout" element={<PaymentReport />} />
+              <Route path="shipment-dispatch" element={<ShipmentDispatchPage />} />
               <Route path="faq" element={<FAQ />} />
               <Route path="calendar" element={<Calendar />} />
                <Route path="line-chart" element={<Line />} />
