@@ -93,21 +93,14 @@ if (platform === "android") {
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="24dp"
     android:height="24dp"
-    android:viewportWidth="96"
-    android:viewportHeight="96">
-    <group
-        android:pivotX="48"
-        android:pivotY="48"
-        android:scaleX="1.25"
-        android:scaleY="1.35"
-        android:translateX="5">
-        <path
-            android:fillColor="#FFFFFFFF"
-            android:pathData="M8,20 H14 V76 H8 Z" />
-        <path
-            android:fillColor="#FFFFFFFF"
-            android:pathData="M28,20 C17,20 17,31 17,40 V76 H30 V43 L42,59 H50 L62,43 V76 H75 V40 C75,31 75,20 64,20 H59 L46,39 L33,20 Z" />
-    </group>
+    android:viewportWidth="84"
+    android:viewportHeight="84">
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M8,20 H14 V76 H8 Z" />
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M28,20 C17,20 17,31 17,40 V76 H30 V43 L42,59 H50 L62,43 V76 H75 V40 C75,31 75,20 64,20 H59 L46,39 L33,20 Z" />
 </vector>
 `;
   await fs.writeFile(path.join(drawable, "ic_stat_maamara.xml"), notificationIcon);
