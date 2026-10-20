@@ -16,6 +16,42 @@ const resolvePushTarget = (rawUrl) => {
   }
 };
 
+const normalizePushPath = (target, title = "") => {
+  const pathname = target.pathname.replace(/\\/+$/, "") || "/";
+  const query = target.search || "";
+  const hash = target.hash || "";
+  const normalizedTitle = String(title || "").toLowerCase();
+
+  // Older notifications used routes that no longer exist. Keep already-delivered
+  // push alerts usable after route fixes have shipped.
+  let match = pathname.match(/^\\/admin-dashboard\\/blogs\\/(\\d+)$/);
+  if (match) {
+    return normalizedTitle.includes("new blog created")
+      ? `/admin-dashboard/blog-approvals?blog=${match[1]}`
+      : `/blogs/${match[1]}`;
+  }
+
+  match = pathname.match(/^\\/vendor\\/blogs\\/(\\d+)$/)
+    || pathname.match(/^\\/vendors-dashboard\\/vendor\\/blogs\\/(\\d+)$/);
+  if (match) {
+    return normalizedTitle.includes("created") || normalizedTitle.includes("denied")
+      ? `/vendors-dashboard/vendor/blogs?blog=${match[1]}`
+      : `/blogs/${match[1]}`;
+  }
+
+  match = pathname.match(/^\\/blog\\/(\\d+)$/);
+  if (match) return `/blogs/${match[1]}${query}${hash}`;
+
+  match = pathname.match(/^\\/product\\/(\\d+)$/);
+  if (match) return `/item/${match[1]}${query}${hash}`;
+
+  // A previous wishlist notification route was never registered in the app.
+  // New wishlist notifications now link directly to the affected product.
+  if (pathname === "/wishlist") return "/";
+
+  return `${pathname}${query}${hash}`;
+};
+
 async function savePushToken(token = currentPushToken) {
   if (!token) return false;
   const platform = Capacitor.getPlatform();
@@ -85,11 +121,18 @@ export async function setupNativePushNotifications(visitorId = "") {
       }));
 
       handles.push(await PushNotifications.addListener("pushNotificationActionPerformed", (event) => {
-        const target = resolvePushTarget(event?.notification?.data?.url);
+        const notification = event?.notification;
+        const target = resolvePushTarget(notification?.data?.url);
         if (!target) return;
+        // Normalize legacy destinations as well as current links so old alerts
+        // already on a device do not land on removed routes.
+        const path = normalizePushPath(
+          target,
+          notification?.data?.title || notification?.title || ""
+        );
         // Dispatch an in-app route change instead of reloading the native WebView.
         window.dispatchEvent(new CustomEvent("maamara:push-navigation", {
-          detail: { path: `${target.pathname}${target.search}${target.hash}` },
+          detail: { path },
         }));
       }));
 
