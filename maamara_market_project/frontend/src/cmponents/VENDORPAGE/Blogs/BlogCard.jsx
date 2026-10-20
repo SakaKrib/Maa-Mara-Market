@@ -21,11 +21,11 @@ export default function BlogCard({ post }) {
   return (
     <article className="flex min-w-0 flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-custom transition-shadow hover:shadow-lg">
       <div className="flex items-center gap-3 px-4 pb-3 pt-4 sm:px-5">
-        {vendor.profile_picture ? (
-          <img src={resolveApiAssetUrl(vendor.profile_picture)} alt="" className="h-10 w-10 shrink-0 rounded-full object-cover ring-1 ring-border" />
+        {vendor.vendor_company_logo ? (
+          <img src={resolveApiAssetUrl(vendor.vendor_company_logo)} alt="" className="h-10 w-10 shrink-0 rounded-full object-contain ring-1 ring-border" />
         ) : (
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-muted text-sm font-semibold text-muted-foreground">
-            {(vendor.company_name || "M").trim().charAt(0).toUpperCase()}
+          <div aria-label={(vendor.company_name || "Maamara Market").trim() + " logo unavailable"} className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-muted text-sm font-semibold text-muted-foreground">
+            {((vendor.company_name || "Maamara Market").trim().charAt(0) || "M").toUpperCase()}
           </div>
         )}
         <div className="min-w-0 flex-1">
