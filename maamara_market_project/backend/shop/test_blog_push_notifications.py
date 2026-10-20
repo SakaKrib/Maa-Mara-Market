@@ -77,6 +77,15 @@ class BlogPushNotificationTests(TestCase):
             ).exists()
         )
 
+        vendor_notification = Notification.objects.get(
+            user=self.vendor_user, title="New Comment on Your Blog"
+        )
+        admin_notification = Notification.objects.get(
+            user=self.admin, title="New Comment on Blog"
+        )
+        self.assertEqual(vendor_notification.url, f"/blogs/{self.post.pk}")
+        self.assertEqual(admin_notification.url, f"/blogs/{self.post.pk}")
+
     def test_visitor_comment_notifies_vendor_and_admin(self):
         response = self.call_action(
             "comment", "post", {"text": "Visitor comment"}, visitor_id="visitor-blog-1"
@@ -98,6 +107,19 @@ class BlogPushNotificationTests(TestCase):
             ).exists()
         )
 
+        vendor_notification = Notification.objects.get(
+            user=self.vendor_user,
+            title="New Comment on Your Blog",
+            message__icontains="visitor",
+        )
+        admin_notification = Notification.objects.get(
+            user=self.admin,
+            title="New Comment on Blog",
+            message__icontains="visitor",
+        )
+        self.assertEqual(vendor_notification.url, f"/blogs/{self.post.pk}")
+        self.assertEqual(admin_notification.url, f"/blogs/{self.post.pk}")
+
     def test_reaction_create_and_remove_notify_admin(self):
         create_response = self.call_action(
             "react", "post", {"type": "like"}, user=self.customer
@@ -108,13 +130,20 @@ class BlogPushNotificationTests(TestCase):
                 user=self.admin, title="New Reaction on Blog"
             ).exists()
         )
+        vendor_notification = Notification.objects.get(
+            user=self.vendor_user, title="New Reaction on Your Blog"
+        )
+        admin_notification = Notification.objects.get(
+            user=self.admin, title="New Reaction on Blog"
+        )
+        self.assertEqual(vendor_notification.url, f"/blogs/{self.post.pk}")
+        self.assertEqual(admin_notification.url, f"/blogs/{self.post.pk}")
 
         remove_response = self.call_action(
             "remove_reaction", "delete", user=self.customer
         )
         self.assertEqual(remove_response.status_code, 204)
-        self.assertTrue(
-            Notification.objects.filter(
-                user=self.admin, title="Reaction Removed from Blog"
-            ).exists()
+        removed_notification = Notification.objects.get(
+            user=self.admin, title="Reaction Removed from Blog"
         )
+        self.assertEqual(removed_notification.url, f"/blogs/{self.post.pk}")
