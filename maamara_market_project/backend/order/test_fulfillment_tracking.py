@@ -1,6 +1,9 @@
+from types import SimpleNamespace
+
 from django.test import SimpleTestCase
 
 from order.fulfillment import FULFILLMENT_RANK, VENDOR_TRANSITIONS, _normalize_carrier_status
+from order.models import Order
 from order.order_completion import _normalize_replayed_order_status
 
 
@@ -45,3 +48,19 @@ class PaymentReplayStatusTests(SimpleTestCase):
 
     def test_legacy_lowercase_paid_status_is_normalized(self):
         self.assertEqual(_normalize_replayed_order_status("paid"), "PAID")
+
+
+
+class PaymentConfirmationStatusTests(SimpleTestCase):
+    def test_paid_and_completed_statuses_are_case_insensitive(self):
+        for value in ("PAID", "paid", "Paid", "COMPLETED", "completed", "Completed"):
+            with self.subTest(status=value):
+                fake_order = SimpleNamespace(payment=SimpleNamespace(status=value))
+                self.assertTrue(Order.payment_confirmed.fget(fake_order))
+
+    def test_missing_or_unpaid_payment_is_not_confirmed(self):
+        self.assertFalse(Order.payment_confirmed.fget(SimpleNamespace(payment=None)))
+        for value in ("PENDING", "FAILED", "REFUNDED", ""):
+            with self.subTest(status=value):
+                fake_order = SimpleNamespace(payment=SimpleNamespace(status=value))
+                self.assertFalse(Order.payment_confirmed.fget(fake_order))
