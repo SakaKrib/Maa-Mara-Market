@@ -13,6 +13,12 @@ from .invoice_services import create_customer_invoice
 logger = logging.getLogger(__name__)
 
 
+def _normalize_replayed_order_status(current_status):
+    """Normalize casing on a replayed payment without downgrading COMPLETED."""
+    normalized = str(current_status or "").upper()
+    return normalized if normalized in {"PAID", "COMPLETED"} else current_status
+
+
 def broadcast_checkout_payment_status(checkout_session, status, order=None):
     """Broadcast a payment state to the customer checkout and order channels after commit."""
     channel_layer = get_channel_layer()
@@ -143,7 +149,7 @@ def complete_paid_order(order, payment, *, transaction_id=None):
     # A duplicate successful-payment callback must be idempotent.
     # Normalize casing without downgrading an order already completed by fulfilment.
     if str(locked_order.status).lower() in {"paid", "completed"}:
-        normalized_order_status = str(locked_order.status).upper()
+        normalized_order_status = _normalize_replayed_order_status(locked_order.status)
         if locked_order.status != normalized_order_status:
             locked_order.status = normalized_order_status
             locked_order.save(update_fields=["status"])
