@@ -161,6 +161,23 @@ class CarrierReturnHoldTests(TestCase):
         self.assertIsNone(self.fulfillment.payout_eligible_at)
         self.assertEqual(self.order.status, "DISPUTED")
 
+    def test_delivery_exception_during_confirmation_pauses_deadline(self):
+        _advance_from_carrier(
+            self.shipment,
+            "EXCEPTION",
+            "Delivery exception",
+            occurred_at=timezone.now(),
+            source="CARRIER_API",
+            event_id="delivery-exception-event",
+        )
+        self.fulfillment.refresh_from_db()
+        self.order.refresh_from_db()
+
+        self.assertEqual(self.fulfillment.status, "ISSUE_REPORTED")
+        self.assertIsNone(self.fulfillment.confirmation_deadline)
+        self.assertIn("delivery exception", self.fulfillment.hold_reason.lower())
+        self.assertEqual(self.order.status, "DISPUTED")
+
     def test_return_to_sender_clears_deadline_and_holds_fulfillment(self):
         _advance_from_carrier(
             self.shipment,
