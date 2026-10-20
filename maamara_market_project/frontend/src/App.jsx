@@ -3,7 +3,7 @@ import {
   CircularProgress,
   ThemeProvider,
 } from "@mui/material";
-import { Routes, Route } from "react-router-dom";
+import { Routes, Route, useNavigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "./cmponents/Auth/AuthContext/Context";
 import { ColourModeContext, useMode } from "./theme";
 import BridgeToHTML from "./globalHtml";
@@ -143,6 +143,7 @@ import VendorSuccessPage from "./cmponents/VENDORPAGE/VendorRegistration/VendorS
 import CreateItemPage from "./cmponents/AdminPages/Notifications/CreateItemPage";
 import AdminCreateNewVendorItemPage from "./cmponents/AdminPages/Notifications/AdminCreateNewVendorItemPage";
 import AdminBannerApprovalPage from "./cmponents/Admin/ApproveBanner/ApproveBanner";
+import AdminBlogApprovalPage from "./cmponents/Admin/ApproveBlogs/ApproveBlogs";
 import AdminPostCareer from "./cmponents/AdminPages/Notifications/PostCareers/AdminPostCareer";
 import SupportAdminPanel from "./cmponents/AdminPages/Notifications/Support/SupportMessages";
 import SearchGlobalResultsPage from "./cmponents/SearchPage/SearchResultsPage";
@@ -154,9 +155,23 @@ import VendorBlogManagerNotification from "./cmponents/VENDORPAGE/VendorSections
 function AppContent() {
   const [theme, colorMode] = useMode();
   const { loading } = useAuth();
+  const navigate = useNavigate();
   const isNativeApp = typeof window !== "undefined" && window.Capacitor?.isNativePlatform?.() === true;
   const [launchAnimationDone, setLaunchAnimationDone] = useState(false);
   const [launchSequenceDone, setLaunchSequenceDone] = useState(false);
+
+  // Native push taps must navigate inside React Router. Assigning window.location
+  // reloads the Capacitor WebView at a nested file URL and can show a blank screen.
+  useEffect(() => {
+    const handlePushNavigation = (event) => {
+      const path = event?.detail?.path;
+      if (typeof path === "string" && path.startsWith("/") && !path.startsWith("//")) {
+        navigate(path);
+      }
+    };
+    window.addEventListener("maamara:push-navigation", handlePushNavigation);
+    return () => window.removeEventListener("maamara:push-navigation", handlePushNavigation);
+  }, [navigate]);
 
   useEffect(() => {
     if (!isNativeApp) {
@@ -318,6 +333,7 @@ function AppContent() {
               <Route path="careers" element={<AdminPostCareer />} />
               <Route path="create-career" element={<AdminPostCareer />} />
               <Route path="support" element={<SupportAdminPanel />} />
+              <Route path="blog-approvals" element={<AdminBlogApprovalPage />} />
               <Route path="create-support" element={<SupportAdminPanel />} />
 
               {/* vendor create new item */}
@@ -414,7 +430,9 @@ function AppContent() {
                 <Route path="sales/report" element={<SalesReportPage />} />
 
                 {/* NOTIFICATION ROUTES */}
+                 <Route path="vendor/banners" element={<VendorBannerManager />} />
                  <Route path="vendor/banners/:id" element={<VendorBannerManager />} />
+                 <Route path="vendor/blogs" element={<VendorBlogManagerNotification />} />
                  <Route path="vendor/blogs/:id" element={<VendorBlogManagerNotification />} />
 
                 {/* banners single page */}
