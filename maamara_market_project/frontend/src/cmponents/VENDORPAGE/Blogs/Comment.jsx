@@ -69,7 +69,7 @@ export default function CommentBox({ postId, comments: initialComments = [], com
                       <div aria-hidden="true" className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-background text-xs font-semibold text-muted-foreground ring-1 ring-border">{initial}</div>
                     )}
                     <div className="min-w-0 flex-1">
-                      <p className="text-xs font-semibold text-card-foreground">{displayName}{isGuest ? <span className="ml-1 font-normal text-muted-foreground">Guest</span> : null}</p>
+                      <p className="text-xs font-semibold text-card-foreground">{displayName}</p>
                       <p className="mt-1 whitespace-pre-wrap break-words text-sm leading-5 text-muted-foreground">{comment.text}</p>
                     </div>
                   </div>
