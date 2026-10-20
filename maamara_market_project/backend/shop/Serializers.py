@@ -350,10 +350,25 @@ class UserSerializer(serializers.ModelSerializer):
 # 💬 Comment Serializer
 class CommentSerializer(serializers.ModelSerializer):
     user_name = serializers.CharField(source='user.username', read_only=True)
+    user_profile_picture = serializers.SerializerMethodField()
+
+    def get_user_profile_picture(self, obj):
+        if not obj.user:
+            return None
+        profile = getattr(obj.user, "profile", None)
+        picture = getattr(profile, "profile_picture", None)
+        if not picture:
+            return None
+        try:
+            picture_url = picture.url
+        except (ValueError, AttributeError):
+            return None
+        request = self.context.get("request")
+        return request.build_absolute_uri(picture_url) if request else picture_url
 
     class Meta:
         model = CommentBlog
-        fields = ['id', 'user_name', 'text', 'created_at', 'visitor_id']
+        fields = ['id', 'user_name', 'user_profile_picture', 'text', 'created_at', 'visitor_id']
 
 
 # 📝 Blog Post Serializer
