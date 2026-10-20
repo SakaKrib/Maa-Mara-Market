@@ -69,6 +69,7 @@ import AppSnackbar, { notifySnackbar } from "../../../../components/ui/app-snack
       mpesa_type: z.union([z.enum(["PHONE", "TILL", "LIPA_NA_MPESA"]), z.literal("")]).optional(),
       mpesa_till: z.union([z.string().min(1), z.literal("")]).optional(),
       mpesa_paybill: z.union([z.string().min(1), z.literal("")]).optional(),
+      mpesa_paybill_account: z.union([z.string().min(1), z.literal("")]).optional(),
       paypal_email: z.union([z.string().email(), z.literal("")]).optional(),
       tax_number: z.union([z.string().min(1), z.literal("")]).optional(),
       website_url: z.union([z.string().url(), z.literal("")]).optional(),
@@ -301,12 +302,20 @@ if (data.payment_method === "MOBILE_MONEY") {
         message: "Paybill number is required when type is Lipa Na Mpesa",
       });
     }
+    if (data.mpesa_type === "LIPA_NA_MPESA" && (!data.mpesa_paybill_account || data.mpesa_paybill_account.trim() === "")) {
+      ctx.addIssue({
+        path: ["mpesa_paybill_account"],
+        code: z.ZodIssueCode.custom,
+        message: "The account number to credit at your Paybill is required",
+      });
+    }
   }
 } else {
   data.mpesa_number = undefined;
   data.mpesa_type = undefined;
   data.mpesa_till = undefined;
   data.mpesa_paybill = undefined;
+  data.mpesa_paybill_account = undefined;
 }
 
   
@@ -416,6 +425,7 @@ const [isSubmitting, setIsSubmitting] = useState(false);
       mpesa_number: "",
       mpesa_till: "",
       mpesa_paybill: "",
+      mpesa_paybill_account: "",
   
       // ===== PayPal =====
       paypal_email: "",
@@ -1501,6 +1511,16 @@ const onSubmit = async (data) => {
         <FormItem>
           <FormLabel>Lipa na M-Pesa Paybill</FormLabel>
           <FormControl><Input {...field} /></FormControl>
+          <FormMessage />
+        </FormItem>
+      )} />
+    )}
+
+    {mpesaType === "LIPA_NA_MPESA" && (
+      <FormField name="mpesa_paybill_account" control={form.control} render={({ field }) => (
+        <FormItem>
+          <FormLabel>Paybill account number</FormLabel>
+          <FormControl><Input {...field} placeholder="Account to credit at your Paybill" /></FormControl>
           <FormMessage />
         </FormItem>
       )} />

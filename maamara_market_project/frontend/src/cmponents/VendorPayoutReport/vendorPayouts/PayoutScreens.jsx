@@ -98,6 +98,14 @@ export function PayoutDetails({ item }) {
         <ReadOnlyField label="Payout period" value={`${item.period_start} → ${item.period_end}`} />
       </div>
 
+      {item.notes?.length > 0 && !item.paid && (
+        <ul className="mt-4 space-y-1 rounded-xl border border-amber-500/30 bg-amber-500/5 px-4 py-3 text-xs text-amber-700 dark:text-amber-300">
+          {item.notes.map((note) => (
+            <li key={note}>• {note}</li>
+          ))}
+        </ul>
+      )}
+
       {item.problems.length > 0 && !item.paid && (
         <ul className="mt-4 space-y-1 rounded-xl border border-destructive/30 bg-destructive/5 px-4 py-3 text-xs text-destructive">
           {item.problems.map((problem) => (

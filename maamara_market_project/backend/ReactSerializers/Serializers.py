@@ -1057,7 +1057,7 @@ class VendorForm(serializers.ModelSerializer):
             "company_name", "workshop_location", "payment_method",
             "country", "city", "address", "address_2",
             "bank_account_number", "mpesa_number", "mpesa_type",
-            "mpesa_till", "mpesa_paybill", "paypal_email",
+            "mpesa_till", "mpesa_paybill", "mpesa_paybill_account", "paypal_email",
             "tax_number", "website_url", "social_media_links",
             "vendor_company_logo", "profile_picture", "brand",  
             "profile_completion",
@@ -1072,7 +1072,7 @@ class VendorForm(serializers.ModelSerializer):
             "company_name", "workshop_location", "payment_method",
             "country", "city", "address", "address_2",
             "bank_account_number", "mpesa_number", "mpesa_type",
-            "mpesa_till", "mpesa_paybill", "paypal_email",
+            "mpesa_till", "mpesa_paybill", "mpesa_paybill_account", "paypal_email",
             "tax_number", "website_url", "social_media_links",
         ]
 
@@ -1173,6 +1173,7 @@ class VendorFormSerializer(serializers.Serializer):
     mpesa_type = serializers.ChoiceField(choices=["PHONE", "TILL", "LIPA_NA_MPESA"], required=False, allow_blank=True)
     mpesa_till = serializers.CharField(max_length=15, required=False, allow_blank=True)
     mpesa_paybill = serializers.CharField(max_length=15, required=False, allow_blank=True)
+    mpesa_paybill_account = serializers.CharField(max_length=50, required=False, allow_blank=True)
     paypal_email = serializers.EmailField(required=False, allow_blank=True)
 
     tax_number = serializers.CharField(max_length=15, required=False, allow_blank=True)
@@ -1232,6 +1233,11 @@ class VendorFormSerializer(serializers.Serializer):
             if mpesa_type == "LIPA_NA_MPESA" and not data.get('mpesa_paybill'):
                 raise serializers.ValidationError({
                     "mpesa_paybill": "M-Pesa paybill number is required."
+                })
+
+            if mpesa_type == "LIPA_NA_MPESA" and not data.get('mpesa_paybill_account'):
+                raise serializers.ValidationError({
+                    "mpesa_paybill_account": "The Paybill account number is required."
                 })
 
         elif payment_method == "PAYPAL":

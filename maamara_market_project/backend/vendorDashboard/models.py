@@ -95,6 +95,8 @@ class Vendor(models.Model):
     mpesa_number = models.CharField(max_length=20, blank=True, null=True)
     mpesa_till = models.CharField(max_length=20, blank=True, null=True)
     mpesa_paybill = models.CharField(max_length=20, blank=True, null=True)
+    # Account number to credit at the vendor's Paybill (Daraja AccountReference).
+    mpesa_paybill_account = models.CharField(max_length=50, blank=True, null=True)
 
     # PayPal
     paypal_email = models.EmailField(blank=True, null=True)
@@ -130,7 +132,7 @@ class Vendor(models.Model):
             elif self.mpesa_type == "TILL":
                 return f"M-Pesa Till: {self.mpesa_till}"
             elif self.mpesa_type == "LIPA_NA_MPESA":
-                return f"M-Pesa Paybill: {self.mpesa_paybill}"
+                return f"M-Pesa Paybill: {self.mpesa_paybill} (account {self.mpesa_paybill_account or 'N/A'})"
         elif self.payment_method == "PAYPAL":
             return f"PayPal: {self.paypal_email}"
         return "No payment details available"

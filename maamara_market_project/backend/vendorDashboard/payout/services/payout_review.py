@@ -10,6 +10,7 @@ from collections import defaultdict
 from decimal import Decimal
 
 from dateutil.relativedelta import relativedelta
+from django.conf import settings
 from django.utils import timezone
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAdminUser
@@ -45,9 +46,41 @@ def _normalize_msisdn(value):
     return digits
 
 
+MPESA_ROUTES = {
+    "PHONE": "Send money to a phone number (Daraja B2C, BusinessPayment)",
+    "TILL": "Pay to a Buy Goods Till (Daraja B2B, BusinessBuyGoods)",
+    "LIPA_NA_MPESA": "Pay to a Paybill and account (Daraja B2B, BusinessPayBill)",
+}
+
+
+def _mpesa_config_problems(mpesa_type):
+    """Tell the admin up front if the server cannot yet make this kind of M-Pesa payment."""
+    mpesa = settings.PAYMENT_GATEWAYS.get("mpesa", {})
+    b2c = mpesa.get("b2c", {})
+    if mpesa_type == "PHONE":
+        keys = ["url", "initiator_name", "short_code", "initiator_password", "certificate_path", "result_url", "timeout_url"]
+        missing = [k for k in keys if not b2c.get(k)]
+        product = "B2C (phone number)"
+    else:
+        b2b = mpesa.get("b2b", {})
+        missing = []
+        for key in ["url", "initiator_name", "short_code", "initiator_password", "certificate_path", "result_url", "timeout_url"]:
+            value = b2b.get(key)
+            if not value and key in {"initiator_name", "short_code", "initiator_password", "certificate_path"}:
+                value = b2c.get(key)
+            if not value:
+                missing.append(key)
+        product = "B2B (Till / Paybill)"
+    if missing:
+        return [f"M-Pesa {product} is not configured on the server (missing: {', '.join(missing)})."]
+    return []
+
+
 def _mpesa_destination(vendor):
     mpesa_type = get_vendor_mpesa_type(vendor)
     fields = [("M-Pesa destination type", MPESA_TYPE_LABELS.get(mpesa_type, "Not saved"))]
+    if mpesa_type in MPESA_ROUTES:
+        fields.append(("How it is paid", MPESA_ROUTES[mpesa_type]))
     problems = []
     value = ""
 
@@ -66,8 +99,15 @@ def _mpesa_destination(vendor):
         fields.append(("Paybill number", value or "Not saved"))
         if not re.fullmatch(r"\d{5,20}", value or ""):
             problems.append("The saved Paybill number is missing or invalid.")
+        account = _clean(getattr(vendor, "mpesa_paybill_account", ""))
+        fields.append(("Paybill account number", account or "Not saved"))
+        if not account:
+            problems.append("This vendor has not saved the account number to credit at their Paybill.")
     else:
         problems.append("This vendor has no saved M-Pesa phone, Till or Paybill number.")
+
+    if mpesa_type:
+        problems.extend(_mpesa_config_problems(mpesa_type))
 
     return {"type": mpesa_type, "value": value, "fields": fields}, problems
 
@@ -141,6 +181,11 @@ def build_payout_review(payout):
         destination, problems = {"type": "", "value": "", "fields": []}, [f"Unknown payment method: {method}"]
 
     amount = payout.amount if payout.amount is not None else Decimal("0")
+    notes = []
+    if method == "MOBILE_MONEY" and amount > 0 and amount != amount.to_integral_value():
+        notes.append(
+            f"M-Pesa pays whole shillings: KES {amount:.2f} will be sent as KES {int(amount)}."
+        )
     if amount <= 0:
         problems.append("The payout amount must be greater than zero.")
     if not vendor.is_active:
@@ -184,6 +229,7 @@ def build_payout_review(payout):
             "fields": [{"label": label, "value": value} for label, value in destination["fields"]],
         },
         "problems": problems,
+        "notes": notes,
         "can_pay": state == "ready",
     }
 

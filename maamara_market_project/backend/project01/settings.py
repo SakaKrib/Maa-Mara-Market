@@ -382,6 +382,9 @@ PAYMENT_GATEWAYS = {
             "initiator_password": env("MPESA_B2B_INITIATOR_PASSWORD", default=""),
             "certificate_path": env("MPESA_B2B_CERTIFICATE_PATH", default=""),
             "url": env("MPESA_B2B_URL", default=""),
+            # Daraja RecieverIdentifierType for Buy Goods: 2 = Till number, 4 = shortcode.
+            # Confirm against your Daraja app/sandbox; override here if Safaricom requires 4.
+            "till_receiver_identifier_type": env("MPESA_B2B_TILL_RECEIVER_IDENTIFIER_TYPE", default="2"),
             "result_url": env("MPESA_B2B_RESULT_URL", default=env("MPESA_B2C_RESULT_URL", default="")),
             "timeout_url": env("MPESA_B2B_TIMEOUT_URL", default=env("MPESA_B2C_TIMEOUT_URL", default="")),
         },

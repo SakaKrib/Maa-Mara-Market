@@ -73,6 +73,7 @@ def generate_monthly_payouts(request):
             "mpesa_number": vendor.mpesa_number,
             "mpesa_till": vendor.mpesa_till,
             "mpesa_paybill": vendor.mpesa_paybill,
+            "mpesa_paybill_account": vendor.mpesa_paybill_account,
             # PayPal
             "paypal_email": vendor.paypal_email,
             # Legacy aliases used by older payout views

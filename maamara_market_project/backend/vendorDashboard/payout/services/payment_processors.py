@@ -265,6 +265,12 @@ def call_mpesa_b2b(vendor, amount, mpesa_config, payout=None):
         label = "Till" if mpesa_type == "TILL" else "PayBill"
         return {"success": False, "error": f"Vendor's saved M-Pesa {label} number is missing or invalid."}
 
+    # A Paybill payment is credited to an account at the paybill, so the vendor's
+    # saved Paybill account number is mandatory (Daraja AccountReference).
+    paybill_account = str(getattr(vendor, "mpesa_paybill_account", "") or "").strip()
+    if mpesa_type == "LIPA_NA_MPESA" and not paybill_account:
+        return {"success": False, "error": "Vendor's saved Paybill account number is missing."}
+
     if payout.mpesa_result_desc and (
         payout.mpesa_result_desc.startswith("B2B submission outcome unknown")
         or payout.mpesa_result_desc.startswith("B2B submission response lacked correlation IDs")
@@ -310,11 +316,13 @@ def call_mpesa_b2b(vendor, amount, mpesa_config, payout=None):
             "SecurityCredential": security_credential,
             "CommandID": "BusinessBuyGoods" if is_till else "BusinessPayBill",
             "SenderIdentifierType": "4",
-            "RecieverIdentifierType": "2" if is_till else "4",
+            "RecieverIdentifierType": str(cfg.get("till_receiver_identifier_type") or "2") if is_till else "4",
             "Amount": int(amount),
             "PartyA": short_code,
             "PartyB": destination,
-            "AccountReference": str(payout.reference or "Vendor payout")[:20],
+            "AccountReference": (
+                str(payout.reference or "Vendor payout")[:20] if is_till else paybill_account
+            ),
             "Remarks": "Vendor payout",
             "QueueTimeOutURL": timeout_url,
             "ResultURL": result_url,
