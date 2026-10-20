@@ -1,6 +1,7 @@
 from django.test import SimpleTestCase
 
 from order.fulfillment import FULFILLMENT_RANK, VENDOR_TRANSITIONS, _normalize_carrier_status
+from order.order_completion import _normalize_replayed_order_status
 
 
 class CarrierStatusNormalizationTests(SimpleTestCase):
@@ -32,3 +33,15 @@ class CarrierStatusNormalizationTests(SimpleTestCase):
     def test_customer_acceptance_occurs_after_delivery_stages(self):
         self.assertLess(FULFILLMENT_RANK["DELIVERED"], FULFILLMENT_RANK["AWAITING_CONFIRMATION"])
         self.assertLess(FULFILLMENT_RANK["AWAITING_CONFIRMATION"], FULFILLMENT_RANK["COMPLETED"])
+
+
+
+class PaymentReplayStatusTests(SimpleTestCase):
+    def test_completed_order_does_not_downgrade_on_payment_replay(self):
+        self.assertEqual(_normalize_replayed_order_status("COMPLETED"), "COMPLETED")
+
+    def test_legacy_lowercase_completed_status_is_normalized_not_downgraded(self):
+        self.assertEqual(_normalize_replayed_order_status("completed"), "COMPLETED")
+
+    def test_legacy_lowercase_paid_status_is_normalized(self):
+        self.assertEqual(_normalize_replayed_order_status("paid"), "PAID")
