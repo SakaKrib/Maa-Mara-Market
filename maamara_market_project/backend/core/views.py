@@ -1213,8 +1213,29 @@ def user_account_view(request):
                 "DELIVERED",
                 "AWAITING_CONFIRMATION",
                 "COMPLETED",
+                "CANCELLED",
+                "RETURN_REQUESTED",
+                "RETURN_APPROVED",
+                "RETURNED",
+                "REFUNDED",
+                "DISPUTED",
                 "pending",
+                "paid",
+                "processing",
+                "packing",
+                "ready_to_ship",
+                "shipped",
+                "in_transit",
+                "out_for_delivery",
+                "delivered",
+                "awaiting_confirmation",
                 "completed",
+                "cancelled",
+                "return_requested",
+                "return_approved",
+                "returned",
+                "refunded",
+                "disputed",
             ])
         ).order_by("-created_at")
     else:
@@ -1237,8 +1258,29 @@ def user_account_view(request):
                 "DELIVERED",
                 "AWAITING_CONFIRMATION",
                 "COMPLETED",
+                "CANCELLED",
+                "RETURN_REQUESTED",
+                "RETURN_APPROVED",
+                "RETURNED",
+                "REFUNDED",
+                "DISPUTED",
                 "pending",
+                "paid",
+                "processing",
+                "packing",
+                "ready_to_ship",
+                "shipped",
+                "in_transit",
+                "out_for_delivery",
+                "delivered",
+                "awaiting_confirmation",
                 "completed",
+                "cancelled",
+                "return_requested",
+                "return_approved",
+                "returned",
+                "refunded",
+                "disputed",
             ])
         ).order_by("-created_at")
 
@@ -1254,6 +1296,7 @@ def user_account_view(request):
 
     # 5️⃣ Combine all into response
     data = {
+        "success": True,
         "is_authenticated": bool(user),
         "authType": "user" if user else "visitor",
         "user": {
