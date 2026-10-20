@@ -3,6 +3,28 @@ import { useSearchParams } from "react-router-dom";
 import api from "../../../../../../Services/Api";
 const endpoint = (path) => path;
 
+const buildProductsUrl = (selectedFilters, page = 1) => {
+  const params = new URLSearchParams();
+  const addList = (key, values) => {
+    if (values?.length) params.set(key, values.join(","));
+  };
+
+  addList("sections", selectedFilters.sections);
+  addList("departments", selectedFilters.departments);
+  addList("categories", selectedFilters.categories);
+  addList("subcategories", selectedFilters.subcategories);
+  addList("brands", selectedFilters.brands);
+  if (selectedFilters.attribute) params.set("attribute", selectedFilters.attribute);
+  if (selectedFilters.color) params.set("color", selectedFilters.color);
+  if (selectedFilters.priceRange?.[0] != null) params.set("min_price", selectedFilters.priceRange[0]);
+  if (selectedFilters.priceRange?.[1] != null) params.set("max_price", selectedFilters.priceRange[1]);
+  if (selectedFilters.sortBy) params.set("sortBy", selectedFilters.sortBy);
+  params.set("perPage", String(selectedFilters.perPage));
+  if (page > 1) params.set("page", String(page));
+
+  return `${endpoint("/filter-products/")}${params.toString() ? `?${params.toString()}` : ""}`;
+};
+
 const useCategoryFilters = () => {
   const [searchParams] = useSearchParams();
   const categoryFromUrl = Number(searchParams.get("category"));
@@ -34,6 +56,8 @@ const useCategoryFilters = () => {
   const [products, setProducts] = useState([]);
   const [nextUrl, setNextUrl] = useState(null);
   const [prevUrl, setPrevUrl] = useState(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalCount, setTotalCount] = useState(null);
   const [loadingFilters, setLoadingFilters] = useState(true);
   const [loadingProducts, setLoadingProducts] = useState(true);
   const [error, setError] = useState("");
@@ -96,6 +120,9 @@ const useCategoryFilters = () => {
       setProducts(Array.isArray(data) ? data : data.results || []);
       setNextUrl(data.next || null);
       setPrevUrl(data.previous || null);
+      setTotalCount(Number.isFinite(Number(data.count)) ? Number(data.count) : (Array.isArray(data) ? data.length : null));
+      const requestedPage = Number(new URL(typeof url === "string" ? url : api.getUri({ url }), window.location.origin).searchParams.get("page") || 1);
+      setCurrentPage(Number.isFinite(requestedPage) && requestedPage > 0 ? requestedPage : 1);
     } catch (requestError) {
       if (requestError?.code === "ERR_CANCELED") return;
       const diagnostic = {
@@ -123,28 +150,14 @@ const useCategoryFilters = () => {
 
   useEffect(() => {
     const controller = new AbortController();
-    const params = new URLSearchParams();
-
-    const addList = (key, values) => {
-      if (values?.length) params.set(key, values.join(","));
-    };
-
-    addList("sections", selectedFilters.sections);
-    addList("departments", selectedFilters.departments);
-    addList("categories", selectedFilters.categories);
-    addList("subcategories", selectedFilters.subcategories);
-    addList("brands", selectedFilters.brands);
-
-    if (selectedFilters.attribute) params.set("attribute", selectedFilters.attribute);
-    if (selectedFilters.color) params.set("color", selectedFilters.color);
-    if (selectedFilters.priceRange?.[0] != null) params.set("min_price", selectedFilters.priceRange[0]);
-    if (selectedFilters.priceRange?.[1] != null) params.set("max_price", selectedFilters.priceRange[1]);
-    if (selectedFilters.sortBy) params.set("sortBy", selectedFilters.sortBy);
-    params.set("perPage", String(selectedFilters.perPage));
-
-    fetchProducts(`${endpoint("/filter-products/")}${params.toString() ? `?${params.toString()}` : ""}`, controller.signal);
+    fetchProducts(buildProductsUrl(selectedFilters), controller.signal);
     return () => controller.abort();
   }, [selectedFilters, fetchProducts]);
+
+  const goToPage = useCallback((page) => {
+    if (!Number.isInteger(page) || page < 1) return;
+    fetchProducts(buildProductsUrl(selectedFilters, page));
+  }, [fetchProducts, selectedFilters]);
 
   const toggleFilter = useCallback((group, value) => {
     setSelectedFilters((prev) => {
@@ -186,6 +199,9 @@ const useCategoryFilters = () => {
     products,
     nextUrl,
     prevUrl,
+    currentPage,
+    totalCount,
+    goToPage,
     loadingFilters,
     loadingProducts,
     error,
