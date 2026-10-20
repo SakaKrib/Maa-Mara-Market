@@ -60,6 +60,63 @@ services:
       redis:
         condition: service_healthy
 
+  celery-worker:
+    image: maamara-market-backend:dev
+    build:
+      context: ./backend
+    restart: unless-stopped
+    env_file:
+      - ./backend/project01/.env
+    environment:
+      DEBUG: "${DEBUG:-false}"
+      POSTGRES_DB: ${POSTGRES_DB:-maamara_db}
+      POSTGRES_USER: ${POSTGRES_USER:-maamara_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD must be set}
+      POSTGRES_HOST: db
+      POSTGRES_PORT: "5432"
+      REDIS_URL: redis://redis:6379/0
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:5173}
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://localhost:5173,http://100.109.224.0:5173}
+      CSRF_TRUSTED_ORIGINS: ${CSRF_TRUSTED_ORIGINS:-http://localhost:5173,http://100.109.224.0:5173}
+      ALLOWED_HOSTS: "${ALLOWED_HOSTS:-127.0.0.1,localhost,100.109.224.0},opondo-thinkpad-t14-gen-1.tail34bca9.ts.net"
+    volumes:
+      - ./backend:/app
+    command: celery -A project01 worker --loglevel=info
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  celery-beat:
+    image: maamara-market-backend:dev
+    build:
+      context: ./backend
+    restart: unless-stopped
+    env_file:
+      - ./backend/project01/.env
+    environment:
+      DEBUG: "${DEBUG:-false}"
+      POSTGRES_DB: ${POSTGRES_DB:-maamara_db}
+      POSTGRES_USER: ${POSTGRES_USER:-maamara_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD must be set}
+      POSTGRES_HOST: db
+      POSTGRES_PORT: "5432"
+      REDIS_URL: redis://redis:6379/0
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:5173}
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://localhost:5173,http://100.109.224.0:5173}
+      CSRF_TRUSTED_ORIGINS: ${CSRF_TRUSTED_ORIGINS:-http://localhost:5173,http://100.109.224.0:5173}
+      ALLOWED_HOSTS: "${ALLOWED_HOSTS:-127.0.0.1,localhost,100.109.224.0},opondo-thinkpad-t14-gen-1.tail34bca9.ts.net"
+    volumes:
+      - ./backend:/app
+      - celerybeat_data:/var/lib/celerybeat
+    command: celery -A project01 beat --loglevel=info --schedule=/var/lib/celerybeat/celerybeat-schedule
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
   pending-registration-cleanup:
     # Reuse the backend image; do not build/install Python dependencies a second time.
     image: maamara-market-backend:dev
@@ -111,3 +168,4 @@ volumes:
   frontend_node_modules:
   backend_static:
   backend_media:
+  celerybeat_data:
