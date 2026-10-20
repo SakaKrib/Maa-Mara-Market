@@ -896,7 +896,7 @@ class AdminBannerApprovalViewSet(viewsets.ModelViewSet):
                 user=banner.vendor.user,
                 title="Banner Approved",
                 message=f"Your banner {banner.title} was approved by the administrator.",
-                url=f"/vendors-dashboard/vendor/banners/{banner.id}/"
+                url="/vendors-dashboard/vendor/banners"
             )
 
         ActivityLog.objects.create(
@@ -929,7 +929,7 @@ class AdminBannerApprovalViewSet(viewsets.ModelViewSet):
                 title="Banner Rejected",
                 message=f"Your banner {title} was rejected by the administrator."
                         + (f" Reason: {reason}" if reason else ""),
-                url="/vendors-dashboard/vendor/banners/"
+                url="/vendors-dashboard/vendor/banners"
             )
 
         ActivityLog.objects.create(
@@ -1091,7 +1091,7 @@ class WishlistAPIView(APIView):
                 visitor_id=actor["visitor_id"],
                 title="Added to wishlist",
                 message=f"You added {item.name} to your wishlist.",
-                url="/wishlist",
+                url=f"/item/{item.id}/",
             )
 
             # Vendor notification is created once by the ActivityLog signal above.
