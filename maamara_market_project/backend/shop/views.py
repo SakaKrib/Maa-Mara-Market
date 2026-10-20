@@ -532,7 +532,7 @@ class BlogPostViewSet(viewsets.ModelViewSet):
                 user=admin,
                 title="New Blog Created",
                 message=f"A vendor created the blog {blog.title}.",
-                url=f"/admin-dashboard/blogs/{blog.id}/"
+                url="/admin-dashboard/blog-approvals"
             )
             print(f"📢 Admin {admin.username} notified")
 
@@ -542,7 +542,7 @@ class BlogPostViewSet(viewsets.ModelViewSet):
                 user=vendor.user,
                 title="Your Blog Was Created",
                 message=f"Your blog {blog.title} has been successfully created.",
-                url=f"/vendor/blogs/{blog.id}/"
+                url="/vendors-dashboard/vendor/blogs"
             )
             print(f"📢 Vendor {vendor.user.username} notified")
 
@@ -586,7 +586,7 @@ class BlogPostViewSet(viewsets.ModelViewSet):
                     user=vendor.user,
                     title="New Comment on Your Blog",
                     message=f"Your blog {post.title} received a new comment from a customer.",
-                    url=f"/vendor/blogs/{post.id}/",
+                    url=f"/blogs/{post.id}",
                 )
             ActivityLog.objects.create(
                 user=request.user,
@@ -603,7 +603,7 @@ class BlogPostViewSet(viewsets.ModelViewSet):
                     action="comment_created",
                     item=None,
                     description=f"A customer commented on the blog {post.title}.",
-                    related_url=f"/admin-dashboard/blogs/{post.id}/",
+                    related_url=f"/blogs/{post.id}",
                 )
         else:
             visitor_id = request.COOKIES.get("visitorId") or request.COOKIES.get("visitor_id")
@@ -619,7 +619,7 @@ class BlogPostViewSet(viewsets.ModelViewSet):
                     user=vendor.user,
                     title="New Comment on Your Blog",
                     message=f"Your blog {post.title} received a new comment from a visitor.",
-                    url=f"/vendor/blogs/{post.id}/",
+                    url=f"/blogs/{post.id}",
                 )
 
         # Admins should receive a push for comments from both registered customers
@@ -630,7 +630,7 @@ class BlogPostViewSet(viewsets.ModelViewSet):
                 user=admin,
                 title="New Comment on Blog",
                 message=f"{actor_label.capitalize()} commented on the blog {post.title}.",
-                url=f"/admin-dashboard/blogs/{post.id}/",
+                url=f"/blogs/{post.id}",
             )
 
         response = Response(CommentSerializer(comment).data, status=status.HTTP_201_CREATED)
@@ -689,7 +689,7 @@ class BlogPostViewSet(viewsets.ModelViewSet):
                     user=vendor.user,
                     title="New Reaction on Your Blog",
                     message=f"Your blog {post.title} received a {reaction.type} reaction from {actor_label}.",
-                    url=f"/vendors-dashboard/vendor/blogs/{post.id}/",
+                    url=f"/blogs/{post.id}",
                 )
             if request.user.is_authenticated:
                 ActivityLog.objects.create(
@@ -705,7 +705,7 @@ class BlogPostViewSet(viewsets.ModelViewSet):
                     user=admin,
                     title="New Reaction on Blog",
                     message=f"{actor_label.capitalize()} reacted with {reaction.type} to the blog {post.title}.",
-                    url=f"/admin-dashboard/blogs/{post.id}/",
+                    url=f"/blogs/{post.id}",
                 )
                 ActivityLog.objects.create(
                     user=admin,
@@ -713,7 +713,7 @@ class BlogPostViewSet(viewsets.ModelViewSet):
                     action="react_created",
                     item=None,
                     description=f"A customer reacted with {reaction.type} to the blog {post.title}.",
-                    related_url=f"/admin-dashboard/blogs/{post.id}/",
+                    related_url=f"/blogs/{post.id}",
                 )
 
         response = Response(
@@ -753,7 +753,7 @@ class BlogPostViewSet(viewsets.ModelViewSet):
                     user=vendor.user,
                     title="Reaction Removed from Your Blog",
                     message=f"A {reaction_type} reaction from {actor_label} was removed from your blog {post.title}.",
-                    url=f"/vendors-dashboard/vendor/blogs/{post.id}/"
+                    url=f"/blogs/{post.id}"
                 )
                 print(f"📢 Vendor {vendor.user.username} notified of removed reaction")
 
@@ -775,7 +775,7 @@ class BlogPostViewSet(viewsets.ModelViewSet):
                     user=admin,
                     title="Reaction Removed from Blog",
                     message=f"{actor_label.capitalize()} removed a {reaction_type} reaction from the blog {post.title}.",
-                    url=f"/admin-dashboard/blogs/{post.id}/",
+                    url=f"/blogs/{post.id}",
                 )
                 ActivityLog.objects.create(
                     user=admin,
@@ -783,7 +783,7 @@ class BlogPostViewSet(viewsets.ModelViewSet):
                     action="react_removed",
                     item=None,
                     description=f"A customer removed a {reaction_type} reaction from the blog {post.title}.",
-                    related_url=f"/admin-dashboard/blogs/{post.id}/"
+                    related_url=f"/blogs/{post.id}"
                 )
                 print(f"📝 Admin {admin.username} activity logged")
 
@@ -815,7 +815,7 @@ class AdminBlogApprovalViewSet(viewsets.ModelViewSet):
                 user=blog.vendor.user,
                 title="Your blog was approved",
                 message=f"Your blog {blog.title} has been approved by the administrator.",
-                url=f"/vendors-dashboard/vendor/blogs/{blog.id}/",
+                url=f"/blogs/{blog.id}",
             )
 
         ActivityLog.objects.create(
@@ -850,7 +850,7 @@ class AdminBlogApprovalViewSet(viewsets.ModelViewSet):
                 user=vendor_user,
                 title="Your blog was denied",
                 message=message,
-                url="/vendors-dashboard/vendor/blogs/",
+                url="/vendors-dashboard/vendor/blogs",
             )
 
         ActivityLog.objects.create(
@@ -860,7 +860,7 @@ class AdminBlogApprovalViewSet(viewsets.ModelViewSet):
             item=None,
             description=f"The administrator denied the blog {title}."
             + (f" Reason: {reason}" if reason else ""),
-            related_url="/vendors-dashboard/vendor/blogs/",
+            related_url="/vendors-dashboard/vendor/blogs",
         )
 
         return Response({"detail": f"Blog '{title}' was denied and the vendor was notified."}, status=status.HTTP_200_OK)
