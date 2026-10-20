@@ -307,6 +307,18 @@ CHANNEL_LAYERS = {
     }
 }
 
+# Celery workers and Beat use Redis for task delivery. REDIS_URL is also
+# used by Channels; CELERY_BROKER_URL can be set separately if desired.
+CELERY_BROKER_URL = env(
+    "CELERY_BROKER_URL",
+    default=env("REDIS_URL", default="redis://redis:6379/0"),
+)
+CELERY_ACCEPT_CONTENT = ["json"]
+CELERY_TASK_SERIALIZER = "json"
+CELERY_RESULT_SERIALIZER = "json"
+CELERY_TIMEZONE = "Africa/Nairobi"
+CELERY_BROKER_CONNECTION_RETRY_ON_STARTUP = True
+
 # The task module uses the legacy singular name order.task; import it explicitly
 # so its cleanup, customer-confirmation timeout, and carrier-sync tasks are registered.
 CELERY_IMPORTS = ("order.task",)
