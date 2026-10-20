@@ -13,6 +13,7 @@ from order.fulfillment import (
     VENDOR_TRANSITIONS,
     _advance_from_carrier,
     _normalize_carrier_status,
+    auto_complete_unconfirmed_items,
 )
 from order.models import Order, OrderItem, OrderItemFulfillment, Payment, Shipment
 from order.order_completion import _normalize_replayed_order_status
@@ -127,6 +128,38 @@ class CarrierReturnHoldTests(TestCase):
             status="DELIVERED",
         )
         self.shipment.order_items.add(self.fulfillment)
+
+    def test_expired_deadline_auto_completes_verified_paid_item(self):
+        self.fulfillment.confirmation_deadline = timezone.now() - timedelta(minutes=1)
+        self.fulfillment.save(update_fields=["confirmation_deadline", "updated_at"])
+
+        result = auto_complete_unconfirmed_items()
+        self.fulfillment.refresh_from_db()
+        self.order.refresh_from_db()
+
+        self.assertEqual(result["completed"], 1)
+        self.assertEqual(result["held_for_review"], 0)
+        self.assertEqual(self.fulfillment.status, "COMPLETED")
+        self.assertIsNone(self.fulfillment.confirmation_deadline)
+        self.assertIsNotNone(self.fulfillment.payout_eligible_at)
+        self.assertEqual(self.order.status, "COMPLETED")
+
+    def test_expired_deadline_holds_item_if_payment_is_unverified(self):
+        self.payment.status = "PENDING"
+        self.payment.save(update_fields=["status", "updated_at"])
+        self.fulfillment.confirmation_deadline = timezone.now() - timedelta(minutes=1)
+        self.fulfillment.save(update_fields=["confirmation_deadline", "updated_at"])
+
+        result = auto_complete_unconfirmed_items()
+        self.fulfillment.refresh_from_db()
+        self.order.refresh_from_db()
+
+        self.assertEqual(result["completed"], 0)
+        self.assertEqual(result["held_for_review"], 1)
+        self.assertEqual(self.fulfillment.status, "ISSUE_REPORTED")
+        self.assertIsNone(self.fulfillment.confirmation_deadline)
+        self.assertIsNone(self.fulfillment.payout_eligible_at)
+        self.assertEqual(self.order.status, "DISPUTED")
 
     def test_return_to_sender_clears_deadline_and_holds_fulfillment(self):
         _advance_from_carrier(
