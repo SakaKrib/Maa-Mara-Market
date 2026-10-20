@@ -140,11 +140,12 @@ def complete_paid_order(order, payment, *, transaction_id=None):
     if locked_payment.amount is None or locked_payment.amount <= Decimal("0.00"):
         raise ValueError("Paid order has an invalid payment amount.")
 
-    # Successful payment moves the order into the paid state.
-    # The iexact check keeps legacy lowercase rows idempotent.
+    # A duplicate successful-payment callback must be idempotent.
+    # Normalize casing without downgrading an order already completed by fulfilment.
     if str(locked_order.status).lower() in {"paid", "completed"}:
-        if locked_order.status != "PAID":
-            locked_order.status = "PAID"
+        normalized_order_status = str(locked_order.status).upper()
+        if locked_order.status != normalized_order_status:
+            locked_order.status = normalized_order_status
             locked_order.save(update_fields=["status"])
 
         if locked_payment.status != "PAID":
