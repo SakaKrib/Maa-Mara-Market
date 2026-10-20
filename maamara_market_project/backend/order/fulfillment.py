@@ -129,19 +129,30 @@ def _ensure_fulfillment(order_item, actor=None):
     legacy_status = str(getattr(order_item.order, "status", "PAID") or "PAID").upper()
     default_status = legacy_status if legacy_status in FULFILLMENT_RANK else "PAID"
     defaults = {"status": default_status}
-    if legacy_status == "DISPUTED":
-        defaults.update({"status": "ISSUE_REPORTED", "hold_reason": "Existing order is disputed; staff review is required."})
+
+    # Preserve legacy financial/return holds. Never turn an existing dispute,
+    # return, or refund into a fresh paid item when tracking records are seeded.
+    if legacy_status in {"DISPUTED", "RETURN_REQUESTED", "RETURN_APPROVED"}:
+        defaults.update({
+            "status": "ISSUE_REPORTED",
+            "hold_reason": f"Existing order status is {legacy_status}; staff review is required.",
+        })
     elif legacy_status in {"CANCELLED", "RETURNED", "REFUNDED"}:
-        defaults["status"] = "CANCELLED"
+        defaults.update({
+            "status": "CANCELLED",
+            "hold_reason": f"Existing order status is {legacy_status}; do not release this item automatically.",
+        })
+
     # For legacy orders already marked delivered, start a transparent fresh
     # confirmation window rather than auto-completing on first page view.
-    if default_status == "DELIVERED":
+    if legacy_status == "DELIVERED":
         defaults["status"] = "AWAITING_CONFIRMATION"
         defaults["delivery_reported_at"] = timezone.now()
         defaults["confirmation_deadline"] = timezone.now() + timedelta(days=CUSTOMER_CONFIRMATION_DAYS)
-    elif default_status == "AWAITING_CONFIRMATION":
+    elif legacy_status == "AWAITING_CONFIRMATION":
         defaults["confirmation_deadline"] = timezone.now() + timedelta(days=CUSTOMER_CONFIRMATION_DAYS)
         defaults["delivery_reported_at"] = timezone.now()
+
     fulfillment, created = OrderItemFulfillment.objects.get_or_create(
         order_item=order_item,
         defaults=defaults,
