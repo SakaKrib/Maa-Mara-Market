@@ -914,7 +914,10 @@ def payment_processors(start_date, end_date, payment_method=None):
     
     if payment_method:
         payouts = payouts.filter(vendor__payment_method=payment_method)
-    
+
+    # Never submit zero/negative amounts or payouts for inactive vendors in bulk.
+    payouts = payouts.filter(amount__gt=0, vendor__is_active=True)
+
     results = []
 
     mpesa_config = settings.PAYMENT_GATEWAYS.get("mpesa", {})

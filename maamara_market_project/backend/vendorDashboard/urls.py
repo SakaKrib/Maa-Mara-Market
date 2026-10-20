@@ -1,6 +1,7 @@
 from django.urls import path
 from . import views  # Make sure views.py exists
 from .VendorRequests import *
+from .payout.services.payout_review import payout_review_single, payout_review_group
 from .views import AdminPayoutAPIView, VendorPayoutAPIView, monthly_sales_report
 from .payout.services.vendor_monthly_payout_runner import process_payouts_by_group, pay_single_vendor_payout, generate_monthly_payouts, reconcile_single_vendor_payout, reconcile_bank_vendor_payout
 from .calback import *
@@ -63,6 +64,10 @@ urlpatterns = [
 
     # group payment
     path("api/payout/process-payouts-by-group/", process_payouts_by_group, name="process_payouts_by_group"),
+
+    # read-only review data for the admin payment screens (server-authoritative)
+    path("api/admin/payouts/review/", payout_review_group, name="payout_review_group"),
+    path("api/admin/payouts/<str:reference>/review/", payout_review_single, name="payout_review_single"),
 
     # pay single vendor
     path(

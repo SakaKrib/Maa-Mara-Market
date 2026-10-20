@@ -35,85 +35,28 @@ export default function AdminPayoutTriggerPayment() {
     0
   );
 
-  const getVendorDetails = (payout) => {
-    // Merge legacy/detail snapshots without allowing empty fields in a partial
-    // snapshot to overwrite the full Vendor model's saved payout destinations.
-    const fullVendor = payout?.vendor || {};
-    const detailVendor = payout?.vendor_details || {};
-    const vendor = { ...fullVendor, ...detailVendor };
-    const phone =
-      detailVendor.mpesa_number ||
-      fullVendor.mpesa_number ||
-      detailVendor.MpesaNo ||
-      fullVendor.MpesaNo ||
-      detailVendor.mpesa_no ||
-      fullVendor.mpesa_no ||
-      payout?.mpesa_number ||
-      payout?.MpesaNo ||
-      payout?.phone ||
-      "";
-    const inferredMpesaType =
-      detailVendor.mpesa_till || fullVendor.mpesa_till || payout?.mpesa_till
-        ? "TILL"
-        : detailVendor.mpesa_paybill || fullVendor.mpesa_paybill || payout?.mpesa_paybill
-          ? "LIPA_NA_MPESA"
-          : phone
-            ? "PHONE"
-            : "";
-    return {
-      ...vendor,
-      company_name: detailVendor.company_name || fullVendor.company_name || vendor.company_name || "",
-      mpesa_number: phone,
-      mpesa_type: detailVendor.mpesa_type || fullVendor.mpesa_type || payout?.mpesa_type || inferredMpesaType,
-      mpesa_till: detailVendor.mpesa_till || fullVendor.mpesa_till || payout?.mpesa_till || "",
-      mpesa_paybill: detailVendor.mpesa_paybill || fullVendor.mpesa_paybill || payout?.mpesa_paybill || "",
-      paypal_email: detailVendor.paypal_email || fullVendor.paypal_email || detailVendor.PaypalEmail || fullVendor.PaypalEmail || payout?.paypal_email || "",
-      bank_account_number: detailVendor.bank_account_number || fullVendor.bank_account_number || detailVendor.BankAccountNo || fullVendor.BankAccountNo || payout?.bank_account_number || "",
-    };
-  };
-
+  // Only the reference travels: the payment screens load the saved vendor details
+  // and amount from the server, so nothing can be altered or lost on refresh.
   const handlePayVendor = (payout) => {
-    const vendor = getVendorDetails(payout);
-    const { payment_method, reference, amount } = payout;
-    const phone = vendor.mpesa_number || "";
+    const { payment_method, reference } = payout;
+    const query = `?reference=${encodeURIComponent(reference)}`;
 
     if (payment_method === "MOBILE_MONEY") {
-      navigate("mpesa-payment/single-vendor", { state: { reference, amount, vendor, phone, mpesa_type: vendor.mpesa_type, mpesa_number: vendor.mpesa_number, mpesa_till: vendor.mpesa_till, mpesa_paybill: vendor.mpesa_paybill } });
+      navigate(`mpesa-payment/single-vendor${query}`);
     } else if (payment_method === "PAYPAL") {
-      navigate("paypal-payment/single-vendor", { state: { reference, amount, vendor } });
+      navigate(`paypal-payment/single-vendor${query}`);
     } else if (payment_method === "BANK_TRANSFER") {
-      navigate("bank-transfer-payment-group", {
-        state: {
-          paymentMethod: payment_method,
-          payments: [{ vendor, amount, reference }],
-        },
-      });
+      navigate(`bank-transfer-payment-group${query}`);
     }
   };
 
-  const handlePayGroup = (paymentMethod, payouts) => {
-    const payments = payouts.map((payout) => {
-      const vendor = getVendorDetails(payout);
-      return {
-        vendor,
-        phone: vendor.mpesa_number || "",
-        mpesa_type: vendor.mpesa_type || "",
-        mpesa_number: vendor.mpesa_number || "",
-        mpesa_till: vendor.mpesa_till || "",
-        mpesa_paybill: vendor.mpesa_paybill || "",
-        paypal_email: vendor.paypal_email || "",
-        bank_account_number: vendor.bank_account_number || "",
-        amount: payout.amount,
-        reference: payout.reference,
-      };
-    });
-
+  const handlePayGroup = (paymentMethod) => {
     if (paymentMethod === "MOBILE_MONEY") {
-      navigate("mpesa-payment-group", { state: { paymentMethod, payments } });
+      navigate("mpesa-payment-group");
     } else if (paymentMethod === "PAYPAL") {
-      navigate("paypal-payment-group", { state: { paymentMethod, payments } });
+      navigate("paypal-payment-group");
     } else if (paymentMethod === "BANK_TRANSFER") {
-      navigate("bank-transfer-payment-group", { state: { paymentMethod, payments } });
+      navigate("bank-transfer-payment-group");
     }
   };
 
@@ -218,7 +161,7 @@ export default function AdminPayoutTriggerPayment() {
                     </div>
                     <button
                       type="button"
-                      onClick={() => handlePayGroup(method, payouts)}
+                      onClick={() => handlePayGroup(method)}
                       className="inline-flex min-h-10 w-full items-center justify-center gap-2 rounded-xl border border-border bg-background px-4 py-2 text-xs font-semibold text-foreground transition hover:bg-muted sm:w-auto"
                     >
                       Pay all
