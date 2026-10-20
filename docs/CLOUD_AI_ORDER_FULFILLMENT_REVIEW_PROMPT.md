@@ -46,7 +46,8 @@ This implementation records `payout_eligible_at`; it has not replaced the curren
 ## Known audit work already added to this branch (verify rather than assume)
 - Payment callback replay normalization was adjusted so an already `COMPLETED` order is not downgraded to `PAID`; unit regression tests were added.
 - Added `project01/celery.py`, imported the Celery app from `project01/__init__.py`, configured Redis as the broker, and added worker/Beat services to both development Compose and the production Compose overlay. Confirm tasks are discovered and Beat actually schedules the 72-hour and tracking-sync tasks.
-- The backend GitHub workflow now includes `python manage.py test order.test_fulfillment_tracking --verbosity 2`. Inspect the current workflow run and its logs; do not report tests passing solely because the earlier syntax/system-check job passed.
+- The backend GitHub workflow now uses disposable PostgreSQL, runs `python manage.py makemigrations --check --dry-run`, applies the migration graph with `python manage.py migrate --noinput`, and runs `python manage.py test order.test_fulfillment_tracking --verbosity 2`. Inspect the current workflow run and its logs; do not report tests passing solely because earlier syntax/system-check jobs passed.
+- The order payment-confirmation property and vendor/admin fulfilment queries now recognize `PAID`/`COMPLETED` casing variants. Verify legacy records and refund/return holds still behave as intended.
 - Updated implementation log: `docs/ORDER_SHIPMENT_TRACKING_IMPLEMENTATION_LOG.md`.
 - The production Compose overlay still contains a Caddy service even though the project's stated production preference is Nginx; that pre-existing deployment discrepancy was not changed by this focused fulfilment work.
 
