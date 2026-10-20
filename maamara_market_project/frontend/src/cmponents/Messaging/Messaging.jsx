@@ -248,11 +248,7 @@ export default function Messaging({ floating = false, onClose = null, initialCon
 
   return (
     <div
-      className={
-        floating
-          ? "fixed inset-x-3 bottom-24 top-20 z-50 overflow-hidden rounded-2xl border border-[#e6e6e4] bg-[#f8f8f6] text-[#222] shadow-2xl sm:bottom-6 sm:right-6 sm:left-auto sm:top-24 sm:w-[720px]"
-          : "min-h-screen bg-[#f8f8f6] p-2 text-[#222] sm:p-4 lg:p-6"
-      }
+      className="fixed inset-0 z-[900] box-border overflow-hidden bg-[#f8f8f6] pt-[env(safe-area-inset-top,0px)] pb-[calc(5rem+env(safe-area-inset-bottom,0px))] text-[#222] sm:pb-0"
     >
       {floating && onClose && (
         <button
@@ -265,13 +261,7 @@ export default function Messaging({ floating = false, onClose = null, initialCon
           <IonIcon icon={closeOutline} className="text-xl" />
         </button>
       )}
-      <div
-        className={
-          floating
-            ? "flex h-full w-full overflow-hidden rounded-2xl bg-white"
-            : "mx-auto flex min-h-[calc(100vh-110px)] max-w-7xl overflow-hidden rounded-2xl border border-[#e6e6e4] bg-white shadow-sm"
-        }
-      >
+      <div className="flex h-full w-full min-h-0 overflow-hidden bg-white">
         <aside className={(mobileThread ? "hidden lg:flex" : "flex") + " w-full shrink-0 flex-col border-r border-[#e6e6e4] lg:w-[340px]"}>
           <div className="border-b border-[#e6e6e4] p-4 text-center">
             <div className="flex flex-col items-center gap-3">
