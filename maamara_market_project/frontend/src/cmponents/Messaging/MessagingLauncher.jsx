@@ -38,7 +38,7 @@ const MessagingLauncher = () => {
   }
 
   return (
-    <div className={"fixed right-5 sm:bottom-8 sm:right-6 " + (isNativeApp ? "bottom-[calc(5rem+env(safe-area-inset-bottom))] z-[950]" : "bottom-24 z-40")}>
+    <div className={"fixed right-5 sm:bottom-8 sm:right-6 " + (isNativeApp ? "bottom-[calc(6rem+env(safe-area-inset-bottom))] z-[950]" : "bottom-28 z-40")}>
       <button
         type="button"
         onClick={() => setOpen(true)}
