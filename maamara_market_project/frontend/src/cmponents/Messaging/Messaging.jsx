@@ -7,6 +7,11 @@ import api, { getWebSocketUrl, resolveApiAssetUrl } from "../../Services/Api";
 const timeLabel = (value) => value ? new Date(value).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : "";
 
 export default function Messaging({ floating = false, onClose = null, initialConversationId = null, initialMessageId = null }) {
+  const notificationParams = typeof window !== "undefined"
+    ? new URLSearchParams(window.location.search)
+    : new URLSearchParams();
+  const targetConversationId = initialConversationId || notificationParams.get("conversation");
+  const targetMessageId = initialMessageId || notificationParams.get("message");
   const { user, isVisitor } = useAuth();
   const isAdmin = Boolean(user?.is_admin || user?.role === "admin" || user?.is_staff);
   const isGuest = !user && Boolean(isVisitor);
@@ -25,7 +30,7 @@ export default function Messaging({ floating = false, onClose = null, initialCon
   const selectedRef = useRef(null);
   const endRef = useRef(null);
   const messageElementRefs = useRef(new Map());
-  const pendingTargetMessageRef = useRef(initialMessageId ? String(initialMessageId) : "");
+  const pendingTargetMessageRef = useRef(targetMessageId ? String(targetMessageId) : "");
   const processedNotificationTargetRef = useRef("");
 
   const loadContacts = useCallback(async () => {
@@ -57,29 +62,29 @@ export default function Messaging({ floating = false, onClose = null, initialCon
   }, [loadContacts, loadConversations, user?.id, isVisitor]);
 
   useEffect(() => {
-    if (!initialConversationId || !conversations.length) return;
+    if (!targetConversationId || !conversations.length) return;
     const targetConversation = conversations.find(
-      (conversation) => String(conversation.id) === String(initialConversationId)
+      (conversation) => String(conversation.id) === String(targetConversationId)
     );
     if (!targetConversation) return;
 
-    const targetKey = `${targetConversation.id}:${initialMessageId ? String(initialMessageId) : ""}`;
+    const targetKey = `${targetConversation.id}:${targetMessageId ? String(targetMessageId) : ""}`;
     if (processedNotificationTargetRef.current === targetKey) return;
     processedNotificationTargetRef.current = targetKey;
 
     // Set the message target even when this conversation is already open.
     // Notifications for multiple messages in the same chat must still scroll
     // to the newly selected message rather than leaving the user at the bottom.
-    pendingTargetMessageRef.current = initialMessageId ? String(initialMessageId) : "";
+    pendingTargetMessageRef.current = targetMessageId ? String(targetMessageId) : "";
 
     if (String(selectedRef.current?.id) !== String(targetConversation.id)) {
       setSelected(targetConversation);
       setMobileThread(true);
-    } else if (initialMessageId) {
+    } else if (targetMessageId) {
       setMobileThread(true);
       loadMessages(targetConversation.id).catch(() => setError("Unable to load conversation."));
     }
-  }, [conversations, initialConversationId, initialMessageId, loadMessages]);
+  }, [conversations, targetConversationId, targetMessageId, loadMessages]);
 
   useEffect(() => {
     selectedRef.current = selected;
