@@ -148,7 +148,7 @@ def _campaign_payload(campaign):
         "id": campaign.id, "title": campaign.title, "campaign_type": campaign.campaign_type,
         "subject": campaign.subject, "preheader": campaign.preheader, "body_html": campaign.body_html,
         "body_text": campaign.body_text, "hero_image_url": campaign.hero_image_url,
-        "cta_label": campaign.cta_label, "cta_url": campaign.cta_url, "content_payload": campaign.content_payload,
+        "cta_label": campaign.cta_label, "cta_url": campaign.cta_url, "content_payload": campaign.content_payload, "recurrence": (campaign.content_payload or {}).get("recurrence", {"frequency": "none", "interval": 1, "until": ""}),
         "status": campaign.status, "scheduled_at": campaign.scheduled_at,
         "recipient_count": campaign.recipient_count, "sent_count": campaign.sent_count,
         "failed_count": campaign.failed_count, "created_at": campaign.created_at,
@@ -251,9 +251,31 @@ def email_campaign_action(request, campaign_id, action):
             return Response({"detail": "Provide a future timezone-aware scheduled_at timestamp."}, status=400)
         if campaign.status != "approved":
             return Response({"detail": "Approve the campaign before scheduling it."}, status=409)
+        recurrence = request.data.get("recurrence") or {}
+        frequency = str(recurrence.get("frequency", "none")).lower()
+        if frequency not in {"none", "daily", "weekly", "monthly", "periodic"}:
+            return Response({"detail": "Choose a valid repeat frequency."}, status=400)
+        try:
+            interval = int(recurrence.get("interval", 1))
+        except (TypeError, ValueError):
+            return Response({"detail": "Repeat interval must be a whole number."}, status=400)
+        if interval < 1 or interval > 365:
+            return Response({"detail": "Repeat interval must be between 1 and 365."}, status=400)
+        until = str(recurrence.get("until", "") or "").strip()
+        if until:
+            from datetime import date
+            try:
+                until_date = date.fromisoformat(until)
+            except ValueError:
+                return Response({"detail": "Repeat-until date must use YYYY-MM-DD."}, status=400)
+            if until_date < dt.date():
+                return Response({"detail": "Repeat-until date must be on or after the first send date."}, status=400)
+        payload = dict(campaign.content_payload or {})
+        payload["recurrence"] = {"frequency": frequency, "interval": interval, "until": until}
+        campaign.content_payload = payload
         campaign.scheduled_at = dt
         campaign.status = "scheduled"
-        campaign.save(update_fields=["scheduled_at", "status", "updated_at"])
+        campaign.save(update_fields=["content_payload", "scheduled_at", "status", "updated_at"])
     elif action == "send":
         if campaign.status not in {"approved", "scheduled"}:
             return Response({"detail": "Campaign must be approved before sending."}, status=409)
