@@ -83,7 +83,7 @@ const EmailPanel = ({ open, onClose, filter = "sent" }) => {
           <button type="button" aria-label="Close email center" title="Close email center" onClick={onClose} className="inline-flex h-11 w-11 shrink-0 items-center justify-center self-start rounded-[20px] border-2 border-black bg-white text-black shadow-md opacity-100 transition hover:bg-gray-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black" style={{ color: "#000000", backgroundColor: "#ffffff", borderColor: "#000000", opacity: 1 }}><X size={22} strokeWidth={2.5} aria-hidden="true" style={{ color: "#000000", stroke: "#000000" }} /></button>
         </header>
 
-        <div className="grid min-h-0 flex-1 grid-cols-1 overflow-hidden lg:grid-cols-[250px_minmax(0,1fr)]">
+        <div className="grid min-h-0 flex-1 grid-cols-1 overflow-hidden pb-[env(safe-area-inset-bottom,0px)] lg:grid-cols-[250px_minmax(0,1fr)]">
           <aside className="min-h-0 border-b border-border bg-card lg:border-b-0 lg:border-r">
             <div className="flex items-center justify-between gap-2 px-4 pb-3 pt-4 sm:px-5">
               <div><h3 className="text-sm font-bold text-card-foreground">Contacts</h3><p className="mt-0.5 text-xs text-muted-foreground">Choose a recipient to compose</p></div>
@@ -101,7 +101,7 @@ const EmailPanel = ({ open, onClose, filter = "sent" }) => {
             </div>
           </aside>
 
-          <main className="flex min-h-0 min-w-0 flex-1 flex-col overflow-y-auto p-4 pb-[calc(env(safe-area-inset-bottom,0px)+1.25rem)] sm:p-6 sm:pb-8">
+          <main className="flex min-h-0 min-w-0 flex-1 flex-col overflow-y-auto p-4 sm:p-6">
             <div className="mb-5 flex flex-wrap gap-2 border-b border-border pb-3">
               <Button type="button" className="rounded-[20px]" variant={workspace === "activity" ? "default" : "outline"} onClick={() => setWorkspace("activity")}>Email activity</Button>
               <Button type="button" className="rounded-[20px]" variant={workspace === "campaigns" ? "default" : "outline"} onClick={() => setWorkspace("campaigns")}>Campaigns & subscribers</Button>
