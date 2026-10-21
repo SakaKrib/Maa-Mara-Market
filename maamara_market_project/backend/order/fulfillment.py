@@ -1462,11 +1462,33 @@ def sync_pending_shipments():
     max_per_run = int(getattr(settings, "SHIPMENT_TRACKING_MAX_PER_RUN", 25))
     spacing = float(getattr(settings, "SHIPMENT_TRACKING_CALL_SPACING_SECONDS", 5.5))
     cutoff = now - timedelta(minutes=interval)
-    qs = Shipment.objects.filter(
+    post_delivery_days = max(
+        0, int(getattr(settings, "SHIPMENT_TRACKING_POST_DELIVERY_DAYS", 14))
+    )
+    delivery_watch_cutoff = now - timedelta(days=post_delivery_days)
+
+    # Keep checking delivered parcels for a bounded period so late carrier
+    # returns/exceptions can still revoke payout eligibility or raise a hold.
+    # Restrict this watch to items still confirming receipt, under issue review,
+    # or recently completed; otherwise delivered parcels would consume the
+    # carrier quota forever.
+    active_shipments = Q(
         status__in=["SHIPPED", "IN_TRANSIT", "OUT_FOR_DELIVERY", "EXCEPTION"]
-    ).filter(
+    )
+    post_delivery_watch = (
+        Q(
+            status="DELIVERED",
+            delivered_at__gte=delivery_watch_cutoff,
+            order_items__status__in=[
+                "AWAITING_CONFIRMATION", "ISSUE_REPORTED", "COMPLETED"
+            ],
+        )
+    )
+    qs = Shipment.objects.filter(active_shipments | post_delivery_watch).filter(
         Q(last_synced_at__isnull=True) | Q(last_synced_at__lt=cutoff)
-    ).exclude(tracking_number="").order_by(F("last_synced_at").asc(nulls_first=True))[:max_per_run]
+    ).exclude(tracking_number="").distinct().order_by(
+        F("last_synced_at").asc(nulls_first=True)
+    )[:max_per_run]
     results = {"checked": 0, "updated": 0, "skipped_unconfigured": 0, "errors": 0, "rate_limited": False}
     for shipment in qs:
         results["checked"] += 1
