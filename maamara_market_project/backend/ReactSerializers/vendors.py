@@ -13,7 +13,7 @@ from rest_framework.permissions import IsAuthenticated
 from core.models import *
 from django.core.mail import send_mail
 import random
-from datetime import timezone as dt_timezone ,datetime
+from datetime import timezone as dt_timezone, datetime, timedelta
 from django.views.decorators.http import require_POST
 from rest_framework.decorators import api_view
 from rest_framework.decorators import action, api_view,permission_classes
@@ -761,7 +761,7 @@ def submit_vendor_request(request):
                 "message": "Request submitted. OTP sent to email.",
                 "expires_at": (
                     vendor_request.date_submitted
-                    + timezone.timedelta(minutes=vendor_request.OTP_EXPIRY_MINUTES)
+                    + timedelta(minutes=vendor_request.OTP_EXPIRY_MINUTES)
                 ).isoformat(),
             },
             status=201,
