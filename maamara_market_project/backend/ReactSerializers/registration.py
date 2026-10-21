@@ -109,6 +109,8 @@ def register(request):
             "otp": pending.otp_code,
             "otp_expiry_minutes": OTP_EXPIRY_MINUTES,
             "frontend_url": settings.FRONTEND_URL.rstrip("/"),
+            "company_address": getattr(settings, "COMPANY_ADDRESS", ""),
+            "company_address": getattr(settings, "COMPANY_ADDRESS", ""),
         },
     )
     email_message = EmailMultiAlternatives(
@@ -243,6 +245,7 @@ def verify_otp_register_otp(request):
                 "username": user.username,
                 "dashboard_url": f"{settings.FRONTEND_URL.rstrip('/')}/user-account",
                 "frontend_url": settings.FRONTEND_URL.rstrip("/"),
+                "company_address": getattr(settings, "COMPANY_ADDRESS", ""),
             },
         )
         email_message = EmailMultiAlternatives(
