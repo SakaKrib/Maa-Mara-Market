@@ -10,6 +10,7 @@ from django.utils import timezone
 from ReactSerializers.models import Item
 from order.fulfillment import (
     FULFILLMENT_RANK,
+    _coerce_event_time,
     VENDOR_TRANSITIONS,
     _advance_from_carrier,
     _normalize_carrier_status,
@@ -221,3 +222,39 @@ class CarrierReturnHoldTests(TestCase):
         self.assertEqual(self.fulfillment.completed_at, accepted_at)
         self.assertEqual(self.fulfillment.customer_confirmed_at, accepted_at)
         self.assertEqual(self.order.status, "DISPUTED")
+
+
+class CarrierEventSafetyTests(SimpleTestCase):
+    def test_negative_delivery_phrases_are_not_read_as_delivered(self):
+        self.assertEqual(_normalize_carrier_status("Not delivered - recipient absent"), "EXCEPTION")
+        self.assertEqual(_normalize_carrier_status("Delivered to sender"), "RETURNED")
+
+    def test_pre_transit_is_not_carrier_custody(self):
+        self.assertIsNone(_normalize_carrier_status("pre-transit"))
+
+    def test_future_event_times_are_clamped_and_aware(self):
+        now = timezone.now()
+        far_future = now + timedelta(days=30)
+        self.assertLessEqual(_coerce_event_time(far_future, now), now)
+        self.assertTrue(timezone.is_aware(_coerce_event_time("2026-01-05T10:00:00", now)))
+
+
+class CarrierEventIntegrityTests(TestCase):
+    setUp = CarrierReturnHoldTests.setUp
+
+    def test_carrier_event_before_staff_handover_is_ignored(self):
+        self.shipment.status = "LABEL_CREATED"
+        self.shipment.save(update_fields=["status", "updated_at"])
+        applied = _advance_from_carrier(
+            self.shipment, "IN_TRANSIT", "In transit", occurred_at=timezone.now(),
+            source="CARRIER_API", event_id="pre-handover-event",
+        )
+        self.shipment.refresh_from_db()
+        self.assertFalse(applied)
+        self.assertEqual(self.shipment.status, "LABEL_CREATED")
+
+    def test_duplicate_event_id_is_applied_once(self):
+        kwargs = dict(occurred_at=timezone.now(), source="CARRIER_API", event_id="dup-event")
+        self.assertTrue(_advance_from_carrier(self.shipment, "EXCEPTION", "Delivery exception", **kwargs))
+        self.assertFalse(_advance_from_carrier(self.shipment, "EXCEPTION", "Delivery exception", **kwargs))
+        self.assertEqual(self.shipment.events.filter(carrier_event_id="dup-event").count(), 1)

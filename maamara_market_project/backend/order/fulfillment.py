@@ -7,14 +7,16 @@ until provider credentials are available.
 import hashlib
 import logging
 import secrets
-from datetime import timedelta
+import time
+from datetime import datetime, timedelta, timezone as dt_timezone
 
 import requests
 from asgiref.sync import async_to_sync
 from channels.layers import get_channel_layer
 from django.conf import settings
 from django.db import IntegrityError, transaction
-from django.db.models import Q
+from django.core.cache import cache
+from django.db.models import F, Max, Q
 from django.utils import timezone
 from django.utils.dateparse import parse_datetime
 from rest_framework import status
@@ -82,6 +84,55 @@ class CarrierTrackingNotConfigured(Exception):
     pass
 
 
+class ShipmentNotHandedOver(Exception):
+    """Carrier events cannot be applied until staff confirm physical handover."""
+
+
+class CarrierRateLimited(Exception):
+    pass
+
+
+CARRIER_EVENT_SOURCES = {"CARRIER_API", "CARRIER_WEBHOOK"}
+PROTECTED_ORDER_STATUSES = {
+    "CANCELLED", "RETURNED", "REFUNDED", "RETURN_REQUESTED", "RETURN_APPROVED",
+}
+# FedEx scan/derived codes that are unambiguous. Text is preferred because
+# FedEx event codes vary by scan; these are only a fallback.
+FEDEX_CODE_STATUS = {
+    "DL": "DELIVERED", "OD": "OUT_FOR_DELIVERY", "IT": "IN_TRANSIT",
+    "PU": "SHIPPED", "DE": "EXCEPTION", "RS": "RETURNED",
+}
+# DHL Unified Tracking statusCode values: pre-transit, transit, delivered,
+# failure, unknown. "pre-transit" means the carrier has not collected the parcel.
+DHL_CODE_STATUS = {"DELIVERED": "DELIVERED", "TRANSIT": "IN_TRANSIT", "FAILURE": "EXCEPTION"}
+
+
+def _coerce_event_time(value, now=None):
+    """Return an aware datetime that is never meaningfully in the future."""
+    now = now or timezone.now()
+    if isinstance(value, str):
+        try:
+            value = parse_datetime(value.strip())
+        except ValueError:
+            value = None
+    if not isinstance(value, datetime):
+        return now
+    if timezone.is_naive(value):
+        value = timezone.make_aware(value, timezone.get_current_timezone())
+    if value > now + timedelta(minutes=5):
+        return now
+    return value
+
+
+def _resolve_item_vendor(item):
+    """Single source of truth for which Vendor owns a catalogue item."""
+    vendor = getattr(item, "vendor", None)
+    if vendor is not None:
+        return vendor
+    owner = getattr(item, "created_by", None)
+    return getattr(owner, "vendor", None) if owner is not None else None
+
+
 def _iso(value):
     return value.isoformat() if value else None
 
@@ -99,14 +150,8 @@ def _customer_owns_order(request, order):
 
 def _vendor_owns_item(user, order_item):
     vendor = getattr(user, "vendor", None)
-    item = order_item.item
-    return bool(
-        vendor
-        and (
-            getattr(item, "vendor_id", None) == vendor.pk
-            or getattr(item, "created_by_id", None) == user.pk
-        )
-    )
+    owner = _resolve_item_vendor(order_item.item)
+    return bool(vendor and owner is not None and owner.pk == vendor.pk)
 
 
 def _record_event(order, fulfillment=None, shipment=None, actor=None, source="SYSTEM",
@@ -191,13 +236,17 @@ def _sync_order_status(order):
     Detailed progress remains item-level. This aggregate rule avoids claiming
     that a multi-item order is complete while one item still needs attention.
     """
-    if order.status in {"CANCELLED", "RETURNED", "REFUNDED"}:
+    # Return/refund workflows own these statuses; fulfilment must not overwrite them.
+    if order.status in PROTECTED_ORDER_STATUSES:
         return order.status
     fulfillments = list(
         OrderItemFulfillment.objects.filter(order_item__order=order).only("status")
     )
-    if not fulfillments:
+    # Cancelled lines no longer take part in the order's progress.
+    live = [item for item in fulfillments if item.status != "CANCELLED"]
+    if not fulfillments or not live:
         return order.status
+    fulfillments = live
     if any(item.status == "ISSUE_REPORTED" for item in fulfillments):
         target = "DISPUTED"
     elif all(item.status == "COMPLETED" for item in fulfillments):
@@ -221,11 +270,11 @@ def _publish_order_update(order):
             f"order_{order.pk}",
             {"type": "fulfillment_update", "order_id": order.pk},
         )
-        vendor_ids = set(
-            OrderItem.objects.filter(order=order, item__vendor__isnull=False)
-            .values_list("item__vendor_id", flat=True)
-            .distinct()
-        )
+        vendor_ids = set()
+        for line in OrderItem.objects.filter(order=order).select_related("item", "item__created_by"):
+            owner = _resolve_item_vendor(line.item)
+            if owner is not None:
+                vendor_ids.add(owner.pk)
         for vendor_id in vendor_ids:
             async_to_sync(layer.group_send)(
                 f"vendor_orders_{vendor_id}",
@@ -235,7 +284,28 @@ def _publish_order_update(order):
         logger.exception("Could not publish fulfilment update for order %s", order.pk)
 
 
-def _fulfillment_payload(fulfillment, include_internal=False):
+CUSTOMER_VISIBLE_EVENT_TYPES = {
+    "payment_confirmed", "legacy_fulfillment_initialized", "carrier_handover_confirmed",
+    "carrier_tracking_update", "carrier_reported_delivery", "awaiting_customer_confirmation",
+    "customer_accepted_item", "customer_reported_item_issue", "auto_completed_after_72_hours",
+    "carrier_return_hold", "carrier_exception_hold",
+    "vendor_step_completed", "dispatch_inspection_passed", "shipment_recorded",
+}
+CUSTOMER_EVENT_NOTES = {
+    "vendor_step_completed": "Seller updated preparation progress.",
+    "dispatch_inspection_passed": "Item passed Maamara Market dispatch inspection.",
+    "shipment_recorded": "Shipment booked with the carrier.",
+}
+
+
+def _fulfillment_payload(fulfillment, include_internal=False, audience=None):
+    """Serialize a fulfilment record for one audience: customer, vendor or staff.
+
+    Customers never see vendor/staff notes or staff usernames; vendors never see
+    the customer's account name or the inspecting staff member.
+    """
+    audience = audience or ("staff" if include_internal else "customer")
+    include_internal = audience in {"staff", "vendor"}
     line = fulfillment.order_item
     order = line.order
     shipments = []
@@ -263,17 +333,31 @@ def _fulfillment_payload(fulfillment, include_internal=False):
                 for event in shipment.events.all()
             ],
         })
-    events = [
-        {
+    events = []
+    for event in fulfillment.events.order_by("created_at", "id"):
+        note = event.note
+        if audience == "customer":
+            if event.event_type not in CUSTOMER_VISIBLE_EVENT_TYPES:
+                continue
+            if event.source in {"VENDOR", "STAFF"}:
+                note = CUSTOMER_EVENT_NOTES.get(event.event_type, "")
+        events.append({
             "event_type": event.event_type,
             "from_status": event.from_status,
             "to_status": event.to_status,
-            "note": event.note,
+            "note": note,
             "source": event.source,
             "created_at": _iso(event.created_at),
-        }
-        for event in fulfillment.events.order_by("created_at", "id")
-    ]
+        })
+    hold_reason = fulfillment.hold_reason
+    if audience == "customer" and fulfillment.status == "ISSUE_REPORTED":
+        customer_reported = fulfillment.events.filter(
+            event_type="customer_reported_item_issue"
+        ).order_by("-created_at", "-id").first()
+        if not customer_reported or customer_reported.note != hold_reason:
+            hold_reason = "Maamara Market staff are reviewing this item."
+    elif audience == "customer":
+        hold_reason = ""
     item = line.item
     result = {
         "fulfillment_id": fulfillment.pk,
@@ -290,7 +374,7 @@ def _fulfillment_payload(fulfillment, include_internal=False):
         "customer_confirmed_at": _iso(fulfillment.customer_confirmed_at),
         "completed_at": _iso(fulfillment.completed_at),
         "payout_eligible_at": _iso(fulfillment.payout_eligible_at),
-        "hold_reason": fulfillment.hold_reason,
+        "hold_reason": hold_reason,
         "shipments": shipments,
         "events": events,
     }
@@ -298,6 +382,10 @@ def _fulfillment_payload(fulfillment, include_internal=False):
         result.update({
             "inspection_notes": fulfillment.dispatch_notes,
             "inspection_at": _iso(fulfillment.dispatch_inspected_at),
+            "created_at": _iso(order.created_at),
+        })
+    if audience == "staff":
+        result.update({
             "inspection_by": (
                 fulfillment.dispatch_inspected_by.get_username()
                 if fulfillment.dispatch_inspected_by_id else None
@@ -306,7 +394,6 @@ def _fulfillment_payload(fulfillment, include_internal=False):
                 order.user.get_username() if order.user_id else
                 (f"Guest {order.visitor_id[:8]}" if order.visitor_id else "Unknown")
             ),
-            "created_at": _iso(order.created_at),
         })
     return result
 
@@ -363,7 +450,7 @@ def vendor_fulfillment_list(request):
     if vendor is None:
         return Response({"detail": "Only registered vendors can view vendor fulfilment."}, status=403)
     vendor_items = OrderItem.objects.filter(
-        Q(item__vendor=vendor) | Q(item__created_by=request.user),
+        Q(item__vendor=vendor) | Q(item__vendor__isnull=True, item__created_by=request.user),
         order__isnull=False,
     ).filter(
         Q(order__payment__status__iexact="PAID")
@@ -374,7 +461,7 @@ def vendor_fulfillment_list(request):
     items = []
     for line in vendor_items.order_by("-order__ordered_date", "-id"):
         fulfillment = _ensure_fulfillment(line, actor=request.user)
-        items.append(_fulfillment_payload(fulfillment, include_internal=True))
+        items.append(_fulfillment_payload(fulfillment, audience="vendor"))
     return Response({"results": items, "count": len(items)})
 
 
@@ -476,7 +563,7 @@ def vendor_advance_fulfillment(request, order_item_id):
         fulfillment.save(update_fields=["inspection_status", "hold_reason", "updated_at"])
     _sync_order_status(line.order)
     transaction.on_commit(lambda order=line.order: _publish_order_update(order))
-    return Response(_fulfillment_payload(fulfillment, include_internal=True))
+    return Response(_fulfillment_payload(fulfillment, audience="vendor"))
 
 
 @api_view(["POST"])
@@ -659,22 +746,45 @@ def confirm_carrier_handover(request, shipment_id):
 
 
 def _normalize_carrier_status(value):
-    text = str(value or "").strip().upper().replace("_", " ").replace("-", " ")
+    text = " ".join(str(value or "").strip().upper().replace("_", " ").replace("-", " ").split())
     if not text:
+        return None
+    # Negative / return phrases first: "not delivered" and "delivered to sender"
+    # must never be read as a successful delivery.
+    if any(word in text for word in (
+        "RETURN TO SENDER", "RETURNED TO SENDER", "RETURN TO SHIPPER",
+        "RETURNED TO SHIPPER", "DELIVERED TO SENDER", "SENT BACK TO SENDER",
+    )):
+        return "RETURNED"
+    if any(word in text for word in (
+        "NOT DELIVERED", "UNDELIVERED", "UNDELIVERABLE", "COULD NOT BE DELIVERED",
+        "DELIVERY FAILED", "FAILED DELIVERY", "UNABLE TO DELIVER", "EXCEPTION",
+        "DELIVERY ATTEMPT", "CUSTOMS HOLD", "DELAY", "ON HOLD",
+    )):
+        return "EXCEPTION"
+    # Carrier has the label/data but has not collected the parcel yet.
+    if any(word in text for word in ("PRE TRANSIT", "LABEL CREATED", "SHIPMENT INFORMATION RECEIVED", "SHIPPING LABEL")):
         return None
     if any(word in text for word in ("DELIVERED", "PROOF OF DELIVERY")):
         return "DELIVERED"
     if any(word in text for word in ("OUT FOR DELIVERY", "ON VEHICLE FOR DELIVERY", "WITH COURIER")):
         return "OUT_FOR_DELIVERY"
+    if any(word in text for word in ("PICKED UP", "ACCEPTED BY CARRIER", "SHIPMENT COLLECTED", "TENDERED")):
+        return "SHIPPED"
     if any(word in text for word in ("IN TRANSIT", "TRANSIT", "DEPARTED", "ARRIVED AT", "AT LOCAL FACILITY", "IN FEDEX LOCATION", "PROCESSED AT")):
         return "IN_TRANSIT"
-    if any(word in text for word in ("PICKED UP", "PICKUP", "ACCEPTED BY CARRIER", "SHIPMENT COLLECTED", "TENDERED")):
-        return "SHIPPED"
-    if any(word in text for word in ("EXCEPTION", "DELIVERY ATTEMPT", "CUSTOMS HOLD", "DELAY")):
-        return "EXCEPTION"
-    if any(word in text for word in ("RETURN TO SENDER", "RETURNED TO SENDER")):
-        return "RETURNED"
     return None
+
+
+def _status_from_description_or_code(description, code, code_map):
+    """Prefer the human description; fall back to an exact provider code."""
+    from_text = _normalize_carrier_status(description)
+    if from_text:
+        return from_text
+    code_text = str(code or "").strip().upper()
+    if not code_text:
+        return None
+    return code_map.get(code_text)
 
 
 @transaction.atomic
@@ -683,34 +793,61 @@ def _advance_from_carrier(shipment, carrier_status, description, *, occurred_at=
     carrier_status = carrier_status if carrier_status in SHIPMENT_STATUS_RANK or carrier_status in {"EXCEPTION", "RETURNED"} else _normalize_carrier_status(carrier_status)
     if not carrier_status:
         return False
-    occurred_at = occurred_at or timezone.now()
-    if timezone.is_naive(occurred_at):
-        occurred_at = timezone.make_aware(occurred_at, timezone.get_current_timezone())
+    # Serialize concurrent pollers/webhooks/staff updates on this shipment.
+    locked = Shipment.objects.select_for_update().select_related("order").filter(pk=shipment.pk).first()
+    if locked is None:
+        return False
+    shipment = locked
+    # A tracking number or label alone is never proof of carrier custody. Only
+    # staff confirmation (confirm_carrier_handover) moves LABEL_CREATED forward;
+    # carrier-sourced events are not recorded so they can be re-read later.
+    if source in CARRIER_EVENT_SOURCES and shipment.status == "LABEL_CREATED":
+        return False
+    now = timezone.now()
+    occurred_at = _coerce_event_time(occurred_at, now)
     payload = payload if isinstance(payload, dict) else {}
-    if event_id:
-        existing = ShipmentEvent.objects.filter(shipment=shipment, carrier_event_id=str(event_id)).exists()
-        if existing:
-            return False
-    event = ShipmentEvent.objects.create(
-        shipment=shipment,
-        carrier_event_id=str(event_id) if event_id else None,
-        status=carrier_status,
-        description=str(description or carrier_status.replace("_", " ").title())[:500],
-        source=source,
-        occurred_at=occurred_at,
-        payload=payload,
+    if event_id and ShipmentEvent.objects.filter(shipment=shipment, carrier_event_id=str(event_id)).exists():
+        return False
+    try:
+        with transaction.atomic():
+            event = ShipmentEvent.objects.create(
+                shipment=shipment,
+                carrier_event_id=str(event_id) if event_id else None,
+                status=carrier_status,
+                description=str(description or carrier_status.replace("_", " ").title())[:500],
+                source=source,
+                occurred_at=occurred_at,
+                payload=payload,
+            )
+    except IntegrityError:
+        # Another worker recorded the same carrier event first.
+        return False
+
+    # Out-of-order protection: an event older than one already applied is kept
+    # in the history but never changes shipment/item state or the headline text.
+    latest_prior = (
+        ShipmentEvent.objects.filter(shipment=shipment, occurred_at__isnull=False)
+        .exclude(pk=event.pk)
+        .aggregate(latest=Max("occurred_at"))["latest"]
     )
+    if latest_prior is not None and occurred_at < latest_prior:
+        shipment.last_synced_at = now
+        shipment.save(update_fields=["last_synced_at", "updated_at"])
+        return True
+
     old_status = shipment.status
     shipment.latest_event_description = event.description
-    if carrier_status == "EXCEPTION":
+    if old_status == "RETURNED":
+        pass  # a returned parcel is terminal; later scans never reopen it
+    elif carrier_status == "EXCEPTION":
         shipment.status = "EXCEPTION"
     elif carrier_status == "RETURNED":
         shipment.status = "RETURNED"
-    elif old_status not in {"RETURNED"} and SHIPMENT_STATUS_RANK.get(carrier_status, -1) >= SHIPMENT_STATUS_RANK.get(old_status, 0):
+    elif SHIPMENT_STATUS_RANK.get(carrier_status, -1) >= SHIPMENT_STATUS_RANK.get(old_status, 0):
         shipment.status = carrier_status
     if carrier_status == "DELIVERED":
         shipment.delivered_at = occurred_at
-    shipment.last_synced_at = timezone.now()
+    shipment.last_synced_at = now
     shipment.provider_payload = payload
     shipment.save(update_fields=[
         "status", "latest_event_description", "delivered_at", "last_synced_at",
@@ -728,7 +865,12 @@ def _advance_from_carrier(shipment, carrier_status, description, *, occurred_at=
         metadata={"carrier_event_id": event_id, "tracking_number": shipment.tracking_number},
     )
 
-    for fulfillment in shipment.order_items.select_related("order_item__order").all():
+    fulfillments = (
+        shipment.order_items.select_for_update(of=("self",))
+        .select_related("order_item__order")
+        .all()
+    )
+    for fulfillment in fulfillments:
         current = fulfillment.status
         # A late carrier return is a conflicting financial/delivery signal; it
         # must place even a previously completed item back on hold for review.
@@ -747,7 +889,9 @@ def _advance_from_carrier(shipment, carrier_status, description, *, occurred_at=
                 )
                 fulfillment.delivery_reported_at = occurred_at
                 fulfillment.status = "AWAITING_CONFIRMATION"
-                fulfillment.confirmation_deadline = occurred_at + timedelta(days=CUSTOMER_CONFIRMATION_DAYS)
+                # The customer's window runs from when Maamara Market learned of
+                # the delivery, so a late poll never shortens it.
+                fulfillment.confirmation_deadline = now + timedelta(days=CUSTOMER_CONFIRMATION_DAYS)
                 fulfillment.save(update_fields=["status", "delivery_reported_at", "confirmation_deadline", "updated_at"])
                 _record_event(
                     order=fulfillment.order_item.order,
@@ -806,6 +950,38 @@ def _advance_from_carrier(shipment, carrier_status, description, *, occurred_at=
     return True
 
 
+def _event_sort_key(entry):
+    stamp = entry.get("stamp")
+    if isinstance(stamp, datetime):
+        if timezone.is_naive(stamp):
+            stamp = timezone.make_aware(stamp, timezone.get_current_timezone())
+        return stamp
+    return datetime(1970, 1, 1, tzinfo=dt_timezone.utc)
+
+
+def _apply_provider_events(shipment, entries, carrier):
+    """Apply provider events oldest-first so history cannot override the latest state."""
+    changed = 0
+    for entry in sorted(entries, key=_event_sort_key):
+        if not entry.get("status"):
+            continue
+        if _advance_from_carrier(
+            shipment, entry["status"], entry["description"], occurred_at=entry.get("stamp"),
+            source="CARRIER_API", event_id=entry["external_id"], payload={"event": entry["payload"]},
+        ):
+            changed += 1
+    shipment.refresh_from_db()
+    shipment.last_synced_at = timezone.now()
+    shipment.save(update_fields=["last_synced_at", "updated_at"])
+    return {"carrier": carrier, "events_applied": changed, "status": shipment.status}
+
+
+def _raise_for_carrier_response(response):
+    if response.status_code == 429:
+        raise CarrierRateLimited("Carrier rate limit reached.")
+    response.raise_for_status()
+
+
 def _dhl_sync(shipment):
     config = settings.PAYMENT_GATEWAYS.get("shipping", {}).get("dhl", {})
     endpoint = config.get("tracking_api_url")
@@ -815,10 +991,10 @@ def _dhl_sync(shipment):
     response = requests.get(
         endpoint,
         params={"trackingNumber": shipment.tracking_number},
-        headers={"DHL-API-Key": api_key},
-        timeout=20,
+        headers={"DHL-API-Key": api_key, "Accept": "application/json"},
+        timeout=(5, 20),
     )
-    response.raise_for_status()
+    _raise_for_carrier_response(response)
     data = response.json()
     records = data.get("shipments") or []
     if not records:
@@ -826,48 +1002,59 @@ def _dhl_sync(shipment):
     record = records[0]
     events = record.get("events") or []
     if not events and record.get("status"):
+        latest = record["status"] if isinstance(record["status"], dict) else {}
         events = [{
-            "timestamp": record.get("status", {}).get("timestamp"),
-            "statusCode": record.get("status", {}).get("statusCode"),
-            "description": record.get("status", {}).get("description"),
+            "timestamp": latest.get("timestamp"),
+            "statusCode": latest.get("statusCode"),
+            "status": latest.get("status"),
+            "description": latest.get("description"),
         }]
-    changed = 0
+    entries = []
     for event in events:
-        description = event.get("description") or event.get("statusCode") or "DHL tracking update"
-        stamp = parse_datetime(str(event.get("timestamp") or ""))
+        description = event.get("description") or event.get("status") or event.get("statusCode") or "DHL tracking update"
+        raw_stamp = event.get("timestamp")
         external_id = hashlib.sha256(
-            f"{shipment.tracking_number}|{event.get('timestamp')}|{event.get('statusCode')}|{description}".encode()
+            f"{shipment.tracking_number}|{raw_stamp}|{event.get('statusCode')}|{description}".encode()
         ).hexdigest()[:40]
-        carrier_status = _normalize_carrier_status(f"{event.get('statusCode', '')} {description}")
-        if carrier_status and _advance_from_carrier(
-            shipment, carrier_status, description, occurred_at=stamp,
-            source="CARRIER_API", event_id=external_id, payload={"event": event},
-        ):
-            changed += 1
-    shipment.refresh_from_db()
-    shipment.last_synced_at = timezone.now()
-    shipment.save(update_fields=["last_synced_at", "updated_at"])
-    return {"carrier": "DHL", "events_applied": changed, "status": shipment.status}
+        entries.append({
+            "stamp": _coerce_event_time(raw_stamp) if raw_stamp else None,
+            "status": _status_from_description_or_code(
+                f"{event.get('status') or ''} {description}", event.get("statusCode"), DHL_CODE_STATUS
+            ),
+            "description": description,
+            "external_id": external_id,
+            "payload": event,
+        })
+    return _apply_provider_events(shipment, entries, "DHL")
+
+
+def _fedex_access_token(config):
+    cache_key = "fedex_tracking_oauth_token"
+    token = cache.get(cache_key)
+    if token:
+        return token
+    token_response = requests.post(
+        config["auth_url"],
+        data={"grant_type": "client_credentials", "client_id": config["client_id"], "client_secret": config["client_secret"]},
+        headers={"Content-Type": "application/x-www-form-urlencoded"},
+        timeout=(5, 15),
+    )
+    _raise_for_carrier_response(token_response)
+    body = token_response.json()
+    token = body.get("access_token")
+    if not token:
+        raise ValueError("FedEx OAuth response did not contain an access token.")
+    ttl = max(int(body.get("expires_in") or 3600) - 120, 60)
+    cache.set(cache_key, token, ttl)
+    return token
 
 
 def _fedex_sync(shipment):
     config = settings.PAYMENT_GATEWAYS.get("shipping", {}).get("fedex", {})
-    auth_url = config.get("auth_url")
     endpoint = config.get("tracking_api_url")
-    client_id = config.get("client_id")
-    client_secret = config.get("client_secret")
-    if not all([auth_url, endpoint, client_id, client_secret]):
+    if not all([config.get("auth_url"), endpoint, config.get("client_id"), config.get("client_secret")]):
         raise CarrierTrackingNotConfigured("FedEx tracking requires FEDEX_OAUTH_URL, FEDEX_TRACKING_API_URL, FEDEX_CLIENT_ID and FEDEX_CLIENT_SECRET.")
-    token_response = requests.post(
-        auth_url,
-        data={"grant_type": "client_credentials", "client_id": client_id, "client_secret": client_secret},
-        headers={"Content-Type": "application/x-www-form-urlencoded"},
-        timeout=15,
-    )
-    token_response.raise_for_status()
-    token = token_response.json().get("access_token")
-    if not token:
-        raise ValueError("FedEx OAuth response did not contain an access token.")
+    token = _fedex_access_token(config)
     response = requests.post(
         endpoint,
         json={
@@ -875,9 +1062,11 @@ def _fedex_sync(shipment):
             "includeDetailedScans": True,
         },
         headers={"Authorization": f"Bearer {token}", "Content-Type": "application/json"},
-        timeout=20,
+        timeout=(5, 20),
     )
-    response.raise_for_status()
+    if response.status_code == 401:
+        cache.delete("fedex_tracking_oauth_token")
+    _raise_for_carrier_response(response)
     data = response.json()
     groups = data.get("output", {}).get("completeTrackResults") or []
     if not groups:
@@ -886,36 +1075,42 @@ def _fedex_sync(shipment):
     if not track_results:
         raise ValueError("FedEx tracking result did not contain track details.")
     record = track_results[0]
+    if record.get("error"):
+        raise ValueError("FedEx reported a tracking error for this shipment.")
     scans = record.get("scanEvents") or []
     latest = record.get("latestStatusDetail") or {}
     if not scans and latest:
+        times = record.get("dateAndTimes") or [{}]
         scans = [{
             "eventDescription": latest.get("description") or latest.get("statusByLocale"),
             "eventType": latest.get("code"),
-            "date": record.get("dateAndTimes", [{}])[0].get("dateTime") if record.get("dateAndTimes") else None,
+            "derivedStatusCode": latest.get("derivedCode") or latest.get("code"),
+            "date": times[0].get("dateTime"),
         }]
-    changed = 0
+    entries = []
     for event in scans:
-        description = event.get("eventDescription") or event.get("eventType") or "FedEx tracking update"
-        stamp = parse_datetime(str(event.get("date") or event.get("dateTime") or ""))
+        description = event.get("eventDescription") or event.get("derivedStatus") or event.get("eventType") or "FedEx tracking update"
+        raw_stamp = event.get("date") or event.get("dateTime")
         external_id = hashlib.sha256(
-            f"{shipment.tracking_number}|{event.get('date') or event.get('dateTime')}|{event.get('eventType')}|{description}".encode()
+            f"{shipment.tracking_number}|{raw_stamp}|{event.get('eventType')}|{description}".encode()
         ).hexdigest()[:40]
-        carrier_status = _normalize_carrier_status(f"{event.get('eventType', '')} {description}")
-        if carrier_status and _advance_from_carrier(
-            shipment, carrier_status, description, occurred_at=stamp,
-            source="CARRIER_API", event_id=external_id, payload={"event": event},
-        ):
-            changed += 1
-    shipment.refresh_from_db()
-    shipment.last_synced_at = timezone.now()
-    shipment.save(update_fields=["last_synced_at", "updated_at"])
-    return {"carrier": "FEDEX", "events_applied": changed, "status": shipment.status}
+        entries.append({
+            "stamp": _coerce_event_time(raw_stamp) if raw_stamp else None,
+            "status": _status_from_description_or_code(
+                description, event.get("derivedStatusCode") or event.get("eventType"), FEDEX_CODE_STATUS
+            ),
+            "description": description,
+            "external_id": external_id,
+            "payload": event,
+        })
+    return _apply_provider_events(shipment, entries, "FEDEX")
 
 
 def sync_shipment_tracking(shipment):
     if not shipment.tracking_number:
         raise ValueError("Shipment has no tracking number.")
+    if shipment.status == "LABEL_CREATED":
+        raise ShipmentNotHandedOver("Confirm carrier handover before carrier tracking can advance this shipment.")
     if shipment.carrier == "DHL":
         return _dhl_sync(shipment)
     if shipment.carrier == "FEDEX":
@@ -933,6 +1128,10 @@ def refresh_shipment_tracking(request, shipment_id):
         result = sync_shipment_tracking(shipment)
     except CarrierTrackingNotConfigured as exc:
         return Response({"detail": str(exc)}, status=424)
+    except ShipmentNotHandedOver as exc:
+        return Response({"detail": str(exc)}, status=409)
+    except CarrierRateLimited:
+        return Response({"detail": "The carrier tracking rate limit was reached. Try again later."}, status=429)
     except requests.RequestException:
         logger.exception("Carrier tracking request failed for shipment %s", shipment_id)
         return Response({"detail": "Carrier tracking provider request failed. The saved tracking record was not fabricated or advanced."}, status=502)
@@ -949,19 +1148,25 @@ def manual_shipment_event(request, shipment_id):
     shipment = Shipment.objects.select_for_update().select_related("order").filter(pk=shipment_id).first()
     if shipment is None:
         return Response({"detail": "Shipment not found."}, status=404)
+    if shipment.status == "LABEL_CREATED":
+        return Response({"detail": "Confirm carrier handover before recording tracking events."}, status=409)
     raw_status = request.data.get("status")
     event_status = _normalize_carrier_status(raw_status) or str(raw_status or "").strip().upper()
     allowed = {"SHIPPED", "IN_TRANSIT", "OUT_FOR_DELIVERY", "DELIVERED", "EXCEPTION", "RETURNED"}
     if event_status not in allowed:
         return Response({"detail": "Use SHIPPED, IN_TRANSIT, OUT_FOR_DELIVERY, DELIVERED, EXCEPTION or RETURNED."}, status=400)
     description = str(request.data.get("description") or event_status.replace("_", " ").title()).strip()[:500]
-    raw_time = request.data.get("occurred_at")
-    occurred_at = parse_datetime(str(raw_time)) if raw_time else timezone.now()
+    occurred_at = _coerce_event_time(request.data.get("occurred_at"))
+    # Deterministic id makes a double-click or retried request idempotent.
+    manual_id = hashlib.sha256(
+        f"manual|{shipment.pk}|{event_status}|{occurred_at.isoformat()}|{description}".encode()
+    ).hexdigest()[:40]
     _advance_from_carrier(
         shipment, event_status, description, occurred_at=occurred_at,
-        source="STAFF", event_id=None,
+        source="STAFF", event_id=manual_id,
         payload={"updated_by": request.user.pk, "manual": True},
     )
+    shipment.refresh_from_db()
     return Response({"shipment_id": shipment.pk, "status": shipment.status, "latest_event_description": shipment.latest_event_description})
 
 
@@ -979,23 +1184,29 @@ def carrier_tracking_webhook(request, carrier):
     carrier = str(carrier or "").strip().upper()
     if carrier not in {"DHL", "FEDEX"}:
         return Response({"detail": "Unsupported carrier."}, status=400)
+    if not isinstance(request.data, dict) and not hasattr(request.data, "get"):
+        return Response({"detail": "Invalid payload."}, status=400)
     tracking_number = str(request.data.get("tracking_number") or "").strip()
     shipment = Shipment.objects.filter(carrier=carrier, tracking_number=tracking_number).first()
     if shipment is None:
         return Response({"detail": "Shipment not found."}, status=404)
+    if shipment.status == "LABEL_CREATED":
+        return Response({"detail": "Shipment is awaiting staff-confirmed carrier handover."}, status=409)
     status_text = request.data.get("status")
     normalized = _normalize_carrier_status(status_text) or str(status_text or "").strip().upper()
     if normalized not in {"SHIPPED", "IN_TRANSIT", "OUT_FOR_DELIVERY", "DELIVERED", "EXCEPTION", "RETURNED"}:
         return Response({"detail": "Unsupported tracking status."}, status=400)
-    raw_time = request.data.get("occurred_at")
-    occurred_at = parse_datetime(str(raw_time)) if raw_time else timezone.now()
-    event_id = str(request.data.get("event_id") or "").strip() or None
+    occurred_at = _coerce_event_time(request.data.get("occurred_at"))
+    description = str(request.data.get("description") or normalized.replace("_", " ").title())[:500]
+    event_id = str(request.data.get("event_id") or "").strip()[:160] or hashlib.sha256(
+        f"webhook|{shipment.pk}|{normalized}|{occurred_at.isoformat()}|{description}".encode()
+    ).hexdigest()[:40]
     _advance_from_carrier(
-        shipment, normalized,
-        str(request.data.get("description") or normalized.replace("_", " ").title()),
+        shipment, normalized, description,
         occurred_at=occurred_at, source="CARRIER_WEBHOOK", event_id=event_id,
         payload={"webhook": True},
     )
+    shipment.refresh_from_db()
     return Response({"accepted": True, "shipment_id": shipment.pk, "status": shipment.status})
 
 
@@ -1219,23 +1430,38 @@ def auto_complete_unconfirmed_items():
 
 
 def sync_pending_shipments():
-    """Poll configured carrier tracking APIs; unconfigured carriers are skipped."""
+    """Poll configured carrier tracking APIs; unconfigured carriers are skipped.
+
+    DHL's default quota is small (about 250 calls/day, 1 call per 5 seconds), so
+    each shipment is polled at most every SHIPMENT_TRACKING_MIN_INTERVAL_MINUTES,
+    the run is capped, calls are spaced, and a 429 stops the run.
+    """
     now = timezone.now()
-    cutoff = now - timedelta(minutes=25)
+    interval = int(getattr(settings, "SHIPMENT_TRACKING_MIN_INTERVAL_MINUTES", 120))
+    max_per_run = int(getattr(settings, "SHIPMENT_TRACKING_MAX_PER_RUN", 25))
+    spacing = float(getattr(settings, "SHIPMENT_TRACKING_CALL_SPACING_SECONDS", 5.5))
+    cutoff = now - timedelta(minutes=interval)
     qs = Shipment.objects.filter(
         status__in=["SHIPPED", "IN_TRANSIT", "OUT_FOR_DELIVERY", "EXCEPTION"]
     ).filter(
         Q(last_synced_at__isnull=True) | Q(last_synced_at__lt=cutoff)
-    ).exclude(tracking_number="")
-    results = {"checked": 0, "updated": 0, "skipped_unconfigured": 0, "errors": 0}
-    for shipment in qs.iterator():
+    ).exclude(tracking_number="").order_by(F("last_synced_at").asc(nulls_first=True))[:max_per_run]
+    results = {"checked": 0, "updated": 0, "skipped_unconfigured": 0, "errors": 0, "rate_limited": False}
+    for shipment in qs:
         results["checked"] += 1
         try:
             outcome = sync_shipment_tracking(shipment)
             results["updated"] += outcome.get("events_applied", 0)
         except CarrierTrackingNotConfigured:
             results["skipped_unconfigured"] += 1
+            continue
+        except CarrierRateLimited:
+            results["rate_limited"] = True
+            logger.warning("Carrier rate limit reached; stopping this tracking sync run")
+            break
         except Exception:
             results["errors"] += 1
             logger.exception("Shipment tracking refresh failed for shipment %s", shipment.pk)
+        if shipment.carrier == "DHL" and spacing > 0:
+            time.sleep(spacing)
     return results
