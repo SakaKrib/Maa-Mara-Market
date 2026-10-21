@@ -168,7 +168,13 @@ def email_campaign_detail(request, campaign_id):
     allowed = ["title", "subject", "preheader", "body_html", "body_text", "hero_image_url", "cta_label", "cta_url", "content_payload", "campaign_type", "scheduled_at"]
     for key in allowed:
         if key in request.data:
-            setattr(campaign, key, request.data[key])
+            value = request.data[key]
+            if key == "campaign_type" and value not in dict(EmailCampaign.TYPE_CHOICES):
+                return Response({"detail": "Unsupported campaign type."}, status=400)
+            if key == "body_html":
+                import bleach
+                value = bleach.clean(str(value), tags=["p","br","strong","b","em","i","ul","ol","li","a","h2","h3","img","div","span"], attributes={"a":["href","title"],"img":["src","alt","width","height"],"div":["style"],"span":["style"]}, protocols=["http","https","mailto"], strip=True)
+            setattr(campaign, key, value)
     if not campaign.title.strip() or not campaign.subject.strip():
         return Response({"detail": "Campaign title and subject are required."}, status=400)
     campaign.status = "draft"
