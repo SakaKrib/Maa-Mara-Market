@@ -11,6 +11,13 @@ import api from "../../../../src/Services/Api";
 import Maamara from "../../../assets/Logo/Maamara.jpg";
 import AppSnackbar from "../../../../components/ui/app-snackbar";
 
+const getSecondsUntil = (expiresAt) => {
+  if (!expiresAt) return 0;
+  const expiryTime = new Date(expiresAt).getTime();
+  if (!Number.isFinite(expiryTime)) return 0;
+  return Math.max(0, Math.floor((expiryTime - Date.now()) / 1000));
+};
+
 const OTPVerification = () => {
   const location = useLocation();
   const navigate = useNavigate();
