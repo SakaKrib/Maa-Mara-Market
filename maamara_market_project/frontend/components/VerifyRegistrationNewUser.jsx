@@ -172,37 +172,37 @@ const VerifyRegistrationNewUser = () => {
   }
 
   return (
-    <div className="min-h-[70vh] flex items-center justify-center px-4 py-10">
-      <div className="bg-white p-6 rounded-[20px] md:p-8 shadow-lg w-full max-w-sm">
-        <div className="flex justify-center mb-4">
+    <div className="mm-otp-screen">
+      <div className="mm-otp-card">
+        <div className="mm-otp-brand">
           <div className="flex gap-4 items-center">
-            <img src={Maamara} alt="maamara-logo" className="w-5 h-5" />
-            <h2 className="text-lg font-semibold">Maamara Market</h2>
+            <img src={Maamara} alt="Maa Mara Market logo" />
+            <span>Maa Mara Market</span>
           </div>
         </div>
 
-        <h1 className="text-lg font-semibold mb-2 text-center">Verify OTP</h1>
-        <p className="text-sm text-muted-foreground text-center mb-6">
+        <h1 className="mm-otp-heading">Verify your email</h1>
+        <p className="mm-otp-description">
           Enter the 6-digit code sent to{" "}
-          <span className="font-medium text-foreground break-all">{email}</span>
+          <span className="mm-otp-address">{email}</span>
         </p>
 
         <InputOTP
           maxLength={6}
           value={otp}
           onChange={setOtp}
-          className="flex justify-center gap-3 max-w-xs mx-auto select-none rounded-xl"
+          className="mm-otp-input" inputMode="numeric" pattern="[0-9]*" autoComplete="one-time-code" aria-label="Six-digit email verification code"
         >
-          <InputOTPGroup>
+          <InputOTPGroup className="mm-otp-group">
             {[0, 1, 2].map((index) => (
               <InputOTPSlot
                 key={index}
                 index={index}
-                className="w-12 h-12 text-xl text-center rounded-xl border border-gray-300 bg-white focus:outline-none focus:border-[var(--blue)] focus:ring-1 focus:ring-[var(--blue)] transition"
+                className="mm-otp-slot"
               />
             ))}
           </InputOTPGroup>
-          <InputOTPSeparator />
+          <InputOTPSeparator className="mm-otp-separator" />
           <InputOTPGroup>
             {[3, 4, 5].map((index) => (
               <InputOTPSlot
@@ -214,9 +214,9 @@ const VerifyRegistrationNewUser = () => {
           </InputOTPGroup>
         </InputOTP>
 
-        <div className="flex flex-col gap-2 justify-center items-center mt-4 text-center">
+        <div className="mm-otp-actions">
           <Button
-            className="primary-button w-full mt-6"
+            className="primary-button w-full"
             onClick={handleVerify}
             disabled={loading || otp.length !== 6 || timer <= 0}
           >
