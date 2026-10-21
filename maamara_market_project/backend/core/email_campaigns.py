@@ -17,6 +17,7 @@ from rest_framework.response import Response
 from asgiref.sync import async_to_sync
 from channels.layers import get_channel_layer
 
+from .email_branding import logo_data_uri
 from .models import EmailCampaign, EmailCampaignRecipient, NewsletterSubscriber
 
 logger = logging.getLogger(__name__)
@@ -283,6 +284,46 @@ def email_campaign_detail(request, campaign_id):
     return Response(_campaign_payload(campaign))
 
 
+def _worker_available():
+    """True when at least one Celery worker answers a quick ping."""
+    if getattr(settings, "CELERY_TASK_ALWAYS_EAGER", False):
+        return True
+    try:
+        from project01.celery import app
+        return bool(app.control.inspect(timeout=1.0).ping())
+    except Exception:
+        logger.warning("Could not reach a Celery worker", exc_info=True)
+        return False
+
+
+def _dispatch_campaign(campaign_id, recipient_count):
+    """Queue the send, or run it right here when no worker is listening.
+
+    Returns ``("queued" | "inline", None)`` on success, else ``(None, message)``.
+    The task itself locks the status transition, so running it inline can never
+    double-send a campaign that a worker also picks up.
+    """
+    from .email_tasks import send_email_campaign
+    if _worker_available():
+        try:
+            send_email_campaign.delay(campaign_id)
+            return "queued", None
+        except Exception:
+            logger.exception("Could not queue email campaign %s", campaign_id)
+    limit = int(getattr(settings, "CAMPAIGN_INLINE_SEND_LIMIT", 300))
+    if recipient_count > limit:
+        return None, (
+            "The background email worker is not running and this campaign has too many recipients "
+            f"({recipient_count}) to send directly. Start the Celery worker and try again."
+        )
+    try:
+        send_email_campaign.apply(args=[campaign_id], throw=False)
+    except Exception:
+        logger.exception("Inline send failed for email campaign %s", campaign_id)
+        return None, "The campaign could not be sent. Check the email settings and the server logs."
+    return "inline", None
+
+
 @api_view(["POST"])
 @permission_classes([IsAdminUser])
 def email_campaign_action(request, campaign_id, action):
@@ -361,15 +402,14 @@ def email_campaign_action(request, campaign_id, action):
                 )
             campaign.recipient_count = recipient_count
             campaign.save(update_fields=["recipient_count", "updated_at"])
-        from .email_tasks import send_email_campaign
-        try:
-            send_email_campaign.delay(campaign.id)
-        except Exception:
-            logger.exception("Could not queue email campaign %s", campaign.id)
-            return Response(
-                {"detail": "Recipients were prepared, but the email could not be queued. Check the background worker and try again."},
-                status=503,
-            )
+        delivery, error = _dispatch_campaign(campaign.id, recipient_count)
+        if error:
+            return Response({"detail": error}, status=503)
+        campaign.refresh_from_db()
+        _broadcast_campaign_update(campaign, action)
+        payload = _campaign_payload(campaign)
+        payload["delivery"] = delivery
+        return Response(payload)
     elif action == "cancel":
         if campaign.status not in {"draft", "pending_approval", "approved", "scheduled", "failed"}:
             return Response({"detail": "This campaign can no longer be cancelled."}, status=409)
@@ -380,6 +420,7 @@ def email_campaign_action(request, campaign_id, action):
             "campaign": campaign, "frontend_url": settings.FRONTEND_URL.rstrip("/"),
             "company_address": getattr(settings, "COMPANY_ADDRESS", ""),
             "unsubscribe_url": "#unsubscribe-preview",
+            "logo_src": logo_data_uri(),
         })
         return HttpResponse(preview_html, content_type="text/html")
     else:
@@ -401,5 +442,10 @@ def email_campaign_report(request, campaign_id):
         failed=Count("id", filter=Q(status="failed")), pending=Count("id", filter=Q(status="pending")),
         suppressed=Count("id", filter=Q(status="suppressed")),
     )
+    failures = list(
+        campaign.recipients.filter(status="failed").exclude(error="")
+        .values_list("error", flat=True).distinct()[:5]
+    )
     return Response({"campaign": _campaign_payload(campaign), "recipients": counts,
+                     "errors": [str(message)[:300] for message in failures],
                      "delivery_note": "Sent means accepted by the configured email backend; it does not prove inbox delivery or opens."})
