@@ -101,7 +101,12 @@ const EmailPanel = ({ open, onClose, filter = "sent" }) => {
             </div>
           </aside>
 
-          <main className="flex min-h-0 min-w-0 flex-1 flex-col overflow-y-auto p-4 sm:p-6">\n            <div className="mb-5 flex flex-wrap gap-2 border-b border-border pb-3">\n              <Button variant={workspace === "activity" ? "default" : "outline"} onClick={() => setWorkspace("activity")}>Email activity</Button>\n              <Button variant={workspace === "campaigns" ? "default" : "outline"} onClick={() => setWorkspace("campaigns")}>Campaigns & subscribers</Button>\n            </div>\n            {workspace === "campaigns" ? <EmailCampaignManager /> : <>
+          <main className="flex min-h-0 min-w-0 flex-1 flex-col overflow-y-auto p-4 sm:p-6">
+            <div className="mb-5 flex flex-wrap gap-2 border-b border-border pb-3">
+              <Button variant={workspace === "activity" ? "default" : "outline"} onClick={() => setWorkspace("activity")}>Email activity</Button>
+              <Button variant={workspace === "campaigns" ? "default" : "outline"} onClick={() => setWorkspace("campaigns")}>Campaigns & subscribers</Button>
+            </div>
+            {workspace === "campaigns" ? <EmailCampaignManager /> : <>
             <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div><h3 className="text-lg font-bold text-card-foreground">Email activity</h3><p className="mt-1 text-sm text-muted-foreground">Track delivery and open a message to review its details.</p></div>
               <Button onClick={() => openComposer()} className="inline-flex items-center gap-2 self-start rounded-[20px]"><PenLine size={16} /> Compose email</Button>
@@ -140,6 +145,7 @@ const EmailPanel = ({ open, onClose, filter = "sent" }) => {
                   </button>;
                 })}</div>}
             </div>
+            </>}
           </main>
         </div>
         <ComposeEmail open={openCompose} onClose={closeComposer} user={selectedUser} />
