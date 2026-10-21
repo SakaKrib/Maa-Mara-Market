@@ -11,7 +11,7 @@ from .item_ai import GenerateItemAIAPIView
 from .vendor_registration_ai import GenerateVendorRegistrationAIAPIView
 from .blog_ai import GenerateBlogAIAPIView
 from core.PasswordRecovery import *
-from django.views.generic.base import TemplateView
+from django.views.generic.base import TemplateView\nfrom core.email_campaigns import (newsletter_subscribe, newsletter_unsubscribe, newsletter_subscribers, email_campaigns, email_campaign_detail, email_campaign_action, email_campaign_report)
 
 router = DefaultRouter()
 
