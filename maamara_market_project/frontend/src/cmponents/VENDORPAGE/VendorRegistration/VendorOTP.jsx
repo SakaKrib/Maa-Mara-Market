@@ -115,7 +115,7 @@ const OTPVerification = () => {
           maxLength={6}
           value={otp}
           onChange={setOtp}
-          className="mm-otp-input" inputMode="numeric" pattern="[0-9]*" autoComplete="one-time-code" aria-label="Six-digit vendor verification code"
+          containerClassName="mm-otp-input" className="mm-otp-native-input" inputMode="numeric" pattern="[0-9]*" autoComplete="one-time-code" aria-label="Six-digit vendor verification code"
         >
           <InputOTPGroup className="mm-otp-group">
             <InputOTPSlot
