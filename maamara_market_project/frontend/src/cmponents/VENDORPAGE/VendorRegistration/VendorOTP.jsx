@@ -124,26 +124,26 @@ const OTPVerification = () => {
             />
             <InputOTPSlot
               index={1}
-              className="w-12 h-20 text-2xl text-center rounded-xl border border-gray-300 shadow-sm focus:outline-none focus:border-blue-600 focus:ring-1 focus:ring-blue-600 transition"
+              className="mm-otp-slot"
             />
             <InputOTPSlot
               index={2}
-              className="w-12 h-20 text-2xl text-center rounded-xl border border-gray-300 shadow-sm focus:outline-none focus:border-blue-600 focus:ring-1 focus:ring-blue-600 transition"
+              className="mm-otp-slot"
             />
           </InputOTPGroup>
           <InputOTPSeparator className="mm-otp-separator" />
-          <InputOTPGroup>
+          <InputOTPGroup className="mm-otp-group">
             <InputOTPSlot
               index={3}
-              className="w-12 h-20 text-2xl text-center rounded-xl border border-gray-300 shadow-sm focus:outline-none focus:border-blue-600 focus:ring-1 focus:ring-blue-600 transition"
+              className="mm-otp-slot"
             />
             <InputOTPSlot
               index={4}
-              className="w-12 h-20 text-2xl text-center rounded-xl border border-gray-300 shadow-sm focus:outline-none focus:border-blue-600 focus:ring-1 focus:ring-blue-600 transition"
+              className="mm-otp-slot"
             />
             <InputOTPSlot
               index={5}
-              className="w-12 h-20 text-2xl text-center rounded-xl border border-gray-300 shadow-sm focus:outline-none focus:border-blue-600 focus:ring-1 focus:ring-blue-600 transition"
+              className="mm-otp-slot"
             />
           </InputOTPGroup>
         </InputOTP>
