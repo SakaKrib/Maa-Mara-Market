@@ -322,7 +322,7 @@ CELERY_BROKER_CONNECTION_RETRY_ON_STARTUP = True
 
 # The task module uses the legacy singular name order.task; import it explicitly
 # so its cleanup, customer-confirmation timeout, and carrier-sync tasks are registered.
-CELERY_IMPORTS = ("order.task",)
+CELERY_IMPORTS = ("order.task", "core.email_tasks")
 
 # =========================================================
 # CELERY
