@@ -759,6 +759,7 @@ def submit_vendor_request(request):
         return Response(
             {
                 "message": "Request submitted. OTP sent to email.",
+                "verification_email": vendor_request.user.email,
                 "expires_at": (
                     vendor_request.date_submitted
                     + timedelta(minutes=vendor_request.OTP_EXPIRY_MINUTES)
@@ -801,7 +802,7 @@ def resend_vendor_otp(request):
         return Response({"success": False, "message": "Email is required."}, status=400)
 
     # Find vendor request
-    vendor_request = VendorRequest.objects.filter(user__email=email).order_by('-date_submitted').first()
+    vendor_request = VendorRequest.objects.filter(user=request.user).order_by('-date_submitted').first()
     if not vendor_request:
         return Response({"success": False, "message": "No vendor request found for this email."}, status=404)
 
