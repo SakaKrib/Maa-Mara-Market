@@ -39,6 +39,9 @@ export default function EmailCampaignManager() {
   const [report, setReport] = useState(null);
   const [scheduleDraft, setScheduleDraft] = useState(null);
   const [scheduling, setScheduling] = useState(false);
+  const [sendConfirmation, setSendConfirmation] = useState(null);
+  const [sendingCampaign, setSendingCampaign] = useState(false);
+  const [previewHtml, setPreviewHtml] = useState(null);
   const [campaignFilter, setCampaignFilter] = useState("all");
   const [snackbar, setSnackbar] = useState({ open: false, message: "", severity: "success" });
   const showSnackbar = (message, severity = "success") => setSnackbar({ open: true, message, severity });
@@ -193,9 +196,7 @@ export default function EmailCampaignManager() {
     try {
       if (name === "preview") {
         const response = await api.post(`/api/admin/email-campaigns/${id}/actions/preview/`, payload, { responseType: "text" });
-        const blob = new Blob([response.data], { type: "text/html" });
-        const url = URL.createObjectURL(blob); window.open(url, "_blank", "noopener,noreferrer");
-        window.setTimeout(() => URL.revokeObjectURL(url), 60000);
+        setPreviewHtml(typeof response.data === "string" ? response.data : String(response.data ?? ""));
         return;
       }
       if (name === "report") {
@@ -206,11 +207,36 @@ export default function EmailCampaignManager() {
         d.setMinutes(Math.ceil(d.getMinutes() / 5) * 5, 0, 0);
         setScheduleDraft({ id, scheduledAt: new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 16), frequency: "none", interval: 1, until: "" });
         return;
-      } else if (name === "send" && !window.confirm("Send this approved campaign to all currently subscribed newsletter recipients?")) return;
-      else await api.post(`/api/admin/email-campaigns/${id}/actions/${name}/`, payload);
+      }
+      if (name === "send") {
+        const campaign = campaigns.find((entry) => String(entry.id) === String(id));
+        setSendConfirmation(campaign || { id, title: "this campaign" });
+        return;
+      }
+      await api.post(`/api/admin/email-campaigns/${id}/actions/${name}/`, payload);
       setNotice(name === "send" ? "Campaign queued for sending." : `Campaign ${name} successful.`);
       await load({ preserveNotice: true });
     } catch (err) { const message = err?.response?.data?.detail || `Campaign action failed: ${name}`; setNotice(message); showSnackbar(message, "error"); }
+  };
+
+  const confirmSendCampaign = async () => {
+    if (!sendConfirmation || sendingCampaign) return;
+    setSendingCampaign(true);
+    setNotice("");
+    try {
+      await api.post(`/api/admin/email-campaigns/${sendConfirmation.id}/actions/send/`);
+      setSendConfirmation(null);
+      const message = "Campaign queued for sending to subscribed newsletter recipients.";
+      setNotice(message);
+      showSnackbar(message, "success");
+      await load({ preserveNotice: true });
+    } catch (err) {
+      const message = err?.response?.data?.detail || "Could not send this campaign. Please try again.";
+      setNotice(message);
+      showSnackbar(message, "error");
+    } finally {
+      setSendingCampaign(false);
+    }
   };
 
   const submitSchedule = async (event) => {
@@ -345,6 +371,19 @@ export default function EmailCampaignManager() {
         </div>
       </form>
 
+      {sendConfirmation && <div className="fixed inset-0 z-[1700] flex items-end justify-center overflow-y-auto bg-black/55 p-0 backdrop-blur-sm sm:items-center sm:p-4" onMouseDown={(e) => { if (e.target === e.currentTarget && !sendingCampaign) setSendConfirmation(null); }}>
+        <section role="alertdialog" aria-modal="true" aria-labelledby="send-campaign-title" aria-describedby="send-campaign-description" className="w-full max-w-lg rounded-t-3xl border border-border bg-card p-5 pb-[calc(1.25rem+env(safe-area-inset-bottom))] text-card-foreground shadow-2xl sm:rounded-2xl sm:p-6">
+          <div className="mb-4 flex items-start gap-3"><span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-primary/10 text-primary"><Send className="h-5 w-5" /></span><div className="min-w-0 flex-1"><h3 id="send-campaign-title" className="text-lg font-bold">Send this campaign?</h3><p className="mt-1 break-words text-sm text-muted-foreground">{sendConfirmation.title || "Selected campaign"}</p></div><button type="button" aria-label="Close send confirmation" disabled={sendingCampaign} onClick={() => setSendConfirmation(null)} className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-muted-foreground transition hover:bg-muted hover:text-foreground disabled:opacity-50"><X className="h-5 w-5" /></button></div>
+          <div id="send-campaign-description" className="rounded-2xl border border-border bg-muted/40 p-4 text-sm leading-6"><p>Send this approved campaign to all currently subscribed newsletter recipients?</p><p className="mt-2 text-muted-foreground">Only active, consented subscribers will receive this email. Sending will queue the campaign for delivery.</p>{sendConfirmation.recipient_count != null && <p className="mt-3 font-semibold">{sendConfirmation.recipient_count} subscribed recipient{Number(sendConfirmation.recipient_count) === 1 ? "" : "s"} currently listed</p>}</div>
+          <div className="mt-5 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end"><Button type="button" variant="outline" className={buttonClass} disabled={sendingCampaign} onClick={() => setSendConfirmation(null)}>Cancel</Button><Button type="button" className={buttonClass} disabled={sendingCampaign} onClick={confirmSendCampaign}><Send className="mr-1.5 h-4 w-4" />{sendingCampaign ? "Queueing campaign…" : "Yes, send campaign"}</Button></div>
+        </section>
+      </div>}
+      {previewHtml !== null && <div className="fixed inset-0 z-[1650] flex items-end justify-center bg-black/55 p-0 backdrop-blur-sm sm:items-center sm:p-4" onMouseDown={(e) => { if (e.target === e.currentTarget) setPreviewHtml(null); }}>
+        <section role="dialog" aria-modal="true" aria-labelledby="campaign-preview-title" className="flex h-[92dvh] w-full flex-col overflow-hidden rounded-t-3xl border border-border bg-card pb-[env(safe-area-inset-bottom)] text-card-foreground shadow-2xl sm:h-[88dvh] sm:max-w-4xl sm:rounded-2xl sm:pb-0">
+          <header className="flex items-center justify-between gap-3 border-b border-border px-4 py-3 sm:px-5"><div><h3 id="campaign-preview-title" className="font-bold">Email campaign preview</h3><p className="text-xs text-muted-foreground">Preview of the email layout</p></div><Button type="button" variant="outline" className={buttonClass} onClick={() => setPreviewHtml(null)}><X className="mr-1.5 h-4 w-4" />Close</Button></header>
+          <iframe title="Email campaign preview content" srcDoc={previewHtml} sandbox="" className="min-h-0 w-full flex-1 bg-white" />
+        </section>
+      </div>}
       {scheduleDraft && <div className="fixed inset-0 z-[1600] flex items-center justify-center overflow-y-auto bg-black/50 p-4" onMouseDown={(e) => { if (e.target === e.currentTarget && !scheduling) setScheduleDraft(null); }}>
         <form onSubmit={submitSchedule} role="dialog" aria-modal="true" aria-labelledby="schedule-campaign-title" className="w-full max-w-lg space-y-4 rounded-2xl border border-border bg-card p-5 text-card-foreground shadow-2xl sm:p-6">
           <div><h3 id="schedule-campaign-title" className="text-lg font-bold">Schedule email campaign</h3><p className="mt-1 text-sm text-muted-foreground">Select the first send time and optional repeat pattern.</p></div>
