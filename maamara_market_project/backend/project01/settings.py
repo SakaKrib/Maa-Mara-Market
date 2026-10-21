@@ -32,6 +32,7 @@ SECRET_KEY = env("SECRET_KEY")
 DEBUG = env.bool("DEBUG", default=False)
 
 FRONTEND_URL = env("FRONTEND_URL")
+COMPANY_ADDRESS = env("COMPANY_ADDRESS", default="")
 
 # Registered PayPal webhook ID. Keep this server-side; it is required to verify
 # every PayPal webhook before any payment/refund state is changed.
@@ -343,6 +344,26 @@ CELERY_BEAT_SCHEDULE = {
     "sync_shipment_tracking_every_30_minutes": {
         "task": "order.task.sync_shipment_tracking",
         "schedule": crontab(minute="*/30"),
+    },
+    "prepare_daily_banner_campaigns": {
+        "task": "core.email_tasks.prepare_daily_banner_campaigns",
+        "schedule": crontab(hour=8, minute=0),
+    },
+    "prepare_daily_sale_campaigns": {
+        "task": "core.email_tasks.prepare_daily_sale_campaigns",
+        "schedule": crontab(hour=8, minute=15),
+    },
+    "prepare_daily_new_arrivals_campaigns": {
+        "task": "core.email_tasks.prepare_daily_new_arrivals_campaigns",
+        "schedule": crontab(hour=8, minute=30),
+    },
+    "process_approved_scheduled_campaigns_every_five_minutes": {
+        "task": "core.email_tasks.process_approved_scheduled_campaigns",
+        "schedule": crontab(minute="*/5"),
+    },
+    "reconcile_campaign_delivery_results_hourly": {
+        "task": "core.email_tasks.reconcile_campaign_delivery_results",
+        "schedule": crontab(minute=10),
     },
 }
 
