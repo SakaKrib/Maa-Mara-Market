@@ -4,9 +4,11 @@ import { X, Mail, Send, AlertCircle, Inbox, PenLine } from "lucide-react";
 import api from "../../../Services/Api";
 import { Button } from "../../../../components/ui/button";
 import ComposeEmail from "./AdminComposeEmail";
+import EmailCampaignManager from "./EmailCampaignManager";
 
 const EmailPanel = ({ open, onClose, filter = "sent" }) => {
   const [tab, setTab] = useState(filter);
+  const [workspace, setWorkspace] = useState("activity");
   const [emails, setEmails] = useState([]);
   const [users, setUsers] = useState([]);
   const [stats, setStats] = useState({ sent: 0, failed: 0, all: 0 });
@@ -99,7 +101,7 @@ const EmailPanel = ({ open, onClose, filter = "sent" }) => {
             </div>
           </aside>
 
-          <main className="flex min-h-0 min-w-0 flex-1 flex-col overflow-y-auto p-4 sm:p-6">
+          <main className="flex min-h-0 min-w-0 flex-1 flex-col overflow-y-auto p-4 sm:p-6">\n            <div className="mb-5 flex flex-wrap gap-2 border-b border-border pb-3">\n              <Button variant={workspace === "activity" ? "default" : "outline"} onClick={() => setWorkspace("activity")}>Email activity</Button>\n              <Button variant={workspace === "campaigns" ? "default" : "outline"} onClick={() => setWorkspace("campaigns")}>Campaigns & subscribers</Button>\n            </div>\n            {workspace === "campaigns" ? <EmailCampaignManager /> : <>
             <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div><h3 className="text-lg font-bold text-card-foreground">Email activity</h3><p className="mt-1 text-sm text-muted-foreground">Track delivery and open a message to review its details.</p></div>
               <Button onClick={() => openComposer()} className="inline-flex items-center gap-2 self-start rounded-[20px]"><PenLine size={16} /> Compose email</Button>
