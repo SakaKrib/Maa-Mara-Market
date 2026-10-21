@@ -530,7 +530,7 @@ def admin_fulfillment_queue(request):
 @permission_classes([IsAuthenticated])
 @transaction.atomic
 def vendor_advance_fulfillment(request, order_item_id):
-    line = OrderItem.objects.select_for_update().select_related("order", "item", "order__payment").filter(
+    line = OrderItem.objects.select_for_update(of=("self",)).select_related("order", "item", "order__payment").filter(
         pk=order_item_id
     ).first()
     if line is None:
@@ -570,7 +570,7 @@ def vendor_advance_fulfillment(request, order_item_id):
 @permission_classes([IsAdminUser])
 @transaction.atomic
 def dispatch_inspection(request, order_item_id):
-    fulfillment = OrderItemFulfillment.objects.select_for_update().select_related(
+    fulfillment = OrderItemFulfillment.objects.select_for_update(of=("self",)).select_related(
         "order_item__order", "order_item__item"
     ).filter(order_item_id=order_item_id).first()
     if fulfillment is None:
@@ -642,7 +642,7 @@ def create_shipment(request):
     if not isinstance(fulfillment_ids, list) or not fulfillment_ids:
         return Response({"detail": "Select at least one inspected item."}, status=400)
     fulfillments = list(
-        OrderItemFulfillment.objects.select_for_update().select_related("order_item__order")
+        OrderItemFulfillment.objects.select_for_update(of=("self",)).select_related("order_item__order")
         .filter(pk__in=fulfillment_ids, order_item__order_id=order_id)
     )
     if len(fulfillments) != len(set(fulfillment_ids)):
@@ -702,7 +702,7 @@ def create_shipment(request):
 @permission_classes([IsAdminUser])
 @transaction.atomic
 def confirm_carrier_handover(request, shipment_id):
-    shipment = Shipment.objects.select_for_update().select_related("order").filter(pk=shipment_id).first()
+    shipment = Shipment.objects.select_for_update(of=("self",)).select_related("order").filter(pk=shipment_id).first()
     if shipment is None:
         return Response({"detail": "Shipment not found."}, status=404)
     if shipment.status != "LABEL_CREATED":
@@ -720,7 +720,7 @@ def confirm_carrier_handover(request, shipment_id):
         occurred_at=now,
         payload={"confirmed_by": request.user.pk},
     )
-    for fulfillment in shipment.order_items.select_for_update().all():
+    for fulfillment in shipment.order_items.select_for_update(of=("self",)).all():
         _transition_fulfillment(
             fulfillment,
             "SHIPPED",
@@ -794,7 +794,7 @@ def _advance_from_carrier(shipment, carrier_status, description, *, occurred_at=
     if not carrier_status:
         return False
     # Serialize concurrent pollers/webhooks/staff updates on this shipment.
-    locked = Shipment.objects.select_for_update().select_related("order").filter(pk=shipment.pk).first()
+    locked = Shipment.objects.select_for_update(of=("self",)).select_related("order").filter(pk=shipment.pk).first()
     if locked is None:
         return False
     shipment = locked
@@ -1145,7 +1145,7 @@ def refresh_shipment_tracking(request, shipment_id):
 @permission_classes([IsAdminUser])
 @transaction.atomic
 def manual_shipment_event(request, shipment_id):
-    shipment = Shipment.objects.select_for_update().select_related("order").filter(pk=shipment_id).first()
+    shipment = Shipment.objects.select_for_update(of=("self",)).select_related("order").filter(pk=shipment_id).first()
     if shipment is None:
         return Response({"detail": "Shipment not found."}, status=404)
     if shipment.status == "LABEL_CREATED":
@@ -1214,7 +1214,7 @@ def carrier_tracking_webhook(request, carrier):
 @permission_classes([AllowAny])
 @transaction.atomic
 def customer_accept_item(request, order_item_id):
-    line = OrderItem.objects.select_for_update().select_related("order", "order__payment", "item").filter(pk=order_item_id).first()
+    line = OrderItem.objects.select_for_update(of=("self",)).select_related("order", "order__payment", "item").filter(pk=order_item_id).first()
     if line is None or not _customer_owns_order(request, line.order):
         return Response({"detail": "Order item not found."}, status=404)
     if not line.order.payment_confirmed:
@@ -1258,7 +1258,7 @@ def customer_accept_item(request, order_item_id):
 @permission_classes([AllowAny])
 @transaction.atomic
 def customer_report_item_issue(request, order_item_id):
-    line = OrderItem.objects.select_for_update().select_related("order", "order__payment", "item").filter(pk=order_item_id).first()
+    line = OrderItem.objects.select_for_update(of=("self",)).select_related("order", "order__payment", "item").filter(pk=order_item_id).first()
     if line is None or not _customer_owns_order(request, line.order):
         return Response({"detail": "Order item not found."}, status=404)
     if not line.order.payment_confirmed:
@@ -1293,7 +1293,7 @@ def customer_report_item_issue(request, order_item_id):
 @permission_classes([IsAdminUser])
 @transaction.atomic
 def resolve_fulfillment_issue(request, order_item_id):
-    fulfillment = OrderItemFulfillment.objects.select_for_update().select_related("order_item__order").filter(
+    fulfillment = OrderItemFulfillment.objects.select_for_update(of=("self",)).select_related("order_item__order").filter(
         order_item_id=order_item_id
     ).first()
     if fulfillment is None:
@@ -1361,7 +1361,7 @@ def auto_complete_unconfirmed_items():
     held = 0
     for fulfillment_id in ids:
         with transaction.atomic():
-            fulfillment = OrderItemFulfillment.objects.select_for_update().select_related(
+            fulfillment = OrderItemFulfillment.objects.select_for_update(of=("self",)).select_related(
                 "order_item__order", "order_item__item"
             ).filter(pk=fulfillment_id).first()
             if (
