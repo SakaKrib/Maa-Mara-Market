@@ -30,6 +30,7 @@ SEND_IN_PROGRESS = "SEND_IN_PROGRESS"
 DESTINATION_HOLD = "DESTINATION_HOLD"
 APPROVAL_REQUESTED = "APPROVAL_REQUESTED"
 SECOND_ADMIN_REQUIRED = "SECOND_ADMIN_REQUIRED"
+BATCH_NOT_APPROVED = "BATCH_NOT_APPROVED"
 
 
 @dataclass
@@ -235,6 +236,13 @@ def gate_send(payout, actor, ip=None):
                     "A send for this payout is already in progress, or an earlier send did not finish. "
                     "Reconcile with the provider before sending again.",
                     {"retryable": False, "reference": payout.reference})
+
+    from vendorDashboard.payout.services.weekly_payouts import payout_blocked_by_batch
+
+    batch_reason = payout_blocked_by_batch(payout)
+    if batch_reason:
+        log_event(payout, "send_blocked_batch_not_approved", actor, ip)
+        return Gate(False, 409, BATCH_NOT_APPROVED, batch_reason, {"reference": payout.reference})
 
     hold_until = destination_hold_until(vendor, now)
     if hold_until:

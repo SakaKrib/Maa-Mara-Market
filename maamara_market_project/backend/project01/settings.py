@@ -396,6 +396,11 @@ PAYOUT_TWO_PERSON_THRESHOLD = env.float("PAYOUT_TWO_PERSON_THRESHOLD", default=5
 # A changed payout destination (phone, Till, Paybill/account, PayPal email, bank
 # account) cannot receive money until this many hours have passed.
 PAYOUT_DESTINATION_HOLD_HOURS = env.int("PAYOUT_DESTINATION_HOLD_HOURS", default=48)
+# Weekly payout cycle. While False, nothing changes: payouts stay monthly and the
+# weekly batch endpoints refuse to run. When True, order items that went through
+# the fulfilment workflow are paid only through weekly batches and are excluded
+# from the monthly earnings calculation, so no item can be paid twice.
+WEEKLY_PAYOUTS_ENABLED = env.bool("WEEKLY_PAYOUTS_ENABLED", default=False)
 # A pending approval request expires after this many hours.
 PAYOUT_APPROVAL_VALID_HOURS = env.int("PAYOUT_APPROVAL_VALID_HOURS", default=24)
 

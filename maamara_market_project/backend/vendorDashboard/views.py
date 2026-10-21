@@ -7,6 +7,7 @@ import json
 import os
 
 from dateutil.relativedelta import relativedelta
+from django.conf import settings
 from django.db import transaction
 from django.utils import timezone
 from django.db.models import Count, ExpressionWrapper, F, FloatField, Q, Sum
@@ -104,6 +105,10 @@ def get_vendor_earnings(vendor, start_date, end_date):
         is_returned=False,
         is_exchanged=False,
     ).distinct()
+    if getattr(settings, "WEEKLY_PAYOUTS_ENABLED", False):
+        # Items that went through the fulfilment workflow are paid by weekly
+        # batches only, so the monthly run can never pay them a second time.
+        order_items = order_items.filter(fulfillment__isnull=True)
 
     # Calculate gross sales using vendor-side pricing (excludes markup)
     gross_sales = Decimal("0.00")
@@ -144,6 +149,8 @@ def get_vendor_earnings(vendor, start_date, end_date):
         is_returned=False,
         is_exchanged=False,
     )
+    if getattr(settings, "WEEKLY_PAYOUTS_ENABLED", False):
+        customer_order_items = customer_order_items.filter(fulfillment__isnull=True)
     total_income = sum(
         (oi.get_final_price() for oi in customer_order_items),
         Decimal("0.00"),

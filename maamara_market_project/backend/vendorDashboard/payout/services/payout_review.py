@@ -270,6 +270,13 @@ def build_payout_review(payout, viewer=None):
     if pending and not payout.paid:
         problems.append(pending)
 
+    if not payout.paid:
+        from vendorDashboard.payout.services.weekly_payouts import payout_blocked_by_batch
+
+        batch_reason = payout_blocked_by_batch(payout)
+        if batch_reason:
+            problems.append(batch_reason)
+
     # Safeguards: destination cooling-off, in-flight sends and two-admin approval.
     sync_destination_state(vendor)
     security = describe_security(payout, viewer)

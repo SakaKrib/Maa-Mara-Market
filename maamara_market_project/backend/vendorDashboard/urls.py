@@ -2,6 +2,7 @@ from django.urls import path
 from . import views  # Make sure views.py exists
 from .VendorRequests import *
 from .payout.services.payout_review import payout_review_single, payout_review_group
+from .payout.services import weekly_batch_views as weekly_views
 from .views import AdminPayoutAPIView, VendorPayoutAPIView, monthly_sales_report
 from .payout.services.vendor_monthly_payout_runner import process_payouts_by_group, pay_single_vendor_payout, generate_monthly_payouts, reconcile_single_vendor_payout, reconcile_bank_vendor_payout
 from .calback import *
@@ -67,6 +68,11 @@ urlpatterns = [
 
     # read-only review data for the admin payment screens (server-authoritative)
     path("api/admin/payouts/review/", payout_review_group, name="payout_review_group"),
+    path("api/admin/payout-batches/", weekly_views.weekly_batch_list, name="weekly_batch_list"),
+    path("api/admin/payout-batches/create/", weekly_views.weekly_batch_create, name="weekly_batch_create"),
+    path("api/admin/payout-batches/<int:batch_id>/", weekly_views.weekly_batch_detail, name="weekly_batch_detail"),
+    path("api/admin/payout-batches/<int:batch_id>/audit/", weekly_views.weekly_batch_audit, name="weekly_batch_audit"),
+    path("api/admin/payout-batches/<int:batch_id>/approve/", weekly_views.weekly_batch_approve, name="weekly_batch_approve"),
     path("api/admin/payouts/<str:reference>/review/", payout_review_single, name="payout_review_single"),
 
     # pay single vendor

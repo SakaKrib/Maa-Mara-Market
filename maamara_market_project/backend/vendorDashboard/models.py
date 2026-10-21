@@ -950,3 +950,66 @@ class PayoutAuditLog(models.Model):
 
     def __str__(self):
         return f"{self.action} {self.payout_id} @ {self.created_at:%Y-%m-%d %H:%M}"
+
+
+class PayoutBatch(models.Model):
+    """One weekly payout cycle (Monday 00:00 to Sunday 23:59:59, Africa/Nairobi).
+
+    Items become payable once the customer accepted them or the 72-hour window
+    elapsed (``OrderItemFulfillment.payout_eligible_at``). The batch is created as
+    a draft, audited by one admin, approved by a different admin, and only then
+    can its payouts be sent through the normal (gated) payout screens.
+    """
+
+    STATUS_DRAFT = "DRAFT"
+    STATUS_AUDITED = "AUDITED"
+    STATUS_APPROVED = "APPROVED"
+    STATUS_CHOICES = [
+        (STATUS_DRAFT, "Draft - awaiting audit"),
+        (STATUS_AUDITED, "Audited - awaiting approval"),
+        (STATUS_APPROVED, "Approved - payouts may be sent"),
+    ]
+
+    week_start = models.DateField(unique=True)
+    week_end = models.DateField()
+    cutoff_at = models.DateTimeField(help_text="Items eligible strictly before this moment are included.")
+    status = models.CharField(max_length=12, choices=STATUS_CHOICES, default=STATUS_DRAFT, db_index=True)
+    created_by = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL, related_name="+")
+    created_at = models.DateTimeField(auto_now_add=True)
+    audited_by = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL, related_name="+")
+    audited_at = models.DateTimeField(null=True, blank=True)
+    approved_by = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL, related_name="+")
+    approved_at = models.DateTimeField(null=True, blank=True)
+    skipped = models.JSONField(default=list, blank=True)
+
+    class Meta:
+        ordering = ["-week_start"]
+
+    def __str__(self):
+        return f"Payout week {self.week_start} ({self.status})"
+
+
+class PayoutAllocation(models.Model):
+    """Links one sold order item to exactly one weekly payout.
+
+    ``order_item`` is unique, so an item can never be allocated twice, whether
+    from a retry, a second batch, or a concurrent request.
+    """
+
+    batch = models.ForeignKey(PayoutBatch, on_delete=models.PROTECT, related_name="allocations")
+    vendor = models.ForeignKey(Vendor, on_delete=models.PROTECT, related_name="payout_allocations")
+    order_item = models.OneToOneField("oder.OrderItem", on_delete=models.PROTECT, related_name="payout_allocation")
+    payment = models.ForeignKey("oder.Payment", null=True, blank=True, on_delete=models.PROTECT, related_name="+")
+    payment_reference = models.CharField(max_length=100, blank=True, default="")
+    vendor_amount = models.DecimalField(max_digits=12, decimal_places=2)
+    eligible_at = models.DateTimeField()
+    payout = models.ForeignKey(VendorPayout, null=True, blank=True, on_delete=models.SET_NULL, related_name="allocations")
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["batch_id", "vendor_id", "order_item_id"]
+        indexes = [models.Index(fields=["batch", "vendor"], name="alloc_batch_vendor_idx")]
+
+    def __str__(self):
+        return f"{self.vendor_id}: {self.vendor_amount} (item {self.order_item_id})"
+
