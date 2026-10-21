@@ -106,6 +106,43 @@ def newsletter_subscribers(request):
     return Response(_subscriber_payload(row))
 
 
+def _frontend_item_url(item_id):
+    """Build a public item page URL using the configured frontend origin."""
+    if item_id in (None, ""):
+        return ""
+    frontend_url = str(settings.FRONTEND_URL).strip().rstrip("/")
+    return f"{frontend_url}/item/{item_id}"
+
+
+def _campaign_content(data, existing=None):
+    """Normalize featured content and persist durable item destinations."""
+    existing_payload = existing.content_payload if existing else {}
+    payload = data.get("content_payload", existing_payload)
+    payload = dict(payload) if isinstance(payload, dict) else {}
+    items = payload.get("items", [])
+    items = items if isinstance(items, list) else []
+    normalized_items = []
+    for item in items:
+        if not isinstance(item, dict):
+            continue
+        snapshot = dict(item)
+        item_id = snapshot.get("id")
+        if item_id not in (None, ""):
+            snapshot["product_url"] = _frontend_item_url(item_id)
+        normalized_items.append(snapshot)
+    payload["items"] = normalized_items
+
+    banner = payload.get("banner")
+    banner_item_id = banner.get("cta_item") if isinstance(banner, dict) else None
+    # A featured product is the primary destination; otherwise honour a selected
+    # banner's item destination. Keep a manually entered URL only when neither exists.
+    primary_item_id = normalized_items[0].get("id") if normalized_items else banner_item_id
+    cta_url = data.get("cta_url", existing.cta_url if existing else "")
+    if primary_item_id not in (None, ""):
+        cta_url = _frontend_item_url(primary_item_id)
+    return payload, cta_url
+
+
 def _campaign_payload(campaign):
     return {
         "id": campaign.id, "title": campaign.title, "campaign_type": campaign.campaign_type,
@@ -139,12 +176,13 @@ def email_campaigns(request):
     from django.utils.html import strip_tags
     import bleach
     body_html = bleach.clean(str(data.get("body_html", "")), tags=["p","br","strong","b","em","i","ul","ol","li","a","h2","h3","img","div","span"], attributes={"a":["href","title"],"img":["src","alt","width","height"],"div":["style"],"span":["style"]}, protocols=["http","https","mailto"], strip=True)
+    content_payload, cta_url = _campaign_content(data)
     campaign = EmailCampaign.objects.create(
         title=title[:200], subject=subject[:255], campaign_type=campaign_type,
         preheader=str(data.get("preheader", ""))[:255], body_html=body_html,
         body_text=str(data.get("body_text", "") or strip_tags(body_html)),
         hero_image_url=str(data.get("hero_image_url", "")), cta_label=str(data.get("cta_label", "Shop now"))[:80],
-        cta_url=str(data.get("cta_url", "")), content_payload=data.get("content_payload") if isinstance(data.get("content_payload"), dict) else {},
+        cta_url=str(cta_url or ""), content_payload=content_payload,
         status="draft", created_by=request.user,
     )
     return Response(_campaign_payload(campaign), status=201)
@@ -175,6 +213,10 @@ def email_campaign_detail(request, campaign_id):
                 import bleach
                 value = bleach.clean(str(value), tags=["p","br","strong","b","em","i","ul","ol","li","a","h2","h3","img","div","span"], attributes={"a":["href","title"],"img":["src","alt","width","height"],"div":["style"],"span":["style"]}, protocols=["http","https","mailto"], strip=True)
             setattr(campaign, key, value)
+    if "content_payload" in request.data or "cta_url" in request.data:
+        content_payload, cta_url = _campaign_content(request.data, existing=campaign)
+        campaign.content_payload = content_payload
+        campaign.cta_url = str(cta_url or "")
     if not campaign.title.strip() or not campaign.subject.strip():
         return Response({"detail": "Campaign title and subject are required."}, status=400)
     campaign.status = "draft"
