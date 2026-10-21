@@ -357,7 +357,31 @@ export default function EmailCampaignManager() {
           <div className="mx-auto max-w-xl overflow-hidden rounded-xl border border-border bg-background shadow-sm">
             {form.hero_image_url && <div className="relative flex max-h-56 min-h-24 items-center justify-center overflow-hidden bg-muted text-muted-foreground"><ImageIcon className="h-7 w-7" /><img src={imageUrl(form.hero_image_url)} alt="Selected campaign banner" className="absolute inset-0 h-full max-h-56 w-full object-cover" onError={(event) => { event.currentTarget.style.display = "none"; }} /></div>}
             <div className="p-4 sm:p-6"><p className="text-xs text-muted-foreground">Subject: {form.subject || "Your email subject will appear here"}</p><h4 className="mt-2 text-xl font-bold">{form.title || "Your campaign title"}</h4>{form.preheader && <p className="mt-1 text-sm text-muted-foreground">{form.preheader}</p>}{form.body_text && <p className="mt-4 whitespace-pre-wrap text-sm leading-6">{form.body_text}</p>}
-              {selectedProducts.length > 0 && <div className="mt-4 grid gap-3 sm:grid-cols-2">{selectedProducts.map((item) => <div key={item.id} className="overflow-hidden rounded-lg border border-border"><div className="relative flex aspect-[4/3] items-center justify-center bg-muted text-muted-foreground"><Package className="h-6 w-6" />{item.image_url && <img src={imageUrl(item.image_url)} alt={item.name} className="absolute inset-0 h-full w-full object-cover" onError={(event) => { event.currentTarget.style.display = "none"; }} /></div><div className="p-3"><p className="line-clamp-2 text-sm font-semibold">{item.name}</p><p className="mt-1 text-sm font-bold text-primary">KSh {Number(item.discount_price && Number(item.discount_price) < Number(item.price) ? item.discount_price : item.price || 0).toLocaleString("en-KE")}</p><span className="mt-3 inline-flex rounded-[20px] bg-primary px-4 py-2 text-xs font-semibold text-primary-foreground">Shop now</span><p className="mt-2 break-all text-[10px] text-muted-foreground">Links to this item’s page</p></div></div>)}</div>}
+              {selectedProducts.length > 0 && (
+                <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                  {selectedProducts.map((item) => (
+                    <div key={item.id} className="overflow-hidden rounded-lg border border-border">
+                      <div className="relative flex aspect-[4/3] items-center justify-center bg-muted text-muted-foreground">
+                        <Package className="h-6 w-6" />
+                        {item.image_url && (
+                          <img
+                            src={imageUrl(item.image_url)}
+                            alt={item.name}
+                            className="absolute inset-0 h-full w-full object-cover"
+                            onError={(event) => { event.currentTarget.style.display = "none"; }}
+                          />
+                        )}
+                      </div>
+                      <div className="p-3">
+                        <p className="line-clamp-2 text-sm font-semibold">{item.name}</p>
+                        <p className="mt-1 text-sm font-bold text-primary">KSh {Number(item.discount_price && Number(item.discount_price) < Number(item.price) ? item.discount_price : item.price || 0).toLocaleString("en-KE")}</p>
+                        <span className="mt-3 inline-flex rounded-[20px] bg-primary px-4 py-2 text-xs font-semibold text-primary-foreground">Shop now</span>
+                        <p className="mt-2 break-all text-[10px] text-muted-foreground">Links to this item’s page</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
               {form.cta_label && <div className="mt-5"><span className="inline-flex rounded-[20px] bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground">{form.cta_label}</span></div>}
             </div>
           </div>
