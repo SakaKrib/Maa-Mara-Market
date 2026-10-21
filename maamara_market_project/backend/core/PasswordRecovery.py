@@ -28,6 +28,7 @@ class RequestPasswordReset(APIView):
             "user": user,
             "reset_link": reset_link,
             "frontend_url": settings.FRONTEND_URL.rstrip("/"),
+            "company_address": getattr(settings, "COMPANY_ADDRESS", ""),
         })
 
         text_content = strip_tags(html_content)
