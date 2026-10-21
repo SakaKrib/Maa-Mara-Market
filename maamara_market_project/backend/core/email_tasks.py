@@ -113,6 +113,9 @@ def prepare_daily_banner_campaigns():
                 image_url = settings.FRONTEND_URL.rstrip("/") + image_url
         except Exception:
             image_url = ""
+        cta_url = getattr(banner, "cta_url", "") or ""
+        if not cta_url and getattr(banner, "cta_item_id", None):
+            cta_url = settings.FRONTEND_URL.rstrip("/") + "/item/" + str(banner.cta_item_id)
         campaign, was_created = EmailCampaign.objects.get_or_create(
             campaign_type="banner", source_key=source, prepared_for_date=today,
             defaults={
@@ -121,7 +124,7 @@ def prepare_daily_banner_campaigns():
                 "hero_image_url": image_url,
                 "body_text": getattr(banner, "subtitle", "") or title,
                 "body_html": "<h2>" + title.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;") + "</h2>",
-                "cta_label": "Shop now", "cta_url": settings.FRONTEND_URL.rstrip("/") + "/",
+                "cta_label": "Shop now", "cta_url": cta_url or settings.FRONTEND_URL.rstrip("/") + "/",
                 "status": "draft",
             },
         )
@@ -145,7 +148,7 @@ def prepare_daily_sale_campaigns():
         return {"drafts_created": 0}
     from django.db.models import F
     # Keep the selection snapshot in payload for admin preview; don't invent a sale campaign from no data.
-    payload = {"items": [{"id": item.pk, "name": item.name, "price": str(item.price), "discount_price": str(item.discount_price)} for item in items]}
+    payload = {"items": [{"id": item.pk, "name": item.name, "price": str(item.price), "discount_price": str(item.discount_price), "image_url": (settings.FRONTEND_URL.rstrip("/") + item.image.url if item.image and item.image.url.startswith("/") else (item.image.url if item.image else ""))} for item in items]}
     campaign, created = EmailCampaign.objects.get_or_create(
         campaign_type="sale", source_key="daily-sale-selection", prepared_for_date=today,
         defaults={"title": "Daily sale items", "subject": "Discover today's deals at Maa Mara Market",
@@ -168,7 +171,7 @@ def prepare_daily_new_arrivals_campaigns():
     items = list(Item.objects.filter(**{date_field + "__date": today}).order_by("-id")[:8])
     if not items:
         return {"drafts_created": 0}
-    payload = {"items": [{"id": item.pk, "name": item.name, "price": str(getattr(item, "price", ""))} for item in items]}
+    payload = {"items": [{"id": item.pk, "name": item.name, "price": str(getattr(item, "price", "")), "image_url": (settings.FRONTEND_URL.rstrip("/") + item.image.url if item.image and item.image.url.startswith("/") else (item.image.url if item.image else ""))} for item in items]}
     _, created = EmailCampaign.objects.get_or_create(
         campaign_type="new_arrivals", source_key="daily-new-arrivals", prepared_for_date=today,
         defaults={"title": "New arrivals", "subject": "Meet the latest arrivals at Maa Mara Market",
