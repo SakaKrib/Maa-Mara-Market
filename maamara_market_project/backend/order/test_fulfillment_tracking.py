@@ -15,7 +15,10 @@ from order.fulfillment import (
     _advance_from_carrier,
     _normalize_carrier_status,
     auto_complete_unconfirmed_items,
+    create_shipment,
+    resolve_fulfillment_issue,
 )
+from rest_framework.test import APIRequestFactory, force_authenticate
 from order.models import Order, OrderItem, OrderItemFulfillment, Payment, Shipment
 from order.order_completion import _normalize_replayed_order_status
 
@@ -258,3 +261,87 @@ class CarrierEventIntegrityTests(TestCase):
         self.assertTrue(_advance_from_carrier(self.shipment, "EXCEPTION", "Delivery exception", **kwargs))
         self.assertFalse(_advance_from_carrier(self.shipment, "EXCEPTION", "Delivery exception", **kwargs))
         self.assertEqual(self.shipment.events.filter(carrier_event_id="dup-event").count(), 1)
+
+class ShipmentCreationSafetyTests(TestCase):
+    def setUp(self):
+        # Reuse a real, paid order fixture; replace the existing tracking record
+        # so each test starts with an inspected line that has no shipment.
+        CarrierReturnHoldTests.setUp(self)
+        self.shipment.delete()
+        self.fulfillment.status = "DISPATCH_INSPECTED"
+        self.fulfillment.inspection_status = "PASSED"
+        self.fulfillment.save(update_fields=["status", "inspection_status", "updated_at"])
+        self.admin = get_user_model().objects.create_superuser(
+            username=f"fulfillment-admin-{uuid4().hex[:8]}",
+            email=f"fulfillment-admin-{uuid4().hex[:8]}@example.com",
+            password="test-only-password",
+        )
+        self.factory = APIRequestFactory()
+
+    def create_shipment_response(self, tracking_number, fulfillment_ids=None):
+        request = self.factory.post(
+            "/api/fulfillment/shipments/",
+            {
+                "order_id": self.order.pk,
+                "fulfillment_ids": fulfillment_ids or [self.fulfillment.pk],
+                "carrier": "DHL",
+                "tracking_number": tracking_number,
+            },
+            format="json",
+        )
+        force_authenticate(request, user=self.admin)
+        return create_shipment(request)
+
+    def test_fulfilment_cannot_be_attached_to_two_shipments(self):
+        first = self.create_shipment_response(f"TRACK-{uuid4().hex}")
+        second = self.create_shipment_response(f"TRACK-{uuid4().hex}")
+
+        self.assertEqual(first.status_code, 201)
+        self.assertEqual(second.status_code, 409)
+        self.assertEqual(self.fulfillment.shipments.count(), 1)
+        self.assertEqual(Shipment.objects.filter(order=self.order).count(), 1)
+
+    def test_duplicate_carrier_tracking_number_returns_conflict_safely(self):
+        tracking_number = f"DUP-{uuid4().hex}"
+        first = self.create_shipment_response(tracking_number)
+
+        second_line = OrderItem.objects.create(
+            order=self.order,
+            item=self.item,
+            user=self.user,
+            price_at_purchase=Decimal("100.00"),
+            quantity=1,
+        )
+        second_fulfillment = OrderItemFulfillment.objects.create(
+            order_item=second_line,
+            status="DISPATCH_INSPECTED",
+            inspection_status="PASSED",
+        )
+        second = self.create_shipment_response(tracking_number, [second_fulfillment.pk])
+
+        self.assertEqual(first.status_code, 201)
+        self.assertEqual(second.status_code, 409)
+        # The handled integrity conflict must not poison the outer request/test
+        # transaction; subsequent ORM queries should still work.
+        self.assertEqual(Shipment.objects.filter(order=self.order).count(), 1)
+
+    def test_issue_cannot_resume_while_return_request_is_open(self):
+        from vendorDashboard.models import ReturnRequest
+
+        self.fulfillment.status = "ISSUE_REPORTED"
+        self.fulfillment.save(update_fields=["status", "updated_at"])
+        ReturnRequest.objects.create(item=self.order_item, status="pending")
+
+        request = self.factory.post(
+            f"/api/fulfillment/items/{self.order_item.pk}/resolve-issue/",
+            {"resolution": "resume_confirmation", "notes": "Reviewed the delivery issue."},
+            format="json",
+        )
+        force_authenticate(request, user=self.admin)
+        response = resolve_fulfillment_issue(request, self.order_item.pk)
+
+        self.assertEqual(response.status_code, 409)
+        self.fulfillment.refresh_from_db()
+        self.assertEqual(self.fulfillment.status, "ISSUE_REPORTED")
+        self.assertIsNone(self.fulfillment.confirmation_deadline)
+
