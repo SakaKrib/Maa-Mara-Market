@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { CircularProgress } from "@mui/material";
 import { Image as ImageIcon, Search, Package, Megaphone, Check, Plus, X, Eye, CalendarClock, Send, FileText, Sparkles } from "lucide-react";
-import api, { resolveApiAssetUrl } from "../../../Services/Api";
+import api, { resolveApiAssetUrl, getWebSocketUrl } from "../../../Services/Api";
+import AppSnackbar from "../../../../components/ui/app-snackbar";
 import { Button } from "../../../../components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../../../components/ui/select";
 
@@ -38,6 +39,9 @@ export default function EmailCampaignManager() {
   const [report, setReport] = useState(null);
   const [scheduleDraft, setScheduleDraft] = useState(null);
   const [scheduling, setScheduling] = useState(false);
+  const [campaignFilter, setCampaignFilter] = useState("all");
+  const [snackbar, setSnackbar] = useState({ open: false, message: "", severity: "success" });
+  const showSnackbar = (message, severity = "success") => setSnackbar({ open: true, message, severity });
 
   const load = async ({ preserveNotice = false } = {}) => {
     setLoading(true);
@@ -55,6 +59,32 @@ export default function EmailCampaignManager() {
   };
 
   useEffect(() => { load(); }, [subscriberFilter]);
+
+  useEffect(() => {
+    let socket;
+    let reconnectTimer;
+    let disposed = false;
+    const connect = () => {
+      if (disposed) return;
+      try {
+        socket = new WebSocket(getWebSocketUrl("/ws/realtime/"));
+        socket.onmessage = (event) => {
+          try {
+            const message = JSON.parse(event.data);
+            if (message?.type === "email_campaign.updated") {
+              api.get("/api/admin/email-campaigns/").then(({ data }) => {
+                setCampaigns(Array.isArray(data) ? data : (data?.results || []));
+              }).catch(() => {});
+            }
+          } catch { /* Ignore malformed or unrelated realtime events. */ }
+        };
+        socket.onclose = () => { if (!disposed) reconnectTimer = window.setTimeout(connect, 3000); };
+        socket.onerror = () => socket?.close();
+      } catch { reconnectTimer = window.setTimeout(connect, 5000); }
+    };
+    connect();
+    return () => { disposed = true; window.clearTimeout(reconnectTimer); socket?.close(); };
+  }, []);
 
   useEffect(() => {
     let active = true;
@@ -142,13 +172,17 @@ export default function EmailCampaignManager() {
       }
       setForm(blank); setSelectedProducts([]); setSelectedBanner(null); setEditingId(null);
       await load({ preserveNotice: true });
-      setNotice(`Draft saved successfully (campaign #${savedCampaign.id}). Preview it before submitting for approval.`);
+      const message = `Draft saved successfully (campaign #${savedCampaign.id}). Preview it before submitting for approval.`;
+      setNotice(message);
+      showSnackbar(message, "success");
     } catch (err) {
       const data = err?.response?.data;
       const detail = data?.detail || (data && typeof data === "object"
         ? Object.entries(data).map(([key, value]) => `${key}: ${Array.isArray(value) ? value.join(", ") : String(value)}`).join(" · ")
         : "");
-      setNotice(detail || err?.message || "Could not save the draft. Check the required fields and try again.");
+      const message = detail || err?.message || "Could not save the draft. Check the required fields and try again.";
+      setNotice(message);
+      showSnackbar(message, "error");
     } finally {
       setSaving(false);
     }
@@ -176,7 +210,7 @@ export default function EmailCampaignManager() {
       else await api.post(`/api/admin/email-campaigns/${id}/actions/${name}/`, payload);
       setNotice(name === "send" ? "Campaign queued for sending." : `Campaign ${name} successful.`);
       await load({ preserveNotice: true });
-    } catch (err) { setNotice(err?.response?.data?.detail || `Campaign action failed: ${name}`); }
+    } catch (err) { const message = err?.response?.data?.detail || `Campaign action failed: ${name}`; setNotice(message); showSnackbar(message, "error"); }
   };
 
   const submitSchedule = async (event) => {
@@ -191,9 +225,11 @@ export default function EmailCampaignManager() {
         recurrence: { frequency: scheduleDraft.frequency, interval: Number(scheduleDraft.interval) || 1, until: scheduleDraft.until || "" },
       });
       setScheduleDraft(null);
-      setNotice(scheduleDraft.frequency === "none" ? "Campaign scheduled." : "Recurring campaign scheduled. A new occurrence is created after each successful send.");
+      const message = scheduleDraft.frequency === "none" ? "Campaign scheduled." : "Recurring campaign scheduled. A new occurrence is created after each successful send.";
+      setNotice(message);
+      showSnackbar(message, "success");
       await load({ preserveNotice: true });
-    } catch (err) { setNotice(err?.response?.data?.detail || "Could not schedule this campaign."); }
+    } catch (err) { const message = err?.response?.data?.detail || "Could not schedule this campaign."; setNotice(message); showSnackbar(message, "error"); }
     finally { setScheduling(false); }
   };
 
@@ -295,7 +331,7 @@ export default function EmailCampaignManager() {
           <div className="mx-auto max-w-xl overflow-hidden rounded-xl border border-border bg-background shadow-sm">
             {form.hero_image_url && <div className="relative flex max-h-56 min-h-24 items-center justify-center overflow-hidden bg-muted text-muted-foreground"><ImageIcon className="h-7 w-7" /><img src={imageUrl(form.hero_image_url)} alt="Selected campaign banner" className="absolute inset-0 h-full max-h-56 w-full object-cover" onError={(event) => { event.currentTarget.style.display = "none"; }} /></div>}
             <div className="p-4 sm:p-6"><p className="text-xs text-muted-foreground">Subject: {form.subject || "Your email subject will appear here"}</p><h4 className="mt-2 text-xl font-bold">{form.title || "Your campaign title"}</h4>{form.preheader && <p className="mt-1 text-sm text-muted-foreground">{form.preheader}</p>}{form.body_text && <p className="mt-4 whitespace-pre-wrap text-sm leading-6">{form.body_text}</p>}
-              {selectedProducts.length > 0 && <div className="mt-4 grid gap-3 sm:grid-cols-2">{selectedProducts.map((item) => <div key={item.id} className="overflow-hidden rounded-lg border border-border"><div className="relative flex aspect-[4/3] items-center justify-center bg-muted text-muted-foreground"><Package className="h-6 w-6" />{item.image_url && <img src={imageUrl(item.image_url)} alt={item.name} className="absolute inset-0 h-full w-full object-cover" onError={(event) => { event.currentTarget.style.display = "none"; }} />}</div><div className="p-3"><p className="line-clamp-2 text-sm font-semibold">{item.name}</p><p className="mt-1 text-sm font-bold text-primary">KSh {Number(item.discount_price && Number(item.discount_price) < Number(item.price) ? item.discount_price : item.price || 0).toLocaleString("en-KE")}</p></div></div>)}</div>}
+              {selectedProducts.length > 0 && <div className="mt-4 grid gap-3 sm:grid-cols-2">{selectedProducts.map((item) => <div key={item.id} className="overflow-hidden rounded-lg border border-border"><div className="relative flex aspect-[4/3] items-center justify-center bg-muted text-muted-foreground"><Package className="h-6 w-6" />{item.image_url && <img src={imageUrl(item.image_url)} alt={item.name} className="absolute inset-0 h-full w-full object-cover" onError={(event) => { event.currentTarget.style.display = "none"; }} /></div><div className="p-3"><p className="line-clamp-2 text-sm font-semibold">{item.name}</p><p className="mt-1 text-sm font-bold text-primary">KSh {Number(item.discount_price && Number(item.discount_price) < Number(item.price) ? item.discount_price : item.price || 0).toLocaleString("en-KE")}</p><span className="mt-3 inline-flex rounded-[20px] bg-primary px-4 py-2 text-xs font-semibold text-primary-foreground">Shop now</span><p className="mt-2 break-all text-[10px] text-muted-foreground">Links to this item’s page</p></div></div>)}</div>}
               {form.cta_label && <div className="mt-5"><span className="inline-flex rounded-[20px] bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground">{form.cta_label}</span></div>}
             </div>
           </div>
@@ -320,7 +356,11 @@ export default function EmailCampaignManager() {
         </form>
       </div>}
       {report && <div className={sectionClass}><div className="flex items-center justify-between gap-2"><h4 className="font-bold">{report.campaign?.title} report</h4><Button type="button" className={buttonClass} variant="outline" onClick={() => setReport(null)}>Close</Button></div><div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-4">{Object.entries(report.recipients || {}).map(([key, value]) => <div key={key} className="rounded-lg bg-muted p-3"><p className="text-xs capitalize text-muted-foreground">{key}</p><p className="text-xl font-bold">{value}</p></div>)}</div><p className="mt-3 text-xs text-muted-foreground">{report.delivery_note}</p></div>}
-      {loading ? <div className="flex justify-center p-8"><CircularProgress size={22} /></div> : <div className="space-y-3">{campaigns.map((c) => <article key={c.id} className="rounded-2xl border border-border bg-card p-4"><div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between"><div className="min-w-0"><h4 className="font-bold text-card-foreground">{c.title}</h4><p className="mt-1 text-sm text-muted-foreground">{c.subject}</p><p className="mt-1 text-xs text-muted-foreground">Created {dateLabel(c.created_at)} · {c.recipient_count} recipients · {c.sent_count} submitted · {c.failed_count} failed</p></div><span className="w-fit rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold capitalize text-primary">{String(c.status || "").replaceAll("_", " ")}</span></div><div className="mt-3 flex flex-wrap gap-2">
+      <div className="mb-3 flex flex-wrap gap-2 border-b border-border pb-3" aria-label="Campaign status filter">
+        {[["all","All campaigns"],["draft","Drafts"],["pending_approval","Pending approval"],["approved","Approved"],["scheduled","Scheduled"],["sent","Sent"],["failed","Failed"]].map(([value,label]) => <Button key={value} type="button" variant={campaignFilter === value ? "default" : "outline"} className={buttonClass} onClick={() => setCampaignFilter(value)}>{label}{value === "draft" ? ` (${campaigns.filter((c) => c.status === "draft").length})` : ""}</Button>)}
+      </div>
+      {campaignFilter === "draft" && <div className="mb-3 rounded-xl border border-border bg-muted/30 p-3"><h3 className="text-sm font-semibold text-card-foreground">Saved email drafts</h3><p className="mt-1 text-xs text-muted-foreground">Saved drafts appear here with their subject, content, creation time and available actions. This list updates over WebSocket when a campaign changes.</p></div>}
+      {loading ? <div className="flex justify-center p-8"><CircularProgress size={22} /></div> : <div className="space-y-3">{campaigns.filter((c) => campaignFilter === "all" || c.status === campaignFilter).map((c) => <article key={c.id} className="rounded-2xl border border-border bg-card p-4"><div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between"><div className="min-w-0"><h4 className="font-bold text-card-foreground">{c.title}</h4><p className="mt-1 text-sm text-muted-foreground">{c.subject}</p><p className="mt-1 text-xs text-muted-foreground">Created {dateLabel(c.created_at)} · {c.recipient_count} recipients · {c.sent_count} submitted · {c.failed_count} failed</p></div><span className="w-fit rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold capitalize text-primary">{String(c.status || "").replaceAll("_", " ")}</span></div><div className="mt-3 flex flex-wrap gap-2">
         {c.status === "draft" && <><Button type="button" className={buttonClass} variant="outline" onClick={() => edit(c)}>Edit</Button><Button type="button" className={buttonClass} variant="outline" onClick={() => action(c.id, "submit")}>Submit for approval</Button></>}
         {["draft","pending_approval","approved","scheduled"].includes(c.status) && <Button type="button" className={buttonClass} variant="outline" onClick={() => action(c.id, "preview")}><Eye className="mr-1.5 h-4 w-4" />Preview</Button>}
         {c.status === "pending_approval" && <Button type="button" className={buttonClass} onClick={() => action(c.id, "approve")}>Approve</Button>}
@@ -328,7 +368,8 @@ export default function EmailCampaignManager() {
         {c.status === "scheduled" && <><Button type="button" className={buttonClass} onClick={() => action(c.id, "send")}>Send now</Button><Button type="button" className={buttonClass} variant="outline" onClick={() => action(c.id, "cancel")}>Cancel schedule</Button></>}
         {["sent","failed"].includes(c.status) && <Button type="button" className={buttonClass} variant="outline" onClick={() => action(c.id, "report")}>View report</Button>}
         {["draft","pending_approval","approved","failed"].includes(c.status) && <Button type="button" className={buttonClass} variant="outline" onClick={() => action(c.id, "cancel")}>Cancel</Button>}
-      </div></article>)}{campaigns.length === 0 && <p className="rounded-xl border border-dashed border-border p-8 text-center text-sm text-muted-foreground">No campaigns yet. Daily automation will prepare reviewable drafts when eligible promotions are found.</p>}</div>}
+      </div></article>)}{campaigns.filter((c) => campaignFilter === "all" || c.status === campaignFilter).length === 0 && <p className="rounded-xl border border-dashed border-border p-8 text-center text-sm text-muted-foreground">{campaignFilter === "draft" ? "No saved drafts yet. Save a campaign draft and it will appear here." : "No campaigns in this status yet."}</p>}</div>}
     </> : <div className="overflow-x-auto rounded-2xl border border-border bg-card shadow-sm"><div className="flex flex-wrap items-center justify-between gap-3 border-b border-border bg-card p-4 sm:p-5"><div><h3 className="text-lg font-bold tracking-tight text-card-foreground">Newsletter subscribers</h3><p className="mt-1 text-sm text-muted-foreground">Only active, consented subscribers receive campaigns. Unsubscribed contacts remain suppressed.</p></div><div className="w-full sm:w-64"><Select value={subscriberFilter} onValueChange={setSubscriberFilter}><SelectTrigger className="h-11 rounded-[20px] border-border bg-background px-4 text-sm"><SelectValue /></SelectTrigger><SelectContent className="z-[1400] rounded-[20px] border-border bg-popover text-popover-foreground shadow-lg"><SelectItem value="true" className="rounded-[14px]">Active subscribers</SelectItem><SelectItem value="false" className="rounded-[14px]">Unsubscribed / suppressed</SelectItem></SelectContent></Select></div></div><table className="w-full text-left text-sm"><thead className="bg-muted/50 text-xs uppercase text-muted-foreground"><tr><th className="p-3">Email</th><th className="p-3">Name</th><th className="p-3">Consent source</th><th className="p-3">Consent date</th><th className="p-3">Status</th></tr></thead><tbody>{subscribers.map((s) => <tr key={s.id} className="border-t border-border"><td className="p-3 break-all">{s.email}</td><td className="p-3">{s.first_name || "—"}</td><td className="p-3">{s.consent_source}</td><td className="p-3">{dateLabel(s.consented_at)}</td><td className="p-3">{s.is_subscribed ? "Subscribed" : "Unsubscribed"}</td></tr>)}</tbody></table>{subscribers.length === 0 && <p className="p-6 text-center text-sm text-muted-foreground">No subscribers in this view yet.</p>}</div>}
+    <AppSnackbar open={snackbar.open} message={snackbar.message} severity={snackbar.severity} onClose={() => setSnackbar((prev) => ({ ...prev, open: false }))} />
   </section>;
 }
