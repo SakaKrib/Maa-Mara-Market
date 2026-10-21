@@ -809,7 +809,17 @@ def resend_vendor_otp(request):
     success, message = vendor_request.resend_otp()
 
     if success:
-        return Response({"success": True, "message": "OTP resent successfully."}, status=200)
+        return Response(
+            {
+                "success": True,
+                "message": "OTP resent successfully.",
+                "expires_at": (
+                    vendor_request.date_submitted
+                    + timezone.timedelta(minutes=vendor_request.OTP_EXPIRY_MINUTES)
+                ).isoformat(),
+            },
+            status=200,
+        )
     else:
         return Response({"success": False, "message": message}, status=400)
 
