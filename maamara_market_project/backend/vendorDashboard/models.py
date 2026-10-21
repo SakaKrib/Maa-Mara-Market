@@ -8,6 +8,7 @@ from django.conf import settings
 from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
 from django.core.mail import EmailMultiAlternatives, send_mail
+from django.template.loader import render_to_string
 from django.core.validators import RegexValidator
 from django.db import models, transaction
 from django.utils import timezone
@@ -327,39 +328,24 @@ class VendorRequest(models.Model):
 
     def send_otp_email(self):
         subject = "🔐 Your Vendor Verification OTP"
-        text_content = f"Your Maamaramarket OTP code is: {self.otp}"
-
-        html_content = f"""
-        <html>
-          <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; background-color: #f9f9f9; margin: 0; padding: 0;">
-            <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f9f9f9; padding: 20px 0;">
-              <tr>
-                <td align="center">
-                  <table width="600" cellpadding="0" cellspacing="0" style="background-color: #fff; border-radius: 8px; overflow: hidden; border: 1px solid #e0e0e0;">
-                    <tr>
-                      <td style="padding: 20px;">
-                        <h2 style="color: #264653;">Hi {self.user.first_name},</h2>
-                        <p>Thank you for registering as a vendor on <strong>MaaMaraMarket</strong>.</p>
-                        <p>Your One-Time Password (OTP) for verification is:</p>
-                        <div style="display: flex; justify-content: center; align-items: center;">
-                          <p style="font-size: 24px; font-weight: bold; color: #2a9d8f; margin: 20px 0; display: flex; justify-content: center; background-color: rgba(170, 216, 247, 0.315); width: fit-content; padding: 5px 5px;">
-                            {self.otp}
-                          </p>
-                        </div>
-                        <p>Please enter this code within <strong>{self.OTP_EXPIRY_MINUTES} minutes</strong> to continue your registration.</p>
-                        <br>
-                        <p>If you did not request this OTP, please ignore this email.</p>
-                        <br>
-                        <p>Best regards,<br><strong>MaaMaraMarket Team</strong></p>
-                      </td>
-                    </tr>
-                  </table>
-                </td>
-              </tr>
-            </table>
-          </body>
-        </html>
-        """
+        text_content = (
+            f"Hi {self.user.first_name},\n\n"
+            "Thank you for registering as a vendor on Maa Mara Market.\n"
+            f"Your One-Time Password (OTP) is: {self.otp}\n"
+            f"Please enter this code within {self.OTP_EXPIRY_MINUTES} minutes to continue your registration.\n\n"
+            "If you did not request this OTP, please ignore this email.\n\n"
+            "Best regards,\nMaa Mara Market Team"
+        )
+        html_content = render_to_string(
+            "emails/vendor_otp.html",
+            {
+                "first_name": self.user.first_name,
+                "otp": self.otp,
+                "otp_expiry_minutes": self.OTP_EXPIRY_MINUTES,
+                "frontend_url": settings.FRONTEND_URL,
+                "company_address": getattr(settings, "COMPANY_ADDRESS", ""),
+            },
+        )
 
         email = EmailMultiAlternatives(
             subject=subject,
@@ -391,41 +377,22 @@ class VendorRequest(models.Model):
         user = self.user
         vendor_email = user.email
 
-        # ---------------------------
-        # Send HTML confirmation email to vendor
-        # ---------------------------
-        subject_vendor = 'Vendor Registration Verified'
+        # Send the vendor confirmation using the shared branded email layout.
+        subject_vendor = "Vendor Registration Verified"
         text_content_vendor = (
-            f"Hi {user.username},\n\n"
+            f"Hi {user.first_name or user.username},\n\n"
             "Your vendor registration has been successfully verified. "
             "You will be notified once your request is fully processed.\n\n"
-            "Thank you for choosing MaaMaraMarket!"
+            "Thank you for choosing Maa Mara Market!"
         )
-        html_content_vendor = f"""
-        <html>
-          <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; background-color: #f9f9f9; margin: 0; padding: 0;">
-            <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f9f9f9; padding: 20px 0;">
-              <tr>
-                <td align="center">
-                  <table width="600" cellpadding="0" cellspacing="0" style="background-color: #fff; border-radius: 8px; overflow: hidden; border: 1px solid #e0e0e0;">
-                    <tr>
-                      <td style="padding: 20px;">
-                        <h2 style="color: #264653;">Hi {user.first_name or user.username},</h2>
-                        <p>🎉 <strong>Congratulations!</strong> Your vendor registration has been successfully verified.</p>
-                        <p>You’ll receive another email when your request is fully approved by our team.</p>
-                        <br>
-                        <p>Thank you for choosing <strong>MaaMaraMarket</strong>!</p>
-                        <br>
-                        <p>Best regards,<br><strong>MaaMaraMarket Team</strong></p>
-                      </td>
-                    </tr>
-                  </table>
-                </td>
-              </tr>
-            </table>
-          </body>
-        </html>
-        """
+        html_content_vendor = render_to_string(
+            "emails/vendor_verified.html",
+            {
+                "first_name": user.first_name or user.username,
+                "frontend_url": settings.FRONTEND_URL,
+                "company_address": getattr(settings, "COMPANY_ADDRESS", ""),
+            },
+        )
 
         vendor_email_obj = EmailMultiAlternatives(
             subject=subject_vendor,
@@ -436,37 +403,23 @@ class VendorRequest(models.Model):
         vendor_email_obj.attach_alternative(html_content_vendor, "text/html")
         vendor_email_obj.send()
 
-        # ---------------------------
-        # Send HTML notification email to admin
-        # ---------------------------
-        subject_admin = '✅ New Verified Vendor Request'
+        # Notify the configured admin inbox with the same branded email shell.
+        subject_admin = "✅ New Verified Vendor Request"
         text_content_admin = (
             f"Vendor {user.username} ({vendor_email}) has verified their registration OTP. "
             "Please review and approve their request."
         )
-        html_content_admin = f"""
-        <html>
-          <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; background-color: #f9f9f9; margin: 0; padding: 0;">
-            <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f9f9f9; padding: 20px 0;">
-              <tr>
-                <td align="center">
-                  <table width="600" cellpadding="0" cellspacing="0" style="background-color: #fff; border-radius: 8px; overflow: hidden; border: 1px solid #e0e0e0;">
-                    <tr>
-                      <td style="padding: 20px;">
-                        <p>Admin,</p>
-                        <p><strong>{user.username}</strong> (<a href="mailto:{vendor_email}">{vendor_email}</a>) has successfully verified their OTP.</p>
-                        <p>Please <a href="https://yourdomain.com/admin/vendor-requests/{self.id}/">review and approve</a> their vendor request at your earliest convenience.</p>
-                        <br>
-                        <p>Regards,<br><strong>MaaMaraMarket System</strong></p>
-                      </td>
-                    </tr>
-                  </table>
-                </td>
-              </tr>
-            </table>
-          </body>
-        </html>
-        """
+        review_url = f"{settings.BACKEND_PUBLIC_URL.rstrip('/')}/admin/vendor-requests/{self.id}/"
+        html_content_admin = render_to_string(
+            "emails/vendor_verified_admin.html",
+            {
+                "username": user.username,
+                "vendor_email": vendor_email,
+                "review_url": review_url,
+                "frontend_url": settings.FRONTEND_URL,
+                "company_address": getattr(settings, "COMPANY_ADDRESS", ""),
+            },
+        )
 
         admin_email_obj = EmailMultiAlternatives(
             subject=subject_admin,
