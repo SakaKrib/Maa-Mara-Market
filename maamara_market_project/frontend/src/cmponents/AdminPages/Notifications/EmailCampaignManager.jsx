@@ -1,16 +1,13 @@
 import { useEffect, useMemo, useState } from "react";
 import { CircularProgress } from "@mui/material";
 import { Image as ImageIcon, Search, Package, Megaphone, Check, Plus, X, Eye, CalendarClock, Send, FileText, Sparkles } from "lucide-react";
-import api from "../../../Services/Api";
+import api, { resolveApiAssetUrl } from "../../../Services/Api";
 import { Button } from "../../../../components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../../../components/ui/select";
 
 const blank = { title: "", subject: "", preheader: "", campaign_type: "custom", body_text: "", body_html: "", hero_image_url: "", cta_label: "Shop now", cta_url: "", content_payload: { items: [], banner: null } };
 const dateLabel = (value) => value ? new Date(value).toLocaleString("en-KE", { dateStyle: "medium", timeStyle: "short" }) : "—";
-const imageUrl = (value) => {
-  if (!value) return "";
-  try { return new URL(value, window.location.origin).toString(); } catch { return value; }
-};
+const imageUrl = (value) => resolveApiAssetUrl(value) || "";
 const itemImage = (item) => imageUrl(item?.image_url || item?.image);
 const itemSnapshot = (item) => ({
   id: item.id,
@@ -188,9 +185,11 @@ export default function EmailCampaignManager() {
 
   const fieldClass = "mt-1.5 block min-h-11 w-full rounded-[20px] border border-border bg-background px-3.5 py-2.5 text-sm text-foreground outline-none transition placeholder:text-muted-foreground focus:border-primary focus:ring-2 focus:ring-primary/15";
   const sectionClass = "rounded-2xl border border-border bg-card p-4 shadow-sm sm:p-5";
+  const sectionHeadingClass = "text-base font-semibold tracking-tight text-card-foreground";
+  const sectionIconClass = "flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary";
   const buttonClass = "rounded-[20px]";
 
-  return <section className="space-y-4 pb-[calc(env(safe-area-inset-bottom,0px)+1.25rem)]">
+  return <section className="space-y-4">
     <div className="flex flex-wrap gap-2 border-b border-border pb-3">
       <Button type="button" className={buttonClass} variant={mode === "campaigns" ? "default" : "outline"} onClick={() => setMode("campaigns")}>Campaigns</Button>
       <Button type="button" className={buttonClass} variant={mode === "subscribers" ? "default" : "outline"} onClick={() => setMode("subscribers")}>Subscriber management</Button>
@@ -200,8 +199,8 @@ export default function EmailCampaignManager() {
       <form onSubmit={save} className="space-y-4">
         <section className={sectionClass}>
           <div className="mb-4 flex items-start gap-3">
-            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary"><Sparkles className="h-5 w-5" /></span>
-            <div><h3 className="text-lg font-bold tracking-tight text-card-foreground">{editingId ? "Edit campaign draft" : "Create an email campaign"}</h3><p className="mt-1 text-sm text-muted-foreground">Choose existing marketplace content, write a short introduction, and preview the email before approval. Only opted-in subscribers receive marketing campaigns.</p></div>
+            <span className={sectionIconClass}><Sparkles className="h-4 w-4" /></span>
+            <div><h3 className={sectionHeadingClass}>{editingId ? "Edit campaign draft" : "Create an email campaign"}</h3><p className="mt-1 text-sm text-muted-foreground">Choose existing marketplace content, write a short introduction, and preview the email before approval. Only opted-in subscribers receive marketing campaigns.</p></div>
           </div>
           <div className="grid gap-3 sm:grid-cols-2">
             <label className="text-sm font-medium">Campaign name <span className="text-destructive">*</span><input required value={form.title} onChange={update("title")} placeholder="e.g. Weekend market highlights" className={fieldClass} /></label>
@@ -212,7 +211,7 @@ export default function EmailCampaignManager() {
         </section>
 
         <section className={sectionClass}>
-          <div className="mb-3 flex items-start gap-3"><span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary"><Megaphone className="h-5 w-5" /></span><div><h3 className="font-bold text-card-foreground">Choose an existing banner</h3><p className="mt-1 text-sm text-muted-foreground">Select an approved banner to use as the email's hero image. No image URL needs to be copied.</p></div></div>
+          <div className="mb-3 flex items-start gap-3"><span className={sectionIconClass}><Megaphone className="h-4 w-4" /></span><div><h3 className={sectionHeadingClass}>Choose an existing banner</h3><p className="mt-1 text-sm text-muted-foreground">Select an approved banner to use as the email's hero image. No image URL needs to be copied.</p></div></div>
           <div className="mb-3 flex flex-col gap-2 sm:flex-row">
             <div className="relative min-w-0 flex-1"><Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" /><input value={bannerSearch} onChange={(e) => setBannerSearch(e.target.value)} placeholder="Search existing banners" aria-label="Search banners" className={fieldClass + " pl-9"} /></div>
             {selectedBanner && <Button type="button" variant="outline" className={buttonClass} onClick={() => chooseBanner(selectedBanner)}><X className="mr-1.5 h-4 w-4" />Remove banner</Button>}
@@ -220,7 +219,7 @@ export default function EmailCampaignManager() {
           {catalogLoading ? <div className="flex items-center justify-center gap-2 py-6 text-sm text-muted-foreground"><CircularProgress size={18} /> Loading banners…</div> : visibleBanners.length ? <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">{visibleBanners.map((banner) => {
             const selected = selectedBanner?.id === banner.id;
             return <button type="button" key={banner.id} onClick={() => chooseBanner(banner)} aria-pressed={selected} className={`group overflow-hidden rounded-xl border text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${selected ? "border-primary ring-2 ring-primary/20" : "border-border hover:border-primary/50"}`}>
-              <div className="relative aspect-[16/7] bg-muted">{banner.image ? <img src={imageUrl(banner.image)} alt={banner.title || "Banner"} className="h-full w-full object-cover" loading="lazy" /> : <div className="flex h-full items-center justify-center text-muted-foreground"><ImageIcon className="h-7 w-7" /></div>}<span className={`absolute right-2 top-2 flex h-7 w-7 items-center justify-center rounded-full ${selected ? "bg-primary text-primary-foreground" : "bg-background/90 text-foreground"}`}>{selected ? <Check className="h-4 w-4" /> : <Plus className="h-4 w-4" />}</span></div>
+              <div className="relative aspect-[16/7] bg-muted"><div className="absolute inset-0 flex items-center justify-center text-muted-foreground"><ImageIcon className="h-7 w-7" /></div>{banner.image && <img src={imageUrl(banner.image)} alt={banner.title || "Banner"} className="relative h-full w-full object-cover" loading="lazy" onError={(event) => { event.currentTarget.style.display = "none"; }} />}<span className={`absolute right-2 top-2 flex h-7 w-7 items-center justify-center rounded-full ${selected ? "bg-primary text-primary-foreground" : "bg-background/90 text-foreground"}`}>{selected ? <Check className="h-4 w-4" /> : <Plus className="h-4 w-4" />}</span></div>
               <div className="p-3"><p className="truncate text-sm font-semibold">{banner.title || "Untitled banner"}</p><p className="mt-1 line-clamp-2 text-xs text-muted-foreground">{banner.subtitle || "Existing marketplace banner"}</p></div>
             </button>;
           })}</div> : <p className="rounded-xl border border-dashed border-border p-5 text-center text-sm text-muted-foreground">No approved banners found. You can continue without a banner.</p>}
@@ -228,7 +227,7 @@ export default function EmailCampaignManager() {
         </section>
 
         <section className={sectionClass}>
-          <div className="mb-3 flex items-start gap-3"><span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary"><Package className="h-5 w-5" /></span><div><h3 className="font-bold text-card-foreground">Select products to feature</h3><p className="mt-1 text-sm text-muted-foreground">Choose existing items. Selected products are inserted into the email layout with their image and price.</p></div></div>
+          <div className="mb-3 flex items-start gap-3"><span className={sectionIconClass}><Package className="h-4 w-4" /></span><div><h3 className={sectionHeadingClass}>Select products to feature</h3><p className="mt-1 text-sm text-muted-foreground">Choose existing items. Selected products are inserted into the email layout with their image and price.</p></div></div>
           <div className="relative mb-3"><Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" /><input value={productSearch} onChange={(e) => setProductSearch(e.target.value)} placeholder="Search products by name or category" aria-label="Search products" className={fieldClass + " pl-9"} /></div>
           {selectedProducts.length > 0 && <div className="mb-4 rounded-xl bg-primary/5 p-3"><div className="mb-2 flex items-center justify-between gap-2"><p className="text-sm font-semibold">{selectedProducts.length} product{selectedProducts.length === 1 ? "" : "s"} selected</p><button type="button" className="text-xs font-semibold text-primary hover:underline" onClick={() => setSelectedProducts([])}>Clear selection</button></div><div className="flex flex-wrap gap-2">{selectedProducts.map((item) => <span key={item.id} className="inline-flex max-w-full items-center gap-2 rounded-full border border-border bg-card py-1 pl-2 pr-1.5 text-xs"><span className="max-w-44 truncate">{item.name}</span><button type="button" aria-label={`Remove ${item.name}`} onClick={() => setSelectedProducts((prev) => prev.filter((entry) => String(entry.id) !== String(item.id)))} className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full hover:bg-muted"><X className="h-3.5 w-3.5" /></button></span>)}</div></div>}
           {catalogLoading ? <div className="flex items-center justify-center gap-2 py-6 text-sm text-muted-foreground"><CircularProgress size={18} /> Loading products…</div> : visibleProducts.length ? <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">{visibleProducts.map((item) => {
@@ -236,7 +235,7 @@ export default function EmailCampaignManager() {
             const image = itemImage(item);
             const price = item.discount_price && Number(item.discount_price) < Number(item.price) ? item.discount_price : item.price;
             return <button type="button" key={item.id} onClick={() => toggleProduct(item)} aria-pressed={selected} className={`flex min-w-0 items-center gap-3 rounded-xl border p-3 text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${selected ? "border-primary bg-primary/5 ring-1 ring-primary/20" : "border-border hover:border-primary/50 hover:bg-muted/30"}`}>
-              <span className="relative h-16 w-16 shrink-0 overflow-hidden rounded-lg bg-muted">{image ? <img src={image} alt="" className="h-full w-full object-cover" loading="lazy" /> : <span className="flex h-full items-center justify-center text-muted-foreground"><Package className="h-6 w-6" /></span>}</span>
+              <span className="relative h-16 w-16 shrink-0 overflow-hidden rounded-lg bg-muted"><span className="absolute inset-0 flex items-center justify-center text-muted-foreground"><Package className="h-6 w-6" /></span>{image && <img src={image} alt="" className="relative h-full w-full object-cover" loading="lazy" onError={(event) => { event.currentTarget.style.display = "none"; }} />}</span>
               <span className="min-w-0 flex-1"><span className="block line-clamp-2 text-sm font-semibold">{item.name || "Untitled item"}</span><span className="mt-1 block text-sm font-bold text-primary">{price != null ? `KSh ${Number(price).toLocaleString("en-KE")}` : "Price unavailable"}</span>{item.discount_price && Number(item.discount_price) < Number(item.price) && <span className="block text-xs text-muted-foreground line-through">KSh {Number(item.price).toLocaleString("en-KE")}</span>}</span>
               <span className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full border ${selected ? "border-primary bg-primary text-primary-foreground" : "border-border text-muted-foreground"}`}>{selected ? <Check className="h-4 w-4" /> : <Plus className="h-4 w-4" />}</span>
             </button>;
@@ -244,7 +243,7 @@ export default function EmailCampaignManager() {
         </section>
 
         <section className={sectionClass}>
-          <div className="mb-3 flex items-start gap-3"><span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary"><FileText className="h-5 w-5" /></span><div><h3 className="font-bold text-card-foreground">Write your message</h3><p className="mt-1 text-sm text-muted-foreground">Write a normal message. The selected banner and products are placed into the email automatically—no HTML code required.</p></div></div>
+          <div className="mb-3 flex items-start gap-3"><span className={sectionIconClass}><FileText className="h-4 w-4" /></span><div><h3 className={sectionHeadingClass}>Write your message</h3><p className="mt-1 text-sm text-muted-foreground">Write a normal message. The selected banner and products are placed into the email automatically—no HTML code required.</p></div></div>
           <label className="block text-sm font-medium">Introduction <span className="font-normal text-muted-foreground">(optional)</span><textarea rows={4} value={form.body_text} onChange={update("body_text")} placeholder="Tell subscribers what is special about this collection…" className={fieldClass + " min-h-28 resize-y leading-6"} /></label>
           <div className="mt-3 grid gap-3 sm:grid-cols-2">
             <label className="text-sm font-medium">Main button label<input value={form.cta_label} onChange={update("cta_label")} placeholder="Shop now" className={fieldClass} /></label>
@@ -253,16 +252,16 @@ export default function EmailCampaignManager() {
         </section>
 
         <section className={sectionClass}>
-          <div className="mb-3 flex items-center gap-2"><Eye className="h-5 w-5 text-primary" /><h3 className="font-bold text-card-foreground">Email content preview</h3></div>
+          <div className="mb-3 flex items-center gap-2"><Eye className="h-4 w-4 text-primary" /><h3 className={sectionHeadingClass}>Email content preview</h3></div>
           <div className="mx-auto max-w-xl overflow-hidden rounded-xl border border-border bg-background shadow-sm">
-            {form.hero_image_url && <img src={imageUrl(form.hero_image_url)} alt="Selected campaign banner" className="max-h-56 w-full object-cover" />}
+            {form.hero_image_url && <div className="relative flex max-h-56 min-h-24 items-center justify-center overflow-hidden bg-muted text-muted-foreground"><ImageIcon className="h-7 w-7" /><img src={imageUrl(form.hero_image_url)} alt="Selected campaign banner" className="absolute inset-0 h-full max-h-56 w-full object-cover" onError={(event) => { event.currentTarget.style.display = "none"; }} /></div>}
             <div className="p-4 sm:p-6"><p className="text-xs text-muted-foreground">Subject: {form.subject || "Your email subject will appear here"}</p><h4 className="mt-2 text-xl font-bold">{form.title || "Your campaign title"}</h4>{form.preheader && <p className="mt-1 text-sm text-muted-foreground">{form.preheader}</p>}{form.body_text && <p className="mt-4 whitespace-pre-wrap text-sm leading-6">{form.body_text}</p>}
-              {selectedProducts.length > 0 && <div className="mt-4 grid gap-3 sm:grid-cols-2">{selectedProducts.map((item) => <div key={item.id} className="overflow-hidden rounded-lg border border-border"><div className="aspect-[4/3] bg-muted">{item.image_url && <img src={item.image_url} alt={item.name} className="h-full w-full object-cover" />}</div><div className="p-3"><p className="line-clamp-2 text-sm font-semibold">{item.name}</p><p className="mt-1 text-sm font-bold text-primary">KSh {Number(item.discount_price && Number(item.discount_price) < Number(item.price) ? item.discount_price : item.price || 0).toLocaleString("en-KE")}</p></div></div>)}</div>}
+              {selectedProducts.length > 0 && <div className="mt-4 grid gap-3 sm:grid-cols-2">{selectedProducts.map((item) => <div key={item.id} className="overflow-hidden rounded-lg border border-border"><div className="relative flex aspect-[4/3] items-center justify-center bg-muted text-muted-foreground"><Package className="h-6 w-6" />{item.image_url && <img src={imageUrl(item.image_url)} alt={item.name} className="absolute inset-0 h-full w-full object-cover" onError={(event) => { event.currentTarget.style.display = "none"; }} />}</div><div className="p-3"><p className="line-clamp-2 text-sm font-semibold">{item.name}</p><p className="mt-1 text-sm font-bold text-primary">KSh {Number(item.discount_price && Number(item.discount_price) < Number(item.price) ? item.discount_price : item.price || 0).toLocaleString("en-KE")}</p></div></div>)}</div>}
               {form.cta_label && <div className="mt-5"><span className="inline-flex rounded-[20px] bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground">{form.cta_label}</span></div>}
             </div>
           </div>
         </section>
-        <div className="sticky bottom-0 z-10 -mx-1 flex flex-wrap items-center justify-between gap-3 border-t border-border bg-background/95 px-1 py-3 pb-[calc(env(safe-area-inset-bottom,0px)+1.25rem)] backdrop-blur sm:static sm:mx-0 sm:px-0 sm:pb-0">
+        <div className="mt-1 flex flex-wrap items-center justify-between gap-3 border-t border-border pt-4">
           <p className="hidden text-xs text-muted-foreground sm:block">Save as a draft first. Preview and submit it for approval when ready.</p>
           <div className="ml-auto flex w-full flex-col-reverse gap-2 sm:w-auto sm:flex-row">
             {editingId && <Button type="button" variant="outline" className={buttonClass} onClick={resetDraft}>Cancel edit</Button>}
