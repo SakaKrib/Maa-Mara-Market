@@ -53,9 +53,9 @@ The normalized webhook endpoint is not a plug-and-play DHL/FedEx webhook adapter
 ## Verification status
 
 - Source changes are committed only to GitHub branch `ui-redesign-foundation`; production GitLab was not modified.
-- The earlier GitHub CI runs passed the website/mobile build, Android debug APK build, iOS simulator project build, Python compilation, and Django system checks. Those earlier build results predate the final audit fixes below.
-- The backend workflow now uses disposable PostgreSQL, runs Python compilation and Django checks, checks model/migration consistency with `makemigrations --check --dry-run`, applies migrations with `migrate --noinput`, and runs `python manage.py test order.test_fulfillment_tracking --verbosity 2`. The latest run triggered by the final backend edits must be inspected before considering those checks verified.
-- No production database migration has been run from this review, and no local browser/device run has been performed.
+- **Verified backend CI:** run [39560495300](https://github.com/SakaKrib/Maa-Mara-Market/actions/runs/39560495300) passed on code/test commit `75a89070c1b7316af58811f2b11f32575dff460c`. Python compilation, Django system checks, `makemigrations --check --dry-run`, migrations against disposable PostgreSQL, and the focused fulfilment/payout safety suite all passed; the suite ran **50 tests**.
+- **Verified frontend/native CI:** run [39560495318](https://github.com/SakaKrib/Maa-Mara-Market/actions/runs/39560495318) passed on the same code/test commit. Website and mobile web bundles, sharing lint, Android debug APK build/upload, and iOS simulator project build/package all succeeded.
+- The branch head includes later documentation-only commits; no backend/frontend code changed after the tested `75a89070c1b7316af58811f2b11f32575dff460c` revision. No production database migration has been run, and no manual browser/device end-to-end or live DHL/FedEx test has been performed.
 - Carrier API behavior remains unverified against live DHL/FedEx credentials and account entitlements.
 - Do not deploy to production until the current revision's CI is green, the migration is checked/applied in a safe test environment, the end-to-end workflow is exercised, carrier credentials are verified, and the separate payout audit is complete.
 
