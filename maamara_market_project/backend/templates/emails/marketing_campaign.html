@@ -1,5 +1,8 @@
 {% extends "emails/_base.html" %}
 {% block title %}{{ campaign.subject }}{% endblock %}
+{% block heading_section_class %}campaign-heading{% endblock %}
+{% block heading_title_class %}campaign-heading-title{% endblock %}
+{% block heading_icon %}{% endblock %}
 {% block heading %}{{ campaign.title }}{% endblock %}
 {% block preheader %}{{ campaign.preheader }}{% endblock %}
 {% block content %}
