@@ -32,6 +32,7 @@ SECRET_KEY = env("SECRET_KEY")
 DEBUG = env.bool("DEBUG", default=False)
 
 FRONTEND_URL = env("FRONTEND_URL")
+BACKEND_PUBLIC_URL = env("BACKEND_PUBLIC_URL", default=FRONTEND_URL).rstrip("/")
 COMPANY_ADDRESS = env("COMPANY_ADDRESS", default="")
 
 # Registered PayPal webhook ID. Keep this server-side; it is required to verify
