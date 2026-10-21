@@ -97,6 +97,14 @@ export default function AdminPayoutTriggerPayment() {
 
           <button
             type="button"
+            onClick={() => navigate("/admin-dashboard/vendor-payout/weekly-batches")}
+            className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-border bg-card px-5 py-2.5 text-sm font-semibold text-card-foreground transition hover:bg-muted lg:w-auto"
+          >
+            Weekly batches
+          </button>
+
+          <button
+            type="button"
             onClick={generateMonthlyPayouts}
             disabled={loading}
             className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground transition hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50 lg:w-auto"

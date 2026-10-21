@@ -117,6 +117,7 @@ import AboutUs from "./PublicUiForAll/PublicUi/Navigations/Footer/AboutUs";
 import CustomerToAdminRequests from "./cmponents/Admin/CustomerRequests/CustomerRequests";
 import VendorPendingOrdersTable from "./cmponents/VENDORPAGE/Home/Orders/VendorPendingOrders";
 import AdminPayoutTriggerPayment from "./cmponents/VendorPayoutReport/vendorPayouts/Business2Customer";
+import WeeklyPayoutBatches from "./cmponents/VendorPayoutReport/vendorPayouts/WeeklyPayoutBatches";
 import MpesaB2CPayment from "./cmponents/VendorPayoutReport/vendorPayouts/Payments/mpesa";
 import MpesaB2CMultiPayment from "./cmponents/VendorPayoutReport/vendorPayouts/Payments/PayManyVendors";
 import PaypalBulkPayment from "./cmponents/VendorPayoutReport/vendorPayouts/Payments/PaypalPayVendor";
@@ -347,6 +348,7 @@ function AppContent() {
 
               {/* generate payouts */}
               <Route path="vendor-payout/payment-trigger" element={<AdminPayoutTriggerPayment />} />
+              <Route path="vendor-payout/weekly-batches" element={<WeeklyPayoutBatches />} />
                <Route path="vendor-payout/payment-trigger/mpesa-payment/single-vendor" element={<MpesaB2CPayment />} />
                <Route path="vendor-payout/payment-trigger/mpesa-payment-group" element={<MpesaB2CMultiPayment />} />
                <Route path="vendor-payout/payment-trigger/paypal-payment-group" element={<PaypalBulkPayment />} />

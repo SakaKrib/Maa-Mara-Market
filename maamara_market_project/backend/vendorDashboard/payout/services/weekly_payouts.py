@@ -247,6 +247,7 @@ def batch_summary(batch):
         p = payouts.setdefault(alloc.payout_id, {
             "payout_reference": alloc.payout.reference if alloc.payout else None,
             "vendor": alloc.vendor.company_name,
+            "payment_method": alloc.vendor.payment_method,
             "amount": ZERO, "items": 0,
             "paid": bool(alloc.payout and alloc.payout.paid),
             "submitted": bool(alloc.payout and (alloc.payout.mpesa_conversation_id or alloc.payout.kcb_transaction_reference
