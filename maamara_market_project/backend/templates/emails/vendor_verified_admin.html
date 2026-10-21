@@ -1,0 +1,13 @@
+{% extends "emails/_base.html" %}
+{% block title %}New verified vendor request | Maa Mara Market{% endblock %}
+{% block heading %}Vendor request ready for review{% endblock %}
+{% block preheader %}A vendor has verified their registration OTP.{% endblock %}
+{% block content %}
+  <p>Hello Admin,</p>
+  <p><strong>{{ username }}</strong> (<a href="mailto:{{ vendor_email }}">{{ vendor_email }}</a>) has successfully verified their registration OTP.</p>
+  <p>Please review the vendor request and continue the approval process.</p>
+  <div class="button-wrap"><a class="button" href="{{ review_url }}">Review vendor request</a></div>
+  <p>If the button does not work, use this address:</p>
+  <p><a href="{{ review_url }}">{{ review_url }}</a></p>
+  <p>Regards,<br><strong>Maa Mara Market System</strong></p>
+{% endblock %}
