@@ -161,6 +161,13 @@ def mpesa_result(request):
                 "paid_at",
             ])
 
+            from vendorDashboard.payout.services.payout_guard import log_event_safely
+            log_event_safely(
+                payout, "provider_result", None, None,
+                provider="MPESA", result_code=result_code, paid=payout.paid,
+                first_confirmation=bool(payout.paid and not previous_paid),
+            )
+
             if transaction_id:
                 Transaction.objects.update_or_create(
                     mpesa_receipt_number=transaction_id,

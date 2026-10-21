@@ -15,6 +15,9 @@ from vendorDashboard.payout.services.payment_processors import (
 
 from vendorDashboard.models import Vendor, VendorPayout
 from vendorDashboard.payout.services.payout_review import build_payout_review
+from vendorDashboard.payout.services.payout_guard import (
+    client_ip, gate_send, log_event_safely, mark_uncertain, release_send,
+)
 from vendorDashboard.payout.services.payment_processors import payment_processors
 from vendorDashboard.payout.services.paypal_payouts import reconcile_paypal_payout
 from vendorDashboard.payout.services.kcb_payouts import reconcile_kcb_payout
@@ -128,7 +131,7 @@ def process_payouts_by_group(request):
     payment_method = request.data.get("payment_method")
 
     if payment_method:
-        payout_results = payment_processors(start_date, end_date, payment_method=payment_method)
+        payout_results = payment_processors(start_date, end_date, payment_method=payment_method, actor=request.user, ip=client_ip(request))
         summary = {
             "results": {
                 payment_method: payout_results.get("results", [])
@@ -140,7 +143,7 @@ def process_payouts_by_group(request):
         groups = ["BANK_TRANSFER", "PAYPAL", "MOBILE_MONEY"]
         summary = {"results": {}}
         for group in groups:
-            payout_results = payment_processors(start_date, end_date, payment_method=group)
+            payout_results = payment_processors(start_date, end_date, payment_method=group, actor=request.user, ip=client_ip(request))
             summary["results"][group] = payout_results.get("results", [])
         summary["status"] = "completed"
         summary["period"] = f"{start_date} → {end_date}"
@@ -153,54 +156,52 @@ def process_payouts_by_group(request):
 # 🚀 API Endpoint single
 # =========================
 
-@api_view(["POST"])
-@permission_classes([IsAdminUser])
-@transaction.atomic
-def pay_single_vendor_payout(request, reference):
-    try:
-        # Serialize payout submission so two admin requests cannot both pass
-        # the duplicate-submission checks and call the provider.
-        payout = VendorPayout.objects.select_for_update(of=("self",)).select_related("vendor").get(reference=reference)
-    except VendorPayout.DoesNotExist:
-        return Response({"error": "Payout reference not found."}, status=404)
+KNOWN_PAYMENT_METHODS = {"MOBILE_MONEY", "PAYPAL", "BANK_TRANSFER"}
 
-    if payout.paid:
-        return Response({"message": "Payout already paid.", "reference": payout.reference}, status=200)
 
-    vendor = payout.vendor
-    amount = payout.amount
-    method = vendor.payment_method
+def _precheck_and_gate(request, reference):
+    """Phase 1: one short transaction that validates, applies the payout
+    safeguards and commits an "in progress" marker. No provider call happens
+    here, so no database lock is held while we wait on a payment provider.
 
-    # Never send a zero/negative payout to a provider. The payout amount is
-    # authoritative on the server; the client cannot override it.
-    try:
-        amount = amount if amount is not None else 0
-        if amount <= 0:
-            return Response(
-                {"error": "Payout amount must be greater than zero."},
-                status=400,
-            )
-    except (TypeError, ValueError):
-        return Response({"error": "Payout amount is invalid."}, status=400)
+    Returns ``(payout, None)`` when the send may proceed, else ``(None, Response)``.
+    """
+    with transaction.atomic():
+        try:
+            # Serialize payout submission so two admin requests cannot both pass
+            # the duplicate-submission checks and call the provider.
+            payout = VendorPayout.objects.select_for_update(of=("self",)).select_related("vendor").get(reference=reference)
+        except VendorPayout.DoesNotExist:
+            return None, Response({"error": "Payout reference not found."}, status=404)
 
-    if not vendor.is_active:
-        return Response(
-            {"error": "This vendor is inactive and cannot receive a payout."},
-            status=400,
-        )
+        if payout.paid:
+            return None, Response({"message": "Payout already paid.", "reference": payout.reference}, status=200)
 
-    # Load gateway configs
-    mpesa_config = settings.PAYMENT_GATEWAYS.get("mpesa", {})
-    paypal_config = settings.PAYMENT_GATEWAYS.get("paypal", {})
+        vendor = payout.vendor
+        amount = payout.amount
+        method = vendor.payment_method
 
-    try:
+        # Never send a zero/negative payout to a provider. The payout amount is
+        # authoritative on the server; the client cannot override it.
+        try:
+            if amount is None or amount <= 0:
+                return None, Response({"error": "Payout amount must be greater than zero."}, status=400)
+        except (TypeError, ValueError):
+            return None, Response({"error": "Payout amount is invalid."}, status=400)
+
+        if not vendor.is_active:
+            return None, Response({"error": "This vendor is inactive and cannot receive a payout."}, status=400)
+
+        if method not in KNOWN_PAYMENT_METHODS:
+            return None, Response({"error": f"Unknown payment method: {method}"}, status=400)
+
         # Do not submit a second provider request while an earlier submission
         # has a provider correlation that is still awaiting settlement.
         if method == "MOBILE_MONEY" and vendor.mpesa_type in {"TILL", "LIPA_NA_MPESA"} and payout.mpesa_result_desc and (
             payout.mpesa_result_desc.startswith("B2B submission outcome unknown")
             or payout.mpesa_result_desc.startswith("B2B submission response lacked correlation IDs")
         ):
-            return Response(
+            return None, Response(
                 {
                     "error": "M-Pesa B2B submission outcome is uncertain. Reconcile with Safaricom before retrying to avoid a duplicate payout.",
                     "reference": payout.reference,
@@ -216,7 +217,7 @@ def pay_single_vendor_payout(request, reference):
             # A pending submission must not be duplicated. A provider-reported
             # failure, however, is retryable and receives a fresh correlation ID.
             if payout.mpesa_result_code is None:
-                return Response(
+                return None, Response(
                     {
                         "error": "M-Pesa payout is already submitted and awaiting provider confirmation.",
                         "reference": payout.reference,
@@ -228,7 +229,7 @@ def pay_single_vendor_payout(request, reference):
         if method == "BANK_TRANSFER" and payout.kcb_transaction_reference:
             kcb_status = (payout.kcb_provider_status or "").upper()
             if kcb_status in {"SUBMITTED", "PENDING", "PROCESSING", "IN_PROGRESS", ""}:
-                return Response(
+                return None, Response(
                     {
                         "error": "Bank payout is already submitted and awaiting bank confirmation.",
                         "reference": payout.reference,
@@ -242,7 +243,7 @@ def pay_single_vendor_payout(request, reference):
         ) and not payout.paid:
             paypal_status = (payout.paypal_transaction_status or "").upper()
             if paypal_status in {"", "PENDING", "UNCLAIMED", "ONHOLD", "BLOCKED"}:
-                return Response(
+                return None, Response(
                     {
                         "error": "PayPal payout is already submitted and awaiting provider confirmation.",
                         "reference": payout.reference,
@@ -251,6 +252,23 @@ def pay_single_vendor_payout(request, reference):
                     status=409,
                 )
 
+        gate = gate_send(payout, request.user, client_ip(request))
+        if not gate.ok:
+            return None, Response(gate.body(), status=gate.status)
+        return payout, None
+
+
+def _submit_to_provider(payout, actor, ip):
+    """Phase 2: contact the provider with no transaction or row lock held."""
+    vendor = payout.vendor
+    amount = payout.amount
+    method = vendor.payment_method
+    reference = payout.reference
+
+    mpesa_config = settings.PAYMENT_GATEWAYS.get("mpesa", {})
+    paypal_config = settings.PAYMENT_GATEWAYS.get("paypal", {})
+
+    try:
         if method == "MOBILE_MONEY":
             # A failed M-Pesa attempt must not leave its old correlation IDs
             # attached to the payout. Otherwise a late callback from that
@@ -272,13 +290,11 @@ def pay_single_vendor_payout(request, reference):
             response = call_mpesa_payout(vendor, amount, mpesa_config, payout=payout)
         elif method == "PAYPAL":
             response = call_paypal_payout(payout, vendor.paypal_email, amount, paypal_config)
-        elif method == "BANK_TRANSFER":
-            response = call_bank_transfer(vendor.bank_account_number, amount, payout=payout)
         else:
-            return Response({"error": f"Unknown payment method: {method}"}, status=400)
+            response = call_bank_transfer(vendor.bank_account_number, amount, payout=payout)
 
         if response.get("success"):
-            
+            release_send(payout.pk, "submitted", actor, ip, method=method)
             return Response({
                 "message": (
                     "Payout submitted to PayPal; awaiting provider confirmation."
@@ -290,30 +306,45 @@ def pay_single_vendor_payout(request, reference):
                 "response": response,
             }, status=202)
 
-        else:
-            if method == "PAYPAL" and response.get("retryable"):
-                return Response({
-                    "error": response.get(
-                        "error",
-                        "PayPal payout status is ambiguous; reconcile before retrying.",
-                    ),
-                    "retryable": True,
-                    "reference": payout.reference,
-                }, status=202)
-
+        if method == "PAYPAL" and response.get("retryable"):
+            # Ambiguous: PayPal may or may not have accepted it. Keep the
+            # in-progress marker so nobody sends again before reconciling.
+            mark_uncertain(payout.pk, actor, ip, "PayPal status ambiguous")
             return Response({
-                "error": response.get("error", "Payment failed."),
-                "response": response,
-            }, status=400)
+                "error": response.get(
+                    "error",
+                    "PayPal payout status is ambiguous; reconcile before retrying.",
+                ),
+                "retryable": True,
+                "reference": payout.reference,
+            }, status=202)
 
-    except Exception:
+        release_send(payout.pk, "failed", actor, ip, method=method, error=str(response.get("error", ""))[:200])
+        return Response({
+            "error": response.get("error", "Payment failed."),
+            "response": response,
+        }, status=400)
+
+    except Exception as exc:
         logger.exception(
             "Unexpected vendor payout submission failure.",
             extra={"payout_reference": reference},
         )
+        # We cannot tell whether the provider acted, so the marker stays set.
+        mark_uncertain(payout.pk, actor, ip, type(exc).__name__)
         return Response({
-            "error": "Vendor payout submission failed."
+            "error": "Vendor payout submission failed. Reconcile with the provider before sending again."
         }, status=500)
+
+
+@api_view(["POST"])
+@permission_classes([IsAdminUser])
+def pay_single_vendor_payout(request, reference):
+    payout, error = _precheck_and_gate(request, reference)
+    if error is not None:
+        return error
+    return _submit_to_provider(payout, request.user, client_ip(request))
+
 
 @api_view(["POST"])
 @permission_classes([IsAdminUser])
@@ -326,6 +357,7 @@ def reconcile_bank_vendor_payout(request, reference):
     if payout.vendor.payment_method != "BANK_TRANSFER":
         return Response({"error": "Payout is not configured for bank transfer."}, status=400)
 
+    log_event_safely(payout, "reconcile_requested", request.user, client_ip(request), provider="KCB")
     try:
         payout = reconcile_kcb_payout(payout.id)
     except requests.RequestException:
@@ -363,6 +395,7 @@ def reconcile_single_vendor_payout(request, reference):
             status=400,
         )
 
+    log_event_safely(payout, "reconcile_requested", request.user, client_ip(request), provider="PAYPAL")
     try:
         payout = reconcile_paypal_payout(payout.id)
     except requests.RequestException:

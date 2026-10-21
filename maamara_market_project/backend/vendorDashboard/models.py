@@ -101,6 +101,11 @@ class Vendor(models.Model):
     # PayPal
     paypal_email = models.EmailField(blank=True, null=True)
 
+    # Payout-destination change tracking. A changed destination is held for a
+    # cooling-off period before any money is sent to it (see payout_guard).
+    payout_destination_hash = models.CharField(max_length=64, blank=True, default="")
+    payout_destination_changed_at = models.DateTimeField(null=True, blank=True)
+
     # ========== Optional Details ==========
     tax_number = models.CharField(max_length=50, null=True, blank=True)
     website_url = models.URLField(null=True, blank=True)
@@ -150,6 +155,14 @@ class Vendor(models.Model):
                 except (TypeError, ValueError):
                     continue
             self.vendor_code = str(last_code + 1)
+
+        # Start (or restart) the cooling-off period whenever the payout
+        # destination changes, whichever code path saved the vendor.
+        from vendorDashboard.payout.services.payout_guard import refresh_destination_state
+        if refresh_destination_state(self) and kwargs.get("update_fields") is not None:
+            kwargs["update_fields"] = set(kwargs["update_fields"]) | {
+                "payout_destination_hash", "payout_destination_changed_at",
+            }
 
         super().save(*args, **kwargs)
 
@@ -763,6 +776,37 @@ class VendorPayout(models.Model):
     paypal_currency = models.CharField(max_length=10, null=True, blank=True)
     paypal_batch_id = models.CharField(max_length=255, null=True, blank=True)
 
+    # Who sent this payout, and from where. Written by payout_guard before the
+    # provider is contacted, so the record exists even if the call never returns.
+    initiated_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL,
+        related_name="initiated_vendor_payouts",
+    )
+    initiated_at = models.DateTimeField(null=True, blank=True)
+    initiated_ip = models.GenericIPAddressField(null=True, blank=True)
+
+    # In-flight marker: set (and committed) before the provider call and cleared
+    # when the provider gives a definite answer. It stays set if the process dies
+    # mid-call, which blocks a blind second send until the payout is reconciled.
+    send_in_progress = models.BooleanField(default=False)
+    send_started_at = models.DateTimeField(null=True, blank=True)
+
+    # Two-person approval above PAYOUT_TWO_PERSON_THRESHOLD: one admin requests,
+    # a different admin approves and sends. The request is void if the amount or
+    # destination changes, or when it ages out.
+    approval_requested_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL,
+        related_name="requested_vendor_payout_approvals",
+    )
+    approval_requested_at = models.DateTimeField(null=True, blank=True)
+    approval_amount = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    approval_destination_hash = models.CharField(max_length=64, blank=True, default="")
+    approved_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL,
+        related_name="approved_vendor_payouts",
+    )
+    approved_at = models.DateTimeField(null=True, blank=True)
+
      # ✅ Default payout period
     payout_period_start = models.DateField(default=default_payout_period_start)
     payout_period_end = models.DateField(default=default_payout_period_end)
@@ -886,3 +930,23 @@ class VendorPaymentDetail(models.Model):
     
     
     
+
+
+class PayoutAuditLog(models.Model):
+    """Append-only record of every payout request, send, retry and reconciliation."""
+
+    payout = models.ForeignKey(VendorPayout, on_delete=models.CASCADE, related_name="audit_logs")
+    action = models.CharField(max_length=40, db_index=True)
+    actor = models.ForeignKey(
+        settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL,
+        related_name="payout_audit_entries",
+    )
+    ip_address = models.GenericIPAddressField(null=True, blank=True)
+    detail = models.JSONField(default=dict, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True, db_index=True)
+
+    class Meta:
+        ordering = ["-created_at", "-id"]
+
+    def __str__(self):
+        return f"{self.action} {self.payout_id} @ {self.created_at:%Y-%m-%d %H:%M}"

@@ -12,12 +12,14 @@ from decimal import Decimal
 from dateutil.relativedelta import relativedelta
 from django.conf import settings
 from django.utils import timezone
+from django.utils.dateparse import parse_datetime
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAdminUser
 from rest_framework.response import Response
 
 from vendorDashboard.models import Vendor, VendorPayout
 from vendorDashboard.payout.services.payment_processors import get_vendor_mpesa_type
+from vendorDashboard.payout.services.payout_guard import describe_security, sync_destination_state
 
 METHOD_LABELS = {
     "MOBILE_MONEY": "M-Pesa",
@@ -238,7 +240,7 @@ def _unusual_signals(payout, vendor, method, destination, amount):
     return warnings
 
 
-def build_payout_review(payout):
+def build_payout_review(payout, viewer=None):
     vendor = payout.vendor
     method = vendor.payment_method
 
@@ -267,6 +269,37 @@ def build_payout_review(payout):
     pending = _pending_problem(payout, method)
     if pending and not payout.paid:
         problems.append(pending)
+
+    # Safeguards: destination cooling-off, in-flight sends and two-admin approval.
+    sync_destination_state(vendor)
+    security = describe_security(payout, viewer)
+    action = "send"
+    if not payout.paid:
+        hold = security["destination_hold"]
+        if hold["active"]:
+            problems.append(
+                "Payout details changed recently, so payment is held until "
+                f"{timezone.localtime(parse_datetime(hold['until'])):%d %b %Y %H:%M}. Confirm the change with the vendor."
+            )
+        if security["send_in_progress"]:
+            problems.append(
+                "A send is in progress or did not finish. Reconcile with the provider before sending again."
+            )
+        approval = security["approval"]
+        if approval["required"]:
+            if approval["state"] == "awaiting_second_admin":
+                if approval.get("requested_by_you"):
+                    action = "wait_for_other_admin"
+                    notes.append("You requested approval. A different admin must approve and send this payout.")
+                else:
+                    action = "approve_and_send"
+                    notes.append(f"{approval['requested_by'] or 'Another admin'} requested this payout. You can approve and send it.")
+            else:
+                action = "request_approval"
+                notes.append(
+                    f"Payouts of KES {Decimal(security['two_person_threshold']):,.0f} or more need two admins: "
+                    "you request, a different admin approves and sends."
+                )
 
     if payout.paid:
         state = "paid"
@@ -305,7 +338,9 @@ def build_payout_review(payout):
         "problems": problems,
         "notes": notes,
         "warnings": warnings,
-        "can_pay": state == "ready",
+        "can_pay": state == "ready" and action != "wait_for_other_admin",
+        "action": action,
+        "security": security,
     }
 
 
@@ -326,7 +361,7 @@ def payout_review_single(request, reference):
     payout = VendorPayout.objects.select_related("vendor").filter(reference=reference).first()
     if not payout:
         return Response({"error": "Payout reference not found."}, status=404)
-    return Response(build_payout_review(payout))
+    return Response(build_payout_review(payout, request.user))
 
 
 @api_view(["GET"])
@@ -351,7 +386,7 @@ def payout_review_group(request):
         )
         .order_by("vendor__company_name")
     )
-    items = [build_payout_review(p) for p in payouts]
+    items = [build_payout_review(p, request.user) for p in payouts]
     return Response({
         "payment_method": method,
         "payment_method_label": METHOD_LABELS[method],

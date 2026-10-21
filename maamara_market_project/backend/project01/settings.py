@@ -385,6 +385,16 @@ CRISPY_TEMPLATE_PACK = "bootstrap4"
 # PAYMENT CONFIG
 # =========================================================
 
+# Vendor payout safeguards (see vendorDashboard/payout/services/payout_guard.py)
+# Payouts at or above this amount (KES) need one admin to request and a different
+# admin to approve and send. Set to 0 to require two admins for every payout.
+PAYOUT_TWO_PERSON_THRESHOLD = env.float("PAYOUT_TWO_PERSON_THRESHOLD", default=50000)
+# A changed payout destination (phone, Till, Paybill/account, PayPal email, bank
+# account) cannot receive money until this many hours have passed.
+PAYOUT_DESTINATION_HOLD_HOURS = env.int("PAYOUT_DESTINATION_HOLD_HOURS", default=48)
+# A pending approval request expires after this many hours.
+PAYOUT_APPROVAL_VALID_HOURS = env.int("PAYOUT_APPROVAL_VALID_HOURS", default=24)
+
 PAYMENT_GATEWAYS = {
     "mpesa": {
         "consumer_key": env("MPESA_CONSUMER_KEY"),

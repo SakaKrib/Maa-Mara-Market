@@ -17,6 +17,9 @@ import time
 from django.utils.timezone import datetime
 import random
 from vendorDashboard.payout.services.generatePermcert import generate_security_credential
+from vendorDashboard.payout.services.payout_guard import (
+    gate_bulk_send, mark_uncertain, release_send,
+)
 # from order.Mpesa.C2BMpesaIntergration.c2butils import get_mpesa_token
 
 # def get_mpesa_access_token(mpesa_config):
@@ -913,19 +916,66 @@ def call_bank_transfer(account_number, amount, payout=None, max_retries=3, retry
 #-----------------------------------
 # payment processor
 #-----------------------------------
-def payment_processors(start_date, end_date, payment_method=None):
-    payouts = VendorPayout.objects.filter(
+def payment_processors(start_date, end_date, payment_method=None, actor=None, ip=None):
+    """Bulk-send the period's unpaid payouts, applying the same safeguards as a single send.
+
+    Each payout first passes ``gate_bulk_send`` (destination hold, two-admin
+    approval, in-flight marker, audit entry, committed in its own short
+    transaction). Only payouts that pass are sent; the rest are reported back
+    as blocked. The provider is called with no database lock held.
+    """
+    if actor is None:
+        raise ValueError("A payout sender (actor) is required.")
+
+    candidates = VendorPayout.objects.filter(
         payout_period_start=start_date,
         payout_period_end=end_date,
         paid=False
-    )
-    
+    ).select_related("vendor")
+
     if payment_method:
-        payouts = payouts.filter(vendor__payment_method=payment_method)
+        candidates = candidates.filter(vendor__payment_method=payment_method)
 
     # Never submit zero/negative amounts or payouts for inactive vendors in bulk.
-    payouts = payouts.filter(amount__gt=0, vendor__is_active=True)
+    candidates = candidates.filter(amount__gt=0, vendor__is_active=True)
 
+    allowed = []
+    blocked = []
+    for candidate in candidates:
+        locked, gate = gate_bulk_send(candidate.pk, actor, ip)
+        if gate.ok:
+            allowed.append(locked)
+        else:
+            blocked.append({
+                "vendor": candidate.vendor.company_name,
+                "reference": candidate.reference,
+                "status": ("Awaiting approval: " if gate.extra.get("awaiting_approval") else "Blocked: ") + gate.message,
+                "payment_method": candidate.vendor.payment_method,
+                "code": gate.code,
+            })
+
+    started = {payout.pk: payout.reference for payout in allowed}
+    try:
+        outcome = _run_payment_processors(allowed, payment_method)
+    except Exception as exc:
+        # Unknown whether the provider acted: leave every in-progress marker set.
+        for payout_id in started:
+            mark_uncertain(payout_id, actor, ip, type(exc).__name__)
+        raise
+
+    statuses = {item.get("reference"): str(item.get("status") or "") for item in outcome.get("results", [])}
+    for payout_id, reference in started.items():
+        status = statuses.get(reference, "")
+        if status.startswith("Exception"):
+            mark_uncertain(payout_id, actor, ip, "bulk exception")
+        else:
+            release_send(payout_id, "bulk_finished", actor, ip, status=status[:120])
+
+    outcome["results"] = blocked + list(outcome.get("results", []))
+    return outcome
+
+
+def _run_payment_processors(payouts, payment_method=None):
     results = []
 
     mpesa_config = settings.PAYMENT_GATEWAYS.get("mpesa", {})
