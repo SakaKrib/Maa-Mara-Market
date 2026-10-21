@@ -36,6 +36,8 @@ export default function EmailCampaignManager() {
   const [notice, setNotice] = useState("");
   const [catalogNotice, setCatalogNotice] = useState("");
   const [report, setReport] = useState(null);
+  const [scheduleDraft, setScheduleDraft] = useState(null);
+  const [scheduling, setScheduling] = useState(false);
 
   const load = async ({ preserveNotice = false } = {}) => {
     setLoading(true);
@@ -166,14 +168,33 @@ export default function EmailCampaignManager() {
         const { data } = await api.get(`/api/admin/email-campaigns/${id}/report/`); setReport(data); return;
       }
       if (name === "schedule") {
-        const value = window.prompt("Enter a future date and time with timezone, e.g. 2026-12-01T09:00:00+03:00");
-        if (!value) return;
-        await api.post(`/api/admin/email-campaigns/${id}/actions/schedule/`, { scheduled_at: value });
+        const d = new Date(Date.now() + 3600000);
+        d.setMinutes(Math.ceil(d.getMinutes() / 5) * 5, 0, 0);
+        setScheduleDraft({ id, scheduledAt: new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 16), frequency: "none", interval: 1, until: "" });
+        return;
       } else if (name === "send" && !window.confirm("Send this approved campaign to all currently subscribed newsletter recipients?")) return;
       else await api.post(`/api/admin/email-campaigns/${id}/actions/${name}/`, payload);
       setNotice(name === "send" ? "Campaign queued for sending." : `Campaign ${name} successful.`);
       await load({ preserveNotice: true });
     } catch (err) { setNotice(err?.response?.data?.detail || `Campaign action failed: ${name}`); }
+  };
+
+  const submitSchedule = async (event) => {
+    event.preventDefault();
+    if (!scheduleDraft || scheduling) return;
+    const when = new Date(scheduleDraft.scheduledAt);
+    if (Number.isNaN(when.getTime()) || when <= new Date()) { setNotice("Choose a future date and time."); return; }
+    setScheduling(true); setNotice("");
+    try {
+      await api.post(`/api/admin/email-campaigns/${scheduleDraft.id}/actions/schedule/`, {
+        scheduled_at: when.toISOString(),
+        recurrence: { frequency: scheduleDraft.frequency, interval: Number(scheduleDraft.interval) || 1, until: scheduleDraft.until || "" },
+      });
+      setScheduleDraft(null);
+      setNotice(scheduleDraft.frequency === "none" ? "Campaign scheduled." : "Recurring campaign scheduled. A new occurrence is created after each successful send.");
+      await load({ preserveNotice: true });
+    } catch (err) { setNotice(err?.response?.data?.detail || "Could not schedule this campaign."); }
+    finally { setScheduling(false); }
   };
 
   const edit = (campaign) => {
@@ -288,6 +309,16 @@ export default function EmailCampaignManager() {
         </div>
       </form>
 
+      {scheduleDraft && <div className="fixed inset-0 z-[1600] flex items-center justify-center overflow-y-auto bg-black/50 p-4" onMouseDown={(e) => { if (e.target === e.currentTarget && !scheduling) setScheduleDraft(null); }}>
+        <form onSubmit={submitSchedule} role="dialog" aria-modal="true" aria-labelledby="schedule-campaign-title" className="w-full max-w-lg space-y-4 rounded-2xl border border-border bg-card p-5 text-card-foreground shadow-2xl sm:p-6">
+          <div><h3 id="schedule-campaign-title" className="text-lg font-bold">Schedule email campaign</h3><p className="mt-1 text-sm text-muted-foreground">Select the first send time and optional repeat pattern.</p></div>
+          <label className="block text-sm font-medium">First send date and time<input required type="datetime-local" value={scheduleDraft.scheduledAt} onChange={(e) => setScheduleDraft(v => ({...v, scheduledAt:e.target.value}))} className={fieldClass}/><span className="mt-1 block text-xs text-muted-foreground">Uses your device's local time.</span></label>
+          <label className="block text-sm font-medium">Repeat<select value={scheduleDraft.frequency} onChange={(e) => setScheduleDraft(v => ({...v, frequency:e.target.value}))} className={fieldClass}><option value="none">One time only</option><option value="daily">Daily</option><option value="weekly">Weekly</option><option value="monthly">Monthly</option><option value="periodic">Every N days</option></select></label>
+          {scheduleDraft.frequency === "periodic" && <label className="block text-sm font-medium">Repeat every (days)<input required type="number" min="1" max="365" value={scheduleDraft.interval} onChange={(e) => setScheduleDraft(v => ({...v, interval:e.target.value}))} className={fieldClass}/></label>}
+          {scheduleDraft.frequency !== "none" && <label className="block text-sm font-medium">Stop repeating after (optional)<input type="date" min={scheduleDraft.scheduledAt.slice(0,10)} value={scheduleDraft.until} onChange={(e) => setScheduleDraft(v => ({...v, until:e.target.value}))} className={fieldClass}/><span className="mt-1 block text-xs text-muted-foreground">Leave blank to continue until you cancel a future occurrence.</span></label>}
+          <div className="flex justify-end gap-2 border-t border-border pt-4"><Button type="button" variant="outline" className={buttonClass} disabled={scheduling} onClick={() => setScheduleDraft(null)}>Cancel</Button><Button type="submit" className={buttonClass} disabled={scheduling}>{scheduling ? "Scheduling…" : "Confirm schedule"}</Button></div>
+        </form>
+      </div>}
       {report && <div className={sectionClass}><div className="flex items-center justify-between gap-2"><h4 className="font-bold">{report.campaign?.title} report</h4><Button type="button" className={buttonClass} variant="outline" onClick={() => setReport(null)}>Close</Button></div><div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-4">{Object.entries(report.recipients || {}).map(([key, value]) => <div key={key} className="rounded-lg bg-muted p-3"><p className="text-xs capitalize text-muted-foreground">{key}</p><p className="text-xl font-bold">{value}</p></div>)}</div><p className="mt-3 text-xs text-muted-foreground">{report.delivery_note}</p></div>}
       {loading ? <div className="flex justify-center p-8"><CircularProgress size={22} /></div> : <div className="space-y-3">{campaigns.map((c) => <article key={c.id} className="rounded-2xl border border-border bg-card p-4"><div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between"><div className="min-w-0"><h4 className="font-bold text-card-foreground">{c.title}</h4><p className="mt-1 text-sm text-muted-foreground">{c.subject}</p><p className="mt-1 text-xs text-muted-foreground">Created {dateLabel(c.created_at)} · {c.recipient_count} recipients · {c.sent_count} submitted · {c.failed_count} failed</p></div><span className="w-fit rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold capitalize text-primary">{String(c.status || "").replaceAll("_", " ")}</span></div><div className="mt-3 flex flex-wrap gap-2">
         {c.status === "draft" && <><Button type="button" className={buttonClass} variant="outline" onClick={() => edit(c)}>Edit</Button><Button type="button" className={buttonClass} variant="outline" onClick={() => action(c.id, "submit")}>Submit for approval</Button></>}
