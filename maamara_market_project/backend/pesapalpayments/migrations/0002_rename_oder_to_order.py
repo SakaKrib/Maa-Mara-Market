@@ -1,51 +1,32 @@
 from django.db import migrations
 
 
-def _rename_order_column(apps, schema_editor, old_column, new_column):
-    """Rename the legacy FK column only when the database still has it."""
+def rename_column_if_needed(apps, schema_editor):
+    """Rename ``oder_id`` to ``order_id`` only where the damaged name exists.
+
+    Databases that ran the original 0001 already have ``order_id``; databases
+    created from the mistyped 0001 have ``oder_id``. Both end up with ``order_id``.
+    """
     model = apps.get_model("pesapalpayments", "PesapalTransaction")
     table = model._meta.db_table
     connection = schema_editor.connection
-
     with connection.cursor() as cursor:
-        columns = {
-            column.name
-            for column in connection.introspection.get_table_description(cursor, table)
-        }
-
-    if old_column in columns and new_column in columns:
-        raise RuntimeError(
-            f"Cannot safely rename {table}.{old_column}: "
-            f"both {old_column} and {new_column} exist."
-        )
-
-    if old_column in columns:
-        quote = schema_editor.quote_name
+        columns = {col.name for col in connection.introspection.get_table_description(cursor, table)}
+    if "oder_id" in columns and "order_id" not in columns:
         schema_editor.execute(
-            f"ALTER TABLE {quote(table)} "
-            f"RENAME COLUMN {quote(old_column)} TO {quote(new_column)}"
+            "ALTER TABLE %s RENAME COLUMN %s TO %s" % (
+                schema_editor.quote_name(table),
+                schema_editor.quote_name("oder_id"),
+                schema_editor.quote_name("order_id"),
+            )
         )
-    elif new_column not in columns:
-        raise RuntimeError(
-            f"Cannot rename Pesapal order column: neither {old_column} "
-            f"nor {new_column} exists in {table}."
-        )
-
-
-def forwards(apps, schema_editor):
-    _rename_order_column(apps, schema_editor, "oder_id", "order_id")
-
-
-def backwards(apps, schema_editor):
-    _rename_order_column(apps, schema_editor, "order_id", "oder_id")
 
 
 class Migration(migrations.Migration):
-    """Repair the misspelled FK column while tolerating already-correct schemas.
+    """Repair a field name damaged by an app-label search/replace in 0001.
 
-    Some databases already have order_id (and record a legacy 0002 migration),
-    while fresh databases created from 0001 still have oder_id. Preserve both
-    database states while keeping Django's migration state consistent.
+    The model has always declared ``order``. The migration state is renamed
+    unconditionally; the database column is renamed only if it needs it.
     """
 
     dependencies = [
@@ -54,15 +35,11 @@ class Migration(migrations.Migration):
 
     operations = [
         migrations.SeparateDatabaseAndState(
-            database_operations=[
-                migrations.RunPython(forwards, backwards),
-            ],
             state_operations=[
-                migrations.RenameField(
-                    model_name="pesapaltransaction",
-                    old_name="oder",
-                    new_name="order",
-                ),
+                migrations.RenameField(model_name="pesapaltransaction", old_name="oder", new_name="order"),
+            ],
+            database_operations=[
+                migrations.RunPython(rename_column_if_needed, migrations.RunPython.noop),
             ],
         ),
     ]
