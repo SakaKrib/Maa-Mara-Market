@@ -9,10 +9,11 @@
   body { margin:0; padding:0; background:#f6f7f9; color:#222222; font-family:Arial,Helvetica,sans-serif; }
   .wrapper { width:100%; padding:25px 0; background:#f6f7f9; }
   .container { width:600px; max-width:94%; margin:auto; background:#ffffff; border-radius:14px; overflow:hidden; }
-  .header { padding:24px 30px; text-align:center; background:#ffffff; }
-  .logo a { position:relative; font-family:'Poppins',Arial,sans-serif; background-color:#ffffff; border:1px solid gold; padding:2px 2px; border-radius:5px; width:auto; font-size:1.3rem; display:inline-flex; gap:2px; text-decoration:none; color:#222222; align-items:center; }
-  .logo a .it-name { background-color:rgba(255,0,0,0.253); padding:2px 10px; position:relative; border-top-left-radius:5px; border-bottom-left-radius:5px; border-left:5px solid #8de02c; margin-left:0; }
-  .mkrt { font-family:jaka,Arial,sans-serif; color:green; font-weight:bold; }
+  .header { padding:25px 30px; text-align:center; background:#ffffff; border-bottom:1px solid #edf1ed; }
+  .logo a { font-family:Arial,Helvetica,sans-serif; display:inline-flex; align-items:center; gap:10px; text-decoration:none; color:#255d3a; font-size:23px; line-height:1.15; font-weight:700; letter-spacing:-.4px; }
+  .brand-mark { display:inline-flex; align-items:center; justify-content:center; width:42px; height:42px; border-radius:10px; background:#255d3a; color:#ffffff; font-size:25px; font-weight:700; line-height:1; }
+  .brand-name { display:inline-block; text-align:left; color:#255d3a; }
+  .brand-name span { display:block; }
   .success { padding:28px; text-align:center; background:#e8f5e9; }
   .success-icon { font-size:42px; }
   .success-title { margin:8px 0; font-size:25px; color:#1b5e20; }
@@ -45,13 +46,16 @@
   .transaction { margin-top:25px; padding:16px; background:#f5f7f6; border-radius:9px; }
   .transaction-label { color:#777777; font-size:12px; }
   .transaction-id { margin-top:4px; font-weight:bold; word-break:break-all; }
-  .footer { padding:25px; text-align:center; background:#1e1e1e !important; color:#aaaaaa; font-size:12px; }
-  .footer a { color:#4fc3f7; text-decoration:none; }
-  .footer hr { border:none; border-top:1px solid #555555; margin:16px 0; }
+  .footer { padding:25px 24px; text-align:center; background:#064e3b !important; color:#e5f2ec; font-size:12px; line-height:1.7; }
+  .footer-brand { color:#ffffff; font-size:16px; font-weight:700; letter-spacing:.1px; }
+  .footer a { color:#ffffff; text-decoration:underline; }
+  .footer hr { border:none; border-top:1px solid rgba(255,255,255,.25); margin:16px 0; }
+  .footer p { margin:10px 0; }
   @media only screen and (max-width:680px) {
     .container { max-width:94%; }
     .content { padding:20px; }
-    .logo a { font-size:12px; }
+    .logo a { font-size:19px; gap:8px; }
+     .brand-mark { width:36px; height:36px; font-size:22px; }
     .item-name { font-size:14px; }
     .price { font-size:13px; }
     .button { display:block; padding:15px; }
@@ -59,7 +63,9 @@
   @media (prefers-color-scheme:dark) {
     body,.wrapper { background:#121212 !important; color:#f1f1f1 !important; }
     .container,.header,.card,.item { background:#1e1e1e !important; }
-    .logo a { background:#1e1e1e !important; color:#ffffff !important; }
+    .logo a { background:#ffffff !important; color:#255d3a !important; }
+     .brand-mark { background:#255d3a !important; color:#ffffff !important; }
+     .brand-name { color:#255d3a !important; }
     .success { background:#16351b !important; }
     .success-title { color:#81c784 !important; }
     .success-text { color:#b7cbb9 !important; }
@@ -80,7 +86,7 @@
 <div class="container">
   <div class="header">
     <div class="logo">
-      <a href="{{ frontend_url|default:'#' }}" aria-label="Maa Mara Market">Maa <span class="it-name">Mara</span> <span class="mkrt">Market</span></a>
+      <a href="{{ frontend_url|default:'#' }}" aria-label="Maa Mara Market"><span class="brand-mark" aria-hidden="true">M</span><span class="brand-name"><span>Maa Mara</span><span>Market</span></span></a>
     </div>
   </div>
   <div class="success">
@@ -92,11 +98,12 @@
     {% block content %}{% endblock %}
   </div>
   <div class="footer">
-    <strong>🌿 Maamara Market – Naturally African 🌿</strong>
-    <p>123 Green Avenue, Nairobi, Kenya</p>
+    <div class="footer-brand">Maa Mara Market</div>
+    <p>{% if company_address %}{{ company_address }}{% endif %}</p>
     <p><a href="mailto:support@maamaramarket.com">support@maamaramarket.com</a> &nbsp;|&nbsp; <a href="{{ frontend_url|default:'#' }}">Visit Website</a></p>
+    {% if unsubscribe_url %}<p><a href="{{ unsubscribe_url }}">Unsubscribe from marketing emails</a></p>{% endif %}
     <hr>
-    <p>© {% now "Y" %} Maamara Market. All rights reserved.</p>
+    <p>© {% now "Y" %} Maa Mara Market. All rights reserved.</p>
   </div>
 </div>
 </td></tr></table>
