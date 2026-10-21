@@ -318,8 +318,36 @@ def email_campaign_action(request, campaign_id, action):
             return Response({"detail": "Campaign must be approved before sending."}, status=409)
         if campaign.scheduled_at and campaign.scheduled_at > timezone.now():
             return Response({"detail": "This campaign is scheduled for a future time."}, status=409)
+
+        # Attach the current consented recipients before queueing so the campaign
+        # report and UI do not incorrectly show zero recipients while Celery starts.
+        subscribers = NewsletterSubscriber.objects.filter(
+            consent_given=True, unsubscribed_at__isnull=True
+        ).order_by("id")
+        recipient_count = subscribers.count()
+        if recipient_count == 0:
+            return Response(
+                {"detail": "No active subscribed newsletter recipients were found. Confirm the subscriber has given consent and has not unsubscribed."},
+                status=400,
+            )
+        with transaction.atomic():
+            for subscriber in subscribers.iterator():
+                EmailCampaignRecipient.objects.get_or_create(
+                    campaign=campaign,
+                    email=subscriber.email,
+                    defaults={"subscriber": subscriber, "status": "pending"},
+                )
+            campaign.recipient_count = recipient_count
+            campaign.save(update_fields=["recipient_count", "updated_at"])
         from .email_tasks import send_email_campaign
-        send_email_campaign.delay(campaign.id)
+        try:
+            send_email_campaign.delay(campaign.id)
+        except Exception:
+            logger.exception("Could not queue email campaign %s", campaign.id)
+            return Response(
+                {"detail": "Recipients were prepared, but the email could not be queued. Check the background worker and try again."},
+                status=503,
+            )
     elif action == "cancel":
         if campaign.status not in {"draft", "pending_approval", "approved", "scheduled", "failed"}:
             return Response({"detail": "This campaign can no longer be cancelled."}, status=409)
