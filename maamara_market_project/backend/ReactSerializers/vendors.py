@@ -756,7 +756,16 @@ def submit_vendor_request(request):
             draft.status = "SUBMITTED"
             draft.save(update_fields=["status", "updated_at"])
 
-        return Response({'message': 'Request submitted. OTP sent to email.'}, status=201)
+        return Response(
+            {
+                "message": "Request submitted. OTP sent to email.",
+                "expires_at": (
+                    vendor_request.date_submitted
+                    + timezone.timedelta(minutes=vendor_request.OTP_EXPIRY_MINUTES)
+                ).isoformat(),
+            },
+            status=201,
+        )
 
     return Response(serializer.errors, status=400)
 
