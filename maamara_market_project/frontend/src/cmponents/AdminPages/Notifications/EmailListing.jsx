@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Drawer, Tabs, Tab, Divider, IconButton, CircularProgress } from "@mui/material";
+import { Drawer, Tabs, Tab, Divider, CircularProgress } from "@mui/material";
 import { X, Mail, Send, AlertCircle, Inbox, PenLine } from "lucide-react";
 import api from "../../../Services/Api";
 import { Button } from "../../../../components/ui/button";
@@ -64,14 +64,14 @@ const EmailPanel = ({ open, onClose, filter = "sent" }) => {
   return (
     <Drawer anchor="right" open={open} onClose={onClose} PaperProps={{ sx: {
       width: "100vw", maxWidth: "100vw",
-      top: "env(safe-area-inset-top, 0px)",
+      top: 0,
       bottom: 0,
-      height: "calc(100dvh - env(safe-area-inset-top, 0px))", maxHeight: "none",
+      height: "100dvh", maxHeight: "none",
       borderRadius: 0,
       bgcolor: "background.default", color: "text.primary", overflow: "hidden",
     } }}>
       <div className="flex h-full min-h-0 flex-col bg-background text-foreground">
-        <header className="flex shrink-0 items-start justify-between gap-4 border-b border-border bg-card px-4 py-3 pt-[max(0.75rem,env(safe-area-inset-top,0px))] sm:px-6 sm:py-4">
+        <header className="flex shrink-0 items-start justify-between gap-4 border-b border-border bg-card px-4 pb-3 pt-[max(0.75rem,env(safe-area-inset-top,0px))] sm:px-6 sm:pb-4">
           <div className="flex min-w-0 items-start gap-3">
             <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary"><Mail size={22} /></div>
             <div className="min-w-0">
@@ -80,7 +80,7 @@ const EmailPanel = ({ open, onClose, filter = "sent" }) => {
               <p className="mt-1 text-sm text-muted-foreground">Review delivery status and contact users from one place.</p>
             </div>
           </div>
-          <IconButton aria-label="Close email center" onClick={onClose} size="small" sx={{ color: "text.secondary" }}><X size={20} /></IconButton>
+          <button type="button" aria-label="Close email center" title="Close email center" onClick={onClose} className="inline-flex h-11 w-11 shrink-0 items-center justify-center self-start rounded-[20px] border-2 border-black bg-white text-black shadow-md opacity-100 transition hover:bg-gray-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black" style={{ color: "#000000", backgroundColor: "#ffffff", borderColor: "#000000", opacity: 1 }}><X size={22} strokeWidth={2.5} aria-hidden="true" style={{ color: "#000000", stroke: "#000000" }} /></button>
         </header>
 
         <div className="grid min-h-0 flex-1 grid-cols-1 overflow-hidden lg:grid-cols-[250px_minmax(0,1fr)]">
