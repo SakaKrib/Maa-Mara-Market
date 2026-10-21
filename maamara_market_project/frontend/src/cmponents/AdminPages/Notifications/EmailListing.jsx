@@ -63,15 +63,15 @@ const EmailPanel = ({ open, onClose, filter = "sent" }) => {
 
   return (
     <Drawer anchor="right" open={open} onClose={onClose} PaperProps={{ sx: {
-      width: { xs: "100%", sm: "min(100%, 1080px)" }, maxWidth: "100vw",
-      top: "calc(72px + env(safe-area-inset-top, 0px))",
-      bottom: "calc(52px + env(safe-area-inset-bottom, 0px))",
-      height: "auto", maxHeight: "none",
-      borderRadius: { xs: "20px 20px 0 0", sm: "20px 0 0 20px" },
+      width: "100vw", maxWidth: "100vw",
+      top: "env(safe-area-inset-top, 0px)",
+      bottom: 0,
+      height: "calc(100dvh - env(safe-area-inset-top, 0px))", maxHeight: "none",
+      borderRadius: 0,
       bgcolor: "background.default", color: "text.primary", overflow: "hidden",
     } }}>
       <div className="flex h-full min-h-0 flex-col bg-background text-foreground">
-        <header className="flex items-start justify-between gap-4 border-b border-border bg-card px-4 py-4 sm:px-6 sm:py-5">
+        <header className="flex shrink-0 items-start justify-between gap-4 border-b border-border bg-card px-4 py-3 pt-[max(0.75rem,env(safe-area-inset-top,0px))] sm:px-6 sm:py-4">
           <div className="flex min-w-0 items-start gap-3">
             <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary"><Mail size={22} /></div>
             <div className="min-w-0">
