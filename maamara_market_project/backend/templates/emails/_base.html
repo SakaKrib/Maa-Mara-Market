@@ -10,15 +10,14 @@
   .wrapper { width:100%; padding:25px 0; background:#f6f7f9; }
   .container { width:600px; max-width:94%; margin:auto; background:#ffffff; border-radius:14px; overflow:hidden; }
   .header { padding:25px 30px; text-align:center; background:#ffffff; border-bottom:1px solid #edf1ed; }
-  /* Match the storefront wordmark from Header.jsx and maamara.css. */
-  .logo { max-width:100%; }
-  .logo a { box-sizing:border-box; max-width:100%; font-family:Arial,Helvetica,sans-serif; display:inline-flex; align-items:center; gap:8px; padding:4px 7px; border:1px solid #d4af37; border-radius:7px; background:#ffffff; text-decoration:none; color:#222222; font-size:20px; line-height:1.12; font-weight:700; letter-spacing:-.35px; }
-  .brand-mark { box-sizing:border-box; display:inline-flex; flex:0 0 auto; align-items:center; justify-content:center; width:38px; height:38px; border-left:4px solid #8de02c; border-radius:5px; background:#ffbfbf; color:#0b0b1a; font-size:25px; font-weight:800; line-height:1; }
-  .brand-name { display:inline-block; min-width:0; text-align:left; color:#222222; }
-  .brand-name .brand-line { display:block; white-space:nowrap; }
-  .brand-name .brand-maa { display:inline !important; color:#222222; }
-  .brand-name .brand-mara { display:inline-block !important; padding:2px 6px; border-left:4px solid #8de02c; border-radius:4px; background:rgba(255,0,0,.16); color:#222222; }
-  .brand-name .brand-market { display:block !important; color:#128a12; font-family:Arial,Helvetica,sans-serif; font-weight:800; }
+  /* Reproduce Header.jsx + maamara.css: artwork sits beside the gold-framed wordmark. */
+  .logo { display:flex; align-items:center; justify-content:center; gap:8px; max-width:100%; }
+  .logo-artwork { display:block; width:50px; height:50px; flex:0 0 50px; object-fit:contain; }
+  .logo a { position:relative; box-sizing:border-box; max-width:100%; font-family:Arial,Helvetica,sans-serif; display:flex; align-items:center; gap:2px; padding:2px 3px; border:1px solid gold; border-radius:5px; background:#ffffff; text-decoration:none; color:#222222; font-size:20px; line-height:1.25; font-weight:500; white-space:nowrap; }
+  .brand-name { display:inline; min-width:0; text-align:left; color:#222222; }
+  .brand-name .brand-maa { display:inline; color:#222222; }
+  .brand-name .brand-mara { display:inline-block; padding:2px 10px; position:relative; border-top-left-radius:5px; border-bottom-left-radius:5px; border-left:5px solid #8de02c; background:rgba(255,0,0,.253); color:#222222; margin-left:0; }
+  .brand-name .brand-market { display:inline; color:green; font-weight:700; }
   .success { padding:28px; text-align:center; background:#e8f5e9; }
   .success-icon { font-size:42px; }
   .success-title { margin:8px 0; font-size:25px; color:#1b5e20; }
@@ -65,8 +64,9 @@
     .container { max-width:94%; }
     .content { padding:20px; }
     .header { padding:18px 12px; }
-    .logo a { gap:6px; padding:4px 5px; font-size:17px; }
-    .brand-mark { width:32px; height:32px; font-size:21px; }
+    .logo { gap:5px; }
+    .logo-artwork { width:38px; height:38px; flex-basis:38px; }
+    .logo a { gap:1px; padding:2px; font-size:15px; }
     .brand-name .brand-mara { padding:2px 4px; border-left-width:3px; }
     .item-name { font-size:14px; }
     .price { font-size:13px; }
@@ -77,11 +77,10 @@
   @media (prefers-color-scheme:dark) {
     body,.wrapper { background:#121212 !important; color:#f1f1f1 !important; }
     .container,.header,.card,.item { background:#1e1e1e !important; }
-    .logo a { background:#ffffff !important; color:#222222 !important; border-color:#d4af37 !important; }
-    .brand-mark { background:#ffbfbf !important; color:#0b0b1a !important; border-left-color:#8de02c !important; }
+    .logo a { background:#ffffff !important; color:#222222 !important; border-color:gold !important; }
     .brand-name,.brand-name .brand-maa { color:#222222 !important; }
-    .brand-name .brand-mara { color:#222222 !important; background:rgba(255,0,0,.16) !important; border-left-color:#8de02c !important; }
-    .brand-name .brand-market { color:#128a12 !important; }
+    .brand-name .brand-mara { color:#222222 !important; background:rgba(255,0,0,.253) !important; border-left-color:#8de02c !important; }
+    .brand-name .brand-market { color:green !important; }
     .success { background:#16351b !important; }
     .success-title { color:#81c784 !important; }
     .success-text { color:#b7cbb9 !important; }
@@ -108,7 +107,8 @@
 <div class="container">
   <div class="header">
     <div class="logo">
-      <a href="{{ frontend_url|default:'#' }}" aria-label="Maa Mara Market"><span class="brand-mark" aria-hidden="true">M</span><span class="brand-name"><span class="brand-line"><span class="brand-maa">Maa</span> <span class="brand-mara">Mara</span></span><span class="brand-market">Market</span></span></a>
+      <img class="logo-artwork" src="{{ frontend_url }}/maamara-brand-artwork.svg" alt="Maa Mara Market logo">
+      <a href="{{ frontend_url|default:'#' }}" aria-label="Maa Mara Market"><span class="brand-name"><span class="brand-maa">Maa</span> <span class="brand-mara">Mara</span> <span class="brand-market">Market</span></span></a>
     </div>
   </div>
   <div class="success">
