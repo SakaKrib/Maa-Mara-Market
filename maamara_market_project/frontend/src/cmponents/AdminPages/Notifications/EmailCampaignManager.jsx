@@ -178,7 +178,7 @@ export default function EmailCampaignManager() {
     });
     setSelectedProducts(Array.isArray(campaign.content_payload?.items) ? campaign.content_payload.items : []);
     const bannerId = campaign.content_payload?.banner?.id;
-    setSelectedBanner(banners.find((banner) => String(banner.id) === String(bannerId)) || null);
+    setSelectedBanner(banners.find((banner) => String(banner.id) === String(bannerId)) || (campaign.content_payload?.banner ? { ...campaign.content_payload.banner, image: campaign.content_payload.banner.image_url || "" } : null));
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
