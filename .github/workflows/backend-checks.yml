@@ -113,4 +113,14 @@ jobs:
         run: python manage.py migrate --noinput
 
       - name: Run fulfilment tracking regression tests
-        run: python manage.py test order.test_fulfillment_tracking --verbosity 2
+        run: |
+          set +e
+          python manage.py test order.test_fulfillment_tracking --verbosity 2 > /tmp/fulfilment-tests.txt 2>&1
+          status=$?
+          cat /tmp/fulfilment-tests.txt
+          if [ "$status" -ne 0 ]; then
+            # Failures are also published as annotations so they can be read without log access.
+            grep -E "^(ERROR|FAIL):|Error|Exception|assert|Traceback|File \"/home/runner/work/.*(order|vendor|pesapal)" /tmp/fulfilment-tests.txt | head -c 5000 | tr '\n' '|' | sed 's/%/%25/g' > /tmp/fulfilment-summary.txt
+            echo "::error title=Fulfilment test failures::$(cat /tmp/fulfilment-summary.txt)"
+          fi
+          exit $status
