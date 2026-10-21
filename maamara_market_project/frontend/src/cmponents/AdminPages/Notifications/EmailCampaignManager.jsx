@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { CircularProgress } from "@mui/material";
-import { Image as ImageIcon, Search, Package, Megaphone, Check, Plus, X, Eye, CalendarClock, Send, FileText, Sparkles } from "lucide-react";
+import { Image as ImageIcon, Search, Package, Megaphone, Check, Plus, X, Eye, CalendarClock, Send, FileText, Sparkles, Mail } from "lucide-react";
 import api, { resolveApiAssetUrl, getWebSocketUrl } from "../../../Services/Api";
 import AppSnackbar from "../../../../components/ui/app-snackbar";
 import { Button } from "../../../../components/ui/button";
@@ -299,6 +299,9 @@ export default function EmailCampaignManager() {
   const sectionHeadingClass = "text-base font-semibold tracking-tight text-card-foreground";
   const sectionIconClass = "flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary";
   const buttonClass = "rounded-[20px]";
+  const displayedRecipientCount = (campaign) => ["draft", "pending_approval", "approved", "scheduled"].includes(campaign.status)
+    ? (campaign.available_recipient_count ?? campaign.recipient_count ?? 0)
+    : (campaign.recipient_count ?? 0);
 
   return <section className="space-y-4">
     <div className="flex flex-wrap gap-2 border-b border-border pb-3">
@@ -364,7 +367,7 @@ export default function EmailCampaignManager() {
 
         <section className={sectionClass}>
           <div className="mb-3 flex items-center gap-2"><Eye className="h-4 w-4 text-primary" /><h3 className={sectionHeadingClass}>Email content preview</h3></div>
-          <div className="mx-auto w-full max-w-[420px] overflow-hidden rounded-xl border border-[#d9d9d9] bg-white text-[#222222] shadow-sm">
+          <div className="mx-auto w-full max-w-[420px] overflow-hidden rounded-xl border border-border bg-card text-card-foreground shadow-sm">
             <div className="flex w-full items-center justify-center gap-2 border-b border-[#edf1ed] bg-white px-2 py-3 sm:gap-3 sm:px-4">
               <img src="/maamara-brand-artwork.svg" alt="Maa Mara Market logo" className="h-9 w-9 shrink-0 object-contain sm:h-11 sm:w-11" />
               <div className="min-w-0 rounded-[5px] border border-[gold] bg-white px-[3px] py-[2px] font-medium leading-tight text-[#222222]">
@@ -376,25 +379,25 @@ export default function EmailCampaignManager() {
               </div>
             </div>
             {form.hero_image_url && <div className="relative flex max-h-56 min-h-24 items-center justify-center overflow-hidden bg-[#f3f4f6] text-[#555555]"><ImageIcon className="h-7 w-7" /><img src={imageUrl(form.hero_image_url)} alt="Selected campaign banner" className="absolute inset-0 h-full max-h-56 w-full object-cover" onError={(event) => { event.currentTarget.style.display = "none"; }} /></div>}
-            <div className="bg-white p-3 text-[#222222] sm:p-4">
-              <p className="break-words text-xs text-[#666666]">Subject: {form.subject || "Your email subject will appear here"}</p>
-              <h4 className="mt-2 break-words text-lg font-bold text-[#222222]">{form.title || "Your campaign title"}</h4>
-              {form.preheader && <p className="mt-1 break-words text-sm text-[#555555]">{form.preheader}</p>}
-              {form.body_text && <p className="mt-4 whitespace-pre-wrap break-words text-sm leading-6 text-[#333333]">{form.body_text}</p>}
+            <div className="bg-background p-3 text-foreground sm:p-4">
+              <p className="break-words text-xs text-muted-foreground">Subject: {form.subject || "Your email subject will appear here"}</p>
+              <h4 className="mt-2 break-words text-lg font-bold text-card-foreground">{form.title || "Your campaign title"}</h4>
+              {form.preheader && <p className="mt-1 break-words text-sm text-muted-foreground">{form.preheader}</p>}
+              {form.body_text && <p className="mt-4 whitespace-pre-wrap break-words text-sm leading-6 text-foreground">{form.body_text}</p>}
               {selectedProducts.length > 0 && (
                 <div className="mt-4 grid grid-cols-1 gap-3">
                   {selectedProducts.map((item) => (
-                    <div key={item.id} className="min-w-0 overflow-hidden rounded-lg border border-[#e5e5e5] bg-white">
-                      <div className="relative flex aspect-[4/3] items-center justify-center bg-[#f3f4f6] text-[#666666]">
+                    <div key={item.id} className="min-w-0 overflow-hidden rounded-lg border border-border bg-card">
+                      <div className="relative flex aspect-[4/3] items-center justify-center bg-muted text-muted-foreground">
                         <Package className="h-6 w-6" />
                         {item.image_url && <img src={imageUrl(item.image_url)} alt={item.name || "Featured item"} className="absolute inset-0 h-full w-full object-cover" onError={(event) => { event.currentTarget.style.display = "none"; }} />}
                       </div>
                       <div className="min-w-0 p-3">
-                        <p className="break-words text-sm font-bold leading-5 text-[#222222]">{item.name || "Untitled item"}</p>
-                        {item.description && <p className="mt-1 break-words text-xs leading-5 text-[#555555]">{item.description}</p>}
-                        <p className="mt-1 text-sm font-bold text-[#255d3a]">KSh {Number(item.discount_price && Number(item.discount_price) < Number(item.price) ? item.discount_price : item.price || 0).toLocaleString("en-KE")}</p>
+                        <p className="break-words text-sm font-bold leading-5 text-card-foreground">{item.name || "Untitled item"}</p>
+                        {item.description && <p className="mt-1 break-words text-xs leading-5 text-muted-foreground">{item.description}</p>}
+                        <p className="mt-1 break-words text-sm font-bold text-primary">KSh {Number(item.discount_price && Number(item.discount_price) < Number(item.price) ? item.discount_price : item.price || 0).toLocaleString("en-KE")}</p>
                         <span className="mt-3 inline-flex rounded-[20px] bg-[#255d3a] px-4 py-2 text-xs font-semibold text-white">Shop now</span>
-                        <p className="mt-2 break-words text-[10px] text-[#666666]">Links to this item’s page</p>
+                        <p className="mt-2 break-words text-[10px] text-muted-foreground">Links to this item’s page</p>
                       </div>
                     </div>
                   ))}
@@ -443,7 +446,7 @@ export default function EmailCampaignManager() {
         {[["all","All campaigns"],["draft","Drafts"],["pending_approval","Pending approval"],["approved","Approved"],["scheduled","Scheduled"],["sent","Sent"],["failed","Failed"]].map(([value,label]) => <Button key={value} type="button" variant={campaignFilter === value ? "default" : "outline"} className={buttonClass} onClick={() => setCampaignFilter(value)}>{label}{value === "draft" ? ` (${campaigns.filter((c) => c.status === "draft").length})` : ""}</Button>)}
       </div>
       {campaignFilter === "draft" && <div className="mb-3 rounded-xl border border-border bg-muted/30 p-3"><h3 className="text-sm font-semibold text-card-foreground">Saved email drafts</h3><p className="mt-1 text-xs text-muted-foreground">Saved drafts appear here with their subject, content, creation time and available actions. This list updates over WebSocket when a campaign changes.</p></div>}
-      {loading ? <div className="flex justify-center p-8"><CircularProgress size={22} /></div> : <div className="space-y-3">{campaigns.filter((c) => campaignFilter === "all" || c.status === campaignFilter).map((c) => <article key={c.id} className="rounded-2xl border border-border bg-card p-4"><div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between"><div className="min-w-0"><h4 className="font-bold text-card-foreground">{c.title}</h4><p className="mt-1 text-sm text-muted-foreground">{c.subject}</p><p className="mt-1 text-xs text-muted-foreground">Created {dateLabel(c.created_at)} · {c.recipient_count} recipients · {c.sent_count} submitted · {c.failed_count} failed</p>{campaignFilter === "draft" && <div className="mt-3 space-y-2 rounded-xl border border-border bg-muted/30 p-3 text-sm"><p><span className="font-semibold">Campaign type:</span> {String(c.campaign_type || "custom").replaceAll("_", " ")}</p>{c.preheader && <p><span className="font-semibold">Preview text:</span> {c.preheader}</p>}{c.body_text && <p className="whitespace-pre-wrap break-words"><span className="font-semibold">Message:</span> {c.body_text}</p>}{c.hero_image_url && <p className="break-all"><span className="font-semibold">Banner image:</span> {c.hero_image_url}</p>}{c.content_payload?.items?.length > 0 && <div><p className="font-semibold">Featured items</p><ul className="mt-1 space-y-1">{c.content_payload.items.map((item) => <li key={item.id} className="break-words">{item.name || `Item #${item.id}`} · {item.product_url || `Item #${item.id} URL will be assigned when saved`}</li>)}</ul></div>}{c.cta_url && <p className="break-all"><span className="font-semibold">Main destination:</span> {c.cta_url}</p>}</div>}</div><span className="w-fit rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold capitalize text-primary">{String(c.status || "").replaceAll("_", " ")}</span></div><div className="mt-3 flex flex-wrap gap-2">
+      {loading ? <div className="flex justify-center p-8"><CircularProgress size={22} /></div> : <div className="space-y-3">{campaigns.filter((c) => campaignFilter === "all" || c.status === campaignFilter).map((c) => <article key={c.id} className="rounded-2xl border border-border bg-card p-4"><div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between"><div className="min-w-0"><h4 className="font-bold text-card-foreground">{c.title}</h4><p className="mt-1 text-sm text-muted-foreground">{c.subject}</p><p className="mt-1 text-xs text-muted-foreground">Created {dateLabel(c.created_at)} · {displayedRecipientCount(c)} recipients · {c.sent_count ?? 0} submitted · {c.failed_count ?? 0} failed</p>{campaignFilter === "draft" && <div className="mt-3 space-y-2 rounded-xl border border-border bg-muted/30 p-3 text-sm"><p><span className="font-semibold">Campaign type:</span> {String(c.campaign_type || "custom").replaceAll("_", " ")}</p>{c.preheader && <p><span className="font-semibold">Preview text:</span> {c.preheader}</p>}{c.body_text && <p className="whitespace-pre-wrap break-words"><span className="font-semibold">Message:</span> {c.body_text}</p>}{c.hero_image_url && <p className="break-all"><span className="font-semibold">Banner image:</span> {c.hero_image_url}</p>}{c.content_payload?.items?.length > 0 && <div><p className="font-semibold">Featured items</p><ul className="mt-1 space-y-1">{c.content_payload.items.map((item) => <li key={item.id} className="break-words">{item.name || `Item #${item.id}`} · {item.product_url || `Item #${item.id} URL will be assigned when saved`}</li>)}</ul></div>}{c.cta_url && <p className="break-all"><span className="font-semibold">Main destination:</span> {c.cta_url}</p>}</div>}</div><span className="w-fit rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold capitalize text-primary">{String(c.status || "").replaceAll("_", " ")}</span></div><div className="mt-3 flex flex-wrap gap-2">
         {c.status === "draft" && <><Button type="button" className={buttonClass} variant="outline" onClick={() => edit(c)}>Edit</Button><Button type="button" className={buttonClass} variant="outline" onClick={() => action(c.id, "submit")}>Submit for approval</Button></>}
         {["draft","pending_approval","approved","scheduled"].includes(c.status) && <Button type="button" className={buttonClass} variant="outline" onClick={() => action(c.id, "preview")}><Eye className="mr-1.5 h-4 w-4" />Preview</Button>}
         {c.status === "pending_approval" && <Button type="button" className={buttonClass} onClick={() => action(c.id, "approve")}>Approve</Button>}
