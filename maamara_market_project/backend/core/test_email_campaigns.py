@@ -1,5 +1,5 @@
 from django.contrib.auth.models import User
-from django.test import TestCase
+from django.test import TestCase, override_settings
 from django.utils import timezone
 from datetime import timedelta
 from rest_framework.test import APIClient
@@ -94,6 +94,51 @@ class EmailCampaignAuthorizationTests(TestCase):
         self.campaign.refresh_from_db()
         self.assertEqual(self.campaign.status, "approved")
         self.assertEqual(self.campaign.approved_by, self.admin)
+
+    @override_settings(FRONTEND_URL="https://shop.example.test/")
+    def test_admin_can_save_campaign_and_item_destination_is_persisted(self):
+        self.client.force_authenticate(user=self.admin)
+        payload = {
+            "title": "Featured items",
+            "subject": "Shop these items",
+            "campaign_type": "custom",
+            "body_text": "A message for subscribers",
+            "cta_label": "Shop now",
+            "cta_url": "",
+            "content_payload": {
+                "items": [
+                    {"id": 314, "name": "Featured item", "price": "1200", "image_url": "https://api.example.test/media/item.jpg"}
+                ],
+                "banner": None,
+            },
+        }
+        response = self.client.post("/api/admin/email-campaigns/", payload, format="json")
+        self.assertEqual(response.status_code, 201, response.data)
+        saved = EmailCampaign.objects.get(pk=response.data["id"])
+        self.assertEqual(saved.status, "draft")
+        self.assertEqual(saved.title, "Featured items")
+        self.assertEqual(saved.body_text, "A message for subscribers")
+        self.assertEqual(saved.cta_url, "https://shop.example.test/item/314")
+        self.assertEqual(saved.content_payload["items"][0]["product_url"], "https://shop.example.test/item/314")
+
+    @override_settings(FRONTEND_URL="https://shop.example.test/")
+    def test_updating_campaign_persists_content_and_refreshes_item_destination(self):
+        self.client.force_authenticate(user=self.admin)
+        response = self.client.patch(
+            f"/api/admin/email-campaigns/{self.campaign.pk}/",
+            {
+                "title": "Updated campaign",
+                "subject": "Updated subject",
+                "content_payload": {"items": [{"id": 902, "name": "Second item"}], "banner": None},
+                "cta_url": "",
+            },
+            format="json",
+        )
+        self.assertEqual(response.status_code, 200, response.data)
+        self.campaign.refresh_from_db()
+        self.assertEqual(self.campaign.title, "Updated campaign")
+        self.assertEqual(self.campaign.content_payload["items"][0]["product_url"], "https://shop.example.test/item/902")
+        self.assertEqual(self.campaign.cta_url, "https://shop.example.test/item/902")
 
     def test_campaign_cannot_be_scheduled_without_approval(self):
         self.client.force_authenticate(user=self.admin)
