@@ -19,7 +19,7 @@
       <strong style="font-size:16px;color:#222222">{{ item.name }}</strong>
       {% if item.discount_price %}<p style="margin:6px 0 0;font-size:14px;color:#255d3a;font-weight:bold">KSh {{ item.discount_price }}{% if item.price %} <span style="color:#999999;text-decoration:line-through;font-weight:normal">KSh {{ item.price }}</span>{% endif %}</p>
       {% elif item.price %}<p style="margin:6px 0 0;font-size:14px;color:#222222;font-weight:bold">KSh {{ item.price }}</p>{% endif %}
-      {% if item.product_url %}<p style="margin:14px 0 0"><a href="{{ item.product_url }}" style="display:inline-block;background:#255d3a;color:#ffffff;text-decoration:none;font-size:14px;font-weight:bold;padding:11px 22px;border-radius:8px">Shop now</a></p>{% endif %}
+      {% if item.product_url %}<p style="margin:14px 0 0"><a href="{{ item.product_url }}" style="display:inline-block;background:#255d3a;color:#ffffff;text-decoration:none;font-size:14px;font-weight:bold;padding:11px 22px;border-radius:8px">Shop now</a></p>{% elif item.id %}<p style="margin:14px 0 0"><a href="{{ frontend_url }}/item/{{ item.id }}" style="display:inline-block;background:#255d3a;color:#ffffff;text-decoration:none;font-size:14px;font-weight:bold;padding:11px 22px;border-radius:8px">Shop now</a></p>{% endif %}
     </td></tr>
   {% endfor %}
   </table>
