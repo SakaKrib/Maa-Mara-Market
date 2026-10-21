@@ -96,8 +96,8 @@ const ComposeEmail = ({ open, onClose, user = null }) => {
               <p className="mt-0.5 text-sm text-muted-foreground">Send a message to a Maa Mara Market user.</p>
             </div>
           </div>
-          <button type="button" onClick={onClose} disabled={loading} aria-label="Close compose email" className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-[20px] border border-border bg-background text-muted-foreground transition hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary disabled:cursor-not-allowed disabled:opacity-50">
-            <X className="h-5 w-5" aria-hidden="true" />
+          <button type="button" onClick={onClose} disabled={loading} aria-label="Close compose email" title="Close email composer" className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-[20px] border-2 border-foreground/20 bg-muted text-foreground shadow-sm transition hover:border-destructive/50 hover:bg-destructive/10 hover:text-destructive focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary disabled:cursor-not-allowed disabled:opacity-50">
+            <X className="h-6 w-6" strokeWidth={2.5} aria-hidden="true" />
           </button>
         </header>
 
