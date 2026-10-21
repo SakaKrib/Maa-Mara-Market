@@ -203,12 +203,12 @@ const VerifyRegistrationNewUser = () => {
             ))}
           </InputOTPGroup>
           <InputOTPSeparator className="mm-otp-separator" />
-          <InputOTPGroup>
+          <InputOTPGroup className="mm-otp-group">
             {[3, 4, 5].map((index) => (
               <InputOTPSlot
                 key={index}
                 index={index}
-                className="w-12 h-12 text-xl text-center rounded-xl border border-gray-300 bg-white focus:outline-none focus:border-[var(--blue)] focus:ring-1 focus:ring-[var(--blue)] transition"
+                className="mm-otp-slot"
               />
             ))}
           </InputOTPGroup>
