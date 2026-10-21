@@ -329,7 +329,8 @@ class ShipmentCreationSafetyTests(TestCase):
         from vendorDashboard.models import ReturnRequest
 
         self.fulfillment.status = "ISSUE_REPORTED"
-        self.fulfillment.save(update_fields=["status", "updated_at"])
+        self.fulfillment.confirmation_deadline = None
+        self.fulfillment.save(update_fields=["status", "confirmation_deadline", "updated_at"])
         ReturnRequest.objects.create(item=self.order_item, status="pending")
 
         request = self.factory.post(
