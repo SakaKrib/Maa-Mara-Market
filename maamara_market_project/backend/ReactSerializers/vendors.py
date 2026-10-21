@@ -802,7 +802,7 @@ def resend_vendor_otp(request):
         return Response({"success": False, "message": "Email is required."}, status=400)
 
     # Find vendor request
-    vendor_request = VendorRequest.objects.filter(user=request.user).order_by('-date_submitted').first()
+    vendor_request = VendorRequest.objects.filter(user=request.user, status="pending").order_by("-date_submitted").first()
     if not vendor_request:
         return Response({"success": False, "message": "No vendor request found for this email."}, status=404)
 
