@@ -82,16 +82,16 @@ const ComposeEmail = ({ open, onClose, user = null }) => {
 
   return (
     <>
-      <Dialog open={open} onClose={loading ? undefined : onClose} fullWidth maxWidth="md">
+      <Dialog open={open} onClose={loading ? undefined : onClose} fullScreen PaperProps={{ sx: { width: "100vw", maxWidth: "100vw", height: "100dvh", maxHeight: "none", m: 0, borderRadius: 0, bgcolor: "background.default", color: "text.primary" } }}>
         <Box component="form" onSubmit={handleSend}>
-          <DialogTitle sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 2, borderBottom: 1, borderColor: "divider" }}>
+          <DialogTitle sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 2, borderBottom: 1, borderColor: "divider", pt: "max(16px, env(safe-area-inset-top, 0px))", px: { xs: 2, sm: 3 } }}>
             <Box>
               <Typography variant="h6" fontWeight={700}>Compose email</Typography>
               <Typography variant="body2" color="text.secondary">Send a message to a Maa Mara Market user.</Typography>
             </Box>
-            <IconButton aria-label="Close compose email" onClick={onClose} disabled={loading}><CloseIcon /></IconButton>
+            <IconButton aria-label="Close compose email" onClick={onClose} disabled={loading} sx={{ flexShrink: 0 }}><CloseIcon /></IconButton>
           </DialogTitle>
-          <DialogContent sx={{ pt: 2.5 }}>
+          <DialogContent sx={{ pt: 2.5, px: { xs: 2, sm: 3 }, pb: 3 }}>
             <Stack spacing={2} sx={{ mt: 0.5 }}>
               <Box>
                 <Typography variant="subtitle2" sx={{ mb: 1 }}>Choose a contact</Typography>
@@ -119,7 +119,7 @@ const ComposeEmail = ({ open, onClose, user = null }) => {
               ))}
             </Stack>
           </DialogContent>
-          <DialogActions sx={{ px: 3, pb: 2.5 }}>
+          <DialogActions sx={{ px: 3, pb: "max(20px, env(safe-area-inset-bottom, 0px))", flexWrap: "wrap" }}>
             <Button onClick={onClose} disabled={loading}>Cancel</Button>
             <Button type="submit" variant="contained" disabled={loading} startIcon={loading ? <CircularProgress size={16} color="inherit" /> : null}>
               {loading ? "Sending…" : "Send email"}
