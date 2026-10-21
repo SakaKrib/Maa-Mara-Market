@@ -15,6 +15,7 @@
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse">
   {% for item in campaign.content_payload.items %}
     <tr><td style="padding:14px 0;border-bottom:1px solid #e5e5e5">
+      {% if item.image_url %}<p style="margin:0 0 10px"><img src="{{ item.image_url }}" alt="{{ item.name }}" style="display:block;width:100%;max-width:220px;height:auto;border-radius:8px"></p>{% endif %}
       <strong style="font-size:16px;color:#222222">{{ item.name }}</strong>
       {% if item.discount_price %}<p style="margin:6px 0 0;font-size:14px;color:#255d3a;font-weight:bold">KSh {{ item.discount_price }}{% if item.price %} <span style="color:#999999;text-decoration:line-through;font-weight:normal">KSh {{ item.price }}</span>{% endif %}</p>
       {% elif item.price %}<p style="margin:6px 0 0;font-size:14px;color:#222222;font-weight:bold">KSh {{ item.price }}</p>{% endif %}
