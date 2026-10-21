@@ -85,6 +85,32 @@ def send_email_campaign(self, campaign_id):
     campaign.sent_at = timezone.now() if sent else None
     campaign.status = "sent" if failed == 0 else ("failed" if sent == 0 else "sent")
     campaign.save(update_fields=["recipient_count", "sent_count", "failed_count", "sent_at", "status", "updated_at"])
+    recurrence = (campaign.content_payload or {}).get("recurrence") or {}
+    frequency = recurrence.get("frequency", "none")
+    if campaign.status == "sent" and frequency in {"daily", "weekly", "monthly", "periodic"} and campaign.scheduled_at:
+        from calendar import monthrange
+        from datetime import date
+        interval = max(1, min(int(recurrence.get("interval", 1) or 1), 365))
+        current = campaign.scheduled_at
+        if frequency == "weekly":
+            next_at = current + timedelta(weeks=interval)
+        elif frequency in {"daily", "periodic"}:
+            next_at = current + timedelta(days=interval)
+        else:
+            month_index = current.month - 1 + interval
+            year, month = current.year + month_index // 12, month_index % 12 + 1
+            next_at = current.replace(year=year, month=month, day=min(current.day, monthrange(year, month)[1]))
+        until = str(recurrence.get("until") or "").strip()
+        if not until or next_at.date() <= date.fromisoformat(until):
+            EmailCampaign.objects.create(
+                title=campaign.title, campaign_type=campaign.campaign_type,
+                subject=campaign.subject, preheader=campaign.preheader,
+                body_html=campaign.body_html, body_text=campaign.body_text,
+                hero_image_url=campaign.hero_image_url, cta_label=campaign.cta_label,
+                cta_url=campaign.cta_url, content_payload=dict(campaign.content_payload or {}),
+                status="scheduled", created_by=campaign.created_by,
+                approved_by=campaign.approved_by, scheduled_at=next_at,
+            )
     return {"status": campaign.status, "recipients": total, "sent": sent, "failed": failed}
 
 
