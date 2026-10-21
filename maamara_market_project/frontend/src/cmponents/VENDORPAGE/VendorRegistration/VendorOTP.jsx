@@ -25,6 +25,7 @@ const OTPVerification = () => {
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
   const [resending, setResending] = useState(false);
+  const [expiryTimestamp, setExpiryTimestamp] = useState(location.state?.expiresAt || null);
   const [timer, setTimer] = useState(() => getSecondsUntil(location.state?.expiresAt));
 
   // Snackbar state
@@ -43,15 +44,14 @@ const OTPVerification = () => {
   }, [location.state]);
 
   useEffect(() => {
-    const expiresAt = location.state?.expiresAt;
-    setTimer(getSecondsUntil(expiresAt));
-    if (!expiresAt) return undefined;
+    setTimer(getSecondsUntil(expiryTimestamp));
+    if (!expiryTimestamp) return undefined;
 
-    const updateTimer = () => setTimer(getSecondsUntil(expiresAt));
+    const updateTimer = () => setTimer(getSecondsUntil(expiryTimestamp));
     updateTimer();
     const interval = setInterval(updateTimer, 1000);
     return () => clearInterval(interval);
-  }, [location.state?.expiresAt]);
+  }, [expiryTimestamp]);
 
   const openSnackbar = (severity, message) => {
     setSnackbar({ open: true, severity, message });
@@ -96,7 +96,9 @@ const OTPVerification = () => {
     try {
       const response = await api.post("/api/resend-otp-vendor/", { email });
       openSnackbar("success", response.data.message || "OTP resent successfully!");
-      setTimer(getSecondsUntil(response.data.expires_at) || 180);
+      const newExpiry = response.data.expires_at || new Date(Date.now() + 180000).toISOString();
+      setExpiryTimestamp(newExpiry);
+      setTimer(getSecondsUntil(newExpiry) || 180);
     } catch (err) {
       openSnackbar("error", err.response?.data?.message || "Failed to resend OTP.");
     } finally {
