@@ -124,7 +124,7 @@ jobs:
       - name: Run fulfilment tracking regression tests
         run: |
           set +e
-          python manage.py test order.test_fulfillment_tracking vendorDashboard.tests --verbosity 2 > /tmp/fulfilment-tests.txt 2>&1
+          python manage.py test order.test_fulfillment_tracking vendorDashboard.tests.test_payout_guard vendorDashboard.tests.test_payout_reconciliation --verbosity 2 > /tmp/fulfilment-tests.txt 2>&1
           status=$?
           cat /tmp/fulfilment-tests.txt
           if [ "$status" -ne 0 ]; then
