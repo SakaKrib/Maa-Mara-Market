@@ -97,6 +97,7 @@
   line-height: 1;
   box-shadow: 0 2px 5px rgba(24, 60, 39, 0.035);
 }
+.mm-otp-slot.z-10,
 .mm-otp-slot[data-active="true"],
 .mm-otp-slot:focus-visible {
   border-color: #287346 !important;
