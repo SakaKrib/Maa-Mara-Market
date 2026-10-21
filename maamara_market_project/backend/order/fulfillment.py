@@ -656,18 +656,37 @@ def create_shipment(request):
         if tracking_url:
             from urllib.parse import quote
             tracking_url = tracking_url + quote(tracking_number, safe="")
-    try:
-        shipment = Shipment.objects.create(
-            order=order,
-            carrier=carrier,
-            service=service,
-            tracking_number=tracking_number,
-            tracking_url=tracking_url,
-            created_by=request.user,
-            status="LABEL_CREATED",
+    # A fulfilment represents one complete order line in this model. Do not
+    # silently attach it to a second shipment; split-quantity shipments need a
+    # separate allocation model and must not be approximated with duplicate links.
+    if OrderItemFulfillment.objects.filter(
+        pk__in=[item.pk for item in fulfillments],
+        shipments__isnull=False,
+    ).exists():
+        return Response(
+            {"detail": "One or more selected items already belong to a shipment."},
+            status=409,
         )
+
+    try:
+        # Use a savepoint inside the view transaction. If the unique carrier /
+        # tracking-number constraint fires, the conflict response can still be
+        # returned without leaving the outer request transaction unusable.
+        with transaction.atomic():
+            shipment = Shipment.objects.create(
+                order=order,
+                carrier=carrier,
+                service=service,
+                tracking_number=tracking_number,
+                tracking_url=tracking_url,
+                created_by=request.user,
+                status="LABEL_CREATED",
+            )
     except IntegrityError:
-        logger.exception("Shipment record could not be created because the carrier tracking number is already registered")
+        logger.info(
+            "Rejected duplicate shipment tracking number for carrier %s",
+            carrier,
+        )
         return Response({"detail": "A shipment with this carrier and tracking number may already exist."}, status=409)
     shipment.order_items.set(fulfillments)
     ShipmentEvent.objects.create(
@@ -1304,12 +1323,14 @@ def resolve_fulfillment_issue(request, order_item_id):
     note = str(request.data.get("notes") or "").strip()[:2000]
     if resolution not in {"resume_confirmation", "complete_after_review"} or not note:
         return Response({"detail": "Provide resolution resume_confirmation or complete_after_review and an audit note."}, status=400)
+    # An open return/refund/exchange must block both resolution choices;
+    # resuming the confirmation timer must not bypass a financial hold either.
+    hold = _return_or_financial_hold(fulfillment.order_item)
+    if hold:
+        return Response({"detail": hold}, status=409)
     if resolution == "complete_after_review":
         if not fulfillment.order_item.order.payment_confirmed:
             return Response({"detail": "Customer payment is not verified; the item cannot become payout-eligible."}, status=409)
-        hold = _return_or_financial_hold(fulfillment.order_item)
-        if hold:
-            return Response({"detail": hold}, status=409)
     old = fulfillment.status
     if resolution == "resume_confirmation":
         fulfillment.status = "AWAITING_CONFIRMATION"
