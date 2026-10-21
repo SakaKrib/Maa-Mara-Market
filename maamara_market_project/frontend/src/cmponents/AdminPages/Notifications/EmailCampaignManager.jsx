@@ -5,6 +5,7 @@ import api, { resolveApiAssetUrl, getWebSocketUrl } from "../../../Services/Api"
 import AppSnackbar from "../../../../components/ui/app-snackbar";
 import { Button } from "../../../../components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../../../components/ui/select";
+import NativeAwareSelect from "../../../components/NativeAwareSelect";
 
 const blank = { title: "", subject: "", preheader: "", campaign_type: "custom", body_text: "", body_html: "", hero_image_url: "", cta_label: "Shop now", cta_url: "", content_payload: { items: [], banner: null } };
 const dateLabel = (value) => value ? new Date(value).toLocaleString("en-KE", { dateStyle: "medium", timeStyle: "short" }) : "—";
@@ -16,6 +17,7 @@ const itemSnapshot = (item) => ({
   price: item.price == null ? "" : String(item.price),
   discount_price: item.discount_price == null ? "" : String(item.discount_price),
   image_url: itemImage(item),
+  description: item.description || item.short_description || item.summary || "",
 });
 
 export default function EmailCampaignManager() {
@@ -354,9 +356,15 @@ export default function EmailCampaignManager() {
 
         <section className={sectionClass}>
           <div className="mb-3 flex items-center gap-2"><Eye className="h-4 w-4 text-primary" /><h3 className={sectionHeadingClass}>Email content preview</h3></div>
-          <div className="mx-auto max-w-xl overflow-hidden rounded-xl border border-border bg-background shadow-sm">
+          <div className="mx-auto w-full max-w-xl overflow-hidden rounded-xl border border-border bg-background text-foreground shadow-sm">
+            <div className="flex justify-center border-b border-[#edf1ed] bg-white px-3 py-4 sm:px-5">
+              <div className="inline-flex max-w-full items-center gap-2 rounded-md border border-[#d4af37] bg-white p-1.5 text-[#222222]">
+                <span aria-hidden="true" className="flex h-9 w-9 shrink-0 items-center justify-center rounded-sm border-l-4 border-[#8de02c] bg-[#ffbfbf] text-xl font-extrabold text-[#0b0b1a]">M</span>
+                <span className="min-w-0 text-left text-sm font-bold leading-tight sm:text-base"><span className="block whitespace-nowrap"><span className="text-[#222222]">Maa</span> <span className="inline-block rounded-sm border-l-4 border-[#8de02c] bg-[rgba(255,0,0,0.16)] px-1.5 py-0.5 text-[#222222]">Mara</span></span><span className="block font-extrabold text-[#128a12]">Market</span></span>
+              </div>
+            </div>
             {form.hero_image_url && <div className="relative flex max-h-56 min-h-24 items-center justify-center overflow-hidden bg-muted text-muted-foreground"><ImageIcon className="h-7 w-7" /><img src={imageUrl(form.hero_image_url)} alt="Selected campaign banner" className="absolute inset-0 h-full max-h-56 w-full object-cover" onError={(event) => { event.currentTarget.style.display = "none"; }} /></div>}
-            <div className="p-4 sm:p-6"><p className="text-xs text-muted-foreground">Subject: {form.subject || "Your email subject will appear here"}</p><h4 className="mt-2 text-xl font-bold">{form.title || "Your campaign title"}</h4>{form.preheader && <p className="mt-1 text-sm text-muted-foreground">{form.preheader}</p>}{form.body_text && <p className="mt-4 whitespace-pre-wrap text-sm leading-6">{form.body_text}</p>}
+            <div className="p-4 text-foreground sm:p-6"><p className="text-xs text-muted-foreground">Subject: {form.subject || "Your email subject will appear here"}</p><h4 className="mt-2 text-xl font-bold text-foreground">{form.title || "Your campaign title"}</h4>{form.preheader && <p className="mt-1 text-sm text-muted-foreground">{form.preheader}</p>}{form.body_text && <p className="mt-4 whitespace-pre-wrap text-sm leading-6 text-foreground">{form.body_text}</p>}
               {selectedProducts.length > 0 && (
                 <div className="mt-4 grid gap-3 sm:grid-cols-2">
                   {selectedProducts.map((item) => (
@@ -412,7 +420,7 @@ export default function EmailCampaignManager() {
         <form onSubmit={submitSchedule} role="dialog" aria-modal="true" aria-labelledby="schedule-campaign-title" className="w-full max-w-lg space-y-4 rounded-2xl border border-border bg-card p-5 text-card-foreground shadow-2xl sm:p-6">
           <div><h3 id="schedule-campaign-title" className="text-lg font-bold">Schedule email campaign</h3><p className="mt-1 text-sm text-muted-foreground">Select the first send time and optional repeat pattern.</p></div>
           <label className="block text-sm font-medium">First send date and time<input required type="datetime-local" value={scheduleDraft.scheduledAt} onChange={(e) => setScheduleDraft(v => ({...v, scheduledAt:e.target.value}))} className={fieldClass}/><span className="mt-1 block text-xs text-muted-foreground">Uses your device's local time.</span></label>
-          <label className="block text-sm font-medium">Repeat<select value={scheduleDraft.frequency} onChange={(e) => setScheduleDraft(v => ({...v, frequency:e.target.value}))} className={fieldClass}><option value="none">One time only</option><option value="daily">Daily</option><option value="weekly">Weekly</option><option value="monthly">Monthly</option><option value="periodic">Every N days</option></select></label>
+          <label className="block text-sm font-medium">Repeat<NativeAwareSelect aria-label="Repeat frequency" value={scheduleDraft.frequency} onChange={(e) => setScheduleDraft(v => ({...v, frequency:e.target.value}))} className={fieldClass + " mm-schedule-select"} options={[{value:"none",label:"One time only"},{value:"daily",label:"Daily"},{value:"weekly",label:"Weekly"},{value:"monthly",label:"Monthly"},{value:"periodic",label:"Every N days"}]} /></label>
           {scheduleDraft.frequency === "periodic" && <label className="block text-sm font-medium">Repeat every (days)<input required type="number" min="1" max="365" value={scheduleDraft.interval} onChange={(e) => setScheduleDraft(v => ({...v, interval:e.target.value}))} className={fieldClass}/></label>}
           {scheduleDraft.frequency !== "none" && <label className="block text-sm font-medium">Stop repeating after (optional)<input type="date" min={scheduleDraft.scheduledAt.slice(0,10)} value={scheduleDraft.until} onChange={(e) => setScheduleDraft(v => ({...v, until:e.target.value}))} className={fieldClass}/><span className="mt-1 block text-xs text-muted-foreground">Leave blank to continue until you cancel a future occurrence.</span></label>}
           <div className="flex justify-end gap-2 border-t border-border pt-4"><Button type="button" variant="outline" className={buttonClass} disabled={scheduling} onClick={() => setScheduleDraft(null)}>Cancel</Button><Button type="submit" className={buttonClass} disabled={scheduling}>{scheduling ? "Scheduling…" : "Confirm schedule"}</Button></div>
