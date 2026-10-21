@@ -8,7 +8,7 @@ import AppSnackbar from "../../../../components/ui/app-snackbar";
 const emptyForm = { to: "", subject: "", message: "" };
 
 const fieldClass =
-  "mt-1.5 block min-h-12 w-full rounded-[20px] border border-border bg-background px-4 py-3 text-sm text-foreground outline-none transition placeholder:text-muted-foreground focus:border-primary focus:ring-2 focus:ring-primary/15 disabled:cursor-not-allowed disabled:opacity-60";
+  "mt-1.5 block min-h-12 w-full rounded-[20px] border border-border bg-background px-2 py-3 text-sm text-foreground outline-none transition placeholder:text-muted-foreground focus:border-primary focus:ring-2 focus:ring-primary/15 disabled:cursor-not-allowed disabled:opacity-60";
 
 const ComposeEmail = ({ open, onClose, user = null }) => {
   const { sendEmail, loading } = useSendEmail();
@@ -85,8 +85,8 @@ const ComposeEmail = ({ open, onClose, user = null }) => {
 
   return (
     <>
-      <div className="fixed inset-0 z-[1200] flex h-[100dvh] w-screen flex-col overflow-hidden bg-background text-foreground" role="dialog" aria-modal="true" aria-labelledby="compose-email-title">
-        <header className="flex shrink-0 items-center justify-between gap-4 border-b border-border bg-card px-4 pb-3 pt-[max(0.75rem,env(safe-area-inset-top,0px))] sm:px-6 sm:pb-4">
+      <div className="fixed inset-0 z-[1200] flex h-[100dvh] w-screen flex-col overflow-hidden rounded-none border-0 bg-background text-foreground" role="dialog" aria-modal="true" aria-labelledby="compose-email-title">
+        <header className="flex shrink-0 items-center justify-between gap-4 border-b border-border bg-card px-2 pb-3 pt-[max(0.75rem,env(safe-area-inset-top,0px))] sm:px-2 sm:pb-4">
           <div className="flex min-w-0 items-center gap-3">
             <div className="hidden h-11 w-11 shrink-0 items-center justify-center rounded-[16px] bg-primary/10 text-primary sm:flex">
               <Mail className="h-5 w-5" aria-hidden="true" />
@@ -102,9 +102,9 @@ const ComposeEmail = ({ open, onClose, user = null }) => {
         </header>
 
         <form onSubmit={handleSend} className="flex min-h-0 flex-1 flex-col">
-          <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 py-5 sm:px-6 sm:py-6">
+          <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-2 py-5 sm:px-2 sm:py-6">
             <div className="mx-auto w-full max-w-4xl space-y-5">
-              <section className="rounded-2xl border border-border bg-card p-4 shadow-sm sm:p-5">
+              <section className="rounded-[20px] border border-border bg-card p-2 shadow-sm sm:p-2">
                 <div className="mb-3 flex items-center gap-2">
                   <Users className="h-4 w-4 text-primary" aria-hidden="true" />
                   <h3 className="text-sm font-semibold">Choose a contact</h3>
@@ -123,7 +123,7 @@ const ComposeEmail = ({ open, onClose, user = null }) => {
                 </div>
               </section>
 
-              <section className="space-y-4 rounded-2xl border border-border bg-card p-4 shadow-sm sm:p-5">
+              <section className="space-y-4 rounded-[20px] border border-border bg-card p-2 shadow-sm sm:p-2">
                 <div>
                   <label htmlFor="compose-to" className="text-sm font-semibold">To <span className="text-destructive">*</span></label>
                   <input id="compose-to" name="to" type="email" autoComplete="email" value={form.to} onChange={updateField("to")} required disabled={loading} placeholder="recipient@example.com" className={fieldClass} />
@@ -138,7 +138,7 @@ const ComposeEmail = ({ open, onClose, user = null }) => {
                 </div>
               </section>
 
-              <section className="rounded-2xl border border-dashed border-border bg-card/70 p-4 sm:p-5">
+              <section className="rounded-[20px] border border-dashed border-border bg-card/70 p-2 sm:p-2">
                 <div className="flex flex-wrap items-center justify-between gap-3">
                   <div>
                     <h3 className="text-sm font-semibold">Attachments</h3>
@@ -155,7 +155,7 @@ const ComposeEmail = ({ open, onClose, user = null }) => {
                 {attachments.length > 0 && (
                   <ul className="mt-3 space-y-2">
                     {attachments.map((file, index) => (
-                      <li key={file.name + file.size + index} className="flex min-w-0 items-center justify-between gap-3 rounded-[16px] border border-border bg-background px-3 py-2.5">
+                      <li key={file.name + file.size + index} className="flex min-w-0 items-center justify-between gap-3 rounded-[20px] border border-border bg-background px-2 py-2.5">
                         <div className="flex min-w-0 items-center gap-2">
                           <Paperclip className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden="true" />
                           <span className="truncate text-sm" title={file.name}>{file.name}</span>
@@ -172,7 +172,7 @@ const ComposeEmail = ({ open, onClose, user = null }) => {
             </div>
           </div>
 
-          <footer className="flex shrink-0 flex-wrap items-center justify-between gap-3 border-t border-border bg-card px-4 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom,0px))] sm:px-6 sm:py-4">
+          <footer className="flex shrink-0 flex-wrap items-center justify-between gap-3 border-t border-border bg-card px-2 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom,0px))] sm:px-2 sm:py-4">
             <p className="hidden text-xs text-muted-foreground sm:block">Required fields are marked with *.</p>
             <div className="ml-auto flex w-full flex-col-reverse gap-2 sm:w-auto sm:flex-row">
               <Button type="button" variant="outline" className="w-full rounded-[20px] sm:w-auto" onClick={onClose} disabled={loading}>Cancel</Button>
