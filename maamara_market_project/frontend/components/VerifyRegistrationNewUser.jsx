@@ -27,6 +27,7 @@ const VerifyRegistrationNewUser = () => {
   const email = (searchParams.get("email") || "").trim().toLowerCase()
   const expiresAt = searchParams.get("expiresAt")
 
+  const [expiryTimestamp, setExpiryTimestamp] = useState(expiresAt)
   const [otp, setOtp] = useState("")
   const [loading, setLoading] = useState(false)
   const [resending, setResending] = useState(false)
@@ -57,18 +58,18 @@ const VerifyRegistrationNewUser = () => {
   }, [email, navigate])
 
   useEffect(() => {
-    setTimer(getSecondsUntil(expiresAt))
+    setTimer(getSecondsUntil(expiryTimestamp))
 
-    if (!expiresAt) return
+    if (!expiryTimestamp) return
 
     const updateTimer = () => {
-      setTimer(getSecondsUntil(expiresAt))
+      setTimer(getSecondsUntil(expiryTimestamp))
     }
 
     updateTimer()
     const interval = setInterval(updateTimer, 1000)
     return () => clearInterval(interval)
-  }, [expiresAt])
+  }, [expiryTimestamp])
 
   const handleVerify = async () => {
     if (otp.length !== 6) {
@@ -152,6 +153,7 @@ const VerifyRegistrationNewUser = () => {
         })
         setOtp("")
 
+        setExpiryTimestamp(response.data.expires_at)
         setTimer(getSecondsUntil(response.data.expires_at))
       } else {
         setSnackbar({
