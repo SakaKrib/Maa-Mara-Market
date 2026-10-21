@@ -192,7 +192,7 @@ const VerifyRegistrationNewUser = () => {
         <InputOTP
           maxLength={6}
           value={otp}
-          onChange={setOtp}
+          onChange={(value) => setOtp(value.replace(/\D/g, "").slice(0, 6))}
           containerClassName="mm-otp-input" className="mm-otp-native-input" inputMode="numeric" pattern="[0-9]*" autoComplete="one-time-code" aria-label="Six-digit email verification code"
         >
           <InputOTPGroup className="mm-otp-group">
