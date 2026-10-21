@@ -417,19 +417,15 @@ jobs:
       # Keep a stable public beta APK URL for direct Android testing downloads.
       # This is a debug APK, not a production-signed Play Store release.
       - name: Publish latest Android beta APK
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: mobile-latest
-          name: Maa Mara Market Android APK (Beta)
-          body: |
-            Automatically generated Android debug APK from the ui-redesign-foundation branch.
-            This is a beta/testing build, not a production-signed Play Store release.
-            Android may require the user to explicitly allow installation from the browser.
-          target_commitish: ${{ github.sha }}
-          prerelease: true
-          make_latest: false
-          overwrite_files: true
-          files: ${{ env.FRONTEND_DIR }}/maa-mara-market-android.apk
+        # Upload only the asset. Updating release metadata can fail for branch builds
+        # when GITHUB_TOKEN cannot update a release whose target commit changes workflow files.
+        # The mobile-latest release already exists; gh release upload uses the asset endpoint.
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release view mobile-latest --repo "${GITHUB_REPOSITORY}" >/dev/null
+          gh release upload mobile-latest "${FRONTEND_DIR}/maa-mara-market-android.apk" \
+            --repo "${GITHUB_REPOSITORY}" --clobber
 
       - name: Upload generated Android project
         uses: actions/upload-artifact@v4
