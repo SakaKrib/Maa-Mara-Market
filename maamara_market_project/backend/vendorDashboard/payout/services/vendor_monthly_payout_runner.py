@@ -160,7 +160,7 @@ def pay_single_vendor_payout(request, reference):
     try:
         # Serialize payout submission so two admin requests cannot both pass
         # the duplicate-submission checks and call the provider.
-        payout = VendorPayout.objects.select_for_update().select_related("vendor").get(reference=reference)
+        payout = VendorPayout.objects.select_for_update(of=("self",)).select_related("vendor").get(reference=reference)
     except VendorPayout.DoesNotExist:
         return Response({"error": "Payout reference not found."}, status=404)
 
