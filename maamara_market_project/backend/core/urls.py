@@ -136,6 +136,6 @@ urlpatterns = [
     path("api/admin/newsletter/subscribers/", newsletter_subscribers),
     path("api/admin/email-campaigns/", email_campaigns),
     path("api/admin/email-campaigns/<int:campaign_id>/", email_campaign_detail),
-    path("api/admin/email-campaigns/<int:campaign_id>/<str:action>/", email_campaign_action),
+    path("api/admin/email-campaigns/<int:campaign_id>/actions/<str:action>/", email_campaign_action),
     path("api/admin/email-campaigns/<int:campaign_id>/report/", email_campaign_report),
 ]
