@@ -349,6 +349,10 @@ CELERY_BEAT_SCHEDULE = {
 # Shipment carrier webhooks use a shared normalized payload and a dedicated secret.
 # Configure a high-entropy secret in the environment before enabling the webhook URL.
 SHIPMENT_TRACKING_WEBHOOK_TOKEN = env("SHIPMENT_TRACKING_WEBHOOK_TOKEN", default="")
+SHIPMENT_TRACKING_MIN_INTERVAL_MINUTES = env.int("SHIPMENT_TRACKING_MIN_INTERVAL_MINUTES", default=120)
+SHIPMENT_TRACKING_MAX_PER_RUN = env.int("SHIPMENT_TRACKING_MAX_PER_RUN", default=25)
+SHIPMENT_TRACKING_CALL_SPACING_SECONDS = env.float("SHIPMENT_TRACKING_CALL_SPACING_SECONDS", default=5.5)
+SHIPMENT_TRACKING_POST_DELIVERY_DAYS = env.int("SHIPMENT_TRACKING_POST_DELIVERY_DAYS", default=14)
 
 # =========================================================
 # STATIC / MEDIA
