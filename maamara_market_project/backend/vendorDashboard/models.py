@@ -409,7 +409,7 @@ class VendorRequest(models.Model):
             f"Vendor {user.username} ({vendor_email}) has verified their registration OTP. "
             "Please review and approve their request."
         )
-        review_url = f"{settings.BACKEND_PUBLIC_URL.rstrip('/')}/admin/vendor-requests/{self.id}/"
+        review_url = f"{settings.FRONTEND_URL.rstrip('/')}/admin-dashboard/vendor-requests"
         html_content_admin = render_to_string(
             "emails/vendor_verified_admin.html",
             {
