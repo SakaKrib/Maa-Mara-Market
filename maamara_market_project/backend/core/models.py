@@ -573,7 +573,7 @@ class NewsletterSubscriber(models.Model):
     """A person who explicitly opted in to marketing email."""
     email = models.EmailField(unique=True)
     first_name = models.CharField(max_length=150, blank=True, default="")
-    consent_given = models.BooleanField(default=True)
+    consent_given = models.BooleanField(default=False)
     consent_source = models.CharField(max_length=100, blank=True, default="website")
     consented_at = models.DateTimeField(null=True, blank=True)
     unsubscribed_at = models.DateTimeField(null=True, blank=True)
