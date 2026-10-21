@@ -24,6 +24,7 @@ const Footer = () => {
   const { isAuthenticated, user, logout } = useAuth();
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
+  const [newsletterConsent, setNewsletterConsent] = useState(false);
   const [loading, setLoading] = useState(false);
   const [snackbar, setSnackbar] = useState({ open: false, message: "", severity: "success" });
 
@@ -54,15 +55,20 @@ const Footer = () => {
 
   const handleSubscribe = async () => {
     const value = email.trim();
+    if (!newsletterConsent) {
+      setSnackbar({ open: true, severity: "warning", message: "Please confirm that you want to receive marketing emails." });
+      return;
+    }
     if (!value) {
       setSnackbar({ open: true, severity: "warning", message: "Please enter your email address." });
       return;
     }
     try {
       setLoading(true);
-      const response = await api.post("/api/newsletter/subscribe/", { email: value });
+      const response = await api.post("/api/newsletter/subscribe/", { email: value, consent: true, source: "website-footer" });
       setSnackbar({ open: true, severity: "success", message: response.data?.message || "Subscribed successfully." });
       setEmail("");
+      setNewsletterConsent(false);
     } catch (error) {
       console.error("Newsletter subscription failed:", error);
       setSnackbar({ open: true, severity: "error", message: "Subscription failed. Please try again." });
@@ -160,7 +166,8 @@ const Footer = () => {
             <form className="mm-footer-subscribe-form" onSubmit={(event) => { event.preventDefault(); handleSubscribe(); }}>
               <input type="email" placeholder="Email address" aria-label="Email address" value={email}
                 onChange={(event) => setEmail(event.target.value)} autoComplete="email" />
-              <button type="submit" disabled={loading}>{loading ? "Joining…" : "Join"}</button>
+              <label className="mm-footer-muted" style={{ display: "flex", alignItems: "flex-start", gap: "8px", fontSize: "12px", marginTop: "10px" }}><input type="checkbox" checked={newsletterConsent} onChange={(event) => setNewsletterConsent(event.target.checked)} required style={{ marginTop: "3px" }} /><span>I agree to receive marketing emails from Maa Mara Market. I can unsubscribe at any time.</span></label>
+              <button type="submit" disabled={loading || !newsletterConsent}>{loading ? "Joining…" : "Join"}</button>
             </form>
             <div className="mm-footer-payment-group">
               <span>Secure payments</span>
