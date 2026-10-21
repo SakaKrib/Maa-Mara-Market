@@ -356,46 +356,43 @@ export default function EmailCampaignManager() {
 
         <section className={sectionClass}>
           <div className="mb-3 flex items-center gap-2"><Eye className="h-4 w-4 text-primary" /><h3 className={sectionHeadingClass}>Email content preview</h3></div>
-          <div className="mx-auto w-full max-w-xl overflow-hidden rounded-xl border border-border bg-background text-foreground shadow-sm">
-            <div className="flex max-w-full items-center justify-center gap-2 border-b border-[#edf1ed] bg-white px-2 py-4 sm:gap-3 sm:px-5">
-              <img src="/maamara-brand-artwork.svg" alt="Maa Mara Market logo" className="h-10 w-10 shrink-0 object-contain sm:h-[50px] sm:w-[50px]" />
-              <div className="min-w-0 max-w-full rounded-[5px] border border-[gold] bg-white px-[3px] py-[2px] font-medium leading-tight text-[#222222]">
-                <div className="flex items-center gap-[2px] whitespace-nowrap text-[clamp(12px,3.7vw,20px)]">
+          <div className="mx-auto w-full max-w-[420px] overflow-hidden rounded-xl border border-[#d9d9d9] bg-white text-[#222222] shadow-sm">
+            <div className="flex w-full items-center justify-center gap-2 border-b border-[#edf1ed] bg-white px-2 py-3 sm:gap-3 sm:px-4">
+              <img src="/maamara-brand-artwork.svg" alt="Maa Mara Market logo" className="h-9 w-9 shrink-0 object-contain sm:h-11 sm:w-11" />
+              <div className="min-w-0 rounded-[5px] border border-[gold] bg-white px-[3px] py-[2px] font-medium leading-tight text-[#222222]">
+                <div className="flex items-center gap-[2px] whitespace-nowrap text-[clamp(11px,3.6vw,18px)]">
                   <span className="text-[#222222]">Maa</span>
-                  <span className="inline-block rounded-l-[5px] border-l-[5px] border-[#8de02c] bg-[rgba(255,0,0,0.253)] px-1.5 py-0.5 text-[#222222] sm:px-[10px]">Mara</span>
-                  <span className="font-bold text-[green]">Market</span>
+                  <span className="inline-block rounded-l-[5px] border-l-[4px] border-[#8de02c] bg-[rgba(255,0,0,0.253)] px-1 py-0.5 text-[#222222] sm:px-2">Mara</span>
+                  <span className="font-bold text-[#008000]">Market</span>
                 </div>
               </div>
             </div>
-            {form.hero_image_url && <div className="relative flex max-h-56 min-h-24 items-center justify-center overflow-hidden bg-muted text-muted-foreground"><ImageIcon className="h-7 w-7" /><img src={imageUrl(form.hero_image_url)} alt="Selected campaign banner" className="absolute inset-0 h-full max-h-56 w-full object-cover" onError={(event) => { event.currentTarget.style.display = "none"; }} /></div>}
-            <div className="p-4 text-foreground sm:p-6"><p className="text-xs text-muted-foreground">Subject: {form.subject || "Your email subject will appear here"}</p><h4 className="mt-2 text-xl font-bold text-foreground">{form.title || "Your campaign title"}</h4>{form.preheader && <p className="mt-1 text-sm text-muted-foreground">{form.preheader}</p>}{form.body_text && <p className="mt-4 whitespace-pre-wrap text-sm leading-6 text-foreground">{form.body_text}</p>}
+            {form.hero_image_url && <div className="relative flex max-h-56 min-h-24 items-center justify-center overflow-hidden bg-[#f3f4f6] text-[#555555]"><ImageIcon className="h-7 w-7" /><img src={imageUrl(form.hero_image_url)} alt="Selected campaign banner" className="absolute inset-0 h-full max-h-56 w-full object-cover" onError={(event) => { event.currentTarget.style.display = "none"; }} /></div>}
+            <div className="bg-white p-3 text-[#222222] sm:p-4">
+              <p className="break-words text-xs text-[#666666]">Subject: {form.subject || "Your email subject will appear here"}</p>
+              <h4 className="mt-2 break-words text-lg font-bold text-[#222222]">{form.title || "Your campaign title"}</h4>
+              {form.preheader && <p className="mt-1 break-words text-sm text-[#555555]">{form.preheader}</p>}
+              {form.body_text && <p className="mt-4 whitespace-pre-wrap break-words text-sm leading-6 text-[#333333]">{form.body_text}</p>}
               {selectedProducts.length > 0 && (
-                <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                <div className="mt-4 grid grid-cols-1 gap-3">
                   {selectedProducts.map((item) => (
-                    <div key={item.id} className="overflow-hidden rounded-lg border border-border">
-                      <div className="relative flex aspect-[4/3] items-center justify-center bg-muted text-muted-foreground">
+                    <div key={item.id} className="min-w-0 overflow-hidden rounded-lg border border-[#e5e5e5] bg-white">
+                      <div className="relative flex aspect-[4/3] items-center justify-center bg-[#f3f4f6] text-[#666666]">
                         <Package className="h-6 w-6" />
-                        {item.image_url && (
-                          <img
-                            src={imageUrl(item.image_url)}
-                            alt={item.name}
-                            className="absolute inset-0 h-full w-full object-cover"
-                            onError={(event) => { event.currentTarget.style.display = "none"; }}
-                          />
-                        )}
+                        {item.image_url && <img src={imageUrl(item.image_url)} alt={item.name || "Featured item"} className="absolute inset-0 h-full w-full object-cover" onError={(event) => { event.currentTarget.style.display = "none"; }} />}
                       </div>
-                      <div className="p-3">
-                        <p className="break-words text-sm font-semibold text-foreground">{item.name}</p>
-                        {item.description && <p className="mt-1 line-clamp-3 break-words text-xs leading-5 text-muted-foreground">{item.description}</p>}
-                        <p className="mt-1 text-sm font-bold text-primary">KSh {Number(item.discount_price && Number(item.discount_price) < Number(item.price) ? item.discount_price : item.price || 0).toLocaleString("en-KE")}</p>
-                        <span className="mt-3 inline-flex rounded-[20px] bg-primary px-4 py-2 text-xs font-semibold text-primary-foreground">Shop now</span>
-                        <p className="mt-2 break-all text-[10px] text-muted-foreground">Links to this item’s page</p>
+                      <div className="min-w-0 p-3">
+                        <p className="break-words text-sm font-bold leading-5 text-[#222222]">{item.name || "Untitled item"}</p>
+                        {item.description && <p className="mt-1 break-words text-xs leading-5 text-[#555555]">{item.description}</p>}
+                        <p className="mt-1 text-sm font-bold text-[#255d3a]">KSh {Number(item.discount_price && Number(item.discount_price) < Number(item.price) ? item.discount_price : item.price || 0).toLocaleString("en-KE")}</p>
+                        <span className="mt-3 inline-flex rounded-[20px] bg-[#255d3a] px-4 py-2 text-xs font-semibold text-white">Shop now</span>
+                        <p className="mt-2 break-words text-[10px] text-[#666666]">Links to this item’s page</p>
                       </div>
                     </div>
                   ))}
                 </div>
               )}
-              {form.cta_label && <div className="mt-5"><span className="inline-flex rounded-[20px] bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground">{form.cta_label}</span></div>}
+              {form.cta_label && <div className="mt-5"><span className="inline-flex rounded-[20px] bg-[#255d3a] px-5 py-2.5 text-sm font-semibold text-white">{form.cta_label}</span></div>}
             </div>
           </div>
         </section>
@@ -415,10 +412,12 @@ export default function EmailCampaignManager() {
           <div className="mt-5 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end"><Button type="button" variant="outline" className={buttonClass} disabled={sendingCampaign} onClick={() => setSendConfirmation(null)}>Cancel</Button><Button type="button" className={buttonClass} disabled={sendingCampaign} onClick={confirmSendCampaign}><Send className="mr-1.5 h-4 w-4" />{sendingCampaign ? "Queueing campaign…" : "Yes, send campaign"}</Button></div>
         </section>
       </div>}
-      {previewHtml !== null && <div className="fixed inset-0 z-[1650] flex items-end justify-center bg-black/55 p-0 backdrop-blur-sm sm:items-center sm:p-4" onMouseDown={(e) => { if (e.target === e.currentTarget) setPreviewHtml(null); }}>
-        <section role="dialog" aria-modal="true" aria-labelledby="campaign-preview-title" className="flex h-[92dvh] w-full flex-col overflow-hidden rounded-t-3xl border border-border bg-card pb-[env(safe-area-inset-bottom)] text-card-foreground shadow-2xl sm:h-[88dvh] sm:max-w-4xl sm:rounded-2xl sm:pb-0">
-          <header className="flex items-center justify-between gap-3 border-b border-border px-4 py-3 sm:px-5"><div><h3 id="campaign-preview-title" className="font-bold">Email campaign preview</h3><p className="text-xs text-muted-foreground">Preview of the email layout</p></div><Button type="button" variant="outline" className={buttonClass} onClick={() => setPreviewHtml(null)}><X className="mr-1.5 h-4 w-4" />Close</Button></header>
-          <iframe title="Email campaign preview content" srcDoc={previewHtml} sandbox="" className="min-h-0 w-full flex-1 bg-white" />
+      {previewHtml !== null && <div className="fixed inset-0 z-[1650] flex items-end justify-center bg-black/65 p-0 backdrop-blur-sm sm:items-center sm:p-4" onMouseDown={(e) => { if (e.target === e.currentTarget) setPreviewHtml(null); }}>
+        <section role="dialog" aria-modal="true" aria-labelledby="campaign-preview-title" className="flex h-[94dvh] w-full max-w-[480px] flex-col overflow-hidden rounded-t-2xl border border-[#333333] bg-[#171717] pb-[env(safe-area-inset-bottom)] text-white shadow-2xl sm:h-[88dvh] sm:rounded-2xl sm:pb-0">
+          <header className="flex shrink-0 items-center justify-between gap-3 border-b border-[#333333] bg-[#202020] px-3 py-3 sm:px-4"><div className="min-w-0"><h3 id="campaign-preview-title" className="font-bold text-white">Email campaign preview</h3><p className="text-xs text-[#c5c5c5]">Mobile-sized preview · scroll to view the full email</p></div><Button type="button" variant="outline" className={buttonClass + " shrink-0 border-[#555555] bg-[#292929] text-white hover:bg-[#383838]"} onClick={() => setPreviewHtml(null)}><X className="mr-1.5 h-4 w-4" />Close</Button></header>
+          <div className="flex min-h-0 flex-1 justify-center overflow-y-auto bg-[#171717] p-0 sm:p-3">
+            <iframe title="Email campaign preview content" srcDoc={previewHtml} sandbox="" className="min-h-full w-full max-w-[390px] flex-1 border-0 bg-white" />
+          </div>
         </section>
       </div>}
       {scheduleDraft && <div className="fixed inset-0 z-[1600] flex items-center justify-center overflow-y-auto bg-black/50 p-4" onMouseDown={(e) => { if (e.target === e.currentTarget && !scheduling) setScheduleDraft(null); }}>
