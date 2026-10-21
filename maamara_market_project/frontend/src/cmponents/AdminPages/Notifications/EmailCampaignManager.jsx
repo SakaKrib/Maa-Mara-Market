@@ -10,6 +10,7 @@ export default function EmailCampaignManager() {
   const [campaigns, setCampaigns] = useState([]);
   const [subscribers, setSubscribers] = useState([]);
   const [mode, setMode] = useState("campaigns");
+  const [subscriberFilter, setSubscriberFilter] = useState("true");
   const [form, setForm] = useState(blank);
   const [editingId, setEditingId] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -21,7 +22,7 @@ export default function EmailCampaignManager() {
     try {
       const [c, s] = await Promise.all([
         api.get("/api/admin/email-campaigns/"),
-        api.get("/api/admin/newsletter/subscribers/?subscribed=true"),
+        api.get(`/api/admin/newsletter/subscribers/?subscribed=${subscriberFilter}`),
       ]);
       setCampaigns(Array.isArray(c.data) ? c.data : []);
       setSubscribers(Array.isArray(s.data) ? s.data : []);
@@ -29,7 +30,7 @@ export default function EmailCampaignManager() {
       setNotice(e?.response?.data?.detail || "Could not load campaigns or subscribers. Check admin access and migrations.");
     } finally { setLoading(false); }
   };
-  useEffect(() => { load(); }, []);
+  useEffect(() => { load(); }, [subscriberFilter]);
 
   const update = (key) => (e) => setForm((v) => ({ ...v, [key]: e.target.value }));
   const save = async (e) => {
@@ -71,7 +72,7 @@ export default function EmailCampaignManager() {
   return <section className="space-y-5">
     <div className="flex flex-wrap gap-2 border-b border-border pb-3">
       <Button variant={mode === "campaigns" ? "default" : "outline"} onClick={() => setMode("campaigns")}>Campaigns</Button>
-      <Button variant={mode === "subscribers" ? "default" : "outline"} onClick={() => setMode("subscribers")}>Newsletter subscribers ({subscribers.length})</Button>
+      <Button variant={mode === "subscribers" ? "default" : "outline"} onClick={() => setMode("subscribers")}>Subscriber management</Button>
     </div>
     {notice && <div role="status" className="rounded-xl border border-border bg-muted/40 p-3 text-sm">{notice}</div>}
     {mode === "campaigns" ? <>
@@ -100,6 +101,6 @@ export default function EmailCampaignManager() {
         {["sent","failed"].includes(c.status) && <Button variant="outline" onClick={() => action(c.id, "report")}>View report</Button>}
         {["draft","pending_approval","approved","failed"].includes(c.status) && <Button variant="outline" onClick={() => action(c.id, "cancel")}>Cancel</Button>}
       </div></article>)}{campaigns.length === 0 && <p className="rounded-xl border border-dashed border-border p-8 text-center text-sm text-muted-foreground">No campaigns yet. Daily automation will prepare reviewable drafts when eligible promotions are found.</p>}</div>}
-    </> : <div className="overflow-x-auto rounded-2xl border border-border bg-card"><div className="p-4"><h3 className="font-bold">Subscribed recipients</h3><p className="text-xs text-muted-foreground">Only contacts with recorded consent and no unsubscribe are eligible for campaigns.</p></div><table className="w-full text-left text-sm"><thead className="bg-muted/50 text-xs uppercase text-muted-foreground"><tr><th className="p-3">Email</th><th className="p-3">Name</th><th className="p-3">Consent source</th><th className="p-3">Subscribed</th></tr></thead><tbody>{subscribers.map((s) => <tr key={s.id} className="border-t border-border"><td className="p-3 break-all">{s.email}</td><td className="p-3">{s.first_name || "—"}</td><td className="p-3">{s.consent_source}</td><td className="p-3">{dateLabel(s.consented_at)}</td></tr>)}</tbody></table>{subscribers.length === 0 && <p className="p-6 text-center text-sm text-muted-foreground">No active newsletter subscribers yet.</p>}</div>}
+    </> : <div className="overflow-x-auto rounded-2xl border border-border bg-card"><div className="flex flex-wrap items-center justify-between gap-3 p-4"><div><h3 className="font-bold">Newsletter subscribers</h3><p className="text-xs text-muted-foreground">Only active, consented subscribers receive campaigns. Unsubscribed contacts remain suppressed.</p></div><select value={subscriberFilter} onChange={(e) => setSubscriberFilter(e.target.value)} className="rounded-lg border border-border bg-background p-2 text-sm"><option value="true">Active subscribers</option><option value="false">Unsubscribed / suppressed</option></select></div><table className="w-full text-left text-sm"><thead className="bg-muted/50 text-xs uppercase text-muted-foreground"><tr><th className="p-3">Email</th><th className="p-3">Name</th><th className="p-3">Consent source</th><th className="p-3">Consent date</th><th className="p-3">Status</th></tr></thead><tbody>{subscribers.map((s) => <tr key={s.id} className="border-t border-border"><td className="p-3 break-all">{s.email}</td><td className="p-3">{s.first_name || "—"}</td><td className="p-3">{s.consent_source}</td><td className="p-3">{dateLabel(s.consented_at)}</td><td className="p-3">{s.is_subscribed ? "Subscribed" : "Unsubscribed"}</td></tr>)}</tbody></table>{subscribers.length === 0 && <p className="p-6 text-center text-sm text-muted-foreground">No subscribers in this view yet.</p>}</div>}
   </section>;
 }
