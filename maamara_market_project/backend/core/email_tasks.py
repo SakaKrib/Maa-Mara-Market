@@ -46,7 +46,7 @@ def send_email_campaign(self, campaign_id):
             recipient.status = "suppressed"
             recipient.save(update_fields=["status"])
             continue
-        unsubscribe_url = f"{settings.FRONTEND_URL.rstrip('/')}/api/newsletter/unsubscribe/{subscriber.unsubscribe_token}/"
+        unsubscribe_url = f"{getattr(settings, 'BACKEND_PUBLIC_URL', settings.FRONTEND_URL).rstrip('/')}/api/newsletter/unsubscribe/{subscriber.unsubscribe_token}/"
         context = {
             "campaign": campaign, "frontend_url": settings.FRONTEND_URL.rstrip("/"),
             "company_address": getattr(settings, "COMPANY_ADDRESS", ""),
@@ -141,8 +141,8 @@ def prepare_daily_sale_campaigns():
     if not {"price", "discount_price"}.issubset(fields):
         return {"drafts_created": 0, "reason": "Item price fields are unavailable."}
     qs = Item.objects.filter(discount_price__isnull=False).exclude(discount_price__gte=__import__("django.db.models", fromlist=["F"]).F("price"))
-    if "is_available" in fields:
-        qs = qs.filter(is_available=True)
+    if "available" in fields:
+        qs = qs.filter(available=True)
     items = list(qs.order_by("-id")[:8])
     if not items:
         return {"drafts_created": 0}
