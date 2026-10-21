@@ -50,3 +50,31 @@ class VendorEmailTemplateTests(SimpleTestCase):
         self.assertIn("vendor@example.com", html)
         self.assertIn("https://api.example/admin/vendor-requests/42/", html)
         self.assertNotIn("yourdomain.com", html)
+
+    def test_customer_registration_otp_emails_use_shared_layout(self):
+        for template_name, heading in (
+            ("emails/registration_otp.html", "Verify Your Account"),
+            ("emails/resend_otp.html", "New Verification Code"),
+        ):
+            with self.subTest(template=template_name):
+                html = self.render_email(
+                    template_name,
+                    first_name="Amina",
+                    otp="012345",
+                    otp_expiry_minutes=3,
+                )
+                self.assert_shared_branding(html)
+                self.assertIn("012345", html)
+                self.assertIn("3 minutes", html)
+                self.assertIn(heading, html)
+
+    def test_customer_registration_confirmation_uses_shared_layout(self):
+        html = self.render_email(
+            "emails/registration_verification.html",
+            first_name="Amina",
+            username="amina",
+            dashboard_url="https://market.example/user-account",
+        )
+        self.assert_shared_branding(html)
+        self.assertIn("Account Verified", html)
+        self.assertIn("https://market.example/user-account", html)
