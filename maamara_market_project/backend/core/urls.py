@@ -11,7 +11,8 @@ from .item_ai import GenerateItemAIAPIView
 from .vendor_registration_ai import GenerateVendorRegistrationAIAPIView
 from .blog_ai import GenerateBlogAIAPIView
 from core.PasswordRecovery import *
-from django.views.generic.base import TemplateView\nfrom core.email_campaigns import (newsletter_subscribe, newsletter_unsubscribe, newsletter_subscribers, email_campaigns, email_campaign_detail, email_campaign_action, email_campaign_report)
+from django.views.generic.base import TemplateView
+from core.email_campaigns import newsletter_subscribe, newsletter_unsubscribe, newsletter_subscribers, email_campaigns, email_campaign_detail, email_campaign_action, email_campaign_report\nfrom core.email_campaigns import (newsletter_subscribe, newsletter_unsubscribe, newsletter_subscribers, email_campaigns, email_campaign_detail, email_campaign_action, email_campaign_report)
 
 router = DefaultRouter()
 
@@ -129,5 +130,12 @@ urlpatterns = [
     # email list view
     path("api/email/list/", email_list),
     # fetch user to send emails
-    path("api/email-users/", users_list)
+    path("api/email-users/", users_list),
+    path("api/newsletter/subscribe/", newsletter_subscribe),
+    path("api/newsletter/unsubscribe/<uuid:token>/", newsletter_unsubscribe),
+    path("api/admin/newsletter/subscribers/", newsletter_subscribers),
+    path("api/admin/email-campaigns/", email_campaigns),
+    path("api/admin/email-campaigns/<int:campaign_id>/", email_campaign_detail),
+    path("api/admin/email-campaigns/<int:campaign_id>/<str:action>/", email_campaign_action),
+    path("api/admin/email-campaigns/<int:campaign_id>/report/", email_campaign_report),
 ]
