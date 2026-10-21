@@ -567,3 +567,100 @@ class SiteMaintenanceSettings(models.Model):
 
     def __str__(self):
         return "Maa Mara Market maintenance settings"
+
+
+class NewsletterSubscriber(models.Model):
+    """A person who explicitly opted in to marketing email."""
+    email = models.EmailField(unique=True)
+    first_name = models.CharField(max_length=150, blank=True, default="")
+    consent_given = models.BooleanField(default=True)
+    consent_source = models.CharField(max_length=100, blank=True, default="website")
+    consented_at = models.DateTimeField(null=True, blank=True)
+    unsubscribed_at = models.DateTimeField(null=True, blank=True)
+    unsubscribe_token = models.UUIDField(default=uuid.uuid4, unique=True, editable=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+
+    @property
+    def is_subscribed(self):
+        return self.consent_given and self.unsubscribed_at is None
+
+    def __str__(self):
+        return self.email
+
+
+class EmailCampaign(models.Model):
+    TYPE_CHOICES = [
+        ("banner", "Banner promotion"),
+        ("sale", "Sale items"),
+        ("new_arrivals", "New arrivals"),
+        ("custom", "Custom campaign"),
+    ]
+    STATUS_CHOICES = [
+        ("draft", "Draft"),
+        ("pending_approval", "Pending approval"),
+        ("approved", "Approved"),
+        ("scheduled", "Scheduled"),
+        ("sending", "Sending"),
+        ("sent", "Sent"),
+        ("failed", "Failed"),
+        ("cancelled", "Cancelled"),
+    ]
+    title = models.CharField(max_length=200)
+    campaign_type = models.CharField(max_length=30, choices=TYPE_CHOICES, default="custom")
+    subject = models.CharField(max_length=255)
+    preheader = models.CharField(max_length=255, blank=True, default="")
+    body_html = models.TextField(blank=True, default="")
+    body_text = models.TextField(blank=True, default="")
+    hero_image_url = models.URLField(blank=True, default="")
+    cta_label = models.CharField(max_length=80, blank=True, default="Shop now")
+    cta_url = models.URLField(blank=True, default="")
+    content_payload = models.JSONField(default=dict, blank=True)
+    status = models.CharField(max_length=24, choices=STATUS_CHOICES, default="draft", db_index=True)
+    created_by = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL, related_name="email_campaigns_created")
+    approved_by = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL, related_name="email_campaigns_approved")
+    scheduled_at = models.DateTimeField(null=True, blank=True, db_index=True)
+    prepared_for_date = models.DateField(null=True, blank=True, db_index=True)
+    source_key = models.CharField(max_length=255, blank=True, default="", db_index=True)
+    recipient_count = models.PositiveIntegerField(default=0)
+    sent_count = models.PositiveIntegerField(default=0)
+    failed_count = models.PositiveIntegerField(default=0)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    sent_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        constraints = [
+            models.UniqueConstraint(fields=["campaign_type", "source_key", "prepared_for_date"], name="uniq_email_campaign_source_day"),
+        ]
+
+    def __str__(self):
+        return self.title
+
+
+class EmailCampaignRecipient(models.Model):
+    STATUS_CHOICES = [
+        ("pending", "Pending"),
+        ("sent", "Submitted"),
+        ("failed", "Failed"),
+        ("suppressed", "Unsubscribed/suppressed"),
+    ]
+    campaign = models.ForeignKey(EmailCampaign, on_delete=models.CASCADE, related_name="recipients")
+    subscriber = models.ForeignKey(NewsletterSubscriber, null=True, blank=True, on_delete=models.SET_NULL, related_name="campaign_deliveries")
+    email = models.EmailField()
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="pending", db_index=True)
+    error = models.TextField(blank=True, default="")
+    attempts = models.PositiveSmallIntegerField(default=0)
+    attempted_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        constraints = [models.UniqueConstraint(fields=["campaign", "email"], name="uniq_campaign_recipient_email")]
+        ordering = ["id"]
+
+    def __str__(self):
+        return f"{self.campaign_id}: {self.email} ({self.status})"
