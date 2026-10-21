@@ -162,11 +162,21 @@ def _campaign_content(data, existing=None):
 
 
 def _campaign_payload(campaign):
+    content_payload = dict(campaign.content_payload or {})
+    normalized_items = []
+    for item in content_payload.get("items", []):
+        if not isinstance(item, dict):
+            continue
+        item = dict(item)
+        if item.get("id") not in (None, ""):
+            item["product_url"] = item.get("product_url") or _frontend_item_url(item["id"])
+        normalized_items.append(item)
+    content_payload["items"] = normalized_items
     return {
         "id": campaign.id, "title": campaign.title, "campaign_type": campaign.campaign_type,
         "subject": campaign.subject, "preheader": campaign.preheader, "body_html": campaign.body_html,
         "body_text": campaign.body_text, "hero_image_url": campaign.hero_image_url,
-        "cta_label": campaign.cta_label, "cta_url": campaign.cta_url, "content_payload": campaign.content_payload, "recurrence": (campaign.content_payload or {}).get("recurrence", {"frequency": "none", "interval": 1, "until": ""}),
+        "cta_label": campaign.cta_label, "cta_url": campaign.cta_url, "content_payload": content_payload, "recurrence": content_payload.get("recurrence", {"frequency": "none", "interval": 1, "until": ""}),
         "status": campaign.status, "scheduled_at": campaign.scheduled_at,
         "recipient_count": campaign.recipient_count, "sent_count": campaign.sent_count,
         "failed_count": campaign.failed_count, "created_at": campaign.created_at,
