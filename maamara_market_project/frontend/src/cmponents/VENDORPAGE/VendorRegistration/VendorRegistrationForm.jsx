@@ -942,7 +942,7 @@ const onSubmit = async (data) => {
       notifySnackbar("Vendor request submitted successfully!", "success");
 
       navigate("/otp-vendor-verification", {
-        state: { email: data.email },
+        state: { email: data.email, expiresAt: response.data?.expires_at },
       });
       
 
