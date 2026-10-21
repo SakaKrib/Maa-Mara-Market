@@ -140,6 +140,22 @@ class EmailCampaignAuthorizationTests(TestCase):
         self.assertEqual(self.campaign.content_payload["items"][0]["product_url"], "https://shop.example.test/item/902")
         self.assertEqual(self.campaign.cta_url, "https://shop.example.test/item/902")
 
+    @override_settings(FRONTEND_URL="https://shop.example.test/")
+    def test_legacy_draft_items_receive_item_urls_in_campaign_listing(self):
+        self.client.force_authenticate(user=self.admin)
+        self.campaign.content_payload = {
+            "items": [{"id": 731, "name": "Older saved item"}],
+            "banner": None,
+        }
+        self.campaign.save(update_fields=["content_payload"])
+        response = self.client.get("/api/admin/email-campaigns/")
+        self.assertEqual(response.status_code, 200)
+        row = next(item for item in response.data if item["id"] == self.campaign.id)
+        self.assertEqual(
+            row["content_payload"]["items"][0]["product_url"],
+            "https://shop.example.test/item/731",
+        )
+
     @override_settings(USE_TZ=True)
     def test_approved_campaign_persists_recurring_schedule_settings(self):
         self.client.force_authenticate(user=self.admin)
