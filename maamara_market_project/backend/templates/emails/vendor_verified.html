@@ -1,0 +1,12 @@
+{% extends "emails/_base.html" %}
+{% block title %}Vendor registration verified | Maa Mara Market{% endblock %}
+{% block heading %}Registration verified{% endblock %}
+{% block preheader %}Your vendor registration email has been verified.{% endblock %}
+{% block content %}
+  <h2>Congratulations, {{ first_name }}!</h2>
+  <p>Your vendor registration has been successfully verified.</p>
+  <p>You’ll receive another email when your request has been reviewed and fully approved by our team.</p>
+  <div class="notice">You do not need to submit your registration again. We’ll let you know when there is an update.</div>
+  <p>Thank you for choosing <strong>Maa Mara Market</strong>.</p>
+  <p>Best regards,<br><strong>Maa Mara Market Team</strong></p>
+{% endblock %}
