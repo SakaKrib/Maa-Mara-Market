@@ -84,7 +84,7 @@ const OTPVerification = () => {
       // Redirect after success with a small delay so snackbar shows
       setTimeout(() => navigate("/vendor-success-page"), 1500);
     } catch (err) {
-      openSnackbar("error", err.response?.data?.message || "Verification failed.");
+      openSnackbar("error", err.response?.data?.message || err.response?.data?.error || "Verification failed.");
     } finally {
       setLoading(false);
     }
