@@ -18,7 +18,7 @@ const OTPVerification = () => {
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
   const [resending, setResending] = useState(false);
-  const [timer, setTimer] = useState(0);
+  const [timer, setTimer] = useState(() => getSecondsUntil(location.state?.expiresAt));
 
   // Snackbar state
   const [snackbar, setSnackbar] = useState({
@@ -36,14 +36,15 @@ const OTPVerification = () => {
   }, [location.state]);
 
   useEffect(() => {
-    let interval = null;
-    if (timer > 0) {
-      interval = setInterval(() => setTimer((t) => t - 1), 1000);
-    } else if (timer === 0) {
-      clearInterval(interval);
-    }
+    const expiresAt = location.state?.expiresAt;
+    setTimer(getSecondsUntil(expiresAt));
+    if (!expiresAt) return undefined;
+
+    const updateTimer = () => setTimer(getSecondsUntil(expiresAt));
+    updateTimer();
+    const interval = setInterval(updateTimer, 1000);
     return () => clearInterval(interval);
-  }, [timer]);
+  }, [location.state?.expiresAt]);
 
   const openSnackbar = (severity, message) => {
     setSnackbar({ open: true, severity, message });
@@ -88,7 +89,7 @@ const OTPVerification = () => {
     try {
       const response = await api.post("/api/resend-otp-vendor/", { email });
       openSnackbar("success", response.data.message || "OTP resent successfully!");
-      setTimer(600); // 10 minutes timer
+      setTimer(getSecondsUntil(response.data.expires_at) || 180);
     } catch (err) {
       openSnackbar("error", err.response?.data?.message || "Failed to resend OTP.");
     } finally {
@@ -97,29 +98,29 @@ const OTPVerification = () => {
   };
 
   return (
-    <div className="fixed inset-0 bg-gray-100 flex items-center justify-center z-50">
+    <div className="mm-otp-screen mm-otp-screen--fixed">
       
-      <div className="bg-white p-6 rounded-lg shadow-lg w-full max-w-sm relative">
-        <div className="flex justify-center mb-4">
+      <div className="mm-otp-card">
+        <div className="mm-otp-brand">
           <div className="flex gap-4 items-center">
-            <img src={Maamara} alt="maamara-logo" className="w-5 h-5" />
-            <h2 className="text-lg font-semibold">Maamara Market</h2>
+            <img src={Maamara} alt="Maa Mara Market logo" />
+            <span>Maa Mara Market</span>
           </div>
         </div>
-        <h2 className="text-lg font-semibold mb-6 text-center">Verify Your Vendor OTP</h2>
+        <h1 className="mm-otp-heading">Verify your vendor registration</h1>
 
-        {email && <p className="mb-3 text-gray-600 text-center">📩 Sent to: {email}</p>}
+        {email && <p className="mm-otp-description">Enter the six-digit code sent to <span className="mm-otp-address">{email}</span>.</p>}
 
         <InputOTP
           maxLength={6}
           value={otp}
           onChange={setOtp}
-          className="flex justify-center gap-3 max-w-xs mx-auto select-none rounded-xl"
+          className="mm-otp-input" inputMode="numeric" pattern="[0-9]*" autoComplete="one-time-code" aria-label="Six-digit vendor verification code"
         >
-          <InputOTPGroup>
+          <InputOTPGroup className="mm-otp-group">
             <InputOTPSlot
               index={0}
-              className="w-12 h-20 text-2xl text-center rounded-xl border border-gray-300 shadow-sm focus:outline-none focus:border-blue-600 focus:ring-1 focus:ring-blue-600 transition"
+              className="mm-otp-slot"
             />
             <InputOTPSlot
               index={1}
@@ -130,7 +131,7 @@ const OTPVerification = () => {
               className="w-12 h-20 text-2xl text-center rounded-xl border border-gray-300 shadow-sm focus:outline-none focus:border-blue-600 focus:ring-1 focus:ring-blue-600 transition"
             />
           </InputOTPGroup>
-          <InputOTPSeparator />
+          <InputOTPSeparator className="mm-otp-separator" />
           <InputOTPGroup>
             <InputOTPSlot
               index={3}
@@ -147,18 +148,20 @@ const OTPVerification = () => {
           </InputOTPGroup>
         </InputOTP>
 
-        <Button onClick={handleVerify} disabled={loading || otp.length !== 6} className="mt-6 w-full">
-          {loading ? "Verifying..." : "Verify OTP"}
+        <div className="mm-otp-actions">
+        <Button onClick={handleVerify} disabled={loading || otp.length !== 6 || timer <= 0} className="primary-button w-full">
+          {loading ? "Verifying..." : timer <= 0 ? "OTP expired" : "Verify OTP"}
         </Button>
 
         <Button
           variant="outline"
           onClick={handleResend}
           disabled={resending || timer > 0}
-          className="mt-4 w-full"
+          className="light-button w-full"
         >
           {timer > 0 ? `Resend OTP in ${timer}s` : resending ? "Resending..." : "Resend OTP"}
         </Button>
+        </div>
 
         {/* Snackbar for notifications */}
         <AppSnackbar open={snackbar.open} message={snackbar.message} severity={snackbar.severity} onClose={handleSnackbarClose} autoHideDuration={6000} />
