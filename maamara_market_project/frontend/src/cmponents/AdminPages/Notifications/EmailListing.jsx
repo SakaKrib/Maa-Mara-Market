@@ -101,7 +101,7 @@ const EmailPanel = ({ open, onClose, filter = "sent" }) => {
             </div>
           </aside>
 
-          <main className="flex min-h-0 min-w-0 flex-1 flex-col overflow-y-auto p-4 sm:p-6">
+          <main className="flex min-h-0 min-w-0 flex-1 flex-col overflow-y-auto p-4 pb-[calc(env(safe-area-inset-bottom,0px)+1.25rem)] sm:p-6 sm:pb-8">
             <div className="mb-5 flex flex-wrap gap-2 border-b border-border pb-3">
               <Button variant={workspace === "activity" ? "default" : "outline"} onClick={() => setWorkspace("activity")}>Email activity</Button>
               <Button variant={workspace === "campaigns" ? "default" : "outline"} onClick={() => setWorkspace("campaigns")}>Campaigns & subscribers</Button>
