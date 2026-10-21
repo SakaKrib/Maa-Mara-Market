@@ -22,6 +22,8 @@ const AdminPostCareer = ({ open = true, onClose }) => {
   const [selectedApplication, setSelectedApplication] = useState(null);
   const [message, setMessage] = useState("");
   const [saving, setSaving] = useState(false);
+  const [deleteConfirmation, setDeleteConfirmation] = useState(null);
+  const [deletingJob, setDeletingJob] = useState(false);
   const [snackbar, setSnackbar] = useState({ open: false, message: "" });
   const showSnackbar = (message) => setSnackbar({ open: true, message });
 
@@ -67,10 +69,17 @@ const AdminPostCareer = ({ open = true, onClose }) => {
     setTab("editor");
   };
 
-  const deleteJob = async (id) => {
-    if (!window.confirm("Delete this job posting?")) return;
+  const deleteJob = (id) => {
+    const job = jobs.find((item) => String(item.id) === String(id));
+    setDeleteConfirmation(job || { id, title: "this job posting" });
+  };
+
+  const confirmDeleteJob = async () => {
+    if (!deleteConfirmation || deletingJob) return;
+    setDeletingJob(true);
     try {
-      await api.delete(`/api/careers/${id}/`);
+      await api.delete(`/api/careers/${deleteConfirmation.id}/`);
+      setDeleteConfirmation(null);
       await loadJobs();
       setMessage("Job deleted.");
       showSnackbar("Job deleted.");
@@ -78,6 +87,8 @@ const AdminPostCareer = ({ open = true, onClose }) => {
       console.error(error);
       setMessage("Could not delete the job.");
       showSnackbar("Could not delete the job.");
+    } finally {
+      setDeletingJob(false);
     }
   };
 
@@ -123,6 +134,14 @@ const AdminPostCareer = ({ open = true, onClose }) => {
       </div>
 
       <AppSnackbar open={snackbar.open} message={snackbar.message} severity={snackbar.severity} onClose={() => setSnackbar((prev) => ({ ...prev, open: false }))} />
+
+      {deleteConfirmation && <div className="fixed inset-0 z-[1200] flex items-end justify-center bg-black/55 p-0 backdrop-blur-sm sm:items-center sm:p-4" onMouseDown={(event) => { if (event.target === event.currentTarget && !deletingJob) setDeleteConfirmation(null); }}>
+        <section role="alertdialog" aria-modal="true" aria-labelledby="delete-job-title" aria-describedby="delete-job-description" className="w-full max-w-md rounded-t-3xl border border-border bg-card p-5 pb-[calc(1.25rem+env(safe-area-inset-bottom))] text-card-foreground shadow-2xl sm:rounded-2xl sm:p-6">
+          <div className="mb-4 flex items-start gap-3"><span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-destructive/10 text-destructive"><Trash2 size={20} /></span><div className="min-w-0 flex-1"><h2 id="delete-job-title" className="text-lg font-bold">Delete this position?</h2><p className="mt-1 break-words text-sm text-muted-foreground">{deleteConfirmation.title || "Selected job posting"}</p></div><button type="button" aria-label="Close delete confirmation" disabled={deletingJob} onClick={() => setDeleteConfirmation(null)} className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-muted-foreground transition hover:bg-muted hover:text-foreground disabled:opacity-50"><X size={19} /></button></div>
+          <p id="delete-job-description" className="rounded-2xl border border-border bg-muted/40 p-4 text-sm leading-6">This job posting will be removed from careers. This action cannot be undone.</p>
+          <div className="mt-5 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end"><button type="button" disabled={deletingJob} onClick={() => setDeleteConfirmation(null)} className="min-h-11 rounded-[20px] border border-border px-4 py-2.5 text-sm font-semibold transition hover:bg-muted disabled:opacity-50">Keep position</button><button type="button" disabled={deletingJob} onClick={confirmDeleteJob} className="min-h-11 rounded-[20px] bg-destructive px-4 py-2.5 text-sm font-semibold text-destructive-foreground transition hover:opacity-90 disabled:opacity-50">{deletingJob ? "Deleting…" : "Delete position"}</button></div>
+        </section>
+      </div>}
 
       {tab === "jobs" && (
         <div className="mm-admin-career-list">
