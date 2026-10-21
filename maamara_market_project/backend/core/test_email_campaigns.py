@@ -140,6 +140,26 @@ class EmailCampaignAuthorizationTests(TestCase):
         self.assertEqual(self.campaign.content_payload["items"][0]["product_url"], "https://shop.example.test/item/902")
         self.assertEqual(self.campaign.cta_url, "https://shop.example.test/item/902")
 
+    @override_settings(USE_TZ=True)
+    def test_approved_campaign_persists_recurring_schedule_settings(self):
+        self.client.force_authenticate(user=self.admin)
+        self.campaign.status = "approved"
+        self.campaign.save(update_fields=["status"])
+        future = (timezone.now() + timedelta(days=1)).isoformat()
+        response = self.client.post(
+            f"/api/admin/email-campaigns/{self.campaign.pk}/actions/schedule/",
+            {
+                "scheduled_at": future,
+                "recurrence": {"frequency": "weekly", "interval": 1, "until": "2027-12-31"},
+            },
+            format="json",
+        )
+        self.assertEqual(response.status_code, 200, response.data)
+        self.campaign.refresh_from_db()
+        self.assertEqual(self.campaign.status, "scheduled")
+        self.assertEqual(self.campaign.content_payload["recurrence"]["frequency"], "weekly")
+        self.assertEqual(self.campaign.content_payload["recurrence"]["until"], "2027-12-31")
+
     def test_campaign_cannot_be_scheduled_without_approval(self):
         self.client.force_authenticate(user=self.admin)
         future = (timezone.now() + timedelta(days=1)).isoformat()
