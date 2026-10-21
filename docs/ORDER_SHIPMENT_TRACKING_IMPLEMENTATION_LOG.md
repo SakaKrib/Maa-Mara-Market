@@ -83,3 +83,17 @@ A second source review found and addressed two operational correctness gaps:
 Backend CI was strengthened to use disposable PostgreSQL, compare model state against migrations, apply all migrations, and run the fulfilment regression tests. Verify the current workflow run triggered by the latest backend commit and the frontend build triggered by the latest customer-list edit; do not rely on earlier builds for these final changes. This audit did not start containers or run live carrier API calls or a real browser/device end-to-end test.
 
 The production Compose overlay still contains the pre-existing Caddy reverse-proxy service even though the preferred production setup is Nginx. It was not changed as part of this targeted fulfilment audit; resolve that separate deployment discrepancy before using the production overlay if the Nginx-only requirement still applies.
+
+## Targeted correctness review — 21 October 2026
+
+The follow-up source review identified and fixed three edge cases:
+
+1. **Shipment creation transaction safety:** the carrier/tracking-number uniqueness conflict is now handled inside a nested database savepoint. A duplicate tracking number should produce a controlled HTTP 409 response instead of leaving the outer request transaction marked as broken.
+2. **One shipment association per complete line:** the API now rejects an inspected fulfillment line that is already assigned to a shipment. The current data model tracks fulfillment at whole-line level and does not support split-quantity allocations, so allowing a second shipment would make tracking ambiguous.
+3. **Return holds during issue resolution:** staff cannot resume the customer-confirmation countdown while an active return/refund/exchange request exists. Both issue-resolution choices now check the financial/return hold first.
+
+Regression tests were added for duplicate tracking-number conflicts, duplicate shipment associations, and attempting to resume confirmation while a return request is open. The carrier event mutation helper is already wrapped in a database transaction, which protects its row lock in scheduled polling and webhook calls.
+
+**Current verification boundary:** the latest branch contains a PostgreSQL-backed CI workflow that runs migration consistency, applies migrations, and executes fulfillment and payout-safety tests. However, this review could not retrieve the Actions run result for the latest branch head through the available repository tools. The new regression tests have been committed but must be verified in the latest CI run; source inspection alone is not a passing test result.
+
+The payout generator remains monthly and selects completed orders by order-placement date; it does not yet allocate vendor payable amounts from `OrderItemFulfillment.payout_eligible_at`. Weekly payout cycles and durable item-level payout allocations therefore remain unimplemented. Do not describe the overall fulfillment-to-payout lifecycle as complete until that work and the real end-to-end checks are done.
