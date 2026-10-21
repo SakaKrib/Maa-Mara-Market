@@ -31,13 +31,15 @@ export default function EmailCampaignManager() {
   const [bannerSearch, setBannerSearch] = useState("");
   const [editingId, setEditingId] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [catalogLoading, setCatalogLoading] = useState(false);
   const [notice, setNotice] = useState("");
   const [catalogNotice, setCatalogNotice] = useState("");
   const [report, setReport] = useState(null);
 
-  const load = async () => {
-    setLoading(true); setNotice("");
+  const load = async ({ preserveNotice = false } = {}) => {
+    setLoading(true);
+    if (!preserveNotice) setNotice("");
     try {
       const [c, s] = await Promise.all([
         api.get("/api/admin/email-campaigns/"),
@@ -102,8 +104,8 @@ export default function EmailCampaignManager() {
       ...v,
       hero_image_url: next ? imageUrl(next.image) : "",
       preheader: next?.subtitle || (isSelected ? "" : v.preheader),
-      cta_url: next?.cta_url ? imageUrl(next.cta_url) : (next?.cta_item ? imageUrl(`/item/${next.cta_item}/`) : (isSelected ? "" : v.cta_url)),
-      content_payload: { ...(v.content_payload || {}), banner: next ? { id: next.id, title: next.title, subtitle: next.subtitle || "", image_url: imageUrl(next.image) } : null },
+      cta_url: next?.cta_url ? next.cta_url : (next?.cta_item ? "" : (isSelected ? "" : v.cta_url)),
+      content_payload: { ...(v.content_payload || {}), banner: next ? { id: next.id, title: next.title, subtitle: next.subtitle || "", image_url: imageUrl(next.image), cta_item: next.cta_item || null, cta_url: next.cta_url || "" } : null },
     }));
   };
 
@@ -115,23 +117,39 @@ export default function EmailCampaignManager() {
   };
 
   const save = async (e) => {
-    e.preventDefault(); setNotice("");
+    e.preventDefault();
+    if (saving) return;
+    setSaving(true);
+    setNotice("");
     const payload = {
       ...form,
       body_html: "",
       content_payload: {
         ...(form.content_payload || {}),
-        banner: selectedBanner ? { id: selectedBanner.id, title: selectedBanner.title, subtitle: selectedBanner.subtitle || "", image_url: imageUrl(selectedBanner.image) } : null,
+        banner: selectedBanner ? { id: selectedBanner.id, title: selectedBanner.title, subtitle: selectedBanner.subtitle || "", image_url: imageUrl(selectedBanner.image), cta_item: selectedBanner.cta_item || null, cta_url: selectedBanner.cta_url || "" } : null,
         items: selectedProducts.map(itemSnapshot),
       },
     };
     try {
-      if (editingId) await api.patch(`/api/admin/email-campaigns/${editingId}/`, payload);
-      else await api.post("/api/admin/email-campaigns/", payload);
+      const response = editingId
+        ? await api.patch(`/api/admin/email-campaigns/${editingId}/`, payload)
+        : await api.post("/api/admin/email-campaigns/", payload);
+      const savedCampaign = response?.data;
+      if (!savedCampaign?.id) {
+        throw new Error("The server did not confirm that the campaign was saved.");
+      }
       setForm(blank); setSelectedProducts([]); setSelectedBanner(null); setEditingId(null);
-      setNotice("Draft saved. Preview it before submitting for approval.");
-      await load();
-    } catch (err) { setNotice(err?.response?.data?.detail || "Could not save the draft."); }
+      await load({ preserveNotice: true });
+      setNotice(`Draft saved successfully (campaign #${savedCampaign.id}). Preview it before submitting for approval.`);
+    } catch (err) {
+      const data = err?.response?.data;
+      const detail = data?.detail || (data && typeof data === "object"
+        ? Object.entries(data).map(([key, value]) => `${key}: ${Array.isArray(value) ? value.join(", ") : String(value)}`).join(" · ")
+        : "");
+      setNotice(detail || err?.message || "Could not save the draft. Check the required fields and try again.");
+    } finally {
+      setSaving(false);
+    }
   };
 
   const action = async (id, name, payload = {}) => {
@@ -154,7 +172,7 @@ export default function EmailCampaignManager() {
       } else if (name === "send" && !window.confirm("Send this approved campaign to all currently subscribed newsletter recipients?")) return;
       else await api.post(`/api/admin/email-campaigns/${id}/actions/${name}/`, payload);
       setNotice(name === "send" ? "Campaign queued for sending." : `Campaign ${name} successful.`);
-      await load();
+      await load({ preserveNotice: true });
     } catch (err) { setNotice(err?.response?.data?.detail || `Campaign action failed: ${name}`); }
   };
 
@@ -247,7 +265,7 @@ export default function EmailCampaignManager() {
           <label className="block text-sm font-medium">Introduction <span className="font-normal text-muted-foreground">(optional)</span><textarea rows={4} value={form.body_text} onChange={update("body_text")} placeholder="Tell subscribers what is special about this collection…" className={fieldClass + " min-h-28 resize-y leading-6"} /></label>
           <div className="mt-3 grid gap-3 sm:grid-cols-2">
             <label className="text-sm font-medium">Main button label<input value={form.cta_label} onChange={update("cta_label")} placeholder="Shop now" className={fieldClass} /></label>
-            <label className="text-sm font-medium">Button destination <span className="font-normal text-muted-foreground">(optional)</span><input type="url" value={form.cta_url} onChange={update("cta_url")} placeholder="https://…" className={fieldClass} /></label>
+            {selectedProducts.length > 0 ? <div className="text-sm font-medium">Button destination<div className={fieldClass + " flex h-auto min-h-11 items-center bg-muted/50 text-muted-foreground"}>Automatically links to {selectedProducts[0].name} at FRONTEND_URL/item/{selectedProducts[0].id}</div><p className="mt-1 text-xs text-muted-foreground">The server saves the full public URL from Django settings.</p></div> : <label className="text-sm font-medium">Button destination <span className="font-normal text-muted-foreground">(optional)</span><input type="url" value={form.cta_url} onChange={update("cta_url")} placeholder="https://…" className={fieldClass} /></label>}
           </div>
         </section>
 
@@ -265,7 +283,7 @@ export default function EmailCampaignManager() {
           <p className="hidden text-xs text-muted-foreground sm:block">Save as a draft first. Preview and submit it for approval when ready.</p>
           <div className="ml-auto flex w-full flex-col-reverse gap-2 sm:w-auto sm:flex-row">
             {editingId && <Button type="button" variant="outline" className={buttonClass} onClick={resetDraft}>Cancel edit</Button>}
-            <Button type="submit" className={buttonClass}><Check className="mr-1.5 h-4 w-4" />{editingId ? "Update draft" : "Save draft"}</Button>
+            <Button type="submit" disabled={saving} className={buttonClass}><Check className="mr-1.5 h-4 w-4" />{saving ? "Saving draft…" : editingId ? "Update draft" : "Save draft"}</Button>
           </div>
         </div>
       </form>
