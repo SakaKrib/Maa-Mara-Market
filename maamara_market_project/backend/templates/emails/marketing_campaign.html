@@ -19,11 +19,11 @@
   {% for item in campaign.content_payload.items %}
     <tr><td class="campaign-item-row" style="padding:14px 0;">
       {% if item.image_url %}<p style="margin:0 0 10px"><img src="{{ item.image_url }}" alt="{{ item.name }}" style="display:block;width:100%;max-width:220px;height:auto;border-radius:8px"></p>{% endif %}
-      <strong class="campaign-item-name">{{ item.name }}</strong>
-      {% if item.description %}<p class="campaign-item-description">{{ item.description }}</p>{% endif %}
-      {% if item.discount_price %}<p class="campaign-item-price">KSh {{ item.discount_price }}{% if item.price %} <span class="campaign-item-old-price">KSh {{ item.price }}</span>{% endif %}</p>
-      {% elif item.price %}<p class="campaign-item-name" style="margin-top:6px">KSh {{ item.price }}</p>{% endif %}
-      {% if item.product_url %}<p style="margin:14px 0 0"><a href="{{ item.product_url }}" style="display:inline-block;background:#255d3a;color:#ffffff;text-decoration:none;font-size:14px;font-weight:bold;padding:11px 22px;border-radius:8px">Shop now</a></p>{% elif item.id %}<p style="margin:14px 0 0"><a href="{{ frontend_url }}/item/{{ item.id }}" style="display:inline-block;background:#255d3a;color:#ffffff;text-decoration:none;font-size:14px;font-weight:bold;padding:11px 22px;border-radius:8px">Shop now</a></p>{% endif %}
+      <strong class="campaign-item-name" style="display:block;color:#222222;font-size:16px;font-weight:700;line-height:1.45;overflow-wrap:anywhere">{{ item.name }}</strong>
+      {% if item.description %}<p class="campaign-item-description" style="margin:6px 0 0;color:#555555;font-size:13px;line-height:1.55;overflow-wrap:anywhere">{{ item.description }}</p>{% endif %}
+      {% if item.discount_price %}<p class="campaign-item-price" style="margin:6px 0 0;color:#255d3a;font-size:14px;font-weight:700;overflow-wrap:anywhere">KSh {{ item.discount_price }}{% if item.price %} <span class="campaign-item-old-price" style="color:#777777;text-decoration:line-through;font-weight:normal">KSh {{ item.price }}</span>{% endif %}</p>
+      {% elif item.price %}<p class="campaign-item-price campaign-item-name" style="margin:6px 0 0;color:#255d3a;font-size:14px;font-weight:700;overflow-wrap:anywhere">KSh {{ item.price }}</p>{% endif %}
+      {% if item.product_url %}<p style="margin:14px 0 0"><a href="{{ item.product_url }}" style="display:inline-block;background:#255d3a;color:#ffffff;text-decoration:none;font-size:14px;font-weight:bold;padding:11px 22px;border-radius:20px">Shop now</a></p>{% elif item.id %}<p style="margin:14px 0 0"><a href="{{ frontend_url }}/item/{{ item.id }}" style="display:inline-block;background:#255d3a;color:#ffffff;text-decoration:none;font-size:14px;font-weight:bold;padding:11px 22px;border-radius:8px">Shop now</a></p>{% endif %}
     </td></tr>
   {% endfor %}
   </table>
