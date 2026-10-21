@@ -74,6 +74,20 @@ const STATE_BADGES = {
   blocked: { text: "Needs attention", icon: alertCircleOutline, cls: "bg-destructive/10 text-destructive" },
 };
 
+const formatWhen = (value) => {
+  const date = new Date(value);
+  return Number.isNaN(date.getTime())
+    ? ""
+    : date.toLocaleString("en-KE", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" });
+};
+
+const ACTION_LABELS = {
+  send: "Send payment",
+  request_approval: "Request approval",
+  approve_and_send: "Approve and send",
+  wait_for_other_admin: "Waiting for a second admin",
+};
+
 export function PayoutDetails({ item }) {
   const badge = STATE_BADGES[item.state] || STATE_BADGES.blocked;
   return (
@@ -99,6 +113,24 @@ export function PayoutDetails({ item }) {
         ))}
         <ReadOnlyField label="Payout amount" value={formatKes(item.amount)} />
         <ReadOnlyField label="Payout period" value={`${item.period_start} → ${item.period_end}`} />
+        {item.security?.initiated_by && (
+          <ReadOnlyField
+            label="Last sent by"
+            value={`${item.security.initiated_by}${item.security.initiated_at ? ` · ${formatWhen(item.security.initiated_at)}` : ""}`}
+          />
+        )}
+        {item.security?.approved_by && (
+          <ReadOnlyField
+            label="Approved by"
+            value={`${item.security.approved_by}${item.security.approved_at ? ` · ${formatWhen(item.security.approved_at)}` : ""}`}
+          />
+        )}
+        {item.security?.approval?.state === "awaiting_second_admin" && (
+          <ReadOnlyField
+            label="Approval requested by"
+            value={`${item.security.approval.requested_by}${item.security.approval.requested_at ? ` · ${formatWhen(item.security.approval.requested_at)}` : ""}`}
+          />
+        )}
       </div>
 
       {item.notes?.length > 0 && !item.paid && (
@@ -220,8 +252,14 @@ export function SinglePayoutScreen({ title, subtitle, logo, successPath, watchRe
 
   const handleSend = async () => {
     if (!item?.can_pay) return;
+    const verb =
+      item.action === "request_approval"
+        ? "Request approval to send"
+        : item.action === "approve_and_send"
+          ? "Approve and send"
+          : "Send";
     const ok = window.confirm(
-      `Send ${formatKes(item.amount)} to ${item.vendor.company_name}\n${item.destination.summary}\n` +
+      `${verb} ${formatKes(item.amount)} to ${item.vendor.company_name}\n${item.destination.summary}\n` +
         (item.warnings?.length ? `\nCheck first:\n- ${item.warnings.join("\n- ")}\n` : "") +
         "\nContinue?"
     );
@@ -264,7 +302,7 @@ export function SinglePayoutScreen({ title, subtitle, logo, successPath, watchRe
         <>
           <PayoutDetails item={item} />
           <SendButton disabled={!item.can_pay} loading={sending} onClick={handleSend}>
-            Send payment
+            {ACTION_LABELS[item.action] || "Send payment"}
           </SendButton>
           <p className="text-center text-xs text-muted-foreground">
             The amount and destination come from the vendor's saved records and cannot be edited here.
@@ -312,7 +350,10 @@ export function GroupPayoutScreen({ method, title, subtitle, logo }) {
     const flagged = items.filter((i) => i.can_pay && i.warnings?.length).length;
     const ok = window.confirm(
       `Send all ${data.payment_method_label} payouts for this period (${summary.ready_count} ready, ${formatKes(summary.ready_amount)})?` +
-        (flagged ? `\n\n${flagged} of them have unusual signals. Review them above first.` : "")
+        (flagged ? `\n\n${flagged} of them have unusual signals. Review them above first.` : "") +
+        (items.some((i) => i.can_pay && i.action === "request_approval")
+          ? "\n\nLarge payouts will only be sent after a different admin approves them."
+          : "")
     );
     if (!ok) return;
 
@@ -321,7 +362,7 @@ export function GroupPayoutScreen({ method, title, subtitle, logo }) {
     try {
       const res = await api.post("/api/payout/process-payouts-by-group/", { payment_method: method });
       setResults(res.data?.results?.[method] || []);
-      showSnackbar("Payouts submitted. Review the results below.");
+      showSnackbar("Request processed. Review the results below.");
     } catch (err) {
       showSnackbar(errorText(err, "The payouts could not be submitted."), "error");
     } finally {
@@ -366,7 +407,13 @@ export function GroupPayoutScreen({ method, title, subtitle, logo }) {
                 {results.map((row) => (
                   <li key={row.reference} className="flex flex-wrap items-center justify-between gap-2 py-2">
                     <span className="font-medium text-card-foreground">{row.vendor}</span>
-                    <span className={String(row.status).startsWith("Failed") || String(row.status).startsWith("Exception") ? "text-destructive" : "text-emerald-700 dark:text-emerald-300"}>
+                    <span className={
+                      /^(Failed|Exception|Blocked)/.test(String(row.status))
+                        ? "text-destructive"
+                        : String(row.status).startsWith("Awaiting")
+                          ? "text-amber-700 dark:text-amber-300"
+                          : "text-emerald-700 dark:text-emerald-300"
+                    }>
                       {row.status}
                     </span>
                   </li>
