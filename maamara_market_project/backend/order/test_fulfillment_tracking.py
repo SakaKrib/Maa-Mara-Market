@@ -4,7 +4,8 @@ from types import SimpleNamespace
 from uuid import uuid4
 
 from django.contrib.auth import get_user_model
-from django.test import SimpleTestCase, TestCase
+from django.test import SimpleTestCase, TestCase, override_settings
+from unittest.mock import patch
 from django.utils import timezone
 
 from ReactSerializers.models import Item
@@ -15,6 +16,7 @@ from order.fulfillment import (
     _advance_from_carrier,
     _normalize_carrier_status,
     auto_complete_unconfirmed_items,
+    sync_pending_shipments,
     create_shipment,
     resolve_fulfillment_issue,
 )
@@ -345,4 +347,24 @@ class ShipmentCreationSafetyTests(TestCase):
         self.fulfillment.refresh_from_db()
         self.assertEqual(self.fulfillment.status, "ISSUE_REPORTED")
         self.assertIsNone(self.fulfillment.confirmation_deadline)
+
+class CarrierDeliveredTrackingSyncTests(TestCase):
+    setUp = CarrierReturnHoldTests.setUp
+
+    @override_settings(
+        SHIPMENT_TRACKING_MIN_INTERVAL_MINUTES=120,
+        SHIPMENT_TRACKING_MAX_PER_RUN=25,
+        SHIPMENT_TRACKING_CALL_SPACING_SECONDS=0,
+        SHIPMENT_TRACKING_POST_DELIVERY_DAYS=14,
+    )
+    @patch("order.fulfillment.sync_shipment_tracking", return_value={"events_applied": 0})
+    def test_delivered_shipment_is_polled_during_confirmation_window(self, sync_mock):
+        self.shipment.delivered_at = timezone.now()
+        self.shipment.last_synced_at = None
+        self.shipment.save(update_fields=["delivered_at", "last_synced_at", "updated_at"])
+
+        result = sync_pending_shipments()
+
+        self.assertEqual(result["checked"], 1)
+        sync_mock.assert_called_once()
 
