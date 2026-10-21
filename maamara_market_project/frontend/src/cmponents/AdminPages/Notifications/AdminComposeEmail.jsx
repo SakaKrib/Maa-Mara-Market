@@ -172,7 +172,7 @@ const ComposeEmail = ({ open, onClose, user = null }) => {
             </div>
           </div>
 
-          <footer className="flex shrink-0 flex-wrap items-center justify-between gap-3 border-t border-border bg-card px-2 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom,0px))] sm:px-2 sm:py-4">
+          <footer className="flex shrink-0 flex-wrap items-center justify-between gap-3 border-t border-border bg-card px-2 py-3 pb-[calc(env(safe-area-inset-bottom,0px)+1.25rem)] sm:px-2 sm:py-4">
             <p className="hidden text-xs text-muted-foreground sm:block">Required fields are marked with *.</p>
             <div className="ml-auto flex w-full flex-col-reverse gap-2 sm:w-auto sm:flex-row">
               <Button type="button" variant="outline" className="w-full rounded-[20px] sm:w-auto" onClick={onClose} disabled={loading}>Cancel</Button>
