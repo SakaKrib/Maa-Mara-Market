@@ -182,9 +182,11 @@ def _campaign_payload(campaign, available_recipient_count=None):
         "body_text": campaign.body_text, "hero_image_url": campaign.hero_image_url,
         "cta_label": campaign.cta_label, "cta_url": campaign.cta_url, "content_payload": content_payload, "recurrence": content_payload.get("recurrence", {"frequency": "none", "interval": 1, "until": ""}),
         "status": campaign.status, "scheduled_at": campaign.scheduled_at,
-        "recipient_count": campaign.recipient_count, "available_recipient_count": available_recipient_count,
-        "sent_count": campaign.sent_count,
-        "failed_count": campaign.failed_count, "created_at": campaign.created_at,
+        "recipient_count": getattr(campaign, "actual_recipient_count", campaign.recipient_count),
+        "available_recipient_count": available_recipient_count,
+        "sent_count": getattr(campaign, "actual_sent_count", campaign.sent_count),
+        "failed_count": getattr(campaign, "actual_failed_count", campaign.failed_count),
+        "created_at": campaign.created_at,
         "updated_at": campaign.updated_at, "sent_at": campaign.sent_at,
         "approved_by": campaign.approved_by_id,
     }
@@ -194,7 +196,16 @@ def _campaign_payload(campaign, available_recipient_count=None):
 @permission_classes([IsAdminUser])
 def email_campaigns(request):
     if request.method == "GET":
-        qs = EmailCampaign.objects.all()
+        from django.db.models import Count, Q
+        qs = EmailCampaign.objects.annotate(
+            actual_recipient_count=Count("recipients", distinct=True),
+            actual_sent_count=Count(
+                "recipients", filter=Q(recipients__status="sent"), distinct=True
+            ),
+            actual_failed_count=Count(
+                "recipients", filter=Q(recipients__status="failed"), distinct=True
+            ),
+        )
         campaign_status = request.query_params.get("status")
         if campaign_status:
             qs = qs.filter(status=campaign_status)
