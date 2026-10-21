@@ -105,7 +105,7 @@ export default function EmailCampaignManager() {
       ...v,
       hero_image_url: next ? imageUrl(next.image) : "",
       preheader: next?.subtitle || (isSelected ? "" : v.preheader),
-      cta_url: next?.cta_url ? imageUrl(next.cta_url) : (next?.cta_item ? imageUrl(`/product/${next.cta_item}/`) : (isSelected ? "" : v.cta_url)),
+      cta_url: next?.cta_url ? imageUrl(next.cta_url) : (next?.cta_item ? imageUrl(`/item/${next.cta_item}/`) : (isSelected ? "" : v.cta_url)),
       content_payload: { ...(v.content_payload || {}), banner: next ? { id: next.id, title: next.title, subtitle: next.subtitle || "", image_url: imageUrl(next.image) } : null },
     }));
   };
