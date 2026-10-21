@@ -44,7 +44,7 @@ export default function EmailCampaignManager() {
     setNotice("");
     try {
       if (name === "preview") {
-        const response = await api.post(`/api/admin/email-campaigns/${id}/preview/`, payload, { responseType: "text" });
+        const response = await api.post(`/api/admin/email-campaigns/${id}/actions/preview/`, payload, { responseType: "text" });
         const blob = new Blob([response.data], { type: "text/html" });
         const url = URL.createObjectURL(blob); window.open(url, "_blank", "noopener,noreferrer");
         return;
@@ -57,7 +57,7 @@ export default function EmailCampaignManager() {
         if (!value) return;
         await api.post(`/api/admin/email-campaigns/${id}/schedule/`, { scheduled_at: value });
       } else if (name === "send" && !window.confirm("Send this approved campaign to all currently subscribed newsletter recipients?")) return;
-      else await api.post(`/api/admin/email-campaigns/${id}/${name}/`, payload);
+      else await api.post(`/api/admin/email-campaigns/${id}/actions/${name}/`, payload);
       setNotice(name === "send" ? "Campaign queued for sending." : `Campaign ${name} successful.`);
       await load();
     } catch (err) { setNotice(err?.response?.data?.detail || `Campaign action failed: ${name}`); }
