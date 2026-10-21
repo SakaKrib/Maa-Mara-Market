@@ -55,7 +55,7 @@ export default function EmailCampaignManager() {
       if (name === "schedule") {
         const value = window.prompt("Enter a future date and time with timezone, e.g. 2026-12-01T09:00:00+03:00");
         if (!value) return;
-        await api.post(`/api/admin/email-campaigns/${id}/schedule/`, { scheduled_at: value });
+        await api.post(`/api/admin/email-campaigns/${id}/actions/schedule/`, { scheduled_at: value });
       } else if (name === "send" && !window.confirm("Send this approved campaign to all currently subscribed newsletter recipients?")) return;
       else await api.post(`/api/admin/email-campaigns/${id}/actions/${name}/`, payload);
       setNotice(name === "send" ? "Campaign queued for sending." : `Campaign ${name} successful.`);
