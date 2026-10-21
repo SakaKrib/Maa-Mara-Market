@@ -357,10 +357,14 @@ export default function EmailCampaignManager() {
         <section className={sectionClass}>
           <div className="mb-3 flex items-center gap-2"><Eye className="h-4 w-4 text-primary" /><h3 className={sectionHeadingClass}>Email content preview</h3></div>
           <div className="mx-auto w-full max-w-xl overflow-hidden rounded-xl border border-border bg-background text-foreground shadow-sm">
-            <div className="flex justify-center border-b border-[#edf1ed] bg-white px-3 py-4 sm:px-5">
-              <div className="inline-flex max-w-full items-center gap-2 rounded-md border border-[#d4af37] bg-white p-1.5 text-[#222222]">
-                <span aria-hidden="true" className="flex h-9 w-9 shrink-0 items-center justify-center rounded-sm border-l-4 border-[#8de02c] bg-[#ffbfbf] text-xl font-extrabold text-[#0b0b1a]">M</span>
-                <span className="min-w-0 text-left text-sm font-bold leading-tight sm:text-base"><span className="block whitespace-nowrap"><span className="text-[#222222]">Maa</span> <span className="inline-block rounded-sm border-l-4 border-[#8de02c] bg-[rgba(255,0,0,0.16)] px-1.5 py-0.5 text-[#222222]">Mara</span></span><span className="block font-extrabold text-[#128a12]">Market</span></span>
+            <div className="flex max-w-full items-center justify-center gap-2 border-b border-[#edf1ed] bg-white px-2 py-4 sm:gap-3 sm:px-5">
+              <img src="/maamara-brand-artwork.svg" alt="Maa Mara Market logo" className="h-10 w-10 shrink-0 object-contain sm:h-[50px] sm:w-[50px]" />
+              <div className="min-w-0 max-w-full rounded-[5px] border border-[gold] bg-white px-[3px] py-[2px] font-medium leading-tight text-[#222222]">
+                <div className="flex items-center gap-[2px] whitespace-nowrap text-[clamp(12px,3.7vw,20px)]">
+                  <span className="text-[#222222]">Maa</span>
+                  <span className="inline-block rounded-l-[5px] border-l-[5px] border-[#8de02c] bg-[rgba(255,0,0,0.253)] px-1.5 py-0.5 text-[#222222] sm:px-[10px]">Mara</span>
+                  <span className="font-bold text-[green]">Market</span>
+                </div>
               </div>
             </div>
             {form.hero_image_url && <div className="relative flex max-h-56 min-h-24 items-center justify-center overflow-hidden bg-muted text-muted-foreground"><ImageIcon className="h-7 w-7" /><img src={imageUrl(form.hero_image_url)} alt="Selected campaign banner" className="absolute inset-0 h-full max-h-56 w-full object-cover" onError={(event) => { event.currentTarget.style.display = "none"; }} /></div>}
