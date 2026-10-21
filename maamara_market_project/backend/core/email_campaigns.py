@@ -14,9 +14,27 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import AllowAny, IsAdminUser
 from rest_framework.response import Response
 
+from asgiref.sync import async_to_sync
+from channels.layers import get_channel_layer
+
 from .models import EmailCampaign, EmailCampaignRecipient, NewsletterSubscriber
 
 logger = logging.getLogger(__name__)
+
+
+def _broadcast_campaign_update(campaign, action):
+    """Notify authenticated admin dashboards that the campaign list changed."""
+    channel_layer = get_channel_layer()
+    if channel_layer is None:
+        return
+    payload = {"type": "email_campaign.updated", "campaign_id": campaign.pk,
+               "action": action, "status": campaign.status}
+    try:
+        async_to_sync(channel_layer.group_send)(
+            "realtime_admin", {"type": "realtime_event", "payload": payload}
+        )
+    except Exception:
+        logger.exception("Could not broadcast email campaign update %s", campaign.pk)
 
 
 def _subscriber_payload(row):
@@ -185,6 +203,7 @@ def email_campaigns(request):
         cta_url=str(cta_url or ""), content_payload=content_payload,
         status="draft", created_by=request.user,
     )
+    _broadcast_campaign_update(campaign, "created")
     return Response(_campaign_payload(campaign), status=201)
 
 
@@ -199,7 +218,14 @@ def email_campaign_detail(request, campaign_id):
     if request.method == "DELETE":
         if campaign.status in {"sending", "sent"}:
             return Response({"detail": "A sending or sent campaign cannot be deleted."}, status=409)
+        campaign_id = campaign.pk
         campaign.delete()
+        channel_layer = get_channel_layer()
+        if channel_layer is not None:
+            try:
+                async_to_sync(channel_layer.group_send)("realtime_admin", {"type": "realtime_event", "payload": {"type": "email_campaign.updated", "campaign_id": campaign_id, "action": "deleted"}})
+            except Exception:
+                logger.exception("Could not broadcast deleted email campaign %s", campaign_id)
         return Response(status=204)
     if campaign.status in {"sending", "sent"}:
         return Response({"detail": "A sending or sent campaign cannot be edited."}, status=409)
@@ -221,6 +247,7 @@ def email_campaign_detail(request, campaign_id):
         return Response({"detail": "Campaign title and subject are required."}, status=400)
     campaign.status = "draft"
     campaign.save()
+    _broadcast_campaign_update(campaign, "updated")
     return Response(_campaign_payload(campaign))
 
 
@@ -298,6 +325,7 @@ def email_campaign_action(request, campaign_id, action):
     else:
         return Response({"detail": "Unknown campaign action."}, status=400)
     campaign.refresh_from_db()
+    _broadcast_campaign_update(campaign, action)
     return Response(_campaign_payload(campaign))
 
 
