@@ -161,7 +161,11 @@ def _campaign_content(data, existing=None):
     return payload, cta_url
 
 
-def _campaign_payload(campaign):
+def _campaign_payload(campaign, available_recipient_count=None):
+    if available_recipient_count is None:
+        available_recipient_count = NewsletterSubscriber.objects.filter(
+            consent_given=True, unsubscribed_at__isnull=True
+        ).count()
     content_payload = dict(campaign.content_payload or {})
     normalized_items = []
     for item in content_payload.get("items", []):
@@ -178,7 +182,8 @@ def _campaign_payload(campaign):
         "body_text": campaign.body_text, "hero_image_url": campaign.hero_image_url,
         "cta_label": campaign.cta_label, "cta_url": campaign.cta_url, "content_payload": content_payload, "recurrence": content_payload.get("recurrence", {"frequency": "none", "interval": 1, "until": ""}),
         "status": campaign.status, "scheduled_at": campaign.scheduled_at,
-        "recipient_count": campaign.recipient_count, "sent_count": campaign.sent_count,
+        "recipient_count": campaign.recipient_count, "available_recipient_count": available_recipient_count,
+        "sent_count": campaign.sent_count,
         "failed_count": campaign.failed_count, "created_at": campaign.created_at,
         "updated_at": campaign.updated_at, "sent_at": campaign.sent_at,
         "approved_by": campaign.approved_by_id,
@@ -193,7 +198,13 @@ def email_campaigns(request):
         campaign_status = request.query_params.get("status")
         if campaign_status:
             qs = qs.filter(status=campaign_status)
-        return Response([_campaign_payload(c) for c in qs[:200]])
+        available_recipient_count = NewsletterSubscriber.objects.filter(
+            consent_given=True, unsubscribed_at__isnull=True
+        ).count()
+        return Response([
+            _campaign_payload(c, available_recipient_count=available_recipient_count)
+            for c in qs[:200]
+        ])
     data = request.data
     title, subject = str(data.get("title", "")).strip(), str(data.get("subject", "")).strip()
     if not title or not subject:
