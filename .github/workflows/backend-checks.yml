@@ -104,7 +104,8 @@ jobs:
           status=$?
           if [ "$status" -ne 0 ]; then
             # Surface the pending changes as annotations so the drift is readable without log access.
-            head -c 6000 /tmp/migration-check.txt | tr '\n' '|' | sed 's/%/%25/g' | while read -r line; do echo "::error title=Migration drift::$line"; done
+            msg=$(head -c 1500 /tmp/migration-check.txt | tr '\n' '|' | sed 's/%/%25/g')
+            echo "::error title=Migration drift::${msg:-no output}"
           fi
           exit $status
 
