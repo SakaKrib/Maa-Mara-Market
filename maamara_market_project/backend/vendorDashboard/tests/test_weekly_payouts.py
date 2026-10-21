@@ -141,7 +141,7 @@ class WeeklyBatchTests(PayoutTestMixin, TestCase):
         from vendorDashboard.views import get_vendor_earnings
 
         self.make_line()
-        today = timezone.now().date()
+        today = timezone.localdate()
         start, end = today.replace(day=1), today
         result = get_vendor_earnings(self.vendor, start, end)
         self.assertEqual(result["payout"].amount, Decimal("0.00"))

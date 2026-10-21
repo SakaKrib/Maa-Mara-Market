@@ -37,7 +37,7 @@ logger = logging.getLogger(__name__)
 @api_view(["POST"])
 @permission_classes([IsAdminUser])
 def generate_monthly_payouts(request):
-    today = timezone.now().date()
+    today = timezone.localdate()
     start_date = today.replace(day=1)
     end_date = (start_date + relativedelta(months=1)) - relativedelta(days=1)
 
@@ -124,7 +124,7 @@ def generate_monthly_payouts(request):
 @api_view(["POST"])
 @permission_classes([IsAdminUser])
 def process_payouts_by_group(request):
-    today = timezone.now().date()
+    today = timezone.localdate()
     start_date = today.replace(day=1)
     end_date = (start_date + relativedelta(months=1)) - relativedelta(days=1)
 
