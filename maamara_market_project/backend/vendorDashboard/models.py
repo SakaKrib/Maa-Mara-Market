@@ -164,6 +164,10 @@ class VendorDraft(models.Model):
     visitor_id = models.UUIDField(null=True, blank=True)
     data = models.JSONField(default=dict)
     draft_images = models.JSONField(default=list, blank=True)
+    # Identity images added by migration 0026; kept so that migration history and
+    # the model agree and no existing draft column is dropped.
+    company_logo = models.ImageField(upload_to="vendor_drafts/company_logos/", blank=True, null=True)
+    profile_picture = models.ImageField(upload_to="vendor_drafts/profile_pictures/", blank=True, null=True)
     status = models.CharField(max_length=20, default="DRAFT")
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
