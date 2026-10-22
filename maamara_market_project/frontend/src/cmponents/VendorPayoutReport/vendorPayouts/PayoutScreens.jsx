@@ -4,6 +4,7 @@ import { arrowBackOutline, checkmarkCircleOutline, timeOutline, alertCircleOutli
 import { useLocation, useNavigate } from "react-router-dom";
 import api, { getWebSocketUrl } from "../../../Services/Api";
 import AppSnackbar from "../../../../components/ui/app-snackbar";
+import { useConfirmDialog } from "../../../../components/ui/confirm-dialog";
 
 export const PAYOUTS_HOME = "/admin-dashboard/vendor-payout/payment-trigger";
 
@@ -227,6 +228,7 @@ export function SinglePayoutScreen({ title, subtitle, logo, successPath, watchRe
   const [error, setError] = useState("");
   const [sending, setSending] = useState(false);
   const [showSnackbar, snackbarNode] = useSnackbar();
+  const [confirm, confirmNode] = useConfirmDialog();
 
   const load = useCallback(async () => {
     if (!reference) {
@@ -258,11 +260,20 @@ export function SinglePayoutScreen({ title, subtitle, logo, successPath, watchRe
         : item.action === "approve_and_send"
           ? "Approve and send"
           : "Send";
-    const ok = window.confirm(
-      `${verb} ${formatKes(item.amount)} to ${item.vendor.company_name}\n${item.destination.summary}\n` +
-        (item.warnings?.length ? `\nCheck first:\n- ${item.warnings.join("\n- ")}\n` : "") +
-        "\nContinue?"
-    );
+    const ok = await confirm({
+      title: `${verb} this payout?`,
+      subtitle: item.vendor.company_name,
+      rows: [
+        ["Amount", formatKes(item.amount)],
+        ["Vendor", item.vendor.company_name],
+        ["Pays to", item.destination.summary],
+      ],
+      warnings: item.warnings || [],
+      note: item.action === "request_approval"
+        ? "This payout needs a second admin. A different admin must approve it before it is sent."
+        : "The saved amount is paid to the saved destination. The provider must confirm settlement before it is marked paid.",
+      confirmLabel: verb,
+    });
     if (!ok) return;
 
     setSending(true);
@@ -297,6 +308,7 @@ export function SinglePayoutScreen({ title, subtitle, logo, successPath, watchRe
   return (
     <PayoutPage title={title} subtitle={subtitle} logo={logo}>
       {snackbarNode}
+      {confirmNode}
       <LoadState loading={loading} error={error} onRetry={load} />
       {item && (
         <>
@@ -324,6 +336,7 @@ export function GroupPayoutScreen({ method, title, subtitle, logo }) {
   const [sending, setSending] = useState(false);
   const [results, setResults] = useState(null);
   const [showSnackbar, snackbarNode] = useSnackbar();
+  const [confirm, confirmNode] = useConfirmDialog();
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -348,13 +361,18 @@ export function GroupPayoutScreen({ method, title, subtitle, logo }) {
   const handleSendAll = async () => {
     if (!summary?.ready_count) return;
     const flagged = items.filter((i) => i.can_pay && i.warnings?.length).length;
-    const ok = window.confirm(
-      `Send all ${data.payment_method_label} payouts for this period (${summary.ready_count} ready, ${formatKes(summary.ready_amount)})?` +
-        (flagged ? `\n\n${flagged} of them have unusual signals. Review them above first.` : "") +
-        (items.some((i) => i.can_pay && i.action === "request_approval")
-          ? "\n\nLarge payouts will only be sent after a different admin approves them."
-          : "")
-    );
+    const needsApproval = items.some((i) => i.can_pay && i.action === "request_approval");
+    const ok = await confirm({
+      title: `Send all ${data.payment_method_label} payouts?`,
+      subtitle: `Period ${data.period}`,
+      rows: [
+        ["Ready to pay", String(summary.ready_count)],
+        ["Total", formatKes(summary.ready_amount)],
+      ],
+      warnings: flagged ? [`${flagged} of these payouts have unusual signals. Review them above first.`] : [],
+      note: needsApproval ? "Large payouts will only be sent after a different admin approves them." : undefined,
+      confirmLabel: "Send all",
+    });
     if (!ok) return;
 
     setSending(true);
@@ -374,6 +392,7 @@ export function GroupPayoutScreen({ method, title, subtitle, logo }) {
   return (
     <PayoutPage title={title} subtitle={subtitle} logo={logo}>
       {snackbarNode}
+      {confirmNode}
       <LoadState loading={loading} error={error} onRetry={load} />
 
       {data && (

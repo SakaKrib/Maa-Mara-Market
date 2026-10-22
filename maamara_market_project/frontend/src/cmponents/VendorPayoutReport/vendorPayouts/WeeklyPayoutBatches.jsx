@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "../../../Services/Api";
 import AppSnackbar from "../../../../components/ui/app-snackbar";
+import { useConfirmDialog } from "../../../../components/ui/confirm-dialog";
 import { PayoutPage, PAYOUTS_HOME } from "./PayoutScreens";
 
 const formatKes = (value) =>
@@ -37,6 +38,7 @@ export default function WeeklyPayoutBatches() {
   const navigate = useNavigate();
   const [state, setState] = useState({ loading: true, enabled: false, batches: [] });
   const [busy, setBusy] = useState("");
+  const [confirm, confirmNode] = useConfirmDialog();
   const [snackbar, setSnackbar] = useState({ open: false, message: "", severity: "info" });
 
   const notify = (message, severity) => setSnackbar({ open: true, message, severity });
@@ -55,8 +57,8 @@ export default function WeeklyPayoutBatches() {
     load();
   }, [load]);
 
-  const act = async (key, request, success, confirmText) => {
-    if (confirmText && !window.confirm(confirmText)) return;
+  const act = async (key, request, success, confirmOptions) => {
+    if (confirmOptions && !(await confirm(confirmOptions))) return;
     setBusy(key);
     try {
       await request();
@@ -94,6 +96,7 @@ export default function WeeklyPayoutBatches() {
         </button>
       </div>
 
+      {confirmNode}
       {state.loading && <p className="text-sm text-muted-foreground">Loading…</p>}
       {!state.loading && state.batches.length === 0 && (
         <p className="rounded-2xl border border-border bg-card p-5 text-sm text-muted-foreground">No weekly batches yet.</p>
@@ -177,7 +180,13 @@ export default function WeeklyPayoutBatches() {
                     `audit-${batch.id}`,
                     () => api.post(`/api/admin/payout-batches/${batch.id}/audit/`),
                     "Batch audited.",
-                    "Confirm you have reviewed every vendor and amount in this batch.",
+                    {
+                      title: "Mark this batch as audited?",
+                      subtitle: `Week ${batch.week_start} to ${batch.week_end}`,
+                      rows: [["Total", formatKes(batch.total)], ["Vendors", String(batch.payouts.length)]],
+                      note: "Confirm you have reviewed every vendor and amount in this batch. A different admin must approve it next.",
+                      confirmLabel: "Mark audited",
+                    },
                   )
                 }
                 className="rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition hover:bg-primary/90 disabled:opacity-50"
@@ -194,7 +203,13 @@ export default function WeeklyPayoutBatches() {
                     `approve-${batch.id}`,
                     () => api.post(`/api/admin/payout-batches/${batch.id}/approve/`),
                     "Batch approved.",
-                    "Approve this batch? Its payouts can then be sent. You must not be the admin who audited it.",
+                    {
+                      title: "Approve this batch?",
+                      subtitle: `Week ${batch.week_start} to ${batch.week_end}`,
+                      rows: [["Total", formatKes(batch.total)], ["Vendors", String(batch.payouts.length)]],
+                      note: "Its payouts can then be sent. You cannot approve a batch you audited yourself.",
+                      confirmLabel: "Approve batch",
+                    },
                   )
                 }
                 className="rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition hover:bg-primary/90 disabled:opacity-50"

@@ -14,6 +14,7 @@ import {
 import api from "../../Services/Api";
 import { useGenerateMonthlyPayouts } from "../Hooks/Payouts/GeneratePayoutHook";
 import AppSnackbar from "../../../components/ui/app-snackbar";
+import { useConfirmDialog } from "../../../components/ui/confirm-dialog";
 
 const METHOD_META = {
   MOBILE_MONEY: {
@@ -205,6 +206,7 @@ export default function VendorReport() {
   const [report, setReport] = useState([]);
   const [loading, setLoading] = useState(true);
   const [processingReference, setProcessingReference] = useState(null);
+  const [confirm, confirmNode] = useConfirmDialog();
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
   const [noticeType, setNoticeType] = useState("success");
@@ -278,10 +280,17 @@ export default function VendorReport() {
     }
 
     const vendorName = getVendorName(payout);
-    const confirmed = window.confirm(
-      `Submit ${formatKES(payout.amount)} to ${vendorName} via ${getMethodMeta(method).label}? The provider must confirm settlement before the payment is marked completed.`
-    );
-
+    const confirmed = await confirm({
+      title: "Submit this payout?",
+      subtitle: vendorName,
+      rows: [
+        ["Amount", formatKES(payout.amount)],
+        ["Vendor", vendorName],
+        ["Method", getMethodMeta(method).label],
+      ],
+      note: "The provider must confirm settlement before the payment is marked completed.",
+      confirmLabel: "Submit payout",
+    });
     if (!confirmed) return;
 
     setProcessingReference(payout.reference);
@@ -345,6 +354,7 @@ export default function VendorReport() {
 
   return (
     <section className="min-w-0 space-y-5 p-2 sm:p-4">
+      {confirmNode}
       <header className="flex flex-col gap-4 rounded-2xl border border-border bg-card p-4 shadow-sm sm:p-5 lg:flex-row lg:items-center lg:justify-between">
         <div className="flex min-w-0 items-center gap-3">
           <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
