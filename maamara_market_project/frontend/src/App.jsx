@@ -355,6 +355,7 @@ function AppContent() {
                <Route path="vendor-payout/payment-trigger/paypal-payment/single-vendor" element={<PaypalBulkPayment />} />
                <Route path="vendor-payout/payment-trigger/bank-transfer-payment-group" element={<BankTransferBulkPayment />} />
                <Route path="vendor-payout/payment-trigger/mpesa-payment/single-vendor/vendor-payouts/success/:reference" element={<PayoutSuccess />} />
+               <Route path="vendor-payout/payment-trigger/payout-result/:reference" element={<PayoutSuccess />} />
 
               {/* payments route */}
 

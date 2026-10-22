@@ -8,7 +8,6 @@ export default function MpesaB2CPayment() {
       subtitle="Phone numbers use B2C. Buy Goods / Till and Paybill destinations use B2B. Everything below is the vendor's saved payment detail."
       logo={MpesaLogo}
       watchResult
-      successPath={(reference) => `vendor-payouts/success/${reference}`}
     />
   );
 }

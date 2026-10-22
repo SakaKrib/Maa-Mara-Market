@@ -308,6 +308,19 @@ def build_payout_review(payout, viewer=None):
                     "you request, a different admin approves and sends."
                 )
 
+    # The provider's last definite answer, so the admin sees why a send did not go through.
+    provider_failure = ""
+    if not payout.paid and method == "MOBILE_MONEY" and payout.mpesa_result_code not in (None, 0):
+        provider_failure = f"M-Pesa could not complete the last attempt: {payout.mpesa_result_desc or 'no reason given'}."
+
+    receipt = ""
+    if method == "MOBILE_MONEY":
+        receipt = payout.mpesa_transaction_id or ""
+    elif method == "PAYPAL":
+        receipt = payout.paypal_transaction_id or ""
+    elif method == "BANK_TRANSFER":
+        receipt = payout.kcb_provider_reference or payout.kcb_transaction_reference or ""
+
     if payout.paid:
         state = "paid"
     elif pending:
@@ -345,6 +358,9 @@ def build_payout_review(payout, viewer=None):
         "problems": problems,
         "notes": notes,
         "warnings": warnings,
+        "provider_failure": provider_failure,
+        "receipt": receipt,
+        "submitted_at": payout.initiated_at if pending and not payout.paid else None,
         "can_pay": state == "ready" and action != "wait_for_other_admin",
         "action": action,
         "security": security,

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { IonIcon } from "@ionic/react";
 import { arrowBackOutline, checkmarkCircleOutline, timeOutline, alertCircleOutline } from "ionicons/icons";
 import { useLocation, useNavigate } from "react-router-dom";
@@ -7,6 +7,9 @@ import AppSnackbar from "../../../../components/ui/app-snackbar";
 import { useConfirmDialog } from "../../../../components/ui/confirm-dialog";
 
 export const PAYOUTS_HOME = "/admin-dashboard/vendor-payout/payment-trigger";
+export const payoutResultPath = (reference) => `${PAYOUTS_HOME}/payout-result/${encodeURIComponent(reference)}`;
+
+const CHECK_EVERY_MS = 5000;
 
 const formatKes = (value) =>
   `KES ${Number(value || 0).toLocaleString("en-KE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
@@ -153,6 +156,12 @@ export function PayoutDetails({ item }) {
         </div>
       )}
 
+      {item.provider_failure && !item.paid && (
+        <p className="mt-4 rounded-xl border border-destructive/30 bg-destructive/5 px-4 py-3 text-xs font-semibold text-destructive">
+          {item.provider_failure}
+        </p>
+      )}
+
       {item.problems.length > 0 && !item.paid && (
         <ul className="mt-4 space-y-1 rounded-xl border border-destructive/30 bg-destructive/5 px-4 py-3 text-xs text-destructive">
           {item.problems.map((problem) => (
@@ -160,6 +169,42 @@ export function PayoutDetails({ item }) {
           ))}
         </ul>
       )}
+    </article>
+  );
+}
+
+export function AwaitingConfirmation({ item, waitedSeconds, checking, onCheck }) {
+  const label = item.payment_method_label || "the provider";
+  const slow = waitedSeconds >= 180;
+  return (
+    <article className="rounded-2xl border border-amber-500/40 bg-amber-500/5 p-4 shadow-sm sm:p-5" role="status">
+      <div className="flex items-start gap-3">
+        <span className="mt-0.5 inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-amber-500/15 text-amber-700 dark:text-amber-300">
+          <span className="h-4 w-4 animate-spin rounded-full border-2 border-current/30 border-t-current" />
+        </span>
+        <div className="min-w-0">
+          <p className="text-sm font-bold text-card-foreground">Waiting for {label} to confirm</p>
+          <p className="mt-1 text-xs leading-5 text-muted-foreground">
+            {label} has accepted this payment{item.submitted_at ? ` (sent ${formatWhen(item.submitted_at)})` : ""}. The final
+            result arrives as a separate message from the provider to our server, usually within a minute. This page checks
+            every few seconds and opens the success page as soon as the payment is confirmed. Do not send it again.
+          </p>
+          {slow && (
+            <p className="mt-2 text-xs leading-5 text-amber-800 dark:text-amber-200">
+              This is taking longer than usual. If it never completes, the server's result address for {label} may not be
+              reachable from the internet. Check that the callback URLs in the server settings are public HTTPS addresses.
+            </p>
+          )}
+          <button
+            type="button"
+            onClick={onCheck}
+            disabled={checking}
+            className="mt-3 inline-flex min-h-10 items-center justify-center rounded-[20px] border border-border bg-card px-4 py-2 text-xs font-semibold text-card-foreground transition hover:bg-muted disabled:opacity-50"
+          >
+            {checking ? "Checking…" : "Check status now"}
+          </button>
+        </div>
+      </div>
     </article>
   );
 }
@@ -229,6 +274,44 @@ export function SinglePayoutScreen({ title, subtitle, logo, successPath, watchRe
   const [sending, setSending] = useState(false);
   const [showSnackbar, snackbarNode] = useSnackbar();
   const [confirm, confirmNode] = useConfirmDialog();
+  const navigatedRef = useRef(false);
+  const socketRef = useRef(null);
+  const [checking, setChecking] = useState(false);
+  const [waitedSeconds, setWaitedSeconds] = useState(0);
+
+  const goToResult = useCallback(
+    (payload) => {
+      if (navigatedRef.current) return;
+      navigatedRef.current = true;
+      navigate(payoutResultPath(reference), { state: { payout: payload } });
+    },
+    [navigate, reference],
+  );
+
+  // Instant path: the server pushes the provider's result over a WebSocket.
+  const openResultSocket = () => {
+    try {
+      socketRef.current?.close();
+      const socket = new WebSocket(getWebSocketUrl(`/ws/payout/${reference}/`));
+      socketRef.current = socket;
+      socket.onmessage = (event) => {
+        try {
+          const data = JSON.parse(event.data);
+          if (data.type === "payout_message") {
+            socket.close();
+            if (String(data.status || "").toLowerCase() === "success" || data.paid) goToResult(data);
+            else load();
+          }
+        } catch {
+          /* ignore malformed frames */
+        }
+      };
+    } catch {
+      /* polling below still picks the result up */
+    }
+  };
+
+  useEffect(() => () => socketRef.current?.close(), []);
 
   const load = useCallback(async () => {
     if (!reference) {
@@ -251,6 +334,38 @@ export function SinglePayoutScreen({ title, subtitle, logo, successPath, watchRe
   useEffect(() => {
     load();
   }, [load]);
+
+  // Reliable path: while the provider has not answered, re-read the saved payout.
+  const refresh = useCallback(async () => {
+    if (!reference) return null;
+    try {
+      const res = await api.get(`/api/admin/payouts/${encodeURIComponent(reference)}/review/`);
+      setItem(res.data);
+      if (res.data.state === "paid") goToResult(res.data);
+      return res.data;
+    } catch {
+      return null;
+    }
+  }, [reference, goToResult]);
+
+  const awaiting = item?.state === "submitted";
+  useEffect(() => {
+    if (!awaiting) {
+      setWaitedSeconds(0);
+      return undefined;
+    }
+    const timer = setInterval(() => {
+      setWaitedSeconds((seconds) => seconds + CHECK_EVERY_MS / 1000);
+      refresh();
+    }, CHECK_EVERY_MS);
+    return () => clearInterval(timer);
+  }, [awaiting, refresh]);
+
+  const checkNow = async () => {
+    setChecking(true);
+    await refresh();
+    setChecking(false);
+  };
 
   const handleSend = async () => {
     if (!item?.can_pay) return;
@@ -282,20 +397,7 @@ export function SinglePayoutScreen({ title, subtitle, logo, successPath, watchRe
       const res = await api.post(`/api/vendor/payout/${encodeURIComponent(reference)}/pay/`);
       showSnackbar(res.data?.message || "Payout submitted.");
 
-      if (watchResult) {
-        const socket = new WebSocket(getWebSocketUrl(`/ws/payout/${reference}/`));
-        socket.onmessage = (event) => {
-          try {
-            const data = JSON.parse(event.data);
-            if (data.type === "payout_message") {
-              socket.close();
-              navigate(successPath(reference), { state: { payout: data } });
-            }
-          } catch {
-            /* ignore malformed frames */
-          }
-        };
-      }
+      if (watchResult) openResultSocket();
       await load();
     } catch (err) {
       showSnackbar(errorText(err, "The payout could not be submitted."), "error");
@@ -312,6 +414,7 @@ export function SinglePayoutScreen({ title, subtitle, logo, successPath, watchRe
       <LoadState loading={loading} error={error} onRetry={load} />
       {item && (
         <>
+          {awaiting && <AwaitingConfirmation item={item} waitedSeconds={waitedSeconds} checking={checking} onCheck={checkNow} />}
           <PayoutDetails item={item} />
           <SendButton disabled={!item.can_pay} loading={sending} onClick={handleSend}>
             {ACTION_LABELS[item.action] || "Send payment"}

@@ -1,129 +1,115 @@
-import React from "react";
-import { Box, Typography, Button, useTheme } from "@mui/material";
-import { tokens } from "../../../../theme";
-import { useNavigate, useLocation, useParams } from "react-router-dom";
-import CheckCircleIcon from "@mui/icons-material/CheckCircle";
-import "../payout-workflows.css";
+import { useCallback, useEffect, useState } from "react";
+import { IonIcon } from "@ionic/react";
+import { alertCircleOutline, checkmarkCircleOutline } from "ionicons/icons";
+import { useNavigate, useParams } from "react-router-dom";
+import api from "../../../../Services/Api";
+import { PayoutPage, ReadOnlyField, PAYOUTS_HOME } from "../PayoutScreens";
 
+const CHECK_EVERY_MS = 5000;
+
+const formatKes = (value) =>
+  `KES ${Number(value || 0).toLocaleString("en-KE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+
+const formatDateTime = (value) => {
+  const date = new Date(value);
+  return Number.isNaN(date.getTime())
+    ? ""
+    : date.toLocaleString("en-KE", { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" });
+};
+
+// Result page for a payout. It always reads the saved payout from the server, so it is
+// correct after a refresh and for every payment method, and keeps checking until the
+// provider has confirmed.
 export default function PayoutSuccess() {
   const { reference } = useParams();
-  const location = useLocation(); // get passed state
   const navigate = useNavigate();
-  const theme = useTheme();
-  const colors = tokens(theme.palette.mode);
+  const [item, setItem] = useState(null);
+  const [error, setError] = useState("");
 
-  const payout = location.state?.payout || null;
-  const payoutStatus = String(payout?.status || "").toLowerCase();
+  const load = useCallback(async () => {
+    try {
+      const res = await api.get(`/api/admin/payouts/${encodeURIComponent(reference)}/review/`);
+      setItem(res.data);
+      setError("");
+    } catch (err) {
+      setError(err?.response?.data?.error || "Unable to load this payout.");
+    }
+  }, [reference]);
 
-  const handleGoBack = () => navigate("/admin-dashboard/vendor-payout/payment-trigger");
+  useEffect(() => {
+    load();
+  }, [load]);
 
-  const maskTransaction = (id) => {
-    if (!id || id.length <= 6) return id;
-    return `${id.slice(0, 3)}...${id.slice(-3)}`;
-  };
+  const finished = item?.state === "paid";
+  useEffect(() => {
+    if (finished || error) return undefined;
+    const timer = setInterval(load, CHECK_EVERY_MS);
+    return () => clearInterval(timer);
+  }, [finished, error, load]);
+
+  const failed = !finished && Boolean(item?.provider_failure);
+  const tone = finished
+    ? { cls: "border-emerald-500/40 bg-emerald-500/5", icon: "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300", title: "Payment successful" }
+    : failed
+      ? { cls: "border-destructive/40 bg-destructive/5", icon: "bg-destructive/15 text-destructive", title: "Payment failed" }
+      : { cls: "border-amber-500/40 bg-amber-500/5", icon: "bg-amber-500/15 text-amber-700 dark:text-amber-300", title: "Waiting for confirmation" };
 
   return (
-    <Box
-      sx={{
-        minHeight: "100vh",
-        display: "flex",
-        justifyContent: "center",
-        alignItems: "center",
-        backgroundColor: colors.primary[900],
-        p: 2,
-      }}
-    >
-      <Box
-        sx={{
-          borderRadius: 2,
-          p: 4,
-          width: "100%",
-          maxWidth: 700,
-          backgroundColor: colors.primary[800],
-          color: colors.gray[100],
-          textAlign: "center",
-          boxShadow: 3,
-        }}
-      >
-        {payoutStatus === "success" && (
-          <CheckCircleIcon
-            sx={{ fontSize: 80, color: colors.greenAccent[500], mb: 2 }}
-          />
-        )}
+    <PayoutPage title="Payout result" subtitle="The provider's confirmation for this vendor payment.">
+      {error && (
+        <div className="rounded-2xl border border-destructive/30 bg-destructive/5 p-5 text-sm text-destructive">
+          <p>{error}</p>
+          <button type="button" onClick={load} className="mt-3 rounded-full border border-destructive/40 px-3 py-1.5 text-xs font-semibold">
+            Try again
+          </button>
+        </div>
+      )}
 
-        <Typography variant="h5" sx={{ mb: 2 }}>
-          {payoutStatus === "success"
-            ? "Payment Successful!"
-            : payoutStatus === "failed"
-            ? "Payment Failed"
-            : "Processing Payment..."}
-        </Typography>
+      {!item && !error && (
+        <p className="rounded-2xl border border-border bg-card p-6 text-sm text-muted-foreground">Loading payout…</p>
+      )}
 
-        {payout && (
-          <Box
-            sx={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-              mt: 3,
-              p: 2,
-              backgroundColor: colors.primary[700],
-              borderRadius: 1,
-            }}
+      {item && (
+        <>
+          <article className={`rounded-2xl border p-5 text-center shadow-sm sm:p-6 ${tone.cls}`} role="status">
+            <span className={`mx-auto flex h-14 w-14 items-center justify-center rounded-full text-3xl ${tone.icon}`}>
+              {finished || failed ? (
+                <IonIcon icon={finished ? checkmarkCircleOutline : alertCircleOutline} />
+              ) : (
+                <span className="h-6 w-6 animate-spin rounded-full border-2 border-current/30 border-t-current" />
+              )}
+            </span>
+            <h2 className="mt-3 text-lg font-bold text-card-foreground">{tone.title}</h2>
+            <p className="mx-auto mt-1 max-w-md text-sm text-muted-foreground">
+              {finished
+                ? `${formatKes(item.amount)} was confirmed by ${item.payment_method_label} for ${item.vendor.company_name}.`
+                : failed
+                  ? item.provider_failure
+                  : `${item.payment_method_label} has not confirmed this payment yet. This page updates by itself.`}
+            </p>
+          </article>
+
+          <article className="rounded-2xl border border-border bg-card p-4 shadow-sm sm:p-5">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <ReadOnlyField label="Vendor" value={item.vendor.company_name} />
+              <ReadOnlyField label="Amount" value={formatKes(item.amount)} />
+              <ReadOnlyField label="Paid to" value={item.destination.summary} />
+              <ReadOnlyField label="Method" value={item.payment_method_label} />
+              <ReadOnlyField label="Receipt / transaction ID" value={item.receipt} />
+              <ReadOnlyField label="Confirmed at" value={finished ? formatDateTime(item.paid_at) : ""} />
+              <ReadOnlyField label="Reference" value={item.reference} />
+            </div>
+          </article>
+
+          <button
+            type="button"
+            onClick={() => navigate(PAYOUTS_HOME)}
+            className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground transition hover:bg-primary/90"
           >
-            {/* Vendor */}
-            <Box sx={{ textAlign: "center", flex: 1 }} className='mm-payout-shadow'>
-              <Typography fontWeight="bold">Vendor</Typography>
-              <Typography>{payout.vendor}</Typography>
-            </Box>
-
-            {/* Amount */}
-            <Box sx={{ textAlign: "center", flex: 1 }} className='mm-payout-shadow'>
-              <Typography fontWeight="bold">Amount</Typography>
-              <Typography>{payout.amount}</Typography>
-            </Box>
-
-            {/* Transaction ID */}
-            <Box sx={{ textAlign: "center", flex: 1 }} className='mm-payout-shadow'>
-              <Typography fontWeight="bold">Transaction ID</Typography>
-              <Typography>{maskTransaction(payout.transaction_id)}</Typography>
-            </Box>
-
-            {/* Status */}
-            <Box sx={{ textAlign: "center", flex: 1 }} className='mm-payout-shadow'>
-              <Typography fontWeight="bold">Status</Typography>
-              <Typography
-                sx={{
-                  color:
-                    payoutStatus === "success"
-                      ? colors.greenAccent[500]
-                      : colors.redAccent[500],
-                }}
-              >
-                {payoutStatus === "success" ? "Paid" : "Failed"}
-              </Typography>
-            </Box>
-          </Box>
-        )}
-
-        {!payout && (
-          <Typography variant="body1" sx={{ mt: 2 }}>
-            Waiting for payout confirmation...
-          </Typography>
-        )}
-
-        <Button
-          variant="contained"
-          sx={{
-            mt: 4,
-            backgroundColor: colors.greenAccent[700],
-            "&:hover": { backgroundColor: colors.gray[900] },
-          }}
-          onClick={handleGoBack}
-        >
-          Back to Payouts
-        </Button>
-      </Box>
-    </Box>
+            Back to payouts
+          </button>
+        </>
+      )}
+    </PayoutPage>
   );
 }
