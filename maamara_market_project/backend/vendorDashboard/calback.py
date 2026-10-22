@@ -203,7 +203,7 @@ def mpesa_result(request):
                     )
 
             transaction_id_for_event = payout.mpesa_transaction_id
-            transaction.on_commit(
+            db_transaction.on_commit(
                 lambda: broadcast_event(
                     "payout.updated",
                     model="VendorPayout",
