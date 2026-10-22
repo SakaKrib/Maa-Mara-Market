@@ -34,3 +34,24 @@ class PayoutReviewStateTests(PayoutTestMixin, TestCase):
         self.assertEqual(review["state"], "paid")
         self.assertEqual(review["receipt"], "QWE123RTY")
         self.assertEqual(review["provider_failure"], "")
+
+
+class MpesaDestinationFieldTests(PayoutTestMixin, TestCase):
+    def labels(self, **vendor_fields):
+        payout = self.make_payout("MOBILE_MONEY")
+        for key, value in vendor_fields.items():
+            setattr(payout.vendor, key, value)
+        payout.vendor.save()
+        return [f["label"] for f in build_payout_review(payout)["destination"]["fields"]]
+
+    def test_paybill_shows_only_paybill_and_account_number(self):
+        labels = self.labels(mpesa_type="LIPA_NA_MPESA", mpesa_paybill="400200", mpesa_paybill_account="ACC-1")
+        self.assertEqual(labels, ["Paybill number", "Paybill account number"])
+
+    def test_till_shows_only_the_till_number(self):
+        labels = self.labels(mpesa_type="TILL", mpesa_till="123456")
+        self.assertEqual(labels, ["Buy Goods / Till number"])
+
+    def test_phone_shows_only_the_phone_number(self):
+        labels = self.labels(mpesa_type="PHONE", mpesa_number="0712345678")
+        self.assertEqual(labels, ["M-Pesa phone number"])

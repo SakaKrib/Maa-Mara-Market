@@ -80,9 +80,11 @@ def _mpesa_config_problems(mpesa_type):
 
 def _mpesa_destination(vendor):
     mpesa_type = get_vendor_mpesa_type(vendor)
-    fields = [("M-Pesa destination type", MPESA_TYPE_LABELS.get(mpesa_type, "Not saved"))]
-    if mpesa_type in MPESA_ROUTES:
-        fields.append(("How it is paid", MPESA_ROUTES[mpesa_type]))
+    # Show only what identifies the destination: phone number; Till number; or
+    # Paybill number with its account number. The labels already say which kind it is.
+    fields = []
+    if mpesa_type not in {"PHONE", "TILL", "LIPA_NA_MPESA"}:
+        fields.append(("M-Pesa destination", "Not saved"))
     problems = []
     value = ""
 
