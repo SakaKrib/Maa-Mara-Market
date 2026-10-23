@@ -1503,7 +1503,8 @@ def approve_vendor(request, vendor_request_id):
                     offer_percentage = offer_data.get("discount_percentage")
                     start_date = offer_data.get("start_date")
                     end_date = offer_data.get("end_date")
-                    if offer_percentage and start_date and end_date:
+                    duration_days = offer_data.get("duration_days")
+                    if offer_percentage and start_date and (end_date or duration_days):
                         from datetime import datetime as _datetime
                         from django.utils import timezone as _timezone
 
@@ -1525,7 +1526,8 @@ def approve_vendor(request, vendor_request_id):
                             item=created_item,
                             discount_percentage=offer_percentage,
                             start_date=_approval_datetime(start_date),
-                            end_date=_approval_datetime(end_date),
+                            end_date=_approval_datetime(end_date or start_date),
+                            duration_days=duration_days or None,
                         )
 
 

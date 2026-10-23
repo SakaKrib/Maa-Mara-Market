@@ -55,3 +55,22 @@ class MpesaDestinationFieldTests(PayoutTestMixin, TestCase):
     def test_phone_shows_only_the_phone_number(self):
         labels = self.labels(mpesa_type="PHONE", mpesa_number="0712345678")
         self.assertEqual(labels, ["M-Pesa phone number"])
+
+
+class MpesaB2BConfigTests(PayoutTestMixin, TestCase):
+    def test_b2b_url_is_derived_from_the_b2c_host_when_not_set(self):
+        from django.conf import settings
+
+        url = settings.PAYMENT_GATEWAYS["mpesa"]["b2b"]["url"]
+        self.assertTrue(url == "" or url.endswith("/mpesa/b2b/v1/paymentrequest"))
+
+    def test_missing_settings_are_named_with_their_environment_variable(self):
+        from django.test import override_settings
+
+        gateways = {"mpesa": {"b2c": {}, "b2b": {}}}
+        with override_settings(PAYMENT_GATEWAYS=gateways):
+            from vendorDashboard.payout.services.payout_review import _mpesa_config_problems
+
+            message = _mpesa_config_problems("TILL")[0]
+        self.assertIn("MPESA_B2B_RESULT_URL", message)
+        self.assertIn("MPESA_B2B_TIMEOUT_URL", message)

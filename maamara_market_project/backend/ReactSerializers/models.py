@@ -2,6 +2,7 @@ from django.db import models
 from django.contrib.auth.models import User
 from django.utils.text import slugify
 import hashlib
+from datetime import timedelta
 from decimal import Decimal
 from django.utils import timezone
 from django.core.exceptions import ValidationError
@@ -275,9 +276,17 @@ class Item(models.Model):
     
     def get_current_price(self):
         """Return the effective base price before the customer markup."""
-        offer = getattr(self, "offer", None)
+        try:
+            offer = self.offer
+        except Exception:
+            offer = None
         if self.in_offer and offer and offer.is_active():
             return offer.calculate_final_price()
+        if offer is not None and self.discount_price is not None and offer.final_price == self.discount_price:
+            # The stored discount is an offer's price that has ended (or not yet
+            # begun): the item is back at its own earlier price immediately,
+            # even before the clean-up job removes the offer.
+            return offer.previous_discount_price if offer.previous_discount_price is not None else self.price
         if self.discount_price is not None:
             return self.discount_price
         return self.price
@@ -550,7 +559,15 @@ class Offer(models.Model):
     )
     start_date = models.DateTimeField()
     end_date = models.DateTimeField()
+    # Optional: how many days the offer runs. When supplied with a start date the
+    # end date is derived from it, so a vendor can pick "30 days" from a list.
+    duration_days = models.PositiveSmallIntegerField(null=True, blank=True)
     final_price = models.DecimalField(
+        max_digits=10, decimal_places=2, null=True, blank=True
+    )
+    # The item's own reduced price before this offer took over, restored when the
+    # offer ends so the item returns to exactly what it was.
+    previous_discount_price = models.DecimalField(
         max_digits=10, decimal_places=2, null=True, blank=True
     )
 
@@ -572,7 +589,12 @@ class Offer(models.Model):
         ).quantize(Decimal("0.01"))
 
     def save(self, *args, **kwargs):
+        if self.duration_days and self.start_date:
+            self.end_date = self.start_date + timedelta(days=int(self.duration_days))
         self.full_clean()
+        if self.pk is None and self.previous_discount_price is None:
+            # Remember a genuine pre-offer reduced price, never a previous offer's.
+            self.previous_discount_price = self.item.discount_price
         super().save(*args, **kwargs)
 
         self.final_price = self.calculate_final_price()
@@ -584,6 +606,24 @@ class Offer(models.Model):
     def is_active(self):
         now = timezone.now()
         return self.start_date <= now <= self.end_date
+
+    def is_expired(self):
+        return timezone.now() > self.end_date
+
+    def seconds_remaining(self):
+        return max(int((self.end_date - timezone.now()).total_seconds()), 0)
+
+    def end_offer(self):
+        """Switch the offer off and put the item back on its normal price.
+
+        The item's own earlier reduced price (if any) is restored; the offer row
+        is removed, which is how an offer is already turned off elsewhere.
+        """
+        item = self.item
+        item.discount_price = self.previous_discount_price
+        item.in_offer = False
+        item.save(update_fields=["discount_price", "in_offer"])
+        self.delete()
 
     def __str__(self):
         return f"Offer for {self.item.name} ({self.discount_percentage}% off)"

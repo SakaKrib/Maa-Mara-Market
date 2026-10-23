@@ -74,7 +74,17 @@ def _mpesa_config_problems(mpesa_type):
                 missing.append(key)
         product = "B2B (Till / Paybill)"
     if missing:
-        return [f"M-Pesa {product} is not configured on the server (missing: {', '.join(missing)})."]
+        env_names = {
+            "url": "MPESA_B2B_URL" if mpesa_type != "PHONE" else "MPESA_URL",
+            "initiator_name": "MPESA_B2B_INITIATOR_NAME" if mpesa_type != "PHONE" else "MPESA_INITIATOR_NAME",
+            "short_code": "MPESA_B2B_SHORT_CODE" if mpesa_type != "PHONE" else "MPESA_SHORT_CODE",
+            "initiator_password": "MPESA_B2B_INITIATOR_PASSWORD" if mpesa_type != "PHONE" else "MPESA_INITIATOR_PASSWORD",
+            "certificate_path": "MPESA_B2B_CERTIFICATE_PATH" if mpesa_type != "PHONE" else "MPESA_CERTIFICATE_PATH",
+            "result_url": "MPESA_B2B_RESULT_URL" if mpesa_type != "PHONE" else "MPESA_B2C_RESULT_URL",
+            "timeout_url": "MPESA_B2B_TIMEOUT_URL" if mpesa_type != "PHONE" else "MPESA_B2C_TIMEOUT_URL",
+        }
+        names = ", ".join(f"{k} ({env_names[k]})" for k in missing)
+        return [f"M-Pesa {product} is not configured on the server (missing: {names})."]
     return []
 
 

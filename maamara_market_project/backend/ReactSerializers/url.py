@@ -10,6 +10,7 @@ from rest_framework_simplejwt.views import (
 from .users import *
 from .vendors import *
 from .views import admin_item_performance
+from .item_insights import item_insights, item_ai_suggestions
 from .items import vendor_item_growth_stats, vendor_item_stats, vendor_analytics_stats
 from .ItemInventory import *
 from .traffic import record_traffic_event, traffic_analytics, inbound_traffic_analytics, inbound_traffic_session_detail
@@ -51,6 +52,8 @@ urlpatterns = [
     # item stats
     path("api/item-stats/", vendor_item_stats, name="item-stats"),
     path("api/admin/items/<int:item_id>/performance/", admin_item_performance, name="admin-item-performance"),
+    path("api/items/<int:item_id>/insights/", item_insights, name="item-insights"),
+    path("api/items/<int:item_id>/insights/ai/", item_ai_suggestions, name="item-ai-suggestions"),
     path("api/vendor-item-growth/", vendor_item_growth_stats, name="vendor-item-growth"),
     path("api/vendor-analytics/", vendor_analytics_stats, name="vendor-analytics"),
 

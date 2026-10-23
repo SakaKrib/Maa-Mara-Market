@@ -9,6 +9,7 @@ import {
   cashSharp,
   cubeSharp,
   trashSharp,
+  sparklesSharp,
 } from "ionicons/icons";
 import api, { resolveApiAssetUrl } from "../../../Services/Api";
 import { useAuth } from "../../Auth/AuthContext/Context";
@@ -16,6 +17,7 @@ import useItemActivityLogs from "../../Hooks/ActivityHook/ItemActivityHook";
 import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
 import AppSnackbar from "../../../../components/ui/app-snackbar";
+import ItemInsightsModal from "./ItemInsightsModal";
 
 dayjs.extend(relativeTime);
 
@@ -44,6 +46,7 @@ const SingleItemProfile = ({ viewMode = null }) => {
   const [showPriceEditor, setShowPriceEditor] = useState(false);
   const [priceDraft, setPriceDraft] = useState("");
   const [savingPrice, setSavingPrice] = useState(false);
+  const [showInsights, setShowInsights] = useState(false);
 
   const {
     activityLogs,
@@ -192,13 +195,23 @@ const SingleItemProfile = ({ viewMode = null }) => {
                   )}
                 </div>
                 {!isAdmin && (
-                  <button
-                    type="button"
-                    onClick={() => navigate("/vendors-dashboard/edit-item/" + item.id, { state: { focusOffer: true } })}
-                    className="mt-5 inline-flex w-fit items-center justify-center rounded-full bg-[#2563eb] px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-[#1d4ed8]"
-                  >
-                    Put this item on offer
-                  </button>
+                  <div className="mt-5 flex flex-wrap gap-3">
+                    <button
+                      type="button"
+                      onClick={() => navigate("/vendors-dashboard/edit-item/" + item.id, { state: { focusOffer: true } })}
+                      className="inline-flex w-fit items-center justify-center rounded-full bg-[#2563eb] px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-[#1d4ed8]"
+                    >
+                      Put this item on offer
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setShowInsights(true)}
+                      className="inline-flex w-fit items-center justify-center gap-2 rounded-full border border-[#2563eb] bg-white px-4 py-2.5 text-sm font-semibold text-[#2563eb] transition hover:bg-blue-50"
+                    >
+                      <IonIcon icon={sparklesSharp} />
+                      Sales insights &amp; AI tips
+                    </button>
+                  </div>
                 )}
                 <div className="mt-5 grid gap-2 text-sm text-gray-600 sm:grid-cols-2">
                   <span>Category: {item.category || "—"}</span>
@@ -367,6 +380,16 @@ const SingleItemProfile = ({ viewMode = null }) => {
         </aside>
       </div>
     </section>
+      <ItemInsightsModal
+        open={showInsights}
+        itemId={item?.id}
+        itemName={item?.name}
+        onClose={() => setShowInsights(false)}
+        onStartOffer={(suggestedOffer) => {
+          setShowInsights(false);
+          navigate("/vendors-dashboard/edit-item/" + item.id, { state: { focusOffer: true, suggestedOffer } });
+        }}
+      />
     </>
   );
 };

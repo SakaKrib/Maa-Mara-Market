@@ -112,6 +112,7 @@ const EditItemPage = () => {
               vendor={vendor}
               onSave={handleSave}
               focusOffer={Boolean(location.state?.focusOffer)}
+              suggestedOffer={location.state?.suggestedOffer || null}
             />
           </div>
         ) : null}

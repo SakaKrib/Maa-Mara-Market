@@ -13,7 +13,7 @@ PUBLIC_FIELDS = {
     "ColorVariant": {"id", "item_id", "color", "image"},
     "SizeStock": {"id", "item_id", "variant_id", "size", "quantity_in_stock"},
     "AgeVariant": {"id", "item_id", "age_group", "quantity_in_stock"},
-    "Offer": {"id", "item_id", "discount_percentage", "start_date", "end_date", "is_active"},
+    "Offer": {"id", "item_id", "discount_percentage", "start_date", "end_date", "duration_days", "is_active"},
 }
 PRIVATE_FIELDS = {
     "Order": {"id", "status", "ordered_date", "updated_total_price", "user_id", "visitor_id"},

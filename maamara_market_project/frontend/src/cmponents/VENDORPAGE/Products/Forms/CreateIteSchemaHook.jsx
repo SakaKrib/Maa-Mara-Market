@@ -123,6 +123,7 @@ export const CreateItemformSchema = z
               .max(100, "Discount cannot exceed 100"),
             start_date: z.string().min(1, "Start date is required"),
             end_date: z.string().min(1, "End date is required"),
+            duration_days: z.union([z.string(), z.number()]).optional().nullable(),
           })
           .optional(),
 

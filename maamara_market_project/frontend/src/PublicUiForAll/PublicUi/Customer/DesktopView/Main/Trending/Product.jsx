@@ -27,7 +27,11 @@ const TrendingProducts = () => {
     );
   }
 
-  const featuredOfferItem = items.find((item) => item.in_offer && item.offer?.end_date);
+  const isRunningOffer = (item) =>
+    item.in_offer && item.offer?.end_date && new Date(item.offer.end_date) > new Date();
+  const runningOffers = items.filter(isRunningOffer);
+  const featuredOfferItem = runningOffers[0];
+  const moreOffers = runningOffers.slice(1, 7);
 
   const renderSection = (title, sectionItems, viewAllPath = "/list") => {
     const visibleItems = sectionItems.filter((item) => item.in_offer === false).slice(0, 6);
@@ -73,6 +77,29 @@ const TrendingProducts = () => {
     <section className="py-10 px-4 md:px-10 bg-white">
       <div className="max-w-7xl mx-auto">
         <FeaturedOffer item={featuredOfferItem} />
+
+        {moreOffers.length > 0 && (
+          <div className="mm-market-product-section">
+            <div className="mm-market-section-header">
+              <h2 className="mm-market-section-title">Items on offer</h2>
+            </div>
+            <div className="product-card-grid grid grid-cols-2 gap-2 sm:gap-4 lg:grid-cols-3 lg:gap-6 xl:grid-cols-4">
+              {moreOffers.map((item) => (
+                <TrendingProductCard
+                  key={item.id}
+                  item={item}
+                  isWishlisted={wishlist.some((entry) => entry.item?.id === item.id || entry.id === item.id)}
+                  onToggleWishlist={async (event) => {
+                    event.stopPropagation();
+                    const saved = wishlist.some((entry) => entry.item?.id === item.id || entry.id === item.id);
+                    if (saved) await removeFromWishlist(item.id);
+                    else await addToWishlist(item.id);
+                  }}
+                />
+              ))}
+            </div>
+          </div>
+        )}
 
         {metadata.has_activity &&
           renderSection("Recommended for You", sections.personalized)}

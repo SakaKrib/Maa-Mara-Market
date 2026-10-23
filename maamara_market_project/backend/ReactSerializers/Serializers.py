@@ -1,6 +1,7 @@
 # shop/serializers.py
 from rest_framework import serializers
 import json
+from datetime import timedelta
 from vendorDashboard.models import Vendor,VendorPayout, VendorAdjustment
 from django.contrib.auth.models import User
 from core.models import Profile
@@ -330,7 +331,23 @@ class LengthSerializer(serializers.ModelSerializer):
 class OfferSerializer(serializers.ModelSerializer):
     class Meta:
         model = Offer
-        fields = ["discount_percentage", "start_date", "end_date"]
+        fields = ["discount_percentage", "start_date", "end_date", "duration_days"]
+        extra_kwargs = {
+            # With a duration the end date is derived from the start date.
+            "end_date": {"required": False},
+            "duration_days": {"required": False, "allow_null": True, "min_value": 1, "max_value": 365},
+        }
+
+    def validate(self, attrs):
+        attrs = super().validate(attrs)
+        if not attrs.get("end_date") and not attrs.get("duration_days") and not (self.instance and self.instance.end_date):
+            raise serializers.ValidationError({"end_date": "Choose an offer duration or an end date."})
+        if attrs.get("end_date") and "duration_days" not in attrs:
+            # An explicit end date replaces any duration stored earlier.
+            attrs["duration_days"] = None
+        if attrs.get("duration_days") and attrs.get("start_date"):
+            attrs["end_date"] = attrs["start_date"] + timedelta(days=int(attrs["duration_days"]))
+        return attrs
 
 class ShoeSerializer(serializers.ModelSerializer):
     id = serializers.IntegerField(read_only=True)
@@ -801,13 +818,19 @@ class ItemSerializers(serializers.ModelSerializer):
             instance.discount_price = offer_instance.final_price
         elif in_offer_supplied and not requested_in_offer:
             if offer_instance:
-                offer_instance.delete()
+                offer_instance.end_offer()
+                instance.refresh_from_db(fields=["discount_price", "in_offer"])
+                discount_price = instance.discount_price
             instance.in_offer = False
             instance.discount_price = discount_price
         elif in_offer_supplied and requested_in_offer and not offer_instance:
             raise serializers.ValidationError({
                 "offer": "Offer details are required when the item is marked on offer."
             })
+        elif offer_instance and offer_instance.is_expired():
+            # An ended offer is switched off and the item returns to its normal price.
+            offer_instance.end_offer()
+            instance.refresh_from_db(fields=["discount_price", "in_offer"])
         elif offer_instance:
             # No offer instruction: preserve the existing configured offer.
             instance.in_offer = True

@@ -381,6 +381,39 @@ const AppSelect = React.forwardRef(function AppSelect(props, ref) {
   return <PhoneSelect ref={ref} {...props} />;
 });
 
+// Offer duration choices (days). "custom" keeps the manual start/end dates.
+const OFFER_DURATION_OPTIONS = [
+  { value: "1", label: "1 day" },
+  { value: "3", label: "3 days" },
+  { value: "7", label: "1 week (7 days)" },
+  { value: "14", label: "2 weeks (14 days)" },
+  { value: "30", label: "30 days" },
+  { value: "60", label: "60 days" },
+  { value: "90", label: "90 days" },
+];
+
+const toDateInputValue = (value) => {
+  if (!value) return "";
+  const text = String(value);
+  return /^\d{4}-\d{2}-\d{2}/.test(text) ? text.slice(0, 10) : "";
+};
+
+const todayInputValue = () => {
+  const now = new Date();
+  const month = String(now.getMonth() + 1).padStart(2, "0");
+  const day = String(now.getDate()).padStart(2, "0");
+  return `${now.getFullYear()}-${month}-${day}`;
+};
+
+const addDaysToInputValue = (value, days) => {
+  const [year, month, day] = String(value).split("-").map(Number);
+  if (!year || !month || !day) return "";
+  const date = new Date(year, month - 1, day + Number(days));
+  const m = String(date.getMonth() + 1).padStart(2, "0");
+  const d = String(date.getDate()).padStart(2, "0");
+  return `${date.getFullYear()}-${m}-${d}`;
+};
+
 const ItemAddNew = ({
   initialItem,
   vendorId,
@@ -397,6 +430,7 @@ const ItemAddNew = ({
   vendorData: vendorDataProp = null,
   vendor_data: vendorDataLegacy = null,
   focusOffer = false,
+  suggestedOffer = null,
 }) => {
   const { departmentMap, organicDepartmentMap } = useDepartments();
   const authContext = useAuth() ?? {};
@@ -833,6 +867,16 @@ const ItemAddNew = ({
         image: normalizeMediaValue(initialItem.image),
         video: normalizeMediaValue(initialItem.video),
         brand: normalizeRelationId(initialItem.brand),
+        ...(initialItem.offer
+          ? {
+              offer: {
+                ...initialItem.offer,
+                start_date: toDateInputValue(initialItem.offer.start_date),
+                end_date: toDateInputValue(initialItem.offer.end_date),
+                duration_days: initialItem.offer.duration_days ? String(initialItem.offer.duration_days) : "",
+              },
+            }
+          : {}),
         gender_based: initialItem.gender_based ?? "none",
         children_size_based_age: initialItem.children_size_based_age ?? "none",
         ...(shipping
@@ -899,11 +943,20 @@ const ItemAddNew = ({
     useEffect(() => {
       if (!focusOffer || !initialItem) return;
       form.setValue("in_offer", true, { shouldDirty: false });
+      if (suggestedOffer?.percent) {
+        form.setValue("offer.discount_percentage", Number(suggestedOffer.percent), { shouldDirty: true });
+      }
+      if (suggestedOffer?.days) {
+        const start = form.getValues("offer.start_date") || todayInputValue();
+        form.setValue("offer.start_date", start, { shouldDirty: true });
+        form.setValue("offer.duration_days", String(suggestedOffer.days), { shouldDirty: true });
+        form.setValue("offer.end_date", addDaysToInputValue(start, suggestedOffer.days), { shouldDirty: true });
+      }
       const timer = window.setTimeout(() => {
         document.getElementById("item-offer-settings")?.scrollIntoView({ behavior: "smooth", block: "center" });
       }, 350);
       return () => window.clearTimeout(timer);
-    }, [focusOffer, initialItem, form]);
+    }, [focusOffer, initialItem, form, suggestedOffer]);
 
     const {
       control,
@@ -1830,6 +1883,7 @@ const ItemAddNew = ({
                   discount_percentage: parseFloat(data.offer.discount_percentage || 0),
                   start_date: data.offer.start_date || null,
                   end_date: data.offer.end_date || null,
+                  duration_days: data.offer.duration_days ? parseInt(data.offer.duration_days, 10) : null,
                 }
               : null,
           kids_sizes: (data.kids_sizes || []).map(
@@ -3808,7 +3862,7 @@ const ItemAddNew = ({
 
             {/* Offer fields (conditionally shown if in_offer is true) */}
             {form.watch("in_offer") && (
-              <div className="grid grid-cols-1 gap-4 md:grid-cols-3 mt-4">
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4 mt-4">
                 {/* Discount percentage */}
                 <FormField
                   control={form.control}
@@ -3837,6 +3891,40 @@ const ItemAddNew = ({
                   )}
                 />
 
+                {/* Offer duration */}
+                <FormField
+                  control={form.control}
+                  name="offer.duration_days"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Offer Duration</FormLabel>
+                      <FormControl>
+                        <AppSelect
+                          className="w-full rounded-[20px] border border-border bg-card px-2 py-2 text-sm leading-6 text-foreground outline-none transition focus:border-[#2563eb] focus:ring-2 focus:ring-[#2563eb]/20"
+                          value={field.value ?? ""}
+                          onChange={(e) => {
+                            const days = e.target.value;
+                            field.onChange(days);
+                            if (!days) return;
+                            const start = form.getValues("offer.start_date") || todayInputValue();
+                            form.setValue("offer.start_date", start, { shouldDirty: true, shouldValidate: true });
+                            form.setValue("offer.end_date", addDaysToInputValue(start, days), { shouldDirty: true, shouldValidate: true });
+                          }}
+                        >
+                          <option value="">Custom dates</option>
+                          {OFFER_DURATION_OPTIONS.map((option) => (
+                            <option key={option.value} value={option.value}>{option.label}</option>
+                          ))}
+                        </AppSelect>
+                      </FormControl>
+                      <FormDescription>
+                        When the time is up the offer switches off and the price returns to normal automatically.
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
                 {/* Start date */}
                 <FormField
                   control={form.control}
@@ -3845,7 +3933,17 @@ const ItemAddNew = ({
                     <FormItem>
                       <FormLabel>Start Date</FormLabel>
                       <FormControl>
-                        <Input type="date" {...field} />
+                        <Input
+                          type="date"
+                          {...field}
+                          onChange={(e) => {
+                            field.onChange(e);
+                            const days = form.getValues("offer.duration_days");
+                            if (days && e.target.value) {
+                              form.setValue("offer.end_date", addDaysToInputValue(e.target.value, days), { shouldDirty: true, shouldValidate: true });
+                            }
+                          }}
+                        />
                       </FormControl>
                       <FormDescription>
                         Select the date the offer begins.
@@ -3863,7 +3961,15 @@ const ItemAddNew = ({
                     <FormItem>
                       <FormLabel>End Date</FormLabel>
                       <FormControl>
-                        <Input type="date" {...field} />
+                        <Input
+                          type="date"
+                          {...field}
+                          onChange={(e) => {
+                            field.onChange(e);
+                            // Picking an end date by hand replaces any preset duration.
+                            form.setValue("offer.duration_days", "", { shouldDirty: true });
+                          }}
+                        />
                       </FormControl>
                       <FormDescription>
                         Select the date the offer ends.

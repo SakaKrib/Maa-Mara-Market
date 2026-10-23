@@ -323,7 +323,7 @@ CELERY_BROKER_CONNECTION_RETRY_ON_STARTUP = True
 
 # The task module uses the legacy singular name order.task; import it explicitly
 # so its cleanup, customer-confirmation timeout, and carrier-sync tasks are registered.
-CELERY_IMPORTS = ("order.task", "core.email_tasks")
+CELERY_IMPORTS = ("order.task", "core.email_tasks", "ReactSerializers.offer_tasks")
 
 # =========================================================
 # CELERY
@@ -357,6 +357,10 @@ CELERY_BEAT_SCHEDULE = {
     "prepare_daily_new_arrivals_campaigns": {
         "task": "core.email_tasks.prepare_daily_new_arrivals_campaigns",
         "schedule": crontab(hour=8, minute=30),
+    },
+    "end_expired_item_offers_every_five_minutes": {
+        "task": "ReactSerializers.offer_tasks.end_expired_offers",
+        "schedule": crontab(minute="*/5"),
     },
     "process_approved_scheduled_campaigns_every_five_minutes": {
         "task": "core.email_tasks.process_approved_scheduled_campaigns",
@@ -426,6 +430,21 @@ WEEKLY_PAYOUTS_ENABLED = env.bool("WEEKLY_PAYOUTS_ENABLED", default=False)
 # A pending approval request expires after this many hours.
 PAYOUT_APPROVAL_VALID_HOURS = env.int("PAYOUT_APPROVAL_VALID_HOURS", default=24)
 
+def _default_mpesa_b2b_url():
+    """Daraja serves B2B on the same host as B2C/OAuth (sandbox or live).
+
+    Only used when MPESA_B2B_URL is not set, so the Till/Paybill product does
+    not need a separate setting just to be reachable. An explicit value wins.
+    """
+    from urllib.parse import urlparse
+
+    for source in (env("MPESA_URL", default=""), env("MPESA_AUTH_URL", default="")):
+        parsed = urlparse(source or "")
+        if parsed.scheme in {"http", "https"} and parsed.netloc and "invalid" not in parsed.netloc:
+            return f"{parsed.scheme}://{parsed.netloc}/mpesa/b2b/v1/paymentrequest"
+    return ""
+
+
 PAYMENT_GATEWAYS = {
     "mpesa": {
         "consumer_key": env("MPESA_CONSUMER_KEY"),
@@ -450,7 +469,7 @@ PAYMENT_GATEWAYS = {
             "short_code": env("MPESA_B2B_SHORT_CODE", default=""),
             "initiator_password": env("MPESA_B2B_INITIATOR_PASSWORD", default=""),
             "certificate_path": env("MPESA_B2B_CERTIFICATE_PATH", default=""),
-            "url": env("MPESA_B2B_URL", default=""),
+            "url": env("MPESA_B2B_URL", default="") or _default_mpesa_b2b_url(),
             # Daraja RecieverIdentifierType for Buy Goods: 2 = Till number, 4 = shortcode.
             # Confirm against your Daraja app/sandbox; override here if Safaricom requires 4.
             "till_receiver_identifier_type": env("MPESA_B2B_TILL_RECEIVER_IDENTIFIER_TYPE", default="2"),
