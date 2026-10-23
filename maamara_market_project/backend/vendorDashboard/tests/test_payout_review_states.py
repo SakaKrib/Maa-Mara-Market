@@ -59,10 +59,16 @@ class MpesaDestinationFieldTests(PayoutTestMixin, TestCase):
 
 class MpesaB2BConfigTests(PayoutTestMixin, TestCase):
     def test_b2b_url_is_derived_from_the_b2c_host_when_not_set(self):
-        from django.conf import settings
+        import os
+        from unittest.mock import patch
 
-        url = settings.PAYMENT_GATEWAYS["mpesa"]["b2b"]["url"]
-        self.assertTrue(url == "" or url.endswith("/mpesa/b2b/v1/paymentrequest"))
+        from project01.settings import _default_mpesa_b2b_url
+
+        with patch.dict(os.environ, {"MPESA_URL": "https://sandbox.safaricom.co.ke/mpesa/b2c/v3/paymentrequest"}):
+            self.assertEqual(
+                _default_mpesa_b2b_url(),
+                "https://sandbox.safaricom.co.ke/mpesa/b2b/v1/paymentrequest",
+            )
 
     def test_missing_settings_are_named_with_their_environment_variable(self):
         from django.test import override_settings
