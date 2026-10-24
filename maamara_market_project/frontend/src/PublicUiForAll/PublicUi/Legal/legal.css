@@ -1,0 +1,11 @@
+/*
+ * The storefront stylesheet sets overflow-x:hidden on BOTH <html> and <body>.
+ * That turns <body> into its own scroll container (which never scrolls), so a
+ * position:sticky element inside it has nothing to stick against and scrolls
+ * away with the page. "clip" hides sideways overflow without creating a scroll
+ * container, so the contents sidebar can stay in place while the page scrolls.
+ */
+html.mm-legal-page,
+body.mm-legal-page {
+  overflow-x: clip;
+}

@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { ChevronDown, FileText, ShieldCheck } from "lucide-react";
+import "./legal.css";
 import { CONTACT_EMAIL, LEGAL_UPDATED, PRIVACY, TERMS } from "./legalContent";
 
 const DOCS = {
@@ -20,6 +21,16 @@ const LegalPage = ({ kind = "terms" }) => {
     setActiveId(doc.sections[0].id);
     setTocOpen(false);
   }, [kind, location.pathname, doc.sections]);
+
+  // Lets the contents sidebar stick (see legal.css).
+  useEffect(() => {
+    document.documentElement.classList.add("mm-legal-page");
+    document.body.classList.add("mm-legal-page");
+    return () => {
+      document.documentElement.classList.remove("mm-legal-page");
+      document.body.classList.remove("mm-legal-page");
+    };
+  }, []);
 
   // Highlight the section being read.
   useEffect(() => {
