@@ -1,3 +1,4 @@
+import DatePicker from "../../../../../../components/ui/date-picker";
 import React, { useState, useEffect } from "react";
 import NativeAwareSelect from "../../../../../components/NativeAwareSelect";
 import {
@@ -1638,12 +1639,14 @@ useEffect(() => {
             <FormItem>
               <FormLabel className="text-sm font-semibold text-card-foreground">Manufactured Date</FormLabel>
               <FormControl>
-              <Input
-              type="date"
-              {...field}
-              value={field.value ?? ""}  // 👈 fallback ensures it's always controlled
-              className="w-full rounded-[20px] border border-border bg-card px-3 py-2 text-sm text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
-              
+              <DatePicker
+              name={field.name}
+              value={field.value ?? ""}
+              onChange={field.onChange}
+              fromYear={new Date().getFullYear() - 30}
+              toYear={new Date().getFullYear() + 1}
+              placeholder="Select manufactured date"
+              label="Choose manufactured date"
             />
     
               </FormControl>
@@ -1674,11 +1677,15 @@ useEffect(() => {
             <FormItem>
               <FormLabel className="text-sm font-semibold text-card-foreground" >Expiry Date</FormLabel>
               <FormControl>
-                <Input
-                  type="date"
-                  {...field}
-                  className="w-full rounded-[20px] border border-border bg-card px-3 py-2 text-sm text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
-                  
+                <DatePicker
+                  name={field.name}
+                  value={field.value ?? ""}
+                  onChange={field.onChange}
+                  min={form.watch("manufactured_date") || undefined}
+                  fromYear={new Date().getFullYear()}
+                  toYear={new Date().getFullYear() + 15}
+                  placeholder="Select expiry date"
+                  label="Choose expiry date"
                 />
               </FormControl>
               <FormDescription>
@@ -1743,7 +1750,15 @@ useEffect(() => {
                     <FormItem>
                       <FormLabel className="text-sm font-semibold text-card-foreground">Start Date</FormLabel>
                       <FormControl>
-                        <Input type="date" {...field} />
+                        <DatePicker
+                          name={field.name}
+                          value={field.value ?? ""}
+                          onChange={field.onChange}
+                          fromYear={new Date().getFullYear()}
+                          toYear={new Date().getFullYear() + 3}
+                          placeholder="Select start date"
+                          label="Choose offer start date"
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -1758,7 +1773,16 @@ useEffect(() => {
                     <FormItem>
                       <FormLabel className="text-sm font-semibold text-card-foreground">End Date</FormLabel>
                       <FormControl>
-                        <Input type="date" {...field} />
+                        <DatePicker
+                          name={field.name}
+                          value={field.value ?? ""}
+                          onChange={field.onChange}
+                          min={form.watch("offer.start_date") || undefined}
+                          fromYear={new Date().getFullYear()}
+                          toYear={new Date().getFullYear() + 5}
+                          placeholder="Select end date"
+                          label="Choose offer end date"
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>

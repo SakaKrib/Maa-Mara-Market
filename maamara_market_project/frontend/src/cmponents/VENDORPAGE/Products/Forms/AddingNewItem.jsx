@@ -11,6 +11,7 @@ import {
   import { Input } from "../../../../../components/ui/input";
   import { Textarea } from "../../../../../components/ui/textarea";
   import { Button } from "../../../../../components/ui/button";
+import DatePicker from "../../../../../components/ui/date-picker";
 import Checkbox from "../../../../../components/ui/checkbox";
 import api, { resolveApiAssetUrl } from "../../../../Services/Api/";
 import { useForm } from "react-hook-form";
@@ -3786,11 +3787,14 @@ const ItemAddNew = ({
             <FormItem>
               <FormLabel className="text-lg">Manufactured Date</FormLabel>
               <FormControl>
-              <Input
-              type="date"
-              {...field}
+              <DatePicker
+              name={field.name}
               value={field.value ?? ""}
-              className="border rounded p-2"
+              onChange={field.onChange}
+              fromYear={new Date().getFullYear() - 30}
+              toYear={new Date().getFullYear() + 1}
+              placeholder="Select manufactured date"
+              label="Choose manufactured date"
             />
 
               </FormControl>
@@ -3821,10 +3825,15 @@ const ItemAddNew = ({
             <FormItem>
               <FormLabel className="text-lg" >Expiry Date</FormLabel>
               <FormControl>
-                <Input
-                  type="date"
-                  {...field}
-                  className="border rounded p-2"
+                <DatePicker
+                  name={field.name}
+                  value={field.value ?? ""}
+                  onChange={field.onChange}
+                  min={form.watch("manufactured_date") || undefined}
+                  fromYear={new Date().getFullYear()}
+                  toYear={new Date().getFullYear() + 15}
+                  placeholder="Select expiry date"
+                  label="Choose expiry date"
                 />
               </FormControl>
               <FormDescription>
@@ -3933,9 +3942,13 @@ const ItemAddNew = ({
                     <FormItem>
                       <FormLabel>Start Date</FormLabel>
                       <FormControl>
-                        <Input
-                          type="date"
-                          {...field}
+                        <DatePicker
+                          name={field.name}
+                          value={field.value ?? ""}
+                          fromYear={new Date().getFullYear()}
+                          toYear={new Date().getFullYear() + 3}
+                          placeholder="Select start date"
+                          label="Choose offer start date"
                           onChange={(e) => {
                             field.onChange(e);
                             const days = form.getValues("offer.duration_days");
@@ -3961,9 +3974,14 @@ const ItemAddNew = ({
                     <FormItem>
                       <FormLabel>End Date</FormLabel>
                       <FormControl>
-                        <Input
-                          type="date"
-                          {...field}
+                        <DatePicker
+                          name={field.name}
+                          value={field.value ?? ""}
+                          min={form.watch("offer.start_date") || undefined}
+                          fromYear={new Date().getFullYear()}
+                          toYear={new Date().getFullYear() + 5}
+                          placeholder="Select end date"
+                          label="Choose offer end date"
                           onChange={(e) => {
                             field.onChange(e);
                             // Picking an end date by hand replaces any preset duration.
