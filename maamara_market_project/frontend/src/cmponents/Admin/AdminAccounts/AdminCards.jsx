@@ -1,6 +1,7 @@
 import React from "react";
 import { IonIcon } from "@ionic/react";
-import { calendarOutline, logoPaypal, phonePortraitOutline } from "ionicons/icons";
+import { logoPaypal, phonePortraitOutline } from "ionicons/icons";
+import DatePicker from "../../../../components/ui/date-picker";
 import MonthlyReport from "./Reports/ReportsLedger";
 
 export default function PaymentsOverview({
@@ -56,16 +57,21 @@ export default function PaymentsOverview({
           </p>
         </div>
 
-        <label className="flex items-center gap-2 rounded-xl border border-border bg-background px-3 py-2">
-          <IonIcon icon={calendarOutline} className="text-sm text-muted-foreground" />
+        <div className="w-full sm:w-52">
           <span className="sr-only">Filter payment activity by date</span>
-          <input
-            type="date"
+          <DatePicker
+            name="accounts-date"
             value={selectedDate}
             onChange={(event) => onDateChange?.(event.target.value)}
-            className="bg-transparent text-xs text-foreground outline-none"
+            fromYear={new Date().getFullYear() - 5}
+            toYear={new Date().getFullYear()}
+            max={new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 10)}
+            placeholder="Current month"
+            label="Filter payment activity by date"
+            clearable
+            className="h-10"
           />
-        </label>
+        </div>
       </div>
 
       {loading ? (

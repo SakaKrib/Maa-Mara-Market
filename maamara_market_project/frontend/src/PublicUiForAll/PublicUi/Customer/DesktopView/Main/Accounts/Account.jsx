@@ -22,6 +22,7 @@ import {
 import api from "../../../../../../Services/Api";
 import { Avatar } from "@mui/material";
 import AppSnackbar from "../../../../../../../components/ui/app-snackbar";
+import DatePicker from "../../../../../../../components/ui/date-picker";
 
 export default function UserAccount() {
   const navigate = useNavigate();
@@ -237,12 +238,16 @@ export default function UserAccount() {
                 <label className="mm-account-label text-sm text-gray-500 flex items-center gap-1">
                   <Calendar className="w-4 h-4" /> Date of Birth
                 </label>
-                <Input className="mm-account-input"
-                  type="date"
+                <DatePicker
                   name="date_of_birth"
-                  value={formData.date_of_birth}
+                  value={formData.date_of_birth || ""}
                   onChange={handleChange}
                   disabled={!editing}
+                  fromYear={1900}
+                  toYear={new Date().getFullYear()}
+                  max={new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 10)}
+                  placeholder="Select date of birth"
+                  label="Choose date of birth"
                 />
               </div>
 

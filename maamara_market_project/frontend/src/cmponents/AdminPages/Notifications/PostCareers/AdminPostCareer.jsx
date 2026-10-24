@@ -5,6 +5,7 @@ import api from "../../../../Services/Api";
 import RichTextEditor from "../../../../cmponents/RichTextEditor/RichTextEdit";
 import NativeAwareSelect from "../../../../components/NativeAwareSelect";
 import AppSnackbar from "../../../../../components/ui/app-snackbar";
+import DatePicker from "../../../../../components/ui/date-picker";
 
 const emptyForm = {
   title: "", department: "", location: "", employment_type: "full_time",
@@ -210,7 +211,19 @@ const AdminPostCareer = ({ open = true, onClose }) => {
                 { value: "remote", label: "Remote" },
               ]}
             /></label>
-            <label>Application deadline<input type="date" value={form.application_deadline} onChange={(e) => setForm({ ...form, application_deadline: e.target.value })} /></label>
+            <div>
+              <span>Application deadline</span>
+              <DatePicker
+                name="application_deadline"
+                value={form.application_deadline || ""}
+                onChange={(e) => setForm({ ...form, application_deadline: e.target.value })}
+                fromYear={new Date().getFullYear()}
+                toYear={new Date().getFullYear() + 3}
+                placeholder="Select deadline"
+                label="Choose application deadline"
+                clearable
+              />
+            </div>
           </div>
           <div>
             <span className="mm-admin-editor-label">Description</span>

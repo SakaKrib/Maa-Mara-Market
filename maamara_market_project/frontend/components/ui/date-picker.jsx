@@ -37,6 +37,7 @@ export default function DatePicker({
   disabled = false,
   placement = "bottom",
   className = "",
+  clearable = false,
 }) {
   const today = new Date();
   const currentYear = today.getFullYear();
@@ -213,7 +214,20 @@ export default function DatePicker({
             })}
           </div>
           <div className="mt-3 flex items-center justify-between border-t border-border pt-3">
-            <span className="text-[11px] text-muted-foreground">Choose month, year, then day</span>
+            {clearable && isoValue ? (
+              <button
+                type="button"
+                onClick={() => {
+                  onChange?.({ target: { name, value: "" } });
+                  setOpen(false);
+                }}
+                className="rounded-lg px-3 py-1.5 text-xs font-semibold text-muted-foreground transition hover:bg-muted hover:text-foreground"
+              >
+                Clear
+              </button>
+            ) : (
+              <span className="text-[11px] text-muted-foreground">Choose month, year, then day</span>
+            )}
             <button type="button" onClick={() => setOpen(false)} className="rounded-lg px-3 py-1.5 text-xs font-semibold text-foreground transition hover:bg-muted">
               Close
             </button>
