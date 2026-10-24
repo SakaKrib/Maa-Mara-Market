@@ -2,7 +2,7 @@
 // paragraphs; "list" items render as bullets under the paragraphs.
 
 export const LEGAL_UPDATED = "24 October 2026";
-export const CONTACT_EMAIL = "maamaramarket@gmail.com";
+export const CONTACT_EMAIL = "hello@maamaramarket.com";
 
 export const TERMS = {
   title: "Terms & Conditions",
