@@ -164,10 +164,12 @@ const Footer = () => {
             <h3>Stay in the loop</h3>
             <p className="mm-footer-muted">Get new arrivals, marketplace stories and occasional offers.</p>
             <form className="mm-footer-subscribe-form" onSubmit={(event) => { event.preventDefault(); handleSubscribe(); }}>
-              <input type="email" placeholder="Email address" aria-label="Email address" value={email}
-                onChange={(event) => setEmail(event.target.value)} autoComplete="email" />
-              <label className="mm-footer-muted" style={{ display: "flex", alignItems: "flex-start", gap: "8px", fontSize: "12px", marginTop: "10px" }}><input type="checkbox" checked={newsletterConsent} onChange={(event) => setNewsletterConsent(event.target.checked)} required style={{ marginTop: "3px" }} /><span>I agree to receive marketing emails from Maa Mara Market. I can unsubscribe at any time.</span></label>
-              <button type="submit" disabled={loading || !newsletterConsent}>{loading ? "Joining…" : "Join"}</button>
+              <label className="mm-footer-consent"><input type="checkbox" checked={newsletterConsent} onChange={(event) => setNewsletterConsent(event.target.checked)} required /><span>I agree to receive marketing emails from Maa Mara Market. I can unsubscribe at any time.</span></label>
+              <div className="mm-footer-subscribe-row">
+                <input type="email" placeholder="Email address" aria-label="Email address" value={email}
+                  onChange={(event) => setEmail(event.target.value)} autoComplete="email" />
+                <button type="submit" disabled={loading || !newsletterConsent}>{loading ? "Joining…" : "Join"}</button>
+              </div>
             </form>
             <div className="mm-footer-payment-group">
               <span>Secure payments</span>
