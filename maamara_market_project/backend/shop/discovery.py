@@ -850,3 +850,71 @@ def homepage_collections(request):
             break
 
     return Response(collections)
+
+
+
+OFFER_GROUPS = (
+    ("ending_soon", "Ending soon"),
+    ("weekly", "This week's offers"),
+    ("monthly", "Monthly offers"),
+    ("long", "Long-running offers"),
+)
+ENDING_SOON_HOURS = 48
+
+
+def offer_group_for(offer, now):
+    """One group per offer: about to end, else by the length the vendor set."""
+    if (offer.end_date - now) <= timedelta(hours=ENDING_SOON_HOURS):
+        return "ending_soon"
+    length = offer.end_date - offer.start_date
+    if length <= timedelta(days=7):
+        return "weekly"
+    if length <= timedelta(days=31):
+        return "monthly"
+    return "long"
+
+
+@api_view(["GET"])
+@permission_classes([AllowAny])
+def homepage_offers(request):
+    """Running offers, each item in exactly one group.
+
+    Without ``group`` the first ``limit`` items of every group are returned for
+    the homepage. With ``group`` a page of that group is returned (``page``,
+    ``limit``), which backs the "View more" page.
+    """
+    try:
+        limit = min(max(int(request.query_params.get("limit", 6)), 1), 48)
+        page = max(int(request.query_params.get("page", 1)), 1)
+    except (TypeError, ValueError):
+        limit, page = 6, 1
+    wanted = request.query_params.get("group")
+    labels = dict(OFFER_GROUPS)
+    if wanted and wanted not in labels:
+        return Response({"detail": "Unknown offer group."}, status=400)
+
+    now = timezone.now()
+    queryset = (
+        _catalog_queryset()
+        .filter(in_offer=True, offer__start_date__lte=now, offer__end_date__gte=now)
+        .select_related("offer")
+        .order_by("offer__end_date", "-updated")
+    )
+    buckets = {key: [] for key, _ in OFFER_GROUPS}
+    for item in queryset:
+        buckets[offer_group_for(item.offer, now)].append(item)
+
+    def block(key):
+        items = buckets[key]
+        start = (page - 1) * limit if wanted else 0
+        chosen = items[start:start + limit]
+        return {
+            "key": key,
+            "label": labels[key],
+            "total": len(items),
+            "has_more": len(items) > start + len(chosen),
+            "items": _serialize_discovery(chosen, request),
+        }
+
+    keys = [wanted] if wanted else [key for key, _ in OFFER_GROUPS if buckets[key]]
+    return Response({"groups": [block(key) for key in keys], "page": page, "limit": limit})

@@ -5,10 +5,12 @@ import useTrendingProducts from "./useTrendingProducts";
 import FeaturedOffer from "./FeaturedOffer";
 import TrendingProductCard from "./TrendingProductCard";
 import ProductSkeleton from "./ProductSkelwton";
+import useHomepageOffers from "./useHomepageOffers";
 
 const TrendingProducts = () => {
   const { items, sections, collections, metadata, loading } = useTrendingProducts();
   const { wishlist, addToWishlist, removeFromWishlist } = useWishlistContext();
+  const offerGroups = useHomepageOffers(6);
 
   if (loading) {
     return (
@@ -27,14 +29,23 @@ const TrendingProducts = () => {
     );
   }
 
-  const isRunningOffer = (item) =>
-    item.in_offer && item.offer?.end_date && new Date(item.offer.end_date) > new Date();
-  const runningOffers = items.filter(isRunningOffer);
-  const featuredOfferItem = runningOffers[0];
-  const moreOffers = runningOffers.slice(1, 7);
+  // An item appears once on the page: offers claim their items first, and every
+  // later section skips anything already shown.
+  const shownIds = new Set();
+  const offerSections = offerGroups
+    .map((group) => ({
+      ...group,
+      items: group.items.filter((item) => !shownIds.has(item.id) && shownIds.add(item.id)),
+    }))
+    .filter((group) => group.items.length > 0);
+  const featuredOfferItem = offerSections[0]?.items[0];
+  if (featuredOfferItem) shownIds.add(featuredOfferItem.id);
 
   const renderSection = (title, sectionItems, viewAllPath = "/list") => {
-    const visibleItems = sectionItems.filter((item) => item.in_offer === false).slice(0, 6);
+    const visibleItems = sectionItems
+      .filter((item) => item.in_offer === false && !shownIds.has(item.id))
+      .slice(0, 6);
+    visibleItems.forEach((item) => shownIds.add(item.id));
 
     if (!visibleItems.length) return null;
 
@@ -78,28 +89,39 @@ const TrendingProducts = () => {
       <div className="max-w-7xl mx-auto">
         <FeaturedOffer item={featuredOfferItem} />
 
-        {moreOffers.length > 0 && (
-          <div className="mm-market-product-section">
-            <div className="mm-market-section-header">
-              <h2 className="mm-market-section-title">Items on offer</h2>
+        {offerSections.map((group, groupIndex) => {
+          const groupItems = groupIndex === 0 ? group.items.slice(1) : group.items;
+          if (!groupItems.length) return null;
+          return (
+            <div className="mm-market-product-section" key={group.key}>
+              <div className="mm-market-section-header">
+                <h2 className="mm-market-section-title">{group.label}</h2>
+                {group.has_more || group.total > groupItems.length ? (
+                  <Link to={`/offers?group=${group.key}`} className="mm-market-view-all">
+                    View more
+                  </Link>
+                ) : null}
+              </div>
+              <div className="product-card-grid grid grid-cols-2 gap-2 sm:gap-4 lg:grid-cols-3 lg:gap-6 xl:grid-cols-4">
+                {groupItems.map((item) => {
+                  const saved = wishlist.some((entry) => entry.item?.id === item.id || entry.id === item.id);
+                  return (
+                    <TrendingProductCard
+                      key={item.id}
+                      item={item}
+                      isWishlisted={saved}
+                      onToggleWishlist={async (event) => {
+                        event.stopPropagation();
+                        if (saved) await removeFromWishlist(item.id);
+                        else await addToWishlist(item.id);
+                      }}
+                    />
+                  );
+                })}
+              </div>
             </div>
-            <div className="product-card-grid grid grid-cols-2 gap-2 sm:gap-4 lg:grid-cols-3 lg:gap-6 xl:grid-cols-4">
-              {moreOffers.map((item) => (
-                <TrendingProductCard
-                  key={item.id}
-                  item={item}
-                  isWishlisted={wishlist.some((entry) => entry.item?.id === item.id || entry.id === item.id)}
-                  onToggleWishlist={async (event) => {
-                    event.stopPropagation();
-                    const saved = wishlist.some((entry) => entry.item?.id === item.id || entry.id === item.id);
-                    if (saved) await removeFromWishlist(item.id);
-                    else await addToWishlist(item.id);
-                  }}
-                />
-              ))}
-            </div>
-          </div>
-        )}
+          );
+        })}
 
         {metadata.has_activity &&
           renderSection("Recommended for You", sections.personalized)}

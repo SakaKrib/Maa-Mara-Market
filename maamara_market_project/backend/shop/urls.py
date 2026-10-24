@@ -1,6 +1,6 @@
 from django.urls import path, include
 from .views import *
-from .discovery import discovery_feed, discovery_collection, multi_collections, recommendations, homepage_collections
+from .discovery import discovery_feed, discovery_collection, multi_collections, recommendations, homepage_collections, homepage_offers
 from .marketplace_context import item_marketplace_context_v2
 from rest_framework.routers import DefaultRouter
 
@@ -42,6 +42,7 @@ urlpatterns = [
     path("api/discovery/", discovery_feed, name="discovery-feed"),
     path("api/discovery-collection/", discovery_collection, name="discovery-collection"),
     path("api/recommendations/", recommendations, name="recommendations"),
+    path("api/homepage-offers/", homepage_offers, name="homepage-offers"),
     path("api/homepage-collections/", homepage_collections, name="homepage-collections"),
     path("api/items/<int:pk>/marketplace-context/", item_marketplace_context_v2, name="item-marketplace-context"),
     path("api/multi-collections/", multi_collections, name="multi-collections"),

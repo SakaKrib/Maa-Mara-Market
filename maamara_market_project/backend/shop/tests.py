@@ -186,3 +186,63 @@ class DatabaseBackedTaxonomyTests(TestCase):
         )
         filtered_ids = [entry["id"] for entry in products_response.json()["results"]]
         self.assertIn(item.pk, filtered_ids)
+
+
+class HomepageOffersTests(TestCase):
+    def setUp(self):
+        from django.contrib.auth import get_user_model
+
+        self.user = get_user_model().objects.create_user(username="offers-user", password="x")
+
+    def make(self, name, start_offset, length_days):
+        from datetime import timedelta
+        from decimal import Decimal
+
+        from django.utils import timezone
+
+        from ReactSerializers.models import Item, Offer
+
+        item = Item.objects.create(
+            name=name, description="d", created_by=self.user, price=Decimal("500.00"),
+            available=True, in_stock=5,
+        )
+        start = timezone.now() + timedelta(days=start_offset)
+        Offer.objects.create(item=item, discount_percentage=10, start_date=start, end_date=start + timedelta(days=length_days))
+        return item
+
+    def fetch(self, **params):
+        from rest_framework.test import APIClient
+
+        return APIClient().get("/api/homepage-offers/", params).json()
+
+    def test_items_are_grouped_by_vendor_duration_and_listed_once(self):
+        weekly = self.make("weekly item", -1, 7)
+        monthly = self.make("monthly item", -1, 30)
+        long_one = self.make("long item", -1, 90)
+        soon = self.make("soon item", -6, 7)  # ends in about one day
+        data = self.fetch()
+        groups = {g["key"]: [i["id"] for i in g["items"]] for g in data["groups"]}
+        self.assertEqual(groups["ending_soon"], [soon.id])
+        self.assertEqual(groups["weekly"], [weekly.id])
+        self.assertEqual(groups["monthly"], [monthly.id])
+        self.assertEqual(groups["long"], [long_one.id])
+        all_ids = [i for ids in groups.values() for i in ids]
+        self.assertEqual(len(all_ids), len(set(all_ids)))
+
+    def test_ended_and_future_offers_are_not_shown(self):
+        self.make("ended", -10, 5)
+        self.make("future", 3, 5)
+        self.assertEqual(self.fetch()["groups"], [])
+
+    def test_view_more_pages_a_single_group(self):
+        for n in range(5):
+            self.make(f"monthly {n}", -1, 20)
+        first = self.fetch(group="monthly", limit=2, page=1)["groups"][0]
+        second = self.fetch(group="monthly", limit=2, page=2)["groups"][0]
+        self.assertEqual((first["total"], len(first["items"]), first["has_more"]), (5, 2, True))
+        self.assertFalse({i["id"] for i in first["items"]} & {i["id"] for i in second["items"]})
+
+    def test_unknown_group_is_rejected(self):
+        from rest_framework.test import APIClient
+
+        self.assertEqual(APIClient().get("/api/homepage-offers/", {"group": "nope"}).status_code, 400)
