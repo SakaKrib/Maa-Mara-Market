@@ -2,8 +2,8 @@ from datetime import datetime
 from dateutil.relativedelta import relativedelta
 from decimal import Decimal
 
-from django.db.models import Sum
-from django.db.models.functions import TruncMonth
+from django.db.models import Q, Sum
+from django.db.models.functions import Coalesce, TruncMonth
 from django.utils import timezone
 from rest_framework.permissions import IsAdminUser
 from rest_framework.response import Response
@@ -12,6 +12,21 @@ from rest_framework.views import APIView
 from vendorDashboard.models import VendorPayout
 
 from .models import Payment, Refund, Transaction
+
+
+# Payment.status uses PAID; older rows and some code paths wrote "completed".
+SETTLED_PAYMENT_STATUS = Q(status__iexact="paid") | Q(status__iexact="completed")
+
+
+def settled_payments():
+    """Confirmed customer payments, dated by when they were actually paid.
+
+    Payment has no ``timestamp`` column: ``paid_at`` is the confirmation time and
+    ``created_at`` is the fallback for rows confirmed before ``paid_at`` was recorded.
+    """
+    return Payment.objects.filter(SETTLED_PAYMENT_STATUS).annotate(
+        settled_at=Coalesce("paid_at", "created_at")
+    )
 
 
 class DashboardSummaryView(APIView):
@@ -49,10 +64,9 @@ class DashboardSummaryView(APIView):
         # Customer income is sourced from completed Payment records. This
         # avoids double-counting PayPal Transaction rows, which may exist once
         # per vendor on a multi-vendor order.
-        completed_payments = Payment.objects.filter(
-            status__iexact="completed",
-            timestamp__gte=period_start,
-            timestamp__lte=period_end,
+        completed_payments = settled_payments().filter(
+            settled_at__gte=period_start,
+            settled_at__lte=period_end,
         )
 
         income_total = (
@@ -126,6 +140,10 @@ class DashboardSummaryView(APIView):
             or Decimal("0.00")
         )
 
+        # Paid vendor settlements are recorded in the books automatically under
+        # "Vendors", so the accountant does not have to key them in again.
+        category_totals["Vendors"] = category_totals.get("Vendors", 0) + float(vendor_payments_total)
+
         expense_total = manual_expenses + vendor_payments_total + refund_total
         cashbook_total = income_total - expense_total
 
@@ -134,14 +152,14 @@ class DashboardSummaryView(APIView):
         chart_start = chart_month - relativedelta(months=11)
 
         monthly_income = (
-            Payment.objects.filter(
-                status__iexact="completed",
-                timestamp__gte=timezone.make_aware(
+            settled_payments()
+            .filter(
+                settled_at__gte=timezone.make_aware(
                     datetime.combine(chart_start, datetime.min.time())
                 ),
-                timestamp__lte=period_end,
+                settled_at__lte=period_end,
             )
-            .annotate(month=TruncMonth("timestamp"))
+            .annotate(month=TruncMonth("settled_at"))
             .values("month")
             .annotate(amount=Sum("amount"))
             .order_by("month")

@@ -262,11 +262,22 @@ class TransactionSerializer(serializers.ModelSerializer):
     vendor_name = serializers.SerializerMethodField()
     items = serializers.SerializerMethodField()
     amount = serializers.SerializerMethodField()
+    payer_name = serializers.SerializerMethodField()
+    source = serializers.SerializerMethodField()
+    source_label = serializers.SerializerMethodField()
+    direction = serializers.SerializerMethodField()
 
     class Meta:
         model = Transaction
         fields = [
             "id",
+            "payer_name",
+            "payer_email",
+            "source",
+            "source_label",
+            "direction",
+            "payment_method",
+            "category",
             "txid",
             "mpesa_receipt_number",
             "phone_number",
@@ -277,6 +288,52 @@ class TransactionSerializer(serializers.ModelSerializer):
             "vendor_name",
             "items",
         ]
+
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        if self.context.get("vendor_view"):
+            # Vendors see their own sales, never the customer's identity.
+            data["payer_name"] = "Customer"
+            data["payer_email"] = None
+        return data
+
+    def get_source(self, obj):
+        if (obj.raw_data or {}).get("source") == "admin_accounts":
+            return "manual"
+        if obj.payout_id:
+            return "vendor_payout"
+        if obj.transaction_type in {"C2B", "PayPal"}:
+            return "customer_payment"
+        return "other"
+
+    def get_source_label(self, obj):
+        return {
+            "manual": "Manual bookkeeping entry",
+            "vendor_payout": "Vendor payout",
+            "customer_payment": "Customer payment",
+        }.get(self.get_source(obj), "Other")
+
+    def get_direction(self, obj):
+        return "in" if self.get_source(obj) == "customer_payment" else "out"
+
+    def get_payer_name(self, obj):
+        """Who the money came from (or went to), never a blank 'unknown'."""
+        source = self.get_source(obj)
+        if source == "manual":
+            return "Admin ledger entry"
+        if source == "vendor_payout":
+            vendor = obj.vendor
+            name = getattr(vendor, "company_name", None) or getattr(vendor, "username", None)
+            return f"Paid to {name}" if name else "Vendor payout"
+        for owner in (getattr(obj.payment, "user", None), getattr(obj.order, "user", None)):
+            if owner:
+                full = f"{owner.first_name} {owner.last_name}".strip()
+                return full or owner.username
+        if obj.payer_email:
+            return obj.payer_email
+        if obj.phone_number:
+            return obj.phone_number
+        return "Guest customer"
 
     # ✅ Transaction ID (VERY IMPORTANT FOR UI)
     def get_txid(self, obj):
@@ -293,7 +350,11 @@ class TransactionSerializer(serializers.ModelSerializer):
     # ✅ Safer vendor resolution
     def get_vendor_name(self, obj):
         if obj.vendor:
-            return getattr(obj.vendor, "business_name", None) or getattr(obj.vendor, "username", None)
+            return (
+                getattr(obj.vendor, "company_name", None)
+                or getattr(obj.vendor, "business_name", None)
+                or getattr(obj.vendor, "username", None)
+            )
 
         if obj.order:
             first_item = obj.order.items.first()

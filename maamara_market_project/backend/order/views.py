@@ -814,7 +814,7 @@ def vendor_transactions(request):
 
     vendor = user.vendor
     transactions = get_vendor_transactions(vendor)
-    serializer = TransactionSerializer(transactions, many=True)
+    serializer = TransactionSerializer(transactions, many=True, context={"vendor_view": True})
     return Response(serializer.data)
 
 
@@ -1099,7 +1099,7 @@ def update_admin_transaction(request, transaction_id):
     ledger_entry.payment_method = payment_method
     ledger_entry.amount = amount
     ledger_entry.raw_data = raw_data
-    ledger_entry.save(update_fields=["category", "payment_method", "amount", "raw_data", "updated_at"])
+    ledger_entry.save(update_fields=["category", "payment_method", "amount", "raw_data"])
 
     channel_layer = get_channel_layer()
     if channel_layer is not None:
@@ -1153,7 +1153,7 @@ def delete_admin_transaction(request, transaction_id):
 
     ledger_entry.status = "deleted"
     ledger_entry.raw_data = raw_data
-    ledger_entry.save(update_fields=["status", "raw_data", "updated_at"])
+    ledger_entry.save(update_fields=["status", "raw_data"])
 
     channel_layer = get_channel_layer()
     if channel_layer is not None:
@@ -1199,7 +1199,7 @@ def admin_transactions(request):
 
     transactions_qs = (
         Transaction.objects
-        .select_related("vendor", "order")
+        .select_related("vendor", "order", "order__user", "payment", "payment__user", "payout")
         .prefetch_related(
             Prefetch(
                 "order__order_items",
@@ -1211,9 +1211,14 @@ def admin_transactions(request):
 
     serializer = TransactionSerializer(transactions_qs, many=True)
 
+    # Revenue is money customers paid in. Vendor payouts, bookkeeping entries and
+    # failed attempts are listed but never counted as revenue.
     summary = Transaction.objects.aggregate(
         total_transactions=Count("id"),
-        total_revenue=Sum("amount")
+        total_revenue=Sum(
+            "amount",
+            filter=Q(transaction_type__in=["C2B", "PayPal"], payout__isnull=True, status__iexact="completed"),
+        ),
     )
 
     return Response({

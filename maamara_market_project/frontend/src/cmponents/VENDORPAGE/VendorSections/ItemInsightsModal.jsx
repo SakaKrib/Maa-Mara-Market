@@ -189,7 +189,11 @@ const ItemInsightsModal = ({ open, itemId, itemName, onClose, onStartOffer }) =>
           </button>
         </div>
 
-        <div className="flex-1 space-y-5 overflow-y-auto px-4 py-4 sm:px-6">
+        <div
+          className="flex-1 space-y-5 overflow-y-auto px-4 pt-4 sm:px-6"
+          // Keeps the last lines clear of the bottom navigation icons and the phone's home bar.
+          style={{ paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 6rem)" }}
+        >
           <div className="flex flex-wrap items-center gap-2">
             {RANGES.map((range) => (
               <button

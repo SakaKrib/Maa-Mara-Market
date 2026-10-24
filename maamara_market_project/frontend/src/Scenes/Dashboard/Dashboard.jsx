@@ -427,7 +427,7 @@ const Dashboard = () => {
               item.order_id ?? item.order?.id ?? "",
               itemSummary,
               unitsSold,
-              item.user?.username ?? item.username ?? item.customer_name ?? "",
+              item.payer_name ?? item.user?.username ?? item.username ?? item.customer_name ?? "",
               item.payer_email ?? item.user?.email ?? item.customer_email ?? "",
               item.amount ?? "",
               item.status ?? item.payment_status ?? "",
@@ -740,13 +740,14 @@ const Dashboard = () => {
                       TX: {transaction.txid || transaction.id}
                     </p>
                     <p className="truncate text-[10px] text-muted-foreground">
-                      {transaction.user?.username || transaction.payer_email || "Unknown user"}
+                      {transaction.payer_name || transaction.payer_email || "Guest customer"}
+                      {transaction.source_label ? ` · ${transaction.source_label}` : ""}
                     </p>
                   </div>
                   <div className="shrink-0 text-right">
                     <p className="text-[10px] text-muted-foreground">{new Date(transaction.created_at).toLocaleString()}</p>
                     <p className="text-xs font-bold text-[hsl(var(--chart-2))] dark:text-[hsl(var(--chart-2))]">
-                      KES {Number(transaction.amount || 0).toLocaleString()}
+                      {transaction.direction === "out" ? "−" : ""}KES {Number(transaction.amount || 0).toLocaleString()}
                     </p>
                   </div>
                 </div>
