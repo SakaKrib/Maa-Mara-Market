@@ -5,7 +5,7 @@ import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "./ui/card"
 import { Input } from "./ui/input"
 import { Label } from "./ui/label"
 import api, { startGoogleLogin } from "../src/Services/Api";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 
 import { Eye, EyeOff } from "lucide-react"
 import AppSnackbar, { notifySnackbar } from "./ui/app-snackbar";
@@ -206,7 +206,7 @@ const RegistrationForm = () => {
 
           <CardFooter>
             <p className="text-xs text-muted-foreground mm-auth-legal">
-              MaamaraMarket.com All rights reserved. <a href="/login" className="underline">Terms & Policies</a>.
+              By registering you agree to our <Link to="/terms" className="underline">Terms of Service</Link> and <Link to="/privacy" className="underline">Privacy Policy</Link>. MaamaraMarket.com All rights reserved.
             </p>
           </CardFooter>
           </CardContent>

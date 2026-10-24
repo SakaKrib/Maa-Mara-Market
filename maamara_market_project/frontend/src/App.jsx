@@ -136,6 +136,7 @@ import VendorOrdersPage from "./cmponents/Hooks/Order/OrderPage";
 import ShipmentDispatchPage from "./cmponents/Hooks/Order/ShipmentDispatchPage";
 import SalesReportPage from "./cmponents/VENDORPAGE/Home/Orders/SalesRegister";
 import SubcategoryProducts from "./PublicUiForAll/PublicUi/Customer/DesktopView/Header/subcategoryListItem";
+import LegalPage from "./PublicUiForAll/PublicUi/Legal/LegalPage";
 import OffersPage from "./PublicUiForAll/PublicUi/Customer/DesktopView/Main/Trending/OffersPage";
 import SearchResultsPage from "./PublicUiForAll/PublicUi/Navigations/Search/NavIcons/ResultsPage";
 import OrganicPage from "./PublicUiForAll/PublicUi/Customer/DesktopView/Main/Trending/OrganicAdvert/OrganicPage";
@@ -276,6 +277,8 @@ function AppContent() {
               <Route element={<CustomerShop />}>
                 <Route path="list" element={<SearchResultsPage />} />
                 <Route path="offers" element={<OffersPage />} />
+                <Route path="terms" element={<LegalPage kind="terms" />} />
+                <Route path="privacy" element={<LegalPage kind="privacy" />} />
                 <Route path="customer-login" element={<HomeRedirectWrapper><LoginPage /></HomeRedirectWrapper>} />
                 <Route path="register" element={<RegisterPage />} />
                 <Route path="verify-otp" element={<VerifyRegistrationNewUser />} />

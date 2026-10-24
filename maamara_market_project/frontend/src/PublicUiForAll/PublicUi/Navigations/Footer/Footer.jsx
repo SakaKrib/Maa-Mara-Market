@@ -184,7 +184,7 @@ const Footer = () => {
 
         <div className="mm-footer-bottom">
           <span>© {year} Maa Mara Market. All rights reserved.</span>
-          <div><span>Kenya · English</span><span>KES</span></div>
+          <div><Link to="/terms">Terms</Link><Link to="/privacy">Privacy</Link><span>Kenya · English</span><span>KES</span></div>
         </div>
       </div>
 

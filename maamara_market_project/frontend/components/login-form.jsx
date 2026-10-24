@@ -285,13 +285,13 @@ export function LoginForm({ className, ...props }) {
 
         <div className="mm-auth-legal text-center text-xs text-muted-foreground">
           By clicking continue, you agree to our{" "}
-          <a href="#" className="underline underline-offset-4">
+          <Link to="/terms" className="underline underline-offset-4">
             Terms of Service
-          </a>{" "}
+          </Link>{" "}
           and{" "}
-          <a href="#" className="underline underline-offset-4">
+          <Link to="/privacy" className="underline underline-offset-4">
             Privacy Policy
-          </a>.
+          </Link>.
         </div>
       </div>
 
