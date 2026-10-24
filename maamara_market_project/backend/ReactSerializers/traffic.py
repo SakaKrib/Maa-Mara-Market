@@ -24,44 +24,10 @@ def _client_ip(request):
     return request.META.get("REMOTE_ADDR") or None
 
 
-def _country_from_request(request, ip):
-    code = (
-        request.META.get("HTTP_CF_IPCOUNTRY")
-        or request.META.get("HTTP_X_COUNTRY_CODE")
-        or request.META.get("HTTP_X_GEO_COUNTRY")
-        or ""
-    ).upper()
-    if code and code != "XX":
-        return code, ""
+def _country_from_request(request, ip, timezone_name=""):
+    from .traffic_geo import resolve_country
 
-    if not ip:
-        return "", ""
-    try:
-        parsed = ip_address(ip)
-        if parsed.is_private or parsed.is_loopback or parsed.is_reserved:
-            return "", ""
-    except ValueError:
-        return "", ""
-
-    if ip in _GEO_CACHE:
-        return _GEO_CACHE[ip]
-
-    # Best-effort fallback. Tracking must never fail because geolocation is unavailable.
-    try:
-        response = requests.get(
-            f"https://ipapi.co/{ip}/json/",
-            timeout=1.5,
-            headers={"User-Agent": "Maa-Mara-Market-Traffic/1.0"},
-        )
-        data = response.json() if response.ok else {}
-        result = ((data.get("country_code") or "").upper(), data.get("country_name") or "")
-    except Exception:
-        result = ("", "")
-
-    if len(_GEO_CACHE) > 5000:
-        _GEO_CACHE.clear()
-    _GEO_CACHE[ip] = result
-    return result
+    return resolve_country(request.META, ip, timezone_name)
 
 
 def _source_from_payload(source, referrer, path):
@@ -114,7 +80,8 @@ def record_traffic_event(request):
     session_id = str(request.data.get("session_id") or "").strip()[:255] or None
     user_agent = request.META.get("HTTP_USER_AGENT", "")[:2000]
     ip = _client_ip(request)
-    country_code, country_name = _country_from_request(request, ip)
+    timezone_name = str(request.data.get("timezone") or "").strip()[:64]
+    country_code, country_name = _country_from_request(request, ip, timezone_name)
 
     TrafficEvent.objects.create(
         user=request.user if getattr(request.user, "is_authenticated", False) else None,
@@ -252,17 +219,10 @@ def inbound_traffic_analytics(request):
     )
     # Keep the geography card useful even when the provider only gives a
     # country code. The browser should never have to display a blank country.
-    country_names = {
-        "KE": "Kenya", "UG": "Uganda", "TZ": "Tanzania", "RW": "Rwanda",
-        "ET": "Ethiopia", "ZA": "South Africa", "NG": "Nigeria",
-        "GH": "Ghana", "US": "United States", "GB": "United Kingdom",
-        "IN": "India", "AE": "United Arab Emirates", "DE": "Germany",
-        "FR": "France", "CA": "Canada", "AU": "Australia",
-    }
+    from .traffic_geo import country_name_for
+
     for row in countries:
-        row["country_name"] = row["country_name"] or country_names.get(
-            row["country_code"], row["country_code"] or "Unknown"
-        )
+        row["country_name"] = row["country_name"] or country_name_for(row["country_code"]) or "Unknown"
     sources = grouped("source", 20)
     devices = grouped("device_type", 10)
     top_items = list(
@@ -348,7 +308,10 @@ def inbound_traffic_analytics(request):
             "sessions": page_views.exclude(session_id__isnull=True).exclude(session_id="").values("session_id").distinct().count(),
             "countries": len(countries),
             "pages": pages.__len__(),
-            "events": event_rows.count(),
+            # Every tracked interaction: page views, session starts and custom events.
+            "events": events.count(),
+            "custom_events": event_rows.count(),
+            "unlocated_views": page_views.filter(country_code="").count(),
         },
         "trend": trend,
         "pages": pages,

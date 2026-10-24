@@ -82,9 +82,9 @@ const SupportAdminPanel = ({ open = true, onClose }) => {
   if (!open) return null;
 
   return (
-    <div className="min-h-[calc(100dvh-124px)] w-full bg-background p-2 pb-20 text-foreground sm:p-4 lg:p-6">
+    <div className="min-h-[calc(100dvh-124px)] w-full bg-background px-2 pb-6 pt-1 text-foreground sm:px-2 sm:pb-6 sm:pt-2 lg:px-2 lg:pb-6">
       <AppSnackbar open={snackbar.open} message={snackbar.message} severity={snackbar.severity} onClose={() => setSnackbar((prev) => ({ ...prev, open: false }))} />
-      <div className="relative mx-auto max-w-7xl rounded-2xl border border-border bg-background p-2 shadow-2xl sm:p-4">
+      <div className="relative mx-auto max-w-7xl rounded-2xl border border-border bg-background p-2 shadow-2xl">
         <button type="button" onClick={closePanel} aria-label="Close support" className="absolute right-3 top-3 z-10 rounded-xl p-2 text-muted-foreground hover:bg-muted">
           <IonIcon icon={closeOutline} />
         </button>

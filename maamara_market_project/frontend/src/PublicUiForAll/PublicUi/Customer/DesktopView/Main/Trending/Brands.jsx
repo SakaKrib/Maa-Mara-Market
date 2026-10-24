@@ -107,8 +107,8 @@ const BrandList = () => {
             return (
               <article key={brand.id} className="group min-w-0 overflow-hidden rounded-2xl border border-gray-200 bg-white p-2.5 transition-shadow hover:shadow-md sm:p-3">
                 <Link to={`/brands/${brand.id}`} className="block overflow-hidden rounded-xl bg-gray-50" aria-label={`View ${brand.name} brand details`}>
-                  <div className="flex aspect-square w-full items-center justify-center overflow-hidden p-4 sm:p-5">
-                    {logo ? <img src={logo} alt={`${brand.name} company logo`} loading="lazy" className="h-full w-full object-contain transition-transform duration-300 group-hover:scale-105" /> : <div className="flex h-full w-full flex-col items-center justify-center gap-2 text-gray-400"><Store size={28} strokeWidth={1.5} /><span className="px-2 text-center text-xs font-semibold">{brand.name}</span></div>}
+                  <div className="flex aspect-square w-full items-center justify-center overflow-hidden p-2 sm:p-2.5">
+                    {logo ? <img src={logo} alt={`${brand.name} company logo`} loading="lazy" className="h-full w-full rounded-xl object-cover transition-transform duration-300 group-hover:scale-105" /> : <div className="flex h-full w-full flex-col items-center justify-center gap-2 text-gray-400"><Store size={28} strokeWidth={1.5} /><span className="px-2 text-center text-xs font-semibold">{brand.name}</span></div>}
                   </div>
                 </Link>
                 <div className="px-1 pb-1 pt-3">

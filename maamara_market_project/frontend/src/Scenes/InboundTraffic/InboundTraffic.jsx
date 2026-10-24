@@ -92,9 +92,9 @@ const InboundTraffic = () => {
         <Stat label="Page views" value={data.summary.page_views} />
         <Stat label="Unique visitors" value={data.summary.unique_visitors} />
         <Stat label="Sessions" value={data.summary.sessions} />
-        <Stat label="Countries" value={data.summary.countries} />
+        <Stat label="Countries" value={data.summary.countries} detail={data.summary.unlocated_views ? `${Number(data.summary.unlocated_views).toLocaleString()} visits not located` : undefined} />
         <Stat label="Pages visited" value={data.summary.pages} />
-        <Stat label="Tracked events" value={data.summary.events} />
+        <Stat label="Tracked events" value={data.summary.events} detail="Page views, sessions and actions" />
       </div>
 
       <div className="grid min-w-0 gap-5 xl:grid-cols-[minmax(0,1.7fr)_minmax(0,0.8fr)]">
@@ -140,7 +140,13 @@ const InboundTraffic = () => {
                 colors={{ scheme: "paired" }}
                 theme={{ axis: { ticks: { text: { fill: "hsl(var(--muted-foreground))", fontSize: 10 } }, domain: { line: { stroke: "hsl(var(--border))" } } }, grid: { line: { stroke: "hsl(var(--border))" } } }}
               />
-            ) : <div className="flex h-full items-center justify-center text-sm text-muted-foreground">No country data yet.</div>}
+            ) : (
+              <div className="flex h-full items-center justify-center px-4 text-center text-sm text-muted-foreground">
+                {data.summary.unlocated_views
+                  ? `${Number(data.summary.unlocated_views).toLocaleString()} visits were recorded but their country could not be worked out. New visits are located automatically.`
+                  : "No country data yet."}
+              </div>
+            )}
           </div>
         </section>
       </div>

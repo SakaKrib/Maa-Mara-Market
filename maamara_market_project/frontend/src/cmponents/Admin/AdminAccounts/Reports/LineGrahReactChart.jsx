@@ -12,8 +12,31 @@ export default function CryptoChart({ monthlySummary = [] }) {
   const data = {
     labels,
     datasets: [
-      { label: "Income", data: incomeData, borderWidth: 2, tension: 0.35, fill: false },
-      { label: "Expenses", data: expensesData, borderWidth: 2, tension: 0.35, fill: false },
+      // Blue and orange stay distinguishable for colour-blind readers; the point
+      // shapes differ too, so the lines are never told apart by colour alone.
+      {
+        label: "Income",
+        data: incomeData,
+        borderColor: "#2563eb",
+        backgroundColor: "#2563eb",
+        pointStyle: "circle",
+        pointRadius: 4,
+        borderWidth: 3,
+        tension: 0.35,
+        fill: false,
+      },
+      {
+        label: "Expenses",
+        data: expensesData,
+        borderColor: "#ea580c",
+        backgroundColor: "#ea580c",
+        pointStyle: "rectRot",
+        pointRadius: 5,
+        borderWidth: 3,
+        borderDash: [6, 4],
+        tension: 0.35,
+        fill: false,
+      },
     ],
   };
 
@@ -21,7 +44,7 @@ export default function CryptoChart({ monthlySummary = [] }) {
     responsive: true,
     maintainAspectRatio: false,
     plugins: {
-      legend: { position: "top" },
+      legend: { position: "top", labels: { usePointStyle: true } },
       title: { display: true, text: "Monthly Income & Expenses", font: { size: 16 } },
     },
     scales: {

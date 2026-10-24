@@ -167,7 +167,7 @@ const BrandPage = () => {
 
           <div className="relative flex min-h-[340px] flex-col justify-end px-4 pb-5 pt-28 sm:min-h-[390px] sm:px-8 sm:pb-8 sm:pt-32 lg:min-h-[420px] lg:px-12">
             <div className="mb-4 flex h-24 w-24 items-center justify-center overflow-hidden rounded-2xl border border-white/90 bg-white p-2 shadow-xl sm:absolute sm:left-8 sm:top-8 sm:mb-0 sm:h-28 sm:w-28 lg:left-12">
-              {logo ? <img src={logo} alt={brand.name + " logo"} className="h-full w-full object-contain" /> : <span className="text-center text-xs font-semibold text-gray-400">{brand.name}</span>}
+              {logo ? <img src={logo} alt={brand.name + " logo"} className="h-full w-full rounded-xl object-contain" /> : <span className="text-center text-xs font-semibold text-gray-400">{brand.name}</span>}
             </div>
             <div className="max-w-4xl sm:pl-32 lg:pl-36">
               <p className="text-xs font-bold uppercase tracking-[0.18em] text-gray-500">Discover the brand</p>

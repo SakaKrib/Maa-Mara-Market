@@ -43,6 +43,14 @@ const classifySource = (url) => {
   }
 };
 
+const getTimeZone = () => {
+  try {
+    return Intl.DateTimeFormat().resolvedOptions().timeZone || "";
+  } catch {
+    return "";
+  }
+};
+
 const AnalyticsTracker = () => {
   const location = useLocation();
   const sessionIdRef = useRef(null);
@@ -70,6 +78,8 @@ const AnalyticsTracker = () => {
         medium: params.get("utm_medium") || "",
         campaign: params.get("utm_campaign") || "",
         session_id: sessionIdRef.current,
+        // Lets the server place the visit in a country when the IP address cannot.
+        timezone: getTimeZone(),
       };
 
       try {
