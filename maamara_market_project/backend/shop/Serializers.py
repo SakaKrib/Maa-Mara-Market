@@ -395,6 +395,12 @@ class BlogPostSerializer(serializers.ModelSerializer):
                 raise serializers.ValidationError("The blog video must be MP4, WebM, MOV or OGG.")
             if value.size > self.MAX_BLOG_VIDEO_BYTES:
                 raise serializers.ValidationError("The blog video must be 100 MB or smaller.")
+            # The real length is checked here, whatever the app did before upload.
+            from core.video_limits import check_video_length
+
+            problem = check_video_length(value, label="blog video")
+            if problem:
+                raise serializers.ValidationError(problem)
         return value
 
     excerpt = serializers.SerializerMethodField()
