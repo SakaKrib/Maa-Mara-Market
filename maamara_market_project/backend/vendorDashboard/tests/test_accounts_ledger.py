@@ -231,3 +231,16 @@ class IncomeCountsAllMoneyReceivedTests(PayoutTestMixin, TestCase):
         self.assertEqual(breakdown["owed_to_vendors"], 100.0)
         self.assertEqual(breakdown["shipping"], 30.0)
         self.assertEqual(breakdown["shop_markup"], 70.0)
+
+
+class DiagnoseCommandTests(PayoutTestMixin, TestCase):
+    def test_diagnose_accounts_runs_and_reports_the_api_version(self):
+        from io import StringIO
+        from django.core.management import call_command
+
+        get_user_model().objects.create_user(username="diag-admin", password="x", is_staff=True)
+        out = StringIO()
+        call_command("diagnose_accounts", stdout=out)
+        text = out.getvalue()
+        self.assertIn("calculation version: income-v2-paid-orders-and-payments", text)
+        self.assertIn("How a payment reaches the income figure", text)

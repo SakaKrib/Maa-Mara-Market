@@ -371,6 +371,9 @@ class DashboardSummaryView(APIView):
         }
 
         return Response({
+            # Identifies the income logic that produced this response, so a stale
+            # backend is easy to spot (the page's network response shows it).
+            "calculation": "income-v2-paid-orders-and-payments",
             "date": period_label,
             "period": {
                 "type": "day" if selected_date else "month",
