@@ -700,6 +700,9 @@ class VendorPayout(models.Model):
     gross_sales = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal("0.00"))
     adjustment_amount = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal("0.00"))
     adjustments = models.ManyToManyField(VendorAdjustment, blank=True)  # ✅ Link multiple adjustments
+    # The order items this payout pays for. An item sits in at most one payout,
+    # which is what lets a later sale join the next payout without being paid twice.
+    order_items = models.ManyToManyField("oder.OrderItem", blank=True, related_name="vendor_payouts")
     income = models.DecimalField(max_digits=12, decimal_places=2, default=0)  # with markup
     profit = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     reference = models.CharField(max_length=100, blank=True, unique=True)

@@ -76,7 +76,7 @@ const RevenueGrowthCard = () => {
               <p className="mt-1 text-xs text-muted-foreground">Across returned monthly records</p>
             </article>
             <article className="rounded-2xl border border-border bg-card p-4 shadow-sm">
-              <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Completed orders</p>
+              <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Paid orders</p>
               <p className="mt-2 text-xl font-bold text-card-foreground">{summary.totalOrders.toLocaleString()}</p>
               <p className="mt-1 text-xs text-muted-foreground">Included in the revenue trend</p>
             </article>

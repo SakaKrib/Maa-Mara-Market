@@ -26,6 +26,7 @@ from vendorDashboard.models import ReturnRequest, VendorPayout
 
 from .Serializers import TransactionSerializer
 from .models import OrderItem, Order, Refund, Transaction
+from .revenue import order_revenue, paid_orders, with_revenue
 
 User = get_user_model()
 logger = logging.getLogger(__name__)
@@ -1300,8 +1301,8 @@ def revenue_growth(request):
 @api_view(['GET'])
 @permission_classes([IsAuthenticated, IsAdminUser])
 def dashboard_stats(request):
-    completed_orders = Order.objects.filter(status__in=["COMPLETED", "completed"])
-    total_sales = sum(order.get_total() for order in completed_orders)
+    completed_orders = Order.objects.filter(status__iexact="completed")
+    total_sales = sum(order_revenue(o) for o in with_revenue(paid_orders()))
     completed_count = completed_orders.count()
     total_orders = Order.objects.count()
     pending_orders = Order.objects.filter(status__in=["PENDING", "pending"]).count()
@@ -1324,7 +1325,7 @@ def vendor_sales(request):
         row["item_id"]: int(row["quantity_sold"] or 0)
         for row in (
             OrderItem.objects
-            .filter(order__status__in=["COMPLETED", "completed"])
+            .filter(order__in=paid_orders().values("id"))
             .values("item_id")
             .annotate(quantity_sold=Sum("quantity"))
         )
@@ -1372,70 +1373,30 @@ def vendor_sales(request):
 @api_view(["GET"])
 @permission_classes([IsAuthenticated, IsAdminUser])
 def revenue_area_chart(request):
-    """
-    Monthly revenue + orders analytics for dashboard charts
-    """
+    """Monthly revenue + orders analytics (paid orders, any fulfilment stage)."""
+    months = {}
+    for order in with_revenue(paid_orders()):
+        key = (order.ordered_date.year, order.ordered_date.month)
+        row = months.setdefault(key, {"month": order.ordered_date.strftime("%b"), "revenue": 0.0, "orders": 0})
+        row["revenue"] += order_revenue(order)
+        row["orders"] += 1
 
-    # Optional: support vendor filtering later
-    queryset = Order.objects.all()
-
-    # 🔥 FIX 1: safe status matching
-    queryset = queryset.filter(status__in=["COMPLETED", "completed"])
-
-    # 🔥 FIX 2: remove bad data
-    queryset = queryset.exclude(
-        ordered_date__isnull=True
-    )
-
-    data = (
-        queryset
-        .annotate(month=TruncMonth("ordered_date"))
-        .values("month")
-        .annotate(
-            revenue=Sum("updated_total_price"),
-            orders=Count("id")
-        )
-        .order_by("month")
-    )
-
-    formatted = [
-        {
-            # frontend-friendly
-            "month": item["month"].strftime("%b") if item["month"] else "Unknown",
-            "revenue": float(item["revenue"] or 0),
-            "orders": int(item["orders"] or 0),
-        }
-        for item in data
-    ]
-
-    return Response(formatted)
+    return Response([months[k] for k in sorted(months)])
 
 @api_view(["GET"])
 @permission_classes([IsAuthenticated, IsAdminUser])
 def dashboard_chart_data(request):
     """Real sales/category datasets for admin dashboard charts."""
-    completed = Order.objects.filter(status__in=["COMPLETED", "completed"], ordered_date__isnull=False)
-
-    sales_rows = (
-        completed.annotate(day=TruncDate("ordered_date"))
-        .values("day")
-        .annotate(
-            sales=Sum("updated_total_price"),
-            orders=Count("id"),
-        )
-        .order_by("-day")[:30]
-    )
-    sales_activity = [
-        {
-            "label": row["day"].strftime("%d %b") if row["day"] else "Unknown",
-            "sales": float(row["sales"] or 0),
-            "orders": int(row["orders"] or 0),
-        }
-        for row in reversed(list(sales_rows))
-    ]
+    days = {}
+    for order in with_revenue(paid_orders()):
+        day = order.ordered_date.date()
+        row = days.setdefault(day, {"label": day.strftime("%d %b"), "sales": 0.0, "orders": 0})
+        row["sales"] += order_revenue(order)
+        row["orders"] += 1
+    sales_activity = [days[d] for d in sorted(days)[-30:]]
 
     category_rows = (
-        OrderItem.objects.filter(order__status__in=["COMPLETED", "completed"], item__category__isnull=False)
+        OrderItem.objects.filter(order__in=paid_orders().values("id"), item__category__isnull=False)
         .values("item__category__name")
         .annotate(value=Sum("quantity"))
         .order_by("-value")[:10]

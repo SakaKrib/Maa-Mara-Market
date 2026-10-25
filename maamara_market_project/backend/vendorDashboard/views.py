@@ -89,26 +89,76 @@ def get_vendor_earnings(vendor, start_date, end_date):
     user = vendor.user
     vendor_items = Item.objects.filter(created_by=user)
 
-    # Get all completed orders within date range
-    completed_orders = Order.objects.filter(
-        status__in=["COMPLETED", "completed"],
-        ordered_date__gte=start_date,
-        ordered_date__lt=end_date + timedelta(days=1)
+    # An order item is payable once the sale is settled: its order is COMPLETED
+    # (customer accepted, or the acceptance window elapsed) or its own
+    # fulfilment line is COMPLETED (so one slow vendor in a multi-vendor order
+    # does not hold up the others). Status text is stored in mixed case.
+    settled = (
+        Q(order__status__iexact="completed")
+        | Q(fulfillment__status__iexact="completed")
     )
-    completed_order_ids = completed_orders.values_list('id', flat=True)
-
-    # Get all valid order items linked to those orders for this vendor
-    order_items = OrderItem.objects.filter(
-        order_id__in=completed_order_ids,
+    candidates = OrderItem.objects.filter(
+        settled,
         item__in=vendor_items,
         refunded=False,
         is_returned=False,
         is_exchanged=False,
-    ).distinct()
+        order__ordered_date__lt=end_date + timedelta(days=1),
+    )
+
+    # Payouts for this exact period that can still change (not paid, not mid-send).
+    open_payout = (
+        VendorPayout.objects.filter(
+            vendor=vendor,
+            payout_period_start=start_date,
+            payout_period_end=end_date,
+            paid=False,
+            send_in_progress=False,
+        )
+        .order_by("-id")
+        .first()
+    )
+
+    # Items already owned by another payout are never paid again. Payouts made
+    # before items were tracked own nothing, so they are treated as covering
+    # everything ordered up to their period end.
+    claimed = VendorPayout.order_items.through.objects.all()
+    if open_payout is not None:
+        claimed = claimed.exclude(vendorpayout_id=open_payout.pk)
+    candidates = candidates.exclude(pk__in=claimed.values("orderitem_id"))
+    legacy_end = (
+        VendorPayout.objects.filter(
+            vendor=vendor, paid=True, amount__gt=0, order_items__isnull=True,
+            payout_period_end__lte=end_date,
+        )
+        .order_by("-payout_period_end")
+        .values_list("payout_period_end", flat=True)
+        .first()
+    )
+    if legacy_end:
+        candidates = candidates.filter(order__ordered_date__gte=legacy_end + timedelta(days=1))
+    order_items = candidates.distinct()
     if getattr(settings, "WEEKLY_PAYOUTS_ENABLED", False):
         # Items that went through the fulfilment workflow are paid by weekly
         # batches only, so the monthly run can never pay them a second time.
         order_items = order_items.filter(fulfillment__isnull=True)
+    order_items = list(order_items)
+
+    # The period was already paid and nothing new has become payable: report
+    # the frozen payout. If something new is payable, it gets its own payout
+    # (a top-up) for the same period instead of being silently dropped.
+    paid_payout = (
+        VendorPayout.objects.filter(
+            vendor=vendor, payout_period_start=start_date, payout_period_end=end_date, paid=True
+        )
+        .order_by("-id")
+        .first()
+    )
+    if open_payout is None and paid_payout is not None and not order_items:
+        difference = paid_payout.difference
+        if difference:
+            difference["reference"] = paid_payout.reference
+        return {"payout": paid_payout, "difference": difference}
 
     # Calculate gross sales using vendor-side pricing (excludes markup)
     gross_sales = Decimal("0.00")
@@ -141,50 +191,32 @@ def get_vendor_earnings(vendor, start_date, end_date):
     # Compute vendor's final net payout for the month (without markup)
     net_total = gross_sales + adjustment_total
 
-    # Customer-side income must be limited to this vendor's order items.
-    customer_order_items = OrderItem.objects.filter(
-        order_id__in=completed_order_ids,
-        item__in=vendor_items,
-        refunded=False,
-        is_returned=False,
-        is_exchanged=False,
-    )
-    if getattr(settings, "WEEKLY_PAYOUTS_ENABLED", False):
-        customer_order_items = customer_order_items.filter(fulfillment__isnull=True)
+    # Customer-side income is limited to exactly the items in this payout.
     total_income = sum(
-        (oi.get_final_price() for oi in customer_order_items),
+        (oi.get_final_price() for oi in order_items),
         Decimal("0.00"),
     )
 
     # Calculate profit from this vendor's own sales only.
     profit = total_income - net_total
 
-    # Create or update the VendorPayout record
-    payout, created = VendorPayout.objects.get_or_create(
-        vendor=vendor,
-        payout_period_start=start_date,
-        payout_period_end=end_date,
-        defaults={
-            "amount": net_total,
-            "gross_sales": gross_sales,
-            "adjustment_amount": adjustment_total,
-            "income": total_income,
-            "profit": profit,
-            "reference": str(uuid.uuid4())[:8],  # Generate a short unique reference
-        },
-    )
-
-    # A provider-confirmed payout is an immutable financial snapshot.
-    # Regenerating the same period must not rewrite a payout that has already
-    # been paid, even if the underlying order query changes later.
-    if not created and payout.paid:
-        difference = payout.difference
-        if difference:
-            difference["reference"] = payout.reference
-        return {
-            "payout": payout,
-            "difference": difference,
-        }
+    # Create or update the VendorPayout record. A paid period is frozen; new
+    # sales for it go to a fresh (unpaid) top-up payout.
+    created = False
+    payout = open_payout
+    if payout is None:
+        payout = VendorPayout.objects.create(
+            vendor=vendor,
+            payout_period_start=start_date,
+            payout_period_end=end_date,
+            amount=net_total,
+            gross_sales=gross_sales,
+            adjustment_amount=adjustment_total,
+            income=total_income,
+            profit=profit,
+            reference=str(uuid.uuid4())[:8],  # Generate a short unique reference
+        )
+        created = True
 
     # Update payout fields to latest calculated values
     payout.gross_sales = gross_sales
@@ -198,6 +230,7 @@ def get_vendor_earnings(vendor, start_date, end_date):
         payout.reference = str(uuid.uuid4())[:8]
 
     payout.save()
+    payout.order_items.set(order_items)
 
     # Attach any newly applied adjustments
     if applied_adjustments:

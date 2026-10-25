@@ -1,4 +1,5 @@
 from django.db.models import Avg, Count, Sum, F, DecimalField, ExpressionWrapper
+from order.revenue import paid_orders
 from rest_framework import permissions, viewsets
 from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated
@@ -78,7 +79,7 @@ class VendorAdminViewSet(viewsets.ModelViewSet):
         vendor = self.get_object()
         completed_items = OrderItem.objects.filter(
             item__vendor=vendor,
-            order__status__in=["COMPLETED", "completed"],
+            order__in=paid_orders().values("id"),
         )
 
         sales = completed_items.aggregate(
@@ -144,7 +145,7 @@ def admin_item_performance(request, item_id):
 
     completed_sales = OrderItem.objects.filter(
         item=item,
-        order__status__in=["COMPLETED", "completed"],
+        order__in=paid_orders().values("id"),
     ).aggregate(
         units=Sum("quantity"),
         amount=Sum(
