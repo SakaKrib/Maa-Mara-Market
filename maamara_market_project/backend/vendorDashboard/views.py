@@ -88,7 +88,9 @@ def get_vendor_earnings(vendor, start_date, end_date):
     """
 
     user = vendor.user
-    vendor_items = Item.objects.filter(created_by=user)
+    # Items the vendor owns: assigned to them or created by them (admins can add
+    # items on a vendor's behalf). Must match the sales overview exactly.
+    vendor_items = Item.objects.filter(Q(vendor=vendor) | Q(created_by=user))
 
     # An order item is payable once the sale is settled: its order is COMPLETED
     # (customer accepted, or the acceptance window elapsed) or its own

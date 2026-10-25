@@ -80,7 +80,7 @@ const Dashboard = () => {
   const [vendorIncrease, setVendorIncrease] = useState("+0%");
   const [jobsCount, setJobsCount] = useState(0);
   const [supportCount, setSupportCount] = useState(0);
-  const [analytics, setAnalytics] = useState({ total_revenue: 0, total_profit: 0, monthly_revenue: [] });
+  const [analytics, setAnalytics] = useState({ total_revenue: 0, total_profit: 0, total_vendor_share: 0, monthly_revenue: [] });
   const [chartData, setChartData] = useState({ sales_activity: [], category_distribution: [] });
   const [trafficData, setTrafficData] = useState({
     total_visits: 0,
@@ -122,6 +122,7 @@ const Dashboard = () => {
         setAnalytics({
           total_revenue: Number(revenue.data?.total_revenue) || monthlyRevenue.reduce((sum, row) => sum + Number(row.revenue || 0), 0),
           total_profit: monthlyRevenue.reduce((sum, row) => sum + Number(row.profit || 0), 0),
+          total_vendor_share: monthlyRevenue.reduce((sum, row) => sum + Number(row.vendor_share || 0), 0),
           monthly_revenue: monthlyRevenue,
         });
         const requestCount = (response) => Array.isArray(response.data) ? response.data.length : Number(response.data?.count ?? response.data?.results?.length ?? 0);
@@ -158,6 +159,7 @@ const Dashboard = () => {
         setAnalytics({
           total_revenue: rows.reduce((sum, row) => sum + Number(row.revenue || 0), 0),
           total_profit: rows.reduce((sum, row) => sum + Number(row.profit || 0), 0),
+          total_vendor_share: rows.reduce((sum, row) => sum + Number(row.vendor_share || 0), 0),
           monthly_revenue: rows,
         });
         setChartData(charts.data || { sales_activity: [], category_distribution: [] });
@@ -735,7 +737,10 @@ const Dashboard = () => {
               <p className="text-xl font-bold text-card-foreground dark:text-card-foreground">
                 KES {Number(analytics.total_revenue || 0).toLocaleString()}
               </p>
-              <p className="text-xs font-semibold text-emerald-600">
+              <p className="text-xs text-muted-foreground">
+                Owed to vendors KES {Number(analytics.total_vendor_share || 0).toLocaleString()}
+              </p>
+              <p className="text-xs font-semibold text-emerald-600" title="Sales minus shipping minus what vendors are owed (the markup)">
                 Profit KES {Number(analytics.total_profit || 0).toLocaleString()}
               </p>
               <span className="text-xs text-muted-foreground">View full analytics →</span>

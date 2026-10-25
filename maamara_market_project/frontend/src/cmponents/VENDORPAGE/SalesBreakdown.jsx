@@ -26,8 +26,47 @@ const SalesBreakdown = ({ overview, defaultOpen = false }) => {
     [items, month]
   );
 
+  const openMonth = (key) => {
+    setMonth(key);
+    setOpen(true);
+  };
+  const activeMonths = months.filter((m) => Number(m.total) > 0).slice().reverse();
+
   return (
     <div className="mt-3 border-t border-[#e6e6e4] pt-3">
+      {activeMonths.length > 0 && (
+        <ul className="mb-3 space-y-2">
+          {activeMonths.map((m) => {
+            const total = Number(m.total) || 0;
+            return (
+              <li key={m.key}>
+                <button
+                  type="button"
+                  onClick={() => openMonth(m.key)}
+                  className="w-full rounded-xl border border-[#e6e6e4] bg-white p-2.5 text-left transition hover:border-[#93c5fd] hover:bg-[#f8fbff]"
+                  aria-label={`View ${m.label} sales`}
+                >
+                  <div className="flex items-baseline justify-between gap-2">
+                    <span className="text-xs font-semibold text-[#222]">{m.label}</span>
+                    <span className="text-sm font-bold text-[#222]">{money(total)}</span>
+                  </div>
+                  <div className="mt-1.5 flex h-1.5 overflow-hidden rounded-full bg-[#f1f1ef]">
+                    {[["paid_out", "bg-green-500"], ["processing", "bg-blue-500"], ["ready", "bg-amber-400"], ["awaiting", "bg-slate-300"]].map(([key, cls]) => (
+                      <span key={key} className={cls} style={{ width: `${total ? (Number(m[key]) / total) * 100 : 0}%` }} />
+                    ))}
+                  </div>
+                  <p className="mt-1.5 text-[11px] leading-4 text-[#595959]">
+                    Paid out {money(m.paid_out)} · Processing {money(m.processing)} · Ready {money(m.ready)} · Awaiting confirmation {money(m.awaiting)}
+                  </p>
+                </button>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+      <p className="mb-2 text-[11px] leading-4 text-[#595959]">
+        A sale counts here as soon as the customer has paid. Once you dispatch it, we hold the payment safely and release it to you when the customer confirms delivery (or the confirmation window ends).
+      </p>
       <div className="grid grid-cols-2 gap-2">
         {STAGES.map(([key, label, cls]) => (
           <div key={key} className={`rounded-lg border px-2.5 py-1.5 ${cls}`}>

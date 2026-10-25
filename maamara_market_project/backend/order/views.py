@@ -26,7 +26,7 @@ from vendorDashboard.models import ReturnRequest, VendorPayout
 
 from .Serializers import TransactionSerializer
 from .models import OrderItem, Order, Refund, Transaction
-from .revenue import order_profit, order_revenue, paid_orders, with_profit_prefetch, with_revenue
+from .revenue import order_profit, order_vendor_share, order_revenue, paid_orders, with_profit_prefetch, with_revenue
 
 User = get_user_model()
 logger = logging.getLogger(__name__)
@@ -1378,10 +1378,14 @@ def revenue_area_chart(request):
     for order in with_profit_prefetch(with_revenue(paid_orders())):
         key = (order.ordered_date.year, order.ordered_date.month)
         row = months.setdefault(
-            key, {"month": order.ordered_date.strftime("%b"), "revenue": 0.0, "profit": 0.0, "orders": 0}
+            key,
+            {"month": order.ordered_date.strftime("%b"), "revenue": 0.0, "vendor_share": 0.0, "profit": 0.0, "orders": 0},
         )
-        row["revenue"] += order_revenue(order)
-        row["profit"] += order_profit(order)
+        revenue = order_revenue(order)
+        vendor_share = order_vendor_share(order)
+        row["revenue"] += revenue
+        row["vendor_share"] += vendor_share
+        row["profit"] += order_profit(order, revenue, vendor_share)
         row["orders"] += 1
 
     return Response([months[k] for k in sorted(months)])

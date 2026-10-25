@@ -93,3 +93,26 @@ class VendorSalesOverviewTests(PayoutTestMixin, TestCase):
         client.force_authenticate(admin)
         rows = client.get("/api/revenue-analytics/").json()
         self.assertTrue(rows and "profit" in rows[0])
+
+    def test_profit_is_sales_minus_vendor_payouts_excluding_shipping(self):
+        # Customer paid 170 for goods the vendor prices at 100, plus 30 shipping.
+        line = self.sale("COMPLETED", "100.00")
+        Order.objects.filter(pk=line.order_id).update(updated_total_price=200, shipping_amount=Decimal("30.00"))
+        admin = get_user_model().objects.create_user(username=f"adm{uuid4().hex[:6]}", password="x", is_staff=True)
+        client = APIClient()
+        client.force_authenticate(admin)
+        row = client.get("/api/revenue-analytics/").json()[0]
+        self.assertEqual(row["revenue"], 200.0)
+        self.assertEqual(row["vendor_share"], 100.0)
+        self.assertEqual(row["profit"], 70.0)
+
+    def test_payout_includes_items_assigned_to_vendor_but_created_by_admin(self):
+        admin = get_user_model().objects.create_user(username=f"adm{uuid4().hex[:6]}", password="x", is_staff=True)
+        item = Item.objects.create(
+            name="Admin added", description="x", created_by=admin, vendor=self.vendor, price=Decimal("600.00")
+        )
+        payment = Payment.objects.create(amount=Decimal("600.00"), merchant_reference=uuid4().hex, status="PAID")
+        order = Order.objects.create(user=self.vendor.user, payment=payment, ordered_date=timezone.now(), status="COMPLETED")
+        OrderItem.objects.create(order=order, item=item, user=self.vendor.user, price_at_purchase=Decimal("1020.00"), quantity=1)
+        payout = get_vendor_earnings(self.vendor, self.start, self.end)["payout"]
+        self.assertEqual(payout.amount, Decimal("600.00"))

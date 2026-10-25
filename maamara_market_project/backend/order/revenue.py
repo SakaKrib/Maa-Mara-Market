@@ -54,19 +54,26 @@ def order_revenue(order):
         return 0.0
 
 
-def order_profit(order):
-    """Platform profit on one order: what customers paid for the items minus
-    what the vendors are owed for them (the marketplace markup). Shipping is
-    not profit and is left out."""
-    profit = Decimal("0")
+def order_vendor_share(order):
+    """What the vendors are owed for an order (their own prices, no markup)."""
+    total = Decimal("0")
     for line in order.order_items.all():
         try:
-            customer = Decimal(str(line.get_final_price()))
-            vendor = Decimal(str(line.get_final_price_for_vendor()))
+            total += Decimal(str(line.get_final_price_for_vendor()))
         except Exception:
-            continue
-        profit += customer - vendor
-    return float(profit)
+            price = getattr(line.item, "discount_price", None) or getattr(line.item, "price", 0) or 0
+            total += Decimal(str(price)) * line.quantity
+    return float(total)
+
+
+def order_profit(order, revenue=None, vendor_share=None):
+    """Shop profit on one order = what the customer paid for the goods (the
+    order total without shipping) minus what the vendors are owed. In other
+    words, the markup on top of the vendors' prices."""
+    revenue = order_revenue(order) if revenue is None else revenue
+    vendor_share = order_vendor_share(order) if vendor_share is None else vendor_share
+    shipping = float(getattr(order, "shipping_amount", 0) or 0)
+    return revenue - shipping - vendor_share
 
 
 def with_profit_prefetch(queryset):
