@@ -9,6 +9,7 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
+        migrations.AlterUniqueTogether(name="vendorpayout", unique_together=set()),
         migrations.AddField(
             model_name="vendorpayout",
             name="order_items",

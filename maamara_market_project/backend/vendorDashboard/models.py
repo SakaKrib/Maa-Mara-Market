@@ -792,8 +792,9 @@ class VendorPayout(models.Model):
         }
 
     class Meta:
-        # Prevent duplicate payouts for the same vendor and payout period.
-        unique_together = ('vendor', 'payout_period_start', 'payout_period_end')
+        # A period may hold several payouts: sales that settle after a payout was
+        # paid get their own top-up payout. Double payment is prevented by
+        # ``order_items`` (an item belongs to at most one payout), not by period.
 
         # Provider correlation identifiers must belong to at most one payout.
         # NULL/blank values remain allowed until M-Pesa supplies them.
