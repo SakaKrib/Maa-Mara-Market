@@ -173,3 +173,61 @@ class PaymentChannelTests(PayoutTestMixin, TestCase):
         card = self.accounts()["mpesa"]
         self.assertEqual(card["amount"], 0.0)
         self.assertEqual(card["unmatched"]["reasons"]["payment_not_confirmed"], 1)
+
+
+class IncomeCountsAllMoneyReceivedTests(PayoutTestMixin, TestCase):
+    def setUp(self):
+        self.admin = get_user_model().objects.create_user(
+            username=f"admin-{uuid4().hex[:8]}", password="x", is_staff=True
+        )
+        self.client = APIClient()
+        self.client.force_authenticate(self.admin)
+        self.vendor = self.make_vendor()
+
+    def order(self, total, status, payment=None, vendor_price="100.00", shipping="0.00"):
+        from order.models import Order, OrderItem
+        from ReactSerializers.models import Item
+
+        order = Order.objects.create(
+            payment=payment, status=status, ordered_date=timezone.now(),
+            updated_total_price=total, shipping_amount=Decimal(shipping),
+        )
+        item = Item.objects.create(
+            name=f"Item {uuid4().hex[:6]}", description="x", created_by=self.vendor.user,
+            vendor=self.vendor, price=Decimal(vendor_price),
+        )
+        OrderItem.objects.create(
+            order=order, item=item, user=self.vendor.user, price_at_purchase=Decimal("170.00"), quantity=1
+        )
+        return order
+
+    def income(self):
+        response = self.client.get("/api/dashboard/summary/")
+        self.assertEqual(response.status_code, 200, response.content)
+        return response.json()["summary_cards"]["income"]
+
+    def test_paid_orders_without_a_settled_payment_still_count_as_income(self):
+        self.order(200, "COMPLETED")  # no payment record at all
+        pending = Payment.objects.create(amount=Decimal("300.00"), merchant_reference=uuid4().hex, status="PENDING")
+        self.order(300, "DELIVERED", payment=pending)  # paid order, payment never marked paid
+        self.assertEqual(self.income()["amount"], 500.0)
+
+    def test_an_order_with_a_settled_payment_is_counted_once(self):
+        paid = Payment.objects.create(
+            amount=Decimal("200.00"), merchant_reference=uuid4().hex, status="PAID", paid_at=timezone.now()
+        )
+        self.order(200, "COMPLETED", payment=paid)
+        self.assertEqual(self.income()["amount"], 200.0)
+
+    def test_unpaid_and_cancelled_orders_are_not_income(self):
+        self.order(200, "PENDING_PAYMENT")
+        self.order(200, "CANCELLED")
+        self.assertEqual(self.income()["amount"], 0.0)
+
+    def test_income_is_split_into_vendors_shipping_and_shop_markup(self):
+        self.order(200, "COMPLETED", vendor_price="100.00", shipping="30.00")
+        breakdown = self.income()["breakdown"]
+        self.assertEqual(breakdown["orders_total"], 200.0)
+        self.assertEqual(breakdown["owed_to_vendors"], 100.0)
+        self.assertEqual(breakdown["shipping"], 30.0)
+        self.assertEqual(breakdown["shop_markup"], 70.0)

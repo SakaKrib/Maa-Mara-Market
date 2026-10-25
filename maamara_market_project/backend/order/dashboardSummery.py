@@ -12,6 +12,7 @@ from rest_framework.views import APIView
 from vendorDashboard.models import VendorPayout
 
 from .models import Payment, Refund, Transaction
+from .revenue import order_revenue, order_vendor_share, paid_orders, with_revenue
 
 
 # Payment.status uses PAID; older rows and some code paths wrote "completed".
@@ -27,6 +28,47 @@ def settled_payments():
     return Payment.objects.filter(SETTLED_PAYMENT_STATUS).annotate(
         settled_at=Coalesce("paid_at", "created_at")
     )
+
+
+def orders_without_settled_payment(start=None, end=None):
+    """Paid orders whose money is not backed by a settled Payment row.
+
+    Older orders, manual orders and orders whose payment was never marked paid
+    still brought money in. Counting them keeps the income figure equal to
+    everything customers actually paid, without counting any order twice.
+    """
+    orders = with_revenue(paid_orders()).exclude(payment__in=settled_payments().values("pk"))
+    if start is not None:
+        orders = orders.filter(ordered_date__gte=start, ordered_date__lte=end)
+    return orders
+
+
+def income_between(start=None, end=None):
+    """All money received from customers (vendor prices + markup + shipping)."""
+    payments = settled_payments()
+    if start is not None:
+        payments = payments.filter(settled_at__gte=start, settled_at__lte=end)
+    total = payments.aggregate(total=Sum("amount"))["total"] or Decimal("0.00")
+    extra = Decimal("0.00")
+    for order in orders_without_settled_payment(start, end):
+        extra += Decimal(str(order_revenue(order)))
+    return total + extra
+
+
+def income_breakdown(start, end):
+    """Where the income of paid orders in the period goes: vendors, shipping, shop."""
+    revenue = vendors = shipping = 0.0
+    orders = with_revenue(paid_orders().filter(ordered_date__gte=start, ordered_date__lte=end))
+    for order in orders.prefetch_related("order_items__item"):
+        revenue += order_revenue(order)
+        vendors += order_vendor_share(order)
+        shipping += float(order.shipping_amount or 0)
+    return {
+        "orders_total": round(revenue, 2),
+        "owed_to_vendors": round(vendors, 2),
+        "shipping": round(shipping, 2),
+        "shop_markup": round(revenue - vendors - shipping, 2),
+    }
 
 
 def channel_filter(channel):
@@ -140,10 +182,8 @@ class DashboardSummaryView(APIView):
             settled_at__lte=period_end,
         )
 
-        income_total = (
-            completed_payments.aggregate(total=Sum("amount"))["total"]
-            or Decimal("0.00")
-        )
+        income_total = income_between(period_start, period_end)
+        breakdown = income_breakdown(period_start, period_end)
 
         paypal = channel_activity("paypal", period_start, period_end)
         mpesa = channel_activity("mpesa", period_start, period_end)
@@ -272,6 +312,11 @@ class DashboardSummaryView(APIView):
             item["month"].strftime("%Y-%m"): float(item["amount"] or 0)
             for item in monthly_income
         }
+        for order in orders_without_settled_payment(
+            timezone.make_aware(datetime.combine(chart_start, datetime.min.time())), period_end
+        ):
+            key = timezone.localtime(order.ordered_date).strftime("%Y-%m")
+            income_dict[key] = income_dict.get(key, 0) + order_revenue(order)
         expense_dict = {
             item["month"].strftime("%Y-%m"): float(item["amount"] or 0)
             for item in monthly_manual_expenses
@@ -338,6 +383,7 @@ class DashboardSummaryView(APIView):
                 "income": {
                     "amount": float(income_total),
                     "comparison": f"Income for {period_description.lower()}",
+                    "breakdown": breakdown,
                 },
                 "expenses": {
                     "amount": float(expense_total),

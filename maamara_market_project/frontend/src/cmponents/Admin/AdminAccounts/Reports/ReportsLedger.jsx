@@ -27,6 +27,7 @@ export default function MonthlyReport({ data = {}, loading = false, error = null
       icon: cashOutline,
       amount: summary.income?.amount,
       comparison: summary.income?.comparison,
+      breakdown: summary.income?.breakdown,
       tone: "bg-green-500/10 text-green-600 dark:text-green-300",
     },
     {
@@ -79,6 +80,20 @@ export default function MonthlyReport({ data = {}, loading = false, error = null
             <p className="mt-2 text-[11px] leading-5 text-muted-foreground">
               {card.comparison || "No data available"}
             </p>
+            {card.breakdown && Number(card.breakdown.orders_total) > 0 && (
+              <dl className="mt-3 space-y-1 border-t border-border pt-3 text-left text-[11px]">
+                {[
+                  ["Owed to vendors", card.breakdown.owed_to_vendors],
+                  ["Shipping", card.breakdown.shipping],
+                  ["Shop markup (profit)", card.breakdown.shop_markup],
+                ].map(([label, value]) => (
+                  <div key={label} className="flex items-center justify-between gap-2">
+                    <dt className="text-muted-foreground">{label}</dt>
+                    <dd className="font-semibold text-card-foreground">{formatKES(value)}</dd>
+                  </div>
+                ))}
+              </dl>
+            )}
           </article>
         ))}
       </div>
