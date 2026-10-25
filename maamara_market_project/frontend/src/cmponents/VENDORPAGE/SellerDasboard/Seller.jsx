@@ -13,6 +13,7 @@ import Activities from "../ChartBox/Bar/RecentActivities/Activities";
 import useVendorStatsBox from "../../Hooks/ItemStats/ItemStatsHook";
 import VendorNotifications from "./notifications/Notifications_vendor";
 import { useMonthlySales } from "../ChartBox/ChartData/HomeChartData/SalesReport";
+import SalesBreakdown from "../SalesBreakdown";
 import { useVendorItemGrowthStats } from "../../Hooks/ItemStats/VendorItemStats";
 import { useVendorPendingOrdersStats } from "../../Hooks/ItemStats/PendingOrderStat";
 import StockSummaryBox from "../Products/Inventory/StockSummary";
@@ -523,6 +524,7 @@ const Home = ({ vendor_id }) => {
 
           <article className={`${cardClass} min-h-[112px] p-3 sm:min-h-[120px] sm:p-4 xl:col-span-3`}>
             <ChartBox {...monthlySales} />
+            <SalesBreakdown overview={monthlySales.overview} />
           </article>
 
           <article className={`${cardClass} min-h-[112px] p-3 sm:min-h-[120px] sm:p-4 xl:col-span-3`}>

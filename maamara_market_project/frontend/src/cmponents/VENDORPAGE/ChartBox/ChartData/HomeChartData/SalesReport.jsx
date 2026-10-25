@@ -1,69 +1,49 @@
-// 📁 src/components/Hooks/Payouts/useMonthlySales.js
 import { useEffect, useState } from "react";
-import { useVendorPayoutHistory } from "../../../../Hooks/Payouts/Payouts";
+import api from "../../../../../Services/Api";
 
+// Monthly sales for the vendor dashboard. Every paid sale counts, and each one
+// carries the stage it has reached on the way to payment (awaiting delivery
+// confirmation, ready for payout, payout processing, paid out).
 export const useMonthlySales = () => {
-  const { payouts, loading, error } = useVendorPayoutHistory();
-  const [monthlySales, setMonthlySales] = useState([]);
-  const [percentage, setPercentage] = useState("0%");
+  const [overview, setOverview] = useState({ months: [], totals: {}, items: [], stage_labels: {} });
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
-    if (!payouts || payouts.length === 0) return;
-
-    // Group payouts by year-month (ISO string)
-    const salesByMonth = {};
-
-    payouts.forEach((p) => {
-      if (!p.payout_period_start) return;
-
-      // Extract "YYYY-MM" from payout_period_start
-      const isoMonth = p.payout_period_start.slice(0, 7);
-
-      const amount = parseFloat(p.amount) || 0;
-      salesByMonth[isoMonth] = (salesByMonth[isoMonth] || 0) + amount;
-    });
-
-    // Convert to array, sort by date, and format for display
-    const chartData = Object.entries(salesByMonth)
-      .map(([isoMonth, total]) => {
-        const date = new Date(isoMonth + "-01"); // safe date
-        return {
-          name: date.toLocaleDateString("en-US", { month: "short", year: "numeric" }),
-          pv: total,
-          date,
-        };
+    let active = true;
+    api
+      .get("/api/vendor/sales-overview/", { params: { months: 6 }, withCredentials: true })
+      .then((response) => {
+        if (active) setOverview(response.data || { months: [], totals: {}, items: [], stage_labels: {} });
       })
-      .sort((a, b) => a.date - b.date)
-      .slice(-6); // last 6 months
+      .catch((requestError) => {
+        if (active) setError(requestError?.response?.data?.detail || "Unable to load your sales.");
+      })
+      .finally(() => {
+        if (active) setLoading(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, []);
 
-    setMonthlySales(chartData);
+  const months = Array.isArray(overview.months) ? overview.months : [];
+  const chartData = months.map((month) => ({
+    name: month.label,
+    pv: Number(month.total) || 0,
+    ...month,
+  }));
 
-    // Calculate percentage change between last two months
-    if (chartData.length >= 2) {
-      const last = chartData[chartData.length - 1].pv;
-      const prev = chartData[chartData.length - 2].pv;
+  let percentage = "0%";
+  if (chartData.length >= 2) {
+    const last = chartData[chartData.length - 1].pv;
+    const prev = chartData[chartData.length - 2].pv;
+    const change = prev > 0 ? ((last - prev) / prev) * 100 : last > 0 ? 100 : 0;
+    const capped = Math.min(Math.max(change, -100), 999);
+    percentage = `${capped >= 0 ? "+" : ""}${capped.toFixed(1)}%`;
+  }
 
-      let change = 0;
-
-      if (prev === 0 && last > 0) {
-        change = 100;
-      } else if (prev > 0) {
-        change = ((last - prev) / prev) * 100;
-      }
-
-      const cappedChange = Math.min(Math.max(change, -100), 999);
-      const formattedChange =
-        cappedChange >= 0
-          ? `+${cappedChange.toFixed(1)}%`
-          : `${cappedChange.toFixed(1)}%`;
-
-      setPercentage(formattedChange);
-    } else {
-      setPercentage("0%");
-    }
-  }, [payouts]);
-
-  const total = monthlySales.reduce((sum, d) => sum + d.pv, 0).toFixed(2);
+  const total = Number(overview.totals?.total || 0).toFixed(2);
 
   return {
     title: "Monthly Sales",
@@ -71,7 +51,8 @@ export const useMonthlySales = () => {
     percentage,
     duration: "Last 6 Months",
     link: "vendor-sales",
-    chartData: monthlySales,
+    chartData,
+    overview,
     loading,
     error,
   };

@@ -211,6 +211,7 @@ export default function VendorReport() {
   const [notice, setNotice] = useState("");
   const [noticeType, setNoticeType] = useState("success");
   const [filter, setFilter] = useState("all");
+  const [readiness, setReadiness] = useState(null);
 
   const {
     data: generatedData,
@@ -230,6 +231,12 @@ export default function VendorReport() {
         : response.data?.results || [];
 
       setReport(payouts);
+      try {
+        const readinessResponse = await api.get("/api/admin/payout-readiness/");
+        setReadiness(readinessResponse.data || null);
+      } catch (readinessError) {
+        console.error("Error fetching payout readiness:", readinessError);
+      }
     } catch (requestError) {
       console.error("Error fetching payout report:", requestError);
       setError(
@@ -427,6 +434,40 @@ export default function VendorReport() {
           </article>
         ))}
       </div>
+
+      {readiness && (
+        <section className="rounded-2xl border border-border bg-card p-4 shadow-sm sm:p-5">
+          <h2 className="text-base font-bold text-card-foreground">Where vendor sales stand</h2>
+          <p className="mt-1 text-xs text-muted-foreground">
+            A sale becomes payable once its order is completed (the customer accepted it or the acceptance window passed). Generate payments to create payouts for everything ready.
+          </p>
+          <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-4">
+            {[
+              ["ready", "Ready to pay", "text-amber-600"],
+              ["awaiting", "Awaiting completion", "text-muted-foreground"],
+              ["processing", "Payout processing", "text-blue-600"],
+              ["paid_out", "Paid out", "text-green-600"],
+            ].map(([key, label, tone]) => (
+              <div key={key} className="rounded-xl border border-border p-3">
+                <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">{label}</p>
+                <p className={`mt-1 text-lg font-bold ${tone}`}>{formatKES(readiness.totals?.[key] || 0)}</p>
+              </div>
+            ))}
+          </div>
+          {Array.isArray(readiness.vendors) && readiness.vendors.some((v) => v.ready > 0 || v.awaiting > 0) && (
+            <ul className="mt-3 divide-y divide-border text-sm">
+              {readiness.vendors.filter((v) => v.ready > 0 || v.awaiting > 0).map((v) => (
+                <li key={v.vendor_id} className="flex flex-wrap items-center justify-between gap-2 py-2">
+                  <span className="font-semibold text-card-foreground">{v.vendor}</span>
+                  <span className="text-xs text-muted-foreground">
+                    Ready {formatKES(v.ready)} · Awaiting completion {formatKES(v.awaiting)}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+      )}
 
       <section className="overflow-hidden rounded-2xl border border-border bg-card shadow-sm">
         <div className="flex flex-col gap-3 border-b border-border p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5">

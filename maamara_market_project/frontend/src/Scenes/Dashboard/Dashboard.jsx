@@ -80,7 +80,7 @@ const Dashboard = () => {
   const [vendorIncrease, setVendorIncrease] = useState("+0%");
   const [jobsCount, setJobsCount] = useState(0);
   const [supportCount, setSupportCount] = useState(0);
-  const [analytics, setAnalytics] = useState({ total_revenue: 0, monthly_revenue: [] });
+  const [analytics, setAnalytics] = useState({ total_revenue: 0, total_profit: 0, monthly_revenue: [] });
   const [chartData, setChartData] = useState({ sales_activity: [], category_distribution: [] });
   const [trafficData, setTrafficData] = useState({
     total_visits: 0,
@@ -121,6 +121,7 @@ const Dashboard = () => {
         const monthlyRevenue = Array.isArray(revenue.data) ? revenue.data : (revenue.data?.monthly_revenue || []);
         setAnalytics({
           total_revenue: Number(revenue.data?.total_revenue) || monthlyRevenue.reduce((sum, row) => sum + Number(row.revenue || 0), 0),
+          total_profit: monthlyRevenue.reduce((sum, row) => sum + Number(row.profit || 0), 0),
           monthly_revenue: monthlyRevenue,
         });
         const requestCount = (response) => Array.isArray(response.data) ? response.data.length : Number(response.data?.count ?? response.data?.results?.length ?? 0);
@@ -399,6 +400,7 @@ const Dashboard = () => {
       if (reportType === "summary") {
         const rows = [
           ["Total revenue (KES)", Number(analytics.total_revenue || transactionSummary.total_revenue || 0)],
+          ["Total profit (KES)", Number(analytics.total_profit || 0)],
           ["Total transactions", Number(transactionSummary.total_transactions || transactions.length || 0)],
           ["Total sales", Number(stats?.total_sales || 0)],
           ["Total orders", totalOrders],
@@ -712,6 +714,9 @@ const Dashboard = () => {
             <div className="text-left sm:text-right">
               <p className="text-xl font-bold text-card-foreground dark:text-card-foreground">
                 KES {Number(analytics.total_revenue || 0).toLocaleString()}
+              </p>
+              <p className="text-xs font-semibold text-emerald-600">
+                Profit KES {Number(analytics.total_profit || 0).toLocaleString()}
               </p>
               <span className="text-xs text-muted-foreground">View full analytics →</span>
             </div>

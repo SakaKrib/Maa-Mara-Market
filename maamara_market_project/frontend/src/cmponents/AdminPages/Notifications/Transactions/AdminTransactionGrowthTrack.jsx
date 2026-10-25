@@ -35,6 +35,7 @@ const RevenueGrowthCard = () => {
 
   const summary = useMemo(() => {
     const totalRevenue = rows.reduce((sum, row) => sum + Number(row.revenue || 0), 0);
+    const totalProfit = rows.reduce((sum, row) => sum + Number(row.profit || 0), 0);
     const totalOrders = rows.reduce((sum, row) => sum + Number(row.orders || 0), 0);
     const latest = rows.length ? rows[rows.length - 1] : null;
     const previous = rows.length > 1 ? rows[rows.length - 2] : null;
@@ -43,7 +44,7 @@ const RevenueGrowthCard = () => {
     const growth = previousRevenue > 0
       ? ((latestRevenue - previousRevenue) / previousRevenue) * 100
       : latestRevenue > 0 ? 100 : 0;
-    return { totalRevenue, totalOrders, latest, previous, latestRevenue, growth };
+    return { totalRevenue, totalProfit, totalOrders, latest, previous, latestRevenue, growth };
   }, [rows]);
 
   if (loading) {
@@ -69,11 +70,16 @@ const RevenueGrowthCard = () => {
         </section>
       ) : (
         <>
-          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
             <article className="rounded-2xl border border-border bg-card p-4 shadow-sm">
               <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Total revenue</p>
               <p className="mt-2 text-xl font-bold text-card-foreground">{formatKes(summary.totalRevenue)}</p>
               <p className="mt-1 text-xs text-muted-foreground">Across returned monthly records</p>
+            </article>
+            <article className="rounded-2xl border border-border bg-card p-4 shadow-sm">
+              <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Profit</p>
+              <p className="mt-2 text-xl font-bold text-emerald-600">{formatKes(summary.totalProfit)}</p>
+              <p className="mt-1 text-xs text-muted-foreground">Customer price minus vendor price</p>
             </article>
             <article className="rounded-2xl border border-border bg-card p-4 shadow-sm">
               <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Paid orders</p>

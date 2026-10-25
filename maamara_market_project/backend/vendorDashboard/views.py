@@ -34,6 +34,7 @@ from .draft_media import (
 )
 from ReactSerializers.models import Item
 from order.models import OrderItem, Order
+from .sales_overview import SUBMITTED_PAYOUT
 from .models import Vendor, SoldItem, VendorAdjustment, VendorPayout, VendorDraft, VendorDraftImage, VendorRequest, VendorItemRequest, ItemDraft, ItemDraftMedia
 
 
@@ -106,37 +107,42 @@ def get_vendor_earnings(vendor, start_date, end_date):
         order__ordered_date__lt=end_date + timedelta(days=1),
     )
 
-    # Payouts for this exact period that can still change (not paid, not mid-send).
+    # A payout is frozen once it was paid or handed to a payment provider:
+    # its amount was fixed at that moment and must never change afterwards.
+    submitted = SUBMITTED_PAYOUT
+    vendor_payouts = VendorPayout.objects.filter(vendor=vendor)
+
+    # The period's payout that can still change (not paid, not sent).
     open_payout = (
-        VendorPayout.objects.filter(
-            vendor=vendor,
+        vendor_payouts.filter(
             payout_period_start=start_date,
             payout_period_end=end_date,
-            paid=False,
-            send_in_progress=False,
         )
+        .exclude(submitted)
         .order_by("-id")
         .first()
     )
 
-    # Items already owned by another payout are never paid again. Payouts made
-    # before items were tracked own nothing, so they are treated as covering
-    # everything ordered up to their period end.
+    # Items already owned by another payout are never paid again.
     claimed = VendorPayout.order_items.through.objects.all()
     if open_payout is not None:
         claimed = claimed.exclude(vendorpayout_id=open_payout.pk)
     candidates = candidates.exclude(pk__in=claimed.values("orderitem_id"))
-    legacy_end = (
-        VendorPayout.objects.filter(
-            vendor=vendor, paid=True, amount__gt=0, order_items__isnull=True,
-            payout_period_end__lte=end_date,
-        )
-        .order_by("-payout_period_end")
-        .values_list("payout_period_end", flat=True)
+
+    # Payouts created before items were tracked own nothing. They covered the
+    # sales that were settled when they were generated, so only items ordered
+    # after that moment (or settled after it) are still unpaid.
+    legacy_cutoff = (
+        vendor_payouts.filter(submitted, amount__gt=0, order_items__isnull=True)
+        .order_by("-created_at")
+        .values_list("created_at", flat=True)
         .first()
     )
-    if legacy_end:
-        candidates = candidates.filter(order__ordered_date__gte=legacy_end + timedelta(days=1))
+    if legacy_cutoff:
+        candidates = candidates.exclude(
+            Q(order__ordered_date__lte=legacy_cutoff)
+            & ~Q(fulfillment__completed_at__gt=legacy_cutoff)
+        )
     order_items = candidates.distinct()
     if getattr(settings, "WEEKLY_PAYOUTS_ENABLED", False):
         # Items that went through the fulfilment workflow are paid by weekly
@@ -148,9 +154,8 @@ def get_vendor_earnings(vendor, start_date, end_date):
     # the frozen payout. If something new is payable, it gets its own payout
     # (a top-up) for the same period instead of being silently dropped.
     paid_payout = (
-        VendorPayout.objects.filter(
-            vendor=vendor, payout_period_start=start_date, payout_period_end=end_date, paid=True
-        )
+        vendor_payouts.filter(payout_period_start=start_date, payout_period_end=end_date)
+        .filter(submitted)
         .order_by("-id")
         .first()
     )

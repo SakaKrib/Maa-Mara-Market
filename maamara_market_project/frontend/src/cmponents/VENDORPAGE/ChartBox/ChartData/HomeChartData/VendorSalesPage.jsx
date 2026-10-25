@@ -1,5 +1,6 @@
 import React from "react";
 import { useMonthlySales } from "./SalesReport";
+import SalesBreakdown from "../../../SalesBreakdown";
 
 const currency = (value) =>
   `KSh ${Number(value || 0).toLocaleString("en-KE", {
@@ -10,6 +11,7 @@ const currency = (value) =>
 const VendorSalesPage = () => {
   const {
     chartData: monthlySales,
+    overview,
     value: totalValue,
     duration,
     loading,
@@ -44,7 +46,7 @@ const VendorSalesPage = () => {
           Monthly Sales
         </h1>
         <p className="mt-1 text-sm text-[#595959]">
-          The same monthly sales data shown in the Vendor Dashboard chart.
+          Every paid sale for the last 6 months, and where each one stands on the way to your payout.
         </p>
       </header>
 
@@ -67,7 +69,7 @@ const VendorSalesPage = () => {
           <div className="mt-5 overflow-hidden rounded-xl border border-[#e6e6e4]">
             <div className="grid grid-cols-[1fr_auto] border-b border-[#e6e6e4] bg-[#f8f8f6] px-4 py-3 text-xs font-semibold uppercase tracking-wide text-[#595959] sm:px-5">
               <span>Month</span>
-              <span>Sales</span>
+              <span>Paid sales</span>
             </div>
 
             <div className="divide-y divide-[#e6e6e4]">
@@ -81,6 +83,9 @@ const VendorSalesPage = () => {
                   </span>
                   <span className="text-sm font-semibold text-[#222]">
                     {currency(month.pv)}
+                    <span className="mt-0.5 block text-[11px] font-normal text-[#595959]">
+                      Paid out {currency(month.paid_out)} · Ready {currency(month.ready)} · Awaiting {currency(month.awaiting)}
+                    </span>
                   </span>
                 </div>
               ))}
@@ -91,6 +96,7 @@ const VendorSalesPage = () => {
             No monthly sales recorded.
           </div>
         )}
+        <SalesBreakdown overview={overview} />
       </section>
     </section>
   );

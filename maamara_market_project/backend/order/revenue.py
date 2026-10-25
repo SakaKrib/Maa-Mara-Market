@@ -52,3 +52,22 @@ def order_revenue(order):
         return float(order.get_total() or 0)
     except Exception:
         return 0.0
+
+
+def order_profit(order):
+    """Platform profit on one order: what customers paid for the items minus
+    what the vendors are owed for them (the marketplace markup). Shipping is
+    not profit and is left out."""
+    profit = Decimal("0")
+    for line in order.order_items.all():
+        try:
+            customer = Decimal(str(line.get_final_price()))
+            vendor = Decimal(str(line.get_final_price_for_vendor()))
+        except Exception:
+            continue
+        profit += customer - vendor
+    return float(profit)
+
+
+def with_profit_prefetch(queryset):
+    return queryset.prefetch_related("order_items__item")

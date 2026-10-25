@@ -3,6 +3,7 @@ from . import views  # Make sure views.py exists
 from .VendorRequests import *
 from .payout.services.payout_review import payout_review_single, payout_review_group
 from .payout.services import weekly_batch_views as weekly_views
+from .sales_overview import admin_payout_readiness, vendor_sales_overview
 from .views import AdminPayoutAPIView, VendorPayoutAPIView, monthly_sales_report
 from .payout.services.vendor_monthly_payout_runner import process_payouts_by_group, pay_single_vendor_payout, generate_monthly_payouts, reconcile_single_vendor_payout, reconcile_bank_vendor_payout
 from .calback import *
@@ -103,6 +104,8 @@ urlpatterns = [
     path('paypal-payout/webhook/', paypal_payout_webhook, name='paypal-payout-webhook'),
     
     # sakes report url
+    path('api/admin/payout-readiness/', admin_payout_readiness, name='admin_payout_readiness'),
+    path('api/vendor/sales-overview/', vendor_sales_overview, name='vendor_sales_overview'),
     path('api/monthly-sales-report/', monthly_sales_report, name='monthly_sales_report'),
 
     # draft item api
