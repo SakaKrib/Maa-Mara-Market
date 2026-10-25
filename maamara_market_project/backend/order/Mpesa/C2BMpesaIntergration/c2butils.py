@@ -1,3 +1,4 @@
+from django.utils import timezone
 import base64
 import logging
 from datetime import datetime
@@ -240,6 +241,15 @@ def stk_callback(request):
                 provider_amount=checkout_session.amount,
                 provider_currency="KES",
             )
+
+            # Record the channel and time on the Payment itself so the accounts
+            # page can tell M-Pesa payments apart.
+            payment = order.payment
+            payment.payment_gateway = "MPESA"
+            payment.payment_method = "MPESA"
+            if not payment.paid_at:
+                payment.paid_at = timezone.now()
+            payment.save(update_fields=["payment_gateway", "payment_method", "paid_at"])
 
             locked_order, completed = complete_paid_order(
                 order,

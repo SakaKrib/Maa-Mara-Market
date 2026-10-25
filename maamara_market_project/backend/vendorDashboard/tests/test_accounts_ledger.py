@@ -90,3 +90,57 @@ class AccountsLedgerTests(PayoutTestMixin, TestCase):
         self.assertEqual(by_source["customer_payment"]["direction"], "in")
         self.assertEqual(by_source["vendor_payout"]["direction"], "out")
         self.assertTrue(by_source["vendor_payout"]["payer_name"].startswith("Paid to"))
+
+
+class PaymentChannelTests(PayoutTestMixin, TestCase):
+    """Accounts shows M-Pesa and PayPal activity separately."""
+
+    def setUp(self):
+        self.admin = get_user_model().objects.create_user(
+            username=f"admin-{uuid4().hex[:8]}", password="x", is_staff=True
+        )
+        self.client = APIClient()
+        self.client.force_authenticate(self.admin)
+
+    def pay(self, amount, method="UNKNOWN", gateway="PESAPAL", transaction_method=None):
+        payment = Payment.objects.create(
+            amount=Decimal(amount), merchant_reference=uuid4().hex, status="PAID",
+            payment_method=method, payment_gateway=gateway, paid_at=timezone.now(),
+        )
+        if transaction_method:
+            Transaction.objects.create(
+                payment=payment, transaction_type="PayPal" if transaction_method == "paypal" else "C2B",
+                payment_method=transaction_method, amount=Decimal(amount), raw_data={},
+                status="Completed", mpesa_receipt_number=uuid4().hex[:10] if transaction_method == "mpesa" else None,
+            )
+        return payment
+
+    def accounts(self):
+        response = self.client.get("/api/dashboard/summary/")
+        self.assertEqual(response.status_code, 200, response.content)
+        return response.json()["accounts"]
+
+    def test_payments_are_split_by_channel(self):
+        self.pay("500.00", method="MPESA", gateway="MPESA")
+        self.pay("300.00", method="PAYPAL", gateway="PAYPAL")
+        accounts = self.accounts()
+        self.assertEqual(accounts["mpesa"]["amount"], 500.0)
+        self.assertEqual(accounts["paypal"]["amount"], 300.0)
+
+    def test_older_payments_are_classified_from_their_recorded_transaction(self):
+        # The till (C2B) flow used to leave the payment as UNKNOWN.
+        self.pay("700.00", transaction_method="mpesa")
+        self.pay("200.00", transaction_method="paypal")
+        accounts = self.accounts()
+        self.assertEqual(accounts["mpesa"]["amount"], 700.0)
+        self.assertEqual(accounts["paypal"]["amount"], 200.0)
+
+    def test_a_payment_with_several_transactions_is_counted_once(self):
+        payment = self.pay("400.00", transaction_method="paypal")
+        for _ in range(2):  # PayPal records one transaction per vendor
+            Transaction.objects.create(
+                payment=payment, transaction_type="PayPal", payment_method="paypal",
+                amount=Decimal("200.00"), raw_data={}, status="Completed",
+                paypal_transaction_id=uuid4().hex[:10],
+            )
+        self.assertEqual(self.accounts()["paypal"]["amount"], 400.0)

@@ -2,7 +2,7 @@ from datetime import datetime
 from dateutil.relativedelta import relativedelta
 from decimal import Decimal
 
-from django.db.models import Q, Sum
+from django.db.models import Exists, OuterRef, Q, Sum
 from django.db.models.functions import Coalesce, TruncMonth
 from django.utils import timezone
 from rest_framework.permissions import IsAdminUser
@@ -26,6 +26,26 @@ def settled_payments():
     """
     return Payment.objects.filter(SETTLED_PAYMENT_STATUS).annotate(
         settled_at=Coalesce("paid_at", "created_at")
+    )
+
+
+def channel_filter(channel):
+    """Payments made through one channel ("mpesa" or "paypal").
+
+    Older payments (and the M-Pesa till/C2B flow) never wrote their method on
+    the Payment row, so a payment also counts when its gateway says so or when
+    its recorded customer transaction was made through that channel.
+    """
+    recorded = Transaction.objects.filter(
+        payment=OuterRef("pk"),
+        payment_method__iexact=channel,
+        transaction_type__in=["C2B", "PayPal"],
+        payout__isnull=True,
+    )
+    return (
+        Q(payment_method__iexact=channel)
+        | Q(payment_gateway__iexact=channel)
+        | Exists(recorded)
     )
 
 
@@ -75,13 +95,13 @@ class DashboardSummaryView(APIView):
         )
 
         paypal_income = (
-            completed_payments.filter(payment_method__iexact="paypal")
+            completed_payments.filter(channel_filter("paypal"))
             .aggregate(total=Sum("amount"))["total"]
             or Decimal("0.00")
         )
 
         mpesa_income = (
-            completed_payments.filter(payment_method__iexact="mpesa")
+            completed_payments.filter(channel_filter("mpesa"))
             .aggregate(total=Sum("amount"))["total"]
             or Decimal("0.00")
         )
