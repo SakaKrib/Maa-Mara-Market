@@ -147,7 +147,27 @@ const Dashboard = () => {
 
     loadDashboard();
 
+    // Revenue, profit and the sales chart follow new orders without a reload.
+    const refreshRevenue = async () => {
+      try {
+        const [revenue, charts] = await Promise.all([
+          api.get("/api/revenue-analytics/"),
+          api.get("/api/admin/dashboard-chart-data/"),
+        ]);
+        const rows = Array.isArray(revenue.data) ? revenue.data : (revenue.data?.monthly_revenue || []);
+        setAnalytics({
+          total_revenue: rows.reduce((sum, row) => sum + Number(row.revenue || 0), 0),
+          total_profit: rows.reduce((sum, row) => sum + Number(row.profit || 0), 0),
+          monthly_revenue: rows,
+        });
+        setChartData(charts.data || { sales_activity: [], category_distribution: [] });
+      } catch (error) {
+        console.error("Admin revenue refresh failed:", error);
+      }
+    };
+
     const interval = setInterval(async () => {
+      refreshRevenue();
       try {
         const [vendorRequests, activity, notificationList] = await Promise.all([
           api.get("/api/vendor/requests/unseen-count/"),

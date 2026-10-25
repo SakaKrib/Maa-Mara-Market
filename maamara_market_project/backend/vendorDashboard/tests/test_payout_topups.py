@@ -96,3 +96,20 @@ class PayoutTopUpTests(PayoutTestMixin, TestCase):
         self.mark_paid(legacy)  # paid before payouts recorded their items
         result = get_vendor_earnings(self.vendor, self.start, self.end)["payout"]
         self.assertEqual(result.pk, legacy.pk)
+
+    def test_sale_made_after_an_old_untracked_payout_is_payable(self):
+        # The vendor was paid 250 for one item before payouts tracked their items.
+        earlier = self.sale("250.00")
+        Order.objects.filter(pk=earlier.order_id).update(ordered_date=timezone.now() - timedelta(hours=3))
+        legacy = VendorPayout.objects.create(
+            vendor=self.vendor, amount=Decimal("250.00"), gross_sales=Decimal("250.00"),
+            reference="legacy02", payout_period_start=self.start, payout_period_end=self.end,
+        )
+        VendorPayout.objects.filter(pk=legacy.pk).update(created_at=timezone.now() - timedelta(hours=2))
+        self.mark_paid(legacy)
+
+        self.sale("400.00")  # sold and completed after that payout
+        topup = get_vendor_earnings(self.vendor, self.start, self.end)["payout"]
+        self.assertNotEqual(topup.pk, legacy.pk)
+        self.assertEqual(topup.amount, Decimal("400.00"))  # the 250 is not paid again
+        self.assertFalse(topup.paid)
