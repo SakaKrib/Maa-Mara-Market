@@ -49,6 +49,49 @@ def channel_filter(channel):
     )
 
 
+def channel_activity(channel, start=None, end=None):
+    """Confirmed customer money that came in through one channel.
+
+    Counts settled payments first. Recorded customer transactions that have no
+    settled payment behind them (older flows, or a payment left unlinked) are
+    added too, once per provider reference, so the card agrees with the
+    Transactions list. PayPal amounts are stored in USD and converted to KES.
+    Returns (amount_kes, number_of_payments_and_transactions).
+    """
+    payments = settled_payments().filter(channel_filter(channel))
+    if start is not None:
+        payments = payments.filter(settled_at__gte=start, settled_at__lte=end)
+    amount = payments.aggregate(total=Sum("amount"))["total"] or Decimal("0.00")
+    count = payments.count()
+
+    covered = settled_payments().filter(channel_filter(channel)).values("pk")
+    orphans = Transaction.objects.filter(
+        transaction_type__in=["C2B", "PayPal"],
+        payment_method__iexact=channel,
+        payout__isnull=True,
+        status__iexact="completed",
+    ).exclude(payment__in=covered)
+    if start is not None:
+        orphans = orphans.filter(created_at__gte=start, created_at__lte=end)
+
+    seen = set()
+    rate = None
+    for tx in orphans.order_by("id"):
+        reference = tx.paypal_transaction_id or tx.mpesa_receipt_number or f"tx-{tx.pk}"
+        if reference in seen:
+            continue  # PayPal stores one row per vendor for the same capture
+        seen.add(reference)
+        value = Decimal(tx.amount or 0)
+        if channel == "paypal":
+            if rate is None:
+                from .Base import get_usd_to_kes_rate
+                rate = Decimal(str(get_usd_to_kes_rate()))
+            value = (value * rate).quantize(Decimal("0.01"))
+        amount += value
+        count += 1
+    return amount, count
+
+
 class DashboardSummaryView(APIView):
     permission_classes = [IsAdminUser]
 
@@ -94,17 +137,10 @@ class DashboardSummaryView(APIView):
             or Decimal("0.00")
         )
 
-        paypal_income = (
-            completed_payments.filter(channel_filter("paypal"))
-            .aggregate(total=Sum("amount"))["total"]
-            or Decimal("0.00")
-        )
-
-        mpesa_income = (
-            completed_payments.filter(channel_filter("mpesa"))
-            .aggregate(total=Sum("amount"))["total"]
-            or Decimal("0.00")
-        )
+        paypal_income, paypal_count = channel_activity("paypal", period_start, period_end)
+        mpesa_income, mpesa_count = channel_activity("mpesa", period_start, period_end)
+        paypal_all_time, paypal_all_count = channel_activity("paypal")
+        mpesa_all_time, mpesa_all_count = channel_activity("mpesa")
 
         # Manual accounting entries are B2C transactions. Only completed
         # entries affect the financial summary.
@@ -261,6 +297,9 @@ class DashboardSummaryView(APIView):
                 "account": None,
                 "holder": "Maa Mara Market",
                 "amount": float(paypal_income),
+                "transactions": paypal_count,
+                "all_time_amount": float(paypal_all_time),
+                "all_time_transactions": paypal_all_count,
                 "status": "Confirmed activity" if paypal_income > 0 else "No activity",
             },
             "mpesa": {
@@ -268,6 +307,9 @@ class DashboardSummaryView(APIView):
                 "till": None,
                 "holder": "Maa Mara Market",
                 "amount": float(mpesa_income),
+                "transactions": mpesa_count,
+                "all_time_amount": float(mpesa_all_time),
+                "all_time_transactions": mpesa_all_count,
                 "agent_status": "Confirmed activity" if mpesa_income > 0 else "No activity",
             },
         }

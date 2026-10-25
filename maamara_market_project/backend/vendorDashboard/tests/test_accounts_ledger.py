@@ -1,4 +1,5 @@
 from decimal import Decimal
+from unittest.mock import patch
 from uuid import uuid4
 
 from django.contrib.auth import get_user_model
@@ -144,3 +145,19 @@ class PaymentChannelTests(PayoutTestMixin, TestCase):
                 paypal_transaction_id=uuid4().hex[:10],
             )
         self.assertEqual(self.accounts()["paypal"]["amount"], 400.0)
+
+    def test_transactions_without_a_settled_payment_still_show_on_the_card(self):
+        # Two PayPal captures recorded without a usable Payment (USD amounts), one per vendor row.
+        Transaction.objects.create(
+            transaction_type="PayPal", payment_method="paypal", amount=Decimal("10.00"),
+            raw_data={}, status="completed", paypal_transaction_id="CAP1",
+        )
+        Transaction.objects.create(
+            transaction_type="PayPal", payment_method="paypal", amount=Decimal("10.00"),
+            raw_data={}, status="completed", paypal_transaction_id="CAP1", order=None,
+        )
+        with patch("order.Base.get_usd_to_kes_rate", return_value=100.0):
+            accounts = self.accounts()
+        self.assertEqual(accounts["paypal"]["amount"], 1000.0)  # counted once: 10 USD x 100
+        self.assertEqual(accounts["paypal"]["transactions"], 1)
+        self.assertEqual(accounts["paypal"]["all_time_amount"], 1000.0)

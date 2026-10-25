@@ -25,6 +25,9 @@ export default function PaymentsOverview({
       primaryValue: paypal.account || "Payment activity",
       secondaryLabel: "Status",
       secondaryValue: paypal.status || "No activity",
+      count: paypal.transactions || 0,
+      allTime: paypal.all_time_amount || 0,
+      allTimeCount: paypal.all_time_transactions || 0,
     },
     {
       id: "mpesa",
@@ -36,6 +39,9 @@ export default function PaymentsOverview({
       primaryValue: mpesa.till || "Payment activity",
       secondaryLabel: "Status",
       secondaryValue: mpesa.agent_status || "No activity",
+      count: mpesa.transactions || 0,
+      allTime: mpesa.all_time_amount || 0,
+      allTimeCount: mpesa.all_time_transactions || 0,
     },
   ];
 
@@ -101,6 +107,10 @@ export default function PaymentsOverview({
               <div className="p-4">
                 <p className="text-xs text-muted-foreground">{item.primaryLabel}</p>
                 <p className="mt-1 text-2xl font-bold tracking-tight text-card-foreground">{formatKES(item.balance)}</p>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  {item.count} transaction{item.count === 1 ? "" : "s"} in this period
+                  {item.allTimeCount > item.count && ` · ${formatKES(item.allTime)} all time (${item.allTimeCount})`}
+                </p>
                 <div className="mt-4 grid grid-cols-2 gap-3 border-t border-border pt-3">
                   <div className="min-w-0">
                     <p className="text-[10px] uppercase tracking-wide text-muted-foreground">Account</p>
