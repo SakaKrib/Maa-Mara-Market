@@ -4,6 +4,7 @@ import { ChevronDown, Download, FileSpreadsheet, ImageDown, Package, ShoppingCar
 import api from "../../../Services/Api";
 import { useAuth } from "../../Auth/AuthContext/Context.jsx";
 import { downloadDataUrl, downloadFile } from "../../../Services/DownloadFile";
+import { buildPdfReportDataUrl } from "../../../Services/pdfReport";
 import TopBox from "../Home/TopBox/TopBox";
 import ChartBox from "../ChartBox/CharBox";
 import CombinedVendorStatsChart from "../ChartBox/PieChart2";
@@ -36,6 +37,7 @@ const Home = ({ vendor_id }) => {
   const [exportMenuOpen, setExportMenuOpen] = useState(false);
   const [exportingKey, setExportingKey] = useState("");
   const [exportMessage, setExportMessage] = useState("");
+  const [exportFormat, setExportFormat] = useState("csv");
 
   const getExportDate = () => {
     const now = new Date();
@@ -63,7 +65,24 @@ const Home = ({ vendor_id }) => {
     return '"' + safeText.replace(/"/g, '""') + '"';
   };
 
-  const downloadCsv = (filename, title, headers, rows, producedAt, date) => {
+  const downloadCsv = async (filename, title, headers, rows, producedAt, date, options = {}) => {
+    if (exportFormat !== "pdf") return downloadCsvFile(filename, title, headers, rows, producedAt, date);
+    const keep = options.pdfColumns || headers.map((_, i) => i);
+    const text = (cell) => (cell == null ? "" : typeof cell === "boolean" ? (cell ? "Yes" : "No") : typeof cell === "object" ? JSON.stringify(cell) : String(cell));
+    const dataUrl = await buildPdfReportDataUrl({
+      title,
+      subtitle: `${vendorName} · Vendor ID ${vendorIdForExport}`,
+      headers: keep.map((i) => headers[i]),
+      rows: rows.map((row) => keep.map((i) => text(row[i]))),
+      summary: options.summary || [],
+      meta: [["Report date", date], ["Records", String(rows.length)]],
+      producedAt,
+      weights: options.weights ? keep.map((i) => options.weights[i] ?? 1) : undefined,
+    });
+    return downloadDataUrl(filename.replace(/\.csv$/i, ".pdf"), dataUrl);
+  };
+
+  const downloadCsvFile = (filename, title, headers, rows, producedAt, date) => {
     const content = [
       ["MAA MARA MARKET"],
       ["Brand icon reference", brandIconReference],
@@ -290,7 +309,17 @@ const Home = ({ vendor_id }) => {
             payout.paypal_transaction_id ?? "",
           ]),
           producedAt,
-          date
+          date,
+          {
+            // The PDF keeps the columns that fit a printed page.
+            pdfColumns: [0, 1, 2, 3, 4, 5, 8, 9, 12],
+            summary: [
+              ["Payouts", String(payouts.length)],
+              ["Total net (KES)", payouts.reduce((sum, p) => sum + Number(p.amount || 0), 0).toLocaleString("en-KE", { minimumFractionDigits: 2 })],
+              ["Paid (KES)", payouts.filter((p) => p.paid).reduce((sum, p) => sum + Number(p.amount || 0), 0).toLocaleString("en-KE", { minimumFractionDigits: 2 })],
+              ["Pending (KES)", payouts.filter((p) => !p.paid).reduce((sum, p) => sum + Number(p.amount || 0), 0).toLocaleString("en-KE", { minimumFractionDigits: 2 })],
+            ],
+          }
         );
       } else if (reportType === "chart-data") {
         const chartData = Array.isArray(monthlySales.chartData) ? monthlySales.chartData : [];
@@ -353,12 +382,26 @@ const Home = ({ vendor_id }) => {
             {exportMenuOpen && (
               <div role="menu" aria-label="Vendor download options" className="absolute right-0 z-50 mt-2 w-80 max-w-[calc(100vw-2rem)] overflow-hidden rounded-2xl border border-[#e6e6e4] bg-white p-1.5 shadow-xl">
                 <p className="px-3 pb-1 pt-2 text-[10px] font-bold uppercase tracking-wider text-[#777]">Download your data</p>
+                <div role="radiogroup" aria-label="Export format" className="mx-2 mb-1.5 grid grid-cols-2 gap-1 rounded-xl bg-[#f1f1ef] p-1">
+                  {[["csv", "CSV spreadsheet"], ["pdf", "PDF report"]].map(([value, label]) => (
+                    <button
+                      key={value}
+                      type="button"
+                      role="radio"
+                      aria-checked={exportFormat === value}
+                      onClick={() => setExportFormat(value)}
+                      className={`rounded-lg px-2 py-1.5 text-xs font-semibold transition ${exportFormat === value ? "bg-white text-[#222] shadow-sm" : "text-[#777] hover:text-[#222]"}`}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
                 {[
-                  ["items", Package, "Item list (CSV)", "Your products, prices, stock and availability"],
-                  ["orders", ShoppingCart, "Orders (CSV)", "Pending and completed order line items"],
-                  ["sales", FileSpreadsheet, "Monthly sales report (CSV)", "Detailed sales for the current month"],
-                  ["payouts", FileSpreadsheet, "Payout history (CSV)", "Gross sales, adjustments, net payout and payment references"],
-                  ["chart-data", ChartNoAxesCombined, "Sales chart data (CSV)", "Monthly values from your dashboard chart"],
+                  ["items", Package, "Item list", "Your products, prices, stock and availability"],
+                  ["orders", ShoppingCart, "Orders", "Pending and completed order line items"],
+                  ["sales", FileSpreadsheet, "Monthly sales report", "Detailed sales for the current month"],
+                  ["payouts", FileSpreadsheet, "Payout history", "Gross sales, adjustments, net payout and payment references"],
+                  ["chart-data", ChartNoAxesCombined, "Sales chart data", "Monthly values from your dashboard chart"],
                   ["chart-image", ImageDown, "Sales chart image (PNG)", "Download a shareable image of the chart"],
                 ].map(([key, Icon, label, description]) => (
                   <button

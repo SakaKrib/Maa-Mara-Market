@@ -16,6 +16,8 @@ import {
 import { useAuth } from "../../cmponents/Auth/AuthContext/Context";
 import { useToast } from "../../../components/ui/toast";
 import api from "../../Services/Api";
+import { downloadDataUrl } from "../../Services/DownloadFile";
+import { buildPdfReportDataUrl } from "../../Services/pdfReport";
 import LineChart from "../../cmponents/LineGraph/LineGraph";
 import BarChart from "../../cmponents/BarChart/BarChart";
 import PieGraph from "../../cmponents/PieChart/pieChart";
@@ -63,6 +65,7 @@ const Dashboard = () => {
   const [filter, setFilter] = useState("sent");
   const [exportMenuOpen, setExportMenuOpen] = useState(false);
   const [exportingKey, setExportingKey] = useState("");
+  const [exportFormat, setExportFormat] = useState("csv");
 
   const [activityLogs, setActivityLogs] = useState([]);
   const [notifications, setNotifications] = useState([]);
@@ -317,7 +320,7 @@ const Dashboard = () => {
       return { dateStamp, producedAt };
     };
 
-    const downloadCsv = (filename, reportTitle, headers, rows, producedAt, dateStamp) => {
+    const downloadCsvFile = (filename, reportTitle, headers, rows, producedAt, dateStamp) => {
       const reportRows = [
         ["MAA MARA MARKET"],
         ["Email", "hello@maamaramarket.com"],
@@ -345,6 +348,24 @@ const Dashboard = () => {
         // started consuming it yet, especially on mobile.
         window.setTimeout(() => URL.revokeObjectURL(url), 1500);
       }
+    };
+
+    const downloadReport = async (filename, reportTitle, headers, rows, producedAt, dateStamp, options = {}) => {
+      if (exportFormat !== "pdf") {
+        downloadCsvFile(filename, reportTitle, headers, rows, producedAt, dateStamp);
+        return;
+      }
+      const dataUrl = await buildPdfReportDataUrl({
+        title: reportTitle,
+        subtitle: options.subtitle || "Maa Mara Market administration report",
+        headers,
+        rows: rows.map((row) => row.map((cell) => (cell == null ? "" : typeof cell === "object" ? JSON.stringify(cell) : String(cell)))),
+        summary: options.summary || [],
+        meta: [["Report date", dateStamp], ["Records", String(rows.length)]],
+        producedAt,
+        weights: options.weights,
+      });
+      await downloadDataUrl(filename.replace(/\.csv$/i, ".pdf"), dataUrl);
     };
 
     const listFromResponse = (data) =>
@@ -387,7 +408,7 @@ const Dashboard = () => {
           ["Unseen job applications", jobsCount],
           ["Pending support messages", supportCount],
         ];
-        downloadCsv(
+        await downloadReport(
           `maa-mara-dashboard-summary-${dateStamp}.csv`,
           "Dashboard summary",
           ["Metric", "Value"],
@@ -398,7 +419,7 @@ const Dashboard = () => {
       } else if (reportType === "transactions") {
         const records = await fetchAllPages("/api/admin-transactions/");
         if (!records.length) throw new Error("No transaction records were returned for export.");
-        downloadCsv(
+        await downloadReport(
           `maa-mara-payment-transactions-${dateStamp}.csv`,
           "Payment transactions",
           ["Transaction ID", "Reference", "Date", "Vendor", "Order ID", "Items sold", "Units sold", "Customer", "Email", "Amount (KES)", "Status", "Payment method"],
@@ -440,7 +461,7 @@ const Dashboard = () => {
       } else if (reportType === "emails") {
         const records = await fetchAllPages("/api/email/list/?status=all");
         if (!records.length) throw new Error("No email records were returned for export.");
-        downloadCsv(
+        await downloadReport(
           `maa-mara-email-delivery-${dateStamp}.csv`,
           "Email delivery report",
           ["Email ID", "Recipient", "Subject", "Status", "Created", "Sent", "Message"],
@@ -469,7 +490,7 @@ const Dashboard = () => {
         const uniqueRecords = [...new Map(
           records.map((item) => [item.id ?? item.request_id ?? JSON.stringify(item), item])
         ).values()];
-        downloadCsv(
+        await downloadReport(
           `maa-mara-vendor-requests-${dateStamp}.csv`,
           "Vendor approval requests",
           ["Request ID", "Vendor", "Email", "Status", "Submitted", "Business name"],
@@ -484,6 +505,53 @@ const Dashboard = () => {
           producedAt,
           dateStamp
         );
+      } else if (reportType === "payouts") {
+        const records = await fetchAllPages("/api/admin-payouts/");
+        if (!records.length) throw new Error("No vendor payouts were returned for export.");
+        const money = (value) => (exportFormat === "pdf"
+          ? Number(value || 0).toLocaleString("en-KE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+          : Number(value || 0).toFixed(2));
+        const vendorLabel = (payout) =>
+          payout.vendor?.company_name
+          || [payout.vendor?.first_name, payout.vendor?.surname_name].filter(Boolean).join(" ")
+          || payout.vendor?.username
+          || `Vendor #${payout.vendor?.id ?? payout.vendor ?? ""}`;
+        const methodLabel = (payout) =>
+          payout.mpesa_transaction_id ? `M-Pesa ${payout.mpesa_transaction_id}`
+            : payout.paypal_transaction_id ? `PayPal ${payout.paypal_transaction_id}`
+              : payout.kcb_provider_reference || payout.kcb_transaction_reference ? `Bank ${payout.kcb_provider_reference || payout.kcb_transaction_reference}`
+                : payout.vendor?.payment_method || "";
+        const dateOnly = (value) => (value ? String(value).slice(0, 10) : "");
+        const total = records.reduce((sum, payout) => sum + Number(payout.amount || 0), 0);
+        const paidTotal = records.filter((payout) => payout.paid).reduce((sum, payout) => sum + Number(payout.amount || 0), 0);
+        await downloadReport(
+          `maa-mara-vendor-payouts-${dateStamp}.csv`,
+          "Vendor payouts",
+          ["Reference", "Vendor", "Period", "Gross sales (KES)", "Adjustments (KES)", "Net payout (KES)", "Status", "Paid on", "Payment reference"],
+          records.map((payout) => [
+            payout.reference ?? "",
+            vendorLabel(payout),
+            `${dateOnly(payout.payout_period_start)} – ${dateOnly(payout.payout_period_end)}`,
+            money(payout.gross_sales),
+            money(payout.adjustment_amount),
+            money(payout.amount),
+            payout.paid ? "Paid" : "Pending",
+            dateOnly(payout.paid_at),
+            methodLabel(payout),
+          ]),
+          producedAt,
+          dateStamp,
+          {
+            subtitle: "Payments due and made to marketplace vendors",
+            weights: [1.1, 1.6, 2.4, 1.2, 1.2, 1.2, 0.8, 1.1, 2],
+            summary: [
+              ["Payouts", String(records.length)],
+              ["Total net (KES)", money(total)],
+              ["Paid (KES)", money(paidTotal)],
+              ["Pending (KES)", money(total - paidTotal)],
+            ],
+          }
+        );
       } else {
         throw new Error("That report type is not supported.");
       }
@@ -491,7 +559,7 @@ const Dashboard = () => {
       setExportMenuOpen(false);
       toast({
         title: "Export ready",
-        description: "Your Maa Mara Market CSV spreadsheet has been prepared for download.",
+        description: `Your Maa Mara Market ${exportFormat === "pdf" ? "PDF report" : "CSV spreadsheet"} has been prepared for download.`,
         duration: 4000,
       });
     } catch (error) {
@@ -540,11 +608,26 @@ const Dashboard = () => {
             {exportMenuOpen && (
               <div role="menu" aria-label="Dashboard export options" className="absolute left-0 right-auto z-30 mt-2 w-72 max-w-[calc(100vw-2rem)] overflow-hidden rounded-2xl border border-border bg-card p-1.5 shadow-xl">
                 <p className="px-3 pb-1 pt-2 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Download report</p>
+                <div role="radiogroup" aria-label="Export format" className="mx-2 mb-1.5 grid grid-cols-2 gap-1 rounded-xl bg-muted p-1">
+                  {[["csv", "CSV spreadsheet"], ["pdf", "PDF report"]].map(([value, label]) => (
+                    <button
+                      key={value}
+                      type="button"
+                      role="radio"
+                      aria-checked={exportFormat === value}
+                      onClick={() => setExportFormat(value)}
+                      className={`rounded-lg px-2 py-1.5 text-xs font-semibold transition ${exportFormat === value ? "bg-card text-card-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
                 {[
                   ["summary", "Dashboard summary", "Revenue, orders, visitors and email totals"],
                   ["transactions", "Payment transactions", "Transaction references, amounts and statuses"],
                   ["emails", "Email delivery report", "Recipients, subjects, statuses and dates"],
                   ["vendors", "Vendor approval requests", "Vendor requests and their current statuses"],
+                  ["payouts", "Vendor payouts", "Payout references, periods, amounts and payment status"],
                 ].map(([key, label, description]) => (
                   <button
                     key={key}
