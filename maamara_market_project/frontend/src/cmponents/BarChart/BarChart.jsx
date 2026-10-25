@@ -1,5 +1,6 @@
 import { ResponsiveBar } from "@nivo/bar";
 import "../admin-charts.css";
+import { formatAxisNumber } from "../../Services/formatNumber";
 
 const BarChart = ({ data = [] }) => {
   if (!Array.isArray(data) || data.length === 0) {
@@ -17,7 +18,7 @@ const BarChart = ({ data = [] }) => {
         enableLabel={false}
         enableGridY
         axisBottom={{ tickSize: 0, tickPadding: 8, legend: "Period", legendPosition: "middle", legendOffset: 38 }}
-        axisLeft={{ tickSize: 0, tickPadding: 6, legend: "Sales (KES)", legendPosition: "middle", legendOffset: -48 }}
+        axisLeft={{ tickSize: 0, tickPadding: 6, format: formatAxisNumber, legend: "Sales (KES)", legendPosition: "middle", legendOffset: -48 }}
         legends={[]}
         theme={{
           axis: {

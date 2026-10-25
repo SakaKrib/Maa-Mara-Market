@@ -23,6 +23,7 @@ import {
 } from "ionicons/icons";
 import VendorProfileSheet from "./EditProfile";
 import AppSnackbar from "../../../../components/ui/app-snackbar";
+import { formatAxisNumber } from "../../../Services/formatNumber";
 
 const infoValue = (value) =>
   value === null || value === undefined || value === "" ? "N/A" : value;
@@ -555,10 +556,10 @@ const SingleVendorProfile = () => {
 
             <div className="h-72 w-full">
               <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={chartData} margin={{ top: 10, right: 12, left: -15, bottom: 0 }}>
+                <LineChart data={chartData} margin={{ top: 10, right: 12, left: 0, bottom: 0 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
                   <XAxis dataKey="month" tick={{ fill: "#6b7280", fontSize: 12 }} />
-                  <YAxis tick={{ fill: "#6b7280", fontSize: 12 }} />
+                  <YAxis tick={{ fill: "#6b7280", fontSize: 12 }} width={48} tickFormatter={formatAxisNumber} />
                   <Tooltip />
                   <Legend />
                   <Line

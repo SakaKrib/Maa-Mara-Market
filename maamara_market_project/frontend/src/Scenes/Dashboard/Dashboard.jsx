@@ -117,7 +117,12 @@ const Dashboard = () => {
             api.get("/api/notifications/"),
           ]);
 
-        setAnalytics(revenue.data || { total_revenue: 0, monthly_revenue: [] });
+        // The endpoint returns one row per month; derive the totals here.
+        const monthlyRevenue = Array.isArray(revenue.data) ? revenue.data : (revenue.data?.monthly_revenue || []);
+        setAnalytics({
+          total_revenue: Number(revenue.data?.total_revenue) || monthlyRevenue.reduce((sum, row) => sum + Number(row.revenue || 0), 0),
+          monthly_revenue: monthlyRevenue,
+        });
         const requestCount = (response) => Array.isArray(response.data) ? response.data.length : Number(response.data?.count ?? response.data?.results?.length ?? 0);
         setUnseenVendorRequests(requestCount(vendorRequests));
         setApprovalRequestTotal([vendorRequests, itemRequests, blogs, prices, banners].reduce((total, response) => total + requestCount(response), 0));

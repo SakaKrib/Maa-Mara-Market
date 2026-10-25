@@ -4,6 +4,7 @@ import { ResponsiveLine } from "@nivo/line";
 import { ResponsiveBar } from "@nivo/bar";
 import api from "../../Services/Api";
 import NativeAwareSelect from "../../components/NativeAwareSelect";
+import { formatAxisNumber } from "../../Services/formatNumber";
 
 const emptyData = {
   summary: { page_views: 0, unique_visitors: 0, sessions: 0, countries: 0, pages: 0, events: 0 },
@@ -114,7 +115,7 @@ const InboundTraffic = () => {
                 enableArea
                 enablePoints={false}
                 axisBottom={{ tickSize: 0, tickPadding: 10, tickRotation: -35 }}
-                axisLeft={{ tickSize: 0, tickPadding: 8 }}
+                axisLeft={{ tickSize: 0, tickPadding: 8, format: formatAxisNumber }}
                 enableGridX={false}
                 colors={{ scheme: "paired" }}
                 theme={{ axis: { ticks: { text: { fill: "hsl(var(--muted-foreground))", fontSize: 10 } }, domain: { line: { stroke: "hsl(var(--border))" } } }, grid: { line: { stroke: "hsl(var(--border))" } } }}
@@ -136,7 +137,7 @@ const InboundTraffic = () => {
                 padding={0.3}
                 enableLabel={false}
                 axisBottom={{ tickSize: 0, tickPadding: 8 }}
-                axisLeft={{ tickSize: 0, tickPadding: 6 }}
+                axisLeft={{ tickSize: 0, tickPadding: 6, format: formatAxisNumber }}
                 colors={{ scheme: "paired" }}
                 theme={{ axis: { ticks: { text: { fill: "hsl(var(--muted-foreground))", fontSize: 10 } }, domain: { line: { stroke: "hsl(var(--border))" } } }, grid: { line: { stroke: "hsl(var(--border))" } } }}
               />

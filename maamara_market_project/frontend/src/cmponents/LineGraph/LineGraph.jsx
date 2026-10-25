@@ -10,6 +10,7 @@ import {
 } from "recharts";
 import api from "../../Services/Api";
 import "../admin-charts.css";
+import { formatAxisNumber } from "../../Services/formatNumber";
 
 const cssVar = (name, fallback) => {
   if (typeof window === "undefined") return fallback;
@@ -61,7 +62,7 @@ const CustomAreaChart = ({ showSummary = true, data: suppliedData = [] }) => {
       )}
 
       <ResponsiveContainer width="100%" height="100%">
-        <AreaChart data={data} margin={{ top: 12, right: 8, left: -18, bottom: 4 }}>
+        <AreaChart data={data} margin={{ top: 12, right: 8, left: 0, bottom: 4 }}>
           <defs>
             <linearGradient id="adminRevenueFill" x1="0" y1="0" x2="0" y2="1">
               <stop offset="5%" stopColor={`hsl(${chart1})`} stopOpacity={0.35} />
@@ -74,7 +75,7 @@ const CustomAreaChart = ({ showSummary = true, data: suppliedData = [] }) => {
           </defs>
           <CartesianGrid strokeDasharray="3 3" stroke={`hsl(${border})`} />
           <XAxis dataKey="month" tick={{ fill: `hsl(${muted})`, fontSize: 10 }} axisLine={{ stroke: `hsl(${border})` }} tickLine={false} />
-          <YAxis tick={{ fill: `hsl(${muted})`, fontSize: 10 }} axisLine={false} tickLine={false} width={42} />
+          <YAxis tick={{ fill: `hsl(${muted})`, fontSize: 10 }} axisLine={false} tickLine={false} width={44} tickFormatter={formatAxisNumber} />
           <Tooltip
             contentStyle={{
               background: "var(--mm-surface, #fff)",
