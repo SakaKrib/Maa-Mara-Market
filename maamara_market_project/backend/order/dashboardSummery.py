@@ -50,46 +50,54 @@ def channel_filter(channel):
 
 
 def channel_activity(channel, start=None, end=None):
-    """Confirmed customer money that came in through one channel.
+    """Money received through one channel, from confirmed payments only.
 
-    Counts settled payments first. Recorded customer transactions that have no
-    settled payment behind them (older flows, or a payment left unlinked) are
-    added too, once per provider reference, so the card agrees with the
-    Transactions list. PayPal amounts are stored in USD and converted to KES.
-    Returns (amount_kes, number_of_payments_and_transactions).
+    The Accounts cards are a statement of cash that actually arrived, so the
+    figure is the sum of settled Payment rows (one per customer payment, in KES).
+    Recorded customer transactions that have no settled payment behind them are
+    not added in: they are reported separately as ``unmatched`` so someone can
+    review them, with the amount in the provider's own currency.
     """
     payments = settled_payments().filter(channel_filter(channel))
     if start is not None:
         payments = payments.filter(settled_at__gte=start, settled_at__lte=end)
     amount = payments.aggregate(total=Sum("amount"))["total"] or Decimal("0.00")
-    count = payments.count()
 
     covered = settled_payments().filter(channel_filter(channel)).values("pk")
-    orphans = Transaction.objects.filter(
+    unmatched_qs = Transaction.objects.filter(
         transaction_type__in=["C2B", "PayPal"],
         payment_method__iexact=channel,
         payout__isnull=True,
         status__iexact="completed",
-    ).exclude(payment__in=covered)
+    ).exclude(payment__in=covered).select_related("payment")
     if start is not None:
-        orphans = orphans.filter(created_at__gte=start, created_at__lte=end)
+        unmatched_qs = unmatched_qs.filter(created_at__gte=start, created_at__lte=end)
 
     seen = set()
-    rate = None
-    for tx in orphans.order_by("id"):
+    unmatched_amount = Decimal("0.00")
+    reasons = {"no_payment": 0, "payment_not_confirmed": 0}
+    for tx in unmatched_qs.order_by("id"):
         reference = tx.paypal_transaction_id or tx.mpesa_receipt_number or f"tx-{tx.pk}"
         if reference in seen:
             continue  # PayPal stores one row per vendor for the same capture
         seen.add(reference)
-        value = Decimal(tx.amount or 0)
-        if channel == "paypal":
-            if rate is None:
-                from .Base import get_usd_to_kes_rate
-                rate = Decimal(str(get_usd_to_kes_rate()))
-            value = (value * rate).quantize(Decimal("0.01"))
-        amount += value
-        count += 1
-    return amount, count
+        unmatched_amount += Decimal(tx.amount or 0)
+        reasons["no_payment" if tx.payment_id is None else "payment_not_confirmed"] += 1
+
+    return {
+        "amount": amount,
+        "payments": payments.count(),
+        "unmatched": {
+            "count": len(seen),
+            "amount": unmatched_amount,
+            "currency": "USD" if channel == "paypal" else "KES",
+            "reasons": reasons,
+        },
+    }
+
+
+def _unmatched_payload(unmatched):
+    return {**unmatched, "amount": float(unmatched["amount"])}
 
 
 class DashboardSummaryView(APIView):
@@ -137,10 +145,11 @@ class DashboardSummaryView(APIView):
             or Decimal("0.00")
         )
 
-        paypal_income, paypal_count = channel_activity("paypal", period_start, period_end)
-        mpesa_income, mpesa_count = channel_activity("mpesa", period_start, period_end)
-        paypal_all_time, paypal_all_count = channel_activity("paypal")
-        mpesa_all_time, mpesa_all_count = channel_activity("mpesa")
+        paypal = channel_activity("paypal", period_start, period_end)
+        mpesa = channel_activity("mpesa", period_start, period_end)
+        paypal_all = channel_activity("paypal")
+        mpesa_all = channel_activity("mpesa")
+        paypal_income, mpesa_income = paypal["amount"], mpesa["amount"]
 
         # Manual accounting entries are B2C transactions. Only completed
         # entries affect the financial summary.
@@ -297,9 +306,10 @@ class DashboardSummaryView(APIView):
                 "account": None,
                 "holder": "Maa Mara Market",
                 "amount": float(paypal_income),
-                "transactions": paypal_count,
-                "all_time_amount": float(paypal_all_time),
-                "all_time_transactions": paypal_all_count,
+                "payments": paypal["payments"],
+                "all_time_amount": float(paypal_all["amount"]),
+                "all_time_payments": paypal_all["payments"],
+                "unmatched": _unmatched_payload(paypal["unmatched"]),
                 "status": "Confirmed activity" if paypal_income > 0 else "No activity",
             },
             "mpesa": {
@@ -307,9 +317,10 @@ class DashboardSummaryView(APIView):
                 "till": None,
                 "holder": "Maa Mara Market",
                 "amount": float(mpesa_income),
-                "transactions": mpesa_count,
-                "all_time_amount": float(mpesa_all_time),
-                "all_time_transactions": mpesa_all_count,
+                "payments": mpesa["payments"],
+                "all_time_amount": float(mpesa_all["amount"]),
+                "all_time_payments": mpesa_all["payments"],
+                "unmatched": _unmatched_payload(mpesa["unmatched"]),
                 "agent_status": "Confirmed activity" if mpesa_income > 0 else "No activity",
             },
         }

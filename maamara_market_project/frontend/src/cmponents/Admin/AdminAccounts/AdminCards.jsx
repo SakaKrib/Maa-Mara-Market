@@ -25,9 +25,10 @@ export default function PaymentsOverview({
       primaryValue: paypal.account || "Payment activity",
       secondaryLabel: "Status",
       secondaryValue: paypal.status || "No activity",
-      count: paypal.transactions || 0,
+      count: paypal.payments || 0,
       allTime: paypal.all_time_amount || 0,
-      allTimeCount: paypal.all_time_transactions || 0,
+      allTimeCount: paypal.all_time_payments || 0,
+      unmatched: paypal.unmatched || { count: 0 },
     },
     {
       id: "mpesa",
@@ -39,9 +40,10 @@ export default function PaymentsOverview({
       primaryValue: mpesa.till || "Payment activity",
       secondaryLabel: "Status",
       secondaryValue: mpesa.agent_status || "No activity",
-      count: mpesa.transactions || 0,
+      count: mpesa.payments || 0,
       allTime: mpesa.all_time_amount || 0,
-      allTimeCount: mpesa.all_time_transactions || 0,
+      allTimeCount: mpesa.all_time_payments || 0,
+      unmatched: mpesa.unmatched || { count: 0 },
     },
   ];
 
@@ -108,9 +110,22 @@ export default function PaymentsOverview({
                 <p className="text-xs text-muted-foreground">{item.primaryLabel}</p>
                 <p className="mt-1 text-2xl font-bold tracking-tight text-card-foreground">{formatKES(item.balance)}</p>
                 <p className="mt-1 text-xs text-muted-foreground">
-                  {item.count} transaction{item.count === 1 ? "" : "s"} in this period
+                  {item.count} confirmed payment{item.count === 1 ? "" : "s"} in this period
                   {item.allTimeCount > item.count && ` · ${formatKES(item.allTime)} all time (${item.allTimeCount})`}
                 </p>
+                {item.unmatched.count > 0 && (
+                  <div role="note" className="mt-3 rounded-lg border border-amber-500/40 bg-amber-500/10 p-2.5 text-xs text-amber-700 dark:text-amber-300">
+                    <p className="font-semibold">
+                      {item.unmatched.count} recorded transaction{item.unmatched.count === 1 ? "" : "s"} ({item.unmatched.currency}{" "}
+                      {Number(item.unmatched.amount || 0).toLocaleString("en-KE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}) not included above
+                    </p>
+                    <p className="mt-0.5 opacity-90">
+                      {item.unmatched.reasons?.no_payment > 0 && `${item.unmatched.reasons.no_payment} with no payment linked. `}
+                      {item.unmatched.reasons?.payment_not_confirmed > 0 && `${item.unmatched.reasons.payment_not_confirmed} whose payment is not confirmed. `}
+                      Income only counts confirmed payments, so these need review.
+                    </p>
+                  </div>
+                )}
                 <div className="mt-4 grid grid-cols-2 gap-3 border-t border-border pt-3">
                   <div className="min-w-0">
                     <p className="text-[10px] uppercase tracking-wide text-muted-foreground">Account</p>
