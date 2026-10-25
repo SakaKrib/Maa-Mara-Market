@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import api from "../../../../../Services/Api";
 
 // Monthly sales for the vendor dashboard. Every paid sale counts, and each one
@@ -9,23 +9,35 @@ export const useMonthlySales = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  useEffect(() => {
-    let active = true;
-    api
-      .get("/api/vendor/sales-overview/", { params: { months: 6 }, withCredentials: true })
-      .then((response) => {
-        if (active) setOverview(response.data || { months: [], totals: {}, items: [], stage_labels: {} });
-      })
-      .catch((requestError) => {
-        if (active) setError(requestError?.response?.data?.detail || "Unable to load your sales.");
-      })
-      .finally(() => {
-        if (active) setLoading(false);
-      });
-    return () => {
-      active = false;
-    };
+  const [updatedAt, setUpdatedAt] = useState(null);
+
+  const refresh = useCallback(async () => {
+    try {
+      const response = await api.get("/api/vendor/sales-overview/", { params: { months: 6 }, withCredentials: true });
+      setOverview(response.data || { months: [], totals: {}, items: [], stage_labels: {} });
+      setUpdatedAt(new Date());
+      setError(null);
+    } catch (requestError) {
+      setError(requestError?.response?.data?.detail || "Unable to load your sales.");
+    } finally {
+      setLoading(false);
+    }
   }, []);
+
+  // Statuses keep moving, so the figures follow them: refresh every minute while
+  // the page is open and whenever the vendor returns to the tab.
+  useEffect(() => {
+    refresh();
+    const timer = setInterval(() => {
+      if (document.visibilityState === "visible") refresh();
+    }, 60000);
+    const onVisible = () => document.visibilityState === "visible" && refresh();
+    document.addEventListener("visibilitychange", onVisible);
+    return () => {
+      clearInterval(timer);
+      document.removeEventListener("visibilitychange", onVisible);
+    };
+  }, [refresh]);
 
   const months = Array.isArray(overview.months) ? overview.months : [];
   const chartData = months.map((month) => ({
@@ -53,6 +65,8 @@ export const useMonthlySales = () => {
     link: "vendor-sales",
     chartData,
     overview,
+    refresh,
+    updatedAt,
     loading,
     error,
   };

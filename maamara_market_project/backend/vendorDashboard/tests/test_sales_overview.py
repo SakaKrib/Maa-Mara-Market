@@ -7,7 +7,7 @@ from django.utils import timezone
 from rest_framework.test import APIClient
 
 from ReactSerializers.models import Item
-from order.models import Order, OrderItem, Payment
+from order.models import FulfillmentEvent, Order, OrderItem, OrderItemFulfillment, Payment
 from vendorDashboard.models import VendorPayout
 from vendorDashboard.tests.test_payout_reconciliation import PayoutTestMixin
 from vendorDashboard.views import get_vendor_earnings
@@ -116,3 +116,39 @@ class VendorSalesOverviewTests(PayoutTestMixin, TestCase):
         OrderItem.objects.create(order=order, item=item, user=self.vendor.user, price_at_purchase=Decimal("1020.00"), quantity=1)
         payout = get_vendor_earnings(self.vendor, self.start, self.end)["payout"]
         self.assertEqual(payout.amount, Decimal("600.00"))
+
+
+    def test_sale_detail_tells_the_story_and_hides_customer_notes(self):
+        line = self.sale("AWAITING_CONFIRMATION", "100.00")
+        fulfilment = OrderItemFulfillment.objects.create(order_item=line, status="AWAITING_CONFIRMATION")
+        FulfillmentEvent.objects.create(
+            order=line.order, fulfillment=fulfilment, source="CUSTOMER",
+            event_type="customer_reported_item_issue", note="my private address is 12 Secret Road",
+        )
+        FulfillmentEvent.objects.create(
+            order=line.order, fulfillment=fulfilment, source="CARRIER_API",
+            event_type="carrier_tracking_update", note="Arrived at Nairobi hub",
+        )
+        FulfillmentEvent.objects.create(
+            order=line.order, fulfillment=fulfilment, source="STAFF",
+            event_type="internal_admin_note", note="internal only",
+        )
+        response = self.client.get(f"/api/vendor/sales-overview/items/{line.pk}/")
+        self.assertEqual(response.status_code, 200, response.content)
+        body = response.json()
+        self.assertEqual(body["stage"], "awaiting")
+        self.assertIn("customer confirms", body["next_step"])
+        titles = [t["title"] for t in body["timeline"]]
+        self.assertEqual(titles[0], "Customer paid for the order")
+        self.assertIn("Carrier tracking update", titles)
+        text = response.content.decode()
+        self.assertNotIn("Secret Road", text)
+        self.assertNotIn("internal only", text)
+        self.assertIn("Arrived at Nairobi hub", text)
+
+    def test_sale_detail_is_private_to_the_owning_vendor(self):
+        line = self.sale("COMPLETED", "100.00")
+        other = self.make_vendor()
+        client = APIClient()
+        client.force_authenticate(other.user)
+        self.assertEqual(client.get(f"/api/vendor/sales-overview/items/{line.pk}/").status_code, 404)

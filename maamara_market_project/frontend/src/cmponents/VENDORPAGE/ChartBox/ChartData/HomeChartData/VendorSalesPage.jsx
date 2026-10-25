@@ -12,6 +12,8 @@ const VendorSalesPage = () => {
   const {
     chartData: monthlySales,
     overview,
+    refresh,
+    updatedAt,
     value: totalValue,
     duration,
     loading,
@@ -96,7 +98,7 @@ const VendorSalesPage = () => {
             No monthly sales recorded.
           </div>
         )}
-        <SalesBreakdown overview={overview} />
+        <SalesBreakdown overview={overview} onRefresh={refresh} updatedAt={updatedAt} />
       </section>
     </section>
   );

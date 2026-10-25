@@ -524,7 +524,7 @@ const Home = ({ vendor_id }) => {
 
           <article className={`${cardClass} min-h-[112px] p-3 sm:min-h-[120px] sm:p-4 xl:col-span-3`}>
             <ChartBox {...monthlySales} />
-            <SalesBreakdown overview={monthlySales.overview} />
+            <SalesBreakdown overview={monthlySales.overview} onRefresh={monthlySales.refresh} updatedAt={monthlySales.updatedAt} />
           </article>
 
           <article className={`${cardClass} min-h-[112px] p-3 sm:min-h-[120px] sm:p-4 xl:col-span-3`}>

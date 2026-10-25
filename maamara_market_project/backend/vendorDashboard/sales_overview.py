@@ -17,6 +17,8 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
+from django.shortcuts import get_object_or_404
+
 from order.models import OrderItem
 from order.revenue import paid_orders
 from ReactSerializers.models import Item
@@ -164,6 +166,8 @@ def vendor_sales_overview(request):
             "order_status": oi.order.status,
             "stage": stage,
             "stage_label": STAGE_LABELS[stage],
+            "step": step_label(oi),
+            "release_by": release_date(oi, stage),
         })
 
     month_list = [
@@ -210,4 +214,161 @@ def admin_payout_readiness(request):
         "totals": {stage: float(grand[stage]) for stage in STAGES},
         "vendors": vendors,
         "stage_labels": STAGE_LABELS,
+    })
+
+
+# --- Per-sale detail: the story of one sale, from payment to payout. -------
+
+FULFILMENT_LABELS = {
+    "PAID": "Paid, waiting for you to start",
+    "PROCESSING": "Being prepared",
+    "PACKING": "Being packed",
+    "READY_TO_SHIP": "Ready for dispatch inspection",
+    "DISPATCH_INSPECTED": "Passed dispatch inspection",
+    "SHIPPED": "Handed to carrier",
+    "IN_TRANSIT": "In transit to the customer",
+    "OUT_FOR_DELIVERY": "Out for delivery",
+    "DELIVERED": "Delivered",
+    "AWAITING_CONFIRMATION": "Delivered, waiting for the customer to confirm",
+    "COMPLETED": "Completed",
+    "ISSUE_REPORTED": "Customer reported a problem",
+    "CANCELLED": "Cancelled",
+}
+
+# Only events a vendor should see. Customer notes and internal notes are never sent.
+EVENT_TITLES = {
+    "payment_confirmed": "Customer payment confirmed",
+    "legacy_fulfillment_initialized": "Order tracking started",
+    "vendor_step_completed": "You updated preparation progress",
+    "dispatch_inspection_passed": "Item passed Maamara Market dispatch inspection",
+    "shipment_recorded": "Shipment booked with the carrier",
+    "carrier_handover_confirmed": "Carrier collected the parcel",
+    "carrier_tracking_update": "Carrier tracking update",
+    "carrier_reported_delivery": "Carrier reported delivery",
+    "awaiting_customer_confirmation": "Waiting for the customer to confirm delivery",
+    "customer_accepted_item": "Customer confirmed they received the item",
+    "customer_reported_item_issue": "Customer reported a problem with the item",
+    "auto_completed_after_72_hours": "Confirmation window ended, order completed",
+    "carrier_return_hold": "Parcel is being returned, payout on hold",
+    "carrier_exception_hold": "Carrier reported a delivery problem, payout on hold",
+}
+EVENT_ACTORS = {
+    "VENDOR": "You", "STAFF": "Maamara Market", "CUSTOMER": "Customer",
+    "CARRIER_API": "Carrier", "CARRIER_WEBHOOK": "Carrier", "SYSTEM": "Maamara Market",
+}
+
+
+def _iso(value):
+    return value.isoformat() if value else None
+
+
+def step_label(order_item):
+    fulfilment = getattr(order_item, "fulfillment", None)
+    if fulfilment is not None:
+        return FULFILMENT_LABELS.get(fulfilment.status, fulfilment.status.replace("_", " ").title())
+    return "Completed" if str(order_item.order.status or "").lower() == "completed" else (
+        str(order_item.order.status or "Paid").replace("_", " ").title()
+    )
+
+
+def release_date(order_item, stage):
+    """When the money is expected to become payable, if that is known."""
+    if stage != "awaiting":
+        return None
+    fulfilment = getattr(order_item, "fulfillment", None)
+    return _iso(getattr(fulfilment, "confirmation_deadline", None))
+
+
+def next_step(order_item, stage):
+    fulfilment = getattr(order_item, "fulfillment", None)
+    status = getattr(fulfilment, "status", "")
+    if stage == "paid_out":
+        return "Paid. This sale is settled."
+    if stage == "processing":
+        return "Your payout has been sent and is waiting for confirmation from the payment provider."
+    if stage == "ready":
+        return "Completed. It joins your next payout when payouts are generated."
+    if status == "ISSUE_REPORTED" or getattr(fulfilment, "hold_reason", ""):
+        return "The customer or carrier reported a problem. Payout is on hold while we review it."
+    if status in {"PAID", "PROCESSING", "PACKING"}:
+        return "Prepare the item and mark it ready for dispatch."
+    if status in {"READY_TO_SHIP", "DISPATCH_INSPECTED"}:
+        return "Hand the item to dispatch. It ships once it passes inspection."
+    if status in {"SHIPPED", "IN_TRANSIT", "OUT_FOR_DELIVERY"}:
+        return "On its way. Payment is released after the customer confirms delivery."
+    if status in {"DELIVERED", "AWAITING_CONFIRMATION"}:
+        return "Delivered. Payment is released when the customer confirms or the confirmation window ends."
+    return "The customer has paid. We hold the payment safely until delivery is confirmed."
+
+
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def vendor_sale_detail(request, order_item_id):
+    vendor = Vendor.objects.filter(user=request.user).first()
+    if not vendor:
+        return Response({"detail": "Vendor profile not found."}, status=403)
+    items = Item.objects.filter(Q(vendor=vendor) | Q(created_by=vendor.user))
+    oi = get_object_or_404(
+        OrderItem.objects.select_related("order", "order__payment", "item", "fulfillment"),
+        pk=order_item_id, item__in=items,
+    )
+    stage = classify(vendor, [oi])[oi.pk]
+    fulfilment = getattr(oi, "fulfillment", None)
+
+    timeline = []
+    payment = oi.order.payment
+    timeline.append({
+        "at": _iso(getattr(payment, "paid_at", None) or oi.order.ordered_date),
+        "title": "Customer paid for the order", "actor": "Customer", "kind": "paid",
+    })
+    if fulfilment is not None:
+        for event in fulfilment.events.all():
+            title = EVENT_TITLES.get(event.event_type)
+            if not title:
+                continue
+            detail = ""
+            if event.source in {"CARRIER_API", "CARRIER_WEBHOOK"} and event.note:
+                detail = event.note[:200]
+            timeline.append({
+                "at": _iso(event.created_at), "title": title,
+                "actor": EVENT_ACTORS.get(event.source, "Maamara Market"),
+                "detail": detail, "kind": "step",
+            })
+
+    payout = (
+        VendorPayout.objects.filter(order_items=oi).order_by("-id").first()
+    )
+    payout_info = None
+    if payout:
+        payout_info = {
+            "reference": payout.reference, "paid": payout.paid, "amount": float(payout.amount),
+            "paid_at": _iso(payout.paid_at), "method": payout.vendor.payment_method,
+        }
+        timeline.append({"at": _iso(payout.created_at), "title": f"Added to payout {payout.reference}",
+                         "actor": "Maamara Market", "kind": "payout"})
+        if payout.paid:
+            timeline.append({"at": _iso(payout.paid_at), "title": "Payout paid to you",
+                             "actor": "Maamara Market", "kind": "paid_out"})
+    timeline = sorted((t for t in timeline if t["at"]), key=lambda t: t["at"])
+
+    shipment = None
+    if fulfilment is not None:
+        record = fulfilment.shipments.order_by("-id").first()
+        if record:
+            shipment = {
+                "carrier": record.get_carrier_display(), "tracking_number": record.tracking_number,
+                "tracking_url": record.tracking_url, "status": record.get_status_display(),
+                "estimated_delivery_at": _iso(record.estimated_delivery_at),
+                "delivered_at": _iso(record.delivered_at),
+            }
+
+    unit = vendor_amount(oi) / (oi.quantity or 1)
+    return Response({
+        "id": oi.pk, "order_id": oi.order_id, "item_name": oi.item.name, "quantity": oi.quantity,
+        "unit_amount": float(unit), "amount": float(vendor_amount(oi)),
+        "ordered_date": _iso(oi.order.ordered_date),
+        "stage": stage, "stage_label": STAGE_LABELS[stage], "step": step_label(oi),
+        "next_step": next_step(oi, stage), "release_by": release_date(oi, stage),
+        "on_hold": bool(getattr(fulfilment, "hold_reason", "")),
+        "shipment": shipment, "payout": payout_info, "timeline": timeline,
     })
