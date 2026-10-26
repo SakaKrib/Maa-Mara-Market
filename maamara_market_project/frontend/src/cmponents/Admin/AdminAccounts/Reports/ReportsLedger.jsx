@@ -28,6 +28,7 @@ export default function MonthlyReport({ data = {}, loading = false, error = null
       amount: summary.income?.amount,
       comparison: summary.income?.comparison,
       breakdown: summary.income?.breakdown,
+      unrecorded: summary.income?.unrecorded_sales,
       tone: "bg-green-500/10 text-green-600 dark:text-green-300",
     },
     {
@@ -80,6 +81,16 @@ export default function MonthlyReport({ data = {}, loading = false, error = null
             <p className="mt-2 text-[11px] leading-5 text-muted-foreground">
               {card.comparison || "No data available"}
             </p>
+            {card.unrecorded && Number(card.unrecorded.count) > 0 && (
+              <div role="note" className="mt-3 rounded-lg border border-amber-500/40 bg-amber-500/10 p-2.5 text-left text-[11px] text-amber-700 dark:text-amber-300">
+                <p className="font-semibold">
+                  {card.unrecorded.count} paid-status order{card.unrecorded.count === 1 ? "" : "s"} ({formatKES(card.unrecorded.amount)}) not counted
+                </p>
+                <p className="mt-0.5 opacity-90">
+                  They have no confirmed payment record, so there is no proof the money arrived. Income only counts confirmed payments.
+                </p>
+              </div>
+            )}
             {card.breakdown && Number(card.breakdown.orders_total) > 0 && (
               <dl className="mt-3 space-y-1 border-t border-border pt-3 text-left text-[11px]">
                 {[

@@ -206,26 +206,36 @@ class IncomeCountsAllMoneyReceivedTests(PayoutTestMixin, TestCase):
         self.assertEqual(response.status_code, 200, response.content)
         return response.json()["summary_cards"]["income"]
 
-    def test_paid_orders_without_a_settled_payment_still_count_as_income(self):
+    def test_orders_without_a_confirmed_payment_are_flagged_not_counted(self):
         self.order(200, "COMPLETED")  # no payment record at all
         pending = Payment.objects.create(amount=Decimal("300.00"), merchant_reference=uuid4().hex, status="PENDING")
-        self.order(300, "DELIVERED", payment=pending)  # paid order, payment never marked paid
-        self.assertEqual(self.income()["amount"], 500.0)
+        self.order(300, "DELIVERED", payment=pending)  # payment never confirmed
+        income = self.income()
+        self.assertEqual(income["amount"], 0.0)
+        self.assertEqual(income["unrecorded_sales"]["count"], 2)
+        self.assertEqual(income["unrecorded_sales"]["amount"], 500.0)
 
     def test_an_order_with_a_settled_payment_is_counted_once(self):
         paid = Payment.objects.create(
             amount=Decimal("200.00"), merchant_reference=uuid4().hex, status="PAID", paid_at=timezone.now()
         )
         self.order(200, "COMPLETED", payment=paid)
-        self.assertEqual(self.income()["amount"], 200.0)
+        income = self.income()
+        self.assertEqual(income["amount"], 200.0)
+        self.assertEqual(income["unrecorded_sales"]["count"], 0)
 
-    def test_unpaid_and_cancelled_orders_are_not_income(self):
+    def test_unpaid_and_cancelled_orders_are_neither_income_nor_flagged(self):
         self.order(200, "PENDING_PAYMENT")
         self.order(200, "CANCELLED")
-        self.assertEqual(self.income()["amount"], 0.0)
+        income = self.income()
+        self.assertEqual(income["amount"], 0.0)
+        self.assertEqual(income["unrecorded_sales"]["count"], 0)
 
     def test_income_is_split_into_vendors_shipping_and_shop_markup(self):
-        self.order(200, "COMPLETED", vendor_price="100.00", shipping="30.00")
+        paid = Payment.objects.create(
+            amount=Decimal("200.00"), merchant_reference=uuid4().hex, status="PAID", paid_at=timezone.now()
+        )
+        self.order(200, "COMPLETED", payment=paid, vendor_price="100.00", shipping="30.00")
         breakdown = self.income()["breakdown"]
         self.assertEqual(breakdown["orders_total"], 200.0)
         self.assertEqual(breakdown["owed_to_vendors"], 100.0)
@@ -242,5 +252,5 @@ class DiagnoseCommandTests(PayoutTestMixin, TestCase):
         out = StringIO()
         call_command("diagnose_accounts", stdout=out)
         text = out.getvalue()
-        self.assertIn("calculation version: income-v2-paid-orders-and-payments", text)
+        self.assertIn("calculation version: income-v3-confirmed-payments-only", text)
         self.assertIn("How a payment reaches the income figure", text)

@@ -52,7 +52,7 @@ class Command(BaseCommand):
             out(f"  #{o.pk} {o.status} {o.ordered_date:%Y-%m-%d %H:%M} total={o.updated_total_price} "
                 f"payment={'NONE' if pay is None else f'{pay.status}/{pay.amount}'}")
         extra = list(orders_without_settled_payment(start, end))
-        out(f"paid orders this month with no settled payment (added to income): {len(extra)}")
+        out(f"paid orders this month with no settled payment (flagged, not counted as income): {len(extra)}")
 
         out(self.style.MIGRATE_HEADING("Customer transactions"))
         for row in Transaction.objects.filter(transaction_type__in=["C2B", "PayPal"]).values("transaction_type", "payment_method", "status").annotate(n=Count("id"), amt=Sum("amount")):

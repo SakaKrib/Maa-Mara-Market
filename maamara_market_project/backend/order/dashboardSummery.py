@@ -44,21 +44,34 @@ def orders_without_settled_payment(start=None, end=None):
 
 
 def income_between(start=None, end=None):
-    """All money received from customers (vendor prices + markup + shipping)."""
+    """Money received from customers: confirmed payments only.
+
+    An order with no confirmed payment behind it is not proof that money
+    arrived, so it is reported separately by ``unrecorded_sales`` instead.
+    """
     payments = settled_payments()
     if start is not None:
         payments = payments.filter(settled_at__gte=start, settled_at__lte=end)
-    total = payments.aggregate(total=Sum("amount"))["total"] or Decimal("0.00")
-    extra = Decimal("0.00")
+    return payments.aggregate(total=Sum("amount"))["total"] or Decimal("0.00")
+
+
+def unrecorded_sales(start, end):
+    """Paid-status orders in the period that have no confirmed payment record."""
+    count, amount = 0, Decimal("0.00")
     for order in orders_without_settled_payment(start, end):
-        extra += Decimal(str(order_revenue(order)))
-    return total + extra
+        count += 1
+        amount += Decimal(str(order_revenue(order)))
+    return {"count": count, "amount": float(amount)}
 
 
 def income_breakdown(start, end):
-    """Where the income of paid orders in the period goes: vendors, shipping, shop."""
+    """Where confirmed income goes: vendors, shipping, shop markup.
+
+    Based on the paid orders whose payment was confirmed in the period.
+    """
+    in_period = settled_payments().filter(settled_at__gte=start, settled_at__lte=end).values("pk")
     revenue = vendors = shipping = 0.0
-    orders = with_revenue(paid_orders().filter(ordered_date__gte=start, ordered_date__lte=end))
+    orders = with_revenue(paid_orders().filter(payment__in=in_period))
     for order in orders.prefetch_related("order_items__item"):
         revenue += order_revenue(order)
         vendors += order_vendor_share(order)
@@ -184,6 +197,7 @@ class DashboardSummaryView(APIView):
 
         income_total = income_between(period_start, period_end)
         breakdown = income_breakdown(period_start, period_end)
+        unrecorded = unrecorded_sales(period_start, period_end)
 
         paypal = channel_activity("paypal", period_start, period_end)
         mpesa = channel_activity("mpesa", period_start, period_end)
@@ -312,11 +326,6 @@ class DashboardSummaryView(APIView):
             item["month"].strftime("%Y-%m"): float(item["amount"] or 0)
             for item in monthly_income
         }
-        for order in orders_without_settled_payment(
-            timezone.make_aware(datetime.combine(chart_start, datetime.min.time())), period_end
-        ):
-            key = timezone.localtime(order.ordered_date).strftime("%Y-%m")
-            income_dict[key] = income_dict.get(key, 0) + order_revenue(order)
         expense_dict = {
             item["month"].strftime("%Y-%m"): float(item["amount"] or 0)
             for item in monthly_manual_expenses
@@ -373,7 +382,7 @@ class DashboardSummaryView(APIView):
         return Response({
             # Identifies the income logic that produced this response, so a stale
             # backend is easy to spot (the page's network response shows it).
-            "calculation": "income-v2-paid-orders-and-payments",
+            "calculation": "income-v3-confirmed-payments-only",
             "date": period_label,
             "period": {
                 "type": "day" if selected_date else "month",
@@ -387,6 +396,7 @@ class DashboardSummaryView(APIView):
                     "amount": float(income_total),
                     "comparison": f"Income for {period_description.lower()}",
                     "breakdown": breakdown,
+                    "unrecorded_sales": unrecorded,
                 },
                 "expenses": {
                     "amount": float(expense_total),
