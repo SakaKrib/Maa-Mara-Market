@@ -232,7 +232,7 @@ def mpesa_stk_callback(request):
         return Response({"ResultCode": 0, "ResultDesc": "Accepted"})
 
     checkout_session = (
-        CheckoutSession.objects.select_for_update()
+        CheckoutSession.objects.select_for_update(of=("self",))
         .select_related("order", "order__payment")
         .filter(mpesa_checkout_request_id=checkout_request_id)
         .first()
