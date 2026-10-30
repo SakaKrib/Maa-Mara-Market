@@ -218,7 +218,21 @@ REST_FRAMEWORK = {
     ],
     "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.PageNumberPagination",
     "PAGE_SIZE": 12,
+    "DEFAULT_THROTTLE_RATES": {
+        "anon": "300/min",
+        "user": "600/min",
+    },
 }
+
+RATE_LIMITS_ENABLED = env.bool("RATE_LIMITS_ENABLED", default=True)
+
+if env.bool("USE_REDIS_CACHE", default=False):
+    CACHES = {
+        "default": {
+            "BACKEND": "django.core.cache.backends.redis.RedisCache",
+            "LOCATION": env("REDIS_URL", default="redis://redis:6379/0"),
+        }
+    }
 
 SIMPLE_JWT = {
     "ALGORITHM": "HS256",
@@ -275,6 +289,20 @@ SECURE_PROXY_SSL_HEADER = (
     if env.bool("SECURE_PROXY_SSL_HEADER", default=not DEBUG)
     else None
 )
+
+# HSTS: only meaningful over HTTPS, so it follows the SSL redirect setting.
+SECURE_HSTS_SECONDS = env.int("SECURE_HSTS_SECONDS", default=31536000 if SECURE_SSL_REDIRECT else 0)
+SECURE_HSTS_INCLUDE_SUBDOMAINS = env.bool("SECURE_HSTS_INCLUDE_SUBDOMAINS", default=False)
+SECURE_HSTS_PRELOAD = False
+SECURE_CONTENT_TYPE_NOSNIFF = True
+
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "formatters": {"standard": {"format": "%(asctime)s %(levelname)s %(name)s: %(message)s"}},
+    "handlers": {"console": {"class": "logging.StreamHandler", "formatter": "standard"}},
+    "root": {"handlers": ["console"], "level": env("LOG_LEVEL", default="INFO")},
+}
 
 SESSION_COOKIE_NAME = "user_sessionid"
 SESSION_COOKIE_SAMESITE = "Lax"

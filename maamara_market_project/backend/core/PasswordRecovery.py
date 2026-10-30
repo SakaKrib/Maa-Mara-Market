@@ -8,8 +8,16 @@ from django.utils.html import strip_tags
 from django.conf import settings
 from rest_framework.views import APIView
 from rest_framework.response import Response
+from rest_framework.throttling import AnonRateThrottle
+
+
+class PasswordResetThrottle(AnonRateThrottle):
+    rate = "5/hour"
+    scope = "password_reset"
 
 class RequestPasswordReset(APIView):
+    throttle_classes = [PasswordResetThrottle]
+
     def post(self, request):
         email = request.data.get("email")
 
@@ -51,6 +59,8 @@ from django.utils.http import urlsafe_base64_decode
 from django.contrib.auth.tokens import default_token_generator
 
 class ResetPasswordConfirm(APIView):
+    throttle_classes = [PasswordResetThrottle]
+
     def post(self, request, uidb64, token):
         try:
             uid = urlsafe_base64_decode(uidb64).decode()

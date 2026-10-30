@@ -3,7 +3,8 @@ from rest_framework.response import Response
 from rest_framework.permissions import AllowAny
 from rest_framework.pagination import PageNumberPagination
 from django.db.models import Min, Max, Count, Prefetch, F
-from rest_framework.throttling import AnonRateThrottle
+from rest_framework.throttling import AnonRateThrottle, UserRateThrottle
+import os
 from rest_framework.decorators import throttle_classes
 from ReactSerializers.models import *
 from .Serializers import *
@@ -136,15 +137,37 @@ def sanitize(value):
 
 
 #  chatfile vuew
+CHAT_UPLOAD_MAX_BYTES = 5 * 1024 * 1024
+CHAT_UPLOAD_ALLOWED_EXTENSIONS = {
+    ".jpg", ".jpeg", ".png", ".gif", ".webp", ".pdf", ".txt",
+}
+
+
 class FileUploadView(APIView):
+    """Signed-in users only; images, PDF and text up to 5 MB.
+
+    Active content (html, svg, js) is rejected because uploads are served
+    from the site's own origin.
+    """
+
+    permission_classes = [permissions.IsAuthenticated]
+    throttle_classes = [UserRateThrottle]
+
     def post(self, request, format=None):
-        serializer = ChatFileSerializer(data=request.data)
+        upload = request.FILES.get("file")
+        if upload is None:
+            return Response({"file": ["No file was submitted."]}, status=status.HTTP_400_BAD_REQUEST)
+        extension = os.path.splitext(upload.name or "")[1].lower()
+        if extension not in CHAT_UPLOAD_ALLOWED_EXTENSIONS:
+            return Response({"file": ["This file type is not allowed."]}, status=status.HTTP_400_BAD_REQUEST)
+        if upload.size > CHAT_UPLOAD_MAX_BYTES:
+            return Response({"file": ["File is larger than 5 MB."]}, status=status.HTTP_400_BAD_REQUEST)
+        serializer = ChatFileSerializer(data={"file": upload})
         if serializer.is_valid():
             serializer.save()
-            file_url = request.build_absolute_uri(serializer.data['file'])
-            return Response({"fileUrl": file_url, "fileName": request.FILES['file'].name})
+            file_url = request.build_absolute_uri(serializer.data["file"])
+            return Response({"fileUrl": file_url, "fileName": upload.name})
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
 
 
 @api_view(["GET"])

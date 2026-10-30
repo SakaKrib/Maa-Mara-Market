@@ -44,6 +44,10 @@ def _otp() -> str:
     return "".join(secrets.choice(string.digits) for _ in range(6))
 
 
+from core.ratelimit import rate_limit
+
+
+@rate_limit("register", 10, 600)
 @csrf_protect
 @permission_classes([AllowAny])
 @transaction.atomic
@@ -130,6 +134,7 @@ def register(request):
     )
 
 
+@rate_limit("otp-verify", 10, 600)
 @csrf_protect
 @api_view(["POST"])
 @authentication_classes([])
@@ -269,6 +274,7 @@ def verify_otp_register_otp(request):
     )
 
 
+@rate_limit("otp-resend", 5, 600)
 @csrf_protect
 @api_view(["POST"])
 @permission_classes([AllowAny])

@@ -1,3 +1,4 @@
+from rest_framework.permissions import IsAdminUser
 # shop/serializers.py
 from rest_framework import serializers
 import json
@@ -1421,6 +1422,8 @@ class VendorRequestSerializer(serializers.ModelSerializer):
 
 
 class UnseenVendorCountView(APIView):
+    permission_classes = [IsAdminUser]
+
     def get(self, request):
         # Current count of verified but unseen vendor requests
         unseen_count = VendorRequest.objects.filter(status='verified', seen=False).count()
@@ -1458,6 +1461,8 @@ class UnseenVendorCountView(APIView):
 
 # mark as seen 
 class MarkVendorSeenView(APIView):
+    permission_classes = [IsAdminUser]
+
     def post(self, request, user_id):
         vendor = get_object_or_404(VendorRequest, user__id=user_id)
         vendor.seen = True

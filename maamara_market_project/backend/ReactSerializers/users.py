@@ -12,6 +12,7 @@ from django.http import JsonResponse
 from django.utils.text import slugify
 from django.views.decorators.csrf import ensure_csrf_cookie, csrf_exempt
 from django.views.decorators.http import require_http_methods
+from core.ratelimit import rate_limit
 from django.middleware.csrf import get_token
 from django.utils.decorators import method_decorator
 
@@ -426,6 +427,7 @@ class HybridCheckAuthView(APIView):
 
 logger = logging.getLogger("ReactSerializers.users")
 
+@rate_limit("login", 10, 60)
 @require_http_methods(["POST"])
 def login_view(request):
     """Authenticate a customer, vendor, or admin by case-insensitive email or username."""
