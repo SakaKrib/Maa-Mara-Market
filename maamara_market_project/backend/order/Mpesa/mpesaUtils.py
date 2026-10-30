@@ -9,6 +9,7 @@ from rest_framework.response import Response
 
 from vendorDashboard.models import VendorPayout
 
+from .callback_security import callback_token_ok
 from .mpesaView import initiate_b2c_payment
 from order.services.refunds import reconcile_mpesa_refund_callback
 
@@ -161,6 +162,8 @@ def mpesa_b2c_payment(request):
 @api_view(["POST"])
 def mpesa_result(request):
     """Process a Safaricom Daraja B2C result callback idempotently."""
+    if not callback_token_ok(request):
+        return Response({"detail": "Forbidden"}, status=403)
     _process_b2c_callback(request.data)
     return Response({"ResultCode": 0, "ResultDesc": "Accepted"})
 
@@ -169,6 +172,8 @@ def mpesa_result(request):
 @api_view(["POST"])
 def mpesa_refund_result(request):
     """Process a Safaricom reversal result callback idempotently."""
+    if not callback_token_ok(request):
+        return Response({"detail": "Forbidden"}, status=403)
     reconcile_mpesa_refund_callback(request.data)
     return Response({"ResultCode": 0, "ResultDesc": "Accepted"})
 
@@ -176,6 +181,8 @@ def mpesa_refund_result(request):
 @api_view(["POST"])
 def mpesa_refund_timeout(request):
     """Process a Safaricom reversal timeout callback."""
+    if not callback_token_ok(request):
+        return Response({"detail": "Forbidden"}, status=403)
     reconcile_mpesa_refund_callback(request.data, timeout=True)
     return Response({"ResultCode": 0, "ResultDesc": "Accepted"})
 
@@ -183,5 +190,7 @@ def mpesa_refund_timeout(request):
 @api_view(["POST"])
 def mpesa_timeout(request):
     """Process a Safaricom Daraja B2C timeout callback."""
+    if not callback_token_ok(request):
+        return Response({"detail": "Forbidden"}, status=403)
     _process_b2c_callback(request.data, timeout=True)
     return Response({"ResultCode": 0, "ResultDesc": "Accepted"})

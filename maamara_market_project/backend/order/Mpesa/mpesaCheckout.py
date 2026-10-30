@@ -14,6 +14,7 @@ from order.checkout_sessions import get_owned_checkout_session, materialize_paid
 from order.models import CheckoutSession, Transaction
 from order.order_completion import complete_paid_order, broadcast_checkout_payment_status
 from order.views import IsAuthenticatedOrVisitor
+from .callback_security import callback_token_ok, stk_query_confirms
 
 logger = logging.getLogger(__name__)
 
@@ -219,6 +220,9 @@ def mpesa_stk_push(request):
 @permission_classes([AllowAny])
 @transaction.atomic
 def mpesa_stk_callback(request):
+    if not callback_token_ok(request):
+        logger.error("Rejected M-Pesa STK callback with a bad token.")
+        return Response({"detail": "Forbidden"}, status=403)
     callback = _callback_result(request.data)
 
     checkout_request_id = callback.get("CheckoutRequestID")
@@ -252,6 +256,15 @@ def mpesa_stk_callback(request):
         }
         checkout_session.save(update_fields=["status", "payload", "updated_at"])
         broadcast_checkout_payment_status(checkout_session, "FAILED")
+        return Response({"ResultCode": 0, "ResultDesc": "Accepted"})
+
+    # Never trust the callback body alone: confirm with Safaricom that this
+    # request was really paid before the order is marked paid.
+    if not stk_query_confirms(checkout_request_id):
+        logger.error(
+            "M-Pesa STK success callback for %s was not confirmed by Safaricom; order left unpaid.",
+            checkout_request_id,
+        )
         return Response({"ResultCode": 0, "ResultDesc": "Accepted"})
 
     metadata = _metadata(callback)

@@ -418,6 +418,9 @@ CRISPY_TEMPLATE_PACK = "bootstrap4"
 # Vendor payout safeguards (see vendorDashboard/payout/services/payout_guard.py)
 # Payouts at or above this amount (KES) need one admin to request and a different
 # admin to approve and send. Set to 0 to require two admins for every payout.
+# Shared secret appended to Daraja callback URLs as ?token=... (see callback_security).
+MPESA_CALLBACK_TOKEN = env("MPESA_CALLBACK_TOKEN", default="")
+
 PAYOUT_TWO_PERSON_THRESHOLD = env.float("PAYOUT_TWO_PERSON_THRESHOLD", default=50000)
 # A changed payout destination (phone, Till, Paybill/account, PayPal email, bank
 # account) cannot receive money until this many hours have passed.

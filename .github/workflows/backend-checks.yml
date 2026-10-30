@@ -124,7 +124,7 @@ jobs:
       - name: Run fulfilment tracking regression tests
         run: |
           set +e
-          python manage.py test core.test_email_campaigns order.test_fulfillment_tracking core.test_email_branding_and_sending core.test_email_campaigns vendorDashboard.tests.test_payout_guard vendorDashboard.tests.test_payout_reconciliation vendorDashboard.tests.test_weekly_payouts vendorDashboard.tests.test_vendor_email_templates vendorDashboard.tests.test_payout_review_states ReactSerializers.test_item_offers_and_insights shop.tests.HomepageOffersTests vendorDashboard.tests.test_accounts_ledger core.test_video_limits ReactSerializers.test_traffic_geo order.test_admin_revenue vendorDashboard.tests.test_payout_topups vendorDashboard.tests.test_sales_overview --verbosity 2 > /tmp/fulfilment-tests.txt 2>&1
+          python manage.py test core.test_email_campaigns order.test_fulfillment_tracking core.test_email_branding_and_sending core.test_email_campaigns vendorDashboard.tests.test_payout_guard vendorDashboard.tests.test_payout_reconciliation vendorDashboard.tests.test_weekly_payouts vendorDashboard.tests.test_vendor_email_templates vendorDashboard.tests.test_payout_review_states ReactSerializers.test_item_offers_and_insights shop.tests.HomepageOffersTests vendorDashboard.tests.test_accounts_ledger core.test_video_limits ReactSerializers.test_traffic_geo order.test_admin_revenue order.test_mpesa_callback_security vendorDashboard.tests.test_payout_topups vendorDashboard.tests.test_sales_overview --verbosity 2 > /tmp/fulfilment-tests.txt 2>&1
           status=$?
           cat /tmp/fulfilment-tests.txt
           if [ "$status" -ne 0 ]; then
