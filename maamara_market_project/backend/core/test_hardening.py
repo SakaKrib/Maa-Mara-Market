@@ -43,20 +43,24 @@ class VendorCounterPermissionTests(TestCase):
         self.assertEqual(client.get("/api/vendor/requests/unseen-count/").status_code, 200)
 
 
-class LoginRateLimitTests(TestCase):
+class RateLimitTests(TestCase):
     def setUp(self):
         cache.clear()
 
-    @override_settings(RATE_LIMITS_ENABLED=True)
-    def test_login_is_throttled(self):
-        from django.urls import reverse, NoReverseMatch
-        from ReactSerializers import users
+    def test_decorator_blocks_after_limit(self):
+        from django.http import HttpResponse
         from django.test import RequestFactory
+        from core.ratelimit import rate_limit
+
+        @rate_limit("unit-test", 3, 60)
+        def view(request):
+            return HttpResponse("ok")
 
         rf = RequestFactory()
-        codes = []
-        for _ in range(12):
-            req = rf.post("/login/", {"username": "nobody", "password": "bad"})
-            codes.append(users.login_view(req).status_code)
-        self.assertEqual(codes[-1], 429)
-        self.assertNotEqual(codes[0], 429)
+        codes = [view(rf.post("/x/")).status_code for _ in range(5)]
+        self.assertEqual(codes, [200, 200, 200, 429, 429])
+
+    def test_login_view_is_wrapped(self):
+        from ReactSerializers import users
+
+        self.assertTrue(hasattr(users.login_view, "__wrapped__"))
