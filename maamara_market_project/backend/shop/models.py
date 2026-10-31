@@ -72,6 +72,9 @@ class Banner(models.Model):
             if Banner.objects.filter(image_hash=new_hash).exclude(pk=self.pk).exists():
                 raise ValueError("🚫 This image is already used in another banner.")
             self.image_hash = new_hash
+        elif not self.image_hash:
+            # Unique column: use NULL (not '') so several image-less banners can coexist.
+            self.image_hash = None
 
         super().save(*args, **kwargs)
 
