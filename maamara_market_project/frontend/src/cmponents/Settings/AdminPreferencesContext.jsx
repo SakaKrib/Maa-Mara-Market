@@ -19,6 +19,28 @@ export const preferenceDefaults = {
   browserAlerts: true,
 };
 
+const TOAST_MAX_AGE_MS = 15 * 60 * 1000;
+const TOASTED_KEY = "maamara-toasted-notification-ids";
+
+// Remember which notifications already popped up, so each one shows only once
+// even after the app is resumed, reloaded or signed in again.
+const readToastedIds = () => {
+  try {
+    return new Set(JSON.parse(window.localStorage.getItem(TOASTED_KEY) || "[]").map(String));
+  } catch {
+    return new Set();
+  }
+};
+
+const rememberToastedIds = (ids) => {
+  try {
+    const merged = [...readToastedIds(), ...ids.map(String)].slice(-300);
+    window.localStorage.setItem(TOASTED_KEY, JSON.stringify(merged));
+  } catch {
+    // Storage may be unavailable; the in-memory baseline still applies.
+  }
+};
+
 const AdminPreferencesContext = createContext(null);
 
 const readStoredPreferences = (role = "admin") => {
@@ -159,6 +181,9 @@ export const AdminPreferencesProvider = ({ children }) => {
 
     const pollAdminAlerts = async () => {
       if (!active || polling) return;
+      // A hidden/sleeping app must not poll: its network is suspended and the
+      // failed request used to wipe the baseline of already-known notifications.
+      if (typeof document !== "undefined" && document.visibilityState === "hidden") return;
       polling = true;
 
       try {
@@ -192,6 +217,11 @@ export const AdminPreferencesProvider = ({ children }) => {
 
         const state = notificationStateRef.current;
 
+        // A failed request (screen off, token refresh, logout) says nothing about
+        // what exists. Keep the previous baseline; otherwise the next successful
+        // poll would treat every notification as new and pop the latest again.
+        if (notificationResponse.status !== "fulfilled") return;
+
         if (!state.initialized) {
           // Do not treat an unauthenticated 401 as an empty baseline; wait for
           // the first successful authenticated response before detecting new items.
@@ -208,13 +238,18 @@ export const AdminPreferencesProvider = ({ children }) => {
           return;
         }
 
+        const alreadyToasted = readToastedIds();
+        const freshAfter = Date.now() - TOAST_MAX_AGE_MS;
         const newNotifications = notifications
           .filter((item) => item.id != null && !state.notificationIds.has(item.id))
+          .filter((item) => !item.seen && !alreadyToasted.has(String(item.id)))
+          .filter((item) => !item.created_at || new Date(item.created_at).getTime() >= freshAfter)
           .sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0));
 
         // Show an in-app toast for every signed-in role, independent of browser
         // notification permission and native-platform status.
         if (preferences.notifications && newNotifications.length > 0) {
+          rememberToastedIds(newNotifications.map((item) => item.id));
           setToastNotification(newNotifications[0]);
           if (toastTimerRef.current) window.clearTimeout(toastTimerRef.current);
           toastTimerRef.current = window.setTimeout(() => setToastNotification(null), 10000);
