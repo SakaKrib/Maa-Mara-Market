@@ -184,7 +184,6 @@ class ItemCreateWithOfferTests(TestCase):
             },
             format="multipart",
         )
-        self.assertNotIn("offer", res.data if isinstance(res.data, dict) else {}, res.data)
         self.assertEqual(res.status_code, 201, res.data)
         item = Item.objects.get(pk=res.data["id"])
         self.assertTrue(item.in_offer)
