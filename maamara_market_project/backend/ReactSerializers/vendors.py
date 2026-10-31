@@ -405,7 +405,8 @@ class VendorItemViewSet(viewsets.ModelViewSet):
         length_data = validated.pop("length", None)
         shoe_data = validated.pop("shoe_input", None)
         shipping_dimension_data = validated.pop("shipping_dimension_data", None)
-        offer_data = validated.pop("offer", None)
+        # The offer stays in validated_data: ItemSerializer.create() builds the
+        # Offer itself and rejects an "on offer" item that arrives without one.
 
         if self.request.user.is_staff:
             item = serializer.save(created_by=self.request.user, vendor=target_vendor)
@@ -419,9 +420,6 @@ class VendorItemViewSet(viewsets.ModelViewSet):
         self._handle_dimension(item, Weight, weight_data, "weight")
         self._handle_dimension(item, Length, length_data, "length")
         self._handle_dimension(item, ShippingDimension, shipping_dimension_data, "shipping_dimension")
-
-        if offer_data:
-            Offer.objects.create(item=item, **{k: sanitize(v) for k, v in offer_data.items()})
 
         for i, variant_data in enumerate(variants_data):
             sizes_data = variant_data.pop("sizes", [])
@@ -523,7 +521,8 @@ class VendorItemViewSet(viewsets.ModelViewSet):
         length_data = validated.pop("length", None)
         shoe_data = validated.pop("shoe_input", None)
         shipping_dimension_data = validated.pop("shipping_dimension_data", None)
-        offer_data = validated.pop("offer", None) 
+        # The offer stays in validated_data: ItemSerializer.update() creates,
+        # changes or ends the Offer from it.
 
         item = serializer.save()
         self._current_item = item
@@ -533,15 +532,6 @@ class VendorItemViewSet(viewsets.ModelViewSet):
         self._handle_dimension(item, Weight, weight_data, "weight")
         self._handle_dimension(item, Length, length_data, "length")
         self._handle_dimension(item, ShippingDimension, shipping_dimension_data, "shipping_dimension")
-
-        if offer_data:
-            offer_obj = getattr(item, 'offer', None)
-            if offer_obj:
-                for key, val in offer_data.items():
-                    setattr(offer_obj, key, sanitize(val))
-                offer_obj.save()
-            else:
-                Offer.objects.create(item=item, **{k: sanitize(v) for k, v in offer_data.items()})
 
         # Handle variant and nested updates
         if variants_supplied:

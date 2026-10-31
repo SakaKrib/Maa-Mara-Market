@@ -137,3 +137,50 @@ class ItemInsightsTests(TestCase):
         second = self.client.post(url, {}, format="json")
         self.assertTrue(second.json()["cached"])
         self.assertEqual(call.call_count, 1)
+
+
+class ItemCreateWithOfferTests(TestCase):
+    """Regression: the create view used to remove the offer before the serializer saw it."""
+
+    def setUp(self):
+        from rest_framework.test import APIClient
+        from vendorDashboard.models import Vendor
+
+        User = get_user_model()
+        self.admin = User.objects.create_user(username=f"a-{uuid4().hex[:8]}", password="x", is_staff=True)
+        self.vendor_user = User.objects.create_user(username=f"v-{uuid4().hex[:8]}", password="x")
+        self.vendor = Vendor.objects.create(user=self.vendor_user)
+        self.client = APIClient()
+        self.client.force_authenticate(self.admin)
+
+    def test_item_marked_on_offer_is_created_with_its_offer(self):
+        import json
+        from datetime import date
+
+        res = self.client.post(
+            "/api/item-post/update/",
+            {
+                "vendor_id": str(self.vendor.pk),
+                "name": f"Offer item {uuid4().hex[:6]}",
+                "description": "Created on offer",
+                "price": "1000",
+                "in_stock": "4",
+                "section": "inorganic",
+                "department": "Home",
+                "category": "Decor",
+                "subcategory": "Vases",
+                "in_offer": "true",
+                "offer": json.dumps({
+                    "discount_percentage": 20,
+                    "start_date": date.today().isoformat(),
+                    "duration_days": 7,
+                }),
+            },
+            format="multipart",
+        )
+        self.assertNotIn("offer", res.data if isinstance(res.data, dict) else {}, res.data)
+        self.assertEqual(res.status_code, 201, res.data)
+        item = Item.objects.get(pk=res.data["id"])
+        self.assertTrue(item.in_offer)
+        self.assertEqual(item.offer.discount_percentage, Decimal("20"))
+        self.assertEqual(item.discount_price, Decimal("800.00"))
