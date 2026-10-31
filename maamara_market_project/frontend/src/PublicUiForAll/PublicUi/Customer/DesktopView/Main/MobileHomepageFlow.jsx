@@ -4,6 +4,7 @@ import CategoryWithItems from "./Trending/Category/CategoryWithItemList";
 import Banners from "./Trending/Banner";
 import AdvertBlogs from "../../../../../cmponents/Hooks/BlogHooksNew/BlogAdvert";
 import TrendingProductCard from "./Trending/TrendingProductCard";
+import HomepageOfferRail from "./Trending/HomepageOfferRail";
 
 const MobileHomepageCollections = () => {
   const [collections, setCollections] = useState([]);
@@ -98,9 +99,12 @@ const MobileHomepageCollections = () => {
 const MobileHomepageFlow = () => (
   <div className="md:hidden">
     <CategoryWithItems />
+    <HomepageOfferRail groupKey="weekly" />
     <MobileHomepageCollections />
     <Banners />
+    <HomepageOfferRail groupKey="ending_soon" />
     <AdvertBlogs />
+    <HomepageOfferRail groupKey="monthly" />
   </div>
 );
 

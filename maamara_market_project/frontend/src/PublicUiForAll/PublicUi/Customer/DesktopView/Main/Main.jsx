@@ -7,6 +7,7 @@ import Banners from "./Trending/Banner";
 import AdvertBlogs from "../../../../../cmponents/Hooks/BlogHooksNew/BlogAdvert";
 import MobileHomepageFlow from "./MobileHomepageFlow";
 import HomepageBrands from "./Trending/HomepageBrands";
+import HomepageOfferRail from "./Trending/HomepageOfferRail";
 
 const Main = () => (
   <main className="mm-page">
@@ -21,10 +22,14 @@ const Main = () => (
     </section>
 
     <div className="hidden md:block">
+      <HomepageOfferRail groupKey="weekly" />
       <Banners />
+      <HomepageOfferRail groupKey="ending_soon" />
       <AdvertBlogs />
+      <HomepageOfferRail groupKey="monthly" />
     </div>
     <MarketplaceDiscovery />
+    <HomepageOfferRail groupKey="long" />
     <HomepageBrands />
   </main>
 );

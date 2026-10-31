@@ -185,7 +185,11 @@ const TrendingProductCard = ({ item, isWishlisted: controlledWishlist, onToggleW
             {discountPercent > 0 && (
               <span className="block text-[10px] sm:text-xs font-semibold text-red-600">{discountPercent}% OFF</span>
             )}
-            {savings > 0 && (
+            {pricingType === "offer" ? (
+              <span className="mt-0.5 inline-block rounded-full bg-red-600 px-2 py-0.5 text-[10px] sm:text-xs font-semibold text-white">
+                On offer
+              </span>
+            ) : savings > 0 && (
               <span className="block text-[10px] sm:text-xs font-medium text-green-600">
                 Save up to <FormattedCurrency value={savings} />
               </span>
