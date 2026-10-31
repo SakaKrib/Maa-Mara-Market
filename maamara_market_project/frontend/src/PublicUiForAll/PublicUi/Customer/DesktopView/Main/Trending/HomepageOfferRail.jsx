@@ -2,6 +2,7 @@ import React from "react";
 import { Link } from "react-router-dom";
 import TrendingProductCard from "./TrendingProductCard";
 import useHomepageOffers from "./useHomepageOffers";
+import OfferTimeLeft from "./OfferTimeLeft";
 
 const MAX_ITEMS = 5;
 
@@ -29,7 +30,10 @@ const HomepageOfferRail = ({ groupKey }) => {
           <div>
             <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-red-600">On offer</p>
             <h2>{group.label}</h2>
-            <p>{DESCRIPTIONS[groupKey]}</p>
+            <p>
+              {DESCRIPTIONS[groupKey]}
+              <OfferTimeLeft endDate={items[0]?.offer?.end_date} prefix=" · Next ends in " className="font-semibold" />
+            </p>
           </div>
           <Link
             to={`/offers?group=${groupKey}`}

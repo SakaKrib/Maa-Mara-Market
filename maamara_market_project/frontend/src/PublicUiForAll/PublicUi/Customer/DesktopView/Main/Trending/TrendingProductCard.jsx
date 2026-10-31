@@ -1,4 +1,5 @@
 import React from "react";
+import OfferTimeLeft from "./OfferTimeLeft";
 import { createPortal } from "react-dom";
 import { useWishlistContext } from "../../../../../../cmponents/Hooks/WishListHook/Wishlist";
 import { IonIcon } from "@ionic/react";
@@ -186,8 +187,11 @@ const TrendingProductCard = ({ item, isWishlisted: controlledWishlist, onToggleW
               <span className="block text-[10px] sm:text-xs font-semibold text-red-600">{discountPercent}% OFF</span>
             )}
             {pricingType === "offer" ? (
-              <span className="mt-0.5 inline-block rounded-full bg-red-600 px-2 py-0.5 text-[10px] sm:text-xs font-semibold text-white">
-                On offer
+              <span className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5">
+                <span className="inline-block rounded-full bg-red-600 px-2 py-0.5 text-[10px] sm:text-xs font-semibold text-white">
+                  On offer
+                </span>
+                <OfferTimeLeft endDate={item.offer?.end_date} className="text-[10px] sm:text-xs font-semibold" />
               </span>
             ) : savings > 0 && (
               <span className="block text-[10px] sm:text-xs font-medium text-green-600">
