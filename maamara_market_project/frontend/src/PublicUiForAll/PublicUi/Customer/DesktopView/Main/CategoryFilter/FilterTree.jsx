@@ -1,4 +1,5 @@
 import React from "react";
+import { orderSections, sectionLabel } from "../../../../../../Services/sectionLabel";
 
 const truncateWords = (text, maxLength = 15) =>
   text && text.length > maxLength ? `${text.slice(0, maxLength)}...` : (text || "");
@@ -9,7 +10,7 @@ const FilterTree = ({ filters, selectedFilters, toggleFilter }) => (
       <section className="mm-filter-tree__group">
         <h4 className="mm-filter-tree__section-title">Sections</h4>
         <ul className="mm-filter-tree__options">
-          {filters.sections.map((section) => (
+          {orderSections(filters.sections).map((section) => (
             <li key={section.id}>
               <label className="mm-filter-tree__option">
                 <input
@@ -18,7 +19,7 @@ const FilterTree = ({ filters, selectedFilters, toggleFilter }) => (
                   checked={selectedFilters.sections.includes(section.id)}
                   onChange={() => toggleFilter("sections", section.id)}
                 />
-                <span className="mm-filter-tree__name">{truncateWords(section.name)}</span>
+                <span className="mm-filter-tree__name">{truncateWords(sectionLabel(section.name))}</span>
                 <span className="mm-filter-tree__count">{section.count}</span>
               </label>
               {section.departments?.length > 0 && (

@@ -5,6 +5,7 @@ import Banners from "./Trending/Banner";
 import AdvertBlogs from "../../../../../cmponents/Hooks/BlogHooksNew/BlogAdvert";
 import TrendingProductCard from "./Trending/TrendingProductCard";
 import HomepageOfferRail from "./Trending/HomepageOfferRail";
+import { sectionLabel } from "../../../../../Services/sectionLabel";
 
 const MobileHomepageCollections = () => {
   const [collections, setCollections] = useState([]);
@@ -67,14 +68,14 @@ const MobileHomepageCollections = () => {
             <div className="mm-section-heading">
               <div>
                 <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-muted-foreground">
-                  {collection.department || collection.section || "MARKETPLACE"}
+                  {collection.department || sectionLabel(collection.section) || "MARKETPLACE"}
                 </p>
                 <h2>{collection.name}</h2>
                 <p>Explore products from this category.</p>
               </div>
 
               <a
-                href={`/filter-category?category=${collection.id}`}
+                href={`/filter-category?category=${collection.id}${collection.department_id ? `&department=${collection.department_id}` : ""}${collection.section_id ? `&section_id=${collection.section_id}` : ""}`}
                 className="shrink-0 rounded-full border border-border bg-background px-3 py-1.5 text-xs font-semibold text-card-foreground"
               >
                 View more

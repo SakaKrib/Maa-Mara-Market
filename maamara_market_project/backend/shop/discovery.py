@@ -836,6 +836,8 @@ def homepage_collections(request):
             "id": category.id,
             "name": category.name,
             "department": category.department.name if category.department else None,
+            "department_id": category.department_id,
+            "section_id": category.department.section_id if category.department else None,
             "section": (
                 category.department.section.name
                 if category.department and category.department.section

@@ -309,3 +309,6 @@ class ProductFilterOrganicAndSearchTests(TestCase):
         ids = {i["id"] for c in rows for i in c["items"]}
         self.assertIn(self.plain.id, ids)
         self.assertFalse(ids & {self.organic.id, self.other_organic.id})
+        home = next(c for c in rows if c["id"] == self.home_cat.id)
+        self.assertEqual(home["section_id"], self.plain_section.id)
+        self.assertEqual(home["department_id"], self.home_cat.department_id)

@@ -32,6 +32,8 @@ const useCategoryFilters = () => {
   const [searchParams] = useSearchParams();
   const categoryFromUrl = Number(searchParams.get("category") || searchParams.get("category_id"));
   // ?section=organic opens the page with that section already ticked in the filter tree.
+  const sectionIdFromUrl = Number(searchParams.get("section_id"));
+  const departmentIdFromUrl = Number(searchParams.get("department"));
   const sectionNameFromUrl = (searchParams.get("section") || "").trim().toLowerCase();
   const searchTerm = (searchParams.get("name") || searchParams.get("q") || "").trim();
   const vendorId = /^\d+$/.test(searchParams.get("vendor_id") || "") ? searchParams.get("vendor_id") : "";
@@ -40,8 +42,8 @@ const useCategoryFilters = () => {
 
   const [filters, setFilters] = useState(null);
   const [selectedFilters, setSelectedFilters] = useState({
-    sections: [],
-    departments: [],
+    sections: Number.isFinite(sectionIdFromUrl) && sectionIdFromUrl > 0 ? [sectionIdFromUrl] : [],
+    departments: Number.isFinite(departmentIdFromUrl) && departmentIdFromUrl > 0 ? [departmentIdFromUrl] : [],
     categories: initialCategories,
     subcategories: [],
     brands: [],
@@ -51,6 +53,17 @@ const useCategoryFilters = () => {
     sortBy: "Default",
     perPage: 10,
   });
+  useEffect(() => {
+    // Opening another collection's "View more" while on this page re-selects its section and department.
+    const nextSections = Number.isFinite(sectionIdFromUrl) && sectionIdFromUrl > 0 ? [sectionIdFromUrl] : null;
+    const nextDepartments = Number.isFinite(departmentIdFromUrl) && departmentIdFromUrl > 0 ? [departmentIdFromUrl] : null;
+    if (!nextSections && !nextDepartments) return;
+    setSelectedFilters((prev) => ({
+      ...prev,
+      ...(nextSections ? { sections: nextSections } : {}),
+      ...(nextDepartments ? { departments: nextDepartments } : {}),
+    }));
+  }, [sectionIdFromUrl, departmentIdFromUrl]);
   useEffect(() => {
     setSelectedFilters((prev) => {
       const nextCategories = Number.isFinite(categoryFromUrl) && categoryFromUrl > 0 ? [categoryFromUrl] : [];
