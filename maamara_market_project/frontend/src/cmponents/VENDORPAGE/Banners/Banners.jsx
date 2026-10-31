@@ -17,6 +17,21 @@ const BANNER_COLORS = [
   { name: "Stone", value: "#efefec", swatch: "bg-[#efefec]" },
 ];
 
+const DURATION_OPTIONS = [
+  { value: "7", label: "1 week" },
+  { value: "14", label: "2 weeks" },
+  { value: "30", label: "1 month" },
+  { value: "90", label: "3 months" },
+  { value: "180", label: "6 months" },
+  { value: "365", label: "1 year" },
+  { value: "custom", label: "Pick an end date" },
+];
+
+const MONTHS = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+const SELECT_CLASS = "w-full rounded-xl border border-border bg-card px-4 py-3 text-sm text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20";
+
+const daysInMonth = (year, monthIndex) => new Date(year, monthIndex + 1, 0).getDate();
+
 const BannerAdd = ({ items = [], onSave = () => {} }) => {
   const [title, setTitle] = useState("");
   const [subtitle, setSubtitle] = useState("");
@@ -27,6 +42,19 @@ const BannerAdd = ({ items = [], onSave = () => {} }) => {
   const [ctaItem, setCtaItem] = useState("");
   const [ctaUrl, setCtaUrl] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const today = new Date();
+  const [duration, setDuration] = useState("30");
+  const [endYear, setEndYear] = useState(String(today.getFullYear()));
+  const [endMonth, setEndMonth] = useState(String(today.getMonth()));
+  const [endDay, setEndDay] = useState(String(today.getDate()));
+
+  const yearOptions = [today.getFullYear(), today.getFullYear() + 1].map((y) => ({ value: String(y), label: String(y) }));
+  const dayCount = daysInMonth(Number(endYear), Number(endMonth));
+  const dayOptions = Array.from({ length: dayCount }, (_, i) => ({ value: String(i + 1), label: String(i + 1) }));
+  const customEnd = new Date(Number(endYear), Number(endMonth), Math.min(Number(endDay), dayCount), 23, 59, 0);
+  const endPreview = duration === "custom"
+    ? customEnd
+    : new Date(Date.now() + Number(duration) * 24 * 60 * 60 * 1000);
 
   const [snackbar, setSnackbar] = useState({
     open: false,
@@ -103,6 +131,18 @@ const BannerAdd = ({ items = [], onSave = () => {} }) => {
       return;
     }
 
+    if (duration === "custom") {
+      const maxEnd = Date.now() + 365 * 24 * 60 * 60 * 1000;
+      if (customEnd.getTime() <= Date.now()) {
+        setSnackbar({ open: true, message: "Choose an end date in the future.", severity: "error" });
+        return;
+      }
+      if (customEnd.getTime() > maxEnd) {
+        setSnackbar({ open: true, message: "A banner can run for at most one year.", severity: "error" });
+        return;
+      }
+    }
+
     setSubmitting(true);
 
     const formData = new FormData();
@@ -112,6 +152,11 @@ const BannerAdd = ({ items = [], onSave = () => {} }) => {
     formData.append("cta_type", ctaType);
     formData.append("cta_item", ctaType === "item" ? ctaItem : "");
     formData.append("cta_url", ctaType === "external" ? ctaUrl.trim() : "");
+    if (duration === "custom") {
+      formData.append("end_date", customEnd.toISOString());
+    } else {
+      formData.append("duration_days", duration);
+    }
 
     if (image instanceof File) {
       formData.append("image", image);
@@ -137,6 +182,7 @@ const BannerAdd = ({ items = [], onSave = () => {} }) => {
         setCtaType("item");
         setCtaItem(items.length > 0 ? String(items[0].id) : "");
         setCtaUrl("");
+        setDuration("30");
         onSave(response.data);
       }
     } catch (error) {
@@ -277,6 +323,29 @@ const BannerAdd = ({ items = [], onSave = () => {} }) => {
             />
           </div>
         )}
+
+        <div>
+          <label className="mb-1.5 block text-xs font-semibold text-card-foreground">
+            How long should the banner run?
+          </label>
+          <NativeAwareSelect
+            value={duration}
+            onChange={(e) => setDuration(e.target.value)}
+            options={DURATION_OPTIONS}
+            className={SELECT_CLASS}
+          />
+          {duration === "custom" && (
+            <div className="mt-3 grid grid-cols-3 gap-2">
+              <NativeAwareSelect value={endDay} onChange={(e) => setEndDay(e.target.value)} options={dayOptions} className={SELECT_CLASS} aria-label="End day" />
+              <NativeAwareSelect value={endMonth} onChange={(e) => setEndMonth(e.target.value)} options={MONTHS.map((m, i) => ({ value: String(i), label: m }))} className={SELECT_CLASS} aria-label="End month" />
+              <NativeAwareSelect value={endYear} onChange={(e) => setEndYear(e.target.value)} options={yearOptions} className={SELECT_CLASS} aria-label="End year" />
+            </div>
+          )}
+          <p className="mt-1 text-xs text-muted-foreground">
+            Runs after admin approval and is removed automatically on{" "}
+            {endPreview.toLocaleDateString(undefined, { day: "numeric", month: "long", year: "numeric" })}.
+          </p>
+        </div>
 
         <div>
           <label className="mb-1.5 block text-xs font-semibold text-card-foreground">

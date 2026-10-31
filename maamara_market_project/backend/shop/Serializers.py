@@ -2,6 +2,7 @@ import html
 
 import bleach
 from rest_framework import serializers
+from datetime import timedelta
 from django.utils import timezone
 from ReactSerializers.models import Section, Department, Category, SubCategory, Brand, Item
 from core.Serializer import *
@@ -190,6 +191,34 @@ ALLOWED_BANNER_COLORS = {
 
 
 class BannerSerializer(serializers.ModelSerializer):
+    # Vendors pick "1 week", "1 month" ... (days) or an exact end date.
+    duration_days = serializers.IntegerField(write_only=True, required=False, min_value=1, max_value=365)
+    is_expired = serializers.BooleanField(read_only=True)
+    days_remaining = serializers.SerializerMethodField()
+
+    def get_days_remaining(self, obj):
+        if not obj.end_date:
+            return None
+        return max((obj.end_date - timezone.now()).days, 0)
+
+    def validate(self, attrs):
+        attrs = super().validate(attrs)
+        now = timezone.now()
+        duration = attrs.pop("duration_days", None)
+        start = attrs.get("start_date") or (self.instance.start_date if self.instance else now)
+        if duration:
+            base = max(start, now)
+            attrs["end_date"] = base + timedelta(days=duration)
+        end = attrs.get("end_date")
+        if end is not None:
+            if end <= now:
+                raise serializers.ValidationError({"end_date": "The banner end date must be in the future."})
+            if end <= start:
+                raise serializers.ValidationError({"end_date": "The end date must be after the start date."})
+            if end > now + timedelta(days=366):
+                raise serializers.ValidationError({"end_date": "A banner can run for at most one year."})
+        return attrs
+
     def validate_background_color(self, value):
         value = (value or "").strip().lower()
         if value and value not in ALLOWED_BANNER_COLORS:
@@ -215,9 +244,13 @@ class BannerSerializer(serializers.ModelSerializer):
             "is_active",
             "start_date",
             "end_date",
+            "duration_days",
+            "is_expired",
+            "days_remaining",
+            "is_approved",
             "display_order",
         ]
-        read_only_fields = ["vendor"]
+        read_only_fields = ["vendor", "is_approved"]
 
     def create(self, validated_data):
         # Assign vendor automatically from logged-in user

@@ -17,6 +17,7 @@
 {% if campaign.content_payload.items %}
   {% for item in campaign.content_payload.items %}
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" class="product-card" style="width:100%;border-collapse:separate;margin:0 0 16px;border:1px solid #e5e5e5;border-radius:12px;background-color:#ffffff"><tr><td class="product-card-cell" style="padding:14px;background-color:#ffffff;border-radius:12px">
+    {% if item.percent_off %}<div style="margin:0 0 10px"><span style="display:inline-block;background-color:#c0392b;color:#ffffff;font-size:12px;font-weight:bold;padding:4px 10px;border-radius:12px">{{ item.percent_off }}% OFF</span></div>{% endif %}
     {% if item.image_url %}<img class="product-image" src="{{ item.image_url }}" alt="{{ item.name }}" width="220" style="display:block;width:100%;max-width:220px;height:auto;margin:0 0 12px;border:0;border-radius:8px">{% endif %}
     <div class="product-name" style="margin:0;color:#222222;font-size:16px;font-weight:700;line-height:1.45;word-wrap:break-word;overflow-wrap:anywhere">{{ item.name }}</div>
     {% if item.description %}<div class="product-desc" style="margin:6px 0 0;color:#555555;font-size:13px;line-height:1.55;word-wrap:break-word;overflow-wrap:anywhere">{{ item.description }}</div>{% endif %}

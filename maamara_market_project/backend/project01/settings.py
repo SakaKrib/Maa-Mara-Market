@@ -351,7 +351,7 @@ CELERY_BROKER_CONNECTION_RETRY_ON_STARTUP = True
 
 # The task module uses the legacy singular name order.task; import it explicitly
 # so its cleanup, customer-confirmation timeout, and carrier-sync tasks are registered.
-CELERY_IMPORTS = ("order.task", "core.email_tasks", "ReactSerializers.offer_tasks")
+CELERY_IMPORTS = ("order.task", "core.email_tasks", "ReactSerializers.offer_tasks", "shop.tasks")
 
 # =========================================================
 # CELERY
@@ -386,6 +386,10 @@ CELERY_BEAT_SCHEDULE = {
         "task": "core.email_tasks.prepare_daily_new_arrivals_campaigns",
         "schedule": crontab(hour=8, minute=30),
     },
+    "delete_expired_banners_hourly": {
+        "task": "shop.tasks.delete_expired_banners",
+        "schedule": crontab(minute=5),
+    },
     "end_expired_item_offers_every_five_minutes": {
         "task": "ReactSerializers.offer_tasks.end_expired_offers",
         "schedule": crontab(minute="*/5"),
@@ -399,6 +403,14 @@ CELERY_BEAT_SCHEDULE = {
         "schedule": crontab(minute=10),
     },
 }
+
+# Promotion campaigns (sale, banner, new arrivals) are sent automatically by the
+# daily tasks. Set AUTO_SEND_PROMOTION_CAMPAIGNS=false to leave them as drafts
+# for admin approval instead.
+AUTO_SEND_PROMOTION_CAMPAIGNS = env.bool("AUTO_SEND_PROMOTION_CAMPAIGNS", default=True)
+PROMO_MIN_DAYS_BETWEEN_SALE_CAMPAIGNS = env.int("PROMO_MIN_DAYS_BETWEEN_SALE_CAMPAIGNS", default=3)
+PROMO_MIN_DAYS_BETWEEN_ARRIVAL_CAMPAIGNS = env.int("PROMO_MIN_DAYS_BETWEEN_ARRIVAL_CAMPAIGNS", default=3)
+PROMO_MAX_BANNER_CAMPAIGNS_PER_RUN = env.int("PROMO_MAX_BANNER_CAMPAIGNS_PER_RUN", default=3)
 
 # Shipment carrier webhooks use a shared normalized payload and a dedicated secret.
 # Configure a high-entropy secret in the environment before enabling the webhook URL.
