@@ -152,6 +152,12 @@ class ItemCreateWithOfferTests(TestCase):
         self.vendor = Vendor.objects.create(user=self.vendor_user)
         self.client = APIClient()
         self.client.force_authenticate(self.admin)
+        from ReactSerializers.models import Category, Department, Section, SubCategory
+
+        section, _ = Section.objects.get_or_create(name="inorganic")
+        department = Department.objects.create(name="Offer Test Dept", section=section)
+        category = Category.objects.create(name="Offer Test Cat", department=department)
+        SubCategory.objects.create(name="Offer Test Sub", category=category)
 
     def test_item_marked_on_offer_is_created_with_its_offer(self):
         import json
@@ -166,9 +172,9 @@ class ItemCreateWithOfferTests(TestCase):
                 "price": "1000",
                 "in_stock": "4",
                 "section": "inorganic",
-                "department": "Home",
-                "category": "Decor",
-                "subcategory": "Vases",
+                "department": "Offer Test Dept",
+                "category": "Offer Test Cat",
+                "subcategory": "Offer Test Sub",
                 "in_offer": "true",
                 "offer": json.dumps({
                     "discount_percentage": 20,
