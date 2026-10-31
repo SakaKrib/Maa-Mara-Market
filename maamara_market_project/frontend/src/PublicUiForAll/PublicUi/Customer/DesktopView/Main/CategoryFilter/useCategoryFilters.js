@@ -8,7 +8,6 @@ const buildProductsUrl = (selectedFilters, page = 1, fixed = {}) => {
   // Search term and vendor come from the page URL and survive "Clear filters".
   if (fixed.q) params.set("q", fixed.q);
   if (fixed.vendorId) params.set("vendor_id", fixed.vendorId);
-  if (selectedFilters.organic) params.set("organic", "true");
   const addList = (key, values) => {
     if (values?.length) params.set(key, values.join(","));
   };
@@ -32,7 +31,8 @@ const buildProductsUrl = (selectedFilters, page = 1, fixed = {}) => {
 const useCategoryFilters = () => {
   const [searchParams] = useSearchParams();
   const categoryFromUrl = Number(searchParams.get("category") || searchParams.get("category_id"));
-  const organicFromUrl = ["1", "true", "yes"].includes(String(searchParams.get("organic") || "").toLowerCase());
+  // ?section=organic opens the page with that section already ticked in the filter tree.
+  const sectionNameFromUrl = (searchParams.get("section") || "").trim().toLowerCase();
   const searchTerm = (searchParams.get("name") || searchParams.get("q") || "").trim();
   const vendorId = /^\d+$/.test(searchParams.get("vendor_id") || "") ? searchParams.get("vendor_id") : "";
   const fixedParams = useMemo(() => ({ q: searchTerm, vendorId }), [searchTerm, vendorId]);
@@ -45,16 +45,12 @@ const useCategoryFilters = () => {
     categories: initialCategories,
     subcategories: [],
     brands: [],
-    organic: organicFromUrl,
     attribute: "",
     color: "",
     priceRange: [0, 150000],
     sortBy: "Default",
     perPage: 10,
   });
-  useEffect(() => {
-    setSelectedFilters((prev) => (prev.organic === organicFromUrl ? prev : { ...prev, organic: organicFromUrl }));
-  }, [organicFromUrl]);
   useEffect(() => {
     setSelectedFilters((prev) => {
       const nextCategories = Number.isFinite(categoryFromUrl) && categoryFromUrl > 0 ? [categoryFromUrl] : [];
@@ -64,6 +60,15 @@ const useCategoryFilters = () => {
       return same ? prev : { ...prev, categories: nextCategories };
     });
   }, [categoryFromUrl]);
+
+  useEffect(() => {
+    if (!sectionNameFromUrl || !Array.isArray(filters?.sections)) return;
+    const match = filters.sections.find((section) => String(section.name || "").toLowerCase() === sectionNameFromUrl);
+    if (!match) return;
+    setSelectedFilters((prev) => (
+      prev.sections.length === 1 && prev.sections[0] === match.id ? prev : { ...prev, sections: [match.id] }
+    ));
+  }, [filters, sectionNameFromUrl]);
 
   const [products, setProducts] = useState([]);
   const [nextUrl, setNextUrl] = useState(null);
@@ -173,7 +178,7 @@ const useCategoryFilters = () => {
 
   const toggleFilter = useCallback((group, value) => {
     setSelectedFilters((prev) => {
-      if (group === "color" || group === "attribute" || group === "priceRange" || group === "organic") {
+      if (group === "color" || group === "attribute" || group === "priceRange") {
         return { ...prev, [group]: value };
       }
 
@@ -196,7 +201,6 @@ const useCategoryFilters = () => {
       categories: [],
       subcategories: [],
       brands: [],
-      organic: false,
       attribute: "",
       color: "",
       priceRange: [min, max],

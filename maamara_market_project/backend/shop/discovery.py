@@ -803,6 +803,8 @@ def homepage_collections(request):
                 available=True,
                 in_stock__gt=0,
             )
+            # Organic-section products have their own homepage container.
+            .exclude(section__name__iexact="organic")
             .select_related("section", "department", "category", "subcategory", "brand")
             .annotate(
                 sales_count=Sum("sold_items__quantity"),
@@ -851,6 +853,53 @@ def homepage_collections(request):
 
     return Response(collections)
 
+
+
+@api_view(["GET"])
+@permission_classes([AllowAny])
+def homepage_organic(request):
+    """The Organic section shown as one department with its categories.
+
+    Only available, in-stock items whose section is Organic are counted, so the
+    homepage never mixes organic and non-organic products.
+    """
+    from ReactSerializers.models import Section
+
+    section = Section.objects.filter(name__iexact="organic").first()
+    if section is None:
+        return Response({"section": None, "department": "Organic", "categories": [], "total_items": 0})
+
+    items = (
+        Item.objects.filter(available=True, in_stock__gt=0, section=section, category__isnull=False)
+        .select_related("category", "subcategory")
+        .order_by("-views", "-id")[:500]
+    )
+    categories = {}
+    for item in items:
+        entry = categories.setdefault(item.category_id, {
+            "id": item.category_id,
+            "name": item.category.name,
+            "image": None,
+            "item_count": 0,
+            "subcategories": [],
+        })
+        entry["item_count"] += 1
+        if entry["image"] is None and item.image:
+            try:
+                entry["image"] = item.image.url
+            except ValueError:
+                entry["image"] = None
+        sub = item.subcategory.name if item.subcategory_id else None
+        if sub and sub not in entry["subcategories"]:
+            entry["subcategories"].append(sub)
+
+    rows = sorted(categories.values(), key=lambda row: (-row["item_count"], row["name"].lower()))
+    return Response({
+        "section": {"id": section.id, "name": section.name},
+        "department": "Organic",
+        "categories": rows,
+        "total_items": sum(row["item_count"] for row in rows),
+    })
 
 
 OFFER_GROUPS = (

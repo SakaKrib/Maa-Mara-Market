@@ -283,9 +283,9 @@ def products_view(request):
     queryset = Item.objects.filter(in_stock__gt=0, available=True).select_related("offer")
 
     # --- Filtering ---
-    # Organic products only (Item.is_organic).
-    if str(request.GET.get("organic", "")).lower() in {"1", "true", "yes", "on"}:
-        queryset = queryset.filter(is_organic=True)
+    # Section by name (for example ?section=organic); the filter tree sends ids.
+    if section_name := request.GET.get("section_name"):
+        queryset = queryset.filter(section__name__iexact=section_name.strip())
 
     if vendor_id := request.GET.get("vendor_id"):
         if str(vendor_id).isdigit():

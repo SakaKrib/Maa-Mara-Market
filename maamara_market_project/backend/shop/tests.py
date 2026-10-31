@@ -252,16 +252,23 @@ class ProductFilterOrganicAndSearchTests(TestCase):
     def setUp(self):
         from django.contrib.auth import get_user_model
         from decimal import Decimal
-        from ReactSerializers.models import Item
+        from ReactSerializers.models import Category, Department, Item, Section, SubCategory
 
         user = get_user_model().objects.create_user(username="filter-user", password="x")
-        make = lambda name, **kw: Item.objects.create(
+        self.organic_section, _ = Section.objects.get_or_create(name="organic")
+        self.plain_section, _ = Section.objects.get_or_create(name="inorganic")
+        dept = Department.objects.create(name="Fresh Dept", section=self.organic_section)
+        self.fresh_cat = Category.objects.create(name="Fresh Fruit", department=dept)
+        self.fresh_sub = SubCategory.objects.create(name="Mangoes", category=self.fresh_cat)
+        dept2 = Department.objects.create(name="Home Dept", section=self.plain_section)
+        self.home_cat = Category.objects.create(name="Buckets", department=dept2)
+        make = lambda name, section, category, **kw: Item.objects.create(
             name=name, description="d", created_by=user, price=Decimal("100.00"),
-            available=True, in_stock=3, **kw,
+            available=True, in_stock=3, section=section, category=category, **kw,
         )
-        self.organic = make("Fresh organic mangoes", is_organic=True)
-        self.plain = make("Plastic bucket")
-        self.other_organic = make("Organic honey", is_organic=True)
+        self.organic = make("Fresh mangoes", self.organic_section, self.fresh_cat, subcategory=self.fresh_sub)
+        self.plain = make("Plastic bucket", self.plain_section, self.home_cat)
+        self.other_organic = make("Organic honey", self.organic_section, self.fresh_cat)
 
     def get(self, **params):
         from rest_framework.test import APIClient
@@ -270,14 +277,14 @@ class ProductFilterOrganicAndSearchTests(TestCase):
         self.assertEqual(res.status_code, 200)
         return {row["id"] for row in res.json()["results"]}
 
-    def test_organic_flag_filters_items(self):
-        self.assertEqual(self.get(organic="true"), {self.organic.id, self.other_organic.id})
+    def test_section_name_filters_organic_section(self):
+        self.assertEqual(self.get(section_name="organic"), {self.organic.id, self.other_organic.id})
+        self.assertEqual(self.get(sections=str(self.organic_section.id)), {self.organic.id, self.other_organic.id})
         self.assertEqual(len(self.get()), 3)
 
-    def test_search_term_combines_with_organic(self):
+    def test_search_term_combines_with_section(self):
         self.assertEqual(self.get(q="mangoes"), {self.organic.id})
-        self.assertEqual(self.get(q="organic honey", organic="true"), {self.organic.id, self.other_organic.id})
-        self.assertEqual(self.get(q="bucket", organic="true"), set())
+        self.assertEqual(self.get(q="bucket", section_name="organic"), set())
 
     def test_results_expose_offer_fields(self):
         from rest_framework.test import APIClient
@@ -285,3 +292,20 @@ class ProductFilterOrganicAndSearchTests(TestCase):
         row = APIClient().get("/filter-products/").json()["results"][0]
         self.assertIn("in_offer", row)
         self.assertIn("offer", row)
+
+    def test_homepage_organic_lists_only_organic_categories(self):
+        from rest_framework.test import APIClient
+
+        data = APIClient().get("/api/homepage-organic/").json()
+        self.assertEqual(data["department"], "Organic")
+        self.assertEqual([c["id"] for c in data["categories"]], [self.fresh_cat.id])
+        self.assertEqual(data["categories"][0]["subcategories"], ["Mangoes"])
+        self.assertEqual(data["total_items"], 2)
+
+    def test_homepage_collections_exclude_organic_items(self):
+        from rest_framework.test import APIClient
+
+        rows = APIClient().get("/api/homepage-collections/").json()
+        ids = {i["id"] for c in rows for i in c["items"]}
+        self.assertIn(self.plain.id, ids)
+        self.assertFalse(ids & {self.organic.id, self.other_organic.id})

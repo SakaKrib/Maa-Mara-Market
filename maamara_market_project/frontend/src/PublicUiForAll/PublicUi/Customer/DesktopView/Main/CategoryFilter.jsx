@@ -113,7 +113,7 @@ const SingleCategory = () => {
                     <h1 className="text-xl sm:text-2xl font-bold text-gray-900">
                       {searchTerm
                         ? `Search results for “${searchTerm}”`
-                        : selectedFilters.organic
+                        : (filters.sections || []).filter((section) => selectedFilters.sections.includes(section.id)).map((section) => String(section.name).toLowerCase()).join() === "organic"
                           ? "Organic products"
                           : categoryName || "Shop products"}
                     </h1>

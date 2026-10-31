@@ -699,7 +699,7 @@ class CategoryListWithItems(generics.ListAPIView):
         subcategory_qs = SubCategory.objects.prefetch_related(
             Prefetch(
                 'items',  # reverse relation from SubCategory to Item
-                queryset=Item.objects.filter(available=True),  # filter if needed
+                queryset=Item.objects.filter(available=True).exclude(section__name__iexact="organic"),  # organic has its own homepage container
                 to_attr='prefetched_items'  # attach prefetched items here
             )
         )

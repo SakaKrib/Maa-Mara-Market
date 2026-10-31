@@ -5,23 +5,6 @@ const truncateWords = (text, maxLength = 15) =>
 
 const FilterTree = ({ filters, selectedFilters, toggleFilter }) => (
   <div className="mm-filter-tree">
-    <section className="mm-filter-tree__group">
-      <h4 className="mm-filter-tree__section-title">Product type</h4>
-      <ul className="mm-filter-tree__options">
-        <li>
-          <label className="mm-filter-tree__option">
-            <input
-              className="mm-filter-tree__input"
-              type="checkbox"
-              checked={Boolean(selectedFilters.organic)}
-              onChange={() => toggleFilter("organic", !selectedFilters.organic)}
-            />
-            <span className="mm-filter-tree__name">Organic products only</span>
-          </label>
-        </li>
-      </ul>
-    </section>
-
     {filters.sections?.length > 0 && (
       <section className="mm-filter-tree__group">
         <h4 className="mm-filter-tree__section-title">Sections</h4>
