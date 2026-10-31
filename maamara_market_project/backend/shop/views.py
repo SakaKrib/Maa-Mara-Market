@@ -280,9 +280,38 @@ def products_view(request):
       - sortBy (Default | Product Name | Price | Brand)
       - perPage (default=10)
     """
-    queryset = Item.objects.filter(in_stock__gt=0, available=True)
+    queryset = Item.objects.filter(in_stock__gt=0, available=True).select_related("offer")
 
     # --- Filtering ---
+    # Organic products only (Item.is_organic).
+    if str(request.GET.get("organic", "")).lower() in {"1", "true", "yes", "on"}:
+        queryset = queryset.filter(is_organic=True)
+
+    if vendor_id := request.GET.get("vendor_id"):
+        if str(vendor_id).isdigit():
+            queryset = queryset.filter(vendor_id=int(vendor_id))
+
+    # Marketplace search: same word matching and relevance ranking as the
+    # search box, so the shop page can combine a search with the filters.
+    search_relevance_order = False
+    if search_query := " ".join((request.GET.get("q") or "").split()):
+        from functools import reduce
+        from core.SearchEngine import _search_fields_for_token, _relevance_expression
+
+        tokens = list(dict.fromkeys(token.lower() for token in search_query.split() if token))
+        if tokens:
+            search_filter = reduce(
+                lambda current, token: current | _search_fields_for_token(token),
+                tokens[1:],
+                _search_fields_for_token(tokens[0]),
+            )
+            queryset = (
+                queryset.filter(search_filter)
+                .annotate(search_relevance=_relevance_expression(search_query, tokens))
+                .distinct()
+            )
+            search_relevance_order = True
+
     if sections := request.GET.get("sections"):
         queryset = queryset.filter(section__id__in=sections.split(","))
 
@@ -346,6 +375,8 @@ def products_view(request):
         queryset = queryset.order_by("price")
     elif sort_by == "Brand":
         queryset = queryset.order_by("brand__name")
+    elif search_relevance_order:
+        queryset = queryset.order_by("-search_relevance", "-views", "-id")
     else:
         queryset = queryset.order_by("-id")  # newest first by default
 

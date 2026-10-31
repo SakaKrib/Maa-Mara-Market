@@ -246,3 +246,42 @@ class HomepageOffersTests(TestCase):
         from rest_framework.test import APIClient
 
         self.assertEqual(APIClient().get("/api/homepage-offers/", {"group": "nope"}).status_code, 400)
+
+
+class ProductFilterOrganicAndSearchTests(TestCase):
+    def setUp(self):
+        from django.contrib.auth import get_user_model
+        from decimal import Decimal
+        from ReactSerializers.models import Item
+
+        user = get_user_model().objects.create_user(username="filter-user", password="x")
+        make = lambda name, **kw: Item.objects.create(
+            name=name, description="d", created_by=user, price=Decimal("100.00"),
+            available=True, in_stock=3, **kw,
+        )
+        self.organic = make("Fresh organic mangoes", is_organic=True)
+        self.plain = make("Plastic bucket")
+        self.other_organic = make("Organic honey", is_organic=True)
+
+    def get(self, **params):
+        from rest_framework.test import APIClient
+
+        res = APIClient().get("/filter-products/", params)
+        self.assertEqual(res.status_code, 200)
+        return {row["id"] for row in res.json()["results"]}
+
+    def test_organic_flag_filters_items(self):
+        self.assertEqual(self.get(organic="true"), {self.organic.id, self.other_organic.id})
+        self.assertEqual(len(self.get()), 3)
+
+    def test_search_term_combines_with_organic(self):
+        self.assertEqual(self.get(q="mangoes"), {self.organic.id})
+        self.assertEqual(self.get(q="organic honey", organic="true"), {self.organic.id, self.other_organic.id})
+        self.assertEqual(self.get(q="bucket", organic="true"), set())
+
+    def test_results_expose_offer_fields(self):
+        from rest_framework.test import APIClient
+
+        row = APIClient().get("/filter-products/").json()["results"][0]
+        self.assertIn("in_offer", row)
+        self.assertIn("offer", row)

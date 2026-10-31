@@ -101,6 +101,7 @@ class ProductSerializer(serializers.ModelSerializer):
     review_count = serializers.SerializerMethodField()
     sizes = serializers.SerializerMethodField()
     colors = serializers.SerializerMethodField()
+    offer = serializers.SerializerMethodField()
 
     class Meta:
         model = Item
@@ -111,6 +112,8 @@ class ProductSerializer(serializers.ModelSerializer):
             "image",
             "price",
             "discount_price",
+            "in_offer",
+            "offer",
             "in_stock",
             "available",
             "returnable",
@@ -143,6 +146,19 @@ class ProductSerializer(serializers.ModelSerializer):
             "reviews",
             "review_count",
         ]
+
+    def get_offer(self, obj):
+        # Same shape as the discovery serializer so item cards can tell a
+        # running time-limited offer from an ordinary discount.
+        offer = getattr(obj, "offer", None)
+        if not offer:
+            return None
+        return {
+            "discount_percentage": offer.discount_percentage,
+            "start_date": offer.start_date,
+            "end_date": offer.end_date,
+            "final_price": offer.final_price,
+        }
 
     # --- Prices ---
     def get_final_price(self, obj):

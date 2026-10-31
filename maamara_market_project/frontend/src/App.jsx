@@ -138,7 +138,6 @@ import SalesReportPage from "./cmponents/VENDORPAGE/Home/Orders/SalesRegister";
 import SubcategoryProducts from "./PublicUiForAll/PublicUi/Customer/DesktopView/Header/subcategoryListItem";
 import LegalPage from "./PublicUiForAll/PublicUi/Legal/LegalPage";
 import OffersPage from "./PublicUiForAll/PublicUi/Customer/DesktopView/Main/Trending/OffersPage";
-import SearchResultsPage from "./PublicUiForAll/PublicUi/Navigations/Search/NavIcons/ResultsPage";
 import OrganicPage from "./PublicUiForAll/PublicUi/Customer/DesktopView/Main/Trending/OrganicAdvert/OrganicPage";
 import ResetPassword from "./cmponents/Auth/AdminLogin/ResetLink";
 import ForgotPassword from "./cmponents/Auth/AdminLogin/RecoverPassword";
@@ -275,7 +274,7 @@ function AppContent() {
 
               {/* Public customer pages outside the outlet tree still use the same storefront shell. */}
               <Route element={<CustomerShop />}>
-                <Route path="list" element={<SearchResultsPage />} />
+                <Route path="list" element={<SingleCategory />} />
                 <Route path="offers" element={<OffersPage />} />
                 <Route path="terms" element={<LegalPage kind="terms" />} />
                 <Route path="privacy" element={<LegalPage kind="privacy" />} />

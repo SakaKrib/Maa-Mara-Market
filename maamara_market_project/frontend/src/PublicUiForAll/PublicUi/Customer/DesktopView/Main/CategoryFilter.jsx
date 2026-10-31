@@ -6,11 +6,14 @@ import NativeAwareSelect from "../../../../../components/NativeAwareSelect";
 import CategoryFilterSidebar from "./CategoryFilter/CategoryFilterSidebar";
 import CategoryProductCard from "./CategoryFilter/CategoryProductCard";
 import ProductSkeleton from "./Trending/ProductSkelwton";
+import { useSearchParams } from "react-router-dom";
 import "../../../maamara.css";
 
 const SingleCategory = () => {
+  const [pageParams] = useSearchParams();
+  const categoryName = pageParams.get("category_name") || "";
   const {
-    filters, selectedFilters, setSelectedFilters, products, nextUrl, prevUrl,
+    searchTerm, filters, selectedFilters, setSelectedFilters, products, nextUrl, prevUrl,
     currentPage, totalCount, goToPage,
     loadingFilters, loadingProducts, error, fetchProducts, resetFilters, toggleFilter,
   } = useCategoryFilters();
@@ -107,7 +110,13 @@ const SingleCategory = () => {
                 <div className="flex flex-wrap items-center justify-between gap-3">
                   <div>
                     <p className="text-xs uppercase tracking-wide text-gray-500">Maa Mara Market</p>
-                    <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Shop products</h1>
+                    <h1 className="text-xl sm:text-2xl font-bold text-gray-900">
+                      {searchTerm
+                        ? `Search results for “${searchTerm}”`
+                        : selectedFilters.organic
+                          ? "Organic products"
+                          : categoryName || "Shop products"}
+                    </h1>
                     <p className="text-sm text-gray-500 mt-1">
                       {totalCount != null && totalCount > 0
                         ? `Showing ${((currentPage - 1) * Number(selectedFilters.perPage)) + 1}–${Math.min(currentPage * Number(selectedFilters.perPage), totalCount)} of ${totalCount} products`

@@ -8,6 +8,7 @@ import AdvertBlogs from "../../../../../cmponents/Hooks/BlogHooksNew/BlogAdvert"
 import MobileHomepageFlow from "./MobileHomepageFlow";
 import HomepageBrands from "./Trending/HomepageBrands";
 import HomepageOfferRail from "./Trending/HomepageOfferRail";
+import HomepageOrganicRail from "./Trending/HomepageOrganicRail";
 
 const Main = () => (
   <main className="mm-page">
@@ -28,6 +29,7 @@ const Main = () => (
       <AdvertBlogs />
       <HomepageOfferRail groupKey="monthly" />
     </div>
+    <HomepageOrganicRail />
     <MarketplaceDiscovery />
     <HomepageOfferRail groupKey="long" />
     <HomepageBrands />

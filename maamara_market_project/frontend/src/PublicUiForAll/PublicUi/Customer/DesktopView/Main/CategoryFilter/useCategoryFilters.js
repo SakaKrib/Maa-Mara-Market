@@ -1,10 +1,14 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import api from "../../../../../../Services/Api";
 const endpoint = (path) => path;
 
-const buildProductsUrl = (selectedFilters, page = 1) => {
+const buildProductsUrl = (selectedFilters, page = 1, fixed = {}) => {
   const params = new URLSearchParams();
+  // Search term and vendor come from the page URL and survive "Clear filters".
+  if (fixed.q) params.set("q", fixed.q);
+  if (fixed.vendorId) params.set("vendor_id", fixed.vendorId);
+  if (selectedFilters.organic) params.set("organic", "true");
   const addList = (key, values) => {
     if (values?.length) params.set(key, values.join(","));
   };
@@ -27,7 +31,11 @@ const buildProductsUrl = (selectedFilters, page = 1) => {
 
 const useCategoryFilters = () => {
   const [searchParams] = useSearchParams();
-  const categoryFromUrl = Number(searchParams.get("category"));
+  const categoryFromUrl = Number(searchParams.get("category") || searchParams.get("category_id"));
+  const organicFromUrl = ["1", "true", "yes"].includes(String(searchParams.get("organic") || "").toLowerCase());
+  const searchTerm = (searchParams.get("name") || searchParams.get("q") || "").trim();
+  const vendorId = /^\d+$/.test(searchParams.get("vendor_id") || "") ? searchParams.get("vendor_id") : "";
+  const fixedParams = useMemo(() => ({ q: searchTerm, vendorId }), [searchTerm, vendorId]);
   const initialCategories = Number.isFinite(categoryFromUrl) && categoryFromUrl > 0 ? [categoryFromUrl] : [];
 
   const [filters, setFilters] = useState(null);
@@ -37,12 +45,16 @@ const useCategoryFilters = () => {
     categories: initialCategories,
     subcategories: [],
     brands: [],
+    organic: organicFromUrl,
     attribute: "",
     color: "",
     priceRange: [0, 150000],
     sortBy: "Default",
     perPage: 10,
   });
+  useEffect(() => {
+    setSelectedFilters((prev) => (prev.organic === organicFromUrl ? prev : { ...prev, organic: organicFromUrl }));
+  }, [organicFromUrl]);
   useEffect(() => {
     setSelectedFilters((prev) => {
       const nextCategories = Number.isFinite(categoryFromUrl) && categoryFromUrl > 0 ? [categoryFromUrl] : [];
@@ -150,18 +162,18 @@ const useCategoryFilters = () => {
 
   useEffect(() => {
     const controller = new AbortController();
-    fetchProducts(buildProductsUrl(selectedFilters), controller.signal);
+    fetchProducts(buildProductsUrl(selectedFilters, 1, fixedParams), controller.signal);
     return () => controller.abort();
-  }, [selectedFilters, fetchProducts]);
+  }, [selectedFilters, fixedParams, fetchProducts]);
 
   const goToPage = useCallback((page) => {
     if (!Number.isInteger(page) || page < 1) return;
-    fetchProducts(buildProductsUrl(selectedFilters, page));
-  }, [fetchProducts, selectedFilters]);
+    fetchProducts(buildProductsUrl(selectedFilters, page, fixedParams));
+  }, [fetchProducts, selectedFilters, fixedParams]);
 
   const toggleFilter = useCallback((group, value) => {
     setSelectedFilters((prev) => {
-      if (group === "color" || group === "attribute" || group === "priceRange") {
+      if (group === "color" || group === "attribute" || group === "priceRange" || group === "organic") {
         return { ...prev, [group]: value };
       }
 
@@ -184,6 +196,7 @@ const useCategoryFilters = () => {
       categories: [],
       subcategories: [],
       brands: [],
+      organic: false,
       attribute: "",
       color: "",
       priceRange: [min, max],
@@ -193,6 +206,8 @@ const useCategoryFilters = () => {
   }, [filters]);
 
   return {
+    searchTerm,
+    vendorId,
     filters,
     selectedFilters,
     setSelectedFilters,
