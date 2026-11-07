@@ -3,6 +3,7 @@ from datetime import timedelta
 from ipaddress import ip_address
 
 import requests
+from django.db import transaction
 from django.db.models import Count
 from django.utils import timezone
 from rest_framework.decorators import api_view, permission_classes
@@ -14,6 +15,29 @@ from .models import TrafficEvent, ItemView
 
 
 _GEO_CACHE = {}
+
+def _visitor_identity_key(visitor_id=None, user_id=None, session_id=None):
+    """Prefer an account identity; otherwise retain the anonymous browser identity."""
+    if user_id:
+        return "user:" + str(user_id)
+    if visitor_id:
+        return "visitor:" + str(visitor_id)
+    if session_id:
+        return "session:" + str(session_id)
+    return None
+
+
+def _landing_page_counts(page_views):
+    """Count the first recorded page in each session, independent of start markers."""
+    first_pages = {}
+    rows = page_views.order_by("created_at", "id").values("id", "path", "session_id")
+    for row in rows.iterator():
+        session_key = row["session_id"] or ("event:" + str(row["id"]))
+        first_pages.setdefault(session_key, row["path"])
+    counts = Counter(first_pages.values())
+    return [{"path": path, "count": count} for path, count in counts.most_common(20)]
+
+
 
 
 def _client_ip(request):
@@ -127,15 +151,14 @@ def traffic_analytics(request):
     previous_count = previous_events.count()
     growth = round(((current_count - previous_count) / previous_count) * 100, 1) if previous_count else (100.0 if current_count else 0.0)
 
-    visitor_rows = events.values("visitor_id", "user_id").distinct()
+    visitor_rows = events.values("visitor_id", "user_id", "session_id").distinct()
     unique_visitor_keys = set()
     for row in visitor_rows:
-        key = row["visitor_id"] or (f"user:{row['user_id']}" if row["user_id"] else None)
+        key = _visitor_identity_key(row["visitor_id"], row["user_id"], row["session_id"])
         if key:
             unique_visitor_keys.add(key)
 
     sessions = events.exclude(session_id="").values("session_id").distinct().count()
-    landing_events = TrafficEvent.objects.filter(event_type="session_start", created_at__gte=start)
 
     def grouped(field, limit=10, queryset=None):
         queryset = queryset or events
@@ -145,7 +168,7 @@ def traffic_analytics(request):
     source_data = grouped("source")
     country_data = grouped("country_code")
     device_data = grouped("device_type")
-    page_data = grouped("path", queryset=landing_events)
+    page_data = _landing_page_counts(events)
 
     trend_counter = Counter()
     for value in events.values_list("created_at", flat=True):
@@ -170,6 +193,28 @@ def traffic_analytics(request):
     })
 
 
+@api_view(["DELETE"])
+@permission_classes([IsAdminUser])
+def clear_inbound_traffic(request):
+    """Reset first-party inbound and product-view analytics without touching commerce data."""
+    if request.data.get("confirmation") != "CLEAR INBOUND TRAFFIC":
+        return Response(
+            {"error": "Confirmation phrase did not match. No analytics were deleted."},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+    with transaction.atomic():
+        traffic_deleted, _ = TrafficEvent.objects.all().delete()
+        item_views_deleted, _ = ItemView.objects.all().delete()
+
+    return Response({
+        "cleared": True,
+        "traffic_events_deleted": traffic_deleted,
+        "product_views_deleted": item_views_deleted,
+        "message": "Inbound traffic analytics have been reset.",
+    })
+
+
 @api_view(["GET"])
 @permission_classes([IsAdminUser])
 def inbound_traffic_analytics(request):
@@ -188,8 +233,8 @@ def inbound_traffic_analytics(request):
     event_rows = events.filter(event_type="event")
 
     visitor_keys = set()
-    for row in page_views.values("visitor_id", "user_id"):
-        key = row["visitor_id"] or (f"user:{row['user_id']}" if row["user_id"] else None)
+    for row in page_views.values("visitor_id", "user_id", "session_id"):
+        key = _visitor_identity_key(row["visitor_id"], row["user_id"], row["session_id"])
         if key:
             visitor_keys.add(key)
 
@@ -246,7 +291,7 @@ def inbound_traffic_analytics(request):
         qs = page_views.filter(path__icontains=predicate)
         keys = set()
         for row in qs.values("visitor_id", "user_id", "session_id"):
-            key = row["visitor_id"] or (f"user:{row['user_id']}" if row["user_id"] else None) or row["session_id"]
+            key = _visitor_identity_key(row["visitor_id"], row["user_id"], row["session_id"])
             if key:
                 keys.add(key)
         return len(keys)
@@ -268,13 +313,8 @@ def inbound_traffic_analytics(request):
         visitor_id = row["visitor_id"] or ""
         user_id = row["user_id"]
         session_id = row["session_id"] or ""
-        if visitor_id:
-            visitor_key = f"visitor:{visitor_id}"
-        elif user_id:
-            visitor_key = f"user:{user_id}"
-        elif session_id:
-            visitor_key = f"session:{session_id}"
-        else:
+        visitor_key = _visitor_identity_key(visitor_id, user_id, session_id)
+        if not visitor_key:
             continue
         if visitor_key not in recent_visitor_groups:
             recent_visitor_groups[visitor_key] = {
@@ -288,10 +328,10 @@ def inbound_traffic_analytics(request):
 
     recent_visitors = []
     for visitor_key, identity in recent_visitor_groups.items():
-        if identity["visitor_id"]:
-            visitor_events = events.filter(visitor_id=identity["visitor_id"])
-        elif identity["user_id"]:
+        if identity["user_id"]:
             visitor_events = events.filter(user_id=identity["user_id"])
+        elif identity["visitor_id"]:
+            visitor_events = events.filter(visitor_id=identity["visitor_id"])
         else:
             visitor_events = events.filter(session_id=identity["latest_session_id"])
 
@@ -300,7 +340,7 @@ def inbound_traffic_analytics(request):
                 "path", "created_at", "event_type", "source", "medium", "campaign",
                 "referrer", "country_code", "country_name", "device_type", "session_id",
                 "user_id", "user__username", "user__email",
-            )[:200]
+            )[:500]
         )
         if not rows:
             continue
@@ -322,9 +362,9 @@ def inbound_traffic_analytics(request):
             ),
             "started_at": first["created_at"],
             "last_seen": last["created_at"],
-            "page_count": len(page_rows),
-            "event_count": len(visible_activity),
-            "session_count": len(visitor_sessions),
+            "page_count": visitor_events.filter(event_type="page_view").count(),
+            "event_count": visitor_events.exclude(event_type="session_start").count(),
+            "session_count": visitor_events.exclude(session_id__isnull=True).exclude(session_id="").values("session_id").distinct().count(),
             "country_code": last["country_code"] or first["country_code"] or "",
             "country_name": last["country_name"] or first["country_name"] or last["country_code"] or "Unknown",
             "source": first["source"] or "direct",
