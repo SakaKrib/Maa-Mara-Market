@@ -760,6 +760,30 @@ jobs:
           FIREBASE_IOS_CONFIG: ${{ secrets.FIREBASE_IOS_CONFIG }}
         run: |
           npx cap add ios
+          # Sign in with Apple requires the App ID entitlement. The App ID must
+          # also have Sign in with Apple enabled in the Apple Developer portal.
+          cat > ios/App/App/App.entitlements <<'PLIST'
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0">
+          <dict>
+              <key>com.apple.developer.applesignin</key>
+              <array>
+                  <string>Default</string>
+              </array>
+          </dict>
+          </plist>
+          PLIST
+          ruby - <<'RUBY'
+          require 'xcodeproj'
+          project = Xcodeproj::Project.open('ios/App/App.xcodeproj')
+          target = project.targets.find { |entry| entry.name == 'App' }
+          raise 'App target was not found in the generated Xcode project' unless target
+          target.build_configurations.each do |configuration|
+            configuration.build_settings['CODE_SIGN_ENTITLEMENTS'] = 'App/App.entitlements'
+          end
+          project.save
+          RUBY
           if [ -n "$FIREBASE_IOS_CONFIG" ]; then
             printf '%s' "$FIREBASE_IOS_CONFIG" > ios/App/App/GoogleService-Info.plist
             python3 - <<'PY'

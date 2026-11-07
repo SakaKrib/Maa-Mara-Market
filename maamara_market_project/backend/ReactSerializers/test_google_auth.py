@@ -80,6 +80,15 @@ class GoogleIdentityAuthenticationTests(TestCase):
         self.assertFalse(SocialAccount.objects.filter(provider="google", user=user).exists())
 
     @patch("ReactSerializers.google_auth.id_token.verify_oauth2_token")
+    def test_invalid_google_signature_is_rejected(self, verify):
+        from rest_framework.exceptions import AuthenticationFailed
+        from ReactSerializers.google_auth import verify_google_credential
+
+        verify.side_effect = ValueError("invalid signature")
+        with self.assertRaises(AuthenticationFailed):
+            verify_google_credential("invalid-google-token")
+
+    @patch("ReactSerializers.google_auth.id_token.verify_oauth2_token")
     def test_unverified_google_email_is_rejected(self, verify):
         from rest_framework.exceptions import AuthenticationFailed
         from ReactSerializers.google_auth import verify_google_credential

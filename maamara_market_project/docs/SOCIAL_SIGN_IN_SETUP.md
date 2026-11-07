@@ -37,7 +37,7 @@ With the shared-hostname deployment prefix, the callback is:
 
 For a root deployment, omit `/maamara`. The configured value must exactly match the backend's expected URL and Apple's registered Return URL. Apple is reported as available only when its required server configuration is complete.
 
-Website Apple sign-in uses a Django-owned authorization-code flow with short-lived HttpOnly state/nonce cookies, server-side code exchange and identity-token verification. Native iOS uses Apple's native authorization sheet and posts its identity token plus nonce to Django. Returning users are resolved by Apple's stable subject; first-login email/name are stored when supplied, including private relay addresses.
+Enable the **Sign in with Apple** capability for the iOS App ID in the Apple Developer portal and include it in the provisioning profile. Website Apple sign-in uses a Django-owned authorization-code flow with short-lived HttpOnly state/nonce cookies, server-side code exchange and identity-token verification. Native iOS uses Apple's native authorization sheet and posts its identity token plus nonce to Django. Returning users are resolved by Apple's stable subject; first-login email/name are stored when supplied, including private relay addresses.
 
 ## Security and sessions
 

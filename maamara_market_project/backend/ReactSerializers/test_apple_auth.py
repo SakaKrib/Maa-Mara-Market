@@ -2,6 +2,7 @@ from urllib.parse import parse_qs, urlsplit
 from unittest.mock import patch
 
 from allauth.socialaccount.models import SocialAccount
+from django.conf import settings
 from django.contrib.auth.models import User
 from django.test import TestCase, override_settings
 
@@ -21,7 +22,16 @@ APPLE_SETTINGS = {
 }
 
 
-@override_settings(**APPLE_SETTINGS)
+@override_settings(
+    **APPLE_SETTINGS,
+    REST_FRAMEWORK={
+        **settings.REST_FRAMEWORK,
+        "DEFAULT_THROTTLE_RATES": {
+            **settings.REST_FRAMEWORK["DEFAULT_THROTTLE_RATES"],
+            "social_auth": "1000/min",
+        },
+    },
+)
 class AppleIdentityAuthenticationTests(TestCase):
     def setUp(self):
         self.claims = {
