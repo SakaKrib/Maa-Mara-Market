@@ -8,6 +8,7 @@ from rest_framework_simplejwt.views import (
     TokenRefreshView,
 )
 from .users import *
+from .google_auth_views import GoogleLoginView
 from .vendors import *
 from .views import admin_item_performance
 from .item_insights import item_insights, item_ai_suggestions
@@ -39,6 +40,7 @@ urlpatterns = [
 
 
     path('api/login/', login_view, name='login'),
+    path('api/google/login/', GoogleLoginView.as_view(), name='google-login'),
     path('api/get-csrf-token/', get_csrf_token, name='get_csrf_token'),
     path('api/profile/', ProfileView.as_view(), name='profile'),
     path('api/check-auth/', HybridCheckAuthView.as_view()),
