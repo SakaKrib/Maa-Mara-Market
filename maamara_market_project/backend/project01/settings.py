@@ -284,7 +284,11 @@ if APPLE_PRIVATE_KEY_PATH:
         apple_key_path = BASE_DIR / apple_key_path
     if apple_key_path.is_file():
         APPLE_PRIVATE_KEY = apple_key_path.read_text(encoding="utf-8")
-APPLE_REDIRECT_URI = get_env_value("APPLE_REDIRECT_URI", f"{BACKEND_PUBLIC_URL}{PUBLIC_PATH_PREFIX.rstrip(chr(47))}/accounts/apple/login/callback/")
+APPLE_CALLBACK_PREFIX = "" if PUBLIC_PATH_PREFIX == "/" else PUBLIC_PATH_PREFIX
+APPLE_REDIRECT_URI = get_env_value(
+    "APPLE_REDIRECT_URI",
+    f"{BACKEND_PUBLIC_URL}{APPLE_CALLBACK_PREFIX}/accounts/apple/login/callback/",
+)
 APPLE_SIGN_IN_ENABLED = bool(APPLE_CLIENT_ID and APPLE_TEAM_ID and APPLE_KEY_ID and APPLE_PRIVATE_KEY)
 APPLE_APPS = (
     [
