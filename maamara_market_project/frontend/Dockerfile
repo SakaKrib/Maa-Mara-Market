@@ -6,6 +6,13 @@ COPY package*.json ./
 RUN npm ci
 
 COPY . .
+
+# Vite embeds these values into the static production bundle at build time.
+ARG VITE_PUBLIC_BASE_PATH=/maamara/
+ARG VITE_ROUTER_BASENAME=/maamara
+ENV VITE_PUBLIC_BASE_PATH=${VITE_PUBLIC_BASE_PATH}
+ENV VITE_ROUTER_BASENAME=${VITE_ROUTER_BASENAME}
+
 RUN npm run build
 
 FROM nginx:1.29-alpine
