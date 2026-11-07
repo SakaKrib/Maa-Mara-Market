@@ -10,7 +10,7 @@
     "preview": "vite preview",
     "build:mobile": "vite build --mode mobile",
     "prebuild:mobile": "npm run prepare:google-login",
-    "prepare:google-login": "node -e \"const fs=require('fs');const p=JSON.parse(fs.readFileSync('package.json','utf8'));p.dependencies=p.dependencies||{};p.dependencies['@capgo/capacitor-social-login']='^7';fs.writeFileSync('package.json',JSON.stringify(p,null,2));process.exit(fs.existsSync('node_modules/@capgo/capacitor-social-login/package.json')?0:1)\" || npm install --no-save --package-lock=false @capgo/capacitor-social-login@^7",
+    "prepare:google-login": "node -e \"const fs=require('fs');const p=JSON.parse(fs.readFileSync('package.json','utf8'));p.dependencies=p.dependencies||{};p.dependencies['@capgo/capacitor-social-login']='^7';fs.writeFileSync('package.json',JSON.stringify(p,null,2));process.exit(fs.existsSync('node_modules/@capgo/capacitor-social-login/package.json')?0:1)\" || npm install --save @capgo/capacitor-social-login@^7",
     "predev": "npm run prepare:google-login",
     "prebuild": "npm run prepare:google-login"
   },
