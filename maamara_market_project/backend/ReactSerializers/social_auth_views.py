@@ -12,7 +12,7 @@ from rest_framework import status
 from rest_framework.exceptions import APIException, AuthenticationFailed
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
-from rest_framework.throttling import AnonRateThrottle
+from rest_framework.throttling import ScopedRateThrottle
 from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
 
@@ -99,7 +99,8 @@ class GoogleLoginView(APIView):
     """Exchange a verified Google ID token for Maa Mara's own JWT cookies."""
     authentication_classes = []
     permission_classes = [AllowAny]
-    throttle_classes = [AnonRateThrottle]
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = "social_auth"
 
     def post(self, request):
         credential = request.data.get("credential") or request.data.get("id_token")
@@ -145,6 +146,8 @@ class AppleLoginStartView(APIView):
     """Start the Apple website flow with short-lived, HttpOnly state and nonce cookies."""
     authentication_classes = []
     permission_classes = [AllowAny]
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = "social_auth"
 
     def get(self, request):
         if not apple_configuration_is_ready():
@@ -182,7 +185,8 @@ class AppleLoginCallbackView(APIView):
     """Validate Apple's website callback, exchange its code, verify the token and issue Maa Mara cookies."""
     authentication_classes = []
     permission_classes = [AllowAny]
-    throttle_classes = [AnonRateThrottle]
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = "social_auth"
 
     def post(self, request):
         state = str(request.data.get("state") or "")
@@ -242,7 +246,8 @@ class AppleLoginView(APIView):
     """Verify a native iOS Apple identity token and issue Maa Mara JWT cookies."""
     authentication_classes = []
     permission_classes = [AllowAny]
-    throttle_classes = [AnonRateThrottle]
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = "social_auth"
 
     def post(self, request):
         if not apple_configuration_is_ready():

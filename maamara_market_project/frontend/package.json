@@ -9,7 +9,10 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "build:mobile": "vite build --mode mobile",
-    "prebuild:mobile": "npm run prepare:google-login"
+    "prebuild:mobile": "npm run prepare:google-login",
+    "prepare:google-login": "npm install --no-save --package-lock=false @capgo/capacitor-social-login@^7",
+    "predev": "npm run prepare:google-login",
+    "prebuild": "npm run prepare:google-login"
   },
   "dependencies": {
     "@capacitor/app": "^7.1.2",
