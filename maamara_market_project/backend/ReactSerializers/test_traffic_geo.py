@@ -131,6 +131,12 @@ class InboundTrafficTests(TestCase):
             user=user, visitor_id="browser-two", session_id="account-session-two",
             event_type="page_view", path="/products",
         )
+        # A later anonymous visit from a browser already associated with this
+        # single account must remain part of the same account journey.
+        TrafficEvent.objects.create(
+            visitor_id="browser-one", session_id="account-session-three",
+            event_type="page_view", path="/offers",
+        )
 
         admin = APIClient()
         admin.force_authenticate(self.admin)
@@ -140,13 +146,13 @@ class InboundTrafficTests(TestCase):
         self.assertEqual(len(body["recent_visitors"]), 1)
         visitor = body["recent_visitors"][0]
         self.assertEqual(visitor["visitor_key"], f"user:{user.pk}")
-        self.assertEqual(visitor["session_count"], 2)
-        self.assertEqual(visitor["page_count"], 2)
+        self.assertEqual(visitor["session_count"], 3)
+        self.assertEqual(visitor["page_count"], 3)
 
         detail = admin.get(f"/api/admin/inbound-traffic/visitors/user:{user.pk}/")
         self.assertEqual(detail.status_code, 200)
-        self.assertEqual(detail.json()["session_count"], 2)
-        self.assertEqual(len(detail.json()["activity"]), 2)
+        self.assertEqual(detail.json()["session_count"], 3)
+        self.assertEqual(len(detail.json()["activity"]), 3)
 
     def test_clear_inbound_traffic_requires_exact_confirmation(self):
         TrafficEvent.objects.create(
