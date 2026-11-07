@@ -52,8 +52,12 @@ export const resolveApiAssetUrl = (value) => {
 
     // Preserve MaaMara's public path namespace for root-relative Django media.
     // This prevents media requests from falling through to Saka Krib.
-    if (assetUrl.pathname.startsWith("/media/")) {
-      const normalizedPath = assetUrl.pathname.replace(/^\/(?:media\/)+/i, "/media/");
+    const alreadyPrefixedMedia = apiBasePath && assetUrl.pathname.startsWith(`${apiBasePath}/media/`);
+    if (assetUrl.pathname.startsWith("/media/") || alreadyPrefixedMedia) {
+      const mediaPath = alreadyPrefixedMedia
+        ? assetUrl.pathname.slice(apiBasePath.length)
+        : assetUrl.pathname;
+      const normalizedPath = mediaPath.replace(/^\/(?:media\/)+/i, "/media/");
       return new URL(
         `${apiBasePath}${normalizedPath}${assetUrl.search}${assetUrl.hash}`,
         apiOrigin.origin
