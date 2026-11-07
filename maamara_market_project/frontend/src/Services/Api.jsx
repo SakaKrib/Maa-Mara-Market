@@ -47,16 +47,16 @@ export const resolveApiAssetUrl = (value) => {
 
   try {
     const apiOrigin = new URL(baseURL);
-    const assetUrl = new URL(rawValue, `${apiOrigin.origin}/`);
+    const apiBasePath = apiOrigin.pathname.replace(/\/+$/, "");
+    const assetUrl = new URL(rawValue, `${apiOrigin.origin}${apiBasePath}/`);
 
-    // Django can return absolute media URLs based on the request Host header.
-    // Resolve API-owned media against the configured API origin so bundled
-    // mobile builds don't accidentally request media from their local origin.
+    // Preserve MaaMara's public path namespace for root-relative Django media.
+    // This prevents media requests from falling through to Saka Krib.
     if (assetUrl.pathname.startsWith("/media/")) {
       const normalizedPath = assetUrl.pathname.replace(/^\/(?:media\/)+/i, "/media/");
       return new URL(
-        `${normalizedPath}${assetUrl.search}${assetUrl.hash}`,
-        `${apiOrigin.origin}/`
+        `${apiBasePath}${normalizedPath}${assetUrl.search}${assetUrl.hash}`,
+        apiOrigin.origin
       ).toString();
     }
 
