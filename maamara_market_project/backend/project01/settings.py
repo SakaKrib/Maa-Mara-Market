@@ -62,7 +62,7 @@ DEBUG = env.bool("DEBUG", default=False)
 
 DEFAULT_PUBLIC_BASE_URL = get_env_value(
     "MAAMARAMARKET_PUBLIC_BASE_URL",
-    "https://opondo-thinkpad-t14-gen-1.tail34bca9.ts.net",
+    "http://localhost:5173",
 )
 FRONTEND_URL = get_env_value(
     "FRONTEND_URL",
