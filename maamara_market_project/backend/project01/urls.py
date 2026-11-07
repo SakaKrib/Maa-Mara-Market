@@ -28,15 +28,31 @@ def index_view(request):
 
 
 def auth_provider_status(request):
-    """Expose provider availability only; never return OAuth credentials."""
+    """Expose provider readiness only; never return OAuth credentials."""
     configured_google_apps = settings.SOCIALACCOUNT_PROVIDERS.get("google", {}).get("APPS", [])
-    google_enabled = any(app.get("client_id") and app.get("secret") for app in configured_google_apps)
-    if not google_enabled:
-        try:
-            google_enabled = SocialApp.objects.filter(provider="google").exists()
-        except Exception:
-            google_enabled = False
-    return JsonResponse({"google": bool(google_enabled), "apple": bool(getattr(settings, "APPLE_SIGN_IN_ENABLED", False))})
+    settings_google_ready = any(
+        app.get("client_id") and app.get("secret")
+        for app in configured_google_apps
+    )
+    google_database_apps = 0
+    try:
+        google_database_apps = SocialApp.objects.filter(provider="google").count()
+    except Exception:
+        # A database outage must not make an unverified provider appear ready.
+        google_database_apps = 0
+
+    # django-allauth cannot safely choose between duplicate settings- and
+    # database-backed SocialApps for the same provider. Fail closed instead.
+    google_configuration_conflict = bool(settings_google_ready and google_database_apps)
+    google_enabled = (
+        settings_google_ready if not google_database_apps else google_database_apps == 1
+    ) and not google_configuration_conflict
+
+    return JsonResponse({
+        "google": bool(google_enabled),
+        "google_configuration_conflict": google_configuration_conflict,
+        "apple": bool(getattr(settings, "APPLE_SIGN_IN_ENABLED", False)),
+    })
 
 
 urlpatterns = [
