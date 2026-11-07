@@ -40,10 +40,13 @@ services:
       POSTGRES_HOST: db
       POSTGRES_PORT: "5432"
       REDIS_URL: redis://redis:6379/0
+      MAAMARAMARKET_PUBLIC_BASE_URL: ${MAAMARAMARKET_PUBLIC_BASE_URL:-http://localhost:5173}
+      MAAMARAMARKET_PUBLIC_FRONTEND_URL: ${MAAMARAMARKET_PUBLIC_FRONTEND_URL:-${MAAMARAMARKET_PUBLIC_BASE_URL:-http://localhost:5173}}
+      BACKEND_PUBLIC_URL: ${BACKEND_PUBLIC_URL:-${MAAMARAMARKET_PUBLIC_BASE_URL:-http://localhost:5173}}
       FRONTEND_URL: ${FRONTEND_URL:-${MAAMARAMARKET_PUBLIC_FRONTEND_URL:-${MAAMARAMARKET_PUBLIC_BASE_URL:-http://localhost:5173}}}
-      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-https://opondo-thinkpad-t14-gen-1.tail34bca9.ts.net,http://localhost:5173}
-      CSRF_TRUSTED_ORIGINS: ${CSRF_TRUSTED_ORIGINS:-https://opondo-thinkpad-t14-gen-1.tail34bca9.ts.net,http://localhost:5173}
-      ALLOWED_HOSTS: "${ALLOWED_HOSTS:-127.0.0.1,localhost,backend},opondo-thinkpad-t14-gen-1.tail34bca9.ts.net"
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://localhost:5173}
+      CSRF_TRUSTED_ORIGINS: ${CSRF_TRUSTED_ORIGINS:-http://localhost:5173}
+      ALLOWED_HOSTS: ${ALLOWED_HOSTS:-127.0.0.1,localhost,backend}
     ports:
       - "8000:8000"
     volumes:
@@ -75,10 +78,13 @@ services:
       POSTGRES_HOST: db
       POSTGRES_PORT: "5432"
       REDIS_URL: redis://redis:6379/0
-      FRONTEND_URL: ${MAAMARAMARKET_PUBLIC_FRONTEND_URL:-https://opondo-thinkpad-t14-gen-1.tail34bca9.ts.net}
-      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-https://opondo-thinkpad-t14-gen-1.tail34bca9.ts.net,http://localhost:5173}
-      CSRF_TRUSTED_ORIGINS: ${CSRF_TRUSTED_ORIGINS:-https://opondo-thinkpad-t14-gen-1.tail34bca9.ts.net,http://localhost:5173}
-      ALLOWED_HOSTS: "${ALLOWED_HOSTS:-127.0.0.1,localhost,backend},opondo-thinkpad-t14-gen-1.tail34bca9.ts.net"
+      MAAMARAMARKET_PUBLIC_BASE_URL: ${MAAMARAMARKET_PUBLIC_BASE_URL:-http://localhost:5173}
+      MAAMARAMARKET_PUBLIC_FRONTEND_URL: ${MAAMARAMARKET_PUBLIC_FRONTEND_URL:-${MAAMARAMARKET_PUBLIC_BASE_URL:-http://localhost:5173}}
+      BACKEND_PUBLIC_URL: ${BACKEND_PUBLIC_URL:-${MAAMARAMARKET_PUBLIC_BASE_URL:-http://localhost:5173}}
+      FRONTEND_URL: ${FRONTEND_URL:-${MAAMARAMARKET_PUBLIC_FRONTEND_URL:-${MAAMARAMARKET_PUBLIC_BASE_URL:-http://localhost:5173}}}
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://localhost:5173}
+      CSRF_TRUSTED_ORIGINS: ${CSRF_TRUSTED_ORIGINS:-http://localhost:5173}
+      ALLOWED_HOSTS: ${ALLOWED_HOSTS:-127.0.0.1,localhost,backend}
     volumes:
       - ./backend:/app
     command: celery -A project01 worker --loglevel=info
@@ -103,10 +109,13 @@ services:
       POSTGRES_HOST: db
       POSTGRES_PORT: "5432"
       REDIS_URL: redis://redis:6379/0
-      FRONTEND_URL: ${MAAMARAMARKET_PUBLIC_FRONTEND_URL:-https://opondo-thinkpad-t14-gen-1.tail34bca9.ts.net}
-      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-https://opondo-thinkpad-t14-gen-1.tail34bca9.ts.net,http://localhost:5173}
-      CSRF_TRUSTED_ORIGINS: ${CSRF_TRUSTED_ORIGINS:-https://opondo-thinkpad-t14-gen-1.tail34bca9.ts.net,http://localhost:5173}
-      ALLOWED_HOSTS: "${ALLOWED_HOSTS:-127.0.0.1,localhost,backend},opondo-thinkpad-t14-gen-1.tail34bca9.ts.net"
+      MAAMARAMARKET_PUBLIC_BASE_URL: ${MAAMARAMARKET_PUBLIC_BASE_URL:-http://localhost:5173}
+      MAAMARAMARKET_PUBLIC_FRONTEND_URL: ${MAAMARAMARKET_PUBLIC_FRONTEND_URL:-${MAAMARAMARKET_PUBLIC_BASE_URL:-http://localhost:5173}}
+      BACKEND_PUBLIC_URL: ${BACKEND_PUBLIC_URL:-${MAAMARAMARKET_PUBLIC_BASE_URL:-http://localhost:5173}}
+      FRONTEND_URL: ${FRONTEND_URL:-${MAAMARAMARKET_PUBLIC_FRONTEND_URL:-${MAAMARAMARKET_PUBLIC_BASE_URL:-http://localhost:5173}}}
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://localhost:5173}
+      CSRF_TRUSTED_ORIGINS: ${CSRF_TRUSTED_ORIGINS:-http://localhost:5173}
+      ALLOWED_HOSTS: ${ALLOWED_HOSTS:-127.0.0.1,localhost,backend}
     volumes:
       - ./backend:/app
       - celerybeat_data:/var/lib/celerybeat
