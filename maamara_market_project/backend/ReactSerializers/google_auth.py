@@ -142,6 +142,21 @@ def authenticate_google_credential(credential: str) -> User:
     if not user.is_active:
         raise exceptions.AuthenticationFailed("This account is inactive.")
 
+    # Normalize an existing case-insensitive email match and fill profile
+    # names only when the local account has not supplied them yet.
+    user_updates = []
+    if not user.email:
+        user.email = email
+        user_updates.append("email")
+    if not user.first_name and claims.get("given_name"):
+        user.first_name = str(claims["given_name"])[:150]
+        user_updates.append("first_name")
+    if not user.last_name and claims.get("family_name"):
+        user.last_name = str(claims["family_name"])[:150]
+        user_updates.append("last_name")
+    if user_updates:
+        user.save(update_fields=user_updates)
+
     # Keep the verified email recorded in django-allauth so existing account
     # and email-management screens continue to work after moving off redirects.
     email_address, _ = EmailAddress.objects.get_or_create(
