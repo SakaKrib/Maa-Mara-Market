@@ -58,7 +58,7 @@ const AnalyticsTracker = () => {
 
   useEffect(() => {
     const recordRoute = async () => {
-      const routeKey = `${location.pathname}${location.search}`;
+      const routeKey = location.pathname || "/";
 
       // React StrictMode can run effects twice during development. Do not
       // turn one browser navigation into two analytics page views.
@@ -108,7 +108,7 @@ const AnalyticsTracker = () => {
     };
 
     recordRoute();
-  }, [location.pathname, location.search]);
+  }, [location.pathname]);
 
   return null;
 };
