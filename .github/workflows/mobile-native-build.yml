@@ -46,6 +46,9 @@ jobs:
 
       - name: Build website bundle
         working-directory: ${{ env.FRONTEND_DIR }}
+        env:
+          VITE_PUBLIC_BASE_PATH: /maamara/
+          VITE_ROUTER_BASENAME: /maamara
         run: npm run build
 
       - name: Build mobile web bundle
