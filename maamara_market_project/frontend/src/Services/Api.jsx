@@ -111,9 +111,12 @@ const createAnalyticsVisitorId = () => (
 );
 
 export const resolveAnalyticsVisitorIdentity = (serverIssuedId = "") => {
-  let identity = typeof serverIssuedId === "string" ? serverIssuedId.trim() : "";
+  // The persisted analytics ID is the long-lived browser identity. The server
+  // visitor cookie can be recreated after logout, so it must not overwrite an
+  // existing, unexpired analytics ID and split one browser into new visitors.
+  let identity = "";
 
-  if (!identity && typeof window !== "undefined") {
+  if (typeof window !== "undefined") {
     try {
       const stored = JSON.parse(window.localStorage.getItem(ANALYTICS_VISITOR_STORAGE_KEY) || "null");
       if (stored?.id && Number(stored.expiresAt) > Date.now()) {
@@ -124,6 +127,9 @@ export const resolveAnalyticsVisitorIdentity = (serverIssuedId = "") => {
     }
   }
 
+  if (!identity && typeof serverIssuedId === "string") {
+    identity = serverIssuedId.trim();
+  }
   if (!identity) identity = createAnalyticsVisitorId();
   analyticsVisitorIdentity = identity;
 
