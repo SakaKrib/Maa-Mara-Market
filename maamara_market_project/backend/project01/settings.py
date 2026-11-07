@@ -74,6 +74,7 @@ BACKEND_PUBLIC_URL = get_env_value(
     DEFAULT_PUBLIC_BASE_URL,
 ).rstrip("/")
 PUBLIC_PATH_PREFIX = env("MAAMARAMARKET_PUBLIC_PATH_PREFIX", default="/maamara").rstrip("/")
+FORCE_SCRIPT_NAME = PUBLIC_PATH_PREFIX or None
 COMPANY_ADDRESS = env("COMPANY_ADDRESS", default="")
 
 # Registered PayPal webhook ID. Keep this server-side; it is required to verify
@@ -220,9 +221,9 @@ AUTH_PASSWORD_VALIDATORS = [
     {"NAME": "django.contrib.auth.password_validation.NumericPasswordValidator"},
 ]
 
-LOGIN_URL = "/accounts/login/"
-LOGIN_REDIRECT_URL = "/google/success/"
-LOGOUT_REDIRECT_URL = "/login/"
+LOGIN_URL = f"{PUBLIC_PATH_PREFIX}/accounts/login/" if PUBLIC_PATH_PREFIX else "/accounts/login/"
+LOGIN_REDIRECT_URL = f"{PUBLIC_PATH_PREFIX}/google/success/" if PUBLIC_PATH_PREFIX else "/google/success/"
+LOGOUT_REDIRECT_URL = f"{PUBLIC_PATH_PREFIX}/login/" if PUBLIC_PATH_PREFIX else "/login/"
 
 # Allauth settings
 ACCOUNT_EMAIL_REQUIRED = True
