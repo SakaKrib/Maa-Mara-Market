@@ -13,7 +13,7 @@ from .views import admin_item_performance
 from .item_insights import item_insights, item_ai_suggestions
 from .items import vendor_item_growth_stats, vendor_item_stats, vendor_analytics_stats
 from .ItemInventory import *
-from .traffic import record_traffic_event, traffic_analytics, inbound_traffic_analytics, inbound_traffic_session_detail, inbound_traffic_visitor_detail
+from .traffic import record_traffic_event, traffic_analytics, inbound_traffic_analytics, inbound_traffic_session_detail, inbound_traffic_visitor_detail, clear_inbound_traffic
 from .social_auth_views import GoogleLoginView, AppleAuthConfigView, AppleLoginStartView, AppleLoginCallbackView, AppleLoginView
 
 router = DefaultRouter()
@@ -35,6 +35,7 @@ urlpatterns = [
     path('api/traffic/record/', record_traffic_event, name='record-traffic-event'),
     path('api/admin/traffic-analytics/', traffic_analytics, name='admin-traffic-analytics'),
     path('api/admin/inbound-traffic/', inbound_traffic_analytics, name='admin-inbound-traffic'),
+    path('api/admin/inbound-traffic/clear/', clear_inbound_traffic, name='admin-clear-inbound-traffic'),
     path('api/admin/inbound-traffic/visitors/<str:visitor_key>/', inbound_traffic_visitor_detail, name='admin-inbound-traffic-visitor'),
     path('api/admin/inbound-traffic/sessions/<str:session_id>/', inbound_traffic_session_detail, name='admin-inbound-traffic-session'),
 
