@@ -33,7 +33,7 @@ def pesapal_callback(request):
     tracking_id = request.query_params.get("OrderTrackingId")
     if not tracking_id:
         return HttpResponseRedirect(
-            f"{settings.FRONTEND_URL.rstrip('/')}/payment-pesapal-callback?status=failed"
+            f"{settings.FRONTEND_URL.rstrip('/')}{settings.PUBLIC_PATH_PREFIX}/payment-pesapal-callback?status=failed"
         )
 
     try:
