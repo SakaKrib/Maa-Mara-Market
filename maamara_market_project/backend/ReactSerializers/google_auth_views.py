@@ -1,9 +1,9 @@
 import logging
 
-from django.contrib.auth import get_user_model
 from rest_framework import status
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
+from rest_framework.exceptions import APIException, AuthenticationFailed
 from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
 
@@ -13,7 +13,6 @@ from core.models import Profile, Wallet
 from .google_auth import authenticate_google_credential
 
 logger = logging.getLogger(__name__)
-User = get_user_model()
 REFRESH_COOKIE_MAX_AGE = 365 * 24 * 3600
 
 
@@ -99,11 +98,17 @@ class GoogleLoginView(APIView):
                 path="/",
             )
             return response
-        except Exception as exc:
-            from rest_framework.exceptions import APIException
-
-            if isinstance(exc, APIException):
-                raise
+        except AuthenticationFailed as exc:
+            # This endpoint deliberately has no authentication scheme because
+            # it establishes the session. Return an explicit 401 for rejected
+            # Google identities instead of DRF's unauthenticated 403 fallback.
+            return Response(
+                {"success": False, "error": str(exc.detail)},
+                status=status.HTTP_401_UNAUTHORIZED,
+            )
+        except APIException:
+            raise
+        except Exception:
             logger.exception("Maa Mara Google sign-in failed")
             return Response(
                 {
