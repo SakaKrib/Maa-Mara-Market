@@ -30,4 +30,8 @@ def email_app_links():
         "frontend_url": _https_url(frontend_url),
         "android": _https_url(getattr(settings, "ANDROID_APP_DOWNLOAD_URL", "")),
         "ios": _https_url(getattr(settings, "IOS_APP_DOWNLOAD_URL", "")),
+        # If no APK release URL is configured, keep the email CTA useful by
+        # opening the public website instead of rendering an empty href.
+        "primary_app_url": _https_url(getattr(settings, "ANDROID_APP_DOWNLOAD_URL", "")) or _https_url(frontend_url),
+        "primary_app_label": "Download Android APK" if _https_url(getattr(settings, "ANDROID_APP_DOWNLOAD_URL", "")) else "Open Maa Mara Market",
     }
