@@ -12,12 +12,18 @@
   @maamara_root path /maamara
   redir @maamara_root /maamara/ 308
 
+  # Preserve Saka Krib's existing API, media, admin and WebSocket routes.
+  @sakakrib_backend path /api/* /media/* /static/* /admin/* /ws/*
+  handle @sakakrib_backend {
+    reverse_proxy 127.0.0.1:8001
+  }
+
   # Keep the prefix intact for Vite and React Router.
   handle /maamara/* {
     reverse_proxy 127.0.0.1:5173
   }
 
-  # Preserve the existing Saka Krib root routes.
+  # Preserve the existing Saka Krib frontend at the hostname root.
   handle {
     reverse_proxy 127.0.0.1:5175
   }
