@@ -591,13 +591,14 @@ jobs:
         working-directory: ${{ env.FRONTEND_DIR }}
         run: npm ci
 
-      - name: Require Firebase iOS client config for push-enabled app
+      - name: Report optional iOS Firebase configuration
         env:
           FIREBASE_IOS_CONFIG: ${{ secrets.FIREBASE_IOS_CONFIG }}
         run: |
-          if [ -z "$FIREBASE_IOS_CONFIG" ]; then
-            echo "::error::FIREBASE_IOS_CONFIG is missing; set the FIREBASE_IOS_CONFIG secret to build a push-enabled iOS app."
-            exit 1
+          if [ -n "$FIREBASE_IOS_CONFIG" ]; then
+            echo "Firebase iOS configuration supplied; native push setup will be included."
+          else
+            echo "Firebase iOS configuration not supplied; preparing unsigned iOS build without native push setup."
           fi
 
       - name: Install temporary Capacitor build tools
