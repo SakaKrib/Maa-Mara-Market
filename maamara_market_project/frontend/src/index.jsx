@@ -7,6 +7,7 @@ import { AuthProvider } from './cmponents/Auth/AuthContext/Context';
 import "./main.css";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { CurrencyProvider } from './PublicUiForAll/PublicUi/Customer/DesktopView/Main/Currency/CurrencyContext';
+import AndroidAppLinksBridge from "./AndroidAppLinksBridge";
 
 const queryClient = new QueryClient();
 
@@ -16,6 +17,7 @@ root.render(
   <React.StrictMode>
     <ErrorBoundary>
       <BrowserRouter basename={import.meta.env.VITE_ROUTER_BASENAME || "/"}>
+        <AndroidAppLinksBridge />
         <QueryClientProvider client={queryClient}>
           <AuthProvider>
             <CurrencyProvider>
