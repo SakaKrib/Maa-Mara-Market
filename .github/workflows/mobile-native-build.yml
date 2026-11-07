@@ -91,6 +91,11 @@ jobs:
           distribution: temurin
           java-version: "21"
 
+      - name: Install Android API 36 platform
+        run: |
+          yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses >/dev/null
+          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "platforms;android-36" "build-tools;36.0.0"
+
       - name: Install web dependencies
         working-directory: ${{ env.FRONTEND_DIR }}
         run: npm ci
@@ -145,6 +150,32 @@ jobs:
           FIREBASE_ANDROID_CONFIG: ${{ secrets.FIREBASE_ANDROID_CONFIG }}
         run: |
           npx cap add android
+          # Capgo Social Login pulls androidx.browser:1.9.0, which requires AGP 8.9.1 and compile SDK 36.
+          python3 - <<'PY'
+          from pathlib import Path
+
+          root_gradle = Path("android/build.gradle")
+          root_text = root_gradle.read_text()
+          old_agp = "com.android.tools.build:gradle:8.7.2"
+          new_agp = "com.android.tools.build:gradle:8.9.1"
+          if old_agp in root_text:
+              root_text = root_text.replace(old_agp, new_agp)
+          elif new_agp not in root_text:
+              raise SystemExit("Could not locate the generated Android Gradle Plugin version")
+          root_gradle.write_text(root_text)
+
+          variables_gradle = Path("android/variables.gradle")
+          if not variables_gradle.exists():
+              raise SystemExit("Capacitor variables.gradle was not generated")
+          variables_text = variables_gradle.read_text()
+          if "compileSdkVersion = 35" in variables_text:
+              variables_text = variables_text.replace("compileSdkVersion = 35", "compileSdkVersion = 36")
+          elif "compileSdkVersion = 36" not in variables_text:
+              raise SystemExit("Could not update generated compileSdkVersion to 36")
+          variables_gradle.write_text(variables_text)
+          print("Configured AGP 8.9.1 and compile SDK 36 for the social-login dependency.")
+          PY
+          PY
           if [ -n "$FIREBASE_ANDROID_CONFIG" ]; then
             printf '%s' "$FIREBASE_ANDROID_CONFIG" > android/app/google-services.json
             python3 - <<'PY'
