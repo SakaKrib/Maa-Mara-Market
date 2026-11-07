@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { Apple, Download, Smartphone, X } from "lucide-react";
 import "./mobile-app-download-prompt.css";
+import maamaraBrandArtwork from "@/assets/maamara-brand-artwork.svg";
 
 const DISMISSED_KEY = "maamara-mobile-app-prompt-dismissed-v1";
 const ANDROID_APK_URL =
@@ -107,7 +108,14 @@ const MobileAppDownloadPrompt = ({ isNativeApp = false }) => {
         </button>
 
         <div className="mm-app-prompt-art" aria-hidden="true">
-          <img className="mm-app-prompt-logo-image" src={`${import.meta.env.BASE_URL}maamara-brand-artwork.svg`} alt="" />
+          <img
+            className="mm-app-prompt-logo-image"
+            src={maamaraBrandArtwork}
+            alt="Maa Mara Market"
+            width="98"
+            height="98"
+            decoding="async"
+          />
           <span className="mm-app-prompt-spark mm-app-prompt-spark-one" />
           <span className="mm-app-prompt-spark mm-app-prompt-spark-two" />
           <span className="mm-app-prompt-device"><Smartphone size={24} /></span>
