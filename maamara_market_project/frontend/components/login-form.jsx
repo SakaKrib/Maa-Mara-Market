@@ -32,7 +32,7 @@ export function LoginForm({ className, ...props }) {
   const [csrfToken, setCsrfToken] = useState("")
   const [csrfReady, setCsrfReady] = useState(false)
   const [loading, setLoading] = useState(false)
-  const [socialProviders, setSocialProviders] = useState({ google: true, apple: false })
+  const [socialProviders, setSocialProviders] = useState({ google: false, apple: false })
 
   // set see password hide password
   const [showPassword, setShowPassword] = useState(false)
@@ -65,7 +65,7 @@ export function LoginForm({ className, ...props }) {
         setSocialProviders({ google: Boolean(data?.google), apple: Boolean(data?.apple) })
       })
       .catch(err => {
-        // Preserve the existing Google action during a temporary status-check failure.
+        // Fail closed: provider buttons stay disabled until Django confirms configuration.
         console.warn("Social sign-in availability check failed:", err)
       })
   }, [])
