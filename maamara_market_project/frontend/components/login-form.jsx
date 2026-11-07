@@ -5,10 +5,11 @@ import { Button } from "./ui/button"
 import { Card, CardContent } from "./ui/card"
 import { Input } from "./ui/input"
 import { Label } from "./ui/label"
-import api, { startGoogleLogin, getVisitorIdentity } from "../src/Services/Api"
+import api, { startGoogleLogin, startAppleLogin, getVisitorIdentity } from "../src/Services/Api"
 import { useNavigate, useLocation, Link } from "react-router-dom"
 import { useAuth } from "../src/cmponents/Auth/AuthContext/Context"
 import { Eye, EyeOff } from "lucide-react"
+import { FaApple } from "react-icons/fa"
 import AppSnackbar from "./ui/app-snackbar";
 
 // Fetch the CSRF token returned by Django. The frontend origin cannot reliably
@@ -31,6 +32,7 @@ export function LoginForm({ className, ...props }) {
   const [csrfToken, setCsrfToken] = useState("")
   const [csrfReady, setCsrfReady] = useState(false)
   const [loading, setLoading] = useState(false)
+  const [socialProviders, setSocialProviders] = useState({ google: true, apple: false })
 
   // set see password hide password
   const [showPassword, setShowPassword] = useState(false)
@@ -57,6 +59,17 @@ export function LoginForm({ className, ...props }) {
       })
   }, [])
 
+  useEffect(() => {
+    api.get("/api/auth/providers/")
+      .then(({ data }) => {
+        setSocialProviders({ google: Boolean(data?.google), apple: Boolean(data?.apple) })
+      })
+      .catch(err => {
+        // Preserve the existing Google action during a temporary status-check failure.
+        console.warn("Social sign-in availability check failed:", err)
+      })
+  }, [])
+
   const handleSnackbarClose = () => {
     setSnackbar(prev => ({ ...prev, open: false }))
   }
@@ -67,6 +80,18 @@ export function LoginForm({ className, ...props }) {
       await startGoogleLogin();
     } catch (err) {
       const msg = "Unable to start Google sign-in. Please try again.";
+      setError(msg);
+      setSnackbar({ open: true, message: msg });
+    }
+  }
+
+  const handleAppleLogin = async () => {
+    if (!socialProviders.apple) return;
+    try {
+      sessionStorage.setItem("postLoginRedirect", from);
+      await startAppleLogin();
+    } catch (err) {
+      const msg = "Apple sign-in is not configured yet. Please use email or Google for now.";
       setError(msg);
       setSnackbar({ open: true, message: msg });
     }
@@ -252,6 +277,19 @@ export function LoginForm({ className, ...props }) {
                     </svg>
 
                     Continue with Google
+                  </Button>
+
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="mm-auth-apple w-full flex items-center justify-center gap-2"
+                    onClick={handleAppleLogin}
+                    disabled={!socialProviders.apple}
+                    title={!socialProviders.apple ? "Apple sign-in will be available after Apple credentials are configured." : "Continue with Apple"}
+                    aria-label="Continue with Apple"
+                  >
+                    <FaApple size={18} aria-hidden="true" />
+                    Continue with Apple
                   </Button>
 
                 <div className="relative flex items-center text-xs text-muted-foreground">

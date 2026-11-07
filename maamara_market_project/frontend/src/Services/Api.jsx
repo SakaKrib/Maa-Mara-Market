@@ -110,22 +110,25 @@ api.interceptors.request.use((config) => {
 });
 
 
-// Start Google OAuth with a CSRF-protected POST. Keep the origin and URL
-// construction here so auth components do not duplicate API/base-URL logic.
-export const startGoogleLogin = async () => {
+// Start django-allauth social sign-in with a CSRF-protected POST.
+// Keep URL construction here so web and native clients share the same auth flow.
+const startSocialLogin = async (provider) => {
+  if (!["google", "apple"].includes(provider)) {
+    throw new Error("Unsupported social sign-in provider.");
+  }
   if (typeof document === "undefined" || !baseURL) {
-    throw new Error("Google sign-in is not available in this environment.");
+    throw new Error(`${provider} sign-in is not available in this environment.`);
   }
 
   const { data } = await api.get("/api/get-csrf-token/");
   const csrfToken = data?.csrfToken;
   if (!csrfToken) {
-    throw new Error("Unable to obtain a security token for Google sign-in.");
+    throw new Error("Unable to obtain a security token for social sign-in.");
   }
 
   const form = document.createElement("form");
   form.method = "POST";
-  form.action = `${baseURL}/accounts/google/login/`;
+  form.action = `${baseURL}/accounts/${provider}/login/`;
   form.style.display = "none";
 
   const tokenInput = document.createElement("input");
@@ -137,6 +140,9 @@ export const startGoogleLogin = async () => {
   document.body.appendChild(form);
   form.submit();
 };
+
+export const startGoogleLogin = () => startSocialLogin("google");
+export const startAppleLogin = () => startSocialLogin("apple");
 
 let isRefreshing = false;
 let refreshPromise = null;
