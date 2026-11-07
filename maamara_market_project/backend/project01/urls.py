@@ -44,9 +44,10 @@ def auth_provider_status(request):
     # django-allauth cannot safely choose between duplicate settings- and
     # database-backed SocialApps for the same provider. Fail closed instead.
     google_configuration_conflict = bool(settings_google_ready and google_database_apps)
-    google_enabled = (
-        settings_google_ready if not google_database_apps else google_database_apps == 1
-    ) and not google_configuration_conflict
+    # Google Identity Services sends an ID token to the backend. The Web Client ID
+    # is sufficient for token verification; the OAuth client secret is not sent
+    # to the browser and is not required by this credential-exchange endpoint.
+    google_enabled = bool(getattr(settings, "GOOGLE_CLIENT_ID", ""))
 
     return JsonResponse({
         "google": bool(google_enabled),
