@@ -378,6 +378,70 @@ def inbound_traffic_analytics(request):
 
 @api_view(["GET"])
 @permission_classes([IsAdminUser])
+def inbound_traffic_visitor_detail(request, visitor_key):
+    """Return one visitor's chronological activity across all their sessions."""
+    prefix, separator, identity = visitor_key.partition(":")
+    if not separator or not identity:
+        return Response({"error": "Visitor not found."}, status=status.HTTP_404_NOT_FOUND)
+
+    if prefix == "visitor":
+        events = TrafficEvent.objects.filter(visitor_id=identity)
+    elif prefix == "user" and identity.isdigit():
+        events = TrafficEvent.objects.filter(user_id=int(identity))
+    elif prefix == "session":
+        events = TrafficEvent.objects.filter(session_id=identity)
+    else:
+        return Response({"error": "Visitor not found."}, status=status.HTTP_404_NOT_FOUND)
+
+    rows = list(
+        events.select_related("user").order_by("created_at").values(
+            "id", "event_type", "path", "created_at", "referrer", "source",
+            "medium", "campaign", "country_code", "country_name", "device_type",
+            "session_id", "user_id", "user__username", "user__email",
+        )
+    )
+    if not rows:
+        return Response({"error": "Visitor not found."}, status=status.HTTP_404_NOT_FOUND)
+
+    activity_rows = [row for row in rows if row["event_type"] != "session_start"]
+    page_rows = [row for row in rows if row["event_type"] == "page_view"]
+    first, last = rows[0], rows[-1]
+    user_id = next((row["user_id"] for row in reversed(rows) if row["user_id"]), None)
+    username = next((row["user__username"] for row in reversed(rows) if row["user__username"]), "")
+    email = next((row["user__email"] for row in reversed(rows) if row["user__email"]), "")
+
+    return Response({
+        "visitor_key": visitor_key,
+        "visitor_id": identity if prefix == "visitor" else "",
+        "started_at": first["created_at"],
+        "last_seen": last["created_at"],
+        "session_count": len({row["session_id"] for row in rows if row["session_id"]}),
+        "page_count": len(page_rows),
+        "country_code": last["country_code"] or first["country_code"] or "",
+        "country_name": last["country_name"] or first["country_name"] or last["country_code"] or "Unknown",
+        "device_type": last["device_type"] or first["device_type"] or "unknown",
+        "source": first["source"] or "direct",
+        "referrer": first["referrer"] or "",
+        "user": {"id": user_id, "username": username, "email": email} if user_id else None,
+        "activity": [
+            {
+                "id": row["id"],
+                "event_type": row["event_type"],
+                "path": row["path"],
+                "created_at": row["created_at"],
+                "referrer": row["referrer"] or "",
+                "source": row["source"] or "direct",
+                "medium": row["medium"] or "",
+                "campaign": row["campaign"] or "",
+                "session_id": row["session_id"] or "",
+            }
+            for row in activity_rows
+        ],
+    })
+
+
+@api_view(["GET"])
+@permission_classes([IsAdminUser])
 def inbound_traffic_session_detail(request, session_id):
     """Return the complete first-party activity timeline for one tracked session."""
     events = (
