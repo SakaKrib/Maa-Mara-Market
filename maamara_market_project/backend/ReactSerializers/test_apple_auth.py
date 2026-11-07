@@ -3,6 +3,7 @@ from unittest.mock import patch
 
 import jwt
 from rest_framework.exceptions import AuthenticationFailed
+from rest_framework.throttling import ScopedRateThrottle
 
 from allauth.socialaccount.models import SocialAccount
 from django.conf import settings
@@ -165,6 +166,11 @@ from rest_framework.exceptions import AuthenticationFailed
 from allauth.account.models import EmailAddress
 
 
+@patch.object(
+    ScopedRateThrottle,
+    "THROTTLE_RATES",
+    {**ScopedRateThrottle.THROTTLE_RATES, "social_auth": "1000/min"},
+)
 @override_settings(
     GOOGLE_CLIENT_ID="maamara-web-client.apps.googleusercontent.com",
     REST_FRAMEWORK={
