@@ -96,7 +96,7 @@ const InboundTraffic = () => {
         <Stat label="Sessions" value={data.summary.sessions} />
         <Stat label="Countries" value={data.summary.countries} detail={data.summary.unlocated_views ? `${Number(data.summary.unlocated_views).toLocaleString()} visits not located` : undefined} />
         <Stat label="Pages visited" value={data.summary.pages} />
-        <Stat label="Tracked events" value={data.summary.events} detail="Page views, sessions and actions" />
+        <Stat label="Tracked events" value={data.summary.events} detail="Page views and customer actions" />
       </div>
 
       <div className="grid min-w-0 gap-5 xl:grid-cols-[minmax(0,1.7fr)_minmax(0,0.8fr)]">
@@ -229,9 +229,9 @@ const InboundTraffic = () => {
         <div className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
           <div>
             <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Visitor journeys</p>
-            <h2 className="mt-1 text-lg font-bold text-card-foreground">Recent visitors and activity</h2>
+            <h2 className="mt-1 text-lg font-bold text-card-foreground">Recent unique visitors and activity</h2>
           </div>
-          <p className="text-xs text-muted-foreground">Select a visitor to follow the full journey.</p>
+          <p className="text-xs text-muted-foreground">One row per visitor. Repeat sessions are grouped together; select a visitor to follow their pages.</p>
         </div>
         <div className="mt-4 space-y-2">
           {(data.recent_visitors || data.recent_sessions || []).slice(0, 20).map((visitor) => (
