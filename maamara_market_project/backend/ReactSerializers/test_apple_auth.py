@@ -165,7 +165,18 @@ from rest_framework.exceptions import AuthenticationFailed
 from allauth.account.models import EmailAddress
 
 
-@override_settings(GOOGLE_CLIENT_ID="maamara-web-client.apps.googleusercontent.com")
+@override_settings(
+    GOOGLE_CLIENT_ID="maamara-web-client.apps.googleusercontent.com",
+    REST_FRAMEWORK={
+        **settings.REST_FRAMEWORK,
+        "DEFAULT_THROTTLE_RATES": {
+            **settings.REST_FRAMEWORK["DEFAULT_THROTTLE_RATES"],
+            # CI executes this auth regression module from one test IP.
+            # Preserve production limits while preventing test-order coupling.
+            "social_auth": "1000/min",
+        },
+    },
+)
 class GoogleIdTokenAuthenticationTests(TestCase):
     def setUp(self):
         self.claims = {
