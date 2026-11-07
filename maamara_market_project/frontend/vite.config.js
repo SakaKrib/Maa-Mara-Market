@@ -5,11 +5,12 @@ import path from "path";
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), "");
   const isMobileBuild = env.VITE_BUILD_TARGET === "mobile";
+  const publicBasePath = env.VITE_PUBLIC_BASE_PATH || "/maamara/";
 
   return {
-    // Website builds keep root-relative URLs. Native bundles use relative
-    // asset paths because the app is served from the platform WebView.
-    base: isMobileBuild ? "./" : "/",
+    // MaaMara website testing is mounted below /maamara on the shared hostname.
+    // Native bundles remain relative because Capacitor serves them locally.
+    base: isMobileBuild ? "./" : publicBasePath,
     plugins: [react()],
     resolve: {
       alias: {
