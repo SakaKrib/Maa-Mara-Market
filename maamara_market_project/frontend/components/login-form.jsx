@@ -5,7 +5,9 @@ import { Button } from "./ui/button"
 import { Card, CardContent } from "./ui/card"
 import { Input } from "./ui/input"
 import { Label } from "./ui/label"
-import api, { startGoogleLogin, startAppleLogin, getVisitorIdentity } from "../src/Services/Api"
+import api, { startAppleLogin, getVisitorIdentity } from "../src/Services/Api"
+import { Capacitor } from "@capacitor/core"
+import { SocialLogin } from "@capgo/capacitor-social-login"
 import { useNavigate, useLocation, Link } from "react-router-dom"
 import { useAuth } from "../src/cmponents/Auth/AuthContext/Context"
 import { Eye, EyeOff } from "lucide-react"
@@ -24,6 +26,29 @@ const getCsrfToken = async () => {
   const data = response.data
   return data.csrfToken || ""
 }
+
+
+let googleIdentityScriptPromise = null;
+let nativeGoogleInitialization = null;
+
+const loadGoogleIdentityScript = async () => {
+  if (window.google?.accounts?.id) return;
+  if (!googleIdentityScriptPromise) {
+    googleIdentityScriptPromise = new Promise((resolve, reject) => {
+      const script = document.createElement("script");
+      script.src = "https://accounts.google.com/gsi/client";
+      script.async = true;
+      script.defer = true;
+      script.onload = resolve;
+      script.onerror = () => {
+        googleIdentityScriptPromise = null;
+        reject(new Error("Unable to load Google sign-in."));
+      };
+      document.head.appendChild(script);
+    });
+  }
+  await googleIdentityScriptPromise;
+};
 
 export function LoginForm({ className, ...props }) {
   const [username, setUsername] = useState("")
@@ -75,14 +100,127 @@ export function LoginForm({ className, ...props }) {
   }
 
   const handleGoogleLogin = async () => {
-    if (!socialProviders.google) return;
+    if (!socialProviders.google || loading) return;
+
+    setError("");
+    setSnackbar({ open: false, message: "" });
+    setLoading(true);
+
     try {
+      const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID?.trim();
+      const iosClientId = import.meta.env.VITE_GOOGLE_IOS_CLIENT_ID?.trim();
+      if (!clientId) {
+        throw new Error("Google sign-in is not configured for this build. Please contact support.");
+      }
+
       sessionStorage.setItem("postLoginRedirect", from);
-      await startGoogleLogin();
+
+      const exchangeCredential = async (credential) => {
+        const visitorId = getVisitorIdentity();
+        const { data } = await api.post("/api/google/login/", {
+          credential,
+          ...(visitorId ? { visitorId } : {}),
+        });
+
+        if (!data?.success || !data?.authenticated || !data?.user) {
+          throw new Error(data?.error || "We couldn’t complete Google sign-in.");
+        }
+
+        const authData = await refreshAuth();
+        if (!authData?.isAuthenticated || !authData?.user) {
+          throw new Error("Google accepted your account, but Maa Mara could not confirm your signed-in session. Please try again.");
+        }
+
+        navigate(from, { replace: true });
+      };
+
+      if (Capacitor.isNativePlatform()) {
+        const platform = Capacitor.getPlatform();
+        if (platform === "ios" && !iosClientId) {
+          throw new Error("Google sign-in on iOS needs the Maa Mara iOS OAuth Client ID configured.");
+        }
+
+        if (!nativeGoogleInitialization) {
+          nativeGoogleInitialization = SocialLogin.initialize({
+            google: {
+              webClientId: clientId,
+              ...(platform === "ios"
+                ? { iOSClientId: iosClientId, iOSServerClientId: clientId }
+                : {}),
+              mode: "online",
+            },
+          }).catch((error) => {
+            nativeGoogleInitialization = null;
+            throw error;
+          });
+        }
+        await nativeGoogleInitialization;
+
+        const nativeResponse = await SocialLogin.login({
+          provider: "google",
+          options: {
+            scopes: ["email", "profile"],
+            filterByAuthorizedAccounts: false,
+          },
+        });
+        const credential = nativeResponse?.result?.idToken;
+        if (!credential) {
+          throw new Error("Google did not return a valid identity token.");
+        }
+        await exchangeCredential(credential);
+        return;
+      }
+
+      await loadGoogleIdentityScript();
+      const google = window.google;
+      if (!google?.accounts?.id) {
+        throw new Error("Google sign-in is unavailable. Please try again.");
+      }
+
+      await new Promise((resolve, reject) => {
+        let settled = false;
+        const finish = (error) => {
+          if (settled) return;
+          settled = true;
+          error ? reject(error) : resolve();
+        };
+
+        google.accounts.id.initialize({
+          client_id: clientId,
+          ux_mode: "popup",
+          callback: async (response) => {
+            try {
+              if (!response?.credential) {
+                finish(new Error("Google did not return an identity token."));
+                return;
+              }
+              await exchangeCredential(response.credential);
+              finish();
+            } catch (error) {
+              finish(error);
+            }
+          },
+        });
+
+        google.accounts.id.prompt((notification) => {
+          if (
+            notification?.isNotDisplayed?.() ||
+            notification?.isSkippedMoment?.()
+          ) {
+            finish(new Error("Google sign-in could not open. Please check the Google OAuth web origin configuration and try again."));
+          }
+        });
+      });
     } catch (err) {
-      const msg = "Unable to start Google sign-in. Please try again.";
+      console.error("Maa Mara Google sign-in failed:", err);
+      const msg =
+        err?.response?.data?.error ||
+        err?.message ||
+        "Unable to complete Google sign-in. Please try again.";
       setError(msg);
       setSnackbar({ open: true, message: msg });
+    } finally {
+      setLoading(false);
     }
   }
 
@@ -245,7 +383,7 @@ export function LoginForm({ className, ...props }) {
                     variant="outline"
                     className="mm-auth-google w-full flex items-center justify-center gap-2"
                     onClick={handleGoogleLogin}
-                    disabled={!socialProviders.google}
+                    disabled={!socialProviders.google || loading}
                   >
                     <svg width="18" height="18" viewBox="0 0 48 48">
                       <path
