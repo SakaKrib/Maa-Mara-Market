@@ -157,6 +157,14 @@ def authenticate_google_credential(credential: str) -> User:
     if user_updates:
         user.save(update_fields=user_updates)
 
+    # Do not attach an email address that allauth already associates with
+    # another local account, even if legacy User rows happen to be inconsistent.
+    verified_email = user.email or email
+    if EmailAddress.objects.filter(email__iexact=verified_email).exclude(user=user).exists():
+        raise exceptions.AuthenticationFailed(
+            "This email is already associated with another account. Please contact support."
+        )
+
     # Keep the verified email recorded in django-allauth so existing account
     # and email-management screens continue to work after moving off redirects.
     email_address, _ = EmailAddress.objects.get_or_create(
