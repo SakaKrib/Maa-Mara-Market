@@ -161,18 +161,13 @@ services:
   frontend:
     build:
       context: ./frontend
-      target: build
+      target: production
+      args:
+        VITE_PUBLIC_BASE_PATH: /maamara/
+        VITE_ROUTER_BASENAME: /maamara
     restart: unless-stopped
-    environment:
-      VITE_API_URL: ""
-      VITE_PUBLIC_BASE_PATH: /maamara/
-      VITE_ROUTER_BASENAME: /maamara
     ports:
-      - "5173:5173"
-    volumes:
-      - ./frontend:/app
-      - frontend_node_modules:/app/node_modules
-    command: npm run dev -- --host 0.0.0.0
+      - "5173:80"
     depends_on:
       - backend
 
