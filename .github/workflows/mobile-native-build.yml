@@ -46,6 +46,42 @@ jobs:
         working-directory: ${{ env.FRONTEND_DIR }}
         run: npm ci
 
+      - name: Generate Android App Links verification file
+        env:
+          ANDROID_APP_SHA256_CERT_FINGERPRINTS: ${{ secrets.ANDROID_APP_SHA256_CERT_FINGERPRINTS || vars.ANDROID_APP_SHA256_CERT_FINGERPRINTS }}
+        working-directory: ${{ env.FRONTEND_DIR }}
+        run: |
+          python3 - <<'PY'
+          import json
+          import os
+          import re
+          from pathlib import Path
+
+          raw = os.environ.get("ANDROID_APP_SHA256_CERT_FINGERPRINTS", "").strip()
+          fingerprints = [item.strip().upper() for item in raw.split(",") if item.strip()]
+          pattern = re.compile(r"^(?:[0-9A-F]{2}:){31}[0-9A-F]{2}$")
+          if not fingerprints or any(not pattern.fullmatch(item) for item in fingerprints):
+              raise SystemExit(
+                  "::error::ANDROID_APP_SHA256_CERT_FINGERPRINTS must contain one or more "
+                  "colon-separated SHA-256 certificate fingerprints."
+              )
+          if len(set(fingerprints)) != len(fingerprints):
+              raise SystemExit("Duplicate Android signing fingerprints were supplied.")
+
+          destination = Path("public/.well-known/assetlinks.json")
+          destination.parent.mkdir(parents=True, exist_ok=True)
+          payload = [{
+              "relation": ["delegate_permission/common.handle_all_urls"],
+              "target": {
+                  "namespace": "android_app",
+                  "package_name": "com.maamaramarket.app",
+                  "sha256_cert_fingerprints": fingerprints,
+              },
+          }]
+          destination.write_text(json.dumps(payload, indent=2) + "\\n")
+          print(f"Generated Android App Links association for {len(fingerprints)} signing certificate(s).")
+          PY
+
       - name: Build website bundle
         working-directory: ${{ env.FRONTEND_DIR }}
         env:
@@ -61,6 +97,14 @@ jobs:
           VITE_ROUTER_BASENAME: /
           VITE_PUBLIC_SITE_URL: https://maamaramarket.com
         run: npm run build:mobile
+
+      - name: Upload Android App Links website file
+        uses: actions/upload-artifact@v4
+        with:
+          name: maa-mara-market-assetlinks
+          path: ${{ env.FRONTEND_DIR }}/public/.well-known/assetlinks.json
+          if-no-files-found: error
+          retention-days: 30
 
       - name: Lint product sharing module
         working-directory: ${{ env.FRONTEND_DIR }}
@@ -139,6 +183,7 @@ jobs:
         working-directory: ${{ env.FRONTEND_DIR }}
         env:
           FIREBASE_ANDROID_CONFIG: ${{ secrets.FIREBASE_ANDROID_CONFIG }}
+          ANDROID_APP_SHA256_CERT_FINGERPRINTS: ${{ secrets.ANDROID_APP_SHA256_CERT_FINGERPRINTS || vars.ANDROID_APP_SHA256_CERT_FINGERPRINTS }}
         run: |
           npx cap add android
           if [ -n "$FIREBASE_ANDROID_CONFIG" ]; then
@@ -179,6 +224,59 @@ jobs:
             echo "Firebase Android config missing; this APK will build, but native push registration stays disabled."
           fi
           npx cap sync android
+          python3 - <<'PY'
+          import os
+          import re
+          import xml.etree.ElementTree as ET
+          from pathlib import Path
+
+          raw = os.environ.get("ANDROID_APP_SHA256_CERT_FINGERPRINTS", "").strip()
+          fingerprints = [item.strip().upper() for item in raw.split(",") if item.strip()]
+          fingerprint_pattern = re.compile(r"^(?:[0-9A-F]{2}:){31}[0-9A-F]{2}$")
+          if not fingerprints or any(not fingerprint_pattern.fullmatch(item) for item in fingerprints):
+              raise SystemExit("ANDROID_APP_SHA256_CERT_FINGERPRINTS is missing or malformed.")
+
+          ET.register_namespace("android", "http://schemas.android.com/apk/res/android")
+          android = "{http://schemas.android.com/apk/res/android}"
+          manifest_path = Path("android/app/src/main/AndroidManifest.xml")
+          tree = ET.parse(manifest_path)
+          application = tree.getroot().find("application")
+          if application is None:
+              raise SystemExit("Android manifest has no application element.")
+
+          launcher = None
+          for activity in application.findall("activity"):
+              actions = {
+                  action.get(android + "name")
+                  for intent in activity.findall("intent-filter")
+                  for action in intent.findall("action")
+              }
+              if "android.intent.action.MAIN" in actions:
+                  launcher = activity
+                  break
+          if launcher is None:
+              raise SystemExit("Could not locate the Android launcher activity.")
+
+          for intent in launcher.findall("intent-filter"):
+              if intent.get(android + "autoVerify") == "true" and any(
+                  data.get(android + "host") == "maamaramarket.com"
+                  for data in intent.findall("data")
+              ):
+                  print("Android App Links intent filter already exists.")
+                  break
+          else:
+              intent = ET.SubElement(launcher, "intent-filter", {android + "autoVerify": "true"})
+              ET.SubElement(intent, "action", {android + "name": "android.intent.action.VIEW"})
+              ET.SubElement(intent, "category", {android + "name": "android.intent.category.DEFAULT"})
+              ET.SubElement(intent, "category", {android + "name": "android.intent.category.BROWSABLE"})
+              ET.SubElement(intent, "data", {
+                  android + "scheme": "https",
+                  android + "host": "maamaramarket.com",
+              })
+          tree.write(manifest_path, encoding="utf-8", xml_declaration=True)
+          ET.parse(manifest_path)
+          print("Configured verified HTTPS App Links for https://maamaramarket.com.")
+          PY
 
       - name: Remove duplicate Android launcher background resource
         working-directory: ${{ env.FRONTEND_DIR }}
