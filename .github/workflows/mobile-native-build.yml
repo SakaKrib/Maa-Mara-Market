@@ -8,6 +8,11 @@ on:
       - "maamara_market_project/frontend/**"
       - "maamara_market_project/backend/**"
       - ".github/workflows/mobile-native-build.yml"
+  pull_request:
+    paths:
+      - "maamara_market_project/frontend/**"
+      - "maamara_market_project/backend/**"
+      - ".github/workflows/mobile-native-build.yml"
   workflow_dispatch:
 
 permissions:
@@ -71,6 +76,7 @@ jobs:
         run: npx eslint src/Services/ProductSharing.js
 
   android:
+    if: github.event_name != 'pull_request'
     name: Generate and sign Android release APK and AAB
     runs-on: ubuntu-latest
     timeout-minutes: 45
@@ -724,6 +730,7 @@ jobs:
           retention-days: 14
 
   ios-project:
+    if: github.event_name != 'pull_request'
     name: Generate and compile iOS project
     runs-on: macos-latest
     timeout-minutes: 45
