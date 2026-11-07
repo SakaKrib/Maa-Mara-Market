@@ -22,6 +22,8 @@ env:
   # Change this single GitHub secret to switch between the Tailscale development
   # endpoint and https://maamaramarket.com for production builds.
   MOBILE_API_URL: ${{ secrets.MAAMARAMARKET_PUBLIC_BASE_URL }}
+  # Set repository variable MAAMARAMARKET_PUBLIC_PATH_PREFIX to / for root-domain production.
+  MOBILE_API_PATH_PREFIX: ${{ vars.MAAMARAMARKET_PUBLIC_PATH_PREFIX || '/maamara' }}
 
 jobs:
 
@@ -47,15 +49,15 @@ jobs:
       - name: Build website bundle
         working-directory: ${{ env.FRONTEND_DIR }}
         env:
-          VITE_PUBLIC_BASE_PATH: /maamara/
-          VITE_ROUTER_BASENAME: /maamara
+          VITE_PUBLIC_BASE_PATH: ${{ vars.MAAMARAMARKET_PUBLIC_PATH_PREFIX == '/' && '/' || format('{0}/', vars.MAAMARAMARKET_PUBLIC_PATH_PREFIX || '/maamara') }}
+          VITE_ROUTER_BASENAME: ${{ vars.MAAMARAMARKET_PUBLIC_PATH_PREFIX || '/maamara' }}
         run: npm run build
 
       - name: Build mobile web bundle
         working-directory: ${{ env.FRONTEND_DIR }}
         env:
           VITE_BUILD_TARGET: mobile
-          VITE_API_URL: ${{ env.MOBILE_API_URL }}/maamara
+          VITE_API_URL: ${{ env.MOBILE_API_URL }}${{ env.MOBILE_API_PATH_PREFIX }}
           VITE_ROUTER_BASENAME: /
           VITE_PUBLIC_SITE_URL: https://maamaramarket.com
         run: npm run build:mobile
@@ -128,7 +130,7 @@ jobs:
         working-directory: ${{ env.FRONTEND_DIR }}
         env:
           VITE_BUILD_TARGET: mobile
-          VITE_API_URL: ${{ env.MOBILE_API_URL }}/maamara
+          VITE_API_URL: ${{ env.MOBILE_API_URL }}${{ env.MOBILE_API_PATH_PREFIX }}
           VITE_ROUTER_BASENAME: /
           VITE_NATIVE_PUSH_ENABLED: ${{ secrets.FIREBASE_ANDROID_CONFIG != '' }}
         run: npm run build:mobile
@@ -608,7 +610,7 @@ jobs:
         working-directory: ${{ env.FRONTEND_DIR }}
         env:
           VITE_BUILD_TARGET: mobile
-          VITE_API_URL: ${{ env.MOBILE_API_URL }}/maamara
+          VITE_API_URL: ${{ env.MOBILE_API_URL }}${{ env.MOBILE_API_PATH_PREFIX }}
           VITE_ROUTER_BASENAME: /
           VITE_NATIVE_PUSH_ENABLED: ${{ secrets.FIREBASE_IOS_CONFIG != '' }}
         run: npm run build:mobile
