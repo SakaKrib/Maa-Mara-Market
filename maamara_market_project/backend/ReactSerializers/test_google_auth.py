@@ -3,12 +3,13 @@ from unittest.mock import patch
 from allauth.account.models import EmailAddress
 from allauth.socialaccount.models import SocialAccount
 from django.contrib.auth.models import User
-from django.test import TestCase
+from django.test import TestCase, override_settings
 from rest_framework.exceptions import AuthenticationFailed
 
 from core.models import Profile, Wallet
 
 
+@override_settings(GOOGLE_CLIENT_ID="test-google-web-client.apps.googleusercontent.com")
 class GoogleIdentityAuthenticationTests(TestCase):
     def setUp(self):
         self.claims = {
