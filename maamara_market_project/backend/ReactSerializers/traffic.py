@@ -359,8 +359,9 @@ def inbound_traffic_analytics(request):
             "sessions": page_views.exclude(session_id__isnull=True).exclude(session_id="").values("session_id").distinct().count(),
             "countries": len(countries),
             "pages": pages.__len__(),
-            # Every tracked interaction: page views, session starts and custom events.
-            "events": events.count(),
+            # Session-start markers are summarized separately; don't present them
+            # as customer activity in the visitor counts.
+            "events": page_views.count() + event_rows.count(),
             "custom_events": event_rows.count(),
             "unlocated_views": page_views.filter(country_code="").count(),
         },
