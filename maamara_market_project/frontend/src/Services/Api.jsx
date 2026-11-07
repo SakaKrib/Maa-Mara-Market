@@ -8,26 +8,42 @@ const configuredApiOrigin = (import.meta.env.VITE_API_URL || "").trim();
 const normalizeOrigin = (value) => value.replace(/\/+$/, "");
 
 const resolveApiOrigin = () => {
-  if (configuredApiOrigin) {
-    return normalizeOrigin(configuredApiOrigin);
-  }
-
   if (typeof window === "undefined") {
-    return "";
+    return configuredApiOrigin ? normalizeOrigin(configuredApiOrigin) : "";
   }
 
-  // Native apps must receive their backend origin from the build configuration.
-  // Do not hard-code development or production hosts in shared application code.
-  if (Capacitor.isNativePlatform()) {
+  const isNative = Capacitor.isNativePlatform();
+
+  // Native builds use their explicitly configured backend URL unchanged.
+  // The browser deployment, however, is mounted below /maamara on a shared
+  // hostname. Even if VITE_API_URL contains only the hostname, API requests
+  // must retain Vite's public base path rather than escaping to /api at root.
+  if (configuredApiOrigin) {
+    const configuredUrl = new URL(configuredApiOrigin, window.location.origin);
+
+    if (!isNative) {
+      const publicBasePath = import.meta.env.BASE_URL || "/";
+      if (publicBasePath.startsWith("/") && publicBasePath !== "/") {
+        const normalizedBasePath = publicBasePath.replace(/\\/+$/, "");
+        const configuredPath = configuredUrl.pathname.replace(/\\/+$/, "");
+        if (!configuredPath || configuredPath === "/") {
+          configuredUrl.pathname = normalizedBasePath;
+        }
+      }
+    }
+
+    return normalizeOrigin(configuredUrl.toString());
+  }
+
+  // Native apps must receive a backend origin from build configuration.
+  if (isNative) {
     throw new Error(
       "VITE_API_URL is required for native builds. Set it in the build configuration."
     );
   }
 
-  // Vite's BASE_URL is /maamara/ for the shared-hostname website and /
-  // for a standalone root deployment. Keep every API, media and WebSocket
-  // request inside that deployment prefix instead of falling through to the
-  // other application mounted at the hostname root.
+  // Vite BASE_URL is /maamara/ for the shared-hostname website and /
+  // for a standalone root deployment.
   const publicBaseUrl = import.meta.env.BASE_URL || "/";
   return normalizeOrigin(new URL(publicBaseUrl, window.location.origin).toString());
 };
