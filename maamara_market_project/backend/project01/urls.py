@@ -42,7 +42,7 @@ urlpatterns = [
 # DEBUG is disabled by the compose environment. django.conf.urls.static.static()
 # returns an EMPTY list whenever DEBUG is False, so it cannot make uploaded
 # media reachable in that setup. Register the serve view explicitly instead.
-_media_prefix = settings.MEDIA_URL.strip("/")
+_media_prefix = settings.MEDIA_URL.strip("/").split("/")[-1]
 if _media_prefix:
     urlpatterns += [
         re_path(
