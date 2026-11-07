@@ -1,4 +1,4 @@
-name: Maa Mara Market Android Debug APK + Mobile Builds
+name: Maa Mara Market Signed Android Release + iOS Build
 
 on:
   push:
@@ -9,12 +9,6 @@ on:
       - "maamara_market_project/backend/**"
       - ".github/workflows/mobile-native-build.yml"
   workflow_dispatch:
-    inputs:
-      api_url:
-        description: "API origin for this development build. Use the Tailscale backend for testing; use https://maamaramarket.com explicitly for a public production build."
-        required: true
-        type: string
-        default: "https://opondo-thinkpad-t14-gen-1.tail34bca9.ts.net"
 
 permissions:
   contents: write
@@ -25,7 +19,9 @@ concurrency:
 
 env:
   FRONTEND_DIR: maamara_market_project/frontend
-  MOBILE_API_URL: ${{ github.event.inputs.api_url || 'https://opondo-thinkpad-t14-gen-1.tail34bca9.ts.net' }}
+  # Change this single GitHub secret to switch between the Tailscale development
+  # endpoint and https://maamaramarket.com for production builds.
+  MOBILE_API_URL: ${{ secrets.MAAMARAMARKET_PUBLIC_BASE_URL }}
 
 jobs:
 
@@ -65,7 +61,7 @@ jobs:
         run: npx eslint src/Services/ProductSharing.js
 
   android:
-    name: Generate and build Android debug APK
+    name: Generate and sign Android release APK and AAB
     runs-on: ubuntu-latest
     timeout-minutes: 45
     steps:
@@ -103,6 +99,26 @@ jobs:
         # Runtime plugins (including push notifications) are pinned in package.json and the lockfile.
         # Install project generators/platform wrappers and Status Bar temporarily.
         run: npm install --no-save @capacitor/cli@7 @capacitor/android@7 @capacitor/ios@7 @capacitor/status-bar@7 @capacitor/app@7 typescript@5.8.3 sharp
+
+      - name: Validate configured mobile API base URL
+        env:
+          MOBILE_API_URL: ${{ env.MOBILE_API_URL }}
+        run: |
+          python3 - <<'PY'
+          import os
+          from urllib.parse import urlparse
+
+          value = os.environ.get("MOBILE_API_URL", "").strip()
+          parsed = urlparse(value)
+          if parsed.scheme != "https" or not parsed.netloc:
+              raise SystemExit(
+                  "::error::Set MAAMARAMARKET_PUBLIC_BASE_URL to the HTTPS API origin "
+                  "(Tailscale Funnel for development or https://maamaramarket.com for production)."
+              )
+          if parsed.path not in ("", "/") or parsed.query or parsed.fragment:
+              raise SystemExit("MAAMARAMARKET_PUBLIC_BASE_URL must be an origin only, without a path, query or fragment.")
+          print("Validated the HTTPS mobile API origin.")
+          PY
 
       - name: Build mobile web bundle
         working-directory: ${{ env.FRONTEND_DIR }}
@@ -398,34 +414,149 @@ jobs:
           }
           JAVA
 
-      - name: Build Android debug APK
-        working-directory: ${{ env.FRONTEND_DIR }}/android
-        run: ./gradlew assembleDebug
+      - name: Configure Android release signing
+        working-directory: ${{ env.FRONTEND_DIR }}
+        env:
+          ANDROID_SIGNING_KEYSTORE_BASE64: ${{ secrets.ANDROID_SIGNING_KEYSTORE_BASE64 }}
+          ANDROID_SIGNING_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_SIGNING_KEYSTORE_PASSWORD }}
+          ANDROID_SIGNING_KEY_ALIAS: ${{ secrets.ANDROID_SIGNING_KEY_ALIAS }}
+          ANDROID_SIGNING_KEY_PASSWORD: ${{ secrets.ANDROID_SIGNING_KEY_PASSWORD }}
+        run: |
+          set -euo pipefail
+          : "${ANDROID_SIGNING_KEYSTORE_BASE64:?Missing ANDROID_SIGNING_KEYSTORE_BASE64}"
+          : "${ANDROID_SIGNING_KEYSTORE_PASSWORD:?Missing ANDROID_SIGNING_KEYSTORE_PASSWORD}"
+          : "${ANDROID_SIGNING_KEY_ALIAS:?Missing ANDROID_SIGNING_KEY_ALIAS}"
+          : "${ANDROID_SIGNING_KEY_PASSWORD:?Missing ANDROID_SIGNING_KEY_PASSWORD}"
 
-      - name: Upload Android APK
+          export ANDROID_KEYSTORE_PATH="$RUNNER_TEMP/maamara-market-release.jks"
+          printf '%s' "$ANDROID_SIGNING_KEYSTORE_BASE64" | base64 --decode > "$ANDROID_KEYSTORE_PATH"
+          test -s "$ANDROID_KEYSTORE_PATH"
+          keytool -list -keystore "$ANDROID_KEYSTORE_PATH" -storepass "$ANDROID_SIGNING_KEYSTORE_PASSWORD" >/dev/null 2>&1 || {
+            echo "::error::The configured Android keystore could not be opened. Check the keystore Base64 and password secrets."
+            exit 1
+          }
+
+          python3 - <<'PY'
+          import os
+          import re
+          from pathlib import Path
+
+          gradle = Path("android/app/build.gradle")
+          source = gradle.read_text()
+          if "android {" not in source:
+              raise SystemExit("Generated Android app/build.gradle has no android block")
+
+          signing = """
+              signingConfigs {
+                  release {
+                      storeFile file(System.getenv("ANDROID_KEYSTORE_PATH"))
+                      storePassword System.getenv("ANDROID_SIGNING_KEYSTORE_PASSWORD")
+                      keyAlias System.getenv("ANDROID_SIGNING_KEY_ALIAS")
+                      keyPassword System.getenv("ANDROID_SIGNING_KEY_PASSWORD")
+                  }
+              }
+          """
+          source = source.replace("android {", "android {\n" + signing, 1)
+
+          def block_bounds(text, opening):
+              start = text.find(opening)
+              if start < 0:
+                  return None
+              brace = text.find("{", start)
+              depth = 0
+              for index in range(brace, len(text)):
+                  if text[index] == "{":
+                      depth += 1
+                  elif text[index] == "}":
+                      depth -= 1
+                      if depth == 0:
+                          return brace, index
+              raise SystemExit(f"Unclosed Gradle block: {opening}")
+
+          build_types = block_bounds(source, "buildTypes")
+          if build_types is None:
+              android_block = block_bounds(source, "android")
+              source = source[:android_block[1]] + """
+              buildTypes {
+                  release {
+                      signingConfig signingConfigs.release
+                  }
+              }
+          """ + source[android_block[1]:]
+          else:
+              bt_open, bt_close = build_types
+              release_match = re.search(r"\brelease\s*\{", source[bt_open:bt_close])
+              if release_match:
+                  release_start = bt_open + release_match.start()
+                  release_block = block_bounds(source, source[release_start:release_start + len("release")])
+                  # Locate the release block's opening brace and insert the signing line.
+                  release_brace = source.find("{", release_start)
+                  source = source[:release_brace + 1] + "\n            signingConfig signingConfigs.release" + source[release_brace + 1:]
+              else:
+                  source = source[:bt_close] + """
+                  release {
+                      signingConfig signingConfigs.release
+                  }
+              """ + source[bt_close:]
+
+          gradle.write_text(source)
+          if "signingConfig signingConfigs.release" not in source:
+              raise SystemExit("Release signing config was not applied to the generated Gradle project")
+          print("Configured release signing without writing credentials into the repository.")
+          PY
+
+      - name: Build signed Android release APK and App Bundle
+        working-directory: ${{ env.FRONTEND_DIR }}/android
+        env:
+          ANDROID_KEYSTORE_PATH: ${{ runner.temp }}/maamara-market-release.jks
+          ANDROID_SIGNING_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_SIGNING_KEYSTORE_PASSWORD }}
+          ANDROID_SIGNING_KEY_ALIAS: ${{ secrets.ANDROID_SIGNING_KEY_ALIAS }}
+          ANDROID_SIGNING_KEY_PASSWORD: ${{ secrets.ANDROID_SIGNING_KEY_PASSWORD }}
+        run: ./gradlew --no-daemon clean assembleRelease bundleRelease
+
+      - name: Verify Android release signatures
+        working-directory: ${{ env.FRONTEND_DIR }}
+        run: |
+          set -euo pipefail
+          APK="android/app/build/outputs/apk/release/app-release.apk"
+          AAB="android/app/build/outputs/bundle/release/app-release.aab"
+          test -s "$APK"
+          test -s "$AAB"
+          APKSIGNER="$(find "$ANDROID_HOME/build-tools" -type f -name apksigner | sort -V | tail -n 1)"
+          test -x "$APKSIGNER"
+          "$APKSIGNER" verify --verbose "$APK"
+          jarsigner -verify -verbose "$AAB" >/dev/null
+          echo "Verified signed release APK and AAB."
+
+      - name: Upload signed Android release APK and AAB
         uses: actions/upload-artifact@v4
         with:
-          name: maa-mara-market-android-debug
-          path: ${{ env.FRONTEND_DIR }}/android/app/build/outputs/apk/debug/app-debug.apk
+          name: maa-mara-market-android-signed-release
+          path: |
+            ${{ env.FRONTEND_DIR }}/android/app/build/outputs/apk/release/app-release.apk
+            ${{ env.FRONTEND_DIR }}/android/app/build/outputs/bundle/release/app-release.aab
           if-no-files-found: error
-          retention-days: 14
+          retention-days: 30
 
-      - name: Prepare stable Android beta APK filename
+      - name: Prepare stable signed Android APK and AAB filenames
         working-directory: ${{ env.FRONTEND_DIR }}
-        run: cp android/app/build/outputs/apk/debug/app-debug.apk maa-mara-market-android.apk
+        run: |
+          cp android/app/build/outputs/apk/release/app-release.apk maa-mara-market-android.apk
+          cp android/app/build/outputs/bundle/release/app-release.aab maa-mara-market-android.aab
 
-      # Keep a stable public beta APK URL for direct Android testing downloads.
-      # This is a debug APK, not a production-signed Play Store release.
-      - name: Publish latest Android beta APK
-        # Upload only the asset. Updating release metadata can fail for branch builds
-        # when GITHUB_TOKEN cannot update a release whose target commit changes workflow files.
-        # The mobile-latest release already exists; gh release upload uses the asset endpoint.
+      - name: Publish latest signed Android release assets
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           gh release view mobile-latest --repo "${GITHUB_REPOSITORY}" >/dev/null
-          gh release upload mobile-latest "${FRONTEND_DIR}/maa-mara-market-android.apk" \
+          gh release upload mobile-latest \
+            "${FRONTEND_DIR}/maa-mara-market-android.apk" \
+            "${FRONTEND_DIR}/maa-mara-market-android.aab" \
             --repo "${GITHUB_REPOSITORY}" --clobber
+
+      - name: Remove temporary Android signing keystore
+        if: always()
+        run: rm -f "$RUNNER_TEMP/maamara-market-release.jks"
 
       - name: Upload generated Android project
         uses: actions/upload-artifact@v4
