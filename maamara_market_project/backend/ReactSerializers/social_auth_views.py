@@ -146,8 +146,6 @@ class AppleLoginStartView(APIView):
     """Start the Apple website flow with short-lived, HttpOnly state and nonce cookies."""
     authentication_classes = []
     permission_classes = [AllowAny]
-    throttle_classes = [ScopedRateThrottle]
-    throttle_scope = "social_auth"
 
     def get(self, request):
         if not apple_configuration_is_ready():

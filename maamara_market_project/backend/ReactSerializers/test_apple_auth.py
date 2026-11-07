@@ -1,6 +1,9 @@
 from urllib.parse import parse_qs, urlsplit
 from unittest.mock import patch
 
+import jwt
+from rest_framework.exceptions import AuthenticationFailed
+
 from allauth.socialaccount.models import SocialAccount
 from django.conf import settings
 from django.contrib.auth.models import User
@@ -109,6 +112,26 @@ class AppleIdentityAuthenticationTests(TestCase):
         )
         self.assertEqual(response.status_code, 401)
         self.assertFalse(SocialAccount.objects.filter(provider="apple", uid=self.claims["sub"]).exists())
+
+    @patch("ReactSerializers.apple_auth.jwt.decode")
+    @patch("ReactSerializers.apple_auth.jwt.PyJWKClient")
+    def test_apple_nonce_mismatch_is_rejected_after_signature_verification(self, jwks, decode):
+        jwks.return_value.get_signing_key_from_jwt.return_value.key = "verified-public-key"
+        decode.return_value = {**self.claims, "nonce": "different-nonce"}
+        from ReactSerializers.apple_auth import verify_apple_identity_token
+
+        with self.assertRaises(AuthenticationFailed):
+            verify_apple_identity_token("signed-apple-token", "expected-hashed-nonce")
+
+    @patch("ReactSerializers.apple_auth.jwt.decode")
+    @patch("ReactSerializers.apple_auth.jwt.PyJWKClient")
+    def test_invalid_apple_signature_is_rejected(self, jwks, decode):
+        jwks.return_value.get_signing_key_from_jwt.return_value.key = "verified-public-key"
+        decode.side_effect = jwt.InvalidSignatureError("bad signature")
+        from ReactSerializers.apple_auth import verify_apple_identity_token
+
+        with self.assertRaises(AuthenticationFailed):
+            verify_apple_identity_token("invalid-apple-token", "expected-hashed-nonce")
 
     def test_web_start_uses_secure_short_lived_state_and_nonce_cookies(self):
         with patch("ReactSerializers.social_auth_views.apple_configuration_is_ready", return_value=True):
