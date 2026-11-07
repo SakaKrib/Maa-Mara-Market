@@ -7,7 +7,7 @@ import { Routes, Route, useNavigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "./cmponents/Auth/AuthContext/Context";
 import { ColourModeContext, useMode } from "./theme";
 import BridgeToHTML from "./globalHtml";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import "./main.css";
 import "../src/PublicUiForAll/PublicUi/maamara.css";
 
@@ -85,7 +85,7 @@ import BlogCard from "./cmponents/VENDORPAGE/Blogs/BlogCard";
 import BlogFeed from "./cmponents/VENDORPAGE/Blogs/BlogFeed";
 import SingleBlogPage from "./cmponents/VENDORPAGE/Blogs/SinglePageBlogPost";
 import { WishlistProvider } from "./cmponents/Hooks/WishListHook/Wishlist";
-import api, { setVisitorIdentity } from "./Services/Api";
+import api, { resolveAnalyticsVisitorIdentity, setVisitorIdentity } from "./Services/Api";
 import { Capacitor } from "@capacitor/core";
 import {
   setupNativePushNotifications,
@@ -494,8 +494,13 @@ function App() {
 
   const [visitorReady, setVisitorReady] = useState(false);
   const [visitorId, setVisitorId] = useState("");
+  const visitorInitializationStartedRef = useRef(false);
 
   useEffect(() => {
+    // React StrictMode replays mount effects in development. Keep this
+    // bootstrap single-flight so parallel requests cannot mint two visitors.
+    if (visitorInitializationStartedRef.current) return undefined;
+    visitorInitializationStartedRef.current = true;
     let active = true;
 
     api.get("/api/vistor-token/")
@@ -504,6 +509,7 @@ function App() {
           const resolvedVisitorId = data?.visitor_id || "";
           setVisitorId(resolvedVisitorId);
           setVisitorIdentity(resolvedVisitorId);
+          resolveAnalyticsVisitorIdentity(resolvedVisitorId);
           setVisitorReady(true);
         }
       })
@@ -512,6 +518,7 @@ function App() {
         if (active) {
           setVisitorId("");
           setVisitorIdentity("");
+          resolveAnalyticsVisitorIdentity();
           setVisitorReady(true);
         }
       });
