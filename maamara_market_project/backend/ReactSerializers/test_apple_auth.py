@@ -318,9 +318,9 @@ class GoogleIdTokenAuthenticationTests(TestCase):
     },
 )
 class AppleNativeNonceAndReplayTests(TestCase):
-    def post(self, nonce):
+    def post(self, nonce, token=None):
         return self.client.post(
-            "/api/apple/login/", {"id_token": "tok", "nonce": nonce}, content_type="application/json"
+            "/api/apple/login/", {"id_token": token or f"tok-{nonce}", "nonce": nonce}, content_type="application/json"
         )
 
     def test_nonce_endpoint_issues_unique_values(self):
@@ -367,7 +367,7 @@ class AppleNativeNonceAndReplayTests(TestCase):
                     "nonce": hashlib.sha256(raw.encode()).hexdigest()}
         raw1 = issue_nonce()
         decode.return_value = claims_for(raw1)
-        self.assertEqual(self.post(raw1).status_code, 200)
+        self.assertEqual(self.post(raw1, "replayed-token").status_code, 200)
         raw2 = issue_nonce()
         decode.return_value = claims_for(raw2)
-        self.assertEqual(self.post(raw2).status_code, 401)  # same token string "tok" already used
+        self.assertEqual(self.post(raw2, "replayed-token").status_code, 401)
