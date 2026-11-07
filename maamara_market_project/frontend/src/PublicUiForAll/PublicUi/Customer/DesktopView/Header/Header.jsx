@@ -111,8 +111,8 @@ const Header = () => {
           </button>
 
           <div className="w-full flex flex-row gap-4 items-center">
-            <img src={`${import.meta.env.BASE_URL}maamara-brand-artwork.svg`} alt="Maa Mara Market" width="50" height="50" className="h-[50px] w-[50px] shrink-0 object-contain" />
-            <div>
+            <img src={`${import.meta.env.BASE_URL}maamara-brand-artwork.svg`} alt="Maa Mara Market" width="50" height="50" className="mm-header-brand-artwork h-[50px] w-[50px] shrink-0 object-contain" />
+            <div className="mm-header-wordmark-wrap">
               <div className="logo xxs:-mt-20 xxs:relative xxs:-top-10 lg:mt-0 lg:top-0">
                 <a href="/">Maa <span className="it-name">Mara</span> <span className="mkrt">Market</span></a>
               </div>
