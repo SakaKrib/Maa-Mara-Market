@@ -142,6 +142,8 @@ jobs:
           VITE_API_URL: ${{ env.MOBILE_API_URL }}${{ env.MOBILE_API_PATH_PREFIX }}
           VITE_ROUTER_BASENAME: /
           VITE_NATIVE_PUSH_ENABLED: ${{ secrets.FIREBASE_ANDROID_CONFIG != '' }}
+          VITE_GOOGLE_CLIENT_ID: ${{ vars.GOOGLE_CLIENT_ID || secrets.GOOGLE_CLIENT_ID }}
+          VITE_GOOGLE_IOS_CLIENT_ID: ${{ vars.GOOGLE_IOS_CLIENT_ID || secrets.GOOGLE_IOS_CLIENT_ID }}
         run: npm run build:mobile
 
       - name: Generate Android project and configure Firebase when credentials are available
@@ -783,12 +785,15 @@ jobs:
           VITE_API_URL: ${{ env.MOBILE_API_URL }}${{ env.MOBILE_API_PATH_PREFIX }}
           VITE_ROUTER_BASENAME: /
           VITE_NATIVE_PUSH_ENABLED: ${{ secrets.FIREBASE_IOS_CONFIG != '' }}
+          VITE_GOOGLE_CLIENT_ID: ${{ vars.GOOGLE_CLIENT_ID || secrets.GOOGLE_CLIENT_ID }}
+          VITE_GOOGLE_IOS_CLIENT_ID: ${{ vars.GOOGLE_IOS_CLIENT_ID || secrets.GOOGLE_IOS_CLIENT_ID }}
         run: npm run build:mobile
 
       - name: Generate iOS project and configure Firebase when credentials are available
         working-directory: ${{ env.FRONTEND_DIR }}
         env:
           FIREBASE_IOS_CONFIG: ${{ secrets.FIREBASE_IOS_CONFIG }}
+          GOOGLE_IOS_CLIENT_ID: ${{ vars.GOOGLE_IOS_CLIENT_ID || secrets.GOOGLE_IOS_CLIENT_ID }}
         run: |
           npx cap add ios
           # Sign in with Apple requires the App ID entitlement. The App ID must
@@ -815,6 +820,65 @@ jobs:
           end
           project.save
           RUBY
+          if [ -n "$GOOGLE_IOS_CLIENT_ID" ]; then
+            GOOGLE_IOS_CLIENT_ID="$GOOGLE_IOS_CLIENT_ID" python3 - <<'PY'
+          import os
+          import plistlib
+          from pathlib import Path
+
+          client_id = os.environ["GOOGLE_IOS_CLIENT_ID"].strip()
+          if not client_id.endswith(".apps.googleusercontent.com"):
+              raise SystemExit("GOOGLE_IOS_CLIENT_ID must be a Google iOS OAuth client ID")
+          reversed_scheme = "com.googleusercontent.apps." + client_id.split(".apps.googleusercontent.com", 1)[0]
+          plist_path = Path("ios/App/App/Info.plist")
+          with plist_path.open("rb") as handle:
+              info = plistlib.load(handle)
+          url_types = info.setdefault("CFBundleURLTypes", [])
+          if not isinstance(url_types, list):
+              raise SystemExit("Info.plist CFBundleURLTypes is not an array")
+          schemes = [scheme for entry in url_types if isinstance(entry, dict) for scheme in entry.get("CFBundleURLSchemes", [])]
+          if reversed_scheme not in schemes:
+              url_types.append({"CFBundleURLName": "Google Sign-In", "CFBundleURLSchemes": [reversed_scheme]})
+          info["GIDClientID"] = client_id
+          with plist_path.open("wb") as handle:
+              plistlib.dump(info, handle)
+          print("Configured the Google iOS client ID and reversed URL scheme in Info.plist.")
+          PY
+            python3 - <<'PY'
+          from pathlib import Path
+
+          path = Path("ios/App/App/AppDelegate.swift")
+          source = path.read_text()
+          if "import GoogleSignIn" not in source:
+              source = source.replace("import Capacitor", "import Capacitor\nimport GoogleSignIn", 1)
+          marker = "func application(_ app: UIApplication, open url: URL, options: [UIApplication.OpenURLOptionsKey: Any] = [:]) -> Bool {"
+          if marker not in source:
+              method = """\n    func application(_ app: UIApplication, open url: URL, options: [UIApplication.OpenURLOptionsKey: Any] = [:]) -> Bool {\n        if GIDSignIn.sharedInstance.handle(url) { return true }\n        return ApplicationDelegateProxy.shared.application(app, open: url, options: options)\n    }\n"""
+              index = source.rfind("}")
+              if index < 0:
+                  raise SystemExit("Could not find AppDelegate class closing brace")
+              source = source[:index] + method + source[index:]
+          else:
+              start = source.index(marker)
+              brace = source.index("{", start)
+              depth = 0
+              end = None
+              for i in range(brace, len(source)):
+                  if source[i] == "{": depth += 1
+                  elif source[i] == "}":
+                      depth -= 1
+                      if depth == 0:
+                          end = i + 1
+                          break
+              if end is None: raise SystemExit("Could not parse existing AppDelegate URL handler")
+              method = marker + "\n        if GIDSignIn.sharedInstance.handle(url) { return true }\n        return ApplicationDelegateProxy.shared.application(app, open: url, options: options)\n    }"
+              source = source[:start] + method + source[end:]
+          path.write_text(source)
+          if "GIDSignIn.sharedInstance.handle(url)" not in source:
+              raise SystemExit("Google URL callback handler was not installed")
+          print("Configured AppDelegate to forward Google Sign-In URL callbacks.")
+          PY
+          fi
           if [ -n "$FIREBASE_IOS_CONFIG" ]; then
             printf '%s' "$FIREBASE_IOS_CONFIG" > ios/App/App/GoogleService-Info.plist
             python3 - <<'PY'
