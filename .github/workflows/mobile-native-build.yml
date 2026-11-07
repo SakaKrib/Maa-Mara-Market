@@ -55,7 +55,8 @@ jobs:
         working-directory: ${{ env.FRONTEND_DIR }}
         env:
           VITE_BUILD_TARGET: mobile
-          VITE_API_URL: ${{ env.MOBILE_API_URL }}
+          VITE_API_URL: ${{ env.MOBILE_API_URL }}/maamara
+          VITE_ROUTER_BASENAME: /
           VITE_PUBLIC_SITE_URL: https://maamaramarket.com
         run: npm run build:mobile
 
