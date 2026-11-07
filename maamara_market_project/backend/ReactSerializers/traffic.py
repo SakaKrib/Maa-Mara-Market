@@ -83,6 +83,13 @@ def record_traffic_event(request):
     timezone_name = str(request.data.get("timezone") or "").strip()[:64]
     country_code, country_name = _country_from_request(request, ip, timezone_name)
 
+    # A browser session has one start marker. Replayed effects or parallel
+    # bootstrap requests must not create duplicate session-start activities.
+    if event_type == "session_start" and session_id and TrafficEvent.objects.filter(
+        session_id=session_id, event_type="session_start"
+    ).exists():
+        return Response({"recorded": False, "duplicate": True}, status=status.HTTP_200_OK)
+
     TrafficEvent.objects.create(
         user=request.user if getattr(request.user, "is_authenticated", False) else None,
         visitor_id=visitor_id,
@@ -239,7 +246,7 @@ def inbound_traffic_analytics(request):
         qs = page_views.filter(path__icontains=predicate)
         keys = set()
         for row in qs.values("visitor_id", "user_id", "session_id"):
-            key = row["session_id"] or row["visitor_id"] or (f"user:{row['user_id']}" if row["user_id"] else None)
+            key = row["visitor_id"] or (f"user:{row['user_id']}" if row["user_id"] else None) or row["session_id"]
             if key:
                 keys.add(key)
         return len(keys)
@@ -251,54 +258,98 @@ def inbound_traffic_analytics(request):
         {"key": "purchase_complete", "label": "Reached payment success", "count": milestone_count("payment-success")},
     ]
 
-    recent_sessions = []
-    session_ids = list(
-        page_views.exclude(session_id__isnull=True)
-        .exclude(session_id="")
-        .values_list("session_id", flat=True)
-        .distinct()
-    )[:40]
-    for session_id in session_ids:
-        rows = list(
-            events.filter(session_id=session_id)
-            .order_by("created_at")
-            .values(
-                "path", "created_at", "event_type", "source", "medium", "campaign",
-                "referrer", "country_code", "country_name", "device_type", "user_id",
-                "user__username", "user__email",
-            )[:100]
-        )
-        if rows:
-            first = rows[0]
-            last = rows[-1]
-            visitor_id = page_views.filter(session_id=session_id).values_list("visitor_id", flat=True).first() or ""
-            recent_sessions.append({
-                "session_id": session_id,
-                "started_at": first["created_at"],
-                "last_seen": last["created_at"],
-                "page_count": sum(1 for row in rows if row["event_type"] == "page_view"),
-                "event_count": len(rows),
-                "country_code": first["country_code"] or "",
-                "country_name": first["country_name"] or first["country_code"] or "Unknown",
-                "source": first["source"] or "direct",
-                "device_type": first["device_type"] or "unknown",
-                "referrer": first["referrer"] or "",
+    # Build one row per visitor identity, not one row per browser session.
+    # A visitor may open several sessions; their pages remain in one journey.
+    recent_visitor_groups = {}
+    visitor_rows = page_views.order_by("-created_at").values(
+        "visitor_id", "session_id", "user_id", "user__username", "user__email",
+    )
+    for row in visitor_rows.iterator():
+        visitor_id = row["visitor_id"] or ""
+        user_id = row["user_id"]
+        session_id = row["session_id"] or ""
+        if visitor_id:
+            visitor_key = f"visitor:{visitor_id}"
+        elif user_id:
+            visitor_key = f"user:{user_id}"
+        elif session_id:
+            visitor_key = f"session:{session_id}"
+        else:
+            continue
+        if visitor_key not in recent_visitor_groups:
+            recent_visitor_groups[visitor_key] = {
+                "visitor_key": visitor_key,
                 "visitor_id": visitor_id,
-                "user": {
-                    "id": first["user_id"],
-                    "username": first["user__username"] or "",
-                    "email": first["user__email"] or "",
-                } if first["user_id"] else None,
-                "pages": [
-                    {
-                        "path": row["path"],
-                        "event_type": row["event_type"],
-                        "created_at": row["created_at"],
-                        "source": row["source"] or "direct",
-                    }
-                    for row in rows
-                ],
-            })
+                "user_id": user_id,
+                "latest_session_id": session_id,
+            }
+        if len(recent_visitor_groups) >= 40:
+            break
+
+    recent_visitors = []
+    for visitor_key, identity in recent_visitor_groups.items():
+        if identity["visitor_id"]:
+            visitor_events = events.filter(visitor_id=identity["visitor_id"])
+        elif identity["user_id"]:
+            visitor_events = events.filter(user_id=identity["user_id"])
+        else:
+            visitor_events = events.filter(session_id=identity["latest_session_id"])
+
+        rows = list(
+            visitor_events.order_by("created_at").values(
+                "path", "created_at", "event_type", "source", "medium", "campaign",
+                "referrer", "country_code", "country_name", "device_type", "session_id",
+                "user_id", "user__username", "user__email",
+            )[:200]
+        )
+        if not rows:
+            continue
+
+        visible_activity = [row for row in rows if row["event_type"] != "session_start"]
+        page_rows = [row for row in rows if row["event_type"] == "page_view"]
+        visitor_sessions = {row["session_id"] for row in rows if row["session_id"]}
+        first = rows[0]
+        last = rows[-1]
+        visitor_user_id = next((row["user_id"] for row in reversed(rows) if row["user_id"]), None)
+        visitor_username = next((row["user__username"] for row in reversed(rows) if row["user__username"]), "")
+        visitor_email = next((row["user__email"] for row in reversed(rows) if row["user__email"]), "")
+
+        recent_visitors.append({
+            "visitor_key": visitor_key,
+            "visitor_id": identity["visitor_id"],
+            "visitor_label": visitor_username or visitor_email or (
+                f"Visitor {identity['visitor_id'][:8]}" if identity["visitor_id"] else "Unidentified visitor"
+            ),
+            "started_at": first["created_at"],
+            "last_seen": last["created_at"],
+            "page_count": len(page_rows),
+            "event_count": len(visible_activity),
+            "session_count": len(visitor_sessions),
+            "country_code": last["country_code"] or first["country_code"] or "",
+            "country_name": last["country_name"] or first["country_name"] or last["country_code"] or "Unknown",
+            "source": first["source"] or "direct",
+            "device_type": last["device_type"] or first["device_type"] or "unknown",
+            "referrer": first["referrer"] or "",
+            "user": {
+                "id": visitor_user_id,
+                "username": visitor_username,
+                "email": visitor_email,
+            } if visitor_user_id else None,
+            "pages": [
+                {
+                    "path": row["path"],
+                    "event_type": row["event_type"],
+                    "created_at": row["created_at"],
+                    "session_id": row["session_id"] or "",
+                    "source": row["source"] or "direct",
+                }
+                for row in page_rows
+            ],
+        })
+
+    recent_visitors.sort(key=lambda item: item["last_seen"], reverse=True)
+    # Keep the legacy key during rollout, with the new visitor-level semantics.
+    recent_sessions = recent_visitors
 
     return Response({
         "period_days": days,
@@ -320,6 +371,7 @@ def inbound_traffic_analytics(request):
         "devices": devices,
         "top_items": top_items,
         "goals": goals,
+        "recent_visitors": recent_visitors,
         "recent_sessions": recent_sessions,
     })
 
