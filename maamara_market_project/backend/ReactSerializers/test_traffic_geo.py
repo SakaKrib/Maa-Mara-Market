@@ -117,6 +117,68 @@ class InboundTrafficTests(TestCase):
         self.assertEqual(detail.json()["session_count"], 2)
         self.assertEqual(len(detail.json()["activity"]), 3)
 
+    def test_signed_in_account_groups_multiple_browser_identities_into_one_journey(self):
+        user = get_user_model().objects.create_user(
+            username=f"returning-{uuid4().hex[:6]}",
+            email="returning@example.com",
+            password="x",
+        )
+        TrafficEvent.objects.create(
+            user=user, visitor_id="browser-one", session_id="account-session-one",
+            event_type="page_view", path="/",
+        )
+        TrafficEvent.objects.create(
+            user=user, visitor_id="browser-two", session_id="account-session-two",
+            event_type="page_view", path="/products",
+        )
+
+        admin = APIClient()
+        admin.force_authenticate(self.admin)
+        body = admin.get("/api/admin/inbound-traffic/?days=30").json()
+
+        self.assertEqual(body["summary"]["unique_visitors"], 1)
+        self.assertEqual(len(body["recent_visitors"]), 1)
+        visitor = body["recent_visitors"][0]
+        self.assertEqual(visitor["visitor_key"], f"user:{user.pk}")
+        self.assertEqual(visitor["session_count"], 2)
+        self.assertEqual(visitor["page_count"], 2)
+
+        detail = admin.get(f"/api/admin/inbound-traffic/visitors/user:{user.pk}/")
+        self.assertEqual(detail.status_code, 200)
+        self.assertEqual(detail.json()["session_count"], 2)
+        self.assertEqual(len(detail.json()["activity"]), 2)
+
+    def test_clear_inbound_traffic_requires_exact_confirmation(self):
+        TrafficEvent.objects.create(
+            event_type="page_view", path="/", visitor_id="clear-visitor",
+            session_id="clear-session",
+        )
+        TrafficEvent.objects.create(
+            event_type="page_view", path="/products", visitor_id="clear-visitor",
+            session_id="clear-session",
+        )
+
+        admin = APIClient()
+        admin.force_authenticate(self.admin)
+
+        rejected = admin.delete(
+            "/api/admin/inbound-traffic/clear/",
+            {"confirmation": "clear"},
+            format="json",
+        )
+        self.assertEqual(rejected.status_code, 400)
+        self.assertEqual(TrafficEvent.objects.count(), 2)
+
+        cleared = admin.delete(
+            "/api/admin/inbound-traffic/clear/",
+            {"confirmation": "CLEAR INBOUND TRAFFIC"},
+            format="json",
+        )
+        self.assertEqual(cleared.status_code, 200)
+        self.assertTrue(cleared.json()["cleared"])
+        self.assertEqual(cleared.json()["traffic_events_deleted"], 2)
+        self.assertEqual(TrafficEvent.objects.count(), 0)
+
     def test_session_start_is_recorded_once_per_session(self):
         client = APIClient()
         payload = {
