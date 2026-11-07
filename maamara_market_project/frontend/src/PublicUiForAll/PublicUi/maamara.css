@@ -4047,12 +4047,16 @@ h1,h2,h3,h4{font-family:'regular','Poppins',Arial,sans-serif}
   }
 }
 
-/* The desktop Maa Mara artwork and wordmark are intentionally hidden on phones.
-   The compact mobile header keeps its menu and account controls uncluttered. */
+/* Hide only the standalone brand artwork on phones.
+   Keep the Maa Mara Market text wordmark visible in the mobile header. */
 @media(max-width:639px){
-  .mm-main-header .mm-header-brand-artwork,
-  .mm-main-header .mm-header-wordmark-wrap{
+  .mm-main-header .mm-header-brand-artwork{
     display:none!important;
+  }
+  .mm-main-header .logo{
+    position:relative!important;
+    top:0!important;
+    margin-top:0!important;
   }
 }
 
