@@ -33,6 +33,12 @@ const InboundTraffic = () => {
   const [loading, setLoading] = useState(true);
   const [selectedSession, setSelectedSession] = useState(null);
   const [sessionLoading, setSessionLoading] = useState(false);
+  const [showClearConfirm, setShowClearConfirm] = useState(false);
+  const [clearPhrase, setClearPhrase] = useState("");
+  const [clearError, setClearError] = useState("");
+  const [clearMessage, setClearMessage] = useState("");
+  const [clearLoading, setClearLoading] = useState(false);
+  const [refreshKey, setRefreshKey] = useState(0);
 
   useEffect(() => {
     let active = true;
@@ -52,7 +58,38 @@ const InboundTraffic = () => {
       active = false;
       clearInterval(interval);
     };
-  }, [days]);
+  }, [days, refreshKey]);
+
+  const confirmClearTraffic = async () => {
+    if (clearPhrase !== "CLEAR INBOUND TRAFFIC") {
+      setClearError("Enter the confirmation phrase exactly as shown.");
+      return;
+    }
+
+    setClearLoading(true);
+    setClearError("");
+    setClearMessage("");
+    try {
+      const response = await api.delete("/api/admin/inbound-traffic/clear/", {
+        data: { confirmation: clearPhrase },
+      });
+      const trafficCount = Number(response.data?.traffic_events_deleted || 0);
+      const productCount = Number(response.data?.product_views_deleted || 0);
+      setData(emptyData);
+      setSelectedSession(null);
+      setShowClearConfirm(false);
+      setClearPhrase("");
+      setClearMessage(`Reset complete: ${trafficCount.toLocaleString()} traffic records and ${productCount.toLocaleString()} product-view records cleared. New visits will now be tracked from a clean baseline.`);
+      setRefreshKey((value) => value + 1);
+    } catch (error) {
+      setClearError(
+        error?.response?.data?.error ||
+        "We could not clear inbound analytics. Please check your administrator access and try again."
+      );
+    } finally {
+      setClearLoading(false);
+    }
+  };
 
   const trendData = [{
     id: "Page views",
@@ -76,19 +113,39 @@ const InboundTraffic = () => {
             Understand where visitors come from, which pages they use, and how far they progress through the storefront.
           </p>
         </div>
-        <NativeAwareSelect
-          aria-label="Reporting period"
-          value={days}
-          onChange={(event) => setDays(Number(event.target.value))}
-          className="rounded-xl border border-border bg-card px-3 py-2 text-sm text-foreground outline-none focus:ring-2 focus:ring-primary/20"
-          options={[
-            { value: 7, label: "Last 7 days" },
-            { value: 30, label: "Last 30 days" },
-            { value: 60, label: "Last 60 days" },
-            { value: 90, label: "Last 90 days" },
-          ]}
-        />
+        <div className="flex flex-wrap items-center gap-2">
+          <NativeAwareSelect
+            aria-label="Reporting period"
+            value={days}
+            onChange={(event) => setDays(Number(event.target.value))}
+            className="rounded-xl border border-border bg-card px-3 py-2 text-sm text-foreground outline-none focus:ring-2 focus:ring-primary/20"
+            options={[
+              { value: 7, label: "Last 7 days" },
+              { value: 30, label: "Last 30 days" },
+              { value: 60, label: "Last 60 days" },
+              { value: 90, label: "Last 90 days" },
+            ]}
+          />
+          <button
+            type="button"
+            onClick={() => {
+              setClearError("");
+              setClearMessage("");
+              setClearPhrase("");
+              setShowClearConfirm(true);
+            }}
+            className="rounded-xl border border-red-300 px-3 py-2 text-sm font-semibold text-red-700 transition hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-red-200"
+          >
+            Clear inbound traffic
+          </button>
+        </div>
       </div>
+
+      {clearMessage && (
+        <div role="status" className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
+          {clearMessage}
+        </div>
+      )}
 
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-6">
         <Stat label="Page views" value={data.summary.page_views} />
@@ -283,6 +340,53 @@ const InboundTraffic = () => {
           {!(data.recent_visitors || data.recent_sessions || []).length && <p className="text-sm text-muted-foreground">Visitor journeys will appear after sessions are recorded.</p>}
         </div>
       </section>
+
+      {showClearConfirm && (
+        <div className="fixed inset-0 z-[10002] flex items-center justify-center bg-black/55 p-4" role="dialog" aria-modal="true" aria-labelledby="clear-traffic-title">
+          <div className="w-full max-w-lg rounded-2xl border border-border bg-card p-5 shadow-2xl">
+            <p className="text-xs font-semibold uppercase tracking-wider text-red-700">Destructive analytics action</p>
+            <h2 id="clear-traffic-title" className="mt-1 text-xl font-bold text-card-foreground">Clear inbound traffic?</h2>
+            <p className="mt-2 text-sm text-muted-foreground">
+              This permanently deletes recorded inbound journeys and product-view analytics so the dashboard can start from a clean baseline. Customer accounts, carts, orders, payments, and products are not affected.
+            </p>
+            <label htmlFor="clear-traffic-confirmation" className="mt-4 block text-xs font-semibold text-card-foreground">
+              Type CLEAR INBOUND TRAFFIC to confirm
+            </label>
+            <input
+              id="clear-traffic-confirmation"
+              value={clearPhrase}
+              onChange={(event) => setClearPhrase(event.target.value)}
+              autoComplete="off"
+              spellCheck={false}
+              className="mt-2 w-full rounded-xl border border-border bg-background px-3 py-2 text-sm text-foreground outline-none focus:ring-2 focus:ring-primary/20"
+              placeholder="CLEAR INBOUND TRAFFIC"
+            />
+            {clearError && <p role="alert" className="mt-2 text-sm text-red-700">{clearError}</p>}
+            <div className="mt-5 flex flex-wrap justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setShowClearConfirm(false);
+                  setClearPhrase("");
+                  setClearError("");
+                }}
+                disabled={clearLoading}
+                className="rounded-xl border border-border px-4 py-2 text-sm font-semibold text-card-foreground hover:bg-muted disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={confirmClearTraffic}
+                disabled={clearLoading || clearPhrase !== "CLEAR INBOUND TRAFFIC"}
+                className="rounded-xl bg-red-700 px-4 py-2 text-sm font-semibold text-white hover:bg-red-800 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {clearLoading ? "Clearing…" : "Permanently clear traffic"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {selectedSession && (
         <div className="fixed inset-0 z-[10000] flex items-center justify-center bg-black/50 p-3 sm:p-6" role="dialog" aria-modal="true">
