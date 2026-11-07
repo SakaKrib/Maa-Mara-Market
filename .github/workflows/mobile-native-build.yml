@@ -488,7 +488,6 @@ jobs:
               release_match = re.search(r"\brelease\s*\{", source[bt_open:bt_close])
               if release_match:
                   release_start = bt_open + release_match.start()
-                  release_block = block_bounds(source, source[release_start:release_start + len("release")])
                   # Locate the release block's opening brace and insert the signing line.
                   release_brace = source.find("{", release_start)
                   source = source[:release_brace + 1] + "\n            signingConfig signingConfigs.release" + source[release_brace + 1:]
