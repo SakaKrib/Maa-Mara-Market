@@ -41,6 +41,29 @@ def _visitor_user_map(page_views):
     }
 
 
+def _visitor_ids_for_user(user_id):
+    candidate_ids = list(
+        TrafficEvent.objects.filter(user_id=user_id)
+        .exclude(visitor_id__isnull=True)
+        .exclude(visitor_id="")
+        .values_list("visitor_id", flat=True)
+        .distinct()
+    )
+    if not candidate_ids:
+        return []
+
+    users_by_visitor = {}
+    for visitor_id, associated_user_id in TrafficEvent.objects.filter(
+        visitor_id__in=candidate_ids, user_id__isnull=False
+    ).values_list("visitor_id", "user_id").distinct():
+        users_by_visitor.setdefault(visitor_id, set()).add(associated_user_id)
+
+    return [
+        visitor_id for visitor_id, user_ids in users_by_visitor.items()
+        if user_ids == {user_id}
+    ]
+
+
 def _visitor_identity_key(visitor_id=None, user_id=None, session_id=None, visitor_user_map=None):
     """Prefer an account identity; otherwise retain the anonymous browser identity."""
     resolved_user_id = user_id or (visitor_user_map or {}).get(visitor_id)
@@ -460,7 +483,11 @@ def inbound_traffic_visitor_detail(request, visitor_key):
     if prefix == "visitor":
         events = TrafficEvent.objects.filter(visitor_id=identity)
     elif prefix == "user" and identity.isdigit():
-        events = TrafficEvent.objects.filter(user_id=int(identity))
+        user_id = int(identity)
+        linked_visitor_ids = _visitor_ids_for_user(user_id)
+        events = TrafficEvent.objects.filter(
+            Q(user_id=user_id) | Q(visitor_id__in=linked_visitor_ids)
+        )
     elif prefix == "session":
         events = TrafficEvent.objects.filter(session_id=identity)
     else:
