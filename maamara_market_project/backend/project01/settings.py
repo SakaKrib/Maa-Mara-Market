@@ -7,6 +7,7 @@ from pathlib import Path
 from datetime import timedelta
 import os
 import re
+from urllib.parse import urlsplit
 import environ
 from dotenv import load_dotenv
 from celery.schedules import crontab
@@ -90,7 +91,14 @@ PESAPAL_CALLBACK_URL = env(
 
 # The domains this Django site is allowed to serve. It is specified as a string
 # of comma-separated URLs in .env
-ALLOWED_HOSTS = [host.strip() for host in env("ALLOWED_HOSTS", default="127.0.0.1,localhost").split(",") if host.strip()]
+ALLOWED_HOSTS = list(dict.fromkeys([
+    *[
+        host.strip()
+        for host in env("ALLOWED_HOSTS", default="127.0.0.1,localhost").split(",")
+        if host.strip()
+    ],
+    *([urlsplit(DEFAULT_PUBLIC_BASE_URL).hostname] if urlsplit(DEFAULT_PUBLIC_BASE_URL).hostname else []),
+]))
 
 # =========================================================
 # APPLICATIONS
