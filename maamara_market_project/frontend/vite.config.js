@@ -20,6 +20,10 @@ export default defineConfig(({ mode }) => {
     server: {
       host: "0.0.0.0",
       port: 5173,
+      // Allow the shared Tailscale hostname when MaaMara is served below /maamara.
+      allowedHosts: [
+        "opondo-thinkpad-t14-gen-1.tail34bca9.ts.net",
+      ],
       watch: {
         // Docker bind mounts can miss native filesystem events on some hosts.
         // Polling keeps HMR reliable during local development.
