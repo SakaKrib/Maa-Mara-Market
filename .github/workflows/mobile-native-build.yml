@@ -46,42 +46,6 @@ jobs:
         working-directory: ${{ env.FRONTEND_DIR }}
         run: npm ci
 
-      - name: Generate Android App Links verification file
-        env:
-          ANDROID_APP_SHA256_CERT_FINGERPRINTS: ${{ secrets.ANDROID_APP_SHA256_CERT_FINGERPRINTS || vars.ANDROID_APP_SHA256_CERT_FINGERPRINTS }}
-        working-directory: ${{ env.FRONTEND_DIR }}
-        run: |
-          python3 - <<'PY'
-          import json
-          import os
-          import re
-          from pathlib import Path
-
-          raw = os.environ.get("ANDROID_APP_SHA256_CERT_FINGERPRINTS", "").strip()
-          fingerprints = [item.strip().upper() for item in raw.split(",") if item.strip()]
-          pattern = re.compile(r"^(?:[0-9A-F]{2}:){31}[0-9A-F]{2}$")
-          if not fingerprints or any(not pattern.fullmatch(item) for item in fingerprints):
-              raise SystemExit(
-                  "::error::ANDROID_APP_SHA256_CERT_FINGERPRINTS must contain one or more "
-                  "colon-separated SHA-256 certificate fingerprints."
-              )
-          if len(set(fingerprints)) != len(fingerprints):
-              raise SystemExit("Duplicate Android signing fingerprints were supplied.")
-
-          destination = Path("public/.well-known/assetlinks.json")
-          destination.parent.mkdir(parents=True, exist_ok=True)
-          payload = [{
-              "relation": ["delegate_permission/common.handle_all_urls"],
-              "target": {
-                  "namespace": "android_app",
-                  "package_name": "com.maamaramarket.app",
-                  "sha256_cert_fingerprints": fingerprints,
-              },
-          }]
-          destination.write_text(json.dumps(payload, indent=2) + "\n")
-          print(f"Generated Android App Links association for {len(fingerprints)} signing certificate(s).")
-          PY
-
       - name: Build website bundle
         working-directory: ${{ env.FRONTEND_DIR }}
         env:
@@ -97,14 +61,6 @@ jobs:
           VITE_ROUTER_BASENAME: /
           VITE_PUBLIC_SITE_URL: https://maamaramarket.com
         run: npm run build:mobile
-
-      - name: Upload Android App Links website file
-        uses: actions/upload-artifact@v4
-        with:
-          name: maa-mara-market-assetlinks
-          path: ${{ env.FRONTEND_DIR }}/public/.well-known/assetlinks.json
-          if-no-files-found: error
-          retention-days: 30
 
       - name: Lint product sharing module
         working-directory: ${{ env.FRONTEND_DIR }}
@@ -183,7 +139,6 @@ jobs:
         working-directory: ${{ env.FRONTEND_DIR }}
         env:
           FIREBASE_ANDROID_CONFIG: ${{ secrets.FIREBASE_ANDROID_CONFIG }}
-          ANDROID_APP_SHA256_CERT_FINGERPRINTS: ${{ secrets.ANDROID_APP_SHA256_CERT_FINGERPRINTS || vars.ANDROID_APP_SHA256_CERT_FINGERPRINTS }}
         run: |
           npx cap add android
           if [ -n "$FIREBASE_ANDROID_CONFIG" ]; then
@@ -229,12 +184,6 @@ jobs:
           import re
           import xml.etree.ElementTree as ET
           from pathlib import Path
-
-          raw = os.environ.get("ANDROID_APP_SHA256_CERT_FINGERPRINTS", "").strip()
-          fingerprints = [item.strip().upper() for item in raw.split(",") if item.strip()]
-          fingerprint_pattern = re.compile(r"^(?:[0-9A-F]{2}:){31}[0-9A-F]{2}$")
-          if not fingerprints or any(not fingerprint_pattern.fullmatch(item) for item in fingerprints):
-              raise SystemExit("ANDROID_APP_SHA256_CERT_FINGERPRINTS is missing or malformed.")
 
           ET.register_namespace("android", "http://schemas.android.com/apk/res/android")
           android = "{http://schemas.android.com/apk/res/android}"
@@ -620,8 +569,6 @@ jobs:
 
       - name: Verify Android release signatures
         working-directory: ${{ env.FRONTEND_DIR }}
-        env:
-          ANDROID_APP_SHA256_CERT_FINGERPRINTS: ${{ secrets.ANDROID_APP_SHA256_CERT_FINGERPRINTS || vars.ANDROID_APP_SHA256_CERT_FINGERPRINTS }}
         run: |
           set -euo pipefail
           APK="android/app/build/outputs/apk/release/app-release.apk"
@@ -637,31 +584,59 @@ jobs:
           import re
           from pathlib import Path
 
-          configured = {
-              item.strip().upper().replace(":", "")
-              for item in os.environ.get("ANDROID_APP_SHA256_CERT_FINGERPRINTS", "").split(",")
-              if item.strip()
-          }
-          if not configured:
-              raise SystemExit("No Android App Links SHA-256 fingerprints were configured.")
-
           output = Path(os.environ["RUNNER_TEMP"]) / "maamara-apk-certs.txt"
           actual = set()
           for line in output.read_text().splitlines():
               match = re.search(r"Signer #\d+ certificate SHA-256 digest: ([0-9A-Fa-f:]+)", line)
               if match:
-                  actual.add(match.group(1).upper().replace(":", ""))
+                  actual.add(match.group(1).upper())
           if not actual:
               raise SystemExit("Could not read the signed APK SHA-256 certificate fingerprint.")
-          if not actual.issubset(configured):
-              raise SystemExit(
-                  "The signed APK certificate fingerprint does not match "
-                  "ANDROID_APP_SHA256_CERT_FINGERPRINTS. Update the configured fingerprint(s)."
-              )
-          print("Verified that the signed APK certificate matches the published Android App Links fingerprint set.")
+          print(f"Extracted {len(actual)} SHA-256 signing certificate fingerprint(s) from the release APK.")
           PY
           jarsigner -verify -verbose "$AAB" >/dev/null
           echo "Verified signed release APK and AAB."
+
+      - name: Generate Android App Links verification file from signed APK
+        working-directory: ${{ env.FRONTEND_DIR }}
+        run: |
+          python3 - <<'PY'
+          import json
+          import os
+          import re
+          from pathlib import Path
+
+          cert_file = Path(os.environ["RUNNER_TEMP"]) / "maamara-apk-certs.txt"
+          fingerprints = []
+          for line in cert_file.read_text().splitlines():
+              match = re.search(r"Signer #\d+ certificate SHA-256 digest: ([0-9A-Fa-f:]+)", line)
+              if match:
+                  fingerprints.append(match.group(1).upper())
+          fingerprints = sorted(set(fingerprints))
+          if not fingerprints:
+              raise SystemExit("No SHA-256 signing fingerprints were extracted from the signed APK.")
+
+          destination = Path("public/.well-known/assetlinks.json")
+          destination.parent.mkdir(parents=True, exist_ok=True)
+          payload = [{
+              "relation": ["delegate_permission/common.handle_all_urls"],
+              "target": {
+                  "namespace": "android_app",
+                  "package_name": "com.maamaramarket.app",
+                  "sha256_cert_fingerprints": fingerprints,
+              },
+          }]
+          destination.write_text(json.dumps(payload, indent=2) + "\n")
+          print(f"Generated assetlinks.json from the actual signed APK ({len(fingerprints)} fingerprint(s)).")
+          PY
+
+      - name: Upload Android App Links website file
+        uses: actions/upload-artifact@v4
+        with:
+          name: maa-mara-market-assetlinks
+          path: ${{ env.FRONTEND_DIR }}/public/.well-known/assetlinks.json
+          if-no-files-found: error
+          retention-days: 30
 
       - name: Upload signed Android release APK and AAB
         uses: actions/upload-artifact@v4
