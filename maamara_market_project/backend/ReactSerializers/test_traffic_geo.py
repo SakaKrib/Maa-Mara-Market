@@ -73,3 +73,69 @@ class InboundTrafficTests(TestCase):
         body = admin.get("/api/admin/inbound-traffic/").json()
         self.assertEqual(body["summary"]["countries"], 0)
         self.assertEqual(body["summary"]["unlocated_views"], 1)
+
+
+    def test_recent_visitors_group_multiple_sessions_into_one_journey(self):
+        TrafficEvent.objects.create(
+            event_type="session_start", path="/", session_id="session-a",
+            visitor_id="returning-visitor", country_code="KE", country_name="Kenya",
+        )
+        TrafficEvent.objects.create(
+            event_type="page_view", path="/", session_id="session-a",
+            visitor_id="returning-visitor", country_code="KE", country_name="Kenya",
+        )
+        TrafficEvent.objects.create(
+            event_type="page_view", path="/products", session_id="session-a",
+            visitor_id="returning-visitor", country_code="KE", country_name="Kenya",
+        )
+        TrafficEvent.objects.create(
+            event_type="session_start", path="/", session_id="session-b",
+            visitor_id="returning-visitor", country_code="KE", country_name="Kenya",
+        )
+        TrafficEvent.objects.create(
+            event_type="page_view", path="/cart", session_id="session-b",
+            visitor_id="returning-visitor", country_code="KE", country_name="Kenya",
+        )
+
+        admin = APIClient()
+        admin.force_authenticate(self.admin)
+        body = admin.get("/api/admin/inbound-traffic/?days=30").json()
+
+        self.assertEqual(body["summary"]["unique_visitors"], 1)
+        self.assertEqual(len(body["recent_visitors"]), 1)
+        visitor = body["recent_visitors"][0]
+        self.assertEqual(visitor["visitor_id"], "returning-visitor")
+        self.assertEqual(visitor["session_count"], 2)
+        self.assertEqual(visitor["page_count"], 3)
+        self.assertEqual(visitor["event_count"], 3)
+        self.assertEqual([page["path"] for page in visitor["pages"]], ["/", "/products", "/cart"])
+
+        detail = admin.get(
+            "/api/admin/inbound-traffic/visitors/visitor:returning-visitor/"
+        )
+        self.assertEqual(detail.status_code, 200)
+        self.assertEqual(detail.json()["session_count"], 2)
+        self.assertEqual(len(detail.json()["activity"]), 3)
+
+    def test_session_start_is_recorded_once_per_session(self):
+        client = APIClient()
+        payload = {
+            "path": "/",
+            "event_type": "session_start",
+            "session_id": "one-session",
+            "visitor_id": "one-visitor",
+            "timezone": "Africa/Nairobi",
+        }
+
+        first = client.post("/api/traffic/record/", payload, format="json")
+        second = client.post("/api/traffic/record/", payload, format="json")
+
+        self.assertEqual(first.status_code, 201)
+        self.assertEqual(second.status_code, 200)
+        self.assertTrue(second.json()["duplicate"])
+        self.assertEqual(
+            TrafficEvent.objects.filter(
+                session_id="one-session", event_type="session_start"
+            ).count(),
+            1,
+        )
