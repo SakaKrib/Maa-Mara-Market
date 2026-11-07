@@ -18,8 +18,10 @@
     reverse_proxy 127.0.0.1:8001
   }
 
-  # Keep the prefix intact for Vite and React Router.
+  # Serve the compiled Maa Mara frontend with Nginx.
+  # The browser retains /maamara while the upstream receives root-relative paths.
   handle /maamara/* {
+    uri strip_prefix /maamara
     reverse_proxy 127.0.0.1:5173
   }
 
