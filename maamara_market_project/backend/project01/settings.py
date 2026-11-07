@@ -104,6 +104,14 @@ PUBLIC_PATH_PREFIX = normalize_public_path_prefix(
 FORCE_SCRIPT_NAME = PUBLIC_PATH_PREFIX or None
 COMPANY_ADDRESS = env("COMPANY_ADDRESS", default="")
 
+# Public app destinations used by the shared transactional-email footer.
+# The Android target is the stable APK asset published by the mobile workflow.
+ANDROID_APP_DOWNLOAD_URL = get_env_value(
+    "ANDROID_APP_DOWNLOAD_URL",
+    "https://github.com/SakaKrib/Maa-Mara-Market/releases/download/mobile-latest/maa-mara-market-android.apk",
+).strip()
+IOS_APP_DOWNLOAD_URL = get_env_value("IOS_APP_DOWNLOAD_URL", "").strip()
+
 # Registered PayPal webhook ID. Keep this server-side; it is required to verify
 # every PayPal webhook before any payment/refund state is changed.
 PAYPAL_WEBHOOK_ID = env("PAYPAL_WEBHOOK_ID", default="")
@@ -160,6 +168,7 @@ INSTALLED_APPS = [
     "allauth.account",
     "allauth.socialaccount",
     "allauth.socialaccount.providers.google",
+    "allauth.socialaccount.providers.apple",
 
     # Django core
     "django.contrib.admin",
@@ -289,7 +298,18 @@ APPLE_REDIRECT_URI = get_env_value(
     "APPLE_REDIRECT_URI",
     f"{BACKEND_PUBLIC_URL}{APPLE_CALLBACK_PREFIX}/accounts/apple/login/callback/",
 )
-APPLE_SIGN_IN_ENABLED = bool(APPLE_CLIENT_ID and APPLE_TEAM_ID and APPLE_KEY_ID and APPLE_PRIVATE_KEY)
+APPLE_EXPECTED_REDIRECT_URI = (
+    f"{BACKEND_PUBLIC_URL}{APPLE_CALLBACK_PREFIX}/accounts/apple/login/callback/"
+)
+# Keep the provider disabled if its registered Apple Return URL does not match
+# the callback Django/allauth will generate for the active public path.
+APPLE_SIGN_IN_ENABLED = bool(
+    APPLE_CLIENT_ID
+    and APPLE_TEAM_ID
+    and APPLE_KEY_ID
+    and APPLE_PRIVATE_KEY
+    and APPLE_REDIRECT_URI.rstrip("/") == APPLE_EXPECTED_REDIRECT_URI.rstrip("/")
+)
 APPLE_APPS = (
     [
         {"client_id": APPLE_CLIENT_ID, "secret": APPLE_KEY_ID, "key": APPLE_TEAM_ID, "settings": {"certificate_key": APPLE_PRIVATE_KEY}},
