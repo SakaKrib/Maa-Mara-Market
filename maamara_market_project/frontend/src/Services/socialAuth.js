@@ -64,7 +64,11 @@ export const signInWithGoogle = async () => {
     await googleNativeInitialization;
     const response = await SocialLogin.login({
       provider: "google",
-      options: { scopes: ["email", "profile"], filterByAuthorizedAccounts: false },
+      // Android already grants the basic email/profile scopes by default.
+      // The explicit scopes option is reserved for iOS here.
+      options: platform === "android"
+        ? { filterByAuthorizedAccounts: false }
+        : { scopes: ["email", "profile"] },
     });
     const credential = response?.result?.idToken || response?.result?.authentication?.idToken;
     return exchangeGoogleCredential(credential);
