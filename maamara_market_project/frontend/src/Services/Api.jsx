@@ -24,9 +24,12 @@ const resolveApiOrigin = () => {
     );
   }
 
-  // Preserve same-origin website behavior. Vite proxies /api, /media and /ws
-  // to Django during local website development.
-  return `${window.location.protocol}//${window.location.host}`;
+  // Vite's BASE_URL is /maamara/ for the shared-hostname website and /
+  // for a standalone root deployment. Keep every API, media and WebSocket
+  // request inside that deployment prefix instead of falling through to the
+  // other application mounted at the hostname root.
+  const publicBaseUrl = import.meta.env.BASE_URL || "/";
+  return normalizeOrigin(new URL(publicBaseUrl, window.location.origin).toString());
 };
 
 export const baseURL = resolveApiOrigin();
