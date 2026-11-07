@@ -100,6 +100,48 @@ export const setVisitorIdentity = (value) => {
 };
 export const getVisitorIdentity = () => visitorIdentity;
 
+let analyticsVisitorIdentity = "";
+const ANALYTICS_VISITOR_STORAGE_KEY = "maaMaraAnalyticsVisitorIdentity";
+const ANALYTICS_VISITOR_MAX_AGE = 30 * 24 * 60 * 60 * 1000;
+
+const createAnalyticsVisitorId = () => (
+  typeof crypto !== "undefined" && crypto.randomUUID
+    ? crypto.randomUUID()
+    : `${Date.now()}-${Math.random().toString(36).slice(2)}`
+);
+
+export const resolveAnalyticsVisitorIdentity = (serverIssuedId = "") => {
+  let identity = typeof serverIssuedId === "string" ? serverIssuedId.trim() : "";
+
+  if (!identity && typeof window !== "undefined") {
+    try {
+      const stored = JSON.parse(window.localStorage.getItem(ANALYTICS_VISITOR_STORAGE_KEY) || "null");
+      if (stored?.id && Number(stored.expiresAt) > Date.now()) {
+        identity = String(stored.id);
+      }
+    } catch {
+      // Replace malformed or unavailable storage entries below.
+    }
+  }
+
+  if (!identity) identity = createAnalyticsVisitorId();
+  analyticsVisitorIdentity = identity;
+
+  if (typeof window !== "undefined") {
+    try {
+      window.localStorage.setItem(
+        ANALYTICS_VISITOR_STORAGE_KEY,
+        JSON.stringify({ id: identity, expiresAt: Date.now() + ANALYTICS_VISITOR_MAX_AGE })
+      );
+    } catch {
+      // In-memory tracking remains available when browser storage is blocked.
+    }
+  }
+  return identity;
+};
+
+export const getAnalyticsVisitorIdentity = () => analyticsVisitorIdentity;
+
 api.interceptors.request.use((config) => {
   const url = String(config.url || "");
   const method = String(config.method || "get").toLowerCase();
