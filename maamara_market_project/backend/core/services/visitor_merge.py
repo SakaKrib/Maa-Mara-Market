@@ -15,7 +15,7 @@ from django.db import transaction
 from core.models import ActivityLog, Notification, Profile, Referral, SearchEvent, Voucher, Wallet
 from order.models import BillingAddress, Customer, Order, OrderItem, Payment, Transaction
 from order.invoice_models import Invoice
-from ReactSerializers.models import ItemView
+from ReactSerializers.models import ItemView, TrafficEvent
 from shop.models import CommentBlog, ReactionBlog, VendorRating, Wishlist, Review, Reaction
 from vendorDashboard.models import ReturnRequest
 
@@ -199,6 +199,13 @@ def merge_visitor_data_to_user(user, visitor_id: str | None) -> dict[str, int]:
     moved += ActivityLog.objects.filter(
         visitor_id=visitor_id, user__isnull=True
     ).update(user=user, visitor_id=None)
+
+    # Preserve the browser visitor ID for analytics continuity, but attach
+    # the account so the earlier anonymous journey becomes identifiable after
+    # the visitor registers or signs in.
+    moved += TrafficEvent.objects.filter(
+        visitor_id=visitor_id, user__isnull=True
+    ).update(user=user)
 
     moved += SearchEvent.objects.filter(
         visitor_id=visitor_id, user__isnull=True
