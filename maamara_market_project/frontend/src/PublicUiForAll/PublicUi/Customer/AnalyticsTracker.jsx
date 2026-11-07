@@ -1,6 +1,6 @@
 import { useEffect, useRef } from "react";
 import { useLocation } from "react-router-dom";
-import api from "../../../Services/Api";
+import api, { getAnalyticsVisitorIdentity } from "../../../Services/Api";
 
 const SOCIAL_HOSTS = ["facebook.com", "instagram.com", "t.co", "x.com", "twitter.com", "linkedin.com", "youtube.com", "tiktok.com"];
 const SEARCH_HOSTS = ["google.", "bing.", "duckduckgo.", "yahoo."];
@@ -78,16 +78,15 @@ const AnalyticsTracker = () => {
         medium: params.get("utm_medium") || "",
         campaign: params.get("utm_campaign") || "",
         session_id: sessionIdRef.current,
+        visitor_id: getAnalyticsVisitorIdentity(),
         // Lets the server place the visit in a country when the IP address cannot.
         timezone: getTimeZone(),
       };
 
       try {
-        // Anonymous visitors receive their existing server-issued visitorId
-        // before the first event is recorded. Authenticated users are left
-        // untouched by this endpoint.
-        await api.get("/api/vistor-token/");
-
+        // App startup initializes the visitor token once before the storefront
+        // mounts. Re-requesting it here on every route can create competing
+        // visitor identities, especially under React StrictMode.
         const sessionStartedKey = "maaMaraAnalyticsSessionStarted";
         const sessionStarted = sessionStorage.getItem(sessionStartedKey) === sessionIdRef.current;
 
