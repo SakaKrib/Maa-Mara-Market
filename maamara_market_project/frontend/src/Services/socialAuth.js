@@ -108,11 +108,15 @@ export const signInWithGoogle = async () => {
   });
 };
 
-const createAppleNonce = async () => {
-  const bytes = crypto.getRandomValues(new Uint8Array(32));
-  const raw = Array.from(bytes, (value) => value.toString(16).padStart(2, "0")).join("");
+// Native Apple sign-in is bound to a one-time nonce issued by our server.
+// Apple receives only its SHA-256; the server verifies it against the token.
+const requestAppleNonce = async () => {
+  const { data } = await api.get("/api/apple/nonce/");
+  const raw = data?.nonce;
+  if (!raw) throw new Error("Apple sign-in could not be started. Please try again.");
   const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(raw));
-  return Array.from(new Uint8Array(digest), (value) => value.toString(16).padStart(2, "0")).join("");
+  const hashed = Array.from(new Uint8Array(digest), (value) => value.toString(16).padStart(2, "0")).join("");
+  return { raw, hashed };
 };
 
 export const signInWithApple = async () => {
@@ -136,7 +140,7 @@ export const signInWithApple = async () => {
     throw new Error("Apple sign-in is supported only on the website and iOS.");
   }
 
-  const nonce = await createAppleNonce();
+  const { raw: rawNonce, hashed: hashedNonce } = await requestAppleNonce();
   if (!appleNativeInitialization) {
     appleNativeInitialization = SocialLogin.initialize({
       apple: { clientId: config.bundleId },
@@ -149,7 +153,7 @@ export const signInWithApple = async () => {
 
   const response = await SocialLogin.login({
     provider: "apple",
-    options: { scopes: ["email", "name"], nonce },
+    options: { scopes: ["email", "name"], nonce: hashedNonce },
   });
   const result = response?.result || {};
   const identityToken = result.idToken || result.identityToken || result.identity_token;
@@ -163,7 +167,7 @@ export const signInWithApple = async () => {
 
   const { data } = await api.post("/api/apple/login/", {
     id_token: identityToken,
-    nonce,
+    nonce: rawNonce,
     ...(fullName ? { full_name: fullName } : {}),
     visitorId: getVisitorIdentity(),
   });

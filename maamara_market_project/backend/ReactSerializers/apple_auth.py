@@ -13,6 +13,8 @@ from django.db import IntegrityError, transaction
 from django.utils.text import slugify
 from rest_framework.exceptions import AuthenticationFailed
 
+from .social_replay import reject_replay
+
 from allauth.account.models import EmailAddress
 from allauth.socialaccount.models import SocialAccount
 
@@ -20,6 +22,15 @@ User = get_user_model()
 APPLE_ISSUER = "https://appleid.apple.com"
 APPLE_JWKS_URL = "https://appleid.apple.com/auth/keys"
 APPLE_TOKEN_URL = "https://appleid.apple.com/auth/token"
+_jwk_client = None
+
+
+def _apple_signing_key(token: str):
+    """Reuse one JWKS client so Apple's keys are cached instead of fetched per login."""
+    global _jwk_client
+    if _jwk_client is None:
+        _jwk_client = jwt.PyJWKClient(APPLE_JWKS_URL, cache_keys=True, lifespan=3600)
+    return _jwk_client.get_signing_key_from_jwt(token)
 
 
 def apple_configuration_is_ready() -> bool:
@@ -100,7 +111,7 @@ def verify_apple_identity_token(identity_token: str, expected_nonce: str) -> dic
     if not audiences:
         raise AuthenticationFailed("Apple sign-in is not configured.")
     try:
-        key = jwt.PyJWKClient(APPLE_JWKS_URL).get_signing_key_from_jwt(identity_token)
+        key = _apple_signing_key(identity_token)
         claims = jwt.decode(
             identity_token,
             key.key,
@@ -111,11 +122,14 @@ def verify_apple_identity_token(identity_token: str, expected_nonce: str) -> dic
         )
     except jwt.PyJWTError as exc:
         raise AuthenticationFailed("Apple identity token could not be verified.") from exc
+    except Exception as exc:  # JWKS download or network failure
+        raise AuthenticationFailed("Apple sign-in is temporarily unavailable. Please try again.") from exc
 
     if not secrets_compare(str(claims.get("nonce") or ""), expected_nonce):
         raise AuthenticationFailed("Apple sign-in nonce validation failed.")
     if not str(claims.get("sub") or "").strip():
         raise AuthenticationFailed("Apple account identifier is missing.")
+    reject_replay(identity_token, claims)
     return claims
 
 

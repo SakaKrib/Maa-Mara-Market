@@ -29,6 +29,7 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from core.mergeVisitortoUserData import merge_visitor_data_to_user
 from core.models import Profile, Wallet
 
+from .social_replay import consume_nonce, issue_nonce, reject_replay
 from .apple_auth import (
     APPLE_ISSUER,
     apple_configuration_is_ready,
@@ -57,6 +58,7 @@ def verify_google_credential(credential: str) -> dict:
     email = str(claims.get("email") or "").strip().lower()
     if not email or claims.get("email_verified") is not True:
         raise AuthenticationFailed("A verified Google email address is required.")
+    reject_replay(credential, claims)
     return claims
 
 
@@ -242,6 +244,19 @@ class AppleAuthConfigView(APIView):
         })
 
 
+class AppleNativeNonceView(APIView):
+    """One-time nonce for native iOS Apple sign-in; the client sends its SHA-256 to Apple."""
+    authentication_classes = []
+    permission_classes = [AllowAny]
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = "social_auth"
+
+    def get(self, request):
+        response = Response({"nonce": issue_nonce()})
+        response["Cache-Control"] = "no-store"
+        return response
+
+
 class AppleLoginStartView(APIView):
     """Start the Apple website flow with short-lived, HttpOnly state and nonce cookies."""
     authentication_classes = []
@@ -362,9 +377,11 @@ class AppleLoginView(APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
         try:
+            # The nonce must be one this server issued moments ago (single use).
+            expected_nonce = consume_nonce(nonce.strip() if isinstance(nonce, str) else "")
             user = authenticate_apple_credential(
                 identity_token.strip(),
-                expected_nonce=nonce.strip() if isinstance(nonce, str) else "",
+                expected_nonce=expected_nonce,
                 supplied_name=supplied_name if isinstance(supplied_name, str) else "",
             )
             return _issue_local_session(request, user)

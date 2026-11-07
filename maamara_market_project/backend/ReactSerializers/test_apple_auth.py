@@ -11,6 +11,7 @@ from django.contrib.auth.models import User
 from django.test import TestCase, override_settings
 
 from core.models import Profile, Wallet
+from ReactSerializers.social_replay import issue_nonce
 
 
 APPLE_SETTINGS = {
@@ -53,7 +54,7 @@ class AppleIdentityAuthenticationTests(TestCase):
         verify.return_value = self.claims
         response = self.client.post(
             "/api/apple/login/",
-            {"id_token": "verified-apple-id-token", "nonce": "expected-hashed-nonce", "full_name": "Apple Customer"},
+            {"id_token": "verified-apple-id-token", "nonce": issue_nonce(), "full_name": "Apple Customer"},
             content_type="application/json",
         )
         self.assertEqual(response.status_code, 200, response.content)
@@ -72,7 +73,7 @@ class AppleIdentityAuthenticationTests(TestCase):
         verify.return_value = {**self.claims, "email": None, "email_verified": False}
         response = self.client.post(
             "/api/apple/login/",
-            {"id_token": "returning-apple-id-token", "nonce": "expected-hashed-nonce"},
+            {"id_token": "returning-apple-id-token", "nonce": issue_nonce()},
             content_type="application/json",
         )
         self.assertEqual(response.status_code, 200, response.content)
@@ -84,7 +85,7 @@ class AppleIdentityAuthenticationTests(TestCase):
         verify.return_value = self.claims
         response = self.client.post(
             "/api/apple/login/",
-            {"id_token": "apple-id-token", "nonce": "expected-hashed-nonce"},
+            {"id_token": "apple-id-token", "nonce": issue_nonce()},
             content_type="application/json",
         )
         self.assertEqual(response.status_code, 200, response.content)
@@ -95,7 +96,7 @@ class AppleIdentityAuthenticationTests(TestCase):
         verify.return_value = {**self.claims, "email_verified": False}
         response = self.client.post(
             "/api/apple/login/",
-            {"id_token": "apple-id-token", "nonce": "expected-hashed-nonce"},
+            {"id_token": "apple-id-token", "nonce": issue_nonce()},
             content_type="application/json",
         )
         self.assertEqual(response.status_code, 401)
@@ -108,14 +109,14 @@ class AppleIdentityAuthenticationTests(TestCase):
         verify.return_value = self.claims
         response = self.client.post(
             "/api/apple/login/",
-            {"id_token": "apple-id-token", "nonce": "expected-hashed-nonce"},
+            {"id_token": "apple-id-token", "nonce": issue_nonce()},
             content_type="application/json",
         )
         self.assertEqual(response.status_code, 401)
         self.assertFalse(SocialAccount.objects.filter(provider="apple", uid=self.claims["sub"]).exists())
 
     @patch("ReactSerializers.apple_auth.jwt.decode")
-    @patch("ReactSerializers.apple_auth.jwt.PyJWKClient")
+    @patch("ReactSerializers.apple_auth._apple_signing_key")
     def test_apple_nonce_mismatch_is_rejected_after_signature_verification(self, jwks, decode):
         jwks.return_value.get_signing_key_from_jwt.return_value.key = "verified-public-key"
         decode.return_value = {**self.claims, "nonce": "different-nonce"}
@@ -125,7 +126,7 @@ class AppleIdentityAuthenticationTests(TestCase):
             verify_apple_identity_token("signed-apple-token", "expected-hashed-nonce")
 
     @patch("ReactSerializers.apple_auth.jwt.decode")
-    @patch("ReactSerializers.apple_auth.jwt.PyJWKClient")
+    @patch("ReactSerializers.apple_auth._apple_signing_key")
     def test_invalid_apple_signature_is_rejected(self, jwks, decode):
         jwks.return_value.get_signing_key_from_jwt.return_value.key = "verified-public-key"
         decode.side_effect = jwt.InvalidSignatureError("bad signature")
@@ -299,3 +300,69 @@ class GoogleIdTokenAuthenticationTests(TestCase):
         )
         self.assertEqual(response.status_code, 401)
         self.assertFalse(SocialAccount.objects.filter(provider="google", uid=self.claims["sub"]).exists())
+
+
+@override_settings(
+    **APPLE_SETTINGS,
+    REST_FRAMEWORK={
+        **settings.REST_FRAMEWORK,
+        "DEFAULT_THROTTLE_RATES": {
+            **settings.REST_FRAMEWORK["DEFAULT_THROTTLE_RATES"],
+            "social_auth": "1000/min",
+        },
+    },
+)
+class AppleNativeNonceAndReplayTests(TestCase):
+    def post(self, nonce):
+        return self.client.post(
+            "/api/apple/login/", {"id_token": "tok", "nonce": nonce}, content_type="application/json"
+        )
+
+    def test_nonce_endpoint_issues_unique_values(self):
+        a = self.client.get("/api/apple/nonce/").json()["nonce"]
+        b = self.client.get("/api/apple/nonce/").json()["nonce"]
+        self.assertNotEqual(a, b)
+
+    def test_unissued_or_missing_nonce_is_rejected(self):
+        self.assertEqual(self.post("client-made-up").status_code, 401)
+        self.assertEqual(self.post("").status_code, 401)
+
+    @patch("ReactSerializers.apple_auth.jwt.decode")
+    @patch("ReactSerializers.apple_auth._apple_signing_key")
+    def test_nonce_is_single_use_and_bound_to_token(self, key, decode):
+        import hashlib
+        raw = issue_nonce()
+        digest = hashlib.sha256(raw.encode()).hexdigest()
+        decode.return_value = {
+            "iss": "https://appleid.apple.com", "sub": "s-1", "aud": "com.maamaramarket.app",
+            "email": "n@privaterelay.appleid.com", "email_verified": "true", "exp": 4102444800,
+            "nonce": digest,
+        }
+        first = self.post(raw)
+        self.assertEqual(first.status_code, 200, first.content)
+        self.assertEqual(self.post(raw).status_code, 401)  # nonce already consumed
+
+    @patch("ReactSerializers.apple_auth.jwt.decode")
+    @patch("ReactSerializers.apple_auth._apple_signing_key")
+    def test_token_minted_for_another_nonce_is_rejected(self, key, decode):
+        decode.return_value = {
+            "iss": "https://appleid.apple.com", "sub": "s-2", "aud": "com.maamaramarket.app",
+            "email": "m@privaterelay.appleid.com", "email_verified": "true", "exp": 4102444800,
+            "nonce": "someone-elses-nonce",
+        }
+        self.assertEqual(self.post(issue_nonce()).status_code, 401)
+
+    @patch("ReactSerializers.apple_auth.jwt.decode")
+    @patch("ReactSerializers.apple_auth._apple_signing_key")
+    def test_same_token_cannot_be_replayed_with_fresh_nonce(self, key, decode):
+        import hashlib
+        def claims_for(raw):
+            return {"iss": "https://appleid.apple.com", "sub": "s-3", "aud": "com.maamaramarket.app",
+                    "email": "r@privaterelay.appleid.com", "email_verified": "true", "exp": 4102444800,
+                    "nonce": hashlib.sha256(raw.encode()).hexdigest()}
+        raw1 = issue_nonce()
+        decode.return_value = claims_for(raw1)
+        self.assertEqual(self.post(raw1).status_code, 200)
+        raw2 = issue_nonce()
+        decode.return_value = claims_for(raw2)
+        self.assertEqual(self.post(raw2).status_code, 401)  # same token string "tok" already used
