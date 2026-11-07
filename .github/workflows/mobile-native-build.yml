@@ -653,12 +653,21 @@ jobs:
           output = Path(os.environ["RUNNER_TEMP"]) / "maamara-apk-certs.txt"
           actual = set()
           for line in output.read_text().splitlines():
-              match = re.search(r"Signer #\d+ certificate SHA-256 digest: ([0-9A-Fa-f:]+)", line)
-              if match:
-                  actual.add(match.group(1).upper())
+              match = re.search(
+                  r"Signer (?:#\\d+|\\([^)]*\\)) certificate SHA-256 digest:\\s*([0-9A-Fa-f:]+)",
+                  line,
+              )
+              if not match:
+                  continue
+              digest = match.group(1).replace(":", "").upper()
+              if re.fullmatch(r"[0-9A-F]{64}", digest):
+                  actual.add(":".join(digest[index:index + 2] for index in range(0, 64, 2)))
           if not actual:
-              raise SystemExit("Could not read the signed APK SHA-256 certificate fingerprint.")
-          print(f"Extracted {len(actual)} SHA-256 signing certificate fingerprint(s) from the release APK.")
+              print(output.read_text())
+              raise SystemExit("Could not parse a valid SHA-256 signing certificate fingerprint from apksigner output.")
+          print("Extracted SHA-256 signing certificate fingerprint(s):")
+          for fingerprint in sorted(actual):
+              print(f"  {fingerprint}")
           PY
           jarsigner -verify -verbose "$AAB" >/dev/null
           echo "Verified signed release APK and AAB."
@@ -675,13 +684,16 @@ jobs:
           cert_file = Path(os.environ["RUNNER_TEMP"]) / "maamara-apk-certs.txt"
           fingerprints = []
           for line in cert_file.read_text().splitlines():
-              match = re.search(r"Signer #\d+ certificate SHA-256 digest: ([0-9A-Fa-f:]+)", line)
-              if match:
-                  fingerprints.append(match.group(1).upper())
+              match = re.search(
+                  r"Signer (?:#\\d+|\\([^)]*\\)) certificate SHA-256 digest:\\s*([0-9A-Fa-f:]+)",
+                  line,
+              )
+              if not match:
+                  continue
+              digest = match.group(1).replace(":", "").upper()
+              if re.fullmatch(r"[0-9A-F]{64}", digest):
+                  fingerprints.append(":".join(digest[index:index + 2] for index in range(0, 64, 2)))
           fingerprints = sorted(set(fingerprints))
-          if not fingerprints:
-              raise SystemExit("No SHA-256 signing fingerprints were extracted from the signed APK.")
-
           destination = Path("public/.well-known/assetlinks.json")
           destination.parent.mkdir(parents=True, exist_ok=True)
           payload = [{
