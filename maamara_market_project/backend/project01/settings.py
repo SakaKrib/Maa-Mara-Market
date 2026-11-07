@@ -265,17 +265,49 @@ SOCIALACCOUNT_AUTO_SIGNUP = True
 SOCIALACCOUNT_LOGIN_ON_GET = False  # Require POST to initiate social login.
 SOCIALACCOUNT_ADAPTER = "ReactSerializers.adapters.MyAdapter"
 
-# Google provider
+# Social sign-in credentials are read only by Django. Never expose OAuth secrets
+# through VITE_* variables or commit the Apple private key to the repository.
+GOOGLE_CLIENT_ID = get_env_value("GOOGLE_CLIENT_ID", "")
+GOOGLE_CLIENT_SECRET = get_env_value("GOOGLE_CLIENT_SECRET", "")
+GOOGLE_APPS = ([{"client_id": GOOGLE_CLIENT_ID, "secret": GOOGLE_CLIENT_SECRET, "key": ""}] if GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET else [])
+
+# Apple uses a Services ID for the web flow and the native Bundle ID for iOS.
+APPLE_CLIENT_ID = get_env_value("APPLE_CLIENT_ID", "")
+APPLE_TEAM_ID = get_env_value("APPLE_TEAM_ID", "")
+APPLE_KEY_ID = get_env_value("APPLE_KEY_ID", "")
+APPLE_BUNDLE_ID = get_env_value("APPLE_BUNDLE_ID", "com.maamaramarket.app")
+APPLE_PRIVATE_KEY_PATH = get_env_value("APPLE_PRIVATE_KEY_PATH", "")
+APPLE_PRIVATE_KEY = get_env_value("APPLE_PRIVATE_KEY", "")
+if APPLE_PRIVATE_KEY_PATH:
+    apple_key_path = Path(APPLE_PRIVATE_KEY_PATH).expanduser()
+    if not apple_key_path.is_absolute():
+        apple_key_path = BASE_DIR / apple_key_path
+    if apple_key_path.is_file():
+        APPLE_PRIVATE_KEY = apple_key_path.read_text(encoding="utf-8")
+APPLE_REDIRECT_URI = get_env_value("APPLE_REDIRECT_URI", f"{BACKEND_PUBLIC_URL}{PUBLIC_PATH_PREFIX}/accounts/apple/login/callback/")
+APPLE_SIGN_IN_ENABLED = bool(APPLE_CLIENT_ID and APPLE_TEAM_ID and APPLE_KEY_ID and APPLE_PRIVATE_KEY)
+APPLE_APPS = (
+    [
+        {"client_id": APPLE_CLIENT_ID, "secret": APPLE_KEY_ID, "key": APPLE_TEAM_ID, "settings": {"certificate_key": APPLE_PRIVATE_KEY}},
+        {"client_id": APPLE_BUNDLE_ID, "secret": APPLE_KEY_ID, "key": APPLE_TEAM_ID, "settings": {"certificate_key": APPLE_PRIVATE_KEY, "hidden": True}},
+    ] if APPLE_SIGN_IN_ENABLED else []
+)
+
 SOCIALACCOUNT_PROVIDERS = {
     "google": {
+        "APPS": GOOGLE_APPS,
         "SCOPE": ["profile", "email"],
         "AUTH_PARAMS": {"access_type": "online"},
         "OAUTH_PKE_ENABLED": True,
         "FETCH_USERINFO": True,
-        # Google email matching is only enabled for provider-verified addresses.
         "VERIFIED_EMAIL": True,
         "EMAIL_AUTHENTICATION": True,
-    }
+    },
+    "apple": {
+        "APPS": APPLE_APPS,
+        "VERIFIED_EMAIL": True,
+        "EMAIL_AUTHENTICATION": True,
+    },
 }
 SOCIALACCOUNT_STORE_TOKENS = False
 

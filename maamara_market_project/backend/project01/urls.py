@@ -19,13 +19,28 @@ from django.contrib import admin
 from django.urls import include, path, re_path
 from django.conf import settings
 from django.views.static import serve
-from django.http import HttpResponse
+from django.http import HttpResponse, JsonResponse
+
+from allauth.socialaccount.models import SocialApp
 
 def index_view(request):
     return HttpResponse("Maa Mara Market API", content_type="text/plain")
 
 
+def auth_provider_status(request):
+    """Expose provider availability only; never return OAuth credentials."""
+    configured_google_apps = settings.SOCIALACCOUNT_PROVIDERS.get("google", {}).get("APPS", [])
+    google_enabled = any(app.get("client_id") and app.get("secret") for app in configured_google_apps)
+    if not google_enabled:
+        try:
+            google_enabled = SocialApp.objects.filter(provider="google").exists()
+        except Exception:
+            google_enabled = False
+    return JsonResponse({"google": bool(google_enabled), "apple": bool(getattr(settings, "APPLE_SIGN_IN_ENABLED", False))})
+
+
 urlpatterns = [
+    path("api/auth/providers/", auth_provider_status, name="auth-provider-status"),
     path("admin/", admin.site.urls),
     path("", include("pesapalpayments.urls")),
     path("", include("order.url")),
