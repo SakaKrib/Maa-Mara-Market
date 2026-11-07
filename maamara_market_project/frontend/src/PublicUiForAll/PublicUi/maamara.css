@@ -4047,14 +4047,12 @@ h1,h2,h3,h4{font-family:'regular','Poppins',Arial,sans-serif}
   }
 }
 
-/* Keep the existing Maa Mara logo visible on mobile without changing its design.
-   The legacy xxs positioning moves it upward out of the compact header. */
+/* The desktop Maa Mara artwork and wordmark are intentionally hidden on phones.
+   The compact mobile header keeps its menu and account controls uncluttered. */
 @media(max-width:639px){
-  .mm-main-header img[alt="maamara-logo"],
-  .mm-main-header .logo{
-    position:relative!important;
-    top:0!important;
-    margin-top:0!important;
+  .mm-main-header .mm-header-brand-artwork,
+  .mm-main-header .mm-header-wordmark-wrap{
+    display:none!important;
   }
 }
 
