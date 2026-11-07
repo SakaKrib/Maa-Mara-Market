@@ -76,7 +76,7 @@ def record_traffic_event(request):
     source = _source_from_payload(request.data.get("source"), referrer, path)
     medium = str(request.data.get("medium") or "").strip()[:120]
     campaign = str(request.data.get("campaign") or "").strip()[:255]
-    visitor_id = request.COOKIES.get("visitorId") or str(request.data.get("visitor_id") or "").strip()[:255] or None
+    visitor_id = str(request.data.get("visitor_id") or request.COOKIES.get("visitorId") or "").strip()[:255] or None
     session_id = str(request.data.get("session_id") or "").strip()[:255] or None
     user_agent = request.META.get("HTTP_USER_AGENT", "")[:2000]
     ip = _client_ip(request)
