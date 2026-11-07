@@ -78,7 +78,7 @@ jobs:
                   "sha256_cert_fingerprints": fingerprints,
               },
           }]
-          destination.write_text(json.dumps(payload, indent=2) + "\\n")
+          destination.write_text(json.dumps(payload, indent=2) + "\n")
           print(f"Generated Android App Links association for {len(fingerprints)} signing certificate(s).")
           PY
 
@@ -620,6 +620,8 @@ jobs:
 
       - name: Verify Android release signatures
         working-directory: ${{ env.FRONTEND_DIR }}
+        env:
+          ANDROID_APP_SHA256_CERT_FINGERPRINTS: ${{ secrets.ANDROID_APP_SHA256_CERT_FINGERPRINTS || vars.ANDROID_APP_SHA256_CERT_FINGERPRINTS }}
         run: |
           set -euo pipefail
           APK="android/app/build/outputs/apk/release/app-release.apk"
@@ -629,6 +631,35 @@ jobs:
           APKSIGNER="$(find "$ANDROID_HOME/build-tools" -type f -name apksigner | sort -V | tail -n 1)"
           test -x "$APKSIGNER"
           "$APKSIGNER" verify --verbose "$APK"
+          "$APKSIGNER" verify --print-certs "$APK" > "$RUNNER_TEMP/maamara-apk-certs.txt"
+          python3 - <<'PY'
+          import os
+          import re
+          from pathlib import Path
+
+          configured = {
+              item.strip().upper().replace(":", "")
+              for item in os.environ.get("ANDROID_APP_SHA256_CERT_FINGERPRINTS", "").split(",")
+              if item.strip()
+          }
+          if not configured:
+              raise SystemExit("No Android App Links SHA-256 fingerprints were configured.")
+
+          output = Path(os.environ["RUNNER_TEMP"]) / "maamara-apk-certs.txt"
+          actual = set()
+          for line in output.read_text().splitlines():
+              match = re.search(r"Signer #\\d+ certificate SHA-256 digest: ([0-9A-Fa-f:]+)", line)
+              if match:
+                  actual.add(match.group(1).upper().replace(":", ""))
+          if not actual:
+              raise SystemExit("Could not read the signed APK SHA-256 certificate fingerprint.")
+          if not actual.issubset(configured):
+              raise SystemExit(
+                  "The signed APK certificate fingerprint does not match "
+                  "ANDROID_APP_SHA256_CERT_FINGERPRINTS. Update the configured fingerprint(s)."
+              )
+          print("Verified that the signed APK certificate matches the published Android App Links fingerprint set.")
+          PY
           jarsigner -verify -verbose "$AAB" >/dev/null
           echo "Verified signed release APK and AAB."
 
