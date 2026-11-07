@@ -43,7 +43,7 @@ def pesapal_callback(request):
 
     if order:
         destination = (
-            f"{settings.FRONTEND_URL.rstrip('/')}/payment-pesapal-callback"
+            f"{settings.FRONTEND_URL.rstrip('/')}{settings.PUBLIC_PATH_PREFIX}/payment-pesapal-callback"
             f"?status=success&order_id={order.id}"
         )
     else:
