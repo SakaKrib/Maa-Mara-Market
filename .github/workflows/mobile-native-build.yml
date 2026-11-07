@@ -648,7 +648,7 @@ jobs:
           output = Path(os.environ["RUNNER_TEMP"]) / "maamara-apk-certs.txt"
           actual = set()
           for line in output.read_text().splitlines():
-              match = re.search(r"Signer #\\d+ certificate SHA-256 digest: ([0-9A-Fa-f:]+)", line)
+              match = re.search(r"Signer #\d+ certificate SHA-256 digest: ([0-9A-Fa-f:]+)", line)
               if match:
                   actual.add(match.group(1).upper().replace(":", ""))
           if not actual:
