@@ -75,6 +75,7 @@ export function LoginForm({ className, ...props }) {
   }
 
   const handleGoogleLogin = async () => {
+    if (!socialProviders.google) return;
     try {
       sessionStorage.setItem("postLoginRedirect", from);
       await startGoogleLogin();
@@ -244,6 +245,7 @@ export function LoginForm({ className, ...props }) {
                     variant="outline"
                     className="mm-auth-google w-full flex items-center justify-center gap-2"
                     onClick={handleGoogleLogin}
+                    disabled={!socialProviders.google}
                   >
                     <svg width="18" height="18" viewBox="0 0 48 48">
                       <path
