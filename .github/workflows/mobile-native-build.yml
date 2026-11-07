@@ -44,13 +44,15 @@ jobs:
 
       - name: Install web dependencies
         working-directory: ${{ env.FRONTEND_DIR }}
-        run: npm ci
+        run: npm ci && npm install --no-save @capgo/capacitor-social-login@^7
 
       - name: Build website bundle
         working-directory: ${{ env.FRONTEND_DIR }}
         env:
           VITE_PUBLIC_BASE_PATH: ${{ vars.MAAMARAMARKET_PUBLIC_PATH_PREFIX == '/' && '/' || format('{0}/', vars.MAAMARAMARKET_PUBLIC_PATH_PREFIX || '/maamara') }}
           VITE_ROUTER_BASENAME: ${{ vars.MAAMARAMARKET_PUBLIC_PATH_PREFIX || '/maamara' }}
+          VITE_GOOGLE_CLIENT_ID: ${{ vars.GOOGLE_CLIENT_ID || secrets.GOOGLE_CLIENT_ID }}
+          VITE_GOOGLE_IOS_CLIENT_ID: ${{ vars.GOOGLE_IOS_CLIENT_ID || secrets.GOOGLE_IOS_CLIENT_ID }}
         run: npm run build
 
       - name: Build mobile web bundle
@@ -60,6 +62,8 @@ jobs:
           VITE_API_URL: ${{ env.MOBILE_API_URL }}${{ env.MOBILE_API_PATH_PREFIX }}
           VITE_ROUTER_BASENAME: /
           VITE_PUBLIC_SITE_URL: https://maamaramarket.com
+          VITE_GOOGLE_CLIENT_ID: ${{ vars.GOOGLE_CLIENT_ID || secrets.GOOGLE_CLIENT_ID }}
+          VITE_GOOGLE_IOS_CLIENT_ID: ${{ vars.GOOGLE_IOS_CLIENT_ID || secrets.GOOGLE_IOS_CLIENT_ID }}
         run: npm run build:mobile
 
       - name: Lint product sharing module
@@ -104,7 +108,7 @@ jobs:
         working-directory: ${{ env.FRONTEND_DIR }}
         # Runtime plugins (including push notifications) are pinned in package.json and the lockfile.
         # Install project generators/platform wrappers and Status Bar temporarily.
-        run: npm install --no-save @capacitor/cli@7 @capacitor/android@7 @capacitor/ios@7 @capacitor/status-bar@7 @capacitor/app@7 typescript@5.8.3 sharp
+        run: npm install --no-save @capacitor/cli@7 @capacitor/android@7 @capacitor/ios@7 @capacitor/status-bar@7 @capacitor/app@7 @capgo/capacitor-social-login@^7 typescript@5.8.3 sharp
 
       - name: Validate configured mobile API base URL
         env:
@@ -133,6 +137,8 @@ jobs:
           VITE_API_URL: ${{ env.MOBILE_API_URL }}${{ env.MOBILE_API_PATH_PREFIX }}
           VITE_ROUTER_BASENAME: /
           VITE_NATIVE_PUSH_ENABLED: ${{ secrets.FIREBASE_ANDROID_CONFIG != '' }}
+          VITE_GOOGLE_CLIENT_ID: ${{ vars.GOOGLE_CLIENT_ID || secrets.GOOGLE_CLIENT_ID }}
+          VITE_GOOGLE_IOS_CLIENT_ID: ${{ vars.GOOGLE_IOS_CLIENT_ID || secrets.GOOGLE_IOS_CLIENT_ID }}
         run: npm run build:mobile
 
       - name: Generate Android project and configure Firebase when credentials are available
@@ -718,6 +724,8 @@ jobs:
           VITE_API_URL: ${{ env.MOBILE_API_URL }}${{ env.MOBILE_API_PATH_PREFIX }}
           VITE_ROUTER_BASENAME: /
           VITE_NATIVE_PUSH_ENABLED: ${{ secrets.FIREBASE_IOS_CONFIG != '' }}
+          VITE_GOOGLE_CLIENT_ID: ${{ vars.GOOGLE_CLIENT_ID || secrets.GOOGLE_CLIENT_ID }}
+          VITE_GOOGLE_IOS_CLIENT_ID: ${{ vars.GOOGLE_IOS_CLIENT_ID || secrets.GOOGLE_IOS_CLIENT_ID }}
         run: npm run build:mobile
 
       - name: Generate iOS project and configure Firebase when credentials are available
