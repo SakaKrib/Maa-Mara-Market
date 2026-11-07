@@ -255,3 +255,30 @@ class GoogleIdTokenAuthenticationTests(TestCase):
         verify.return_value = {**self.claims, "iss": "https://attacker.example"}
         with self.assertRaises(AuthenticationFailed):
             verify_google_credential("signed-google-token")
+
+
+    @patch("ReactSerializers.social_auth_views.id_token.verify_oauth2_token")
+    def test_invalid_google_signature_is_rejected(self, verify):
+        from ReactSerializers.social_auth_views import verify_google_credential
+        verify.side_effect = ValueError("invalid signature")
+        with self.assertRaises(AuthenticationFailed):
+            verify_google_credential("invalid-signature-token")
+
+    @patch("ReactSerializers.social_auth_views.id_token.verify_oauth2_token")
+    def test_google_audience_is_pinned_to_web_client_id(self, verify):
+        from ReactSerializers.social_auth_views import verify_google_credential
+        verify.return_value = self.claims
+        verify_google_credential("signed-google-token")
+        self.assertEqual(verify.call_args.kwargs["audience"], "maamara-web-client.apps.googleusercontent.com")
+
+    @patch("ReactSerializers.social_auth_views.verify_google_credential")
+    def test_conflicting_google_identity_is_rejected(self, verify):
+        user = User.objects.create_user(username="google-conflict", email=self.claims["email"], password=None)
+        SocialAccount.objects.create(provider="google", uid="different-google-subject", user=user)
+        verify.return_value = self.claims
+        response = self.client.post(
+            "/api/google/login/", {"credential": "signed-google-token"},
+            content_type="application/json",
+        )
+        self.assertEqual(response.status_code, 401)
+        self.assertFalse(SocialAccount.objects.filter(provider="google", uid=self.claims["sub"]).exists())
