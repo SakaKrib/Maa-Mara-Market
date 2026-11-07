@@ -17,10 +17,10 @@ User = get_user_model()
 
 
 class MyAdapter(DefaultSocialAccountAdapter):
-    """Safely link verified Google identities to existing email accounts."""
+    """Safely link verified Google and Apple identities to existing accounts."""
 
     @staticmethod
-    def _abort_google_login(reason):
+    def _abort_social_login(reason):
         frontend_url = settings.FRONTEND_URL.rstrip("/")
         raise ImmediateHttpResponse(
             redirect(f"{frontend_url}/unauthorized?reason={reason}")
@@ -31,8 +31,8 @@ class MyAdapter(DefaultSocialAccountAdapter):
         """Build a stable email-based username without overwriting another user."""
         maximum_length = User._meta.get_field("username").max_length or 150
         email_prefix = email.split("@", 1)[0]
-        base = (slugify(email_prefix) or "google-user")[:maximum_length].rstrip("-")
-        base = base or "google-user"[:maximum_length]
+        base = (slugify(email_prefix) or "social-user")[:maximum_length].rstrip("-")
+        base = base or "social-user"[:maximum_length]
 
         username = base
         counter = 2
@@ -46,7 +46,7 @@ class MyAdapter(DefaultSocialAccountAdapter):
         return username
 
     @staticmethod
-    def _is_verified_google_email(sociallogin, email):
+    def _is_verified_social_email(sociallogin, email):
         account = getattr(sociallogin, "account", None)
         extra_data = getattr(account, "extra_data", {}) or {}
         claim = extra_data.get("email_verified")
@@ -72,7 +72,8 @@ class MyAdapter(DefaultSocialAccountAdapter):
             return
 
         account = getattr(sociallogin, "account", None)
-        if not account or getattr(account, "provider", None) != "google":
+        provider = getattr(account, "provider", None) if account else None
+        if provider not in {"google", "apple"}:
             return
 
         extra_data = getattr(account, "extra_data", {}) or {}
@@ -82,10 +83,10 @@ class MyAdapter(DefaultSocialAccountAdapter):
             or ""
         ).strip()
         if not email:
-            self._abort_google_login("google-email-missing")
+            self._abort_social_login(f"{provider}-email-missing")
 
-        if not self._is_verified_google_email(sociallogin, email):
-            self._abort_google_login("google-email-unverified")
+        if not self._is_verified_social_email(sociallogin, email):
+            self._abort_social_login(f"{provider}-email-unverified")
 
         # Match case-insensitively so older mixed-case records do not create a
         # second account. If legacy duplicate emails exist, fail closed rather
@@ -94,13 +95,13 @@ class MyAdapter(DefaultSocialAccountAdapter):
             User.objects.filter(email__iexact=email).order_by("pk")[:2]
         )
         if len(matches) > 1:
-            self._abort_google_login("duplicate-local-email")
+            self._abort_social_login(f"{provider}-duplicate-local-email")
 
         if matches:
             sociallogin.connect(request, matches[0])
 
     def populate_user(self, request, sociallogin, data):
-        """Populate a new Google user from Google's profile and email."""
+        """Populate a new social user from the provider profile and email."""
         user = super().populate_user(request, sociallogin, data)
         account = getattr(sociallogin, "account", None)
         extra_data = getattr(account, "extra_data", {}) or {}
@@ -147,12 +148,12 @@ class MyAdapter(DefaultSocialAccountAdapter):
         return user
 
     def save_user(self, request, sociallogin, form=None):
-        """Recheck the generated username at the actual Google signup boundary."""
+        """Recheck the generated username at the social signup boundary."""
         account = getattr(sociallogin, "account", None)
         user = sociallogin.user
         if (
             account
-            and getattr(account, "provider", None) == "google"
+            and getattr(account, "provider", None) in {"google", "apple"}
             and user
             and getattr(user, "email", "")
         ):
