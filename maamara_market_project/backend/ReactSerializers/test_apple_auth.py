@@ -101,7 +101,7 @@ class AppleIdentityAuthenticationTests(TestCase):
         self.assertFalse(SocialAccount.objects.filter(provider="apple", uid=self.claims["sub"]).exists())
 
     def test_web_start_uses_secure_short_lived_state_and_nonce_cookies(self):
-        with patch("ReactSerializers.apple_auth_views.apple_configuration_is_ready", return_value=True):
+        with patch("ReactSerializers.social_auth_views.apple_configuration_is_ready", return_value=True):
             response = self.client.get("/api/apple/start/")
         self.assertEqual(response.status_code, 302)
         self.assertTrue(response["Location"].startswith("https://appleid.apple.com/auth/authorize?"))
