@@ -4,7 +4,7 @@ from ipaddress import ip_address
 
 import requests
 from django.db import transaction
-from django.db.models import Count
+from django.db.models import Count, Q
 from django.utils import timezone
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import AllowAny, IsAdminUser
@@ -16,10 +16,36 @@ from .models import TrafficEvent, ItemView
 
 _GEO_CACHE = {}
 
-def _visitor_identity_key(visitor_id=None, user_id=None, session_id=None):
+def _visitor_user_map(page_views):
+    """Map browser IDs to an account only when that browser has one unambiguous account."""
+    visitor_ids = list(
+        page_views.exclude(visitor_id__isnull=True)
+        .exclude(visitor_id="")
+        .values_list("visitor_id", flat=True)
+        .distinct()
+    )
+    if not visitor_ids:
+        return {}
+
+    users_by_visitor = {}
+    associations = TrafficEvent.objects.filter(
+        visitor_id__in=visitor_ids, user_id__isnull=False
+    ).values_list("visitor_id", "user_id").distinct()
+    for visitor_id, user_id in associations:
+        users_by_visitor.setdefault(visitor_id, set()).add(user_id)
+
+    return {
+        visitor_id: next(iter(user_ids))
+        for visitor_id, user_ids in users_by_visitor.items()
+        if len(user_ids) == 1
+    }
+
+
+def _visitor_identity_key(visitor_id=None, user_id=None, session_id=None, visitor_user_map=None):
     """Prefer an account identity; otherwise retain the anonymous browser identity."""
-    if user_id:
-        return "user:" + str(user_id)
+    resolved_user_id = user_id or (visitor_user_map or {}).get(visitor_id)
+    if resolved_user_id:
+        return "user:" + str(resolved_user_id)
     if visitor_id:
         return "visitor:" + str(visitor_id)
     if session_id:
@@ -151,10 +177,11 @@ def traffic_analytics(request):
     previous_count = previous_events.count()
     growth = round(((current_count - previous_count) / previous_count) * 100, 1) if previous_count else (100.0 if current_count else 0.0)
 
+    visitor_user_map = _visitor_user_map(events)
     visitor_rows = events.values("visitor_id", "user_id", "session_id").distinct()
     unique_visitor_keys = set()
     for row in visitor_rows:
-        key = _visitor_identity_key(row["visitor_id"], row["user_id"], row["session_id"])
+        key = _visitor_identity_key(row["visitor_id"], row["user_id"], row["session_id"], visitor_user_map)
         if key:
             unique_visitor_keys.add(key)
 
@@ -229,12 +256,12 @@ def inbound_traffic_analytics(request):
     events = TrafficEvent.objects.filter(created_at__gte=start)
 
     page_views = events.filter(event_type="page_view")
-    session_starts = events.filter(event_type="session_start")
     event_rows = events.filter(event_type="event")
 
+    visitor_user_map = _visitor_user_map(page_views)
     visitor_keys = set()
     for row in page_views.values("visitor_id", "user_id", "session_id"):
-        key = _visitor_identity_key(row["visitor_id"], row["user_id"], row["session_id"])
+        key = _visitor_identity_key(row["visitor_id"], row["user_id"], row["session_id"], visitor_user_map)
         if key:
             visitor_keys.add(key)
 
@@ -291,7 +318,7 @@ def inbound_traffic_analytics(request):
         qs = page_views.filter(path__icontains=predicate)
         keys = set()
         for row in qs.values("visitor_id", "user_id", "session_id"):
-            key = _visitor_identity_key(row["visitor_id"], row["user_id"], row["session_id"])
+            key = _visitor_identity_key(row["visitor_id"], row["user_id"], row["session_id"], visitor_user_map)
             if key:
                 keys.add(key)
         return len(keys)
@@ -313,14 +340,15 @@ def inbound_traffic_analytics(request):
         visitor_id = row["visitor_id"] or ""
         user_id = row["user_id"]
         session_id = row["session_id"] or ""
-        visitor_key = _visitor_identity_key(visitor_id, user_id, session_id)
+        resolved_user_id = user_id or visitor_user_map.get(visitor_id)
+        visitor_key = _visitor_identity_key(visitor_id, resolved_user_id, session_id, visitor_user_map)
         if not visitor_key:
             continue
         if visitor_key not in recent_visitor_groups:
             recent_visitor_groups[visitor_key] = {
                 "visitor_key": visitor_key,
                 "visitor_id": visitor_id,
-                "user_id": user_id,
+                "user_id": resolved_user_id,
                 "latest_session_id": session_id,
             }
         if len(recent_visitor_groups) >= 40:
@@ -329,7 +357,13 @@ def inbound_traffic_analytics(request):
     recent_visitors = []
     for visitor_key, identity in recent_visitor_groups.items():
         if identity["user_id"]:
-            visitor_events = events.filter(user_id=identity["user_id"])
+            linked_visitor_ids = [
+                visitor_id for visitor_id, mapped_user_id in visitor_user_map.items()
+                if mapped_user_id == identity["user_id"]
+            ]
+            visitor_events = events.filter(
+                Q(user_id=identity["user_id"]) | Q(visitor_id__in=linked_visitor_ids)
+            )
         elif identity["visitor_id"]:
             visitor_events = events.filter(visitor_id=identity["visitor_id"])
         else:
@@ -345,9 +379,7 @@ def inbound_traffic_analytics(request):
         if not rows:
             continue
 
-        visible_activity = [row for row in rows if row["event_type"] != "session_start"]
         page_rows = [row for row in rows if row["event_type"] == "page_view"]
-        visitor_sessions = {row["session_id"] for row in rows if row["session_id"]}
         first = rows[0]
         last = rows[-1]
         visitor_user_id = next((row["user_id"] for row in reversed(rows) if row["user_id"]), None)
