@@ -654,7 +654,7 @@ jobs:
           actual = set()
           for line in output.read_text().splitlines():
               match = re.search(
-                  r"Signer (?:#\\d+|\\([^)]*\\)) certificate SHA-256 digest:\\s*([0-9A-Fa-f:]+)",
+                  r"Signer (?:#\d+|\([^)]*\)) certificate SHA-256 digest:\s*([0-9A-Fa-f:]+)",
                   line,
               )
               if not match:
@@ -685,7 +685,7 @@ jobs:
           fingerprints = []
           for line in cert_file.read_text().splitlines():
               match = re.search(
-                  r"Signer (?:#\\d+|\\([^)]*\\)) certificate SHA-256 digest:\\s*([0-9A-Fa-f:]+)",
+                  r"Signer (?:#\d+|\([^)]*\)) certificate SHA-256 digest:\s*([0-9A-Fa-f:]+)",
                   line,
               )
               if not match:
