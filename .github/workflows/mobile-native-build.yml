@@ -626,8 +626,8 @@ jobs:
           actual_sha256 = set()
           actual_sha1 = set()
           for line in output.read_text().splitlines():
-              match_sha256 = re.search(r"Signer #\\d+ certificate SHA-256 digest: ([0-9A-Fa-f:]+)", line)
-              match_sha1 = re.search(r"Signer #\\d+ certificate SHA-1 digest: ([0-9A-Fa-f:]+)", line)
+              match_sha256 = re.search(r"Signer #\d+ certificate SHA-256 digest: ([0-9A-Fa-f:]+)", line)
+              match_sha1 = re.search(r"Signer #\d+ certificate SHA-1 digest: ([0-9A-Fa-f:]+)", line)
               if match_sha256:
                   actual_sha256.add(match_sha256.group(1).upper())
               if match_sha1:
