@@ -1,0 +1,24 @@
+{
+  auto_https off
+}
+
+:9080 {
+  @maamara_backend path /maamara/api/* /maamara/media/* /maamara/static/* /maamara/admin/* /maamara/accounts/* /maamara/google/* /maamara/ws/*
+  handle @maamara_backend {
+    uri strip_prefix /maamara
+    reverse_proxy 127.0.0.1:8000
+  }
+
+  @maamara_root path /maamara
+  redir @maamara_root /maamara/ 308
+
+  # Keep the prefix intact for Vite and React Router.
+  handle /maamara/* {
+    reverse_proxy 127.0.0.1:5173
+  }
+
+  # Preserve the existing Saka Krib root routes.
+  handle {
+    reverse_proxy 127.0.0.1:5175
+  }
+}
