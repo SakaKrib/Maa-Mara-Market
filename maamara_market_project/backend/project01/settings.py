@@ -73,6 +73,7 @@ BACKEND_PUBLIC_URL = get_env_value(
     "BACKEND_PUBLIC_URL",
     DEFAULT_PUBLIC_BASE_URL,
 ).rstrip("/")
+PUBLIC_PATH_PREFIX = env("MAAMARAMARKET_PUBLIC_PATH_PREFIX", default="/maamara").rstrip("/")
 COMPANY_ADDRESS = env("COMPANY_ADDRESS", default="")
 
 # Registered PayPal webhook ID. Keep this server-side; it is required to verify
