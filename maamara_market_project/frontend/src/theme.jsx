@@ -286,14 +286,17 @@ export const tokens = (mode) => ({
 
 
 
-  // material ui theme settings
+  // Material UI supports only "light" and "dark" palette modes.
+  // Normalize stale/unsupported persisted values (for example "auto") before
+  // constructing the palette so ThemeProvider always receives a valid theme.
   export const themeSettings = (mode) => {
-    const colors = tokens(mode);
+    const resolvedMode = mode === "light" ? "light" : "dark";
+    const colors = tokens(resolvedMode);
 
     return {
         palette: {
-            mode: mode,
-            ...(mode === 'dark'
+            mode: resolvedMode,
+            ...(resolvedMode === 'dark'
               ? {
                   primary: { main: colors.primary[500] },
                   secondary: { main: colors.greenAccent[500] },
@@ -341,9 +344,11 @@ export const ColourModeContext = createContext({
 
 
 export const useMode = () => {
-  const [mode, setMode] = useState(
-    localStorage.getItem("theme") || "dark"
-  );
+  const [mode, setMode] = useState(() => {
+    if (typeof window === "undefined") return "dark";
+    const storedMode = window.localStorage.getItem("theme");
+    return storedMode === "light" || storedMode === "dark" ? storedMode : "dark";
+  });
 
   useEffect(() => {
     localStorage.setItem("theme", mode);
