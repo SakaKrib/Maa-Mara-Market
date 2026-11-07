@@ -24,8 +24,8 @@ const resolveApiOrigin = () => {
     if (!isNative) {
       const publicBasePath = import.meta.env.BASE_URL || "/";
       if (publicBasePath.startsWith("/") && publicBasePath !== "/") {
-        const normalizedBasePath = publicBasePath.replace(/\\/+$/, "");
-        const configuredPath = configuredUrl.pathname.replace(/\\/+$/, "");
+        const normalizedBasePath = publicBasePath.replace(/\/+$/, "");
+        const configuredPath = configuredUrl.pathname.replace(/\/+$/, "");
         if (!configuredPath || configuredPath === "/") {
           configuredUrl.pathname = normalizedBasePath;
         }
