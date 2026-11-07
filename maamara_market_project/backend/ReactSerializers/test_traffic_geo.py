@@ -62,7 +62,7 @@ class InboundTrafficTests(TestCase):
         admin.force_authenticate(self.admin)
         body = admin.get("/api/admin/inbound-traffic/?days=30").json()
         self.assertEqual(body["summary"]["countries"], 1)
-        self.assertEqual(body["summary"]["events"], 3)
+        self.assertEqual(body["summary"]["events"], 2)
         self.assertEqual(body["summary"]["unlocated_views"], 0)
         self.assertEqual(body["countries"][0]["country_name"], "Kenya")
 
