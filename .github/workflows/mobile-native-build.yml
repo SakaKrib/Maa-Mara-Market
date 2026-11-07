@@ -19,8 +19,8 @@ concurrency:
 
 env:
   FRONTEND_DIR: maamara_market_project/frontend
-  # Change this single GitHub secret to switch between the Tailscale development
-  # endpoint and https://maamaramarket.com for production builds.
+  # Public hostname comes from one secret; the optional path variable selects
+  # /maamara for shared-hostname testing or / for a standalone production domain.
   MOBILE_API_URL: ${{ secrets.MAAMARAMARKET_PUBLIC_BASE_URL }}
   # Set repository variable MAAMARAMARKET_PUBLIC_PATH_PREFIX to / for root-domain production.
   MOBILE_API_PATH_PREFIX: ${{ vars.MAAMARAMARKET_PUBLIC_PATH_PREFIX || '/maamara' }}
