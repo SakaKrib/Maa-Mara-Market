@@ -475,14 +475,14 @@ SHIPMENT_TRACKING_POST_DELIVERY_DAYS = env.int("SHIPMENT_TRACKING_POST_DELIVERY_
 # STATIC / MEDIA
 # =========================================================
 
-STATIC_URL = "/static/"
+STATIC_URL = f"{PUBLIC_PATH_PREFIX}/static/" if PUBLIC_PATH_PREFIX else "/static/"
 # The React app is served by Vite in development, not from Django's
 # STATICFILES_DIRS. Keeping the frontend dist directory out of this setting
 # prevents Django from warning about a directory that does not exist in the
 # backend container.
 STATIC_ROOT = BASE_DIR / "static/"
 
-MEDIA_URL = "/media/"
+MEDIA_URL = f"{PUBLIC_PATH_PREFIX}/media/" if PUBLIC_PATH_PREFIX else "/media/"
 MEDIA_ROOT = os.path.join(BASE_DIR, "media")
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
