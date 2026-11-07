@@ -501,31 +501,25 @@ function App() {
     // bootstrap single-flight so parallel requests cannot mint two visitors.
     if (visitorInitializationStartedRef.current) return undefined;
     visitorInitializationStartedRef.current = true;
-    let active = true;
 
+    // App remains mounted for the lifetime of the router. Do not cancel the
+    // single bootstrap request during StrictMode's effect replay; the first
+    // request must still resolve visitorReady.
     api.get("/api/vistor-token/")
       .then(({ data }) => {
-        if (active) {
-          const resolvedVisitorId = data?.visitor_id || "";
-          setVisitorId(resolvedVisitorId);
-          setVisitorIdentity(resolvedVisitorId);
-          resolveAnalyticsVisitorIdentity(resolvedVisitorId);
-          setVisitorReady(true);
-        }
+        const resolvedVisitorId = data?.visitor_id || "";
+        setVisitorId(resolvedVisitorId);
+        setVisitorIdentity(resolvedVisitorId);
+        resolveAnalyticsVisitorIdentity(resolvedVisitorId);
+        setVisitorReady(true);
       })
       .catch((error) => {
         console.error("Visitor token initialization failed:", error);
-        if (active) {
-          setVisitorId("");
-          setVisitorIdentity("");
-          resolveAnalyticsVisitorIdentity();
-          setVisitorReady(true);
-        }
+        setVisitorId("");
+        setVisitorIdentity("");
+        resolveAnalyticsVisitorIdentity();
+        setVisitorReady(true);
       });
-
-    return () => {
-      active = false;
-    };
   }, []);
 
   // Install native push listeners once per app lifecycle. Do not tear them
