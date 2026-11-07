@@ -115,14 +115,18 @@ class MyAdapter(DefaultSocialAccountAdapter):
         if email:
             user.email = email.lower()
 
+        apple_user = data.get("user") or extra_data.get("user") or {}
+        apple_name = apple_user.get("name", {}) if isinstance(apple_user, dict) else {}
         first_name = (
             data.get("first_name")
+            or apple_name.get("firstName")
             or extra_data.get("given_name")
             or getattr(user, "first_name", "")
             or ""
         ).strip()
         last_name = (
             data.get("last_name")
+            or apple_name.get("lastName")
             or extra_data.get("family_name")
             or getattr(user, "last_name", "")
             or ""

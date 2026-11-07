@@ -298,7 +298,7 @@ SOCIALACCOUNT_PROVIDERS = {
         "APPS": GOOGLE_APPS,
         "SCOPE": ["profile", "email"],
         "AUTH_PARAMS": {"access_type": "online"},
-        "OAUTH_PKE_ENABLED": True,
+        "OAUTH_PKCE_ENABLED": True,
         "FETCH_USERINFO": True,
         "VERIFIED_EMAIL": True,
         "EMAIL_AUTHENTICATION": True,
