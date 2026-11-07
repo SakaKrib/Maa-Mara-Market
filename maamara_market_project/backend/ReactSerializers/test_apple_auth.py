@@ -302,6 +302,11 @@ class GoogleIdTokenAuthenticationTests(TestCase):
         self.assertFalse(SocialAccount.objects.filter(provider="google", uid=self.claims["sub"]).exists())
 
 
+@patch.object(
+    ScopedRateThrottle,
+    "THROTTLE_RATES",
+    {**ScopedRateThrottle.THROTTLE_RATES, "social_auth": "1000/min"},
+)
 @override_settings(
     **APPLE_SETTINGS,
     REST_FRAMEWORK={
