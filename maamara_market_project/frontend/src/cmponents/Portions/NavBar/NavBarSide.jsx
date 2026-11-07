@@ -95,7 +95,7 @@ const NavBar = ({ open = false, onClose }) => {
         <div className="flex h-[72px] shrink-0 items-center justify-between border-b border-slate-200 px-5 dark:border-slate-800">
           <Link to="/admin-dashboard" onClick={onClose} className="flex items-center gap-3">
             <img
-              src="/maamara-brand-artwork.svg"
+              src={`${import.meta.env.BASE_URL}maamara-brand-artwork.svg`}
               alt="Maa Mara Market"
               className="h-10 w-10 shrink-0 rounded-md object-contain"
             />
