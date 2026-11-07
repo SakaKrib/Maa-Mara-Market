@@ -14,6 +14,7 @@ const emptyData = {
   sources: [],
   devices: [],
   goals: [],
+  recent_visitors: [],
   recent_sessions: [],
   top_items: [],
 };
@@ -233,17 +234,18 @@ const InboundTraffic = () => {
           <p className="text-xs text-muted-foreground">Select a visitor to follow the full journey.</p>
         </div>
         <div className="mt-4 space-y-2">
-          {(data.recent_sessions || []).slice(0, 20).map((session) => (
+          {(data.recent_visitors || data.recent_sessions || []).slice(0, 20).map((visitor) => (
             <button
-              key={session.session_id}
+              key={visitor.visitor_key || visitor.visitor_id || visitor.session_id}
               type="button"
               onClick={async () => {
                 setSessionLoading(true);
                 try {
-                  const response = await api.get(`/api/admin/inbound-traffic/sessions/${encodeURIComponent(session.session_id)}/`);
+                  const visitorKey = visitor.visitor_key || `session:${visitor.session_id}`;
+                  const response = await api.get(`/api/admin/inbound-traffic/visitors/${encodeURIComponent(visitorKey)}/`);
                   setSelectedSession(response.data);
                 } catch (error) {
-                  console.error("Inbound traffic session load failed:", error);
+                  console.error("Inbound traffic visitor load failed:", error);
                 } finally {
                   setSessionLoading(false);
                 }
@@ -254,27 +256,31 @@ const InboundTraffic = () => {
                 <div className="min-w-0">
                   <div className="flex flex-wrap items-center gap-2">
                     <span className="text-sm font-semibold text-card-foreground">
-                      {session.country_name || session.country_code || "Unknown country"}
+                      {visitor.country_name || visitor.country_code || "Unknown country"}
                     </span>
-                    {session.country_code && (
-                      <span className="rounded-full bg-card px-2 py-0.5 text-[10px] font-semibold text-muted-foreground">{session.country_code}</span>
+                    {visitor.country_code && (
+                      <span className="rounded-full bg-card px-2 py-0.5 text-[10px] font-semibold text-muted-foreground">{visitor.country_code}</span>
                     )}
-                    <span className="rounded-full bg-card px-2 py-0.5 text-[10px] text-muted-foreground">{session.device_type || "unknown"}</span>
-                    <span className="rounded-full bg-card px-2 py-0.5 text-[10px] text-muted-foreground">{session.source || "direct"}</span>
+                    <span className="rounded-full bg-card px-2 py-0.5 text-[10px] text-muted-foreground">{visitor.device_type || "unknown"}</span>
+                    <span className="rounded-full bg-card px-2 py-0.5 text-[10px] text-muted-foreground">{visitor.source || "direct"}</span>
                   </div>
                   <p className="mt-1 truncate text-xs text-muted-foreground">
-                    {session.user?.username || session.user?.email || "Anonymous visitor"} • {new Date(session.started_at).toLocaleString()}
+                    {visitor.user?.username || visitor.user?.email || visitor.visitor_label || "Anonymous visitor"} • First seen {new Date(visitor.started_at).toLocaleString()}
                   </p>
+                  {visitor.visitor_id && (
+                    <p className="mt-1 truncate text-[10px] text-muted-foreground">Visitor ID: {visitor.visitor_id}</p>
+                  )}
                 </div>
                 <div className="flex shrink-0 items-center gap-3 text-xs text-muted-foreground">
-                  <span>{session.page_count} pages</span>
-                  <span>{session.event_count} activities</span>
+                  <span>{visitor.session_count ?? 1} sessions</span>
+                  <span>{visitor.page_count} pages</span>
+                  <span>{visitor.event_count} activities</span>
                   <span className="font-semibold text-primary">View journey →</span>
                 </div>
               </div>
             </button>
           ))}
-          {!data.recent_sessions?.length && <p className="text-sm text-muted-foreground">Visitor journeys will appear after sessions are recorded.</p>}
+          {!(data.recent_visitors || data.recent_sessions || []).length && <p className="text-sm text-muted-foreground">Visitor journeys will appear after sessions are recorded.</p>}
         </div>
       </section>
 
@@ -288,7 +294,7 @@ const InboundTraffic = () => {
                   {selectedSession.country_name || selectedSession.country_code || "Unknown country"}
                 </h2>
                 <p className="mt-1 break-all text-xs text-muted-foreground">
-                  {selectedSession.user?.username || selectedSession.user?.email || "Anonymous visitor"} • {selectedSession.device_type} • {selectedSession.source}
+                  {selectedSession.user?.username || selectedSession.user?.email || (selectedSession.visitor_id ? `Visitor ${selectedSession.visitor_id.slice(0, 8)}` : "Anonymous visitor")} • {selectedSession.device_type} • {selectedSession.source} • {selectedSession.session_count ?? 1} sessions
                 </p>
               </div>
               <button type="button" onClick={() => setSelectedSession(null)} className="shrink-0 rounded-full border border-border px-3 py-1.5 text-xs font-semibold text-card-foreground hover:bg-muted">
@@ -302,6 +308,8 @@ const InboundTraffic = () => {
                   ["Source", selectedSession.source || "direct"],
                   ["Device", selectedSession.device_type || "unknown"],
                   ["Referrer", selectedSession.referrer || "Direct"],
+                  ["Sessions", selectedSession.session_count ?? 1],
+                  ["Pages viewed", selectedSession.page_count ?? 0],
                 ].map(([label, value]) => (
                   <div key={label} className="rounded-xl bg-muted p-3">
                     <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">{label}</p>
