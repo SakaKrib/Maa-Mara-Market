@@ -157,3 +157,101 @@ class AppleIdentityAuthenticationTests(TestCase):
         )
         self.assertEqual(response.status_code, 400)
         self.assertIn("state validation failed", response.data["error"].lower())
+
+
+from unittest.mock import patch
+from django.contrib.auth.models import User
+from rest_framework.exceptions import AuthenticationFailed
+from allauth.account.models import EmailAddress
+
+
+@override_settings(GOOGLE_CLIENT_ID="maamara-web-client.apps.googleusercontent.com")
+class GoogleIdTokenAuthenticationTests(TestCase):
+    def setUp(self):
+        self.claims = {
+            "iss": "https://accounts.google.com",
+            "sub": "google-subject-001",
+            "email": "google.customer@example.com",
+            "email_verified": True,
+            "given_name": "Google",
+            "family_name": "Customer",
+            "name": "Google Customer",
+        }
+
+    @patch("ReactSerializers.social_auth_views.verify_google_credential")
+    def test_new_google_identity_creates_local_user_profile_wallet_and_cookies(self, verify):
+        verify.return_value = self.claims
+        response = self.client.post(
+            "/api/google/login/", {"credential": "signed-google-token"},
+            content_type="application/json",
+        )
+        self.assertEqual(response.status_code, 200, response.content)
+        user = User.objects.get(email=self.claims["email"])
+        self.assertEqual(user.first_name, "Google")
+        self.assertTrue(Profile.objects.filter(user=user).exists())
+        self.assertTrue(Wallet.objects.filter(user=user).exists())
+        self.assertTrue(SocialAccount.objects.filter(provider="google", uid=self.claims["sub"], user=user).exists())
+        self.assertTrue(EmailAddress.objects.filter(user=user, email=self.claims["email"], verified=True).exists())
+        self.assertTrue(response.cookies["accessToken"]["httponly"])
+        self.assertTrue(response.cookies["refreshToken"]["httponly"])
+
+    @patch("ReactSerializers.social_auth_views.verify_google_credential")
+    def test_existing_verified_email_is_linked_without_duplicate_user(self, verify):
+        user = User.objects.create_user(username="local-customer", email=self.claims["email"], password="Local-password-123!")
+        verify.return_value = self.claims
+        response = self.client.post(
+            "/api/google/login/", {"credential": "signed-google-token"},
+            content_type="application/json",
+        )
+        self.assertEqual(response.status_code, 200, response.content)
+        self.assertEqual(User.objects.filter(email__iexact=self.claims["email"]).count(), 1)
+        self.assertTrue(SocialAccount.objects.filter(provider="google", uid=self.claims["sub"], user=user).exists())
+
+    @patch("ReactSerializers.social_auth_views.verify_google_credential")
+    def test_returning_google_subject_reuses_existing_account(self, verify):
+        user = User.objects.create_user(username="google-returning", email=self.claims["email"], password=None)
+        SocialAccount.objects.create(provider="google", uid=self.claims["sub"], user=user, extra_data=self.claims)
+        verify.return_value = self.claims
+        response = self.client.post(
+            "/api/google/login/", {"credential": "signed-google-token"},
+            content_type="application/json",
+        )
+        self.assertEqual(response.status_code, 200, response.content)
+        self.assertEqual(User.objects.filter(email=self.claims["email"]).count(), 1)
+
+    @patch("ReactSerializers.social_auth_views.verify_google_credential")
+    def test_duplicate_email_records_fail_closed(self, verify):
+        User.objects.create_user(username="google-one", email=self.claims["email"], password="First-password-123!")
+        User.objects.create_user(username="google-two", email=self.claims["email"].upper(), password="Second-password-123!")
+        verify.return_value = self.claims
+        response = self.client.post(
+            "/api/google/login/", {"credential": "signed-google-token"},
+            content_type="application/json",
+        )
+        self.assertEqual(response.status_code, 401)
+        self.assertFalse(SocialAccount.objects.filter(provider="google", uid=self.claims["sub"]).exists())
+
+    @patch("ReactSerializers.social_auth_views.verify_google_credential")
+    def test_inactive_user_is_rejected(self, verify):
+        user = User.objects.create_user(username="google-inactive", email=self.claims["email"], password=None, is_active=False)
+        verify.return_value = self.claims
+        response = self.client.post(
+            "/api/google/login/", {"credential": "signed-google-token"},
+            content_type="application/json",
+        )
+        self.assertEqual(response.status_code, 401)
+        self.assertFalse(SocialAccount.objects.filter(provider="google", user=user).exists())
+
+    @patch("ReactSerializers.social_auth_views.id_token.verify_oauth2_token")
+    def test_unverified_email_is_rejected(self, verify):
+        from ReactSerializers.social_auth_views import verify_google_credential
+        verify.return_value = {**self.claims, "email_verified": False}
+        with self.assertRaises(AuthenticationFailed):
+            verify_google_credential("signed-google-token")
+
+    @patch("ReactSerializers.social_auth_views.id_token.verify_oauth2_token")
+    def test_wrong_issuer_is_rejected(self, verify):
+        from ReactSerializers.social_auth_views import verify_google_credential
+        verify.return_value = {**self.claims, "iss": "https://attacker.example"}
+        with self.assertRaises(AuthenticationFailed):
+            verify_google_credential("signed-google-token")
