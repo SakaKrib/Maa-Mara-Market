@@ -717,7 +717,7 @@ const Dashboard = () => {
           icon={personAddOutline}
           label="Traffic inbound"
           value={Number(trafficData.unique_visitors || 0).toLocaleString()}
-          detail="Customer journeys, pages, countries and goals"
+          detail="Unique visitors, repeat sessions, pages and countries"
           to="/admin-dashboard/inbound-traffic"
         />
       </div>
