@@ -57,23 +57,50 @@ def get_env_value(name, default=None):
     return resolve_env_reference(value)
 
 
+def env_resolved(name, default=None, **kwargs):
+    value = env(name, default=default, **kwargs)
+    return resolve_env_reference(value) if isinstance(value, str) else value
+
+
 # Core Secrets
 SECRET_KEY = env("SECRET_KEY")
 DEBUG = env.bool("DEBUG", default=False)
 
 DEFAULT_PUBLIC_BASE_URL = get_env_value(
     "MAAMARAMARKET_PUBLIC_BASE_URL",
-    "http://localhost:5173",
+    "https://opondo-thinkpad-t14-gen-1.tail34bca9.ts.net",
+)
+MAAMARAMARKET_PUBLIC_FRONTEND_URL = get_env_value(
+    "MAAMARAMARKET_PUBLIC_FRONTEND_URL",
+    DEFAULT_PUBLIC_BASE_URL,
 )
 FRONTEND_URL = get_env_value(
     "FRONTEND_URL",
-    get_env_value("MAAMARAMARKET_PUBLIC_FRONTEND_URL", DEFAULT_PUBLIC_BASE_URL),
+    MAAMARAMARKET_PUBLIC_FRONTEND_URL,
 )
 BACKEND_PUBLIC_URL = get_env_value(
     "BACKEND_PUBLIC_URL",
     DEFAULT_PUBLIC_BASE_URL,
 ).rstrip("/")
-PUBLIC_PATH_PREFIX = env("MAAMARAMARKET_PUBLIC_PATH_PREFIX", default="/maamara").rstrip("/")
+def normalize_public_path_prefix(value):
+    if not isinstance(value, str):
+        return "/maamara"
+
+    cleaned = value.strip()
+    if not cleaned:
+        return "/maamara"
+
+    if "://" in cleaned:
+        parsed = urlsplit(cleaned)
+        path = parsed.path or "/"
+        return path.rstrip("/") or "/"
+
+    return cleaned.rstrip("/") or "/"
+
+
+PUBLIC_PATH_PREFIX = normalize_public_path_prefix(
+    get_env_value("MAAMARAMARKET_PUBLIC_PATH_PREFIX", "/maamara")
+)
 FORCE_SCRIPT_NAME = PUBLIC_PATH_PREFIX or None
 COMPANY_ADDRESS = env("COMPANY_ADDRESS", default="")
 
@@ -86,7 +113,7 @@ PESAPAL_BASE_URL = env("PESAPAL_BASE_URL", default="https://pay.pesapal.com/v3")
 PESAPAL_CONSUMER_KEY = env("PESAPAL_CONSUMER_KEY", default="")
 PESAPAL_CONSUMER_SECRET = env("PESAPAL_CONSUMER_SECRET", default="")
 PESAPAL_NOTIFICATION_ID = env("PESAPAL_NOTIFICATION_ID", default="")
-PESAPAL_CALLBACK_URL = env(
+PESAPAL_CALLBACK_URL = env_resolved(
     "PESAPAL_CALLBACK_URL",
     default=f"{BACKEND_PUBLIC_URL}{PUBLIC_PATH_PREFIX}/api/pesapal/callback/",
 )
@@ -552,8 +579,8 @@ PAYMENT_GATEWAYS = {
             "certificate_path": env("MPESA_CERTIFICATE_PATH", default=""),
             "url": env("MPESA_URL"),
 
-            "result_url": env("MPESA_B2C_RESULT_URL", default=""),
-            "timeout_url": env("MPESA_B2C_TIMEOUT_URL", default=""),
+            "result_url": env_resolved("MPESA_B2C_RESULT_URL", default=""),
+            "timeout_url": env_resolved("MPESA_B2C_TIMEOUT_URL", default=""),
         },
 
         # B2B disbursements to registered merchant Till/Buy Goods and PayBill
@@ -567,8 +594,14 @@ PAYMENT_GATEWAYS = {
             # Daraja RecieverIdentifierType for Buy Goods: 2 = Till number, 4 = shortcode.
             # Confirm against your Daraja app/sandbox; override here if Safaricom requires 4.
             "till_receiver_identifier_type": env("MPESA_B2B_TILL_RECEIVER_IDENTIFIER_TYPE", default="2"),
-            "result_url": env("MPESA_B2B_RESULT_URL", default=env("MPESA_B2C_RESULT_URL", default="")),
-            "timeout_url": env("MPESA_B2B_TIMEOUT_URL", default=env("MPESA_B2C_TIMEOUT_URL", default="")),
+            "result_url": env_resolved(
+                "MPESA_B2B_RESULT_URL",
+                default=env_resolved("MPESA_B2C_RESULT_URL", default=""),
+            ),
+            "timeout_url": env_resolved(
+                "MPESA_B2B_TIMEOUT_URL",
+                default=env_resolved("MPESA_B2C_TIMEOUT_URL", default=""),
+            ),
         },
 
         "c2b": {
@@ -589,7 +622,7 @@ PAYMENT_GATEWAYS = {
             "shortcode": env("MPESA_STK_SHORTCODE", default="174379"),
             "passkey": env("MPESA_STK_PASSKEY", default=""),
             "stk_url": env("MPESA_STK_URL"),
-            "callback_url": env("MPESA_STK_CALLBACK_URL", default=""),
+            "callback_url": env_resolved("MPESA_STK_CALLBACK_URL", default=""),
         },
     },
 
@@ -607,7 +640,7 @@ PAYMENT_GATEWAYS = {
         "auth_url": env("KCB_OAUTH_URL"),
         "client_id": env("KCB_API_KEY"),
         "client_secret": env("KCB_API_SECRET"),
-        "callback_url": env("KCB_CALLBACK_URL"),
+        "callback_url": env_resolved("KCB_CALLBACK_URL"),
         "transfer_url": env("KCB_TRANSFER_URL", default=""),
         "status_url": env("KCB_TRANSFER_STATUS_URL", default=""),
         "status_reference_parameter": env("KCB_STATUS_REFERENCE_PARAMETER", default="transactionReference"),
