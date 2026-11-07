@@ -5,7 +5,9 @@ import { Button } from "./ui/button"
 import { Card, CardContent } from "./ui/card"
 import { Input } from "./ui/input"
 import { Label } from "./ui/label"
-import api, { startGoogleLogin, startAppleLogin, getVisitorIdentity } from "../src/Services/Api"
+import api, { getVisitorIdentity } from "../src/Services/Api"
+import { signInWithGoogle, signInWithApple } from "../src/Services/socialAuth"
+import { Capacitor } from "@capacitor/core"
 import { useNavigate, useLocation, Link } from "react-router-dom"
 import { useAuth } from "../src/cmponents/Auth/AuthContext/Context"
 import { Eye, EyeOff } from "lucide-react"
@@ -46,6 +48,7 @@ export function LoginForm({ className, ...props }) {
 
   // Get redirect path after login (fallback to home page)
   const from = location.state?.from || "/"
+  const isAndroid = Capacitor.getPlatform() === "android"
 
   useEffect(() => {
     getCsrfToken()
@@ -75,26 +78,45 @@ export function LoginForm({ className, ...props }) {
   }
 
   const handleGoogleLogin = async () => {
-    if (!socialProviders.google) return;
+    if (!socialProviders.google || loading) return;
+    setError("");
+    setLoading(true);
     try {
       sessionStorage.setItem("postLoginRedirect", from);
-      await startGoogleLogin();
+      await signInWithGoogle();
+      const authData = await refreshAuth();
+      if (!authData?.isAuthenticated || !authData?.user) {
+        throw new Error("Google sign-in completed, but your Maa Mara session could not be confirmed.");
+      }
+      navigate(from, { replace: true });
     } catch (err) {
-      const msg = "Unable to start Google sign-in. Please try again.";
+      const msg = err?.message || "Unable to complete Google sign-in. Please try again.";
       setError(msg);
       setSnackbar({ open: true, message: msg });
+    } finally {
+      setLoading(false);
     }
   }
 
   const handleAppleLogin = async () => {
-    if (!socialProviders.apple) return;
+    if (!socialProviders.apple || isAndroid || loading) return;
+    setError("");
+    setLoading(true);
     try {
       sessionStorage.setItem("postLoginRedirect", from);
-      await startAppleLogin();
+      const result = await signInWithApple();
+      if (result?.redirecting) return;
+      const authData = await refreshAuth();
+      if (!authData?.isAuthenticated || !authData?.user) {
+        throw new Error("Apple sign-in completed, but your Maa Mara session could not be confirmed.");
+      }
+      navigate(from, { replace: true });
     } catch (err) {
-      const msg = "Apple sign-in is not configured yet. Please use email or Google for now.";
+      const msg = err?.message || "Unable to complete Apple sign-in. Please try again.";
       setError(msg);
       setSnackbar({ open: true, message: msg });
+    } finally {
+      setLoading(false);
     }
   }
 
@@ -281,18 +303,19 @@ export function LoginForm({ className, ...props }) {
                     Continue with Google
                   </Button>
 
-                  <Button
-                    type="button"
-                    variant="outline"
-                    className="mm-auth-apple w-full flex items-center justify-center gap-2"
-                    onClick={handleAppleLogin}
-                    disabled={!socialProviders.apple}
-                    title={!socialProviders.apple ? "Apple sign-in will be available after Apple credentials are configured." : "Continue with Apple"}
-                    aria-label="Continue with Apple"
-                  >
-                    <FaApple size={18} aria-hidden="true" />
-                    Continue with Apple
-                  </Button>
+                  {!isAndroid && socialProviders.apple && (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="mm-auth-apple w-full flex items-center justify-center gap-2"
+                      onClick={handleAppleLogin}
+                      disabled={loading}
+                      aria-label="Continue with Apple"
+                    >
+                      <FaApple size={18} aria-hidden="true" />
+                      Continue with Apple
+                    </Button>
+                  )}
 
                 <div className="relative flex items-center text-xs text-muted-foreground">
                   <span className="h-px flex-1 bg-border" />

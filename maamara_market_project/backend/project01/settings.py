@@ -167,8 +167,6 @@ INSTALLED_APPS = [
     "allauth",
     "allauth.account",
     "allauth.socialaccount",
-    "allauth.socialaccount.providers.google",
-    "allauth.socialaccount.providers.apple",
 
     # Django core
     "django.contrib.admin",
@@ -258,29 +256,33 @@ AUTH_PASSWORD_VALIDATORS = [
 ]
 
 LOGIN_URL = f"{PUBLIC_PATH_PREFIX}/accounts/login/" if PUBLIC_PATH_PREFIX else "/accounts/login/"
-LOGIN_REDIRECT_URL = f"{PUBLIC_PATH_PREFIX}/google/success/" if PUBLIC_PATH_PREFIX else "/google/success/"
+LOGIN_REDIRECT_URL = f"{PUBLIC_PATH_PREFIX}/" if PUBLIC_PATH_PREFIX else "/"
 LOGOUT_REDIRECT_URL = f"{PUBLIC_PATH_PREFIX}/login/" if PUBLIC_PATH_PREFIX else "/login/"
 
-# Allauth settings
+# Allauth remains installed for existing account/email functionality. Google and
+# Apple provider redirects are intentionally not registered; social sign-in uses
+# the dedicated ID-token endpoints below.
 ACCOUNT_EMAIL_REQUIRED = True
 ACCOUNT_USERNAME_REQUIRED = False
 ACCOUNT_AUTHENTICATION_METHOD = "email"
 ACCOUNT_LOGIN_METHODS = {"email"}
 ACCOUNT_EMAIL_VERIFICATION = "none"
 ACCOUNT_UNIQUE_EMAIL = True
-
 SOCIALACCOUNT_EMAIL_VERIFICATION = "none"
-SOCIALACCOUNT_AUTO_SIGNUP = True
-SOCIALACCOUNT_LOGIN_ON_GET = False  # Require POST to initiate social login.
+SOCIALACCOUNT_AUTO_SIGNUP = False
+SOCIALACCOUNT_LOGIN_ON_GET = False
 SOCIALACCOUNT_ADAPTER = "ReactSerializers.adapters.MyAdapter"
+SOCIALACCOUNT_STORE_TOKENS = False
 
-# Social sign-in credentials are read only by Django. Never expose OAuth secrets
-# through VITE_* variables or commit the Apple private key to the repository.
+# Google Identity Services / native Google Sign-In. Only GOOGLE_CLIENT_ID is
+# used to validate ID-token audience. GOOGLE_CLIENT_SECRET is backend-only and
+# is retained for compatibility; this flow does not use a client secret.
 GOOGLE_CLIENT_ID = get_env_value("GOOGLE_CLIENT_ID", "")
 GOOGLE_CLIENT_SECRET = get_env_value("GOOGLE_CLIENT_SECRET", "")
-GOOGLE_APPS = ([{"client_id": GOOGLE_CLIENT_ID, "secret": GOOGLE_CLIENT_SECRET, "key": ""}] if GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET else [])
+GOOGLE_IOS_CLIENT_ID = get_env_value("GOOGLE_IOS_CLIENT_ID", "")
+GOOGLE_ANDROID_CLIENT_ID = get_env_value("GOOGLE_ANDROID_CLIENT_ID", "")
 
-# Apple uses a Services ID for the web flow and the native Bundle ID for iOS.
+# Apple Sign In: the private key stays on the Django server.
 APPLE_CLIENT_ID = get_env_value("APPLE_CLIENT_ID", "")
 APPLE_TEAM_ID = get_env_value("APPLE_TEAM_ID", "")
 APPLE_KEY_ID = get_env_value("APPLE_KEY_ID", "")
@@ -293,16 +295,15 @@ if APPLE_PRIVATE_KEY_PATH:
         apple_key_path = BASE_DIR / apple_key_path
     if apple_key_path.is_file():
         APPLE_PRIVATE_KEY = apple_key_path.read_text(encoding="utf-8")
+
 APPLE_CALLBACK_PREFIX = "" if PUBLIC_PATH_PREFIX == "/" else PUBLIC_PATH_PREFIX
 APPLE_REDIRECT_URI = get_env_value(
     "APPLE_REDIRECT_URI",
-    f"{BACKEND_PUBLIC_URL}{APPLE_CALLBACK_PREFIX}/accounts/apple/login/callback/",
+    f"{BACKEND_PUBLIC_URL}{APPLE_CALLBACK_PREFIX}/api/apple/callback/",
 )
 APPLE_EXPECTED_REDIRECT_URI = (
-    f"{BACKEND_PUBLIC_URL}{APPLE_CALLBACK_PREFIX}/accounts/apple/login/callback/"
+    f"{BACKEND_PUBLIC_URL}{APPLE_CALLBACK_PREFIX}/api/apple/callback/"
 )
-# Keep the provider disabled if its registered Apple Return URL does not match
-# the callback Django/allauth will generate for the active public path.
 APPLE_SIGN_IN_ENABLED = bool(
     APPLE_CLIENT_ID
     and APPLE_TEAM_ID
@@ -310,30 +311,8 @@ APPLE_SIGN_IN_ENABLED = bool(
     and APPLE_PRIVATE_KEY
     and APPLE_REDIRECT_URI.rstrip("/") == APPLE_EXPECTED_REDIRECT_URI.rstrip("/")
 )
-APPLE_APPS = (
-    [
-        {"client_id": APPLE_CLIENT_ID, "secret": APPLE_KEY_ID, "key": APPLE_TEAM_ID, "settings": {"certificate_key": APPLE_PRIVATE_KEY}},
-        {"client_id": APPLE_BUNDLE_ID, "secret": APPLE_KEY_ID, "key": APPLE_TEAM_ID, "settings": {"certificate_key": APPLE_PRIVATE_KEY, "hidden": True}},
-    ] if APPLE_SIGN_IN_ENABLED else []
-)
 
-SOCIALACCOUNT_PROVIDERS = {
-    "google": {
-        "APPS": GOOGLE_APPS,
-        "SCOPE": ["profile", "email"],
-        "AUTH_PARAMS": {"access_type": "online"},
-        "OAUTH_PKCE_ENABLED": True,
-        "FETCH_USERINFO": True,
-        "VERIFIED_EMAIL": True,
-        "EMAIL_AUTHENTICATION": True,
-    },
-    "apple": {
-        "APPS": APPLE_APPS,
-        "VERIFIED_EMAIL": True,
-        "EMAIL_AUTHENTICATION": True,
-    },
-}
-SOCIALACCOUNT_STORE_TOKENS = False
+SOCIALACCOUNT_PROVIDERS = {}
 
 # =========================================================
 # REST FRAMEWORK + JWT

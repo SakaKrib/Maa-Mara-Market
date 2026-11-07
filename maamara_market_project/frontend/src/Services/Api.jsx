@@ -126,40 +126,6 @@ api.interceptors.request.use((config) => {
 });
 
 
-// Start django-allauth social sign-in with a CSRF-protected POST.
-// Keep URL construction here so web and native clients share the same auth flow.
-const startSocialLogin = async (provider) => {
-  if (!["google", "apple"].includes(provider)) {
-    throw new Error("Unsupported social sign-in provider.");
-  }
-  if (typeof document === "undefined" || !baseURL) {
-    throw new Error(`${provider} sign-in is not available in this environment.`);
-  }
-
-  const { data } = await api.get("/api/get-csrf-token/");
-  const csrfToken = data?.csrfToken;
-  if (!csrfToken) {
-    throw new Error("Unable to obtain a security token for social sign-in.");
-  }
-
-  const form = document.createElement("form");
-  form.method = "POST";
-  form.action = `${baseURL}/accounts/${provider}/login/`;
-  form.style.display = "none";
-
-  const tokenInput = document.createElement("input");
-  tokenInput.type = "hidden";
-  tokenInput.name = "csrfmiddlewaretoken";
-  tokenInput.value = csrfToken;
-  form.appendChild(tokenInput);
-
-  document.body.appendChild(form);
-  form.submit();
-};
-
-export const startGoogleLogin = () => startSocialLogin("google");
-export const startAppleLogin = () => startSocialLogin("apple");
-
 let isRefreshing = false;
 let refreshPromise = null;
 let failedQueue = [];

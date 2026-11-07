@@ -21,39 +21,18 @@ from django.conf import settings
 from django.views.static import serve
 from django.http import HttpResponse, JsonResponse
 
-from allauth.socialaccount.models import SocialApp
+from ReactSerializers.apple_auth import apple_configuration_is_ready
 
 def index_view(request):
     return HttpResponse("Maa Mara Market API", content_type="text/plain")
 
 
 def auth_provider_status(request):
-    """Expose provider readiness only; never return OAuth credentials."""
-    configured_google_apps = settings.SOCIALACCOUNT_PROVIDERS.get("google", {}).get("APPS", [])
-    settings_google_ready = any(
-        app.get("client_id") and app.get("secret")
-        for app in configured_google_apps
-    )
-    google_database_apps = 0
-    try:
-        google_database_apps = SocialApp.objects.filter(provider="google").count()
-    except Exception:
-        # A database outage must not make an unverified provider appear ready.
-        google_database_apps = 0
-
-    # django-allauth cannot safely choose between duplicate settings- and
-    # database-backed SocialApps for the same provider. Fail closed instead.
-    google_configuration_conflict = bool(settings_google_ready and google_database_apps)
-    google_enabled = (
-        settings_google_ready if not google_database_apps else google_database_apps == 1
-    ) and not google_configuration_conflict
-
+    """Expose readiness flags for the dedicated ID-token sign-in flows."""
     return JsonResponse({
-        "google": bool(google_enabled),
-        "google_configuration_conflict": google_configuration_conflict,
-        "apple": bool(getattr(settings, "APPLE_SIGN_IN_ENABLED", False)),
+        "google": bool(getattr(settings, "GOOGLE_CLIENT_ID", "")),
+        "apple": apple_configuration_is_ready(),
     })
-
 
 urlpatterns = [
     path("api/auth/providers/", auth_provider_status, name="auth-provider-status"),

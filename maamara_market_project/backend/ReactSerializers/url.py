@@ -14,6 +14,7 @@ from .item_insights import item_insights, item_ai_suggestions
 from .items import vendor_item_growth_stats, vendor_item_stats, vendor_analytics_stats
 from .ItemInventory import *
 from .traffic import record_traffic_event, traffic_analytics, inbound_traffic_analytics, inbound_traffic_session_detail
+from .social_auth_views import GoogleLoginView, AppleAuthConfigView, AppleLoginStartView, AppleLoginCallbackView, AppleLoginView
 
 router = DefaultRouter()
 # Legacy router registrations were removed: the referenced viewsets no longer
@@ -39,6 +40,11 @@ urlpatterns = [
 
 
     path('api/login/', login_view, name='login'),
+    path("api/google/login/", GoogleLoginView.as_view(), name="google-login"),
+    path("api/apple/config/", AppleAuthConfigView.as_view(), name="apple-auth-config"),
+    path("api/apple/start/", AppleLoginStartView.as_view(), name="apple-login-start"),
+    path("api/apple/callback/", AppleLoginCallbackView.as_view(), name="apple-login-callback"),
+    path("api/apple/login/", AppleLoginView.as_view(), name="apple-login"),
     path('api/get-csrf-token/', get_csrf_token, name='get_csrf_token'),
     path('api/profile/', ProfileView.as_view(), name='profile'),
     path('api/check-auth/', HybridCheckAuthView.as_view()),
@@ -46,8 +52,6 @@ urlpatterns = [
     path('api/user-visitor-notifications/', user_visitor_notifications_view, name='user-visitor-notifications'),
     path('api/user-visitor-activity/', user_visitor_activity_view, name='user-visitor-activity'),
 
-    # google login
-    path("google/success/", google_login_success),
     
     # item stats
     path("api/item-stats/", vendor_item_stats, name="item-stats"),

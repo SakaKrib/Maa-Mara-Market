@@ -51,6 +51,8 @@ jobs:
         env:
           VITE_PUBLIC_BASE_PATH: ${{ vars.MAAMARAMARKET_PUBLIC_PATH_PREFIX == '/' && '/' || format('{0}/', vars.MAAMARAMARKET_PUBLIC_PATH_PREFIX || '/maamara') }}
           VITE_ROUTER_BASENAME: ${{ vars.MAAMARAMARKET_PUBLIC_PATH_PREFIX || '/maamara' }}
+          VITE_GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
+          VITE_GOOGLE_IOS_CLIENT_ID: ${{ secrets.GOOGLE_IOS_CLIENT_ID }}
         run: npm run build
 
       - name: Build mobile web bundle
@@ -60,6 +62,8 @@ jobs:
           VITE_API_URL: ${{ env.MOBILE_API_URL }}${{ env.MOBILE_API_PATH_PREFIX }}
           VITE_ROUTER_BASENAME: /
           VITE_PUBLIC_SITE_URL: https://maamaramarket.com
+          VITE_GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
+          VITE_GOOGLE_IOS_CLIENT_ID: ${{ secrets.GOOGLE_IOS_CLIENT_ID }}
         run: npm run build:mobile
 
       - name: Lint product sharing module
@@ -104,7 +108,7 @@ jobs:
         working-directory: ${{ env.FRONTEND_DIR }}
         # Runtime plugins (including push notifications) are pinned in package.json and the lockfile.
         # Install project generators/platform wrappers and Status Bar temporarily.
-        run: npm install --no-save @capacitor/cli@7 @capacitor/android@7 @capacitor/ios@7 @capacitor/status-bar@7 @capacitor/app@7 typescript@5.8.3 sharp
+        run: npm install --no-save @capacitor/cli@7 @capacitor/android@7 @capacitor/ios@7 @capacitor/status-bar@7 @capacitor/app@7 @capgo/capacitor-social-login@^7 typescript@5.8.3 sharp
 
       - name: Validate configured mobile API base URL
         env:
@@ -397,6 +401,14 @@ jobs:
           import android.webkit.CookieManager;
           import android.webkit.WebView;
           import android.widget.Toast;
+          import android.content.Intent;
+          import android.util.Log;
+
+          import com.getcapacitor.Plugin;
+          import com.getcapacitor.PluginHandle;
+          import ee.forgr.capacitor.social.login.GoogleProvider;
+          import ee.forgr.capacitor.social.login.ModifiedMainActivityForSocialLoginPlugin;
+          import ee.forgr.capacitor.social.login.SocialLoginPlugin;
 
           import androidx.activity.OnBackPressedCallback;
           import androidx.core.view.ViewCompat;
@@ -406,7 +418,7 @@ jobs:
 
           import com.getcapacitor.BridgeActivity;
 
-          public class MainActivity extends BridgeActivity {
+          public class MainActivity extends BridgeActivity implements ModifiedMainActivityForSocialLoginPlugin {
               private static final long BACK_EXIT_INTERVAL_MS = 2000L;
               private long lastHomeBackPressAt = 0L;
 
@@ -447,6 +459,28 @@ jobs:
                   applySystemBarSettings();
                   // Reapply after Capacitor plugins initialize.
                   getWindow().getDecorView().post(this::applySystemBarSettings);
+              }
+
+              @Override
+              public void onActivityResult(int requestCode, int resultCode, Intent data) {
+                  super.onActivityResult(requestCode, resultCode, data);
+                  if (requestCode >= GoogleProvider.REQUEST_AUTHORIZE_GOOGLE_MIN
+                          && requestCode < GoogleProvider.REQUEST_AUTHORIZE_GOOGLE_MAX) {
+                      PluginHandle handle = getBridge().getPlugin("SocialLogin");
+                      if (handle == null) {
+                          Log.w("MaaMara Google Login", "SocialLogin plugin is not registered.");
+                          return;
+                      }
+                      Plugin plugin = handle.getInstance();
+                      if (plugin instanceof SocialLoginPlugin) {
+                          ((SocialLoginPlugin) plugin).handleGoogleLoginIntent(requestCode, data);
+                      }
+                  }
+              }
+
+              @Override
+              public void IHaveModifiedTheMainActivityForTheUseWithSocialLoginPlugin() {
+                  // Required by Capgo Social Login for Google activity-result forwarding.
               }
 
               private void applySystemBarSettings() {
