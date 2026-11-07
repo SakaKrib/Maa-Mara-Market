@@ -177,7 +177,6 @@ jobs:
           variables_gradle.write_text(variables_text)
           print("Configured AGP 8.9.1 and compile SDK 36 for the social-login dependency.")
           PY
-          PY
           if [ -n "$FIREBASE_ANDROID_CONFIG" ]; then
             printf '%s' "$FIREBASE_ANDROID_CONFIG" > android/app/google-services.json
             python3 - <<'PY'
