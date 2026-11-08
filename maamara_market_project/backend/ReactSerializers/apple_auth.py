@@ -16,6 +16,7 @@ from rest_framework.exceptions import AuthenticationFailed
 from .social_replay import reject_replay
 
 from allauth.account.models import EmailAddress
+from core.models import Profile
 from allauth.socialaccount.models import SocialAccount
 
 User = get_user_model()
@@ -129,7 +130,6 @@ def verify_apple_identity_token(identity_token: str, expected_nonce: str) -> dic
         raise AuthenticationFailed("Apple sign-in nonce validation failed.")
     if not str(claims.get("sub") or "").strip():
         raise AuthenticationFailed("Apple account identifier is missing.")
-    reject_replay(identity_token, claims)
     return claims
 
 
@@ -260,4 +260,7 @@ def authenticate_apple_credential(identity_token: str, expected_nonce: str, supp
     if legacy_social and not legacy_social.extra_data:
         legacy_social.extra_data = claims
         legacy_social.save(update_fields=["extra_data"])
+
+    # Claim the verified token only after account linking and profile checks pass.
+    reject_replay(identity_token, claims)
     return user
