@@ -186,7 +186,11 @@ def mpesa_stk_push(request):
             status=200,
         )
 
-    if checkout_session.status in {"failed", "expired"}:
+    # A failed Daraja attempt does not invalidate the checkout itself.
+    # Permit the customer to retry STK Push while the checkout is still within
+    # its expiry window. A new successful initiation replaces the prior
+    # CheckoutRequestID, so callbacks for an older attempt cannot complete it.
+    if checkout_session.status == "expired":
         return Response({"error": "This checkout is no longer payable."}, status=400)
 
     if checkout_session.expires_at <= timezone.now():
