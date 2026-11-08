@@ -23,6 +23,7 @@ import api from "../../../../../../Services/Api";
 import { Avatar } from "@mui/material";
 import AppSnackbar from "../../../../../../../components/ui/app-snackbar";
 import DatePicker from "../../../../../../../components/ui/date-picker";
+import DeleteAccountSection from "./DeleteAccountSection";
 
 export default function UserAccount() {
   const navigate = useNavigate();
@@ -522,6 +523,8 @@ export default function UserAccount() {
                 <p className="text-gray-500 text-sm">No active vouchers</p>
               )}
             </motion.div>
+
+            <DeleteAccountSection />
 
           </CardContent>
         </Card>

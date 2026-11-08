@@ -1,7 +1,7 @@
 // Terms & Conditions and Privacy Policy text. Each section has a heading and
 // paragraphs; "list" items render as bullets under the paragraphs.
 
-export const LEGAL_UPDATED = "24 October 2026";
+export const LEGAL_UPDATED = "8 November 2026";
 export const CONTACT_EMAIL = "hello@maamaramarket.com";
 
 export const TERMS = {
@@ -29,14 +29,14 @@ export const TERMS = {
       id: "accounts",
       title: "3. Your account",
       paragraphs: [
-        "You can browse as a guest, but you need an account to use some features such as order history, wishlist, reviews, saved details and messaging. You can sign up with your email address and a password, or with Google sign-in where it is offered. We may ask you to verify your email address with a one-time code.",
+        "You can browse as a guest, but you need an account to use some features such as order history, wishlist, reviews, saved details and messaging. You can sign up with your email address and a password, or with Google or Sign in with Apple where they are offered. We may ask you to verify your email address with a one-time code.",
         "You are responsible for the information you give us, for keeping your password and devices secure, and for everything done through your account. Tell us straight away if you think someone else has used it.",
       ],
       list: [
         "Give accurate and current details, and keep them up to date.",
         "Do not share your password or one-time codes with anyone.",
         "Do not create accounts for other people without their permission, or open accounts to get around a suspension.",
-        "You can ask us to close your account at any time (see the Privacy Policy for what happens to your data).",
+        "You can delete your account yourself at any time from the Account page in the app or website, or from the public page at /delete-account if you cannot sign in (see the Privacy Policy for what is deleted and what we keep). Vendor accounts and accounts with orders still in progress must finish those first.",
       ],
     },
     {
@@ -349,6 +349,15 @@ export const PRIVACY = {
       title: "11. How long we keep your information",
       paragraphs: [
         "We keep personal information only for as long as we need it for the purposes above. In general, account and profile details are kept while your account is active and for a limited time afterwards. Order, payment, refund and payout records are kept for as long as the law requires for tax, accounting and dispute purposes. Analytics records are kept for a limited period and may be summarised without identifying you. Marketing consent records are kept as proof of your choice. When we no longer need information, we delete or anonymise it.",
+        "Deleting your account: you can delete your account yourself from the Account page in the app or website (you confirm with your password, or with a code we email you if you signed in with Google or Apple). If you cannot sign in or no longer have the app, use the web page at /delete-account; we email a confirmation link to the address on the account. Deletion happens immediately and we email you when it is done.",
+      ],
+      list: [
+        "Deleted straight away: your profile and picture, wallet and coins, vouchers, referral links, wishlist, reviews, comments and reactions, notifications, messages you sent, saved registration drafts, email addresses and your Google or Apple sign-in links. Your name, email and login details on the account are erased and cannot be recovered.",
+        "Kept without your personal details: orders, payments, refunds, invoices and related financial records, because tax and accounting law requires us to keep them. They stay linked only to an anonymous account number, not to your name or email. Support tickets are kept without your name or email. Page-view analytics are kept without a link to you.",
+        "We keep a record that your deletion happened, with a one-way hash of your email so we can prove it was done. It cannot be used to find your email.",
+        "Not possible while you have an order in progress (paid, shipping, or being returned or disputed): finish or cancel it first. Vendor accounts have payouts, listings and bank details to settle, so we complete those requests within 30 days after you confirm on the web page.",
+        "Sign in with Apple: after deletion you can also remove Maa Mara Market from your Apple ID under Settings > Apple ID > Sign in with Apple. Google works the same way under the third-party connections of your Google Account.",
+        "Service providers that process data for us (for example email and payment providers) keep their own records under their own policies; payment records are covered by the retention above.",
       ],
     },
     {
@@ -368,7 +377,7 @@ export const PRIVACY = {
         "access the personal data we hold about you;",
         "object to certain uses of your data, including direct marketing;",
         "ask us to correct inaccurate or incomplete data;",
-        "ask us to delete data we no longer need or have no right to keep;",
+        "ask us to delete data we no longer need or have no right to keep, including by deleting your whole account yourself (see section 11);",
         "receive your data in a usable format and ask us to transfer it (data portability) where it applies;",
         "withdraw your consent at any time, without affecting what we did before you withdrew it.",
       ],
