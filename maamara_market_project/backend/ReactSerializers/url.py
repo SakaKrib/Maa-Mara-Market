@@ -16,6 +16,8 @@ from .ItemInventory import *
 from .traffic import record_traffic_event, traffic_analytics, inbound_traffic_analytics, inbound_traffic_session_detail, inbound_traffic_visitor_detail, clear_inbound_traffic
 from core.account_deletion_views import (AccountDeletionCodeView, AccountDeletionInfoView, AccountDeletionView,
                                         PublicDeletionConfirmView, PublicDeletionRequestView, AppLinksView)
+from core.moderation_views import (AdminReportListView, AdminReportResolveView, BlockedUsersView,
+                                   ReportContentView, UnblockUserView)
 from .social_auth_views import GoogleLoginView, AppleAuthConfigView, AppleLoginStartView, AppleLoginCallbackView, AppleLoginView, AppleNativeNonceView
 
 router = DefaultRouter()
@@ -49,6 +51,11 @@ urlpatterns = [
     path("api/apple/start/", AppleLoginStartView.as_view(), name="apple-login-start"),
     path("api/apple/callback/", AppleLoginCallbackView.as_view(), name="apple-login-callback"),
     path("api/app-links/", AppLinksView.as_view(), name="app-links"),
+    path("api/moderation/reports/", ReportContentView.as_view(), name="moderation-report"),
+    path("api/moderation/blocks/", BlockedUsersView.as_view(), name="moderation-blocks"),
+    path("api/moderation/blocks/<int:user_id>/", UnblockUserView.as_view(), name="moderation-unblock"),
+    path("api/admin/moderation/reports/", AdminReportListView.as_view(), name="admin-moderation-reports"),
+    path("api/admin/moderation/reports/<int:pk>/resolve/", AdminReportResolveView.as_view(), name="admin-moderation-resolve"),
     path("api/account/delete/info/", AccountDeletionInfoView.as_view(), name="account-delete-info"),
     path("api/account/delete/send-code/", AccountDeletionCodeView.as_view(), name="account-delete-code"),
     path("api/account/delete/", AccountDeletionView.as_view(), name="account-delete"),

@@ -108,8 +108,8 @@ def _delete_files(instances, *fields):
 def anonymise_user(user, channel="app"):
     from allauth.account.models import EmailAddress
     from allauth.socialaccount.models import SocialAccount
-    from core.models import (AccountDeletionRecord, DirectMessage, EmailOTP, Notification, Profile,
-                             Referral, SupportMessage, Voucher, Wallet)
+    from core.models import (AccountDeletionRecord, ContentReport, DirectMessage, EmailOTP, Notification, Profile,
+                             Referral, SupportMessage, UserBlock, Voucher, Wallet)
     from order.models import Customer
     from ReactSerializers.models import ItemView
     from shop.models import CommentBlog, Reaction, ReactionBlog, Review, VendorRating, Wishlist
@@ -132,6 +132,11 @@ def anonymise_user(user, channel="app"):
     ):
         model.objects.filter(**{field: user}).delete()
     Referral.objects.filter(referrer=user).delete()
+    # Blocks go both ways; reports the user made lose their identity. Reports about
+    # the user's content keep the text snapshot as safety evidence (see privacy policy).
+    UserBlock.objects.filter(blocker=user).delete()
+    UserBlock.objects.filter(blocked=user).delete()
+    ContentReport.objects.filter(reporter=user).update(reporter=None, reporter_visitor_id="")
     Referral.objects.filter(invited_user=user).update(invited_user=None)
 
     # Keep the ticket text for support history, drop who it came from.

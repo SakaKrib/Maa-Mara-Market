@@ -332,11 +332,12 @@ class ReactionSerializer(serializers.ModelSerializer):
 # Review Serializer
 class ReviewSerializer(serializers.ModelSerializer):
     user = serializers.StringRelatedField(read_only=True)
+    user_id = serializers.IntegerField(read_only=True)
     reactions = ReactionSerializer(many=True, read_only=True)
 
     class Meta:
         model = Review
-        fields = ['id', 'user', 'visitor_id', 'rating', 'review_text', 'created_at', 'reactions']        
+        fields = ['id', 'user', 'user_id', 'visitor_id', 'rating', 'review_text', 'created_at', 'reactions']        
 
 class ItemAdditionalImageSerializer(serializers.ModelSerializer):
     image = serializers.ImageField(use_url=True)
@@ -366,7 +367,7 @@ class ItemSerializer(serializers.ModelSerializer):
     final_discounted_price = serializers.SerializerMethodField()
     save_upto = serializers.SerializerMethodField()
     variants = ColorVariantSerializer(many=True, read_only=True)
-    reviews = ReviewSerializer(many=True, read_only=True)
+    reviews = serializers.SerializerMethodField()
     average_rating = serializers.SerializerMethodField()
     review_count = serializers.SerializerMethodField()
     brand = BrandSerializer(read_only=True)
@@ -464,15 +465,24 @@ class ItemSerializer(serializers.ModelSerializer):
             return 0
 
     
+    def _visible_reviews(self, obj):
+        from .moderation import visible_reviews
+
+        return visible_reviews(obj.reviews.all(), self.context.get("request"))
+
+    def get_reviews(self, obj):
+        return ReviewSerializer(
+            self._visible_reviews(obj).order_by("-created_at"), many=True, context=self.context,
+        ).data
+
     def get_average_rating(self, obj):
-        reviews = obj.reviews.all()
+        reviews = list(self._visible_reviews(obj))
         if not reviews:
             return None
         return round(sum([review.rating for review in reviews]) / len(reviews), 2)
-    
+
     def get_review_count(self, obj):
-       
-        return obj.reviews.count()
+        return self._visible_reviews(obj).count()
 
 
 class ActivityLogSerializer(serializers.ModelSerializer):

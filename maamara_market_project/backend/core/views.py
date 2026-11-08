@@ -845,8 +845,10 @@ class ReviewViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticatedOrVisitor]
 
     def get_queryset(self):
+        from .moderation import visible_reviews
+
         item_id = self.kwargs.get("item_id")
-        return Review.objects.filter(item_id=item_id).order_by("-created_at")
+        return visible_reviews(Review.objects.filter(item_id=item_id), self.request).order_by("-created_at")
 
     def perform_create(self, serializer):
         item_id = self.kwargs.get('item_id')

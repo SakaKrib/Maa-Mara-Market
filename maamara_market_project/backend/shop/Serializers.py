@@ -399,6 +399,7 @@ class UserSerializer(serializers.ModelSerializer):
 # 💬 Comment Serializer
 class CommentSerializer(serializers.ModelSerializer):
     user_name = serializers.CharField(source='user.username', read_only=True)
+    user_id = serializers.IntegerField(read_only=True)
     user_profile_picture = serializers.SerializerMethodField()
 
     def get_user_profile_picture(self, obj):
@@ -417,7 +418,7 @@ class CommentSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = CommentBlog
-        fields = ['id', 'user_name', 'user_profile_picture', 'text', 'created_at', 'visitor_id']
+        fields = ['id', 'user_id', 'user_name', 'user_profile_picture', 'text', 'created_at', 'visitor_id']
 
 
 # 📝 Blog Post Serializer
@@ -452,6 +453,14 @@ class BlogPostSerializer(serializers.ModelSerializer):
                 raise serializers.ValidationError(problem)
         return value
 
+    def get_comments(self, obj):
+        from core.moderation import visible_comments
+
+        request = self.context.get('request')
+        return CommentSerializer(
+            visible_comments(obj.comments_blog.all(), request), many=True, context=self.context,
+        ).data
+
     excerpt = serializers.SerializerMethodField()
 
     def get_excerpt(self, obj):
@@ -463,7 +472,7 @@ class BlogPostSerializer(serializers.ModelSerializer):
     user_name = serializers.CharField(source='user.username', read_only=True)
     user = UserSerializer(read_only=True)  
     vendor = VendorSerializer(read_only=True)  # ✅ return full vendor object
-    comments = CommentSerializer(source='comments_blog', many=True, read_only=True)
+    comments = serializers.SerializerMethodField()
     reactions = ReactionSerializer(source='reactions_blog', many=True, read_only=True)
 
     class Meta:

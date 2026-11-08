@@ -572,8 +572,12 @@ class BlogPostViewSet(viewsets.ModelViewSet):
         if self.request.user.is_staff and self.request.user.is_superuser:
             return qs
 
-        # Everyone else only sees approved blogs
-        return qs.filter(approved=True)
+        # Everyone else only sees approved blogs, minus authors they blocked
+        from core.moderation import blocked_user_ids
+
+        qs = qs.filter(approved=True)
+        blocked = blocked_user_ids(self.request)
+        return qs.exclude(user_id__in=blocked) if blocked else qs
 
     def perform_create(self, serializer):
         vendor = getattr(self.request.user, "vendor", None)

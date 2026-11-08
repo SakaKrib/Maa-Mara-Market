@@ -126,6 +126,7 @@ class Review(models.Model):
         validators=[MinValueValidator(1), MaxValueValidator(5)]
     )
     review_text = models.TextField()
+    moderation_hidden = models.BooleanField(default=False, db_index=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
@@ -297,6 +298,7 @@ class CommentBlog(models.Model):
     )
     visitor_id = models.CharField(max_length=100, null=True, blank=True)
     text = models.TextField()
+    moderation_hidden = models.BooleanField(default=False, db_index=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:

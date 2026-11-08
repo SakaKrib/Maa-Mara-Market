@@ -104,8 +104,12 @@ def _message_payload(message, request):
         "sender_id": message.sender_id,
         "sender_visitor_id": message.sender_visitor_id,
         "sender": sender,
-        "body": message.body,
-        "image": request.build_absolute_uri(message.image.url) if message.image else None,
+        "body": "This message was removed by a moderator." if message.moderation_hidden else message.body,
+        "image": (
+            request.build_absolute_uri(message.image.url)
+            if message.image and not message.moderation_hidden else None
+        ),
+        "moderation_hidden": message.moderation_hidden,
         "created_at": message.created_at.isoformat(),
         "read_at": message.read_at.isoformat() if message.read_at else None,
     }

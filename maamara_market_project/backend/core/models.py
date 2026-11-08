@@ -454,6 +454,7 @@ class DirectMessage(models.Model):
     )
     sender_visitor_id = models.CharField(max_length=64, null=True, blank=True, db_index=True)
     body = models.TextField(blank=True)
+    moderation_hidden = models.BooleanField(default=False)
     image = models.ImageField(
         upload_to="messages/%Y/%m/",
         blank=True,
@@ -681,3 +682,94 @@ class AccountDeletionRecord(models.Model):
 
     def __str__(self):
         return f"Deletion {self.pk} ({self.channel}, {self.status})"
+
+
+# ---------------------------------------------------------------------------
+# Content moderation: reports and user blocks (App Store 1.2 / Play UGC policy)
+# ---------------------------------------------------------------------------
+class ContentReport(models.Model):
+    TARGET_CHOICES = [
+        ("review", "Review"),
+        ("blog_post", "Blog post"),
+        ("blog_comment", "Blog comment"),
+        ("message", "Message"),
+        ("item", "Product listing"),
+        ("banner", "Banner"),
+        ("user", "User or vendor"),
+    ]
+    REASON_CHOICES = [
+        ("spam", "Spam or scam"),
+        ("harassment", "Harassment or bullying"),
+        ("hate", "Hate speech"),
+        ("sexual", "Sexual or inappropriate content"),
+        ("violence", "Violence or dangerous content"),
+        ("illegal", "Illegal goods or activity"),
+        ("misleading", "False or misleading"),
+        ("ip", "Copyright or counterfeit"),
+        ("ai_harmful", "Harmful or inaccurate AI-generated content"),
+        ("other", "Other"),
+    ]
+    STATUS_OPEN = "open"
+    STATUS_ACTIONED = "actioned"
+    STATUS_DISMISSED = "dismissed"
+    STATUS_CHOICES = [
+        (STATUS_OPEN, "Open"),
+        (STATUS_ACTIONED, "Action taken"),
+        (STATUS_DISMISSED, "Dismissed"),
+    ]
+    ACTION_CHOICES = [
+        ("none", "No action"),
+        ("removed", "Content removed"),
+        ("suspended", "User suspended"),
+        ("removed_suspended", "Content removed and user suspended"),
+    ]
+
+    reporter = models.ForeignKey(
+        settings.AUTH_USER_MODEL, null=True, blank=True,
+        on_delete=models.SET_NULL, related_name="content_reports_made",
+    )
+    reporter_visitor_id = models.CharField(max_length=64, blank=True, default="", db_index=True)
+    target_type = models.CharField(max_length=20, choices=TARGET_CHOICES)
+    target_id = models.PositiveIntegerField()
+    target_owner = models.ForeignKey(
+        settings.AUTH_USER_MODEL, null=True, blank=True,
+        on_delete=models.SET_NULL, related_name="content_reports_received",
+    )
+    reason = models.CharField(max_length=20, choices=REASON_CHOICES)
+    details = models.CharField(max_length=1000, blank=True, default="")
+    snapshot = models.TextField(blank=True, default="", help_text="Copy of the content when reported, kept as evidence.")
+    status = models.CharField(max_length=12, choices=STATUS_CHOICES, default=STATUS_OPEN, db_index=True)
+    action = models.CharField(max_length=20, choices=ACTION_CHOICES, default="none")
+    moderator_note = models.CharField(max_length=1000, blank=True, default="")
+    resolved_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, null=True, blank=True,
+        on_delete=models.SET_NULL, related_name="content_reports_resolved",
+    )
+    resolved_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True, db_index=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        indexes = [models.Index(fields=["target_type", "target_id"], name="core_report_target_idx")]
+
+    def __str__(self):
+        return f"Report {self.pk}: {self.target_type}#{self.target_id} ({self.status})"
+
+
+class UserBlock(models.Model):
+    blocker = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="blocks_made",
+    )
+    blocked = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="blocks_received",
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=["blocker", "blocked"], name="unique_user_block"),
+            models.CheckConstraint(check=~models.Q(blocker=models.F("blocked")), name="no_self_block"),
+        ]
+
+    def __str__(self):
+        return f"{self.blocker_id} blocks {self.blocked_id}"
