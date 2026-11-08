@@ -1376,10 +1376,12 @@ def revenue_area_chart(request):
     """Monthly revenue + orders analytics (paid orders, any fulfilment stage)."""
     months = {}
     for order in with_profit_prefetch(with_revenue(paid_orders())):
-        key = (order.ordered_date.year, order.ordered_date.month)
+        local_date = timezone.localtime(order.ordered_date)
+        key = (local_date.year, local_date.month)
         row = months.setdefault(
             key,
-            {"month": order.ordered_date.strftime("%b"), "revenue": 0.0, "vendor_share": 0.0, "profit": 0.0, "orders": 0},
+            {"month": local_date.strftime("%b"), "year": local_date.year,
+             "month_key": local_date.strftime("%Y-%m"), "revenue": 0.0, "vendor_share": 0.0, "profit": 0.0, "orders": 0},
         )
         revenue = order_revenue(order)
         vendor_share = order_vendor_share(order)

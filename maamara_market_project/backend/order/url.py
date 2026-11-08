@@ -44,6 +44,7 @@ from .views import (
     delete_admin_transaction,
 )
 from .invoice_views import invoice_list
+from .monthly_accounting import confirm_monthly_accounting, monthly_accounting
 
 
 urlpatterns = [
@@ -60,6 +61,8 @@ urlpatterns = [
     path("api/admin/dashboard/vendor-sales/", vendor_sales, name="admin-vendor-sales"),
     path("api/admin-transactions/", admin_transactions, name="admin-transactions"),
     path("api/revenue-analytics/", revenue_area_chart, name="revenue-analytics"),
+    path("api/admin/monthly-accounting/", monthly_accounting, name="monthly-accounting"),
+    path("api/admin/monthly-accounting/confirm/", confirm_monthly_accounting, name="monthly-accounting-confirm"),
 
     path("api/transactions/", create_admin_transaction, name="create-admin-transaction"),
     path("api/transactions/history/", admin_transaction_history, name="admin-transaction-history"),

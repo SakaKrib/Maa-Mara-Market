@@ -1044,3 +1044,26 @@ class FulfillmentEvent(models.Model):
 
     def __str__(self):
         return f"Order {self.order_id}: {self.event_type}"
+
+
+
+class MonthlyReconciliation(models.Model):
+    """Admin sign-off of one month's accounts (revenue, profit, vendor payouts).
+
+    The figures are snapshotted at confirmation. If sales for that month change
+    afterwards (late payment, refund) the dashboard shows the sign-off as stale.
+    """
+    month = models.CharField(max_length=7, unique=True)  # YYYY-MM
+    revenue = models.DecimalField(max_digits=14, decimal_places=2)
+    shipping = models.DecimalField(max_digits=14, decimal_places=2, default=0)
+    vendor_share = models.DecimalField(max_digits=14, decimal_places=2)
+    profit = models.DecimalField(max_digits=14, decimal_places=2)
+    orders = models.PositiveIntegerField(default=0)
+    note = models.CharField(max_length=500, blank=True, default="")
+    confirmed_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name="+"
+    )
+    confirmed_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"Reconciliation {self.month}"

@@ -21,6 +21,7 @@ import { buildPdfReportDataUrl } from "../../Services/pdfReport";
 import LineChart from "../../cmponents/LineGraph/LineGraph";
 import BarChart from "../../cmponents/BarChart/BarChart";
 import PieGraph from "../../cmponents/PieChart/pieChart";
+import MonthlyAccountingPanel from "./MonthlyAccountingPanel";
 import { useEmailStats } from "../../cmponents/Hooks/Emails/DashboardEmailHook";
 import useDashboardStats from "../../cmponents/Hooks/StockInventory/SalesStats";
 import EmailPanel from "../../cmponents/AdminPages/Notifications/EmailListing";
@@ -892,6 +893,8 @@ const Dashboard = () => {
           </div>
         </div>
       </div>
+
+      <MonthlyAccountingPanel monthlyRevenue={analytics.monthly_revenue || []} />
 
       <div className="grid min-w-0 grid-cols-1 gap-5">
         <Link
