@@ -43,7 +43,7 @@ urlpatterns = [
     path("", include("shop.urls")),
     path("", include("vendorDashboard.urls")),
     path("", include("ReactSerializers.url")),
-    path("accounts/", include("allauth.urls")),
+    # Backward-compatible endpoint for older browser bundles. It still uses\n    # the same verified Google ID-token flow as /api/google/login/; it does\n    # not enable a separate Allauth/OAuth sign-in implementation.\n    path("accounts/google/login/", GoogleLoginView.as_view(), name="google-login-legacy-compat"),\n    path("accounts/", include("allauth.urls")),
     path("", index_view, name="index"),
 ]
 
