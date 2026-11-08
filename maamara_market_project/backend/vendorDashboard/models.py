@@ -16,6 +16,7 @@ from django.utils import timezone
 from core.models import Notification
 from ReactSerializers.models import Brand, Item
 from order.models import OrderItem
+from core.public_urls import frontend_base
 
 
 
@@ -342,7 +343,7 @@ class VendorRequest(models.Model):
                 "first_name": self.user.first_name,
                 "otp": self.otp,
                 "otp_expiry_minutes": self.OTP_EXPIRY_MINUTES,
-                "frontend_url": settings.FRONTEND_URL,
+                "frontend_url": frontend_base(),
                 "company_address": getattr(settings, "COMPANY_ADDRESS", ""),
             },
         )
@@ -389,7 +390,7 @@ class VendorRequest(models.Model):
             "emails/vendor_verified.html",
             {
                 "first_name": user.first_name or user.username,
-                "frontend_url": settings.FRONTEND_URL,
+                "frontend_url": frontend_base(),
                 "company_address": getattr(settings, "COMPANY_ADDRESS", ""),
             },
         )
@@ -409,14 +410,14 @@ class VendorRequest(models.Model):
             f"Vendor {user.username} ({vendor_email}) has verified their registration OTP. "
             "Please review and approve their request."
         )
-        review_url = f"{settings.FRONTEND_URL.rstrip('/')}/admin-dashboard/vendor-requests"
+        review_url = f"{frontend_base()}/admin-dashboard/vendor-requests"
         html_content_admin = render_to_string(
             "emails/vendor_verified_admin.html",
             {
                 "username": user.username,
                 "vendor_email": vendor_email,
                 "review_url": review_url,
-                "frontend_url": settings.FRONTEND_URL,
+                "frontend_url": frontend_base(),
                 "company_address": getattr(settings, "COMPANY_ADDRESS", ""),
             },
         )

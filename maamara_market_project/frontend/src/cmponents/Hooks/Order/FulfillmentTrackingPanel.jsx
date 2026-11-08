@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useState } from "react";
 import { AlertTriangle, CheckCircle2, Clock3, PackageCheck, RefreshCw, Truck } from "lucide-react";
 import api, { getWebSocketUrl } from "../../../Services/Api";
+import FulfillmentStepper from "./FulfillmentStepper";
 
 const LABELS = {
   PAID: "Payment confirmed", PROCESSING: "Processing", PACKING: "Packing",
@@ -120,10 +121,14 @@ export default function FulfillmentTrackingPanel({ orderId, onOrderStatusChange 
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div>
                 <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Item #{item.order_item_id}</p>
-                <h3 className="mt-1 font-bold text-slate-900">{item.item_name}</h3>
+                <h3 className="mt-1 text-base font-semibold leading-snug text-slate-900">{item.item_name}</h3>
                 <p className="mt-1 text-sm text-slate-600">Quantity: {item.quantity}</p>
               </div>
               <span className={`rounded-full px-3 py-1 text-xs font-bold ${item.status === "COMPLETED" ? "bg-green-50 text-green-700" : awaiting ? "bg-amber-50 text-amber-800" : issue ? "bg-red-50 text-red-700" : "bg-blue-50 text-blue-800"}`}>{LABELS[item.status] || item.status}</span>
+            </div>
+
+            <div className="mt-4 rounded-xl border border-slate-100 bg-slate-50/60 p-4">
+              <FulfillmentStepper status={item.status} events={item.events || []} />
             </div>
 
             <div className="mt-4 space-y-3">

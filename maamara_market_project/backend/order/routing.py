@@ -9,6 +9,7 @@ from .consumers import (
     VendorNotificationsConsumer,
     ActivityLogsConsumer,
     AdminAccountsConsumer,
+    AdminFulfillmentConsumer,
 )
 from vendorDashboard.consumers import (
     VendorPayoutConsumer,
@@ -32,6 +33,7 @@ websocket_urlpatterns = [
     re_path(r"ws/admin/vendor-requests/$", AdminVendorRequestsConsumer.as_asgi()),
     re_path(r"ws/admin/payouts/$", AdminPayoutsConsumer.as_asgi()),
     re_path(r"ws/vendor/payouts/$", VendorPayoutsConsumer.as_asgi()),
+    re_path(r"ws/admin/fulfillment/$", AdminFulfillmentConsumer.as_asgi()),
     re_path(r"ws/admin/accounts/$", AdminAccountsConsumer.as_asgi()),
     re_path(r"ws/activity-logs/$", ActivityLogsConsumer.as_asgi()),
     re_path(r"ws/currency/$", CurrencyConsumer.as_asgi()),

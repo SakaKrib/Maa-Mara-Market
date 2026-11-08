@@ -2,11 +2,17 @@ import React, { useEffect, useState } from "react";
 import { Apple, Download, Smartphone, X } from "lucide-react";
 import "./mobile-app-download-prompt.css";
 import maamaraBrandArtwork from "@/assets/maamara-brand-artwork.svg";
+import api from "../../../../../Services/Api";
 
 const DISMISSED_KEY = "maamara-mobile-app-prompt-dismissed-v1";
-const ANDROID_APK_URL =
-  "https://github.com/SakaKrib/Maa-Mara-Market/releases/download/mobile-latest/maa-mara-market-android.apk";
-const IOS_APP_STORE_URL = ""; // Set this to the public App Store listing after iOS publication.
+const ANDROID_PACKAGE = "com.maamaramarket.app";
+
+// Opens the installed Android app for the page being viewed (falls back to the store link).
+function androidOpenInAppUrl(fallbackUrl) {
+  const { host, pathname, search, hash } = window.location;
+  const fallback = fallbackUrl ? `;S.browser_fallback_url=${encodeURIComponent(fallbackUrl)}` : "";
+  return `intent://${host}${pathname}${search}${hash}#Intent;scheme=https;package=${ANDROID_PACKAGE}${fallback};end`;
+}
 
 function isMobileChrome() {
   if (typeof navigator === "undefined") return false;
@@ -25,6 +31,8 @@ function isInstalledWebApp() {
 const MobileAppDownloadPrompt = ({ isNativeApp = false }) => {
   const [visible, setVisible] = useState(false);
   const [platform, setPlatform] = useState("android");
+  const [installed, setInstalled] = useState(false);
+  const [links, setLinks] = useState({ android: "", ios: "" });
 
   useEffect(() => {
     if (isNativeApp || typeof window === "undefined" || !isMobileChrome()) return undefined;
@@ -38,39 +46,47 @@ const MobileAppDownloadPrompt = ({ isNativeApp = false }) => {
     if (isInstalledWebApp()) return undefined;
 
     let active = true;
+    let timer;
     const detectAndShow = async () => {
-      // Chromium can report related installed apps only when the website/app
-      // association is configured on the distribution domain.
-      if (typeof navigator.getInstalledRelatedApps === "function") {
+      const ua = navigator.userAgent || "";
+      const onAndroid = /Android/i.test(ua);
+
+      // Store links come from the server's .env (ANDROID_APP_LINK / IOS_APP_LINK).
+      let storeLinks = { android: "", ios: "" };
+      try {
+        const { data } = await api.get("/api/app-links/");
+        storeLinks = { android: data?.android || "", ios: data?.ios || "" };
+      } catch {
+        // Without links there is nothing to offer unless the app is already installed.
+      }
+
+      // Chromium reports installed related apps when the site declares them in its
+      // web manifest. iOS browsers cannot tell, so iPhone only ever sees the store link.
+      let nativeAppIsInstalled = false;
+      if (onAndroid && typeof navigator.getInstalledRelatedApps === "function") {
         try {
           const relatedApps = await navigator.getInstalledRelatedApps();
-          const nativeAppIsInstalled = relatedApps.some((app) =>
-            String(app.id || "").toLowerCase() === "com.maamaramarket.app" ||
-            String(app.url || "").includes("maamaramarket.com")
-          );
-          if (nativeAppIsInstalled || !active) return;
+          nativeAppIsInstalled = relatedApps.some((app) => String(app.id || "").toLowerCase() === ANDROID_PACKAGE);
         } catch {
-          // Unsupported/unassociated browsers cannot reliably expose installed native apps.
+          // Unsupported or not associated: treat as not installed.
         }
       }
 
       if (!active) return;
-      const ua = navigator.userAgent || "";
-      setPlatform(/Android/i.test(ua) ? "android" : "ios");
-      const timer = window.setTimeout(() => {
-        if (active) setVisible(true);
-      }, 3500);
-      return () => window.clearTimeout(timer);
+      const storeUrl = onAndroid ? storeLinks.android : storeLinks.ios;
+      // Nothing useful to show: app not installed and no store link configured yet.
+      if (!nativeAppIsInstalled && !storeUrl) return;
+
+      setLinks(storeLinks);
+      setInstalled(nativeAppIsInstalled);
+      setPlatform(onAndroid ? "android" : "ios");
+      timer = window.setTimeout(() => { if (active) setVisible(true); }, 3500);
     };
 
-    let timerCleanup;
-    detectAndShow().then((cleanup) => {
-      timerCleanup = cleanup;
-    });
-
+    detectAndShow();
     return () => {
       active = false;
-      timerCleanup?.();
+      window.clearTimeout(timer);
     };
   }, [isNativeApp]);
 
@@ -86,7 +102,7 @@ const MobileAppDownloadPrompt = ({ isNativeApp = false }) => {
   if (!visible || isNativeApp) return null;
 
   const isAndroid = platform === "android";
-  const storeUrl = isAndroid ? ANDROID_APK_URL : IOS_APP_STORE_URL;
+  const storeUrl = isAndroid ? links.android : links.ios;
 
   return (
     <div className="mm-app-prompt-backdrop" role="presentation" onClick={dismiss}>
@@ -122,34 +138,31 @@ const MobileAppDownloadPrompt = ({ isNativeApp = false }) => {
         </div>
 
         <p className="mm-app-prompt-eyebrow">MAA MARA MARKET</p>
-        <h2 id="mm-app-prompt-title">Shopping looks better in the app.</h2>
+        <h2 id="mm-app-prompt-title">{installed ? "Continue in the app." : "Shopping looks better in the app."}</h2>
         <p id="mm-app-prompt-description" className="mm-app-prompt-description">
-          Enjoy a smoother way to discover products and keep your marketplace close at hand.
+          {installed
+            ? "You have the Maa Mara Market app on this device. Open it to pick up where you left off."
+            : "Enjoy a smoother way to discover products and keep your marketplace close at hand."}
         </p>
 
         <div className="mm-app-prompt-platform">
           {isAndroid ? <Smartphone size={20} /> : <Apple size={20} />}
           <div>
             <strong>{isAndroid ? "For Android" : "For iPhone"}</strong>
-            <span>{isAndroid ? "Android app download" : "iOS app availability"}</span>
+            <span>{installed ? "App installed" : isAndroid ? "Android app" : "iPhone app"}</span>
           </div>
         </div>
 
-        {storeUrl ? (
-          <a
-            className="mm-app-prompt-primary"
-            href={storeUrl}
-            onClick={dismiss}
-            target="_blank"
-            rel="noreferrer"
-          >
-            <Download size={18} />
-            {isAndroid ? "Download Android APK (Beta)" : "Get it on the App Store"}
+        {installed ? (
+          <a className="mm-app-prompt-primary" href={androidOpenInAppUrl(storeUrl)} onClick={dismiss}>
+            <Smartphone size={18} />
+            Go to app
           </a>
         ) : (
-          <div className="mm-app-prompt-coming-soon" role="status">
-            {isAndroid ? "Android beta download is being prepared" : "iPhone app coming soon"}
-          </div>
+          <a className="mm-app-prompt-primary" href={storeUrl} onClick={dismiss} target="_blank" rel="noreferrer">
+            <Download size={18} />
+            {isAndroid ? "Download the Android app" : "Download the iPhone app"}
+          </a>
         )}
 
         <button type="button" className="mm-app-prompt-secondary" onClick={dismiss}>

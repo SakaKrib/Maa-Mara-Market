@@ -3,13 +3,22 @@ import { useNavigate } from "react-router-dom";
 import { App as CapacitorApp } from "@capacitor/app";
 import { Capacitor } from "@capacitor/core";
 
-const VERIFIED_HOST = "maamaramarket.com";
+const VERIFIED_HOSTS = String(import.meta.env.VITE_APP_LINK_HOSTS || "maamaramarket.com")
+  .split(",")
+  .map((host) => host.trim().toLowerCase())
+  .filter(Boolean);
+// The website is served under a path prefix (e.g. /maamara); the app's router is not.
+const PATH_PREFIX = String(import.meta.env.VITE_PUBLIC_PATH_PREFIX || "").trim().replace(/\/+$/, "");
 
 function routeFromUrl(value) {
   try {
     const url = new URL(value);
-    if (url.protocol !== "https:" || url.hostname !== VERIFIED_HOST) return null;
-    return `${url.pathname}${url.search}${url.hash}`;
+    if (url.protocol !== "https:" || !VERIFIED_HOSTS.includes(url.hostname.toLowerCase())) return null;
+    let path = url.pathname;
+    if (PATH_PREFIX && PATH_PREFIX !== "/" && (path === PATH_PREFIX || path.startsWith(`${PATH_PREFIX}/`))) {
+      path = path.slice(PATH_PREFIX.length) || "/";
+    }
+    return `${path}${url.search}${url.hash}`;
   } catch {
     return null;
   }

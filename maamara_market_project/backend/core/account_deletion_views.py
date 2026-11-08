@@ -11,6 +11,7 @@ from rest_framework.views import APIView
 
 from . import account_deletion as svc
 from .ratelimit import client_ip, hit
+from core.public_urls import frontend_base
 
 logger = logging.getLogger(__name__)
 User = get_user_model()
@@ -107,7 +108,7 @@ class PublicDeletionRequestView(APIView):
         user = User.objects.filter(email__iexact=email, is_active=True).order_by("pk").first()
         if user:
             token = signing.dumps({"uid": user.pk}, salt=TOKEN_SALT)
-            link = f"{str(settings.FRONTEND_URL).rstrip('/')}/delete-account?token={token}"
+            link = f"{frontend_base()}/delete-account?token={token}"
             try:
                 send_mail(
                     "Confirm deletion of your Maa Mara Market account",
@@ -147,3 +148,21 @@ class PublicDeletionConfirmView(APIView):
             return Response({"detail": str(exc), "pending_review": True}, status=status.HTTP_202_ACCEPTED)
         svc.send_completion_email(email)
         return Response({"detail": "Your account has been deleted."})
+
+
+
+class AppLinksView(APIView):
+    """Public store links for the mobile apps (blank until configured in .env)."""
+    authentication_classes = []
+    permission_classes = [AllowAny]
+
+    def get(self, request):
+        def clean(value):
+            value = str(value or "").strip()
+            return value if value.startswith("https://") else ""
+        response = Response({
+            "android": clean(getattr(settings, "ANDROID_APP_LINK", "")),
+            "ios": clean(getattr(settings, "IOS_APP_LINK", "")),
+        })
+        response["Cache-Control"] = "public, max-age=300"
+        return response

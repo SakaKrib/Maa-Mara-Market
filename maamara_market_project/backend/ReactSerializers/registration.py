@@ -45,6 +45,7 @@ def _otp() -> str:
 
 
 from core.ratelimit import rate_limit
+from core.public_urls import frontend_base
 
 
 @rate_limit("register", 10, 600)
@@ -112,7 +113,7 @@ def register(request):
             "first_name": firstname,
             "otp": pending.otp_code,
             "otp_expiry_minutes": OTP_EXPIRY_MINUTES,
-            "frontend_url": settings.FRONTEND_URL.rstrip("/"),
+            "frontend_url": frontend_base(),
             "company_address": getattr(settings, "COMPANY_ADDRESS", ""),
         },
     )
@@ -247,8 +248,8 @@ def verify_otp_register_otp(request):
             {
                 "first_name": user.first_name,
                 "username": user.username,
-                "dashboard_url": f"{settings.FRONTEND_URL.rstrip('/')}/user-account",
-                "frontend_url": settings.FRONTEND_URL.rstrip("/"),
+                "dashboard_url": f"{frontend_base()}/user-account",
+                "frontend_url": frontend_base(),
                 "company_address": getattr(settings, "COMPANY_ADDRESS", ""),
             },
         )
@@ -309,7 +310,7 @@ def resend_otp_register_otp(request):
             "first_name": pending.first_name,
             "otp": pending.otp_code,
             "otp_expiry_minutes": OTP_EXPIRY_MINUTES,
-            "frontend_url": settings.FRONTEND_URL.rstrip("/"),
+            "frontend_url": frontend_base(),
             "company_address": getattr(settings, "COMPANY_ADDRESS", ""),
         },
     )

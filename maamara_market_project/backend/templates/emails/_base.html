@@ -147,11 +147,11 @@
         <a class="footer-app-button" href="{{ app_links.primary_app_url|default:app_links.frontend_url|default:'#' }}" style="display:inline-block;padding:14px 24px;background:#2f8a5d;border:1px solid #5ab783;border-radius:8px;color:#ffffff;text-decoration:none;font-size:14px;line-height:1.3;font-weight:bold;">{{ app_links.primary_app_label|default:"Open Maa Mara Market" }}</a>
       </td></tr>
     </table>
-    {% if app_links.android %}<p style="margin:0 0 15px;color:#c9ddd2;font-size:11px;">Android app · Download directly to your Android device</p>{% else %}<p style="margin:0 0 15px;color:#c9ddd2;font-size:11px;">Continue shopping on the Maa Mara Market website.</p>{% endif %}
-    {% if app_links.ios %}
-    <p style="margin:0 0 16px;"><a href="{{ app_links.ios }}" style="color:#ffffff;text-decoration:underline;font-weight:bold;">Get the iPhone app</a></p>
-    {% else %}
-    <p style="margin:0 0 16px;color:#c9ddd2;font-size:11px;">The iPhone app link will be added when the iOS release is available.</p>
+    <p style="margin:0 0 12px;color:#c9ddd2;font-size:11px;">Opens in the Maa Mara Market app if you have it installed.</p>
+    {% if app_links.android or app_links.ios %}
+    <p style="margin:0 0 16px;color:#c9ddd2;font-size:12px;">Don't have the app yet?
+      {% if app_links.android %}<a href="{{ app_links.android }}" style="color:#ffffff;text-decoration:underline;font-weight:bold;">Download the Android app</a>{% endif %}{% if app_links.android and app_links.ios %} &nbsp;|&nbsp; {% endif %}{% if app_links.ios %}<a href="{{ app_links.ios }}" style="color:#ffffff;text-decoration:underline;font-weight:bold;">Download the iPhone app</a>{% endif %}
+    </p>
     {% endif %}
     {% if company_address %}<p style="margin:10px 0;color:#d2e4da;">{{ company_address }}</p>{% endif %}
     <p style="margin:10px 0;color:#d2e4da;"><a href="mailto:support@maamaramarket.com" style="color:#ffffff;text-decoration:underline;">support@maamaramarket.com</a> &nbsp;|&nbsp; <a href="{{ app_links.frontend_url|default:frontend_url|default:'#' }}" style="color:#ffffff;text-decoration:underline;">Visit Website</a></p>

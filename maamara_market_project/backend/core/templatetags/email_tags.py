@@ -19,19 +19,19 @@ def _https_url(value):
 
 @register.simple_tag
 def email_app_links():
-    """Return safe public app destinations for every shared email template."""
-    frontend_url = str(getattr(settings, "FRONTEND_URL", "") or "").rstrip("/")
-    prefix = str(getattr(settings, "PUBLIC_PATH_PREFIX", "") or "").strip()
-    if prefix and prefix != "/":
-        current_path = urlsplit(frontend_url).path.rstrip("/")
-        if current_path != prefix.rstrip("/"):
-            frontend_url = frontend_url + prefix.rstrip("/")
+    """Safe public destinations for the shared email footer.
+
+    The website link is a normal https URL: when the app is installed and
+    verified for this domain, Android/iOS open the app instead of the browser.
+    Store links come from ANDROID_APP_LINK / IOS_APP_LINK and are hidden until set.
+    """
+    from core.public_urls import frontend_base
+
+    site = _https_url(frontend_base())
     return {
-        "frontend_url": _https_url(frontend_url),
-        "android": _https_url(getattr(settings, "ANDROID_APP_DOWNLOAD_URL", "")),
-        "ios": _https_url(getattr(settings, "IOS_APP_DOWNLOAD_URL", "")),
-        # If no APK release URL is configured, keep the email CTA useful by
-        # opening the public website instead of rendering an empty href.
-        "primary_app_url": _https_url(getattr(settings, "ANDROID_APP_DOWNLOAD_URL", "")) or _https_url(frontend_url),
-        "primary_app_label": "Download Android APK" if _https_url(getattr(settings, "ANDROID_APP_DOWNLOAD_URL", "")) else "Open Maa Mara Market",
+        "frontend_url": site,
+        "android": _https_url(getattr(settings, "ANDROID_APP_LINK", "")),
+        "ios": _https_url(getattr(settings, "IOS_APP_LINK", "")),
+        "primary_app_url": site,
+        "primary_app_label": "Open Maa Mara Market",
     }

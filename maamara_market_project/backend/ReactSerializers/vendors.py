@@ -52,6 +52,7 @@ from vendorDashboard.draft_service import (
 )
 from .item_deduplication import find_duplicate_item
 from .category_taxonomy import resolve_item_taxonomy
+from core.public_urls import frontend_base
 
 
 
@@ -1554,7 +1555,7 @@ def approve_vendor(request, vendor_request_id):
     )
 
     user_first_name = user.first_name or user.username
-    dashboard_url = f"{settings.FRONTEND_URL.rstrip('/')}/vendors-dashboard"
+    dashboard_url = f"{frontend_base()}/vendors-dashboard"
     total_items = len(created_items)
     current_year = timezone.now().year
 
@@ -1566,7 +1567,7 @@ def approve_vendor(request, vendor_request_id):
             "dashboard_url": dashboard_url,
             "total_items": total_items,
             "current_year": current_year,
-            "frontend_url": settings.FRONTEND_URL.rstrip("/"),
+            "frontend_url": frontend_base(),
         }
     )
 
@@ -1653,7 +1654,7 @@ def deny_vendor(request, vendor_request_id):
         {
             "user_first_name": user.first_name,
             "current_year": current_year,
-            "frontend_url": settings.FRONTEND_URL.rstrip("/"),
+            "frontend_url": frontend_base(),
         }
     )
 

@@ -38,6 +38,17 @@ def _line_vendor_price(line):
         return Decimal(str(price)) * line.quantity
 
 
+def _payout_status(owed, settled, pending):
+    """paid | partial | processing | unpaid | none"""
+    if owed <= 0:
+        return "none"
+    if _money(owed - settled) <= 0:
+        return "paid"
+    if settled > 0:
+        return "partial"
+    return "processing" if pending > 0 else "unpaid"
+
+
 def month_figures(year, month):
     """Everything for one calendar month (server time zone)."""
     orders = with_profit_prefetch(with_revenue(paid_orders())).filter(
@@ -49,9 +60,14 @@ def month_figures(year, month):
         VendorPayout.objects.filter(paid=True, order_items__order__in=orders.values("pk"))
         .values_list("order_items__pk", flat=True)
     )
+    # Payouts created but not yet confirmed paid (money may be on its way).
+    pending_item_ids = set(
+        VendorPayout.objects.filter(paid=False, order_items__order__in=orders.values("pk"))
+        .values_list("order_items__pk", flat=True)
+    ) - settled_item_ids
 
     revenue = shipping = vendor_share = Decimal("0")
-    vendors = defaultdict(lambda: {"owed": Decimal("0"), "settled": Decimal("0"), "items": 0})
+    vendors = defaultdict(lambda: {"owed": Decimal("0"), "settled": Decimal("0"), "pending": Decimal("0"), "items": 0})
     count = 0
     for order in orders:
         count += 1
@@ -66,6 +82,8 @@ def month_figures(year, month):
             row["items"] += line.quantity
             if line.pk in settled_item_ids:
                 row["settled"] += price
+            elif line.pk in pending_item_ids:
+                row["pending"] += price
 
     vendor_share = _money(vendor_share)
     profit = _money(revenue - shipping - vendor_share)
@@ -75,13 +93,25 @@ def month_figures(year, month):
                 "vendor_id": pk, "vendor": name, "items": row["items"],
                 "owed": float(_money(row["owed"])), "settled": float(_money(row["settled"])),
                 "outstanding": float(_money(row["owed"] - row["settled"])),
+                "pending": float(_money(row["pending"])),
+                "status": _payout_status(row["owed"], row["settled"], row["pending"]),
             }
             for (pk, name), row in vendors.items()
         ),
         key=lambda r: -r["owed"],
     )
     settled_total = sum(Decimal(str(r["settled"])) for r in vendor_rows)
+    statuses = {r["status"] for r in vendor_rows if r["status"] != "none"}
+    if not statuses:
+        month_status = "none"
+    elif statuses == {"paid"}:
+        month_status = "paid"
+    elif statuses <= {"unpaid"}:
+        month_status = "unpaid"
+    else:
+        month_status = "partial"
     return {
+        "payout_status": month_status,
         "month": f"{year:04d}-{month:02d}",
         "orders": count,
         "revenue": float(revenue),

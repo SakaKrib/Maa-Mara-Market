@@ -15,7 +15,7 @@ from .items import vendor_item_growth_stats, vendor_item_stats, vendor_analytics
 from .ItemInventory import *
 from .traffic import record_traffic_event, traffic_analytics, inbound_traffic_analytics, inbound_traffic_session_detail, inbound_traffic_visitor_detail, clear_inbound_traffic
 from core.account_deletion_views import (AccountDeletionCodeView, AccountDeletionInfoView, AccountDeletionView,
-                                        PublicDeletionConfirmView, PublicDeletionRequestView)
+                                        PublicDeletionConfirmView, PublicDeletionRequestView, AppLinksView)
 from .social_auth_views import GoogleLoginView, AppleAuthConfigView, AppleLoginStartView, AppleLoginCallbackView, AppleLoginView, AppleNativeNonceView
 
 router = DefaultRouter()
@@ -48,6 +48,7 @@ urlpatterns = [
     path("api/apple/config/", AppleAuthConfigView.as_view(), name="apple-auth-config"),
     path("api/apple/start/", AppleLoginStartView.as_view(), name="apple-login-start"),
     path("api/apple/callback/", AppleLoginCallbackView.as_view(), name="apple-login-callback"),
+    path("api/app-links/", AppLinksView.as_view(), name="app-links"),
     path("api/account/delete/info/", AccountDeletionInfoView.as_view(), name="account-delete-info"),
     path("api/account/delete/send-code/", AccountDeletionCodeView.as_view(), name="account-delete-code"),
     path("api/account/delete/", AccountDeletionView.as_view(), name="account-delete"),

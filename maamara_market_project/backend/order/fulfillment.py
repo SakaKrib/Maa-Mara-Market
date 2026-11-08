@@ -270,6 +270,9 @@ def _publish_order_update(order):
             f"order_{order.pk}",
             {"type": "fulfillment_update", "order_id": order.pk},
         )
+        async_to_sync(layer.group_send)(
+            "admin_fulfillment", {"type": "fulfillment_changed", "order_id": order.pk}
+        )
         vendor_ids = set()
         for line in OrderItem.objects.filter(order=order).select_related("item", "item__created_by"):
             owner = _resolve_item_vendor(line.item)

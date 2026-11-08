@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import api from "../../../Services/Api";
+import api, { getWebSocketUrl } from "../../../Services/Api";
 
 const LOW_STOCK_ENDPOINT = "/api/low-stock-items/";
 const HIGH_STOCK_ENDPOINT = "/api/high-stock-items/";
@@ -57,9 +57,13 @@ export function useVendorStockItems() {
   useEffect(() => {
     if (!vendorId) return; // do not connect until vendorId is known
 
-    const wsScheme = window.location.protocol === "https:" ? "wss" : "ws";
-    const backendHost = `${window.location.hostname}:8000`;
-    const ws = new WebSocket(`${wsScheme}://${backendHost}/ws/stock/${vendorId}/`);
+    let ws;
+    try {
+      ws = new WebSocket(getWebSocketUrl(`/ws/stock/${vendorId}/`));
+    } catch (e) {
+      console.error("Stock socket could not start:", e);
+      return undefined;
+    }
 
     ws.onmessage = () => {
       fetchStockItems(); // 🔥 AUTO REFRESH
@@ -73,7 +77,12 @@ export function useVendorStockItems() {
   // 4️⃣ UPDATE STOCK
   const updateStock = async (itemId, newStock) => {
     try {
-      await api.patch(UPDATE_STOCK_ENDPOINT(itemId), { in_stock: newStock });
+      const { data } = await api.patch(UPDATE_STOCK_ENDPOINT(itemId), { in_stock: newStock });
+      // Show the saved number straight away, then confirm against the server.
+      const saved = Number.isFinite(Number(data?.in_stock)) ? Number(data.in_stock) : newStock;
+      const apply = (list) => list.map((item) => (item.id === itemId ? { ...item, in_stock: saved } : item));
+      setLowStockItems(apply);
+      setHighStockItems(apply);
       await fetchStockItems();
       return { success: true };
     } catch (err) {

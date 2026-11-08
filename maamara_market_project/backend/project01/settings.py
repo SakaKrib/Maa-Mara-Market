@@ -104,13 +104,15 @@ PUBLIC_PATH_PREFIX = normalize_public_path_prefix(
 FORCE_SCRIPT_NAME = PUBLIC_PATH_PREFIX or None
 COMPANY_ADDRESS = env("COMPANY_ADDRESS", default="")
 
-# Public app destinations used by the shared transactional-email footer.
-# The Android target is the stable APK asset published by the mobile workflow.
-ANDROID_APP_DOWNLOAD_URL = get_env_value(
-    "ANDROID_APP_DOWNLOAD_URL",
-    "https://github.com/SakaKrib/Maa-Mara-Market/releases/download/mobile-latest/maa-mara-market-android.apk",
-).strip()
-IOS_APP_DOWNLOAD_URL = get_env_value("IOS_APP_DOWNLOAD_URL", "").strip()
+# Store listings for the mobile apps, shown in emails and the website prompt.
+# Leave blank until the apps are published; the "Download" links then stay hidden.
+#   ANDROID_APP_LINK=https://play.google.com/store/apps/details?id=com.maamaramarket.app
+#   IOS_APP_LINK=https://apps.apple.com/app/id<your app id>
+# (ANDROID_APP_DOWNLOAD_URL / IOS_APP_DOWNLOAD_URL are still read as old names.)
+ANDROID_APP_LINK = (get_env_value("ANDROID_APP_LINK", "") or get_env_value("ANDROID_APP_DOWNLOAD_URL", "")).strip()
+IOS_APP_LINK = (get_env_value("IOS_APP_LINK", "") or get_env_value("IOS_APP_DOWNLOAD_URL", "")).strip()
+# Hosts the mobile apps are verified for (Android App Links / iOS Universal Links).
+APP_LINK_HOSTS = [h.strip() for h in get_env_value("APP_LINK_HOSTS", "maamaramarket.com").split(",") if h.strip()]
 
 # Registered PayPal webhook ID. Keep this server-side; it is required to verify
 # every PayPal webhook before any payment/refund state is changed.

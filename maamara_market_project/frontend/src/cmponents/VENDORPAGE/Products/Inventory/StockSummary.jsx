@@ -6,7 +6,6 @@ const StockSummaryBox = () => {
   const { lowStockItems, highStockItems, loading, error, refresh, updateStock } =
     useVendorStockItems();
   const [open, setOpen] = useState(false);
-  const [modalItems, setModalItems] = useState([]);
 
   const allItems = useMemo(() => {
     const map = new Map();
@@ -20,10 +19,8 @@ const StockSummaryBox = () => {
 
   const criticalCount = allItems.filter((item) => Number(item.in_stock) < 10).length;
 
-  const handleOpen = (items = allItems) => {
-    setModalItems(items);
-    setOpen(true);
-  };
+  // The modal reads the live list, so a saved quantity shows up immediately.
+  const handleOpen = () => setOpen(true);
 
   if (loading) {
     return <p className="text-sm text-[#595959]">Loading stock information...</p>;
@@ -99,7 +96,7 @@ const StockSummaryBox = () => {
 
       <button
         type="button"
-        onClick={() => handleOpen(allItems)}
+        onClick={handleOpen}
         className="mt-3 inline-flex w-full items-center justify-center rounded-[20px] border border-[#d9d9d6] bg-white px-4 py-2 text-xs font-semibold text-[#222] transition hover:bg-[#f8f8f6]"
       >
         View all items
@@ -108,7 +105,7 @@ const StockSummaryBox = () => {
       <StockRangeModal
         open={open}
         onClose={() => setOpen(false)}
-        items={modalItems}
+        items={allItems}
         refresh={refresh}
         updateStock={updateStock}
       />

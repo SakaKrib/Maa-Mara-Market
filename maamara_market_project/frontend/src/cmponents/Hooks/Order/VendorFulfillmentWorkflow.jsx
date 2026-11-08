@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { CheckCircle2, Clock3, PackageCheck, RefreshCw, Truck } from "lucide-react";
 import api, { getWebSocketUrl } from "../../../Services/Api";
+import FulfillmentStepper, { VENDOR_STAGES } from "./FulfillmentStepper";
 
 const STAGES = [
   "PAID", "PROCESSING", "PACKING", "READY_TO_SHIP", "DISPATCH_INSPECTED",
@@ -36,6 +37,7 @@ export default function VendorFulfillmentWorkflow() {
   const [error, setError] = useState("");
   const [activeAction, setActiveAction] = useState(null);
   const [note, setNote] = useState("");
+  const [submitting, setSubmitting] = useState(false);
   const initialLoadRef = useRef(true);
 
   const load = useCallback(async (quiet = false) => {
@@ -83,7 +85,8 @@ export default function VendorFulfillmentWorkflow() {
   }, [load]);
 
   const confirmStep = async () => {
-    if (!activeAction) return;
+    if (!activeAction || submitting) return;
+    setSubmitting(true);
     try {
       const { data } = await api.post(
         `/api/fulfillment/items/${activeAction.order_item_id}/advance/`,
@@ -97,6 +100,9 @@ export default function VendorFulfillmentWorkflow() {
       else setActiveAction(null);
     } catch (e) {
       setError(e?.response?.data?.detail || "The status could not be updated. Refresh and review the latest state.");
+      await load(true);
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -139,19 +145,14 @@ export default function VendorFulfillmentWorkflow() {
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div>
                     <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Order #{record.order_id} · Item #{record.order_item_id}</p>
-                    <h3 className="mt-1 font-bold text-slate-900">{record.item_name}</h3>
+                    <h3 className="mt-1 text-base font-semibold leading-snug text-slate-900">{record.item_name}</h3>
                     <p className="mt-1 text-sm text-slate-600">Quantity: {record.quantity} · Customer: {record.customer_name || "Customer"}</p>
                   </div>
                   <span className={`rounded-full px-3 py-1 text-xs font-bold ${status === "COMPLETED" ? "bg-green-50 text-green-700" : status === "ISSUE_REPORTED" ? "bg-red-50 text-red-700" : "bg-blue-50 text-blue-700"}`}>
                     {LABELS[status] || status}
                   </span>
                 </div>
-                <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-4">
-                  {["PAID", "PROCESSING", "PACKING", "READY_TO_SHIP"].map((stage, index) => {
-                    const reached = progress >= index;
-                    return <div key={stage} className={`rounded-lg border px-2 py-2 text-center text-[11px] font-semibold ${reached ? "border-blue-200 bg-blue-50 text-blue-800" : "border-slate-100 bg-slate-50 text-slate-400"}`}>{LABELS[stage]}</div>;
-                  })}
-                </div>
+                <div className="mt-4"><FulfillmentStepper status={status} events={record.events || []} stages={VENDOR_STAGES} /></div>
 
                 {record.hold_reason && <p className="mt-3 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">Hold: {record.hold_reason}</p>}
 
@@ -188,7 +189,9 @@ export default function VendorFulfillmentWorkflow() {
         </div>
       )}
 
-      {activeAction && (
+      {activeAction && (() => {
+        const live = records.find((r) => r.order_item_id === activeAction.order_item_id) || activeAction;
+        return (
         <div role="dialog" aria-modal="true" aria-labelledby="vendor-fulfillment-title" className="fixed inset-0 z-[15000] flex items-end justify-center bg-slate-950/50 p-3 sm:items-center">
           <div className="w-full max-w-lg rounded-2xl bg-white p-5 shadow-2xl sm:p-6">
             <div className="flex items-start justify-between gap-3">
@@ -205,12 +208,17 @@ export default function VendorFulfillmentWorkflow() {
             </label>
             <div className="mt-5 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
               <button type="button" onClick={() => setActiveAction(null)} className="rounded-xl border border-slate-300 px-4 py-2.5 text-sm font-semibold text-slate-700">Save for later</button>
-              <button type="button" onClick={confirmStep} className="rounded-xl bg-blue-700 px-4 py-2.5 text-sm font-bold text-white hover:bg-blue-800">Confirm and show next step</button>
+              <button type="button" onClick={confirmStep} disabled={submitting} className="rounded-xl bg-blue-700 px-4 py-2.5 text-sm font-bold text-white hover:bg-blue-800 disabled:opacity-60">{submitting ? "Saving…" : "Confirm and show next step"}</button>
+            </div>
+            <div className="mt-5 rounded-xl border border-slate-200 bg-slate-50 p-4">
+              <p className="mb-3 text-xs font-bold uppercase tracking-wide text-slate-500">Progress so far</p>
+              <FulfillmentStepper status={live.status} events={live.events || []} stages={VENDOR_STAGES} />
             </div>
             <p className="mt-3 text-xs text-slate-500">The server records every change with its timestamp. You can close this window and resume from the Orders tracking page later.</p>
           </div>
         </div>
-      )}
+        );
+      })()}
     </section>
   );
 }

@@ -13,7 +13,7 @@ from order.models import Order
 
 
 @override_settings(RATE_LIMITS_ENABLED=False, EMAIL_BACKEND="django.core.mail.backends.locmem.EmailBackend",
-                   FRONTEND_URL="https://example.test")
+                   FRONTEND_URL="https://example.test", PUBLIC_PATH_PREFIX="/")
 class AccountDeletionTests(TestCase):
     def setUp(self):
         cache.clear()

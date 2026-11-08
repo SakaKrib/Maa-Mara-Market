@@ -37,3 +37,31 @@ def transaction_saved(sender, instance, created, **kwargs):
 @receiver(post_delete, sender=Transaction)
 def transaction_deleted(sender, instance, **kwargs):
     _broadcast_account_change("deleted", instance.pk)
+
+
+def _broadcast_payout_change(payout_id):
+    channel_layer = get_channel_layer()
+    if not channel_layer:
+        return
+
+    def send():
+        try:
+            async_to_sync(channel_layer.group_send)(
+                "admin_fulfillment", {"type": "payout_changed", "payout_id": payout_id}
+            )
+        except Exception:
+            return
+
+    transaction.on_commit(send)
+
+
+def _register_payout_signal():
+    from vendorDashboard.models import VendorPayout
+
+    @receiver(post_save, sender=VendorPayout, weak=False, dispatch_uid="monthly-accounting-payout-live")
+    def payout_saved(sender, instance, **kwargs):
+        # Any payout change (created, sent, paid, failed) can alter a month's settlement.
+        _broadcast_payout_change(instance.pk)
+
+
+_register_payout_signal()

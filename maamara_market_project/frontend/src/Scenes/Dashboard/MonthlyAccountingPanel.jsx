@@ -1,7 +1,19 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import api from "../../Services/Api";
+import api, { getWebSocketUrl } from "../../Services/Api";
 
 const kes = (value) => `KES ${Number(value || 0).toLocaleString(undefined, { maximumFractionDigits: 2 })}`;
+
+const STATUS = {
+  paid: { label: "Paid", cls: "bg-emerald-100 text-emerald-800" },
+  partial: { label: "Partly paid", cls: "bg-amber-100 text-amber-800" },
+  processing: { label: "Payment processing", cls: "bg-blue-100 text-blue-800" },
+  unpaid: { label: "Unpaid", cls: "bg-red-100 text-red-800" },
+  none: { label: "No payouts due", cls: "bg-slate-100 text-slate-600" },
+};
+const StatusBadge = ({ status }) => {
+  const meta = STATUS[status] || STATUS.none;
+  return <span className={`inline-block rounded-full px-2 py-0.5 text-xs font-semibold ${meta.cls}`}>{meta.label}</span>;
+};
 
 const monthLabel = (key) => {
   const [year, month] = key.split("-").map(Number);
@@ -31,15 +43,18 @@ export default function MonthlyAccountingPanel({ monthlyRevenue = [] }) {
   const [note, setNote] = useState("");
   const [error, setError] = useState("");
 
-  const load = useCallback(async (key) => {
-    setLoading(true);
+  const [updatedAt, setUpdatedAt] = useState(null);
+
+  const load = useCallback(async (key, { silent = false } = {}) => {
+    if (!silent) setLoading(true);
     setError("");
     try {
       const response = await api.get("/api/admin/monthly-accounting/", { params: { month: key } });
       setData(response.data);
-      setNote(response.data?.signoff?.note || "");
+      setUpdatedAt(new Date());
+      if (!silent) setNote(response.data?.signoff?.note || "");
     } catch (err) {
-      setData(null);
+      if (!silent) setData(null);
       setError(err?.response?.data?.detail || "Could not load this month's accounts.");
     } finally {
       setLoading(false);
@@ -47,6 +62,34 @@ export default function MonthlyAccountingPanel({ monthlyRevenue = [] }) {
   }, []);
 
   useEffect(() => { if (month) load(month); }, [month, load]);
+
+  // Live: refresh quietly whenever a payout or order changes anywhere in the system.
+  useEffect(() => {
+    let socket;
+    let active = true;
+    let retry;
+    let debounce;
+    let attempts = 0;
+    const connect = () => {
+      if (!active) return;
+      try { socket = new WebSocket(getWebSocketUrl("/ws/admin/fulfillment/")); } catch { return; }
+      socket.onopen = () => { attempts = 0; };
+      socket.onmessage = () => {
+        window.clearTimeout(debounce);
+        debounce = window.setTimeout(() => { if (month) load(month, { silent: true }); }, 600);
+      };
+      socket.onclose = () => {
+        if (active) retry = window.setTimeout(connect, Math.min(1000 * (2 ** attempts++), 30000));
+      };
+    };
+    connect();
+    return () => {
+      active = false;
+      window.clearTimeout(retry);
+      window.clearTimeout(debounce);
+      if (socket) { socket.onclose = null; socket.close(); }
+    };
+  }, [month, load]);
 
   const confirm = async () => {
     setSaving(true);
@@ -108,24 +151,30 @@ export default function MonthlyAccountingPanel({ monthlyRevenue = [] }) {
             <Stat label="Already paid to vendors" value={kes(data.settled)} />
             <Stat label="Still to pay vendors" value={kes(data.outstanding)} tone={data.outstanding > 0 ? "text-amber-600" : ""} />
           </div>
+          <p className="mt-3 flex flex-wrap items-center gap-2 text-sm">
+            <span className="text-muted-foreground">Vendor payments for {monthLabel(month)}:</span>
+            <StatusBadge status={data.payout_status} />
+            {updatedAt && <span className="text-xs text-muted-foreground">Live · updated {updatedAt.toLocaleTimeString()}</span>}
+          </p>
           <p className="mt-2 text-xs text-muted-foreground">
             Profit = revenue − shipping − vendor share. Vendor amounts are the vendors' own prices; paid-out amounts come from payouts marked paid.
           </p>
 
           <div className="mt-4 overflow-x-auto">
-            <table className="w-full min-w-[480px] text-left text-sm">
+            <table className="w-full min-w-[560px] text-left text-sm">
               <thead className="text-xs uppercase text-muted-foreground">
-                <tr><th className="py-2 pr-3">Vendor</th><th className="pr-3">Items</th><th className="pr-3">Owed</th><th className="pr-3">Paid</th><th>Outstanding</th></tr>
+                <tr><th className="py-2 pr-3">Vendor</th><th className="pr-3">Items</th><th className="pr-3">Owed</th><th className="pr-3">Paid</th><th className="pr-3">Outstanding</th><th>Status</th></tr>
               </thead>
               <tbody>
-                {data.vendors.length === 0 && <tr><td colSpan={5} className="py-3 text-muted-foreground">No paid sales this month.</td></tr>}
+                {data.vendors.length === 0 && <tr><td colSpan={6} className="py-3 text-muted-foreground">No paid sales this month.</td></tr>}
                 {data.vendors.map((v) => (
                   <tr key={v.vendor_id} className="border-t border-border">
                     <td className="py-2 pr-3 font-medium">{v.vendor}</td>
                     <td className="pr-3">{v.items}</td>
                     <td className="pr-3">{kes(v.owed)}</td>
                     <td className="pr-3">{kes(v.settled)}</td>
-                    <td className={v.outstanding > 0 ? "font-semibold text-amber-600" : ""}>{kes(v.outstanding)}</td>
+                    <td className={`pr-3 ${v.outstanding > 0 ? "font-semibold text-amber-600" : ""}`}>{kes(v.outstanding)}</td>
+                    <td><StatusBadge status={v.status} /></td>
                   </tr>
                 ))}
               </tbody>

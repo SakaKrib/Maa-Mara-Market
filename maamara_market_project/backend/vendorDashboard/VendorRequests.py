@@ -42,6 +42,7 @@ import json
 import os
 from PIL import Image
 from django.core.files.storage import default_storage
+from core.public_urls import frontend_base
 
 User = get_user_model()
 
@@ -197,7 +198,7 @@ class VendorItemRequestCreateView(generics.CreateAPIView):
             "item": item_request,
             "user": self.request.user,
             "current_year": current_year,
-            "frontend_url": settings.FRONTEND_URL.rstrip("/"),
+            "frontend_url": frontend_base(),
         }
 
         html_content = render_to_string(
@@ -576,7 +577,7 @@ def approve_request(request, pk):
             "item": item,
             "vendor": item_request.vendor,
             "current_year": timezone.now().year,
-            "frontend_url": settings.FRONTEND_URL.rstrip("/"),
+            "frontend_url": frontend_base(),
         }
 
         html_content = render_to_string(
@@ -653,7 +654,7 @@ def approve_request(request, pk):
             "item": item_request,
             "vendor": item_request.vendor,
             "current_year": current_year,
-            "frontend_url": settings.FRONTEND_URL.rstrip("/"),
+            "frontend_url": frontend_base(),
         }
 
         html_content = render_to_string(
@@ -1031,7 +1032,7 @@ class CreatePriceChangeRequestView(APIView):
                     "price_request": price_request,
                     "vendor": request.user,
                     "current_year": current_year,
-                    "frontend_url": settings.FRONTEND_URL.rstrip("/"),
+                    "frontend_url": frontend_base(),
                 }
             )
             text_content = strip_tags(html_content)
@@ -1054,7 +1055,7 @@ class CreatePriceChangeRequestView(APIView):
                 "vendor": request.user,
                 "item": item,
                 "price_request": price_request,
-                "frontend_url": settings.FRONTEND_URL.rstrip("/"),
+                "frontend_url": frontend_base(),
             }
         )
 
@@ -1172,7 +1173,7 @@ class ApprovePriceChangeRequestView(APIView):
                 "item": item,
                 "price_request": price_request,
                 "current_year": current_year,
-                "frontend_url": settings.FRONTEND_URL.rstrip("/"),
+                "frontend_url": frontend_base(),
             }
         )
 

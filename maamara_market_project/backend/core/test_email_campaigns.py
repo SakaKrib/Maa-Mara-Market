@@ -95,7 +95,7 @@ class EmailCampaignAuthorizationTests(TestCase):
         self.assertEqual(self.campaign.status, "approved")
         self.assertEqual(self.campaign.approved_by, self.admin)
 
-    @override_settings(FRONTEND_URL="https://shop.example.test/")
+    @override_settings(FRONTEND_URL="https://shop.example.test/", PUBLIC_PATH_PREFIX="/")
     def test_admin_can_save_campaign_and_item_destination_is_persisted(self):
         self.client.force_authenticate(user=self.admin)
         payload = {
@@ -121,7 +121,7 @@ class EmailCampaignAuthorizationTests(TestCase):
         self.assertEqual(saved.cta_url, "https://shop.example.test/item/314")
         self.assertEqual(saved.content_payload["items"][0]["product_url"], "https://shop.example.test/item/314")
 
-    @override_settings(FRONTEND_URL="https://shop.example.test/")
+    @override_settings(FRONTEND_URL="https://shop.example.test/", PUBLIC_PATH_PREFIX="/")
     def test_updating_campaign_persists_content_and_refreshes_item_destination(self):
         self.client.force_authenticate(user=self.admin)
         response = self.client.patch(
@@ -140,7 +140,7 @@ class EmailCampaignAuthorizationTests(TestCase):
         self.assertEqual(self.campaign.content_payload["items"][0]["product_url"], "https://shop.example.test/item/902")
         self.assertEqual(self.campaign.cta_url, "https://shop.example.test/item/902")
 
-    @override_settings(FRONTEND_URL="https://shop.example.test/")
+    @override_settings(FRONTEND_URL="https://shop.example.test/", PUBLIC_PATH_PREFIX="/")
     def test_legacy_draft_items_receive_item_urls_in_campaign_listing(self):
         self.client.force_authenticate(user=self.admin)
         self.campaign.content_payload = {

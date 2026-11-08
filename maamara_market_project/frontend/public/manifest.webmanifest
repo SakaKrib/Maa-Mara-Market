@@ -1,0 +1,20 @@
+{
+  "name": "Maa Mara Market",
+  "short_name": "Maa Mara",
+  "start_url": "./",
+  "display": "browser",
+  "icons": [
+    {
+      "src": "maamara-app-icon.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ],
+  "related_applications": [
+    {
+      "platform": "play",
+      "id": "com.maamaramarket.app"
+    }
+  ],
+  "prefer_related_applications": false
+}

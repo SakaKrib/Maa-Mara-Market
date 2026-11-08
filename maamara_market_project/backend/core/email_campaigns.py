@@ -19,6 +19,7 @@ from channels.layers import get_channel_layer
 
 from .email_branding import logo_data_uri
 from .models import EmailCampaign, EmailCampaignRecipient, NewsletterSubscriber
+from core.public_urls import frontend_base
 
 logger = logging.getLogger(__name__)
 
@@ -129,7 +130,7 @@ def _frontend_item_url(item_id):
     """Build a public item page URL using the configured frontend origin."""
     if item_id in (None, ""):
         return ""
-    frontend_url = str(settings.FRONTEND_URL).strip().rstrip("/")
+    frontend_url = frontend_base()
     return f"{frontend_url}/item/{item_id}"
 
 
@@ -417,7 +418,7 @@ def email_campaign_action(request, campaign_id, action):
         campaign.save(update_fields=["status", "updated_at"])
     elif action == "preview":
         preview_html = render_to_string("emails/marketing_campaign.html", {
-            "campaign": campaign, "frontend_url": settings.FRONTEND_URL.rstrip("/"),
+            "campaign": campaign, "frontend_url": frontend_base(),
             "company_address": getattr(settings, "COMPANY_ADDRESS", ""),
             "unsubscribe_url": "#unsubscribe-preview",
             "logo_src": logo_data_uri(),

@@ -12,6 +12,7 @@ from django.template.loader import render_to_string
 from django.utils import timezone
 
 from .models import EmailCampaign, EmailCampaignRecipient, NewsletterSubscriber
+from core.public_urls import frontend_base
 
 logger = logging.getLogger(__name__)
 
@@ -48,14 +49,14 @@ def send_email_campaign(self, campaign_id):
             recipient.status = "suppressed"
             recipient.save(update_fields=["status"])
             continue
-        unsubscribe_url = f"{getattr(settings, 'BACKEND_PUBLIC_URL', settings.FRONTEND_URL).rstrip('/')}/api/newsletter/unsubscribe/{subscriber.unsubscribe_token}/"
+        unsubscribe_url = f"{getattr(settings, 'BACKEND_PUBLIC_URL', frontend_base()).rstrip('/')}/api/newsletter/unsubscribe/{subscriber.unsubscribe_token}/"
         context = {
-            "campaign": campaign, "frontend_url": settings.FRONTEND_URL.rstrip("/"),
+            "campaign": campaign, "frontend_url": frontend_base(),
             "company_address": getattr(settings, "COMPANY_ADDRESS", ""),
             "unsubscribe_url": unsubscribe_url,
         }
         html_body = render_to_string("emails/marketing_campaign.html", context)
-        text_body = (campaign.body_text or campaign.subject) + "\n\nVisit: " + (campaign.cta_url or settings.FRONTEND_URL)
+        text_body = (campaign.body_text or campaign.subject) + "\n\nVisit: " + (campaign.cta_url or frontend_base())
         text_body += "\n\nUnsubscribe: " + unsubscribe_url
         try:
             email = EmailMultiAlternatives(
@@ -141,7 +142,7 @@ def _absolute_media_url(file_field):
     except Exception:
         return ""
     if url and url.startswith("/"):
-        url = settings.FRONTEND_URL.rstrip("/") + url
+        url = frontend_base() + url
     return url
 
 
@@ -206,7 +207,7 @@ def prepare_daily_banner_campaigns():
         title = banner.title or f"Banner promotion {banner.pk}"
         cta_url = banner.cta_url or ""
         if not cta_url and banner.cta_item_id:
-            cta_url = settings.FRONTEND_URL.rstrip("/") + "/item/" + str(banner.cta_item_id)
+            cta_url = frontend_base() + "/item/" + str(banner.cta_item_id)
         safe_title = title.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
         campaign, was_created = EmailCampaign.objects.get_or_create(
             campaign_type="banner", source_key=source, prepared_for_date=today,
@@ -216,7 +217,7 @@ def prepare_daily_banner_campaigns():
                 "hero_image_url": _absolute_media_url(banner.image),
                 "body_text": banner.subtitle or title,
                 "body_html": f"<h2>{safe_title}</h2>",
-                "cta_label": "Shop now", "cta_url": cta_url or settings.FRONTEND_URL.rstrip("/") + "/",
+                "cta_label": "Shop now", "cta_url": cta_url or frontend_base() + "/",
                 "content_payload": {"banner": {"id": banner.pk, "ends": banner.end_date.isoformat()}},
                 "status": "draft",
             },
@@ -271,7 +272,7 @@ def prepare_daily_sale_campaigns():
             "title": "Items on sale", "subject": f"Up to {top}% off: {total} items on sale at Maa Mara Market",
             "preheader": "Discounted prices on items you'll love", "content_payload": payload,
             "body_text": body, "body_html": f"<p>{body}</p>", "cta_label": "Shop deals",
-            "cta_url": settings.FRONTEND_URL.rstrip("/") + "/", "status": "draft",
+            "cta_url": frontend_base() + "/", "status": "draft",
         },
     )
     published = _publish_campaign(campaign) if created else False
@@ -299,7 +300,7 @@ def prepare_daily_new_arrivals_campaigns():
         defaults={"title": "New arrivals", "subject": "Meet the latest arrivals at Maa Mara Market",
                   "preheader": "Fresh finds from our marketplace", "content_payload": payload,
                   "body_text": "Discover newly listed items.", "cta_label": "Explore arrivals",
-                  "cta_url": settings.FRONTEND_URL.rstrip("/") + "/", "status": "draft"}
+                  "cta_url": frontend_base() + "/", "status": "draft"}
     )
     published = _publish_campaign(campaign) if created else False
     return {"drafts_created": int(created), "published": int(published)}

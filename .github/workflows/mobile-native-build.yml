@@ -24,6 +24,8 @@ env:
   MOBILE_API_URL: ${{ secrets.MAAMARAMARKET_PUBLIC_BASE_URL }}
   # Set repository variable MAAMARAMARKET_PUBLIC_PATH_PREFIX to / for root-domain production.
   MOBILE_API_PATH_PREFIX: ${{ vars.MAAMARAMARKET_PUBLIC_PATH_PREFIX || '/maamara' }}
+  # Comma-separated hosts the app opens for (must serve /.well-known/assetlinks.json at their root).
+  APP_LINK_HOSTS: ${{ vars.APP_LINK_HOSTS || 'maamaramarket.com' }}
 
 jobs:
 
@@ -81,6 +83,8 @@ jobs:
         working-directory: ${{ env.FRONTEND_DIR }}
         env:
           VITE_BUILD_TARGET: mobile
+          VITE_APP_LINK_HOSTS: ${{ env.APP_LINK_HOSTS }}
+          VITE_PUBLIC_PATH_PREFIX: ${{ env.MOBILE_API_PATH_PREFIX }}
           VITE_API_URL: ${{ env.MOBILE_API_URL }}${{ env.MOBILE_API_PATH_PREFIX }}
           VITE_ROUTER_BASENAME: /
           VITE_PUBLIC_SITE_URL: https://maamaramarket.com
@@ -183,6 +187,8 @@ jobs:
         working-directory: ${{ env.FRONTEND_DIR }}
         env:
           VITE_BUILD_TARGET: mobile
+          VITE_APP_LINK_HOSTS: ${{ env.APP_LINK_HOSTS }}
+          VITE_PUBLIC_PATH_PREFIX: ${{ env.MOBILE_API_PATH_PREFIX }}
           VITE_API_URL: ${{ env.MOBILE_API_URL }}${{ env.MOBILE_API_PATH_PREFIX }}
           VITE_ROUTER_BASENAME: /
           VITE_NATIVE_PUSH_ENABLED: ${{ secrets.FIREBASE_ANDROID_CONFIG != '' }}
@@ -308,25 +314,25 @@ jobs:
           if launcher is None:
               raise SystemExit("Could not locate the Android launcher activity.")
 
-          for intent in launcher.findall("intent-filter"):
-              if intent.get(android + "autoVerify") == "true" and any(
-                  data.get(android + "host") == "maamaramarket.com"
-                  for data in intent.findall("data")
-              ):
-                  print("Android App Links intent filter already exists.")
-                  break
-          else:
+          hosts = [h.strip() for h in os.environ.get("APP_LINK_HOSTS", "maamaramarket.com").split(",") if h.strip()]
+          existing = {
+              data.get(android + "host")
+              for intent in launcher.findall("intent-filter")
+              if intent.get(android + "autoVerify") == "true"
+              for data in intent.findall("data")
+          }
+          for host in hosts:
+              if host in existing:
+                  print(f"Android App Links intent filter already exists for {host}.")
+                  continue
               intent = ET.SubElement(launcher, "intent-filter", {android + "autoVerify": "true"})
               ET.SubElement(intent, "action", {android + "name": "android.intent.action.VIEW"})
               ET.SubElement(intent, "category", {android + "name": "android.intent.category.DEFAULT"})
               ET.SubElement(intent, "category", {android + "name": "android.intent.category.BROWSABLE"})
-              ET.SubElement(intent, "data", {
-                  android + "scheme": "https",
-                  android + "host": "maamaramarket.com",
-              })
+              ET.SubElement(intent, "data", {android + "scheme": "https", android + "host": host})
           tree.write(manifest_path, encoding="utf-8", xml_declaration=True)
           ET.parse(manifest_path)
-          print("Configured verified HTTPS App Links for https://maamaramarket.com.")
+          print("Configured verified HTTPS App Links for: " + ", ".join(hosts))
           PY
 
       - name: Remove duplicate Android launcher background resource
@@ -883,6 +889,8 @@ jobs:
         working-directory: ${{ env.FRONTEND_DIR }}
         env:
           VITE_BUILD_TARGET: mobile
+          VITE_APP_LINK_HOSTS: ${{ env.APP_LINK_HOSTS }}
+          VITE_PUBLIC_PATH_PREFIX: ${{ env.MOBILE_API_PATH_PREFIX }}
           VITE_API_URL: ${{ env.MOBILE_API_URL }}${{ env.MOBILE_API_PATH_PREFIX }}
           VITE_ROUTER_BASENAME: /
           VITE_NATIVE_PUSH_ENABLED: ${{ secrets.FIREBASE_IOS_CONFIG != '' }}

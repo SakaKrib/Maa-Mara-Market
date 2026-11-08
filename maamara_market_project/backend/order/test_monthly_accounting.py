@@ -83,6 +83,22 @@ class MonthlyAccountingTests(PayoutTestMixin, TestCase):
         data = self.get(self.this_month)
         self.assertEqual(data["settled"], before["vendor_share"])
         self.assertEqual(data["outstanding"], 0)
+        self.assertEqual(data["vendors"][0]["status"], "paid")
+        self.assertEqual(data["payout_status"], "paid")
+
+    def test_status_moves_unpaid_processing_paid(self):
+        line = self.sale()
+        self.assertEqual(self.get(self.this_month)["vendors"][0]["status"], "unpaid")
+        payout = VendorPayout.objects.create(
+            vendor=self.vendor, amount=Decimal("1.00"), paid=False, reference=uuid4().hex[:12],
+        )
+        payout.order_items.add(line)
+        data = self.get(self.this_month)
+        self.assertEqual(data["vendors"][0]["status"], "processing")
+        self.assertEqual(data["payout_status"], "partial")
+        payout.paid = True
+        payout.save()
+        self.assertEqual(self.get(self.this_month)["vendors"][0]["status"], "paid")
 
     def test_confirm_stores_snapshot_and_flags_later_changes(self):
         self.sale(when=self.last_dt)
