@@ -205,6 +205,8 @@ api.interceptors.response.use(
     if (
       requestUrl.includes("/api/token/refresh/") ||
       requestUrl.includes("/api/login/") ||
+      requestUrl.includes("/api/google/login/") ||
+      requestUrl.includes("/api/apple/login/") ||
       requestUrl.includes("/api/get-csrf-token/")
     ) {
       return Promise.reject(error);
