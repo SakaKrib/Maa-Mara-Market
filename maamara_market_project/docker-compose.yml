@@ -163,6 +163,10 @@ services:
       context: ./frontend
       target: production
       args:
+        # These are public OAuth client IDs, not client secrets. Empty build args
+        # fall back to frontend/.env in the Docker build context.
+        VITE_GOOGLE_CLIENT_ID: ${VITE_GOOGLE_CLIENT_ID:-}
+        VITE_GOOGLE_IOS_CLIENT_ID: ${VITE_GOOGLE_IOS_CLIENT_ID:-}
         VITE_PUBLIC_BASE_PATH: /maamara/
         VITE_ROUTER_BASENAME: /maamara
     restart: unless-stopped
