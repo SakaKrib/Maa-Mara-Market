@@ -51,7 +51,7 @@ jobs:
         env:
           VITE_PUBLIC_BASE_PATH: ${{ vars.MAAMARAMARKET_PUBLIC_PATH_PREFIX == '/' && '/' || format('{0}/', vars.MAAMARAMARKET_PUBLIC_PATH_PREFIX || '/maamara') }}
           VITE_ROUTER_BASENAME: ${{ vars.MAAMARAMARKET_PUBLIC_PATH_PREFIX || '/maamara' }}
-          VITE_GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
+          VITE_GOOGLE_CLIENT_ID: ${{ vars.GOOGLE_CLIENT_ID || secrets.GOOGLE_CLIENT_ID || '324719171852-l6o0inml2kg195qaojggsc8pkf1am6nr.apps.googleusercontent.com' }}
           VITE_GOOGLE_IOS_CLIENT_ID: ${{ secrets.GOOGLE_IOS_CLIENT_ID }}
         run: npm run build
 
@@ -62,9 +62,31 @@ jobs:
           VITE_API_URL: ${{ env.MOBILE_API_URL }}${{ env.MOBILE_API_PATH_PREFIX }}
           VITE_ROUTER_BASENAME: /
           VITE_PUBLIC_SITE_URL: https://maamaramarket.com
-          VITE_GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
+          VITE_GOOGLE_CLIENT_ID: ${{ vars.GOOGLE_CLIENT_ID || secrets.GOOGLE_CLIENT_ID || '324719171852-l6o0inml2kg195qaojggsc8pkf1am6nr.apps.googleusercontent.com' }}
           VITE_GOOGLE_IOS_CLIENT_ID: ${{ secrets.GOOGLE_IOS_CLIENT_ID }}
         run: npm run build:mobile
+      - name: Verify Google client ID is embedded in the mobile bundle
+        working-directory: ${{ env.FRONTEND_DIR }}
+        env:
+          EXPECTED_GOOGLE_CLIENT_ID: ${{ vars.GOOGLE_CLIENT_ID || secrets.GOOGLE_CLIENT_ID || '324719171852-l6o0inml2kg195qaojggsc8pkf1am6nr.apps.googleusercontent.com' }}
+        run: |
+          node --input-type=module <<'JS'
+          import fs from "node:fs";
+          import path from "node:path";
+
+          const expected = process.env.EXPECTED_GOOGLE_CLIENT_ID?.trim();
+          const assets = path.resolve("dist/assets");
+          if (!expected) throw new Error("Google web client ID is not configured for this build.");
+          const files = fs.existsSync(assets)
+            ? fs.readdirSync(assets).filter((name) => name.endsWith(".js"))
+            : [];
+          const embedded = files.some((name) => fs.readFileSync(path.join(assets, name), "utf8").includes(expected));
+          if (!embedded) {
+            throw new Error("Google client ID was not embedded in dist/assets. Refusing to produce an APK with disabled Google sign-in.");
+          }
+          console.log("Verified Google web client ID is embedded in the mobile bundle.");
+          JS
+
 
       - name: Lint product sharing module
         working-directory: ${{ env.FRONTEND_DIR }}
@@ -142,7 +164,7 @@ jobs:
           VITE_API_URL: ${{ env.MOBILE_API_URL }}${{ env.MOBILE_API_PATH_PREFIX }}
           VITE_ROUTER_BASENAME: /
           VITE_NATIVE_PUSH_ENABLED: ${{ secrets.FIREBASE_ANDROID_CONFIG != '' }}
-          VITE_GOOGLE_CLIENT_ID: ${{ vars.GOOGLE_CLIENT_ID || secrets.GOOGLE_CLIENT_ID }}
+          VITE_GOOGLE_CLIENT_ID: ${{ vars.GOOGLE_CLIENT_ID || secrets.GOOGLE_CLIENT_ID || '324719171852-l6o0inml2kg195qaojggsc8pkf1am6nr.apps.googleusercontent.com' }}
           VITE_GOOGLE_IOS_CLIENT_ID: ${{ vars.GOOGLE_IOS_CLIENT_ID || secrets.GOOGLE_IOS_CLIENT_ID }}
         run: npm run build:mobile
 
@@ -820,7 +842,7 @@ jobs:
           VITE_API_URL: ${{ env.MOBILE_API_URL }}${{ env.MOBILE_API_PATH_PREFIX }}
           VITE_ROUTER_BASENAME: /
           VITE_NATIVE_PUSH_ENABLED: ${{ secrets.FIREBASE_IOS_CONFIG != '' }}
-          VITE_GOOGLE_CLIENT_ID: ${{ vars.GOOGLE_CLIENT_ID || secrets.GOOGLE_CLIENT_ID }}
+          VITE_GOOGLE_CLIENT_ID: ${{ vars.GOOGLE_CLIENT_ID || secrets.GOOGLE_CLIENT_ID || '324719171852-l6o0inml2kg195qaojggsc8pkf1am6nr.apps.googleusercontent.com' }}
           VITE_GOOGLE_IOS_CLIENT_ID: ${{ vars.GOOGLE_IOS_CLIENT_ID || secrets.GOOGLE_IOS_CLIENT_ID }}
         run: npm run build:mobile
 
