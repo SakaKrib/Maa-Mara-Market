@@ -7,7 +7,6 @@ from rest_framework.throttling import ScopedRateThrottle
 
 from allauth.socialaccount.models import SocialAccount
 from django.conf import settings
-from django.core.cache import cache
 from django.contrib.auth.models import User
 from django.test import TestCase, override_settings
 
@@ -187,10 +186,6 @@ from allauth.account.models import EmailAddress
 )
 class GoogleIdTokenAuthenticationTests(TestCase):
     def setUp(self):
-        # Each regression test deliberately uses the same mocked credential.
-        # Clear only the test cache between methods so replay protection is
-        # tested within a request sequence, not across unrelated test cases.
-        cache.clear()
         self.claims = {
             "iss": "https://accounts.google.com",
             "sub": "google-subject-001",
