@@ -167,6 +167,28 @@ jobs:
           VITE_GOOGLE_CLIENT_ID: ${{ vars.GOOGLE_CLIENT_ID || secrets.GOOGLE_CLIENT_ID || '324719171852-l6o0inml2kg195qaojggsc8pkf1am6nr.apps.googleusercontent.com' }}
           VITE_GOOGLE_IOS_CLIENT_ID: ${{ vars.GOOGLE_IOS_CLIENT_ID || secrets.GOOGLE_IOS_CLIENT_ID }}
         run: npm run build:mobile
+      - name: Verify Google client ID is embedded in the mobile bundle
+        working-directory: ${{ env.FRONTEND_DIR }}
+        env:
+          EXPECTED_GOOGLE_CLIENT_ID: ${{ vars.GOOGLE_CLIENT_ID || secrets.GOOGLE_CLIENT_ID || '324719171852-l6o0inml2kg195qaojggsc8pkf1am6nr.apps.googleusercontent.com' }}
+        run: |
+          node --input-type=module <<'JS'
+          import fs from "node:fs";
+          import path from "node:path";
+
+          const expected = process.env.EXPECTED_GOOGLE_CLIENT_ID?.trim();
+          const assets = path.resolve("dist/assets");
+          if (!expected) throw new Error("Google web client ID is not configured for this build.");
+          const files = fs.existsSync(assets)
+            ? fs.readdirSync(assets).filter((name) => name.endsWith(".js"))
+            : [];
+          const embedded = files.some((name) => fs.readFileSync(path.join(assets, name), "utf8").includes(expected));
+          if (!embedded) {
+            throw new Error("Google client ID was not embedded in dist/assets. Refusing to produce an APK with disabled Google sign-in.");
+          }
+          console.log("Verified Google web client ID is embedded in the mobile bundle.");
+          JS
+
 
       - name: Generate Android project and configure Firebase when credentials are available
         working-directory: ${{ env.FRONTEND_DIR }}
@@ -845,6 +867,28 @@ jobs:
           VITE_GOOGLE_CLIENT_ID: ${{ vars.GOOGLE_CLIENT_ID || secrets.GOOGLE_CLIENT_ID || '324719171852-l6o0inml2kg195qaojggsc8pkf1am6nr.apps.googleusercontent.com' }}
           VITE_GOOGLE_IOS_CLIENT_ID: ${{ vars.GOOGLE_IOS_CLIENT_ID || secrets.GOOGLE_IOS_CLIENT_ID }}
         run: npm run build:mobile
+      - name: Verify Google client ID is embedded in the mobile bundle
+        working-directory: ${{ env.FRONTEND_DIR }}
+        env:
+          EXPECTED_GOOGLE_CLIENT_ID: ${{ vars.GOOGLE_CLIENT_ID || secrets.GOOGLE_CLIENT_ID || '324719171852-l6o0inml2kg195qaojggsc8pkf1am6nr.apps.googleusercontent.com' }}
+        run: |
+          node --input-type=module <<'JS'
+          import fs from "node:fs";
+          import path from "node:path";
+
+          const expected = process.env.EXPECTED_GOOGLE_CLIENT_ID?.trim();
+          const assets = path.resolve("dist/assets");
+          if (!expected) throw new Error("Google web client ID is not configured for this build.");
+          const files = fs.existsSync(assets)
+            ? fs.readdirSync(assets).filter((name) => name.endsWith(".js"))
+            : [];
+          const embedded = files.some((name) => fs.readFileSync(path.join(assets, name), "utf8").includes(expected));
+          if (!embedded) {
+            throw new Error("Google client ID was not embedded in dist/assets. Refusing to produce an APK with disabled Google sign-in.");
+          }
+          console.log("Verified Google web client ID is embedded in the mobile bundle.");
+          JS
+
 
       - name: Generate iOS project and configure Firebase when credentials are available
         working-directory: ${{ env.FRONTEND_DIR }}
