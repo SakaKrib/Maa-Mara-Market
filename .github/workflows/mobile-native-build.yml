@@ -631,7 +631,31 @@ jobs:
           ANDROID_SIGNING_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_SIGNING_KEYSTORE_PASSWORD }}
           ANDROID_SIGNING_KEY_ALIAS: ${{ secrets.ANDROID_SIGNING_KEY_ALIAS }}
           ANDROID_SIGNING_KEY_PASSWORD: ${{ secrets.ANDROID_SIGNING_KEY_PASSWORD }}
-        run: ./gradlew --no-daemon clean assembleRelease bundleRelease
+        run: |
+          set -euo pipefail
+          # Capacitor generates this wrapper on each build. Its default 10s
+          # download timeout is too short for the Gradle distribution archive.
+          python3 - <<'PY'
+          from pathlib import Path
+          path = Path("gradle/wrapper/gradle-wrapper.properties")
+          if not path.is_file():
+              raise SystemExit("Generated Gradle wrapper properties were not found")
+          lines = [line for line in path.read_text().splitlines() if not line.startswith("networkTimeout=")]
+          lines.append("networkTimeout=120000")
+          path.write_text("\\n".join(lines) + "\\n")
+          PY
+          for attempt in 1 2 3; do
+            echo "Android release build attempt $attempt/3"
+            if ./gradlew --no-daemon clean assembleRelease bundleRelease; then
+              exit 0
+            fi
+            if [ "$attempt" -lt 3 ]; then
+              echo "Gradle download/build failed; retrying after 20 seconds."
+              sleep 20
+            fi
+          done
+          echo "::error::Android release build failed after three attempts."
+          exit 1
 
       - name: Verify Android release signatures
         working-directory: ${{ env.FRONTEND_DIR }}
@@ -806,7 +830,23 @@ jobs:
           FIREBASE_IOS_CONFIG: ${{ secrets.FIREBASE_IOS_CONFIG }}
           GOOGLE_IOS_CLIENT_ID: ${{ vars.GOOGLE_IOS_CLIENT_ID || secrets.GOOGLE_IOS_CLIENT_ID }}
         run: |
-          npx cap add ios
+          # CocoaPods can receive transient 5xx responses from GitHub when
+          # downloading provider SDK archives. Keep all providers enabled and
+          # retry the native dependency sync instead of dropping functionality.
+          for attempt in 1 2 3; do
+            echo "iOS Capacitor/CocoaPods setup attempt $attempt/3"
+            if [ -d ios/App ]; then
+              npx cap sync ios && break
+            else
+              npx cap add ios && break
+            fi
+            if [ "$attempt" -eq 3 ]; then
+              echo "::error::iOS native dependency setup failed after three attempts."
+              exit 1
+            fi
+            echo "CocoaPods setup failed; retrying after 20 seconds."
+            sleep 20
+          done
           # Sign in with Apple requires the App ID entitlement. The App ID must
           # also have Sign in with Apple enabled in the Apple Developer portal.
           cat > ios/App/App/App.entitlements <<'PLIST'
