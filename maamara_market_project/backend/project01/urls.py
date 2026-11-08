@@ -22,6 +22,7 @@ from django.views.static import serve
 from django.http import HttpResponse, JsonResponse
 
 from ReactSerializers.apple_auth import apple_configuration_is_ready
+from ReactSerializers.social_auth_views import GoogleLoginView
 
 def index_view(request):
     return HttpResponse("Maa Mara Market API", content_type="text/plain")
