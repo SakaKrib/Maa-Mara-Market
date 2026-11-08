@@ -62,7 +62,7 @@ class AppleIdentityAuthenticationTests(TestCase):
         self.assertEqual(user.first_name, "Apple")
         self.assertTrue(Profile.objects.filter(user=user).exists())
         self.assertTrue(Wallet.objects.filter(user=user).exists())
-        self.assertTrue(SocialAccount.objects.filter(provider="apple", uid=self.claims["sub"], user=user).exists())
+        self.assertEqual(Profile.objects.get(user=user).apple_subject, self.claims["sub"])
         self.assertTrue(response.cookies["accessToken"]["httponly"])
         self.assertTrue(response.cookies["refreshToken"]["httponly"])
 
@@ -89,7 +89,7 @@ class AppleIdentityAuthenticationTests(TestCase):
             content_type="application/json",
         )
         self.assertEqual(response.status_code, 200, response.content)
-        self.assertTrue(SocialAccount.objects.filter(provider="apple", uid=self.claims["sub"], user=user).exists())
+        self.assertEqual(Profile.objects.get(user=user).apple_subject, self.claims["sub"])
 
     @patch("ReactSerializers.apple_auth.verify_apple_identity_token")
     def test_unverified_email_cannot_create_or_link_new_apple_identity(self, verify):
@@ -113,7 +113,7 @@ class AppleIdentityAuthenticationTests(TestCase):
             content_type="application/json",
         )
         self.assertEqual(response.status_code, 401)
-        self.assertFalse(SocialAccount.objects.filter(provider="apple", uid=self.claims["sub"]).exists())
+        self.assertFalse(Profile.objects.filter(apple_subject=self.claims["sub"]).exists())
 
     @patch("ReactSerializers.apple_auth.jwt.decode")
     @patch("ReactSerializers.apple_auth._apple_signing_key")
@@ -208,7 +208,7 @@ class GoogleIdTokenAuthenticationTests(TestCase):
         self.assertEqual(user.first_name, "Google")
         self.assertTrue(Profile.objects.filter(user=user).exists())
         self.assertTrue(Wallet.objects.filter(user=user).exists())
-        self.assertTrue(SocialAccount.objects.filter(provider="google", uid=self.claims["sub"], user=user).exists())
+        self.assertEqual(Profile.objects.get(user=user).google_subject, self.claims["sub"])
         self.assertTrue(EmailAddress.objects.filter(user=user, email=self.claims["email"], verified=True).exists())
         self.assertTrue(response.cookies["accessToken"]["httponly"])
         self.assertTrue(response.cookies["refreshToken"]["httponly"])
@@ -223,7 +223,7 @@ class GoogleIdTokenAuthenticationTests(TestCase):
         )
         self.assertEqual(response.status_code, 200, response.content)
         self.assertEqual(User.objects.filter(email__iexact=self.claims["email"]).count(), 1)
-        self.assertTrue(SocialAccount.objects.filter(provider="google", uid=self.claims["sub"], user=user).exists())
+        self.assertEqual(Profile.objects.get(user=user).google_subject, self.claims["sub"])
 
     @patch("ReactSerializers.social_auth_views.verify_google_credential")
     def test_returning_google_subject_reuses_existing_account(self, verify):
@@ -247,7 +247,7 @@ class GoogleIdTokenAuthenticationTests(TestCase):
             content_type="application/json",
         )
         self.assertEqual(response.status_code, 401)
-        self.assertFalse(SocialAccount.objects.filter(provider="google", uid=self.claims["sub"]).exists())
+        self.assertFalse(Profile.objects.filter(google_subject=self.claims["sub"]).exists())
 
     @patch("ReactSerializers.social_auth_views.verify_google_credential")
     def test_inactive_user_is_rejected(self, verify):

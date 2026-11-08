@@ -66,50 +66,66 @@ def verify_google_credential(credential: str) -> dict:
 
 @transaction.atomic
 def authenticate_google_credential(credential: str):
-    """Resolve a Google subject to exactly one Maa Mara local user."""
+    """Resolve a verified Google subject through Maa Mara's Profile record.
+
+    Existing SocialAccount rows are read only as a one-time compatibility path;
+    new Google links are stored on Profile.google_subject.
+    """
     claims = verify_google_credential(credential)
     subject = str(claims["sub"])
     email = str(claims["email"]).strip().lower()
-    social = (SocialAccount.objects.select_for_update().select_related("user")
-              .filter(provider="google", uid=subject).first())
-    if social:
-        user = social.user
+
+    linked_profile = (
+        Profile.objects.select_for_update()
+        .select_related("user")
+        .filter(google_subject=subject)
+        .first()
+    )
+    legacy_social = None
+    if linked_profile:
+        user = linked_profile.user
     else:
-        matches = list(User.objects.select_for_update().filter(email__iexact=email).order_by("pk")[:2])
-        if len(matches) > 1:
-            raise AuthenticationFailed("This email is associated with multiple accounts. Please contact support.")
-        if matches:
-            user = matches[0]
-            if SocialAccount.objects.filter(provider="google", user=user).exclude(uid=subject).exists():
-                raise AuthenticationFailed("This account is already linked to a different Google account.")
+        legacy_social = (
+            SocialAccount.objects.select_for_update()
+            .select_related("user")
+            .filter(provider="google", uid=subject)
+            .first()
+        )
+        if legacy_social:
+            user = legacy_social.user
         else:
-            full_name = str(claims.get("name") or "").strip()
-            first = str(claims.get("given_name") or "").strip()
-            last = str(claims.get("family_name") or "").strip()
-            parts = full_name.split()
-            if not first and parts:
-                first = parts[0]
-            if not last and len(parts) > 1:
-                last = " ".join(parts[1:])
-            user = User.objects.create_user(
-                username=MyAdapter._unique_username(email), email=email, password=None,
-                first_name=first[:150], last_name=last[:150],
+            matches = list(
+                User.objects.select_for_update()
+                .filter(email__iexact=email)
+                .order_by("pk")[:2]
             )
-        if not user.is_active:
-            raise AuthenticationFailed("This account is inactive.")
-        try:
-            with transaction.atomic():
-                social, _ = SocialAccount.objects.get_or_create(
-                    provider="google", uid=subject,
-                    defaults={"user": user, "extra_data": claims},
+            if len(matches) > 1:
+                raise AuthenticationFailed(
+                    "This email is associated with multiple accounts. Please contact support."
                 )
-        except IntegrityError:
-            social = (SocialAccount.objects.select_for_update().select_related("user")
-                      .filter(provider="google", uid=subject).first())
-            if social is None:
-                raise
-        if social.user_id != user.pk:
-            raise AuthenticationFailed("This Google account is already linked to another user.")
+            if matches:
+                user = matches[0]
+                existing_profile = Profile.objects.select_for_update().filter(user=user).first()
+                if existing_profile and existing_profile.google_subject and existing_profile.google_subject != subject:
+                    raise AuthenticationFailed("This account is already linked to a different Google account.")
+                if SocialAccount.objects.filter(provider="google", user=user).exclude(uid=subject).exists():
+                    raise AuthenticationFailed("This account is already linked to a different Google account.")
+            else:
+                full_name = str(claims.get("name") or "").strip()
+                first = str(claims.get("given_name") or "").strip()
+                last = str(claims.get("family_name") or "").strip()
+                parts = full_name.split()
+                if not first and parts:
+                    first = parts[0]
+                if not last and len(parts) > 1:
+                    last = " ".join(parts[1:])
+                user = User.objects.create_user(
+                    username=MyAdapter._unique_username(email),
+                    email=email,
+                    password=None,
+                    first_name=first[:150],
+                    last_name=last[:150],
+                )
 
     if not user.is_active:
         raise AuthenticationFailed("This account is inactive.")
@@ -118,22 +134,40 @@ def authenticate_google_credential(credential: str):
         user.save(update_fields=["email"])
     if EmailAddress.objects.filter(email__iexact=email).exclude(user=user).exists():
         raise AuthenticationFailed("This email is already associated with another account.")
+
+    profile, _ = Profile.objects.select_for_update().get_or_create(user=user)
+    if profile.google_subject and profile.google_subject != subject:
+        raise AuthenticationFailed("This account is already linked to a different Google account.")
+    owner = Profile.objects.select_for_update().filter(google_subject=subject).exclude(user=user).first()
+    if owner:
+        raise AuthenticationFailed("This Google account is already linked to another user.")
+    if not profile.google_subject:
+        try:
+            profile.google_subject = subject
+            profile.save(update_fields=["google_subject"])
+        except IntegrityError as exc:
+            raise AuthenticationFailed("This Google account is already linked to another user.") from exc
+
     address, _ = EmailAddress.objects.get_or_create(
-        user=user, email=email,
-        defaults={"verified": True, "primary": not EmailAddress.objects.filter(user=user, primary=True).exists()},
+        user=user,
+        email=email,
+        defaults={
+            "verified": True,
+            "primary": not EmailAddress.objects.filter(user=user, primary=True).exists(),
+        },
     )
     if not address.verified:
         address.verified = True
         address.save(update_fields=["verified"])
-    if not social.extra_data:
-        social.extra_data = claims
-        social.save(update_fields=["extra_data"])
 
-    # Atomically claim the ID token after all account/linking checks pass.
-    # The cache add remains the single-use gate for concurrent/replayed requests.
+    # Keep legacy metadata current if this account was previously linked through
+    # allauth; no new SocialAccount rows are created by this ID-token flow.
+    if legacy_social and not legacy_social.extra_data:
+        legacy_social.extra_data = claims
+        legacy_social.save(update_fields=["extra_data"])
+
     reject_replay(credential, claims)
     return user
-
 
 logger = logging.getLogger(__name__)
 APPLE_STATE_COOKIE = "maamara_apple_state"

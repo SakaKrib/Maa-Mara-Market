@@ -155,61 +155,61 @@ def _unique_username(email: str) -> str:
 
 @transaction.atomic
 def authenticate_apple_credential(identity_token: str, expected_nonce: str, supplied_name: str = "") -> User:
+    """Resolve Apple's stable subject through Profile while preserving legacy links."""
     claims = verify_apple_identity_token(identity_token, expected_nonce)
     subject = str(claims["sub"])
     email = str(claims.get("email") or "").strip().lower()
     verified = _email_verified(claims.get("email_verified"))
     full_name = str(supplied_name or "").strip()[:255]
 
-    social = (
-        SocialAccount.objects.select_for_update()
+    linked_profile = (
+        Profile.objects.select_for_update()
         .select_related("user")
-        .filter(provider="apple", uid=subject)
+        .filter(apple_subject=subject)
         .first()
     )
-    if social:
-        user = social.user
+    legacy_social = None
+    if linked_profile:
+        user = linked_profile.user
     else:
-        if not email or not verified:
-            raise AuthenticationFailed(
-                "Apple did not provide a verified email for this account. Sign in using your existing method first."
-            )
-        matches = list(User.objects.select_for_update().filter(email__iexact=email).order_by("pk")[:2])
-        if len(matches) > 1:
-            raise AuthenticationFailed("This email is associated with multiple accounts. Please contact support.")
-        if matches:
-            user = matches[0]
-            if SocialAccount.objects.filter(provider="apple", user=user).exclude(uid=subject).exists():
-                raise AuthenticationFailed("This account is already linked to a different Apple account.")
+        legacy_social = (
+            SocialAccount.objects.select_for_update()
+            .select_related("user")
+            .filter(provider="apple", uid=subject)
+            .first()
+        )
+        if legacy_social:
+            user = legacy_social.user
         else:
-            parts = full_name.split()
-            user = User.objects.create_user(
-                username=_unique_username(email),
-                email=email,
-                password=None,
-                first_name=(parts[0] if parts else "")[:150],
-                last_name=(" ".join(parts[1:]) if len(parts) > 1 else "")[:150],
-            )
-        if not user.is_active:
-            raise AuthenticationFailed("This account is inactive.")
-        try:
-            with transaction.atomic():
-                social, _ = SocialAccount.objects.get_or_create(
-                    provider="apple",
-                    uid=subject,
-                    defaults={"user": user, "extra_data": claims},
+            if not email or not verified:
+                raise AuthenticationFailed(
+                    "Apple did not provide a verified email for this account. Sign in using your existing method first."
                 )
-        except IntegrityError:
-            social = (
-                SocialAccount.objects.select_for_update()
-                .select_related("user")
-                .filter(provider="apple", uid=subject)
-                .first()
+            matches = list(
+                User.objects.select_for_update()
+                .filter(email__iexact=email)
+                .order_by("pk")[:2]
             )
-            if social is None:
-                raise
-        if social.user_id != user.pk:
-            raise AuthenticationFailed("This Apple account is already linked to another user.")
+            if len(matches) > 1:
+                raise AuthenticationFailed(
+                    "This email is associated with multiple accounts. Please contact support."
+                )
+            if matches:
+                user = matches[0]
+                existing_profile = Profile.objects.select_for_update().filter(user=user).first()
+                if existing_profile and existing_profile.apple_subject and existing_profile.apple_subject != subject:
+                    raise AuthenticationFailed("This account is already linked to a different Apple account.")
+                if SocialAccount.objects.filter(provider="apple", user=user).exclude(uid=subject).exists():
+                    raise AuthenticationFailed("This account is already linked to a different Apple account.")
+            else:
+                parts = full_name.split()
+                user = User.objects.create_user(
+                    username=_unique_username(email),
+                    email=email,
+                    password=None,
+                    first_name=(parts[0] if parts else "")[:150],
+                    last_name=(" ".join(parts[1:]) if len(parts) > 1 else "")[:150],
+                )
 
     if not user.is_active:
         raise AuthenticationFailed("This account is inactive.")
@@ -228,6 +228,19 @@ def authenticate_apple_credential(identity_token: str, expected_nonce: str, supp
     if updates:
         user.save(update_fields=updates)
 
+    profile, _ = Profile.objects.select_for_update().get_or_create(user=user)
+    if profile.apple_subject and profile.apple_subject != subject:
+        raise AuthenticationFailed("This account is already linked to a different Apple account.")
+    owner = Profile.objects.select_for_update().filter(apple_subject=subject).exclude(user=user).first()
+    if owner:
+        raise AuthenticationFailed("This Apple account is already linked to another user.")
+    if not profile.apple_subject:
+        try:
+            profile.apple_subject = subject
+            profile.save(update_fields=["apple_subject"])
+        except IntegrityError as exc:
+            raise AuthenticationFailed("This Apple account is already linked to another user.") from exc
+
     canonical_email = (user.email or email).strip().lower()
     if canonical_email:
         if EmailAddress.objects.filter(email__iexact=canonical_email).exclude(user=user).exists():
@@ -235,12 +248,16 @@ def authenticate_apple_credential(identity_token: str, expected_nonce: str, supp
         address, _ = EmailAddress.objects.get_or_create(
             user=user,
             email=canonical_email,
-            defaults={"verified": verified, "primary": not EmailAddress.objects.filter(user=user, primary=True).exists()},
+            defaults={
+                "verified": verified,
+                "primary": not EmailAddress.objects.filter(user=user, primary=True).exists(),
+            },
         )
         if verified and not address.verified:
             address.verified = True
             address.save(update_fields=["verified"])
-    if not social.extra_data:
-        social.extra_data = claims
-        social.save(update_fields=["extra_data"])
+
+    if legacy_social and not legacy_social.extra_data:
+        legacy_social.extra_data = claims
+        legacy_social.save(update_fields=["extra_data"])
     return user
