@@ -54,10 +54,10 @@ services:
       - ./backend:/app
       - backend_static:/app/static
       - backend_media:/app/media
-    command: >
-      sh -c "python manage.py collectstatic --noinput &&
-             python manage.py migrate --noinput &&
-             python manage.py runserver 0.0.0.0:8000"
+    # Use the repository's Daphne startup script. Django's runserver
+    # derives ASGI root_path from FORCE_SCRIPT_NAME, which conflicts with
+    # Caddy stripping /maamara before forwarding WebSocket requests.
+    command: ["bash", "./entrypoint.production.sh"]
     depends_on:
       db:
         condition: service_healthy
