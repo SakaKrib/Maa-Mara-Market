@@ -314,7 +314,16 @@ jobs:
           if launcher is None:
               raise SystemExit("Could not locate the Android launcher activity.")
 
-          hosts = [h.strip() for h in os.environ.get("APP_LINK_HOSTS", "maamaramarket.com").split(",") if h.strip()]
+          from urllib.parse import urlsplit
+
+          def host_only(value):
+              value = value.strip()
+              host = urlsplit(value).hostname if "://" in value else value.split("/")[0].split(":")[0]
+              return (host or "").lower()
+
+          hosts = list(dict.fromkeys(
+              h for h in (host_only(v) for v in os.environ.get("APP_LINK_HOSTS", "maamaramarket.com").split(",")) if h
+          ))
           existing = {
               data.get(android + "host")
               for intent in launcher.findall("intent-filter")

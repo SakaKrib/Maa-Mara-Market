@@ -5,7 +5,14 @@ import { Capacitor } from "@capacitor/core";
 
 const VERIFIED_HOSTS = String(import.meta.env.VITE_APP_LINK_HOSTS || "maamaramarket.com")
   .split(",")
-  .map((host) => host.trim().toLowerCase())
+  .map((value) => {
+    const text = value.trim();
+    try {
+      return (text.includes("://") ? new URL(text).hostname : text.split("/")[0].split(":")[0]).toLowerCase();
+    } catch {
+      return "";
+    }
+  })
   .filter(Boolean);
 // The website is served under a path prefix (e.g. /maamara); the app's router is not.
 const PATH_PREFIX = String(import.meta.env.VITE_PUBLIC_PATH_PREFIX || "").trim().replace(/\/+$/, "");

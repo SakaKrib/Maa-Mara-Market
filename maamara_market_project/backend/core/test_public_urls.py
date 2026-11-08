@@ -55,3 +55,11 @@ class EmailFooterAndLinksTests(SimpleTestCase):
         res = APIClient().get("/api/app-links/")
         self.assertEqual(res.status_code, 200)
         self.assertEqual(res.json(), {"android": "https://play.google.com/x", "ios": "https://apps.apple.com/y"})
+
+
+class AppLinkHostsParsingTests(SimpleTestCase):
+    def test_full_urls_in_env_are_reduced_to_hostnames(self):
+        from project01.settings import _hostname_only
+        self.assertEqual(_hostname_only("https://Opondo-Thinkpad.tail34bca9.ts.net/maamara/"), "opondo-thinkpad.tail34bca9.ts.net")
+        self.assertEqual(_hostname_only("maamaramarket.com"), "maamaramarket.com")
+        self.assertEqual(_hostname_only("shop.example.com:8443/x"), "shop.example.com")

@@ -112,7 +112,16 @@ COMPANY_ADDRESS = env("COMPANY_ADDRESS", default="")
 ANDROID_APP_LINK = (get_env_value("ANDROID_APP_LINK", "") or get_env_value("ANDROID_APP_DOWNLOAD_URL", "")).strip()
 IOS_APP_LINK = (get_env_value("IOS_APP_LINK", "") or get_env_value("IOS_APP_DOWNLOAD_URL", "")).strip()
 # Hosts the mobile apps are verified for (Android App Links / iOS Universal Links).
-APP_LINK_HOSTS = [h.strip() for h in get_env_value("APP_LINK_HOSTS", "maamaramarket.com").split(",") if h.strip()]
+def _hostname_only(value):
+    """Accept 'example.com' or 'https://example.com/path' and return just the host."""
+    value = value.strip()
+    host = urlsplit(value).hostname if "://" in value else value.split("/")[0].split(":")[0]
+    return (host or "").lower()
+
+
+APP_LINK_HOSTS = list(dict.fromkeys(
+    h for h in (_hostname_only(v) for v in get_env_value("APP_LINK_HOSTS", "maamaramarket.com").split(",")) if h
+))
 
 # Registered PayPal webhook ID. Keep this server-side; it is required to verify
 # every PayPal webhook before any payment/refund state is changed.
