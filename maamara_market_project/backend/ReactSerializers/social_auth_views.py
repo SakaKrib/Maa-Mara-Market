@@ -58,7 +58,9 @@ def verify_google_credential(credential: str) -> dict:
     email = str(claims.get("email") or "").strip().lower()
     if not email or claims.get("email_verified") is not True:
         raise AuthenticationFailed("A verified Google email address is required.")
-    reject_replay(credential, claims)
+    # Consume the one-time token only after account resolution succeeds.
+    # Otherwise a downstream account/database rejection can burn a valid token
+    # before the client has received a usable Maa Mara session.
     return claims
 
 
@@ -126,6 +128,10 @@ def authenticate_google_credential(credential: str):
     if not social.extra_data:
         social.extra_data = claims
         social.save(update_fields=["extra_data"])
+
+    # Atomically claim the ID token after all account/linking checks pass.
+    # The cache add remains the single-use gate for concurrent/replayed requests.
+    reject_replay(credential, claims)
     return user
 
 
