@@ -164,3 +164,33 @@ class ModerationTests(TestCase):
         anonymise_user(self.alice)
         self.assertEqual(UserBlock.objects.count(), 0)
         self.assertIsNone(ContentReport.objects.get().reporter)
+
+
+class ModerationTasksTests(TestCase):
+    def setUp(self):
+        self.admin = User.objects.create_user("boss2", "b2@example.com", "pw", is_staff=True, is_superuser=True)
+
+    def test_purge_removes_only_old_resolved_reports(self):
+        from datetime import timedelta
+        from django.utils import timezone
+        from core.moderation_tasks import purge_old_reports
+
+        old = ContentReport.objects.create(target_type="user", target_id=1, reason="spam", status="dismissed",
+                                           resolved_at=timezone.now() - timedelta(days=400))
+        recent = ContentReport.objects.create(target_type="user", target_id=2, reason="spam", status="dismissed",
+                                              resolved_at=timezone.now() - timedelta(days=10))
+        still_open = ContentReport.objects.create(target_type="user", target_id=3, reason="spam")
+        purge_old_reports()
+        remaining = set(ContentReport.objects.values_list("pk", flat=True))
+        self.assertEqual(remaining, {recent.pk, still_open.pk})
+        self.assertNotIn(old.pk, remaining)
+
+    def test_overdue_reminder_notifies_admins(self):
+        from datetime import timedelta
+        from django.utils import timezone
+        from core.moderation_tasks import remind_overdue_reports
+
+        report = ContentReport.objects.create(target_type="user", target_id=1, reason="spam")
+        ContentReport.objects.filter(pk=report.pk).update(created_at=timezone.now() - timedelta(hours=30))
+        self.assertEqual(remind_overdue_reports(), 1)
+        self.assertTrue(Notification.objects.filter(user=self.admin, title="Reports need review").exists())

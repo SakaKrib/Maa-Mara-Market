@@ -483,6 +483,14 @@ CELERY_IMPORTS = ("order.task", "core.email_tasks", "ReactSerializers.offer_task
 # =========================================================
 
 CELERY_BEAT_SCHEDULE = {
+    "remind_overdue_moderation_reports": {
+        "task": "core.moderation_tasks.remind_overdue_reports",
+        "schedule": crontab(minute=0, hour="*/6"),
+    },
+    "purge_old_moderation_reports": {
+        "task": "core.moderation_tasks.purge_old_reports",
+        "schedule": crontab(hour=3, minute=30),
+    },
     "cleanup_visitor_orders_daily": {
         "task": "order.task.cleanup_old_visitor_orders",
         "schedule": crontab(hour=2, minute=0),

@@ -1,7 +1,7 @@
 // Terms & Conditions and Privacy Policy text. Each section has a heading and
 // paragraphs; "list" items render as bullets under the paragraphs.
 
-export const LEGAL_UPDATED = "8 November 2026";
+export const LEGAL_UPDATED = "9 November 2026";
 export const CONTACT_EMAIL = "hello@maamaramarket.com";
 
 export const TERMS = {
@@ -118,6 +118,8 @@ export const TERMS = {
       paragraphs: [
         "You can post reviews, comments, ratings, messages and, if you are a vendor, blogs, banners, photographs and videos. You keep ownership of what you post, but you give Maa Mara Market a free, non-exclusive licence to display, store, adapt and promote it on the marketplace and in our marketing for as long as it is on the platform.",
         "Content from vendors, such as blogs and banners, is reviewed before it is published, and we may remove or edit anything that breaks these terms. You promise that you own or have the right to use what you post and that it does not infringe anyone else’s rights.",
+        "Reviews, comments and messages are not checked before they appear, so we rely on you to tell us about content that breaks these terms. Every review, blog post, blog comment, message and product listing has a Report option. Choose a reason and, if you wish, add details. Our team reviews every report within 24 hours. We may remove the content, suspend the person who posted it, or take no action if nothing was broken, and we tell you when we have finished looking at your report. The person you report is not told who reported them.",
+        "You can block another signed-in user from the same menu. Blocked people’s reviews, comments and blog posts are hidden from you straight away, and you can unblock them at any time under Account > Blocked users. Support accounts cannot be blocked; use Report instead.",
       ],
     },
     {
@@ -125,7 +127,8 @@ export const TERMS = {
       title: "14. Acceptable use",
       paragraphs: ["When you use Maa Mara Market you agree not to:"],
       list: [
-        "break the law, or post anything unlawful, defamatory, hateful, harassing, sexually explicit or misleading;",
+        "break the law, or post anything unlawful, defamatory, hateful, harassing, threatening, violent, sexually explicit or misleading;",
+        "post anything that sexualises or endangers children;",
         "sell or promote counterfeit, stolen, prohibited or unsafe goods;",
         "write fake or paid reviews, or manipulate ratings, views or traffic;",
         "attempt to access other people’s accounts, our systems or data, or probe, scan or overload the service;",
@@ -156,6 +159,7 @@ export const TERMS = {
       title: "17. Automated and AI-assisted features",
       paragraphs: [
         "Some tools on Maa Mara Market use artificial intelligence, for example to help vendors write product descriptions and blog drafts, to suggest ways to improve sales, and to help with registration. Suggestions are a guide and may be wrong or incomplete. People remain responsible for what they publish and for decisions they make, and our team reviews listings and content before they appear.",
+        "AI output is only ever a draft for a vendor to check and edit; nothing is published automatically. Our AI tools use the provider’s safety filters, and text the filters block is not used. Blog posts written with the AI tool are marked “Written with AI assistance”. We do not offer a chatbot that talks to customers. If you see AI-generated content that is harmful, false or misleading, use Report and choose “Harmful or inaccurate AI-generated content”.",
       ],
     },
     {
@@ -183,7 +187,7 @@ export const TERMS = {
       id: "suspension",
       title: "21. Suspension and ending your account",
       paragraphs: [
-        "We may warn, restrict, suspend or close an account, remove content, or cancel orders if we believe these terms have been broken, the law requires it, or there is a risk of fraud or harm to others. Where practical we will tell you why. You may stop using Maa Mara Market and ask us to close your account at any time. Closing an account does not cancel orders already in progress or remove the duties that should continue afterwards.",
+        "We may warn, restrict, suspend or close an account, remove content, or cancel orders if we believe these terms have been broken, the law requires it, or there is a risk of fraud or harm to others. Where practical we will tell you why. If you think we made a mistake, email us and a different team member will look at it again; where we agree, we will restore the content or account. You may stop using Maa Mara Market and ask us to close your account at any time. Closing an account does not cancel orders already in progress or remove the duties that should continue afterwards.",
       ],
     },
     {
@@ -253,6 +257,7 @@ export const PRIVACY = {
         "Communications: messages you send through support, chat or contact forms, replies from us, notifications we send you, and your choices about marketing email.",
         "Vendor information: if you sell with us, your business and contact details, workshop or business location, your ID number, product and certification documents (for example KEBS certification where it applies), and the payout details you give us (an M-Pesa number, Till or Paybill, bank account or PayPal account).",
         "Content you post: reviews, ratings, comments, blogs, photographs and videos.",
+        "Reports and blocks: reports you make (the reason and any details you write), the people you block, and, for reported content, a saved copy of it and the decision and note made by our team.",
       ],
     },
     {
@@ -274,7 +279,7 @@ export const PRIVACY = {
         "show you relevant products and recommendations based on what you view, search for and buy;",
         "send marketing emails, but only if you have agreed to receive them;",
         "understand how the marketplace is used, find and fix problems, and improve our services;",
-        "prevent fraud, abuse and security incidents, and enforce our terms;",
+        "prevent fraud, abuse and security incidents, review reports, and enforce our terms and community rules;",
         "approve vendors, products and content, and help vendors understand how their items are performing;",
         "meet our legal, tax and regulatory duties.",
       ],
@@ -331,7 +336,7 @@ export const PRIVACY = {
         "Vendors, who receive the details they need to prepare and send your order. Customer contact details are used to fulfil orders and are not for the vendor’s own marketing.",
         "Payment partners, such as Pesapal, Safaricom M-Pesa and PayPal, to take payments, confirm them and send refunds and vendor payouts.",
         "Delivery partners and carriers, such as DHL and FedEx, who receive your name, address and phone number to deliver your order.",
-        "Service providers who help us run the platform, including hosting, email delivery, notifications, security, and AI services that power some tools. When we use an AI service we send it listing, blog and sales information needed for the task, and we do not send payment details.",
+        "Service providers who help us run the platform, including hosting, email delivery, notifications, security, and AI services that power some tools. When a vendor uses an AI tool we send the AI service the title, item name, description, brand and business name, and any image or video the vendor chooses to attach, together with sales figures for item suggestions. We do not send customer personal details or payment details to AI services.",
         "Professional advisers, auditors and insurers where necessary.",
         "Authorities, courts and regulators where the law requires, or to protect our rights, our users or the public.",
         "A buyer or successor, if Maa Mara Market is ever merged, sold or reorganised, with the same protections for your data.",
@@ -352,8 +357,9 @@ export const PRIVACY = {
         "Deleting your account: you can delete your account yourself from the Account page in the app or website (you confirm with your password, or with a code we email you if you signed in with Google or Apple). If you cannot sign in or no longer have the app, use the web page at /delete-account; we email a confirmation link to the address on the account. Deletion happens immediately and we email you when it is done.",
       ],
       list: [
-        "Deleted straight away: your profile and picture, wallet and coins, vouchers, referral links, wishlist, reviews, comments and reactions, notifications, messages you sent, saved registration drafts, email addresses and your Google or Apple sign-in links. Your name, email and login details on the account are erased and cannot be recovered.",
+        "Deleted straight away: your profile and picture, wallet and coins, vouchers, referral links, wishlist, reviews, comments and reactions, notifications, messages you sent, the people you have blocked (and anyone who blocked you), saved registration drafts, email addresses and your Google or Apple sign-in links. Your name, email and login details on the account are erased and cannot be recovered.",
         "Kept without your personal details: orders, payments, refunds, invoices and related financial records, because tax and accounting law requires us to keep them. They stay linked only to an anonymous account number, not to your name or email. Support tickets are kept without your name or email. Page-view analytics are kept without a link to you.",
+        "Reports and moderation records: reports are kept for 12 months after they are decided, then deleted. If you made a report, your identity is removed from it when you delete your account. If your own content was reported, a saved copy of that content may be kept for the same 12 months as safety evidence.",
         "We keep a record that your deletion happened, with a one-way hash of your email so we can prove it was done. It cannot be used to find your email.",
         "Not possible while you have an order in progress (paid, shipping, or being returned or disputed): finish or cancel it first. Vendor accounts have payouts, listings and bank details to settle, so we complete those requests within 30 days after you confirm on the web page.",
         "Sign in with Apple: after deletion you can also remove Maa Mara Market from your Apple ID under Settings > Apple ID > Sign in with Apple. Google works the same way under the third-party connections of your Google Account.",
