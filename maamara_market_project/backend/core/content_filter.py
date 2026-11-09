@@ -37,6 +37,11 @@ def _normalise(text):
     return re.sub(r"\s+", " ", text).strip()
 
 
+def _squash(text):
+    """Collapse every run of repeated characters so 'kiiiill' and 'kill' compare equal."""
+    return re.sub(r"(.)\1+", r"\1", text)
+
+
 def _blocked_phrases():
     extra = [t.strip().lower() for t in str(getattr(settings, "CONTENT_FILTER_EXTRA_TERMS", "") or "").split(",")]
     return [p for p in (*DEFAULT_BLOCKED_PHRASES, *extra) if p]
@@ -47,9 +52,9 @@ def check_text(text, *, allow_contact=False):
     if not getattr(settings, "CONTENT_FILTER_ENABLED", True):
         return True, ""
     raw = str(text or "")
-    normalised = f" {_normalise(raw)} "
+    normalised = f" {_squash(_normalise(raw))} "
     for phrase in _blocked_phrases():
-        if f" {_normalise(phrase)} " in normalised:
+        if f" {_squash(_normalise(phrase))} " in normalised:
             return False, "abusive"
     if len(_URL.findall(raw)) > 1:
         return False, "links"
