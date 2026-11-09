@@ -3,6 +3,7 @@ import { IonIcon } from "@ionic/react";
 import { addOutline, arrowBackOutline, attachOutline, chatbubbleEllipsesOutline, closeOutline, peopleOutline, personOutline, sendOutline, storefrontOutline } from "ionicons/icons";
 import { useAuth } from "../Auth/AuthContext/Context";
 import api, { getWebSocketUrl, resolveApiAssetUrl } from "../../Services/Api";
+import ReportBlockMenu from "../Moderation/ReportBlockMenu";
 
 const timeLabel = (value) => value ? new Date(value).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : "";
 
@@ -320,7 +321,7 @@ export default function Messaging({ floating = false, onClose = null, initialCon
               <div className="flex-1 overflow-y-auto bg-[#f8f8f6] p-3 sm:p-5">
                 {messages.map((message) => {
                   const mine = user ? message.sender_id === user.id : isGuest && message.sender_id === null;
-                  return <div key={message.id} ref={(node) => { if (node) messageElementRefs.current.set(String(message.id), node); else messageElementRefs.current.delete(String(message.id)); }} className={"mb-3 flex " + (String(message.id) === String(initialMessageId) ? "rounded-xl bg-blue-50 p-1 ring-2 ring-blue-300 " : "") + (mine ? "justify-end" : "justify-start")}><div className={"max-w-[82%] rounded-2xl px-3 py-2 " + (mine ? "rounded-br-md bg-[#2563eb] text-white" : "rounded-bl-md bg-[#f8f8f6] text-[#222]")}>{message.image && <img src={resolveApiAssetUrl(message.image)} alt="Attachment" className="mb-2 max-h-72 max-w-full rounded-xl object-contain" />}{message.body && <p className="whitespace-pre-wrap break-words text-sm">{message.body}</p>}<p className="mt-1 text-[9px] opacity-70">{timeLabel(message.created_at)}</p></div></div>;
+                  return <div key={message.id} ref={(node) => { if (node) messageElementRefs.current.set(String(message.id), node); else messageElementRefs.current.delete(String(message.id)); }} className={"mb-3 flex " + (String(message.id) === String(initialMessageId) ? "rounded-xl bg-blue-50 p-1 ring-2 ring-blue-300 " : "") + (mine ? "justify-end" : "justify-start")}><div className={"max-w-[82%] rounded-2xl px-3 py-2 " + (mine ? "rounded-br-md bg-[#2563eb] text-white" : "rounded-bl-md bg-[#f8f8f6] text-[#222]")}>{message.image && <img src={resolveApiAssetUrl(message.image)} alt="Attachment" className="mb-2 max-h-72 max-w-full rounded-xl object-contain" />}{message.body && <p className="whitespace-pre-wrap break-words text-sm">{message.body}</p>}<p className="mt-1 text-[9px] opacity-70">{timeLabel(message.created_at)}</p>{!mine && !message.moderation_hidden && <div className="mt-1 text-[10px]"><ReportBlockMenu targetType="message" targetId={message.id} label="Report" /></div>}</div></div>;
                 })}
                 <div ref={endRef} />
               </div>

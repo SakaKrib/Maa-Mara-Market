@@ -148,6 +148,7 @@ import CreateItemPage from "./cmponents/AdminPages/Notifications/CreateItemPage"
 import AdminCreateNewVendorItemPage from "./cmponents/AdminPages/Notifications/AdminCreateNewVendorItemPage";
 import AdminBannerApprovalPage from "./cmponents/Admin/ApproveBanner/ApproveBanner";
 import AdminBlogApprovalPage from "./cmponents/Admin/ApproveBlogs/ApproveBlogs";
+import ModerationPage from "./cmponents/Admin/Moderation/ModerationPage";
 import AdminPostCareer from "./cmponents/AdminPages/Notifications/PostCareers/AdminPostCareer";
 import SupportAdminPanel from "./cmponents/AdminPages/Notifications/Support/SupportMessages";
 import SearchGlobalResultsPage from "./cmponents/SearchPage/SearchResultsPage";
@@ -343,6 +344,7 @@ function AppContent() {
               <Route path="create-career" element={<AdminPostCareer />} />
               <Route path="support" element={<SupportAdminPanel />} />
               <Route path="blog-approvals" element={<AdminBlogApprovalPage />} />
+              <Route path="moderation" element={<ModerationPage />} />
               <Route path="create-support" element={<SupportAdminPanel />} />
 
               {/* vendor create new item */}

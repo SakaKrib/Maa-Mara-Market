@@ -3,6 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import api, { resolveApiAssetUrl } from "../../../Services/Api";
 import ReactionButton from "./Reaction";
 import CommentBox from "./Comment";
+import ReportBlockMenu from "../Moderation/ReportBlockMenu";
 import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
 import { sanitizeRichText } from "../../../utils/sanitizeRichText";
@@ -113,6 +114,9 @@ export default function SingleBlogPage() {
 
               <div className="mt-6 border-t border-border pt-4">
                 <ReactionButton postId={post.id} reactions={post.reactions || []} />
+                <div className="mt-3">
+                  <ReportBlockMenu targetType="blog_post" targetId={post.id} ownerId={post.user?.id} ownerName={post.vendor?.company_name || post.user_name || "this author"} label="Report this post" onBlocked={() => navigate("/blogs")} />
+                </div>
               </div>
 
               {post.item && (

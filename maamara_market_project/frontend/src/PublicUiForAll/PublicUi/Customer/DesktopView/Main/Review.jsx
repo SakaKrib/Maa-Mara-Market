@@ -3,6 +3,7 @@ import api from "../../../../../Services/Api";
 import Avatar from "@mui/material/Avatar";
 import NativeAwareSelect from "../../../../../components/NativeAwareSelect";
 import AppSnackbar from "../../../../../../components/ui/app-snackbar";
+import ReportBlockMenu from "../../../../../cmponents/Moderation/ReportBlockMenu";
 
 // MUI Alert wrapper
 const ReviewSection = ({ item }) => {
@@ -141,6 +142,9 @@ const ReviewSection = ({ item }) => {
                       </div>
                     </div>
                     <p className="mt-3 text-sm leading-6 text-card-foreground">{truncateReview(review.review_text)}</p>
+                    <div className="mt-2 text-right">
+                      <ReportBlockMenu targetType="review" targetId={review.id} ownerId={review.user_id} ownerName={typeof review.user === "string" ? review.user : "this user"} onBlocked={fetchReviews} />
+                    </div>
                   </article>
                 ))}
               </div>

@@ -24,6 +24,7 @@ import { Avatar } from "@mui/material";
 import AppSnackbar from "../../../../../../../components/ui/app-snackbar";
 import DatePicker from "../../../../../../../components/ui/date-picker";
 import DeleteAccountSection from "./DeleteAccountSection";
+import BlockedUsersSection from "../../../../../cmponents/Moderation/BlockedUsersSection";
 
 export default function UserAccount() {
   const navigate = useNavigate();
@@ -523,6 +524,8 @@ export default function UserAccount() {
                 <p className="text-gray-500 text-sm">No active vouchers</p>
               )}
             </motion.div>
+
+            <BlockedUsersSection />
 
             <DeleteAccountSection />
 

@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { resolveApiAssetUrl } from "../../../Services/Api";
 import api from "../../../../src/Services/Api";
+import ReportBlockMenu from "../Moderation/ReportBlockMenu";
 
 export default function CommentBox({ postId, comments: initialComments = [], compact = false }) {
   const [text, setText] = useState("");
@@ -71,6 +72,9 @@ export default function CommentBox({ postId, comments: initialComments = [], com
                     <div className="min-w-0 flex-1">
                       <p className="text-xs font-semibold text-card-foreground">{displayName}</p>
                       <p className="mt-1 whitespace-pre-wrap break-words text-sm leading-5 text-muted-foreground">{comment.text}</p>
+                      <div className="mt-1">
+                        <ReportBlockMenu targetType="blog_comment" targetId={comment.id} ownerId={comment.user_id} ownerName={comment.user_name || "this user"} onBlocked={(blockedId) => setComments((current) => current.filter((item) => item.user_id !== blockedId))} />
+                      </div>
                     </div>
                   </div>
                 );

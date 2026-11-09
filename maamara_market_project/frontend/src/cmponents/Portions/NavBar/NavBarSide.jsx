@@ -65,6 +65,7 @@ const navigation = [
     label: "Content",
     items: [
       { label: "Marketing & banners", to: "/admin-dashboard/approve-banner", icon: megaphoneOutline },
+      { label: "Moderation", to: "/admin-dashboard/moderation", icon: shieldCheckmarkOutline },
       { label: "FAQ", to: "/admin-dashboard/faq", icon: helpCircleOutline },
     ],
   },

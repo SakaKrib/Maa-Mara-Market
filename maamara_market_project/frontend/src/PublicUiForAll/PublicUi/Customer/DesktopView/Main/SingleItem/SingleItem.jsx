@@ -5,6 +5,7 @@ import ProductOptions from "./ProductOptions";
 import QuantityAndCart from "./QuantityAndCart";
 import ProductDetails from "./ProductDetails";
 import ProductReviews from "./ProductReviews";
+import ReportBlockMenu from "../../../../../cmponents/Moderation/ReportBlockMenu";
 import FormattedCurrency from "../Currency/FormattedCurrency";
 import { useWishlistContext } from "../../../../../../cmponents/Hooks/WishListHook/Wishlist";
 import MarketplaceItemContext from "./MarketplaceItemContext";
@@ -233,6 +234,9 @@ const SingleItem = () => {
 
           <section className="min-w-0 rounded-2xl border border-border bg-card p-4 shadow-custom sm:p-5">
             <ProductReviews item={item} />
+            <div className="mt-4 text-center">
+              <ReportBlockMenu targetType="item" targetId={item.id} label="Report this listing" />
+            </div>
           </section>
         </div>
       </div>
