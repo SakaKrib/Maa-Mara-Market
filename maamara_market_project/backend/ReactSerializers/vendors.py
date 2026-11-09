@@ -589,6 +589,15 @@ def submit_vendor_request(request):
     user = request.user
     decoded = {}
 
+    from core.vendor_terms import has_accepted_current
+
+    if not has_accepted_current(user):
+        return Response(
+            {"detail": "Please read and accept the Vendor Terms and Conditions before applying.",
+             "code": "vendor_terms_required"},
+            status=403,
+        )
+
     # ✅ Parse vendor_data JSON
     vendor_data_raw = request.data.get('vendor_data')
     if not vendor_data_raw:

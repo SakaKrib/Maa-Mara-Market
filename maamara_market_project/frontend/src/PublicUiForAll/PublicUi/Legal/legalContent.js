@@ -142,7 +142,7 @@ export const TERMS = {
       id: "vendors",
       title: "15. Vendors",
       paragraphs: [
-        "If you sell on Maa Mara Market, the Vendor Terms and Conditions you accept during vendor registration also apply to you and take priority over these terms where they differ. They cover eligibility, approval of products, dispatch, payment after customer confirmation, returns and the marketplace charges.",
+        "If you sell on Maa Mara Market, the Vendor Terms and Conditions you accept during vendor registration also apply to you and take priority over these terms where they differ. They cover eligibility, approval of products, dispatch, payment after customer confirmation, returns and the marketplace margin. You must read and accept the current Vendor Terms before you can apply, and we ask you to accept again when they change.",
         "Vendors are responsible for their products, for describing them honestly, for keeping stock accurate and for meeting any licences or certificates their products need. Vendor payouts are made only after the customer has confirmed the order, or the confirmation period has ended, and any checks are complete. We may hold, adjust or reverse a payout where there is a return, a refund, a dispute or suspected fraud.",
       ],
     },
@@ -255,7 +255,7 @@ export const PRIVACY = {
         "Browsing and shopping activity: items you view, add to your cart or wishlist, products you search for, items you review, and the recommendations built from these.",
         "Technical and analytics data: a visitor identifier and session identifier, pages visited and when, the website or campaign that referred you, your device type and browser, your IP address, and the approximate country worked out from your IP address, your browser’s time zone or our network provider.",
         "Communications: messages you send through support, chat or contact forms, replies from us, notifications we send you, and your choices about marketing email.",
-        "Vendor information: if you sell with us, your business and contact details, workshop or business location, your ID number, product and certification documents (for example KEBS certification where it applies), and the payout details you give us (an M-Pesa number, Till or Paybill, bank account or PayPal account).",
+        "Vendor information: if you sell with us, your business and contact details, workshop or business location, your ID number, product and certification documents (for example KEBS certification where it applies), and the payout details you give us (an M-Pesa number, Till or Paybill, bank account or PayPal account). We also record which version of the Vendor Terms you accepted, the statements you confirmed, and when.",
         "Content you post: reviews, ratings, comments, blogs, photographs and videos.",
         "Reports and blocks: reports you make (the reason and any details you write), the people you block, and, for reported content, a saved copy of it and the decision and note made by our team.",
       ],

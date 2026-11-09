@@ -776,3 +776,19 @@ class UserBlock(models.Model):
 
     def __str__(self):
         return f"{self.blocker_id} blocks {self.blocked_id}"
+
+
+class VendorTermsAcceptance(models.Model):
+    """Proof that a user read and accepted a specific version of the Vendor Terms."""
+
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="vendor_terms_acceptances")
+    version = models.CharField(max_length=20)
+    acknowledgements = models.JSONField(default=list, blank=True)
+    accepted_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        constraints = [models.UniqueConstraint(fields=["user", "version"], name="unique_vendor_terms_acceptance")]
+        ordering = ["-accepted_at"]
+
+    def __str__(self):
+        return f"{self.user_id} accepted vendor terms {self.version}"

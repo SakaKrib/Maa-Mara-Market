@@ -16,6 +16,7 @@ from .ItemInventory import *
 from .traffic import record_traffic_event, traffic_analytics, inbound_traffic_analytics, inbound_traffic_session_detail, inbound_traffic_visitor_detail, clear_inbound_traffic
 from core.account_deletion_views import (AccountDeletionCodeView, AccountDeletionInfoView, AccountDeletionView,
                                         PublicDeletionConfirmView, PublicDeletionRequestView, AppLinksView)
+from core.vendor_terms import VendorTermsView
 from core.moderation_views import (AdminReportListView, AdminReportResolveView, BlockedUsersView,
                                    ReportContentView, UnblockUserView)
 from .social_auth_views import GoogleLoginView, AppleAuthConfigView, AppleLoginStartView, AppleLoginCallbackView, AppleLoginView, AppleNativeNonceView
@@ -51,6 +52,7 @@ urlpatterns = [
     path("api/apple/start/", AppleLoginStartView.as_view(), name="apple-login-start"),
     path("api/apple/callback/", AppleLoginCallbackView.as_view(), name="apple-login-callback"),
     path("api/app-links/", AppLinksView.as_view(), name="app-links"),
+    path("api/vendor-terms/", VendorTermsView.as_view(), name="vendor-terms"),
     path("api/moderation/reports/", ReportContentView.as_view(), name="moderation-report"),
     path("api/moderation/blocks/", BlockedUsersView.as_view(), name="moderation-blocks"),
     path("api/moderation/blocks/<int:user_id>/", UnblockUserView.as_view(), name="moderation-unblock"),
