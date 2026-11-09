@@ -287,6 +287,11 @@ SOCIALACCOUNT_STORE_TOKENS = False
 
 # Google Identity Services / native Google Sign-In. Only GOOGLE_CLIENT_ID is
 # used to validate ID-token audience. GOOGLE_CLIENT_SECRET is backend-only and
+# Android signing-cert SHA-256 fingerprint(s), comma separated (printed by the
+# "Signed Android Release" workflow; add the Play App Signing key too if used).
+ANDROID_APP_PACKAGE = get_env_value("ANDROID_APP_PACKAGE", "com.maamaramarket.app")
+ANDROID_APP_SHA256_CERT_FINGERPRINTS = get_env_value("ANDROID_APP_SHA256_CERT_FINGERPRINTS", "")
+
 # is retained for compatibility; this flow does not use a client secret.
 GOOGLE_CLIENT_ID = get_env_value("GOOGLE_CLIENT_ID", "")
 GOOGLE_CLIENT_SECRET = get_env_value("GOOGLE_CLIENT_SECRET", "")

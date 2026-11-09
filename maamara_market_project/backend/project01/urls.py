@@ -21,6 +21,7 @@ from django.conf import settings
 from django.views.static import serve
 from django.http import HttpResponse, JsonResponse
 
+from core.app_links import apple_app_site_association, assetlinks
 from ReactSerializers.apple_auth import apple_configuration_is_ready
 from ReactSerializers.social_auth_views import GoogleLoginView
 
@@ -36,6 +37,8 @@ def auth_provider_status(request):
     })
 
 urlpatterns = [
+    path(".well-known/assetlinks.json", assetlinks, name="assetlinks"),
+    path(".well-known/apple-app-site-association", apple_app_site_association, name="aasa"),
     path("api/auth/providers/", auth_provider_status, name="auth-provider-status"),
     path("admin/", admin.site.urls),
     path("", include("pesapalpayments.urls")),

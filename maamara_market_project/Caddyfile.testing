@@ -9,6 +9,12 @@
     reverse_proxy 127.0.0.1:8000
   }
 
+  # App Links / Universal Links files must be at the host root (Maa Mara backend).
+  @wellknown path /.well-known/assetlinks.json /.well-known/apple-app-site-association
+  handle @wellknown {
+    reverse_proxy 127.0.0.1:8000
+  }
+
   @maamara_root path /maamara
   redir @maamara_root /maamara/ 308
 
