@@ -3,7 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import api, { resolveApiAssetUrl } from "../../../Services/Api";
 import ReactionButton from "./Reaction";
 import CommentBox from "./Comment";
-import ReportBlockMenu from "../Moderation/ReportBlockMenu";
+import ReportBlockMenu from "../../Moderation/ReportBlockMenu";
 import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
 import { sanitizeRichText } from "../../../utils/sanitizeRichText";

@@ -24,7 +24,7 @@ import { Avatar } from "@mui/material";
 import AppSnackbar from "../../../../../../../components/ui/app-snackbar";
 import DatePicker from "../../../../../../../components/ui/date-picker";
 import DeleteAccountSection from "./DeleteAccountSection";
-import BlockedUsersSection from "../../../../../cmponents/Moderation/BlockedUsersSection";
+import BlockedUsersSection from "../../../../../../cmponents/Moderation/BlockedUsersSection";
 
 export default function UserAccount() {
   const navigate = useNavigate();

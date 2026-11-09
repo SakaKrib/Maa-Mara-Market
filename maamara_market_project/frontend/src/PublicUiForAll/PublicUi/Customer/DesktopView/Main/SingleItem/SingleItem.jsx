@@ -5,7 +5,7 @@ import ProductOptions from "./ProductOptions";
 import QuantityAndCart from "./QuantityAndCart";
 import ProductDetails from "./ProductDetails";
 import ProductReviews from "./ProductReviews";
-import ReportBlockMenu from "../../../../../cmponents/Moderation/ReportBlockMenu";
+import ReportBlockMenu from "../../../../../../cmponents/Moderation/ReportBlockMenu";
 import FormattedCurrency from "../Currency/FormattedCurrency";
 import { useWishlistContext } from "../../../../../../cmponents/Hooks/WishListHook/Wishlist";
 import MarketplaceItemContext from "./MarketplaceItemContext";

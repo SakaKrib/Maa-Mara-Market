@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { resolveApiAssetUrl } from "../../../Services/Api";
 import api from "../../../../src/Services/Api";
-import ReportBlockMenu from "../Moderation/ReportBlockMenu";
+import ReportBlockMenu from "../../Moderation/ReportBlockMenu";
 
 export default function CommentBox({ postId, comments: initialComments = [], compact = false }) {
   const [text, setText] = useState("");
