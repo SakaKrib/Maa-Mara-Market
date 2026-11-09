@@ -76,8 +76,12 @@ def month_figures(year, month):
         for line in order.order_items.all():
             price = _line_vendor_price(line)
             vendor_share += price
+            # Older catalog items can have no vendor assigned. They still
+            # contribute to marketplace totals, so retain their owed amount
+            # instead of failing the entire monthly-accounting request.
             vendor = line.item.vendor
-            row = vendors[(vendor.pk, vendor.company_name)]
+            vendor_key = (vendor.pk, vendor.company_name) if vendor else (None, "Unassigned vendor")
+            row = vendors[vendor_key]
             row["owed"] += price
             row["items"] += line.quantity
             if line.pk in settled_item_ids:
