@@ -259,6 +259,9 @@ def _call_gemini(prompt, use_search):
             "responseMimeType": "application/json",
             "responseSchema": SUGGESTION_SCHEMA,
         }
+    from core.ai_safety import ensure_not_blocked, with_safety
+
+    with_safety(payload)
     response = requests.post(
         GEMINI_ENDPOINT.format(model=model),
         headers={"x-goog-api-key": api_key, "Content-Type": "application/json"},
@@ -268,7 +271,7 @@ def _call_gemini(prompt, use_search):
     if not response.ok:
         logger.error("Gemini item insights failed: %s", response.text[:800])
         raise RuntimeError("Gemini request failed.")
-    data = response.json()
+    data = ensure_not_blocked(response.json())
     candidates = data.get("candidates") or []
     text = "".join(
         part.get("text", "")

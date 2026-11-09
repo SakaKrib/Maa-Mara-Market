@@ -487,6 +487,7 @@ class BlogPostSerializer(serializers.ModelSerializer):
             'video',
             'item',
             'approved',
+            'ai_assisted',
             'created_at',
             'comments',
             'reactions',

@@ -158,6 +158,9 @@ def _gemini_request(image_bytes, mime_type, prompt, schema):
         },
     }
 
+    from .ai_safety import ensure_not_blocked, with_safety
+
+    with_safety(payload)
     response = requests.post(
         endpoint,
         headers={
@@ -172,7 +175,7 @@ def _gemini_request(image_bytes, mime_type, prompt, schema):
         logger.error("Gemini item generation failed: %s", response.text[:1000])
         raise RuntimeError("Gemini request failed.")
 
-    data = response.json()
+    data = ensure_not_blocked(response.json())
     text_parts = []
 
     for candidate in data.get("candidates", []):

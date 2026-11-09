@@ -22,6 +22,7 @@ from order.Base import IsVendor
 from ReactSerializers.models import Item
 from shop.sanitizers import sanitize_rich_text
 
+from .ai_safety import AIBlockedError, ensure_not_blocked, with_safety
 from .vendor_registration_ai import DEFAULT_GEMINI_MODEL, GEMINI_ENDPOINT
 
 logger = logging.getLogger(__name__)
@@ -64,23 +65,24 @@ def _generate(prompt, media_parts):
     response = requests.post(
         GEMINI_ENDPOINT.format(model=model),
         headers={"x-goog-api-key": api_key, "Content-Type": "application/json"},
-        json={
+        json=with_safety({
             "contents": [{"parts": [*media_parts, {"text": prompt}]}],
             "generationConfig": {
                 "temperature": 0.5,
                 "responseMimeType": "application/json",
                 "responseSchema": BLOG_SCHEMA,
             },
-        },
+        }),
         timeout=90,
     )
     if not response.ok:
         logger.error("Gemini blog generation failed: %s", response.text[:1000])
         raise RuntimeError("Gemini request failed.")
 
+    data = ensure_not_blocked(response.json())
     text = "".join(
         part.get("text", "")
-        for candidate in response.json().get("candidates", [])
+        for candidate in data.get("candidates", [])
         for part in candidate.get("content", {}).get("parts", [])
     )
     if not text:
@@ -180,6 +182,8 @@ class GenerateBlogAIAPIView(APIView):
                     status=status.HTTP_422_UNPROCESSABLE_ENTITY,
                 )
             return Response({"content": content})
+        except AIBlockedError as exc:
+            return Response({"detail": str(exc)}, status=status.HTTP_422_UNPROCESSABLE_ENTITY)
         except Exception:
             logger.exception("Blog AI generation failed.")
             return Response(

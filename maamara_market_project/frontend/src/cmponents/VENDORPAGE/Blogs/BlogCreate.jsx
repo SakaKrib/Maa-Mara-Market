@@ -25,6 +25,7 @@ const BlogCreate = ({ items = [] }) => {
   const [videoTrimSource, setVideoTrimSource] = useState(null);
   const [submitting, setSubmitting] = useState(false);
   const [aiLoading, setAiLoading] = useState(false);
+  const [aiUsed, setAiUsed] = useState(false);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
 
@@ -133,6 +134,7 @@ const BlogCreate = ({ items = [] }) => {
   };
 
   const resetForm = () => {
+    setAiUsed(false);
     setTitle("");
     setContent("");
     setItem("");
@@ -162,7 +164,8 @@ const BlogCreate = ({ items = [] }) => {
       const result = await generateBlogWithAI({ title: title.trim(), item, image, video });
       if (result?.content) {
         setContent(result.content);
-        setMessage("AI draft added. Review and edit it before submitting.");
+        setAiUsed(true);
+        setMessage("AI draft added. AI can make mistakes: check every fact, price and claim, and edit it before submitting.");
       }
     } catch (err) {
       setError(err?.response?.data?.detail || "Unable to generate the blog text right now.");
@@ -192,6 +195,7 @@ const BlogCreate = ({ items = [] }) => {
       const formData = new FormData();
       formData.append("title", title.trim());
       formData.append("content", content);
+      if (aiUsed) formData.append("ai_assisted", "true");
 
       if (item) {
         formData.append("item", item);
@@ -284,7 +288,7 @@ const BlogCreate = ({ items = [] }) => {
               </button>
             </div>
             <p className="mb-2 text-[11px] text-gray-500">
-              Uses the title, related item, and media to write the text. For AI text generation, videos must be 12 MB or smaller.
+              Uses the title, related item, and media to write the text. For AI text generation, videos must be 12 MB or smaller. AI drafts can contain mistakes. You are responsible for what you publish, and posts marked "Written with AI assistance" are reviewed by our team before they go live.
             </p>
             <div className="overflow-hidden rounded-[20px] border border-gray-300 bg-white focus-within:border-[#2563eb] focus-within:ring-2 focus-within:ring-[#2563eb]/10">
               <RichTextEditor value={content} onChange={setContent} />

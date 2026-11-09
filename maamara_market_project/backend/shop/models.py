@@ -262,6 +262,7 @@ class BlogPost(models.Model):
         related_name='vendor_blog_posts'
     )
     approved = models.BooleanField(default=False)
+    ai_assisted = models.BooleanField(default=False)
     title = models.CharField(max_length=255, blank=True)
     content = models.TextField(blank=True)
     image = models.ImageField(upload_to='blog_images/', null=True, blank=True)

@@ -103,6 +103,7 @@ export default function SingleBlogPage() {
             )}
 
             <div className="px-4 py-5 sm:px-6 sm:py-7">
+              {post.ai_assisted && <p className="mb-2 inline-block rounded-full bg-muted px-3 py-1 text-xs font-semibold text-muted-foreground">Written with AI assistance</p>}
               <h1 className="font-serif text-2xl font-semibold leading-tight text-card-foreground sm:text-3xl lg:text-4xl">
                 {post.title || "Community story"}
               </h1>

@@ -69,6 +69,9 @@ def _gemini_text_request(prompt, schema, image=None):
         },
     }
 
+    from .ai_safety import ensure_not_blocked, with_safety
+
+    with_safety(payload)
     response = requests.post(
         endpoint,
         headers={
@@ -83,7 +86,7 @@ def _gemini_text_request(prompt, schema, image=None):
         logger.error("Gemini vendor registration generation failed: %s", response.text[:1000])
         raise RuntimeError("Gemini request failed.")
 
-    data = response.json()
+    data = ensure_not_blocked(response.json())
     text_parts = []
 
     for candidate in data.get("candidates", []):
