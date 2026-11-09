@@ -73,6 +73,19 @@ class MonthlyAccountingTests(PayoutTestMixin, TestCase):
         self.assertEqual(data["vendors"][0]["owed"], data["vendor_share"])
         self.assertEqual(self.get(self.last_month)["orders"], 1)
 
+    def test_paid_item_without_vendor_does_not_break_monthly_accounting(self):
+        line = self.sale()
+        line.item.vendor = None
+        line.item.save(update_fields=["vendor"])
+
+        data = self.get(self.this_month)
+
+        self.assertEqual(data["orders"], 1)
+        self.assertEqual(len(data["vendors"]), 1)
+        self.assertIsNone(data["vendors"][0]["vendor_id"])
+        self.assertEqual(data["vendors"][0]["vendor"], "Unassigned vendor")
+        self.assertEqual(data["vendors"][0]["owed"], data["vendor_share"])
+
     def test_paid_payout_marks_amount_settled(self):
         line = self.sale()
         before = self.get(self.this_month)
