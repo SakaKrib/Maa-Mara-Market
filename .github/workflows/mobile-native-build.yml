@@ -458,6 +458,33 @@ jobs:
           print("Validated the Option B monochrome M tile + accent bar and Firebase default icon metadata.")
           PY
 
+      # The vendor sign-up form reads the device location through the WebView, which only
+      # works when the app declares the location permissions.
+      - name: Declare Android location permissions used by the web app
+        working-directory: ${{ env.FRONTEND_DIR }}
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import xml.etree.ElementTree as ET
+
+          manifest = Path("android/app/src/main/AndroidManifest.xml")
+          text = manifest.read_text()
+          wanted = ["android.permission.ACCESS_COARSE_LOCATION", "android.permission.ACCESS_FINE_LOCATION"]
+          lines = "".join(
+              f'    <uses-permission android:name="{name}" />\n'
+              for name in wanted
+              if f'android:name="{name}"' not in text
+          )
+          if lines:
+              index = text.find("<application")
+              if index < 0:
+                  raise SystemExit("Could not locate the application tag in AndroidManifest.xml")
+              text = text[:index] + lines.lstrip() + "    " + text[index:]
+              manifest.write_text(text)
+          ET.parse(manifest)
+          print("Android location permissions declared.")
+          PY
+
       # GitHub development builds use HTTPS Tailscale Serve to avoid Android WebView mixed-content blocking.
       # Use https://maamaramarket.com only for an explicitly requested production build.
       - name: Allow HTTP API access only when explicitly configured
@@ -952,6 +979,27 @@ jobs:
             echo "CocoaPods setup failed; retrying after 20 seconds."
             sleep 20
           done
+          # App Review requires a plain-language purpose string for every permission the
+          # WebView can ask for (photo/camera pickers for uploads, GPS for vendor sign-up).
+          python3 - <<'PY'
+          import plistlib
+          from pathlib import Path
+
+          plist_path = Path("ios/App/App/Info.plist")
+          with plist_path.open("rb") as handle:
+              info = plistlib.load(handle)
+          purposes = {
+              "NSCameraUsageDescription": "Maa Mara Market uses the camera so you can take photos of products, banners and your profile to upload.",
+              "NSPhotoLibraryUsageDescription": "Maa Mara Market needs access to your photos so you can choose pictures to upload for products, blogs, banners, messages and your profile.",
+              "NSMicrophoneUsageDescription": "Maa Mara Market uses the microphone only when you record a video to upload with a product or blog.",
+              "NSLocationWhenInUseUsageDescription": "Maa Mara Market uses your location while the app is open to fill in your business location when you register as a vendor.",
+          }
+          for key, text in purposes.items():
+              info.setdefault(key, text)
+          with plist_path.open("wb") as handle:
+              plistlib.dump(info, handle)
+          print("Added privacy purpose strings to Info.plist.")
+          PY
           # Sign in with Apple requires the App ID entitlement. The App ID must
           # also have Sign in with Apple enabled in the Apple Developer portal.
           cat > ios/App/App/App.entitlements <<'PLIST'
