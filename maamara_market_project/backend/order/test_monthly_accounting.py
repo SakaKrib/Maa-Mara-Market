@@ -132,3 +132,32 @@ class MonthlyAccountingTests(PayoutTestMixin, TestCase):
         self.sale()
         rows = self.client.get("/api/revenue-analytics/").json()
         self.assertEqual(rows[-1]["month_key"], self.this_month)
+
+
+class MonthlyAccountingRequestTests(PayoutTestMixin, TestCase):
+    """The panel must always get a readable JSON reply, whatever month text it sends."""
+
+    def setUp(self):
+        admin = get_user_model().objects.create_user(f"adm-{uuid4().hex[:6]}", password="x", is_staff=True)
+        self.client = APIClient()
+        self.client.force_authenticate(admin)
+
+    def test_month_formats_are_accepted(self):
+        for value in ("2026-11", "2026-1", "2026/11", "2026-11-05", "2026-11-05T10:00:00Z"):
+            res = self.client.get("/api/admin/monthly-accounting/", {"month": value})
+            self.assertEqual(res.status_code, 200, (value, res.content))
+
+    def test_invalid_month_gets_a_message(self):
+        for value in ("2026-13", "november", "20261"):
+            res = self.client.get("/api/admin/monthly-accounting/", {"month": value})
+            self.assertEqual(res.status_code, 400)
+            self.assertIn("detail", res.json())
+
+    def test_calculation_failure_returns_json_detail(self):
+        from unittest import mock
+
+        self.client.raise_request_exception = False
+        with mock.patch("order.monthly_accounting.month_figures", side_effect=RuntimeError("boom")):
+            res = self.client.get("/api/admin/monthly-accounting/", {"month": "2026-11"})
+        self.assertEqual(res.status_code, 500)
+        self.assertIn("detail", res.json())

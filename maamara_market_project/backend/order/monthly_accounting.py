@@ -7,6 +7,7 @@ Uses the same definitions as the dashboard chart (order/revenue.py):
 * settled  = part of that already sent to vendors in a paid payout
 * outstanding = owed - settled, i.e. still to be paid for that month.
 """
+import logging
 import re
 from collections import defaultdict
 from decimal import Decimal
@@ -22,7 +23,9 @@ from vendorDashboard.models import VendorPayout
 from .models import MonthlyReconciliation
 from .revenue import order_revenue, paid_orders, with_profit_prefetch, with_revenue
 
-MONTH_RE = re.compile(r"^(\d{4})-(0[1-9]|1[0-2])$")
+logger = logging.getLogger(__name__)
+# Accept 2026-11, 2026-1, 2026/11 and full dates such as 2026-11-05.
+MONTH_RE = re.compile(r"^\s*(\d{4})[-/](0?[1-9]|1[0-2])(?:[-/T ]\d{1,2}.*)?\s*$")
 TWO = Decimal("0.01")
 
 
@@ -163,8 +166,15 @@ def monthly_accounting(request):
     parsed = _parse_month(request.query_params.get("month") or timezone.localdate().strftime("%Y-%m"))
     if not parsed:
         return Response({"detail": "Use month=YYYY-MM."}, status=400)
-    figures = month_figures(*parsed)
-    figures["signoff"] = _signoff(figures)
+    try:
+        figures = month_figures(*parsed)
+        figures["signoff"] = _signoff(figures)
+    except Exception:
+        logger.exception("Monthly accounting failed for %s", parsed)
+        return Response(
+            {"detail": "The monthly accounts could not be calculated. Please try again; if it keeps happening the server log has the reason."},
+            status=500,
+        )
     return Response(figures)
 
 

@@ -58,9 +58,18 @@ export default function MonthlyAccountingPanel({ monthlyRevenue = [] }) {
       if (!silent) setNote(response.data?.signoff?.note || "");
     } catch (err) {
       if (!silent) setData(null);
-      const detail = err?.response?.data?.detail || err?.response?.data?.error;
+      const body = err?.response?.data;
+      const detail = body?.detail || body?.error;
       const status = err?.response?.status;
-      setError(detail || (status ? "Could not load this month's accounts (HTTP " + status + ")." : "Could not connect to the monthly accounting service."));
+      // A reply without a "detail" usually comes from a proxy or the framework, not our view.
+      // Show the start of it so the cause is visible instead of just the status code.
+      const snippet = typeof body === "string"
+        ? body.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim().slice(0, 160)
+        : "";
+      console.error("Monthly accounting request failed", { month: key, status, url: err?.config?.url, body });
+      setError(detail || (status
+        ? "Could not load this month's accounts (HTTP " + status + (snippet ? ": " + snippet : "") + ")."
+        : "Could not reach the server for the monthly accounts. Check your connection and try again."));
     } finally {
       setLoading(false);
     }
@@ -163,7 +172,12 @@ export default function MonthlyAccountingPanel({ monthlyRevenue = [] }) {
       </div>
 
       {loading && <p className="mt-4 text-sm text-muted-foreground">Loading…</p>}
-      {error && <p className="mt-4 text-sm text-red-600" role="alert">{error}</p>}
+      {error && (
+        <div className="mt-4 flex flex-wrap items-center gap-3 text-sm text-red-600" role="alert">
+          <p>{error}</p>
+          <button type="button" onClick={() => month && load(month)} className="rounded-full border border-red-300 px-3 py-1 text-xs font-semibold hover:bg-red-50">Try again</button>
+        </div>
+      )}
 
       {data && !loading && (
         <>
