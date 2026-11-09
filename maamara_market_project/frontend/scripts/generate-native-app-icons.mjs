@@ -86,24 +86,19 @@ if (platform === "android") {
     await render(markIconSvg(0.8, false), 1024).toBuffer()
   );
 
-  // Small status-bar notification icon (Option B): the solid M tile and
-  // vertical accent bar on transparent canvas. Android uses the alpha mask and
-  // applies its own light/dark notification tint; do not bake in a background.
-  const notificationIcon = `<?xml version="1.0" encoding="utf-8"?>
-<vector xmlns:android="http://schemas.android.com/apk/res/android"
-    android:width="24dp"
-    android:height="24dp"
-    android:viewportWidth="84"
-    android:viewportHeight="84">
-    <path
-        android:fillColor="#FFFFFFFF"
-        android:pathData="M8,20 H14 V76 H8 Z" />
-    <path
-        android:fillColor="#FFFFFFFF"
-        android:pathData="M28,20 C17,20 17,31 17,40 V76 H30 V43 L42,59 H50 L62,43 V76 H75 V40 C75,31 75,20 64,20 H59 L46,39 L33,20 Z" />
-</vector>
-`;
-  await fs.writeFile(path.join(drawable, "ic_stat_maamara.xml"), notificationIcon);
+  // Small status-bar notification icon: the Maa Mara "|m" monochrome mark.
+  // The PNGs in resources/notification-icon are white on a transparent canvas;
+  // Android uses only the alpha mask and applies its own notification tint.
+  // Any older vector version is removed so the resource name is not duplicated.
+  await fs.rm(path.join(drawable, "ic_stat_maamara.xml"), { force: true });
+  for (const density of ["mdpi", "hdpi", "xhdpi", "xxhdpi", "xxxhdpi"]) {
+    const dir = path.join(res, `drawable-${density}`);
+    await fs.mkdir(dir, { recursive: true });
+    await fs.copyFile(
+      path.join(root, "resources", "notification-icon", `ic_stat_maamara-${density}.png`),
+      path.join(dir, "ic_stat_maamara.png")
+    );
+  }
 
   const values = path.join(res, "values");
   await fs.mkdir(values, { recursive: true });

@@ -1,5 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { CalendarDays, ChevronDown, ChevronLeft, ChevronRight } from "lucide-react";
+import NativeAwareSelect from "../../src/components/NativeAwareSelect";
+
+const IS_NATIVE_APP = typeof window !== "undefined" && window.Capacitor?.isNativePlatform?.() === true;
 
 // Same look as the date-of-birth picker in the account menu: month and year
 // selectors, previous/next arrows and a day grid. The value is "YYYY-MM-DD".
@@ -146,36 +149,28 @@ export default function DatePicker({
             </button>
             <label className="relative min-w-0">
               <span className="sr-only">Month</span>
-              <select
-                value={month}
+              <NativeAwareSelect
+                value={String(month)}
                 onChange={(event) => setVisibleMonth(new Date(year, Number(event.target.value), 1, 12))}
+                options={MONTHS.map((monthName, index) => ({ value: String(index), label: monthName, disabled: monthBlocked(year, index) }))}
+                aria-label="Month"
                 className="h-9 w-full appearance-none rounded-lg border border-border bg-background pl-2 pr-6 text-xs font-semibold text-foreground outline-none focus:border-primary focus:ring-2 focus:ring-primary/15"
-              >
-                {MONTHS.map((monthName, index) => (
-                  <option key={monthName} value={index} disabled={monthBlocked(year, index)}>
-                    {monthName}
-                  </option>
-                ))}
-              </select>
-              <ChevronDown size={13} className="pointer-events-none absolute right-1.5 top-3 text-muted-foreground" />
+              />
+              {!IS_NATIVE_APP && <ChevronDown size={13} className="pointer-events-none absolute right-1.5 top-3 text-muted-foreground" />}
             </label>
             <label className="relative min-w-0">
               <span className="sr-only">Year</span>
-              <select
-                value={year}
+              <NativeAwareSelect
+                value={String(year)}
                 onChange={(event) => {
                   const nextYear = Number(event.target.value);
                   setVisibleMonth(clampMonth(new Date(nextYear, month, 1, 12)));
                 }}
+                options={yearOptions.map((optionYear) => ({ value: String(optionYear), label: String(optionYear) }))}
+                aria-label="Year"
                 className="h-9 w-full appearance-none rounded-lg border border-border bg-background pl-2 pr-6 text-xs font-semibold text-foreground outline-none focus:border-primary focus:ring-2 focus:ring-primary/15"
-              >
-                {yearOptions.map((optionYear) => (
-                  <option key={optionYear} value={optionYear}>
-                    {optionYear}
-                  </option>
-                ))}
-              </select>
-              <ChevronDown size={13} className="pointer-events-none absolute right-1.5 top-3 text-muted-foreground" />
+              />
+              {!IS_NATIVE_APP && <ChevronDown size={13} className="pointer-events-none absolute right-1.5 top-3 text-muted-foreground" />}
             </label>
             <button
               type="button"

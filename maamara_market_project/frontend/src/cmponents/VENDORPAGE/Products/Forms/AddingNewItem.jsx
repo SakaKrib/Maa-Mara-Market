@@ -378,7 +378,8 @@ const PhoneSelect = React.forwardRef(function PhoneSelect(
 
 const AppSelect = React.forwardRef(function AppSelect(props, ref) {
   const isPhone = useIsPhoneViewport();
-  if (!isPhone) return <select ref={ref} {...props} />;
+  const isNativeApp = typeof window !== "undefined" && window.Capacitor?.isNativePlatform?.() === true;
+  if (!isPhone && !isNativeApp) return <select ref={ref} {...props} />;
   return <PhoneSelect ref={ref} {...props} />;
 });
 

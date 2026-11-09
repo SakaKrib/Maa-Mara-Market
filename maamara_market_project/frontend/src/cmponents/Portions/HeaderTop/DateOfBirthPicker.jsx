@@ -1,5 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { CalendarDays, ChevronDown, ChevronLeft, ChevronRight } from "lucide-react";
+import NativeAwareSelect from "../../../components/NativeAwareSelect";
+
+const IS_NATIVE_APP = typeof window !== "undefined" && window.Capacitor?.isNativePlatform?.() === true;
 
 const MONTHS = [
   "January", "February", "March", "April", "May", "June",
@@ -112,37 +115,29 @@ export default function DateOfBirthPicker({ value = "", onChange, disabled = fal
             </button>
             <label className="relative min-w-0">
               <span className="sr-only">Month</span>
-              <select
-                value={month}
+              <NativeAwareSelect
+                value={String(month)}
                 onChange={(event) => changeMonth(Number(event.target.value))}
+                options={MONTHS.map((name, index) => ({ value: String(index), label: name, disabled: year === currentYear && index > today.getMonth() }))}
+                aria-label="Month"
                 className="h-9 w-full appearance-none rounded-lg border border-border bg-background pl-2 pr-6 text-xs font-semibold text-foreground outline-none focus:border-primary focus:ring-2 focus:ring-primary/15"
-              >
-                {MONTHS.map((name, index) => (
-                  <option key={name} value={index} disabled={year === currentYear && index > today.getMonth()}>
-                    {name}
-                  </option>
-                ))}
-              </select>
-              <ChevronDown size={13} className="pointer-events-none absolute right-1.5 top-3 text-muted-foreground" />
+              />
+              {!IS_NATIVE_APP && <ChevronDown size={13} className="pointer-events-none absolute right-1.5 top-3 text-muted-foreground" />}
             </label>
             <label className="relative min-w-0">
               <span className="sr-only">Year</span>
-              <select
-                value={year}
+              <NativeAwareSelect
+                value={String(year)}
                 onChange={(event) => {
                   const nextYear = Number(event.target.value);
                   const safeMonth = nextYear === currentYear && month > today.getMonth() ? today.getMonth() : month;
                   setVisibleMonth(new Date(nextYear, safeMonth, 1, 12));
                 }}
+                options={yearOptions.map((optionYear) => ({ value: String(optionYear), label: String(optionYear) }))}
+                aria-label="Year"
                 className="h-9 w-full appearance-none rounded-lg border border-border bg-background pl-2 pr-6 text-xs font-semibold text-foreground outline-none focus:border-primary focus:ring-2 focus:ring-primary/15"
-              >
-                {yearOptions.map((optionYear) => (
-                  <option key={optionYear} value={optionYear}>
-                    {optionYear}
-                  </option>
-                ))}
-              </select>
-              <ChevronDown size={13} className="pointer-events-none absolute right-1.5 top-3 text-muted-foreground" />
+              />
+              {!IS_NATIVE_APP && <ChevronDown size={13} className="pointer-events-none absolute right-1.5 top-3 text-muted-foreground" />}
             </label>
             <button
               type="button"

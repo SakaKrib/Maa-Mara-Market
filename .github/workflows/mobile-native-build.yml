@@ -423,7 +423,8 @@ jobs:
       - name: Configure Firebase default notification icon
         working-directory: ${{ env.FRONTEND_DIR }}
         run: |
-          test -s android/app/src/main/res/drawable/ic_stat_maamara.xml
+          for d in mdpi hdpi xhdpi xxhdpi xxxhdpi; do test -s android/app/src/main/res/drawable-$d/ic_stat_maamara.png; done
+          test ! -e android/app/src/main/res/drawable/ic_stat_maamara.xml
           python3 - <<'PY'
           from pathlib import Path
           import re
@@ -447,15 +448,13 @@ jobs:
           manifest.write_text(source)
 
           ET.parse(manifest)
-          icon = ET.parse("android/app/src/main/res/drawable/ic_stat_maamara.xml").getroot()
           if metadata_name not in manifest.read_text() or "@drawable/ic_stat_maamara" not in manifest.read_text():
               raise SystemExit("Firebase notification icon metadata was not installed")
-          paths = icon.findall("path")
-          if len(paths) != 2:
-              raise SystemExit("Option B notification icon must contain exactly two paths: accent bar and M tile")
-          if any(path.get("{http://schemas.android.com/apk/res/android}strokeColor") for path in paths):
-              raise SystemExit("Option B notification icon must use solid shapes without outlines")
-          print("Validated the Option B monochrome M tile + accent bar and Firebase default icon metadata.")
+          for density in ("mdpi", "hdpi", "xhdpi", "xxhdpi", "xxxhdpi"):
+              data = Path(f"android/app/src/main/res/drawable-{density}/ic_stat_maamara.png").read_bytes()
+              if not data.startswith(b"\x89PNG\r\n\x1a\n"):
+                  raise SystemExit(f"{density} notification icon is not a PNG")
+          print("Validated the |m monochrome notification icon PNGs and Firebase default icon metadata.")
           PY
 
       # The vendor sign-up form reads the device location through the WebView, which only
