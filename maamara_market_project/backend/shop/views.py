@@ -634,6 +634,10 @@ class BlogPostViewSet(viewsets.ModelViewSet):
         serializer = CommentSerializer(data=request.data)
         if not serializer.is_valid():
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        from core.content_filter import BLOCKED_MESSAGE, check_text
+
+        if not check_text(serializer.validated_data.get('text', ''))[0]:
+            return Response({'detail': BLOCKED_MESSAGE}, status=status.HTTP_400_BAD_REQUEST)
 
         generated_visitor_id = False
         if request.user.is_authenticated:

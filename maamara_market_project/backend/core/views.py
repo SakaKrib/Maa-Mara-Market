@@ -851,6 +851,9 @@ class ReviewViewSet(viewsets.ModelViewSet):
         return visible_reviews(Review.objects.filter(item_id=item_id), self.request).order_by("-created_at")
 
     def perform_create(self, serializer):
+        from .content_filter import reject_if_blocked
+
+        reject_if_blocked(serializer.validated_data.get('review_text', ''))
         item_id = self.kwargs.get('item_id')
         user = self.request.user if self.request.user.is_authenticated else None
         visitor_id = None if user else self.request.COOKIES.get("visitorId")

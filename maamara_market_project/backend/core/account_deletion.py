@@ -104,6 +104,20 @@ def _delete_files(instances, *fields):
                     logger.warning("Could not remove file for %s", obj.__class__.__name__)
 
 
+def _revoke_apple_access(user):
+    """Apple requires apps to revoke Sign in with Apple tokens when an account is deleted."""
+    from core.models import Profile
+    from ReactSerializers.apple_auth import revoke_apple_token
+
+    profile = Profile.objects.filter(user=user).only("apple_refresh_token", "apple_token_client_id").first()
+    if not profile or not profile.apple_refresh_token:
+        return False
+    try:
+        return revoke_apple_token(profile.apple_refresh_token, profile.apple_token_client_id)
+    except Exception:  # never block a deletion on Apple being unreachable
+        return False
+
+
 @transaction.atomic
 def anonymise_user(user, channel="app"):
     from allauth.account.models import EmailAddress
@@ -119,6 +133,7 @@ def anonymise_user(user, channel="app"):
     if blockers:
         raise PermissionError(blockers[0])
 
+    _revoke_apple_access(user)
     original_email = user.email
     user_pk = user.pk
 

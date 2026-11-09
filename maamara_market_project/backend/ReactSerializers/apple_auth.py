@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import logging
 import time
 import urllib.error
 import urllib.parse
@@ -20,9 +21,12 @@ from core.models import Profile
 from allauth.socialaccount.models import SocialAccount
 
 User = get_user_model()
+logger = logging.getLogger(__name__)
+
 APPLE_ISSUER = "https://appleid.apple.com"
 APPLE_JWKS_URL = "https://appleid.apple.com/auth/keys"
 APPLE_TOKEN_URL = "https://appleid.apple.com/auth/token"
+APPLE_REVOKE_URL = "https://appleid.apple.com/auth/revoke"
 _jwk_client = None
 
 
@@ -47,7 +51,7 @@ def apple_configuration_is_ready() -> bool:
     )
 
 
-def _apple_client_secret() -> str:
+def _apple_client_secret(client_id=None) -> str:
     if not apple_configuration_is_ready():
         raise AuthenticationFailed("Apple sign-in is not fully configured on the server.")
     now = int(time.time())
@@ -58,7 +62,7 @@ def _apple_client_secret() -> str:
                 "iat": now,
                 "exp": now + 300,
                 "aud": APPLE_ISSUER,
-                "sub": settings.APPLE_CLIENT_ID,
+                "sub": client_id or settings.APPLE_CLIENT_ID,
             },
             settings.APPLE_PRIVATE_KEY,
             algorithm="ES256",
@@ -68,19 +72,23 @@ def _apple_client_secret() -> str:
         raise AuthenticationFailed("Apple sign-in credentials could not be loaded.") from exc
 
 
-def exchange_apple_authorization_code(code: str) -> dict:
+def exchange_apple_authorization_code(code: str, native: bool = False) -> dict:
+    """Exchange an authorization code. Native iOS codes belong to the bundle ID and have no redirect URI."""
     if not apple_configuration_is_ready():
         raise AuthenticationFailed("Apple sign-in is not configured.")
     if not isinstance(code, str) or not code.strip() or len(code) > 4096:
         raise AuthenticationFailed("Apple authorization code is missing or invalid.")
 
-    body = urllib.parse.urlencode({
-        "client_id": settings.APPLE_CLIENT_ID,
-        "client_secret": _apple_client_secret(),
+    client_id = settings.APPLE_BUNDLE_ID if native else settings.APPLE_CLIENT_ID
+    fields = {
+        "client_id": client_id,
+        "client_secret": _apple_client_secret(client_id),
         "code": code.strip(),
         "grant_type": "authorization_code",
-        "redirect_uri": settings.APPLE_REDIRECT_URI,
-    }).encode("utf-8")
+    }
+    if not native:
+        fields["redirect_uri"] = settings.APPLE_REDIRECT_URI
+    body = urllib.parse.urlencode(fields).encode("utf-8")
     request = urllib.request.Request(
         APPLE_TOKEN_URL,
         data=body,
@@ -94,7 +102,45 @@ def exchange_apple_authorization_code(code: str) -> dict:
         raise AuthenticationFailed("Apple could not validate the sign-in request.") from exc
     if not isinstance(payload.get("id_token"), str) or not payload["id_token"]:
         raise AuthenticationFailed("Apple did not return a valid identity token.")
+    payload["_client_id"] = client_id
     return payload
+
+
+def store_apple_refresh_token(user, token_response: dict) -> None:
+    """Keep Apple's refresh token so access can be revoked when the user deletes their account."""
+    token = str((token_response or {}).get("refresh_token") or "").strip()
+    if not token:
+        return
+    from core.models import Profile
+
+    Profile.objects.filter(user=user).update(
+        apple_refresh_token=token[:512],
+        apple_token_client_id=str(token_response.get("_client_id") or settings.APPLE_CLIENT_ID)[:255],
+    )
+
+
+def revoke_apple_token(refresh_token: str, client_id: str) -> bool:
+    """Tell Apple to revoke the user's Sign in with Apple grant. Returns True when Apple accepts it."""
+    if not refresh_token or not apple_configuration_is_ready():
+        return False
+    body = urllib.parse.urlencode({
+        "client_id": client_id,
+        "client_secret": _apple_client_secret(client_id),
+        "token": refresh_token,
+        "token_type_hint": "refresh_token",
+    }).encode("utf-8")
+    request = urllib.request.Request(
+        APPLE_REVOKE_URL,
+        data=body,
+        headers={"Content-Type": "application/x-www-form-urlencoded"},
+        method="POST",
+    )
+    try:
+        with urllib.request.urlopen(request, timeout=12) as response:
+            return 200 <= response.status < 300
+    except (urllib.error.URLError, TimeoutError, OSError, AuthenticationFailed):
+        logger.warning("Apple token revocation failed")
+        return False
 
 
 def verify_apple_identity_token(identity_token: str, expected_nonce: str) -> dict:

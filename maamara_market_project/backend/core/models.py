@@ -18,6 +18,9 @@ class Profile(models.Model):
     # Nullable values preserve password/visitor-created accounts.
     google_subject = models.CharField(max_length=255, unique=True, null=True, blank=True, db_index=True)
     apple_subject = models.CharField(max_length=255, unique=True, null=True, blank=True, db_index=True)
+    # Needed only to revoke Sign in with Apple access when the account is deleted.
+    apple_refresh_token = models.CharField(max_length=512, null=True, blank=True)
+    apple_token_client_id = models.CharField(max_length=255, blank=True, default="")
     customer = models.OneToOneField("oder.Customer", on_delete=models.CASCADE, null=True, blank=True)
     profile_picture = models.ImageField(upload_to='profile_pictures/', blank=True, null=True)
     date_of_birth = models.DateField(blank=True, null=True)

@@ -363,6 +363,11 @@ def messaging_messages(request, conversation_id):
             _validate_message_image(image)
         except ValidationError as exc:
             return Response({"error": str(exc)}, status=400)
+    if body and not (request.user.is_staff or request.user.is_superuser):
+        from .content_filter import BLOCKED_MESSAGE, check_text
+
+        if not check_text(body, allow_contact=True)[0]:
+            return Response({"error": BLOCKED_MESSAGE}, status=400)
 
     message = DirectMessage.objects.create(
         conversation=conversation,

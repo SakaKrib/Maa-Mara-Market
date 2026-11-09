@@ -132,3 +132,37 @@ class AccountDeletionTests(TestCase):
         self.assertEqual(AccountDeletionRecord.objects.get().status, "pending_review")
         self.user.refresh_from_db()
         self.assertTrue(self.user.is_active)
+
+
+@override_settings(RATE_LIMITS_ENABLED=False, PUBLIC_PATH_PREFIX="/")
+class AppleRevocationTests(TestCase):
+    def test_deletion_revokes_apple_token_and_survives_failure(self):
+        from unittest import mock
+        from core.account_deletion import anonymise_user
+
+        user = User.objects.create_user("apl", "apl@example.com", "pw-12345!x")
+        Profile.objects.update_or_create(user=user, defaults={
+            "phone_number": "0700", "apple_refresh_token": "r-token", "apple_token_client_id": "com.example.app",
+        })
+        with mock.patch("ReactSerializers.apple_auth.revoke_apple_token", return_value=True) as revoke:
+            anonymise_user(user)
+        revoke.assert_called_once_with("r-token", "com.example.app")
+        self.assertFalse(Profile.objects.filter(user=user).exists())
+
+        other = User.objects.create_user("apl2", "apl2@example.com", "pw-12345!x")
+        Profile.objects.update_or_create(user=other, defaults={"phone_number": "0701", "apple_refresh_token": "t2",
+                                                               "apple_token_client_id": "svc"})
+        with mock.patch("ReactSerializers.apple_auth.revoke_apple_token", side_effect=RuntimeError("down")):
+            anonymise_user(other)
+        other.refresh_from_db()
+        self.assertFalse(other.is_active)
+
+    def test_user_without_apple_token_skips_revocation(self):
+        from unittest import mock
+        from core.account_deletion import anonymise_user
+
+        user = User.objects.create_user("noapl", "n@example.com", "pw-12345!x")
+        Profile.objects.update_or_create(user=user, defaults={"phone_number": "0702"})
+        with mock.patch("ReactSerializers.apple_auth.revoke_apple_token") as revoke:
+            anonymise_user(user)
+        revoke.assert_not_called()

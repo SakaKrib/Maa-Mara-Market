@@ -35,6 +35,7 @@ from .apple_auth import (
     apple_configuration_is_ready,
     authenticate_apple_credential,
     exchange_apple_authorization_code,
+    store_apple_refresh_token,
 )
 
 
@@ -382,6 +383,7 @@ class AppleLoginCallbackView(APIView):
                 expected_nonce=nonce,
                 supplied_name=full_name,
             )
+            store_apple_refresh_token(user, token_response)
             response = _issue_local_session(request, user, redirect_response=True)
             callback_path = f"{str(getattr(settings, 'PUBLIC_PATH_PREFIX', '') or '').rstrip('/')}/api/apple/callback/"
             response.delete_cookie(APPLE_STATE_COOKIE, path=callback_path or "/api/apple/callback/", samesite="None")
@@ -424,6 +426,13 @@ class AppleLoginView(APIView):
                 expected_nonce=expected_nonce,
                 supplied_name=supplied_name if isinstance(supplied_name, str) else "",
             )
+            # Optional: the app may also send Apple's authorization code so we can revoke access on deletion.
+            auth_code = request.data.get("authorization_code")
+            if isinstance(auth_code, str) and auth_code.strip() and len(auth_code) <= 4096:
+                try:
+                    store_apple_refresh_token(user, exchange_apple_authorization_code(auth_code.strip(), native=True))
+                except Exception:
+                    logger.info("Could not store Apple refresh token for native sign-in")
             return _issue_local_session(request, user)
         except AuthenticationFailed as exc:
             return Response(

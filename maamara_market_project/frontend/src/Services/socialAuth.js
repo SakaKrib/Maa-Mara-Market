@@ -168,6 +168,9 @@ export const signInWithApple = async () => {
   const { data } = await api.post("/api/apple/login/", {
     id_token: identityToken,
     nonce: rawNonce,
+    ...(result.authorizationCode || result.authorization_code
+      ? { authorization_code: result.authorizationCode || result.authorization_code }
+      : {}),
     ...(fullName ? { full_name: fullName } : {}),
     visitorId: getVisitorIdentity(),
   });
