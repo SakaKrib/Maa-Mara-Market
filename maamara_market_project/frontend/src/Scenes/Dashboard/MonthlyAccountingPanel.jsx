@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
+import { ChevronDown, CalendarDays } from "lucide-react";
 import api, { getWebSocketUrl } from "../../Services/Api";
 
 const kes = (value) => `KES ${Number(value || 0).toLocaleString(undefined, { maximumFractionDigits: 2 })}`;
@@ -17,12 +18,13 @@ const StatusBadge = ({ status }) => {
 
 const monthLabel = (key) => {
   const [year, month] = key.split("-").map(Number);
-  return new Date(year, month - 1, 1).toLocaleString(undefined, { month: "long", year: "numeric" });
+  return new Date(Date.UTC(year, month - 1, 1)).toLocaleString(undefined, { month: "long", year: "numeric", timeZone: "UTC" });
 };
 
 const currentKey = () => {
-  const now = new Date();
-  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+  const parts = new Intl.DateTimeFormat("en-CA", { timeZone: "Africa/Nairobi", year: "numeric", month: "2-digit" }).formatToParts(new Date());
+  const values = Object.fromEntries(parts.map(({ type, value }) => [type, value]));
+  return values.year + "-" + values.month;
 };
 
 /**
@@ -37,6 +39,7 @@ export default function MonthlyAccountingPanel({ monthlyRevenue = [] }) {
   }, [monthlyRevenue]);
 
   const [month, setMonth] = useState(months[0]);
+  const [monthMenuOpen, setMonthMenuOpen] = useState(false);
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -55,7 +58,9 @@ export default function MonthlyAccountingPanel({ monthlyRevenue = [] }) {
       if (!silent) setNote(response.data?.signoff?.note || "");
     } catch (err) {
       if (!silent) setData(null);
-      setError(err?.response?.data?.detail || "Could not load this month's accounts.");
+      const detail = err?.response?.data?.detail || err?.response?.data?.error;
+      const status = err?.response?.status;
+      setError(detail || (status ? "Could not load this month's accounts (HTTP " + status + ")." : "Could not connect to the monthly accounting service."));
     } finally {
       setLoading(false);
     }
@@ -120,13 +125,32 @@ export default function MonthlyAccountingPanel({ monthlyRevenue = [] }) {
           <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Accountability</p>
           <h2 className="mt-1 text-lg font-bold text-card-foreground">Monthly accounting</h2>
         </div>
-        <label className="flex items-center gap-2 text-sm">
+        <div className="relative z-20 flex items-center gap-2 text-sm">
           <span className="text-muted-foreground">Month</span>
-          <select value={month} onChange={(e) => setMonth(e.target.value)}
-            className="rounded-lg border border-border bg-background px-3 py-2 text-sm">
-            {months.map((key) => <option key={key} value={key}>{monthLabel(key)}</option>)}
-          </select>
-        </label>
+          <button type="button" aria-haspopup="menu" aria-expanded={monthMenuOpen}
+            aria-label={"Choose accounting month, currently " + monthLabel(month)}
+            onClick={() => setMonthMenuOpen((open) => !open)}
+            className="inline-flex min-h-10 min-w-[190px] items-center justify-between gap-3 rounded-xl border border-border bg-card px-3 py-2 text-left text-sm font-semibold text-card-foreground shadow-sm transition hover:bg-muted focus:outline-none focus:ring-2 focus:ring-primary/30">
+            <span className="inline-flex min-w-0 items-center gap-2">
+              <CalendarDays className="h-4 w-4 shrink-0 text-primary" />
+              <span className="truncate">{monthLabel(month)}</span>
+            </span>
+            <ChevronDown className={"h-4 w-4 shrink-0 text-muted-foreground transition-transform " + (monthMenuOpen ? "rotate-180" : "")} />
+          </button>
+          {monthMenuOpen && (
+            <div role="menu" aria-label="Choose accounting month" className="absolute right-0 top-full mt-2 max-h-64 w-64 max-w-[calc(100vw-2rem)] overflow-y-auto rounded-2xl border border-border bg-card p-1.5 shadow-xl">
+              <p className="px-3 pb-1 pt-2 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Available accounting months</p>
+              {months.map((key) => (
+                <button key={key} type="button" role="menuitem" aria-current={key === month ? "true" : undefined}
+                  onClick={() => { setMonth(key); setMonthMenuOpen(false); }}
+                  className={"flex w-full items-center justify-between rounded-xl px-3 py-2.5 text-left text-sm transition " + (key === month ? "bg-primary/10 font-semibold text-primary" : "text-card-foreground hover:bg-muted")}>
+                  <span>{monthLabel(key)}</span>
+                  {key === month && <span className="text-xs font-bold">Selected</span>}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
 
       <div className="mt-3 flex flex-wrap gap-2">
