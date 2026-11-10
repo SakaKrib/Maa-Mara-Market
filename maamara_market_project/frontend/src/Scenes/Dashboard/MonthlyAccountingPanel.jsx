@@ -66,9 +66,10 @@ export default function MonthlyAccountingPanel({ monthlyRevenue = [] }) {
       const snippet = typeof body === "string"
         ? body.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim().slice(0, 160)
         : "";
+      const requestedUrl = (err?.config?.baseURL || "") + (err?.config?.url || "");
       console.error("Monthly accounting request failed", { month: key, status, url: err?.config?.url, body });
       setError(detail || (status
-        ? "Could not load this month's accounts (HTTP " + status + (snippet ? ": " + snippet : "") + ")."
+        ? "Could not load this month's accounts (HTTP " + status + (snippet ? ": " + snippet : "") + ") at " + requestedUrl + "."
         : "Could not reach the server for the monthly accounts. Check your connection and try again."));
     } finally {
       setLoading(false);
