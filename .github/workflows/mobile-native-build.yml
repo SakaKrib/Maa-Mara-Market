@@ -23,9 +23,10 @@ env:
   # /maamara for shared-hostname testing or / for a standalone production domain.
   MOBILE_API_URL: ${{ secrets.MAAMARAMARKET_PUBLIC_BASE_URL }}
   # Set repository variable MAAMARAMARKET_PUBLIC_PATH_PREFIX to / for root-domain production.
-  MOBILE_API_PATH_PREFIX: ${{ vars.MAAMARAMARKET_PUBLIC_PATH_PREFIX || '/maamara' }}
+  MOBILE_API_PATH_PREFIX: ${{ vars.MAAMARAMARKET_PUBLIC_PATH_PREFIX || secrets.MAAMARAMARKET_PUBLIC_PATH_PREFIX || '/maamara' }}
+  # APP_LINK_HOSTS may be stored as a repository variable OR a secret (both are read).
   # Comma-separated hosts the app opens for (must serve /.well-known/assetlinks.json at their root).
-  APP_LINK_HOSTS: ${{ vars.APP_LINK_HOSTS || 'maamaramarket.com' }}
+  APP_LINK_HOSTS: ${{ vars.APP_LINK_HOSTS || secrets.APP_LINK_HOSTS || 'maamaramarket.com' }}
 
 jobs:
 
