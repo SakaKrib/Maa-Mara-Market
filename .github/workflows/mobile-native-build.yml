@@ -996,6 +996,9 @@ jobs:
           }
           for key, text in purposes.items():
               info.setdefault(key, text)
+          # The app only uses standard HTTPS/TLS from the operating system, which is exempt
+          # from US export documentation; declaring it skips the per-upload encryption prompt.
+          info.setdefault("ITSAppUsesNonExemptEncryption", False)
           with plist_path.open("wb") as handle:
               plistlib.dump(info, handle)
           print("Added privacy purpose strings to Info.plist.")
