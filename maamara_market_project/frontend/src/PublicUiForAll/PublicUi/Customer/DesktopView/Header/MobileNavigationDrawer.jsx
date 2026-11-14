@@ -285,7 +285,7 @@ const MobileNavigationDrawer = ({ open, onClose, nativeApp = false }) => {
                     </button>
 
                     {isOpen && (
-                      <div className="mm-mobile-category-list">
+                      <div className="mm-mobile-category-list mm-mobile-category-list--collections">
                         {collection.categories.map((category) => (
                           <div key={category.id}>
                             <button
