@@ -35,7 +35,34 @@ import {
   LifeBuoy,
   MapPin,
   Phone,
+  Sofa,
+  Car,
+  PawPrint,
+  Gift,
+  Apple,
+  CupSoda,
+  Wheat,
 } from "lucide-react";
+
+// One icon per department, chosen from its name (vendors can also add custom departments,
+// which fall back to the shop icon).
+const DEPARTMENT_ICON_RULES = [
+  [/organic.*(drink|beverage)|drink|beverage/i, CupSoda],
+  [/condiment|spice/i, Wheat],
+  [/organic|food|grocer/i, Apple],
+  [/fashion|apparel|cloth/i, Shirt],
+  [/home|living|furniture|kitchen/i, Sofa],
+  [/beauty|personal care|cosmetic/i, Sparkles],
+  [/baby|kid|toy|child/i, Baby],
+  [/automotive|vehicle|car\b/i, Car],
+  [/sport|outdoor|fitness/i, Dumbbell],
+  [/pet/i, PawPrint],
+  [/season|gift|special/i, Gift],
+];
+const departmentIcon = (name) => {
+  const rule = DEPARTMENT_ICON_RULES.find(([pattern]) => pattern.test(name || ""));
+  return rule ? rule[1] : Store;
+};
 
 const COLLECTION_ICONS = { women: Shirt, men: Users, sports: Dumbbell, children: Baby, unisex: Sparkles };
 
@@ -206,7 +233,7 @@ const MobileNavigationDrawer = ({ open, onClose, nativeApp = false }) => {
                     onClick={() => toggleCategory("department-" + department.id)}
                   >
                     <span className="flex items-center gap-3">
-                      <Shirt size={19} strokeWidth={1.8} />
+                      {React.createElement(departmentIcon(department.name), { size: 19, strokeWidth: 1.8 })}
                       {department.name}
                     </span>
                     <ChevronDown

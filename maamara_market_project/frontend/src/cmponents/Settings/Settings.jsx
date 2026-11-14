@@ -133,7 +133,7 @@ const Settings = () => {
         });
       })
       .catch((err) => {
-        if (active) setError(err.response?.data?.detail || "Could not load the contact details.");
+        if (active) setError(err.response?.data?.detail || ("Could not load the contact details" + (err.response?.status ? " (HTTP " + err.response.status + "). The backend may need to be restarted and migrated." : ". Check your connection.")));
       })
       .finally(() => { if (active) setContactLoading(false); });
     return () => { active = false; };
