@@ -276,10 +276,11 @@ LOGOUT_REDIRECT_URL = f"{PUBLIC_PATH_PREFIX}/login/" if PUBLIC_PATH_PREFIX else 
 # Allauth remains installed for existing account/email functionality. Google and
 # Apple provider redirects are intentionally not registered; social sign-in uses
 # the dedicated ID-token endpoints below.
-ACCOUNT_EMAIL_REQUIRED = True
-ACCOUNT_USERNAME_REQUIRED = False
-ACCOUNT_AUTHENTICATION_METHOD = "email"
+# Current django-allauth settings (the old EMAIL_REQUIRED / USERNAME_REQUIRED /
+# AUTHENTICATION_METHOD names are deprecated). Same behaviour: email login,
+# email required, no username.
 ACCOUNT_LOGIN_METHODS = {"email"}
+ACCOUNT_SIGNUP_FIELDS = ["email*", "password1*", "password2*"]
 ACCOUNT_EMAIL_VERIFICATION = "none"
 ACCOUNT_UNIQUE_EMAIL = True
 SOCIALACCOUNT_EMAIL_VERIFICATION = "none"
