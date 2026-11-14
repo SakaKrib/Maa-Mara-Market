@@ -56,7 +56,7 @@ const DrawerFooterLink = ({ to, href, icon: Icon, onClick, children }) => {
 
 const MobileNavigationDrawer = ({ open, onClose, nativeApp = false }) => {
   const { data, loading } = useCategories();
-  const { collections } = useCollections();
+  const { collections: serverCollections } = useCollections();
   const contact = useSiteContact();
   const navigate = useNavigate();
   const { isAuthenticated, user, logout } = useAuth();
@@ -73,6 +73,39 @@ const MobileNavigationDrawer = ({ open, onClose, nativeApp = false }) => {
 
     return section?.departments || [];
   }, [data]);
+
+  // Normally the server supplies the collections with real "new" flags. If it cannot
+  // be reached (or is an older backend), build the same lists from the category tree
+  // so the Collections section never vanishes; they just carry no badges.
+  const collections = useMemo(() => {
+    if (serverCollections.length > 0) return serverCollections;
+    const fashion = departments.find((d) => /fashion|apparel/i.test(d?.name || ""));
+    const sports = departments.find((d) => /sport|outdoor/i.test(d?.name || ""));
+    const pick = (list, patterns) => {
+      const out = [];
+      patterns.forEach((pattern) => {
+        const match = (list || []).find((c) => new RegExp(pattern, "i").test(c?.name || ""));
+        if (match && !out.includes(match)) out.push(match);
+      });
+      return out;
+    };
+    const shape = (cats) => cats.map((c) => ({
+      id: c.id,
+      name: c.name,
+      new_count: 0,
+      subcategories: (c.subcategories || []).map((sub) => ({ id: sub.id, name: sub.name, new_count: 0 })),
+    }));
+    const defs = [
+      ["women", "Women", pick(fashion?.categories, ["women", "accessor", "shoes"])],
+      ["men", "Men", pick(fashion?.categories, ["^men", "shoes"])],
+      ["sports", "Sports", (sports?.categories || []).slice(0, 3)],
+      ["children", "Children", pick(fashion?.categories, ["children|kids", "children.*shoes|kids.*shoes"])],
+      ["unisex", "Unisex", pick(fashion?.categories, ["unisex"])],
+    ];
+    return defs
+      .filter(([, , cats]) => cats.length > 0)
+      .map(([key, label, cats]) => ({ key, label, is_new: false, new_count: 0, categories: shape(cats) }));
+  }, [serverCollections, departments]);
 
   useEffect(() => {
     if (!open) {
