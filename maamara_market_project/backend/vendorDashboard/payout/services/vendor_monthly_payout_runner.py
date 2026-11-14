@@ -21,6 +21,7 @@ from vendorDashboard.payout.services.payout_guard import (
 from vendorDashboard.payout.services.payment_processors import payment_processors
 from vendorDashboard.payout.services.paypal_payouts import reconcile_paypal_payout
 from vendorDashboard.payout.services.kcb_payouts import reconcile_kcb_payout
+from vendorDashboard.sales_overview import SUBMITTED_PAYOUT
 from vendorDashboard.views import get_vendor_earnings  # assuming your current function lives here
 from rest_framework.permissions import IsAdminUser
 from rest_framework.decorators import permission_classes,api_view
@@ -87,6 +88,16 @@ def generate_monthly_payouts(request):
             "BankAccountName": vendor.bank_account_name,
         }
         try:
+            # Earlier months that were generated but never sent: recalculate them so
+            # late-settling sales are included and refunded/returned ones are dropped.
+            # (Unpaid sales never expire: they stay in the first payout that can still change.)
+            for old in (
+                VendorPayout.objects.filter(vendor=vendor, paid=False, payout_period_end__lt=start_date)
+                .exclude(SUBMITTED_PAYOUT)
+                .values_list("payout_period_start", "payout_period_end").distinct()
+            ):
+                get_vendor_earnings(vendor, old[0], old[1])
+
             result = get_vendor_earnings(vendor, start_date, end_date)
             payout = result["payout"]
             summary["generated"].append({

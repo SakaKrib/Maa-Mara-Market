@@ -21,6 +21,7 @@ from decimal import Decimal, InvalidOperation
 
 from django.conf import settings
 from django.db import transaction
+from django.db.models import Q
 from django.utils import timezone
 
 logger = logging.getLogger(__name__)
@@ -31,6 +32,7 @@ DESTINATION_HOLD = "DESTINATION_HOLD"
 APPROVAL_REQUESTED = "APPROVAL_REQUESTED"
 SECOND_ADMIN_REQUIRED = "SECOND_ADMIN_REQUIRED"
 BATCH_NOT_APPROVED = "BATCH_NOT_APPROVED"
+STALE_PAYOUT = "STALE_PAYOUT"
 
 
 @dataclass
@@ -217,6 +219,15 @@ def log_event_safely(payout, action, actor=None, ip=None, **detail):
 # --------------------------------------------------------------------------
 # The gate
 # --------------------------------------------------------------------------
+def payout_stale_items(payout):
+    """Number of sales in an unsent payout that were refunded/returned/exchanged since it was generated."""
+    if not payout.pk or payout.paid:
+        return 0
+    return payout.order_items.filter(
+        Q(refunded=True) | Q(is_returned=True) | Q(is_exchanged=True)
+    ).count()
+
+
 def gate_send(payout, actor, ip=None):
     """Decide whether ``actor`` may send ``payout`` now.
 
@@ -236,6 +247,14 @@ def gate_send(payout, actor, ip=None):
                     "A send for this payout is already in progress, or an earlier send did not finish. "
                     "Reconcile with the provider before sending again.",
                     {"retryable": False, "reference": payout.reference})
+
+    stale = payout_stale_items(payout)
+    if stale:
+        log_event(payout, "send_blocked_stale_items", actor, ip, items=stale)
+        return Gate(False, 409, STALE_PAYOUT,
+                    f"{stale} sale(s) in this payout were refunded, returned or exchanged after it was generated. "
+                    "Use Generate payouts to recalculate it before sending.",
+                    {"reference": payout.reference, "stale_items": stale})
 
     from vendorDashboard.payout.services.weekly_payouts import payout_blocked_by_batch
 

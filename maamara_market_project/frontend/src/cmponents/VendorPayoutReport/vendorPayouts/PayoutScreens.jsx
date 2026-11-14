@@ -117,6 +117,12 @@ export function PayoutDetails({ item }) {
         ))}
         <ReadOnlyField label="Payout amount" value={formatKes(item.amount)} />
         <ReadOnlyField label="Payout period" value={`${item.period_start} → ${item.period_end}`} />
+        {Array.isArray(item.by_sale_month) && item.by_sale_month.length > 0 && (
+          <ReadOnlyField
+            label={item.includes_earlier_sales ? "Sales included (includes earlier unpaid months)" : "Sales included"}
+            value={item.by_sale_month.map((row) => `${row.month}: ${formatKes(row.amount)} (${row.items})`).join(" · ")}
+          />
+        )}
         {item.security?.initiated_by && (
           <ReadOnlyField
             label="Last sent by"

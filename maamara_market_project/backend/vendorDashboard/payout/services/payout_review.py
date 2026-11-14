@@ -252,6 +252,35 @@ def _unusual_signals(payout, vendor, method, destination, amount):
     return warnings
 
 
+def sale_month_breakdown(payout):
+    """What the payout is made of, by the month each sale was placed.
+
+    A payout pays every settled, unpaid sale up to the end of its period, so a
+    sale from an earlier month that was not paid then is carried into this one.
+    This lists them separately so the admin can see exactly what is included.
+    """
+    from collections import OrderedDict
+    from decimal import Decimal
+
+    totals = OrderedDict()
+    if not payout.pk:
+        return []
+    for oi in payout.order_items.select_related("order", "item").order_by("order__ordered_date"):
+        ordered = oi.order.ordered_date
+        key = ordered.strftime("%Y-%m") if ordered else "unknown"
+        try:
+            value = Decimal(str(oi.get_final_price_for_vendor()))
+        except AttributeError:
+            value = Decimal(str(getattr(oi.item, "price", 0) or 0)) * oi.quantity
+        row = totals.setdefault(key, {"month": key, "items": 0, "amount": Decimal("0.00")})
+        row["items"] += 1
+        row["amount"] += value
+    return [
+        {"month": r["month"], "items": r["items"], "amount": f"{r['amount']:.2f}"}
+        for r in totals.values()
+    ]
+
+
 def build_payout_review(payout, viewer=None):
     vendor = payout.vendor
     method = vendor.payment_method
@@ -353,6 +382,10 @@ def build_payout_review(payout, viewer=None):
         "adjustment_amount": f"{payout.adjustment_amount:.2f}",
         "period_start": payout.payout_period_start,
         "period_end": payout.payout_period_end,
+        "by_sale_month": sale_month_breakdown(payout),
+        "includes_earlier_sales": any(
+            row["month"] < payout.payout_period_start.strftime("%Y-%m") for row in sale_month_breakdown(payout)
+        ),
         "payment_method": method,
         "payment_method_label": METHOD_LABELS.get(method, method),
         "vendor": {
@@ -402,7 +435,7 @@ def payout_review_single(request, reference):
 @api_view(["GET"])
 @permission_classes([IsAdminUser])
 def payout_review_group(request):
-    """Unpaid payouts of the current period for one payment method (the exact set "Pay all" submits)."""
+    """Unpaid payouts (this period and earlier ones) for one payment method: the exact set "Pay all" submits."""
     method = request.query_params.get("payment_method", "")
     if method not in METHOD_LABELS:
         return Response({"error": "A valid payment_method is required."}, status=400)
@@ -414,8 +447,8 @@ def payout_review_group(request):
     payouts = (
         VendorPayout.objects.select_related("vendor")
         .filter(
-            payout_period_start=start_date,
-            payout_period_end=end_date,
+            # This month's payouts plus any earlier month that was never paid.
+            payout_period_end__lte=end_date,
             paid=False,
             vendor__payment_method=method,
         )

@@ -927,9 +927,9 @@ def payment_processors(start_date, end_date, payment_method=None, actor=None, ip
     if actor is None:
         raise ValueError("A payout sender (actor) is required.")
 
+    # This period plus any earlier period whose payout was never sent.
     candidates = VendorPayout.objects.filter(
-        payout_period_start=start_date,
-        payout_period_end=end_date,
+        payout_period_end__lte=end_date,
         paid=False
     ).select_related("vendor")
 
