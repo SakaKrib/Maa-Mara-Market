@@ -40,6 +40,9 @@ class SiteContactTests(TestCase):
 class CollectionsTests(TestCase):
     def setUp(self):
         self.client = APIClient()
+        # Migrations may seed a taxonomy; start from a clean one so the test controls it.
+        Section.objects.all().delete()
+        Department.objects.all().delete()
         section = Section.objects.create(name="inorganic")
         fashion = Department.objects.create(name="Fashion", section=section)
         sports = Department.objects.create(name="Sports", section=section)
