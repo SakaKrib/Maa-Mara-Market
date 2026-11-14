@@ -18,7 +18,11 @@ router = DefaultRouter()
 
 
 
+from .site_content import CollectionsView, SiteContactView
+
 urlpatterns = [
+    path("api/site-contact/", SiteContactView.as_view(), name="site-contact"),
+    path("api/collections/", CollectionsView.as_view(), name="collections-menu"),
     path("api/maintenance/status/", views.MaintenanceStatusView.as_view(), name="maintenance-status"),
     path("api/push/devices/", PushDeviceRegistrationView.as_view(), name="push-device-registration"),
     path("api/maintenance/settings/", views.MaintenanceSettingsView.as_view(), name="maintenance-settings"),

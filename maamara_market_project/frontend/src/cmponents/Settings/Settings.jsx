@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from "react";
-import { Bell, Check, ChevronRight, Globe2, KeyRound, LogOut, Monitor, RefreshCw, Save, Settings as SettingsIcon, ShieldCheck, UserRound, X, Eye, EyeOff, Wrench, Power } from "lucide-react";
+import { Bell, Check, ChevronRight, Globe2, KeyRound, LogOut, Monitor, RefreshCw, Save, Settings as SettingsIcon, ShieldCheck, UserRound, X, Eye, EyeOff, Wrench, Power, Mail } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../Auth/AuthContext/Context";
 import { useAdminPreferences } from "./AdminPreferencesContext";
 import api from "../../Services/Api";
+import { setSiteContactCache } from "../../Services/siteContent";
 
 const Settings = () => {
   const navigate = useNavigate();
@@ -41,6 +42,9 @@ const Settings = () => {
   });
   const [maintenanceLoading, setMaintenanceLoading] = useState(true);
   const [maintenanceSaving, setMaintenanceSaving] = useState(false);
+  const [contact, setContact] = useState({ email: "", phone: "", location: "" });
+  const [contactLoading, setContactLoading] = useState(true);
+  const [contactSaving, setContactSaving] = useState(false);
 
   useEffect(() => {
     const load = async () => {
@@ -117,6 +121,45 @@ const Settings = () => {
       active = false;
     };
   }, []);
+
+  useEffect(() => {
+    let active = true;
+    api.get("/api/site-contact/")
+      .then((response) => {
+        if (active) setContact({
+          email: response.data?.email || "",
+          phone: response.data?.phone || "",
+          location: response.data?.location || "",
+        });
+      })
+      .catch((err) => {
+        if (active) setError(err.response?.data?.detail || "Could not load the contact details.");
+      })
+      .finally(() => { if (active) setContactLoading(false); });
+    return () => { active = false; };
+  }, []);
+
+  const saveContact = async () => {
+    if (contactSaving) return;
+    setContactSaving(true);
+    setMessage("");
+    setError("");
+    try {
+      const response = await api.patch("/api/site-contact/", contact);
+      const saved = {
+        email: response.data?.email || "",
+        phone: response.data?.phone || "",
+        location: response.data?.location || "",
+      };
+      setContact(saved);
+      setSiteContactCache(saved);
+      setMessage("Contact details saved. The website and app footer now show them.");
+    } catch (err) {
+      setError(err.response?.data?.detail || "Could not save the contact details.");
+    } finally {
+      setContactSaving(false);
+    }
+  };
 
   const saveMaintenance = async (nextMaintenance = maintenance) => {
     if (maintenanceSaving) return;
@@ -353,6 +396,44 @@ const Settings = () => {
                   className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-[20px] bg-primary px-4 py-3 text-sm font-semibold text-primary-foreground transition hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   <Save size={15} /> {maintenanceSaving ? "Saving..." : "Save maintenance settings"}
+                </button>
+              </div>
+
+              <div className="rounded-2xl border border-border bg-card p-5 shadow-sm sm:p-6">
+                <div className="mb-3 flex items-center gap-3">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary"><Mail size={19} /></div>
+                  <div>
+                    <h2 className="text-sm font-semibold text-card-foreground">Footer contact details</h2>
+                    <p className="text-xs text-muted-foreground">Shown in the website footer and the app menu. Leave a field empty to hide it.</p>
+                  </div>
+                </div>
+                <div className="space-y-3">
+                  <label className="block">
+                    <span className="mb-1.5 block text-xs font-semibold text-muted-foreground">Contact email</span>
+                    <input type="email" inputMode="email" value={contact.email} maxLength={254} disabled={contactLoading || contactSaving}
+                      onChange={(event) => setContact((current) => ({ ...current, email: event.target.value }))}
+                      placeholder="hello@example.com" className="w-full rounded-[20px] border border-border bg-background px-4 py-3 text-sm text-foreground outline-none transition placeholder:text-muted-foreground focus:border-primary focus:ring-4 focus:ring-primary/10 disabled:opacity-60" />
+                  </label>
+                  <label className="block">
+                    <span className="mb-1.5 block text-xs font-semibold text-muted-foreground">Phone number</span>
+                    <input type="tel" inputMode="tel" value={contact.phone} maxLength={32} disabled={contactLoading || contactSaving}
+                      onChange={(event) => setContact((current) => ({ ...current, phone: event.target.value }))}
+                      placeholder="+254 712 345 678" className="w-full rounded-[20px] border border-border bg-background px-4 py-3 text-sm text-foreground outline-none transition placeholder:text-muted-foreground focus:border-primary focus:ring-4 focus:ring-primary/10 disabled:opacity-60" />
+                  </label>
+                  <label className="block">
+                    <span className="mb-1.5 block text-xs font-semibold text-muted-foreground">Location line</span>
+                    <input type="text" value={contact.location} maxLength={120} disabled={contactLoading || contactSaving}
+                      onChange={(event) => setContact((current) => ({ ...current, location: event.target.value }))}
+                      placeholder="Nairobi, Kenya" className="w-full rounded-[20px] border border-border bg-background px-4 py-3 text-sm text-foreground outline-none transition placeholder:text-muted-foreground focus:border-primary focus:ring-4 focus:ring-primary/10 disabled:opacity-60" />
+                  </label>
+                </div>
+                <button
+                  type="button"
+                  onClick={saveContact}
+                  disabled={contactLoading || contactSaving}
+                  className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-[20px] bg-primary px-4 py-3 text-sm font-semibold text-primary-foreground transition hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  <Save size={15} /> {contactSaving ? "Saving..." : "Save contact details"}
                 </button>
               </div>
 

@@ -16,11 +16,13 @@ import FedEx from "../../../../../src/assets/partnaship/fedex.png";
 import WellsFargo from "../../../../../src/assets/partnaship/wellfargo.jpeg";
 import { useAuth } from "../../../../cmponents/Auth/AuthContext/Context";
 import api from "../../../../Services/Api";
+import { useSiteContact, phoneHref, mailHref } from "../../../../Services/siteContent";
 import AppSnackbar from "../../../../../components/ui/app-snackbar";
 import "./footer.css";
 
 const Footer = () => {
   const year = new Date().getFullYear();
+  const contact = useSiteContact();
   const { isAuthenticated, user, logout } = useAuth();
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
@@ -90,9 +92,9 @@ const Footer = () => {
             <p className="mm-footer-muted">
               Discover handmade goods, African design, everyday essentials and independent sellers from across the marketplace.
             </p>
-            <p className="mm-footer-contact"><IonIcon icon={locationOutline} aria-hidden="true" />Nairobi, Kenya · East Africa</p>
-            <a href="mailto:maamaramarket@gmail.com">maamaramarket@gmail.com</a>
-            <a href="tel:+254712345678">+254 712 345 678</a>
+            {contact.location && <p className="mm-footer-contact"><IonIcon icon={locationOutline} aria-hidden="true" />{contact.location}</p>}
+            {contact.email && <a href={mailHref(contact.email)}>{contact.email}</a>}
+            {contact.phone && <a href={phoneHref(contact.phone)}>{contact.phone}</a>}
             <div className="mm-footer-socials" aria-label="Social media">
               <button type="button" aria-label="Facebook"><IonIcon icon={logoFacebook} /></button>
               <button type="button" aria-label="X"><IonIcon icon={logoX} /></button>
@@ -107,10 +109,10 @@ const Footer = () => {
             <div>
               <h3>Company</h3>
               <Link to="/about-us">About Us</Link>
-              <a href="mailto:maamaramarket@gmail.com?subject=Contact%20Maa%20Mara%20Market">Contact us</a>
+              {contact.email ? <a href={mailHref(contact.email, "Contact Maa Mara Market")}>Contact us</a> : <Link to="/support">Contact us</Link>}
               <Link to="/customer-order">Order History</Link>
               <Link to="/request-returns">Return Policy &amp; Returns</Link>
-              <a href="mailto:maamaramarket@gmail.com?subject=Shipping%20Question">Shipping</a>
+              {contact.email ? <a href={mailHref(contact.email, "Shipping Question")}>Shipping</a> : <Link to="/support">Shipping</Link>}
               <Link to="/careers/jobs">Career</Link>
               <Link to="/faq">Frequently Asked Questions</Link>
             </div>

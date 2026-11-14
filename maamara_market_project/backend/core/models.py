@@ -792,3 +792,23 @@ class VendorTermsAcceptance(models.Model):
 
     def __str__(self):
         return f"{self.user_id} accepted vendor terms {self.version}"
+
+
+class SiteContactSettings(models.Model):
+    """Singleton: the contact details shown in the website and app footer."""
+
+    contact_email = models.CharField(max_length=254, blank=True, default="maamaramarket@gmail.com")
+    contact_phone = models.CharField(max_length=32, blank=True, default="+254 712 345 678")
+    location = models.CharField(max_length=120, blank=True, default="Nairobi, Kenya · East Africa")
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = "Site contact settings"
+        verbose_name_plural = "Site contact settings"
+
+    def save(self, *args, **kwargs):
+        self.pk = 1
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return "Site contact settings"

@@ -111,6 +111,9 @@ COMPANY_ADDRESS = env("COMPANY_ADDRESS", default="")
 # (ANDROID_APP_DOWNLOAD_URL / IOS_APP_DOWNLOAD_URL are still read as old names.)
 ANDROID_APP_LINK = (get_env_value("ANDROID_APP_LINK", "") or get_env_value("ANDROID_APP_DOWNLOAD_URL", "")).strip()
 IOS_APP_LINK = (get_env_value("IOS_APP_LINK", "") or get_env_value("IOS_APP_DOWNLOAD_URL", "")).strip()
+# Days an item counts as "new" for the NEW badge in the Collections menu.
+COLLECTION_NEW_DAYS = int(get_env_value("COLLECTION_NEW_DAYS", "14") or 14)
+
 # Hosts the mobile apps are verified for (Android App Links / iOS Universal Links).
 def _hostname_only(value):
     """Accept 'example.com' or 'https://example.com/path' and return just the host."""

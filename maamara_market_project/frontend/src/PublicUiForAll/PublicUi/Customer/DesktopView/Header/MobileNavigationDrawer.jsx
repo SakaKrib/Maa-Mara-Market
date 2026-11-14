@@ -2,11 +2,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../../../../../cmponents/Auth/AuthContext/Context";
 import { useCategories } from "./SectionHook";
-import MegaMenuWomen from "./WomenCat";
-import MegaMenuMen from "./MenCat";
-import MegaMenuChildren from "./ChildrenCat";
-import MegaMenuSports from "./SportsCat";
-import MegaMenuUnisex from "./UnisexCat";
+import { useCollections, useSiteContact, phoneHref, mailHref } from "../../../../../Services/siteContent";
 import {
   Home,
   Store,
@@ -41,6 +37,8 @@ import {
   Phone,
 } from "lucide-react";
 
+const COLLECTION_ICONS = { women: Shirt, men: Users, sports: Dumbbell, children: Baby, unisex: Sparkles };
+
 const DrawerFooterLink = ({ to, href, icon: Icon, onClick, children }) => {
   const content = (
     <>
@@ -58,6 +56,8 @@ const DrawerFooterLink = ({ to, href, icon: Icon, onClick, children }) => {
 
 const MobileNavigationDrawer = ({ open, onClose, nativeApp = false }) => {
   const { data, loading } = useCategories();
+  const { collections } = useCollections();
+  const contact = useSiteContact();
   const navigate = useNavigate();
   const { isAuthenticated, user, logout } = useAuth();
   const isAdmin = user?.role === "admin";
@@ -227,126 +227,63 @@ const MobileNavigationDrawer = ({ open, onClose, nativeApp = false }) => {
             )}
           </div>
 
-          <div className="mm-mobile-drawer-section">
-            <div className="mm-mobile-drawer-section-title">Collections</div>
+          {collections.length > 0 && (
+            <div className="mm-mobile-drawer-section">
+              <div className="mm-mobile-drawer-section-title">Collections</div>
 
-            <div className="border-b border-gray-100">
-              <button
-                type="button"
-                onClick={() => toggleCategory("women")}
-                className={itemClass}
-              >
-                <span className="flex items-center gap-3">
-                  <Shirt size={19} strokeWidth={1.8} />
-                  Women
-                </span>
-                <ChevronDown
-                  size={18}
-                  className={expandedCategory === "women" ? "rotate-180" : ""}
-                />
-              </button>
-              {expandedCategory === "women" && (
-                <div className="px-5 pb-4">
-                  <MegaMenuWomen />
-                </div>
-              )}
-            </div>
+              {collections.map((collection) => {
+                const key = "collection-" + collection.key;
+                const Icon = COLLECTION_ICONS[collection.key] || Shirt;
+                const isOpen = expandedCategory === key;
+                return (
+                  <div key={collection.key} className="mm-mobile-department">
+                    <button
+                      type="button"
+                      className="mm-mobile-department-trigger"
+                      aria-expanded={isOpen}
+                      onClick={() => toggleCategory(key)}
+                    >
+                      <span className="flex items-center gap-3">
+                        <Icon size={19} strokeWidth={1.8} />
+                        {collection.label}
+                        {collection.is_new && <span className="mm-new-badge">New</span>}
+                      </span>
+                      <ChevronDown size={18} className={isOpen ? "rotate-180" : ""} />
+                    </button>
 
-            <div className="border-b border-gray-100">
-              <button
-                type="button"
-                onClick={() => toggleCategory("men")}
-                className={itemClass}
-              >
-                <span className="flex items-center gap-3">
-                  <Users size={19} strokeWidth={1.8} />
-                  Men
-                </span>
-                <ChevronDown
-                  size={18}
-                  className={expandedCategory === "men" ? "rotate-180" : ""}
-                />
-              </button>
-              {expandedCategory === "men" && (
-                <div className="px-5 pb-4">
-                  <MegaMenuMen />
-                </div>
-              )}
-            </div>
+                    {isOpen && (
+                      <div className="mm-mobile-category-list">
+                        {collection.categories.map((category) => (
+                          <div key={category.id}>
+                            <button
+                              type="button"
+                              className="mm-mobile-category"
+                              onClick={() => go("/filter-category?category=" + category.id)}
+                            >
+                              {category.name}
+                              {category.new_count > 0 && <span className="mm-new-badge mm-new-badge--small">New</span>}
+                            </button>
 
-            <div className="border-b border-gray-100">
-              <button
-                type="button"
-                onClick={() => toggleCategory("sports")}
-                className={itemClass}
-              >
-                <span className="flex items-center gap-3">
-                  <Dumbbell size={19} strokeWidth={1.8} />
-                  Sports
-                  <span className="bg-[var(--blue)] text-white text-[10px] px-2 py-1 rounded-full">
-                    New!
-                  </span>
-                </span>
-                <ChevronDown
-                  size={18}
-                  className={expandedCategory === "sports" ? "rotate-180" : ""}
-                />
-              </button>
-              {expandedCategory === "sports" && (
-                <div className="px-5 pb-4">
-                  <MegaMenuSports />
-                </div>
-              )}
+                            {(category.subcategories || []).slice(0, 8).map((subcategory) => (
+                              <button
+                                type="button"
+                                key={subcategory.id}
+                                className="mm-mobile-subcategory"
+                                onClick={() => go("/subcategory/" + subcategory.id + "/products")}
+                              >
+                                {subcategory.name}
+                                {subcategory.new_count > 0 && <span className="mm-new-badge mm-new-badge--small">New</span>}
+                              </button>
+                            ))}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
             </div>
-
-            <div className="border-b border-gray-100">
-              <button
-                type="button"
-                onClick={() => toggleCategory("children")}
-                className={itemClass}
-              >
-                <span className="flex items-center gap-3">
-                  <Baby size={19} strokeWidth={1.8} />
-                  Children
-                </span>
-                <ChevronDown
-                  size={18}
-                  className={
-                    expandedCategory === "children" ? "rotate-180" : ""
-                  }
-                />
-              </button>
-              {expandedCategory === "children" && (
-                <div className="px-5 pb-4">
-                  <MegaMenuChildren />
-                </div>
-              )}
-            </div>
-
-            <div className="border-b border-gray-200">
-              <button
-                type="button"
-                onClick={() => toggleCategory("unisex")}
-                className={itemClass}
-              >
-                <span className="flex items-center gap-3">
-                  <Sparkles size={19} strokeWidth={1.8} />
-                  Unisex
-                </span>
-                <ChevronDown
-                  size={18}
-                  className={
-                    expandedCategory === "unisex" ? "rotate-180" : ""
-                  }
-                />
-              </button>
-              {expandedCategory === "unisex" && (
-                <div className="px-5 pb-4">
-                  <MegaMenuUnisex />
-                </div>
-              )}
-            </div>
-          </div>
+          )}
 
           <div className="mm-mobile-drawer-section mt-4 border-t border-gray-200">
             <div className="mm-mobile-drawer-section-title">Account</div>
@@ -402,10 +339,10 @@ const MobileNavigationDrawer = ({ open, onClose, nativeApp = false }) => {
               <div className="mm-mobile-drawer-section mm-mobile-footer-links">
                 <div className="mm-mobile-drawer-section-title">Company</div>
                 <DrawerFooterLink to="/about-us" icon={Info} onClick={onClose}>About Us</DrawerFooterLink>
-                <DrawerFooterLink href="mailto:maamaramarket@gmail.com?subject=Contact%20Maa%20Mara%20Market" icon={Mail} onClick={onClose}>Contact us</DrawerFooterLink>
+                <DrawerFooterLink {...(contact.email ? { href: mailHref(contact.email, "Contact Maa Mara Market") } : { to: "/support" })} icon={Mail} onClick={onClose}>Contact us</DrawerFooterLink>
                 <DrawerFooterLink to="/customer-order" icon={Package} onClick={onClose}>Order History</DrawerFooterLink>
                 <DrawerFooterLink to="/request-returns" icon={RotateCcw} onClick={onClose}>Return Policy &amp; Returns</DrawerFooterLink>
-                <DrawerFooterLink href="mailto:maamaramarket@gmail.com?subject=Shipping%20Question" icon={Truck} onClick={onClose}>Shipping</DrawerFooterLink>
+                <DrawerFooterLink {...(contact.email ? { href: mailHref(contact.email, "Shipping Question") } : { to: "/support" })} icon={Truck} onClick={onClose}>Shipping</DrawerFooterLink>
                 <DrawerFooterLink to="/careers/jobs" icon={BriefcaseBusiness} onClick={onClose}>Career</DrawerFooterLink>
                 <DrawerFooterLink to="/faq" icon={CircleHelp} onClick={onClose}>Frequently Asked Questions</DrawerFooterLink>
               </div>
@@ -428,9 +365,9 @@ const MobileNavigationDrawer = ({ open, onClose, nativeApp = false }) => {
                 <DrawerFooterLink to="/messages" icon={MessageCircle} onClick={onClose}>Chat with us</DrawerFooterLink>
                 <DrawerFooterLink to="/support" icon={LifeBuoy} onClick={onClose}>Support</DrawerFooterLink>
                 <DrawerFooterLink to="/support" icon={CircleHelp} onClick={onClose}>Help</DrawerFooterLink>
-                <DrawerFooterLink href="mailto:maamaramarket@gmail.com" icon={Mail} onClick={onClose}>maamaramarket@gmail.com</DrawerFooterLink>
-                <DrawerFooterLink href="tel:+254712345678" icon={Phone} onClick={onClose}>+254 712 345 678</DrawerFooterLink>
-                <div className="flex items-center gap-2 px-4 py-3 text-xs text-gray-500"><MapPin size={15} />Nairobi, Kenya · East Africa</div>
+                {contact.email && <DrawerFooterLink href={mailHref(contact.email)} icon={Mail} onClick={onClose}>{contact.email}</DrawerFooterLink>}
+                {contact.phone && <DrawerFooterLink href={phoneHref(contact.phone)} icon={Phone} onClick={onClose}>{contact.phone}</DrawerFooterLink>}
+                {contact.location && <div className="flex items-center gap-2 px-4 py-3 text-xs text-gray-500"><MapPin size={15} />{contact.location}</div>}
               </div>
               {isAuthenticated && (isAdmin || isVendor) && (
                 <div className="mm-mobile-drawer-section mm-mobile-footer-links">
