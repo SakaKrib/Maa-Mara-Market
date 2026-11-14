@@ -145,6 +145,17 @@ def checkout_view(request):
             raise ValueError("Order amount must be greater than zero.")
 
         payment_method = data["payment_method"]
+        from order.credits import another_credit_checkout_in_flight, quote_credit
+
+        full_total = grand_total
+        credit_quote = quote_credit(user, visitor_id, grand_total, payment_method)
+        if credit_quote.applied > 0:
+            if credit_quote.covers_all:
+                raise ValueError("Your exchange credit covers this whole order; complete it from the main checkout.")
+            if another_credit_checkout_in_flight(user, visitor_id):
+                raise ValueError("Another payment using your exchange credit is still in progress. Finish or wait for it to expire.")
+        grand_total = credit_quote.charge
+
         CheckoutSession.objects.filter(
             user=user,
             visitor_id=None if user else visitor_id,
@@ -158,6 +169,8 @@ def checkout_view(request):
                 "billing": billing,
                 "items": item_snapshots,
                 "shipping": shipping,
+                "credit_applied": str(credit_quote.applied),
+                "order_total": str(full_total),
             },
             payment_method=payment_method,
             amount=grand_total,

@@ -273,6 +273,10 @@ def process_paypal_refund(refund_id):
             item.refunded_at = timezone.now()
             item.status = "refunded"
             item.save(update_fields=["refunded", "refunded_at", "status"])
+            from vendorDashboard.deductions import register_vendor_deduction
+            register_vendor_deduction(
+                item, f"Refund of {item.item.name} (OrderItem {item.id}); vendor already paid", "refund"
+            )
 
             adjustment = return_request.vendor_adjustment
             if adjustment and not adjustment.applied:
@@ -477,6 +481,10 @@ def reconcile_mpesa_refund_callback(payload, *, timeout=False):
             item.refunded_at = item.refunded_at or timezone.now()
             item.status = "refunded"
             item.save(update_fields=["refunded", "refunded_at", "status"])
+            from vendorDashboard.deductions import register_vendor_deduction
+            register_vendor_deduction(
+                item, f"Refund of {item.item.name} (OrderItem {item.id}); vendor already paid", "refund"
+            )
 
             adjustment = return_request.vendor_adjustment
             if adjustment and not adjustment.applied:
@@ -553,6 +561,10 @@ def reconcile_paypal_refund(provider_reference, provider_status, provider_amount
             item.refunded_at = item.refunded_at or timezone.now()
             item.status = "refunded"
             item.save(update_fields=["refunded", "refunded_at", "status"])
+            from vendorDashboard.deductions import register_vendor_deduction
+            register_vendor_deduction(
+                item, f"Refund of {item.item.name} (OrderItem {item.id}); vendor already paid", "refund"
+            )
 
             adjustment = return_request.vendor_adjustment
             if adjustment and not adjustment.applied:

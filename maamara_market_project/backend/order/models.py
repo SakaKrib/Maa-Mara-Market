@@ -393,6 +393,8 @@ class Order(models.Model):
     )
     paypal_order_id = models.CharField(max_length=64, blank=True, null=True, unique=True)
     updated_total_price = models.IntegerField( null=True, blank=True, default=0)
+    # Part of the order paid with the customer's exchange credit (not charged to a provider).
+    credit_applied = models.DecimalField(max_digits=12, decimal_places=2, default=Decimal("0.00"))
     billing_address = models.ForeignKey(BillingAddress, on_delete=models.SET_NULL, blank=True, null=True)
     payment = models.ForeignKey(Payment, on_delete=models.SET_NULL, blank=True, null=True)
     paypal_invoice_id = models.CharField(max_length=128, blank=True, null=True, unique=True)
@@ -1067,3 +1069,35 @@ class MonthlyReconciliation(models.Model):
 
     def __str__(self):
         return f"Reconciliation {self.month}"
+
+
+
+class ExchangeCredit(models.Model):
+    """Store credit created when an admin approves an exchange.
+
+    The server is the only source of truth for the amount: it is never read
+    from a cookie. Credit is spent in the order it was issued and expires.
+    """
+
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, null=True, blank=True, related_name="exchange_credits"
+    )
+    visitor_id = models.CharField(max_length=255, null=True, blank=True, db_index=True)
+    return_request = models.OneToOneField(
+        "vendorDashboard.ReturnRequest", on_delete=models.CASCADE, related_name="exchange_credit"
+    )
+    amount = models.DecimalField(max_digits=12, decimal_places=2)
+    used_amount = models.DecimalField(max_digits=12, decimal_places=2, default=Decimal("0.00"))
+    expires_at = models.DateTimeField()
+    voided = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["created_at"]
+
+    @property
+    def remaining(self):
+        return max(self.amount - self.used_amount, Decimal("0.00"))
+
+    def __str__(self):
+        return f"Exchange credit {self.pk}: {self.remaining} of {self.amount}"

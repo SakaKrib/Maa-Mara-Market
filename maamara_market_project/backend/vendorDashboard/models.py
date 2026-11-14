@@ -589,6 +589,14 @@ class VendorAdjustment(models.Model):
         default='refund'
     )
     applied = models.BooleanField(default=False)
+    # "customer": the customer-side record of a refund/exchange (informational, never paid out).
+    # "vendor_deduction": a NEGATIVE amount (the vendor's own share) taken from a later payout
+    # because the vendor was already paid for a sale that was refunded or exchanged.
+    KIND_CHOICES = [
+        ("customer", "Customer record"),
+        ("vendor_deduction", "Vendor deduction"),
+    ]
+    kind = models.CharField(max_length=20, choices=KIND_CHOICES, default="customer")
 
 # MODEL TO HANDLE RETURNS
 # vendorDashboard/models.py

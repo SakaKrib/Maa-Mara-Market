@@ -176,23 +176,29 @@ def get_vendor_earnings(vendor, start_date, end_date):
             base_vendor_price = getattr(oi.item, "vendor_price", None) or getattr(oi.item, "price", 0)
             gross_sales += Decimal(str(base_vendor_price)) * oi.quantity
 
-    # Fetch unapplied vendor adjustments in this period
-    adjustments = VendorAdjustment.objects.filter(
+    # Deductions for sales that were refunded/exchanged after the vendor was paid.
+    # They never expire: an unapplied one is taken from the first payout that can absorb it
+    # (a payout is never pushed below zero, the rest carries forward). Deductions already
+    # attached to this still-open payout are re-evaluated so regenerating stays consistent.
+    deduction_filter = Q(applied=False)
+    if open_payout is not None:
+        deduction_filter |= Q(pk__in=open_payout.adjustments.values("pk"))
+    deductions = VendorAdjustment.objects.filter(
+        deduction_filter,
         vendor=vendor,
-        created_at__gte=start_date,
+        kind="vendor_deduction",
+        amount__lt=0,
         created_at__lt=end_date + timedelta(days=1),
-        applied=False
-    )
+    ).order_by("created_at", "id")
 
     adjustment_total = Decimal("0.00")
     applied_adjustments = []
-
-    # Process applicable adjustments (returns / exchanges)
-    for adj in adjustments:
-        if adj.order_item and (adj.order_item.is_returned or adj.order_item.is_exchanged):
-            adjustment_total += adj.amount or Decimal("0.00")
-            adj.applied = True
-            adj.save()
+    running_total = gross_sales
+    for adj in deductions:
+        amount = adj.amount or Decimal("0.00")
+        if running_total + amount >= 0:
+            running_total += amount
+            adjustment_total += amount
             applied_adjustments.append(adj)
 
     # Compute vendor's final net payout for the month (without markup)
@@ -239,9 +245,17 @@ def get_vendor_earnings(vendor, start_date, end_date):
     payout.save()
     payout.order_items.set(order_items)
 
-    # Attach any newly applied adjustments
-    if applied_adjustments:
-        payout.adjustments.set(applied_adjustments)
+    # Attach the deductions this payout absorbs and release any it no longer can.
+    previously_attached = set(payout.adjustments.values_list("pk", flat=True))
+    keep = {adj.pk for adj in applied_adjustments}
+    for adj in applied_adjustments:
+        if not adj.applied:
+            adj.applied = True
+            adj.save(update_fields=["applied"])
+    released = previously_attached - keep
+    if released:
+        VendorAdjustment.objects.filter(pk__in=released).update(applied=False)
+    payout.adjustments.set(applied_adjustments)
 
     # Calculate previous month range for difference calculation
     prev_start_date = (start_date - relativedelta(months=1)).replace(day=1)

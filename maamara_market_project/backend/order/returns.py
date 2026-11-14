@@ -369,15 +369,8 @@ def return_request_handler_api(request, item_id):
                 "return_request": ReturnRequestSerializer(return_request).data,
             }, status=status.HTTP_200_OK)
 
-            response.set_cookie(
-                key="exchange_credit",
-                value=str(float(total_exchange_credit)),
-                httponly=True,
-                secure=not settings.DEBUG,
-                samesite="Lax",
-                max_age=7 * 24 * 60 * 60,  # 7 days
-            )
-
+            # The credit itself is created on the server when the admin approves the
+            # exchange; nothing about its amount is stored in the browser any more.
             return response
 
         return Response({
@@ -676,6 +669,20 @@ def approve_return_request_api(request, return_id):
                 if adjustment:
                     adjustment.is_approved = True
                     adjustment.save(update_fields=["is_approved"])
+
+                # The customer's money becomes server-side credit; the original sale is
+                # reversed so the vendor is not paid for it (or repays it if already paid).
+                from order.credits import issue_exchange_credit
+                from vendorDashboard.deductions import register_vendor_deduction
+
+                issue_exchange_credit(return_request)
+                item.is_exchanged = True
+                item.save(update_fields=["is_exchanged"])
+                register_vendor_deduction(
+                    item,
+                    f"Exchange of {product.name} (OrderItem {item.id}); vendor already paid",
+                    "exchange",
+                )
 
                 # --- 🔔 Notifications ---
                 msg = f"The administrator approved your exchange request for {product.name}. You can now redeem your exchange credit."

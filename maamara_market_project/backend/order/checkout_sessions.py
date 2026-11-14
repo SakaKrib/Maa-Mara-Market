@@ -316,11 +316,20 @@ def materialize_paid_checkout(checkout_session, *, transaction_id=None, provider
         total_amount += order_item.get_final_price()
 
     expected_total = (total_amount + Decimal(str(shipping.get("amount_kes", "0.00")))).quantize(Decimal("0.01"))
-    if expected_total != session.amount:
+    credit_applied = Decimal(str(payload.get("credit_applied", "0") or "0")).quantize(Decimal("0.01"))
+    if expected_total - credit_applied != session.amount:
         raise ValueError("Checkout total changed before payment completion.")
 
     order.updated_total_price = int(expected_total)
-    order.save(update_fields=["updated_total_price"])
+    update_fields = ["updated_total_price"]
+    if credit_applied > 0:
+        from order.credits import consume_credit
+
+        order.credit_applied = consume_credit(
+            session.user, None if session.user_id else session.visitor_id, credit_applied
+        )
+        update_fields.append("credit_applied")
+    order.save(update_fields=update_fields)
 
     session.order = order
     session.status = "completed"

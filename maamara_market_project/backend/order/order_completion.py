@@ -143,7 +143,11 @@ def complete_paid_order(order, payment, *, transaction_id=None):
 
     if locked_order.payment_id != locked_payment.id:
         raise ValueError("Payment does not belong to the order.")
-    if locked_payment.amount is None or locked_payment.amount <= Decimal("0.00"):
+    # An order fully covered by exchange credit has a zero provider charge by design.
+    is_credit_payment = str(locked_payment.payment_method or "").upper() == "CREDIT"
+    if locked_payment.amount is None or locked_payment.amount < Decimal("0.00") or (
+        locked_payment.amount == Decimal("0.00") and not is_credit_payment
+    ):
         raise ValueError("Paid order has an invalid payment amount.")
 
     # A duplicate successful-payment callback must be idempotent.

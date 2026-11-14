@@ -21,6 +21,51 @@ from order.Payment import create_paypal_order
 from order.Base import get_usd_to_kes_rate
 
 
+def _complete_with_credit(user, visitor_id, billing, item_snapshots, shipping, payment_method, full_total, quote):
+    from order.checkout_sessions import materialize_paid_checkout
+    from order.order_completion import complete_paid_order
+
+    CheckoutSession.objects.filter(
+        user=user, visitor_id=None if user else visitor_id, status="draft",
+    ).delete()
+    session = CheckoutSession.objects.create(
+        user=user,
+        visitor_id=visitor_id,
+        payload={
+            "billing": billing,
+            "items": item_snapshots,
+            "shipping": shipping,
+            "credit_applied": str(quote.applied),
+            "order_total": str(full_total),
+        },
+        payment_method=payment_method,
+        amount=Decimal("0.00"),
+        currency="KES",
+        expires_at=timezone.now() + timedelta(minutes=30),
+        status="payment_pending",
+    )
+    transaction_id = f"CREDIT-{session.id}"
+    order, _created = materialize_paid_checkout(session, transaction_id=transaction_id)
+    payment = order.payment
+    payment.payment_method = "CREDIT"
+    payment.paid_at = timezone.now()
+    payment.save(update_fields=["payment_method", "paid_at", "updated_at"])
+    locked_order, _completed = complete_paid_order(order, payment, transaction_id=transaction_id)
+    return Response(
+        {
+            "checkout_id": str(session.id),
+            "credit_paid": True,
+            "order_id": locked_order.pk,
+            "payment": {
+                "payment_method": "CREDIT",
+                "amount": "0.00",
+                "credit_applied": str(quote.applied),
+            },
+        },
+        status=status.HTTP_201_CREATED,
+    )
+
+
 @api_view(["POST"])
 @permission_classes([IsAuthenticatedOrVisitor])
 @transaction.atomic
@@ -64,6 +109,21 @@ def checkout_view(request):
         if payment_method not in {"Pesapal", "PayPal", "M-Pesa"}:
             raise ValueError("Unsupported payment method.")
 
+        from order.credits import another_credit_checkout_in_flight, quote_credit
+
+        full_total = grand_total
+        credit_quote = quote_credit(user, visitor_id, grand_total, payment_method)
+        if credit_quote.applied > 0:
+            if another_credit_checkout_in_flight(user, visitor_id):
+                raise ValueError("Another payment using your exchange credit is still in progress. Finish or wait for it to expire.")
+        grand_total = credit_quote.charge
+
+        if credit_quote.covers_all:
+            # The whole order is paid with exchange credit: nothing to charge a provider.
+            return _complete_with_credit(
+                user, visitor_id, billing, item_snapshots, shipping, payment_method, full_total, credit_quote
+            )
+
         CheckoutSession.objects.filter(
             user=user,
             visitor_id=None if user else visitor_id,
@@ -77,6 +137,8 @@ def checkout_view(request):
                 "billing": billing,
                 "items": item_snapshots,
                 "shipping": shipping,
+                "credit_applied": str(credit_quote.applied),
+                "order_total": str(full_total),
             },
             payment_method=payment_method,
             amount=grand_total,

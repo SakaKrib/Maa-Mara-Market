@@ -153,12 +153,18 @@ def create_batch(actor, week_start=None):
         gross = sum((e[2] for e in entries), ZERO)
         income = sum((_customer_amount(e[1]) for e in entries), ZERO)
 
-        adjustments = list(
-            VendorAdjustment.objects.filter(
-                vendor=vendor, applied=False, created_at__lt=cutoff,
-            ).filter(Q(order_item__is_returned=True) | Q(order_item__is_exchanged=True))
-        )
-        adjustment_total = sum((a.amount or ZERO for a in adjustments), ZERO)
+        # Deductions (negative amounts) for sales refunded/exchanged after the vendor was paid.
+        # A payout is never pushed below zero; what does not fit carries forward.
+        adjustments = []
+        adjustment_total = ZERO
+        running = gross
+        for adj in VendorAdjustment.objects.filter(
+            vendor=vendor, applied=False, kind="vendor_deduction", amount__lt=0, created_at__lt=cutoff,
+        ).order_by("created_at", "id"):
+            if running + adj.amount >= 0:
+                running += adj.amount
+                adjustment_total += adj.amount
+                adjustments.append(adj)
         net = gross + adjustment_total
         if net <= 0:
             skipped.append({"vendor": vendor.pk, "reason": "net payout not positive after adjustments; carried forward"})

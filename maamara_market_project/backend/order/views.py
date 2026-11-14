@@ -124,26 +124,11 @@ def get_cart_view(request):
             })
 
         # ---------------------------------------------------
-        # 4️⃣ Return/exchange credit check
+        # 4️⃣ Exchange credit (server-side record, never a cookie)
         # ---------------------------------------------------
-        queryset = ReturnRequest.objects.filter(
-            item__in=order.items.values_list('id', flat=True)
-        ).filter(
-            Q(status="Approved-Exchange") | Q(approved_by_admin=True)
-        )
+        from order.credits import credit_balance
 
-        if user:
-            queryset = queryset.filter(customer=user)
-        else:
-            queryset = queryset.filter(visitor_id=visitor_id)
-
-        approved_exchange_exists = queryset.exists()
-
-        exchange_credit_str = request.COOKIES.get("exchange_credit", "0.00")
-        try:
-            exchange_credit = Decimal(exchange_credit_str) if approved_exchange_exists else Decimal("0.00")
-        except:
-            exchange_credit = Decimal("0.00")
+        exchange_credit = credit_balance(user, visitor_id)
 
         # ---------------------------------------------------
         # 5️⃣ Final totals
@@ -153,6 +138,7 @@ def get_cart_view(request):
         except:
             raw_total = Decimal(str(order.get_total()))
 
+        exchange_credit = min(exchange_credit, raw_total)
         final_total = max(raw_total - exchange_credit, Decimal("0.00"))
 
         # ---------------------------------------------------
