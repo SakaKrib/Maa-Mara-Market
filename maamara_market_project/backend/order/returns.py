@@ -21,6 +21,7 @@ from django.db import transaction
 import logging
 from django.conf import settings
 from .refund_tasks import process_refund_task
+from .payment_labels import canonical_provider, is_refundable_status
 from .models import Order, Refund
 
 User = get_user_model()
@@ -474,7 +475,7 @@ def approve_return_request_api(request, return_id):
         product = item.item
         vendor = Vendor.objects.get(user=product.created_by)
         order = Order.objects.select_for_update(of=("self",)).filter(order_items=item).select_related("payment").first()
-        if not order or not order.payment or str(order.payment.status).lower() not in {"completed", "partially_refunded"}:
+        if not order or not order.payment or not is_refundable_status(order.payment.status):
             return Response({
                 "success": False,
                 "error": "The return is not linked to a completed payment.",
@@ -494,7 +495,7 @@ def approve_return_request_api(request, return_id):
                     }, status=status.HTTP_409_CONFLICT)
 
                 payment = order.payment
-                provider = payment.payment_method
+                provider = canonical_provider(payment.payment_method)
                 if provider not in {"PayPal", "Mpesa"}:
                     return Response({
                         "success": False,

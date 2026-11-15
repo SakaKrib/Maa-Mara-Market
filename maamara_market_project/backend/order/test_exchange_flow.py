@@ -104,3 +104,17 @@ class ExchangeFlowTests(PayoutTestMixin, TestCase):
         payout = get_vendor_earnings(self.vendor, self.start, self.end)["payout"]
         self.assertEqual(payout.amount, Decimal("0.00"))
         self.assertEqual(credit_balance(self.customer, None), Decimal("1000.00"))
+
+
+class PaymentLabelTests(TestCase):
+    def test_saved_payment_spellings_are_accepted_for_refunds(self):
+        from order.payment_labels import canonical_provider, is_refundable_status
+
+        self.assertEqual(canonical_provider("PAYPAL"), "PayPal")
+        self.assertEqual(canonical_provider("MPESA"), "Mpesa")
+        self.assertEqual(canonical_provider("M-Pesa"), "Mpesa")
+        self.assertIsNone(canonical_provider("CARD"))
+        self.assertTrue(is_refundable_status("PAID"))
+        self.assertTrue(is_refundable_status("PARTIALLY_REFUNDED"))
+        self.assertFalse(is_refundable_status("PENDING"))
+        self.assertFalse(is_refundable_status("REFUNDED"))

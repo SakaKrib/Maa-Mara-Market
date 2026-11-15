@@ -1,4 +1,5 @@
 import logging
+from order.payment_labels import canonical_provider, is_refundable_status
 from decimal import Decimal, InvalidOperation
 
 import requests
@@ -149,7 +150,7 @@ def process_paypal_refund(refund_id):
         Payment = refund.payment.__class__
         payment = Payment.objects.select_for_update().get(pk=refund.payment_id)
 
-        if payment.payment_method != "PayPal" or str(payment.status).lower() not in {"completed", "partially_refunded"}:
+        if canonical_provider(payment.payment_method) != "PayPal" or not is_refundable_status(payment.status):
             raise RefundProcessingError("The original PayPal payment is not eligible for refund.")
 
         capture_id = _capture_id_for_payment(payment)
@@ -308,7 +309,7 @@ def process_mpesa_refund(refund_id):
 
         Payment = refund.payment.__class__
         payment = Payment.objects.select_for_update().get(pk=refund.payment_id)
-        if payment.payment_method != "Mpesa" or str(payment.status).lower() not in {"completed", "partially_refunded"}:
+        if canonical_provider(payment.payment_method) != "Mpesa" or not is_refundable_status(payment.status):
             raise RefundProcessingError("The original M-Pesa payment is not eligible for reversal.")
 
         original = (
