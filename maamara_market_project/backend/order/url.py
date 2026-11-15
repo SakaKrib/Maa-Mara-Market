@@ -22,6 +22,7 @@ from .returns import (
     get_my_return_requests_api,
     process_refund_api,
     return_request_handler_api,
+    return_eligibility_api,
 )
 from .shipping import get_shipping_rates
 from .views import (
@@ -85,6 +86,7 @@ urlpatterns = [
     path("api/vendor-order-items/", vendor_all_order_items, name="vendor-all-order-items"),
 
     # Returns / refunds
+    path("api/returns-eligibility/<int:item_id>/", return_eligibility_api, name="return-eligibility"),
     path(
         "api/returns-request/<int:item_id>/",
         return_request_handler_api,

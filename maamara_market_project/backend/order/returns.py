@@ -23,6 +23,7 @@ from django.conf import settings
 from .refund_tasks import process_refund_task
 from .payment_labels import canonical_provider, is_refundable_status
 from .models import Order, Refund
+from .return_policy import return_eligibility
 
 User = get_user_model()
 logger = logging.getLogger(__name__)
@@ -110,6 +111,16 @@ def return_request_handler_api(request, item_id):
             return Response({
                 "success": False,
                 "error": "Only a completed, paid order item can be returned.",
+            }, status=status.HTTP_409_CONFLICT)
+
+        # Vendor "returnable" choice and the return window.
+        eligibility = return_eligibility(item)
+        if not eligibility["eligible"]:
+            return Response({
+                "success": False,
+                "error": eligibility["message"],
+                "code": eligibility["code"],
+                "support_url": eligibility["support_url"],
             }, status=status.HTTP_409_CONFLICT)
 
         # A line can only be returned/exchanged once.
@@ -930,3 +941,22 @@ def process_refund_api(request, refund_id):
             {"success": False, "error": "Unable to queue refund processing."},
             status=status.HTTP_500_INTERNAL_SERVER_ERROR,
         )
+
+
+@api_view(["GET"])
+@permission_classes([IsAuthenticatedOrVisitor])
+def return_eligibility_api(request, item_id):
+    """Tell the Returns page whether an item can be returned before the form is sent."""
+    if request.user and request.user.is_authenticated:
+        item = OrderItem.objects.select_related("item", "order").filter(id=item_id, user=request.user).first()
+    else:
+        visitor_id = sanitize(request.COOKIES.get("visitorId"))
+        item = (
+            OrderItem.objects.select_related("item", "order").filter(id=item_id, visitor_id=visitor_id).first()
+            if visitor_id else None
+        )
+    if not item:
+        return Response({"error": "No matching ordered item found."}, status=status.HTTP_404_NOT_FOUND)
+    data = return_eligibility(item)
+    data["window_ends_at"] = data["window_ends_at"].isoformat()
+    return Response(data)

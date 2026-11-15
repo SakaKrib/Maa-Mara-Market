@@ -54,7 +54,7 @@ const AdminPostCareer = ({ open = true, onClose }) => {
     } catch (error) {
       console.error(error);
       setMessage(error.response?.data?.detail || "Could not save the job.");
-      showSnackbar(error.response?.data?.detail || "Could not save the job.");
+      showSnackbar(error.response?.data?.detail || "Could not save the job.", "error");
     } finally {
       setSaving(false);
     }

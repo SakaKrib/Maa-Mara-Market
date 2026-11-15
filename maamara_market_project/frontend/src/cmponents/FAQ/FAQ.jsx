@@ -84,7 +84,7 @@ const FAQ = () => {
       showSnackbar("FAQ created successfully.");
     } catch (error) {
       console.error("Failed to create FAQ:", error);
-      showSnackbar(error?.response?.data?.detail || "Could not create FAQ.");
+      showSnackbar(error?.response?.data?.detail || "Could not create FAQ.", "error");
     } finally {
       setSaving(false);
     }
@@ -104,7 +104,7 @@ const FAQ = () => {
       showSnackbar("FAQ updated successfully.");
     } catch (error) {
       console.error("Failed to update FAQ:", error);
-      showSnackbar(error?.response?.data?.detail || "Could not update FAQ.");
+      showSnackbar(error?.response?.data?.detail || "Could not update FAQ.", "error");
     } finally {
       setSaving(false);
     }

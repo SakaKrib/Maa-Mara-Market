@@ -614,6 +614,8 @@ PAYOUT_DESTINATION_HOLD_HOURS = env.int("PAYOUT_DESTINATION_HOLD_HOURS", default
 # from the monthly earnings calculation, so no item can be paid twice.
 WEEKLY_PAYOUTS_ENABLED = env.bool("WEEKLY_PAYOUTS_ENABLED", default=False)
 # A pending approval request expires after this many hours.
+# Customers may request a return this many days after delivery is confirmed.
+RETURN_WINDOW_DAYS = env.int("RETURN_WINDOW_DAYS", default=14)
 PAYOUT_APPROVAL_VALID_HOURS = env.int("PAYOUT_APPROVAL_VALID_HOURS", default=24)
 
 def _default_mpesa_b2b_url():

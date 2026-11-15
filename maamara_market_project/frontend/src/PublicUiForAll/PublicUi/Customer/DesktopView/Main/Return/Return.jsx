@@ -3,7 +3,7 @@ import api from "../../../../../../Services/Api";
 import { downloadFile } from "../../../../../../Services/DownloadFile";
 import { Button } from "../../../../../../../components/ui/button";
 import { Download, Loader2, PackageCheck, UploadCloud, Undo2 } from "lucide-react";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import NativeAwareSelect from "../../../../../../components/NativeAwareSelect";
 import AppSnackbar from "../../../../../../../components/ui/app-snackbar";
 
@@ -20,6 +20,7 @@ const reasonOptions = [
 
 const RequestReturnForm = ({ selectedItem = null }) => {
   const location = useLocation();
+  const navigate = useNavigate();
   const routeSelectedItem = location.state?.selectedItem || null;
   const initialSelectedItem = selectedItem || routeSelectedItem;
   const [orders, setOrders] = useState([]);
@@ -95,10 +96,24 @@ const RequestReturnForm = ({ selectedItem = null }) => {
     [selectedOrder, itemId, selectedItem]
   );
 
+  // Ask the server whether the vendor and the return window allow this item to be returned.
+  const [eligibility, setEligibility] = useState(null);
+  useEffect(() => {
+    setEligibility(null);
+    if (!selectedOrderItem?.id) return undefined;
+    let active = true;
+    api.get(`/api/returns-eligibility/${selectedOrderItem.id}/`, { withCredentials: true })
+      .then(({ data }) => { if (active) setEligibility(data); })
+      .catch(() => { if (active) setEligibility(null); });
+    return () => { active = false; };
+  }, [selectedOrderItem?.id]);
+  const blockedByPolicy = eligibility && eligibility.eligible === false;
+
   const availableItems = selectedOrder?.items || [];
 
-  const showMessage = (message) =>
-    setSnackbar({ open: true, message });
+  // Failures are red; pass "success" explicitly for a confirmation.
+  const showMessage = (message, severity = "error") =>
+    setSnackbar({ open: true, message, severity });
 
   const downloadReturnRecord = async (record) => {
     if (!record) return;
@@ -261,13 +276,20 @@ const RequestReturnForm = ({ selectedItem = null }) => {
           normalizedReturnRecord,
           ...current.filter((record) => String(record.id) !== String(normalizedReturnRecord.id)),
         ]);
-        showMessage(response.data.message || "Your return request has been submitted.");
+        showMessage(response.data.message || "Your return request has been submitted.", "success");
         resetForm();
       } else {
         showMessage(response.data?.error || "The return request could not be submitted.");
       }
     } catch (error) {
       console.error("Return request error:", error);
+      if (error.response?.data?.code) {
+        setEligibility({
+          eligible: false,
+          message: error.response.data.error,
+          support_url: error.response.data.support_url,
+        });
+      }
       const message =
         error.response?.data?.error ||
         error.response?.data?.errors?.item?.[0] ||
@@ -324,7 +346,7 @@ const RequestReturnForm = ({ selectedItem = null }) => {
           <h1 className="mm-return-title">Return Policy</h1>
           <p className="mm-return-lead">
             We take great pride in our handmade creations. If you are not completely
-            satisfied, eligible returns and exchanges can be requested within <strong>2 weeks</strong> of purchase.
+            satisfied, eligible returns and exchanges can be requested within <strong>14 days</strong> of your order being delivered.
           </p>
 
           <div className="mm-return-policy-grid">
@@ -333,6 +355,20 @@ const RequestReturnForm = ({ selectedItem = null }) => {
               <p>
                 The item must be in the same quality and condition as when it was received:
                 unused, unwashed, and in its original packaging.
+              </p>
+            </div>
+            <div>
+              <h2>Vendor policy</h2>
+              <p>
+                Each vendor chooses whether an item can be returned, and this is shown on the item page.
+                Items the vendor has marked as non-returnable cannot be returned or exchanged here.
+              </p>
+            </div>
+            <div>
+              <h2>After 14 days</h2>
+              <p>
+                If more than 14 days have passed, please <Link to="/support">contact us</Link> and explain why
+                you could not respond sooner. We only make exceptions after reviewing your case.
               </p>
             </div>
             <div>
@@ -509,10 +545,24 @@ const RequestReturnForm = ({ selectedItem = null }) => {
                 <small>Optional. A clear photo can help us review damaged or incorrect items.</small>
               </div>
 
+              {blockedByPolicy && (
+                <div role="alert" className="mm-return-policy-block rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+                  <p className="font-semibold">{eligibility.message}</p>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="mt-3 rounded-full"
+                    onClick={() => navigate(eligibility.support_url || "/support")}
+                  >
+                    Contact us
+                  </Button>
+                </div>
+              )}
+
               <Button
                 type="submit"
                 className="mm-return-submit"
-                disabled={loading || !selectedOrderItem}
+                disabled={loading || !selectedOrderItem || blockedByPolicy}
               >
                 {loading ? (
                   <>

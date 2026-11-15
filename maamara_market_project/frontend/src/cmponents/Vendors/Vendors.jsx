@@ -414,7 +414,7 @@ const Vendor_list = () => {
                           showSnackbar("Vendor status updated successfully.");
                         } catch (actionError) {
                           console.error("Vendor status update failed:", actionError);
-                          showSnackbar(actionError.response?.data?.detail || "Unable to update vendor status.");
+                          showSnackbar(actionError.response?.data?.detail || "Unable to update vendor status.", "error");
                         }
                       }}
                       className="inline-flex flex-1 items-center justify-center rounded-xl border border-amber-200 px-4 py-2.5 text-sm font-semibold text-amber-700 transition hover:bg-amber-50 sm:flex-none"
@@ -431,7 +431,7 @@ const Vendor_list = () => {
                           showSnackbar("Vendor deleted successfully.");
                         } catch (actionError) {
                           console.error("Vendor deletion failed:", actionError);
-                          showSnackbar(actionError.response?.data?.detail || "Unable to delete vendor.");
+                          showSnackbar(actionError.response?.data?.detail || "Unable to delete vendor.", "error");
                         }
                       }}
                       className="inline-flex flex-1 items-center justify-center rounded-xl border border-red-200 px-4 py-2.5 text-sm font-semibold text-red-700 transition hover:bg-red-50 sm:flex-none"

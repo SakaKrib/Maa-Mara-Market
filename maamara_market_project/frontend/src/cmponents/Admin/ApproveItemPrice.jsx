@@ -115,7 +115,7 @@ const AdminPriceApproval = ({ onCountChange }) => {
       fetchHistory();
     } catch (err) {
       console.error("Error approving request:", err);
-      showSnackbar(err?.response?.data?.detail || err?.response?.data?.error || "Unable to approve price change.");
+      showSnackbar(err?.response?.data?.detail || err?.response?.data?.error || "Unable to approve price change.", "error");
     } finally {
       setApprovingId(null);
     }

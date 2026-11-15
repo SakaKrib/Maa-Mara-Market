@@ -102,7 +102,7 @@ const SingleItemProfile = ({ viewMode = null }) => {
       navigate("/admin-dashboard/vendors");
     } catch (requestError) {
       console.error("Failed to delete item:", requestError);
-      setSnackbar({ open: true, message: requestError.response?.data?.detail || "Unable to delete item." });
+      setSnackbar({ open: true, message: requestError.response?.data?.detail || "Unable to delete item.", severity: "error" });
     } finally {
       setDeleting(false);
     }
@@ -124,7 +124,7 @@ const SingleItemProfile = ({ viewMode = null }) => {
       await loadItem();
     } catch (requestError) {
       console.error("Failed to update item price:", requestError);
-      setSnackbar({ open: true, message: requestError.response?.data?.detail || requestError.response?.data?.price?.[0] || "Unable to update the item price." });
+      setSnackbar({ open: true, message: requestError.response?.data?.detail || requestError.response?.data?.price?.[0] || "Unable to update the item price.", severity: "error" });
     } finally {
       setSavingPrice(false);
     }

@@ -80,7 +80,7 @@ const CareerPage = () => {
       setTimeout(() => setSelectedJob(null), 900);
     } catch (error) {
       console.error("Application submission failed:", error);
-      setMessage(error.response?.data?.detail || "Application could not be submitted. Please try again."); showSnackbar(error.response?.data?.detail || "Application could not be submitted. Please try again.");
+      setMessage(error.response?.data?.detail || "Application could not be submitted. Please try again."); showSnackbar(error.response?.data?.detail || "Application could not be submitted. Please try again.", "error");
     } finally {
       setSubmitting(false);
     }

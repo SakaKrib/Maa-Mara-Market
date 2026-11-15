@@ -49,7 +49,7 @@ const CareerDetails = () => {
       setTimeout(() => setFormOpen(false), 900);
     } catch (error) {
       console.error("Application submission failed:", error);
-      setMessage(error.response?.data?.detail || "Application could not be submitted."); showSnackbar(error.response?.data?.detail || "Application could not be submitted.");
+      setMessage(error.response?.data?.detail || "Application could not be submitted."); showSnackbar(error.response?.data?.detail || "Application could not be submitted.", "error");
     } finally {
       setSubmitting(false);
     }

@@ -33,7 +33,7 @@ const SupportAdminPanel = ({ open = true, onClose }) => {
     } catch (requestError) {
       const message = requestError?.response?.data?.detail || "Could not load support requests.";
       setError(message);
-      showSnackbar(message);
+      showSnackbar(message, "error");
     } finally {
       setLoading(false);
     }
@@ -66,14 +66,14 @@ const SupportAdminPanel = ({ open = true, onClose }) => {
       if (updated.email_sent === false) {
         const message = "Reply was saved to the support ticket, but the customer email could not be delivered. Check the backend email configuration/logs.";
         setError(message);
-        showSnackbar(message);
+        showSnackbar(message, "error");
       } else {
         showSnackbar("Support reply sent successfully.");
       }
     } catch (requestError) {
       const message = requestError?.response?.data?.detail || "Could not send the reply.";
       setError(message);
-      showSnackbar(message);
+      showSnackbar(message, "error");
     } finally {
       setSending(false);
     }

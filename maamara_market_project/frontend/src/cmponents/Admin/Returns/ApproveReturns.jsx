@@ -39,7 +39,7 @@ const PendingReturnsList = () => {
       console.error("Return action failed:", err);
       const errorMessage = err?.response?.data?.error || "Something went wrong.";
       setActionError(errorMessage);
-      showSnackbar(errorMessage);
+      showSnackbar(errorMessage, "error");
     } finally {
       setLoadingId(null);
     }

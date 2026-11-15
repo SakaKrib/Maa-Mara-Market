@@ -49,7 +49,7 @@ export default function AdminBannerApprovalPage({ onCountChange }) {
       });
     } catch (err) {
       console.error(`${action} banner failed:`, err);
-      showSnackbar(err?.response?.data?.detail || `Unable to ${action} banner.`);
+      showSnackbar(err?.response?.data?.detail || `Unable to ${action} banner.`, "error");
     } finally {
       setProcessingId(null);
     }

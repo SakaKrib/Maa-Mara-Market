@@ -1,13 +1,19 @@
 import React, { useEffect, useState } from "react";
 
+// Messages that report a problem. Matched when a caller gives no explicit severity,
+// and also used to catch a caller that wrongly passes "success" for a failure.
 const ERROR_WORDS =
-  /(fail|error|unable|couldn'?t|could not|cannot|can'?t|invalid|denied|unauthori[sz]ed|incorrect|wrong|required|not found|try again|rejected|missing)/i;
+  /(fail|error|unable|couldn'?t|could not|cannot|can'?t|invalid|denied|unauthori[sz]ed|forbidden|incorrect|wrong|required|not found|try again|rejected|missing|not allowed|not eligible|not available|not completed|does not|do not|did not|isn'?t|aren'?t|won'?t|must |please (select|enter|choose|fill|complete|provide|upload|log ?in|sign ?in)|(enter|choose|select) a |only .{0,60}(can|may|are|is|be)\b|already|expired|no longer|too (large|long|big)|smaller than|at least|not enough|out of stock|permission|conflict|held for|unavailable|timed out|timeout)/i;
+
+// Stricter list used to override an explicit "success" that is clearly a failure.
+const FAILURE_START = /^\s*(failed|unable|could not|couldn'?t|error|cannot|can'?t|invalid|please (try again|select|enter|choose))|\b(failed|could not|unable to|not completed)\b/i;
 
 export const resolveSnackbarSeverity = (severity, message) => {
   const value = String(severity || "").toLowerCase();
-  if (value === "error" || value === "warning" || value === "danger" || value === "destructive") return "error";
-  if (value === "success") return "success";
   const text = String(message || "");
+  if (value === "error" || value === "warning" || value === "danger" || value === "destructive") return "error";
+  if (value === "success") return FAILURE_START.test(text) ? "error" : "success";
+  if (value === "info") return "success";
   if (/✅/.test(text)) return "success";
   if (/[⚠❌]/.test(text)) return "error";
   return ERROR_WORDS.test(text) ? "error" : "success";
