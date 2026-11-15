@@ -82,7 +82,7 @@ def return_request_handler_api(request, item_id):
         # --- Get the order containing this item ---
         order = (
             Order.objects
-            .select_for_update()
+            .select_for_update(of=("self",))
             .select_related("payment")
             .filter(order_items=item)
             .first()
@@ -456,7 +456,7 @@ def approve_return_request_api(request, return_id):
 
         return_request = (
             ReturnRequest.objects
-            .select_for_update()
+            .select_for_update(of=("self",))
             .select_related("item__item", "customer")
             .get(pk=return_id)
         )

@@ -135,7 +135,7 @@ def process_paypal_refund(refund_id):
     with transaction.atomic():
         refund = (
             Refund.objects
-            .select_for_update()
+            .select_for_update(of=("self",))
             .select_related("payment", "return_request__item")
             .get(pk=refund_id)
         )
@@ -297,7 +297,7 @@ def process_mpesa_refund(refund_id):
     with transaction.atomic():
         refund = (
             Refund.objects
-            .select_for_update()
+            .select_for_update(of=("self",))
             .select_related("payment", "return_request__item")
             .get(pk=refund_id)
         )
@@ -521,7 +521,7 @@ def reconcile_paypal_refund(provider_reference, provider_status, provider_amount
     with transaction.atomic():
         refund = (
             Refund.objects
-            .select_for_update()
+            .select_for_update(of=("self",))
             .select_related("payment", "return_request__item", "return_request__vendor_adjustment")
             .filter(provider="PayPal", provider_reference=provider_reference)
             .first()
