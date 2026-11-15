@@ -21,6 +21,10 @@ maamaramarket.com, www.maamaramarket.com {
         reverse_proxy backend:8000
     }
 
+    handle /admin/* {
+        reverse_proxy backend:8000
+    }
+
     handle /api/* {
         reverse_proxy backend:8000
     }
