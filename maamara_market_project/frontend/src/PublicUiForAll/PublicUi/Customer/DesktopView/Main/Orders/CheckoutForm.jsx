@@ -277,6 +277,21 @@ const fetchShippingQuote = async () => {
       const res = await api.post("/api/checkout/", payload);
       const responseData = res.data;
 
+      // The whole order was paid with exchange credit: nothing to charge, it is already placed.
+      if (responseData.credit_paid) {
+        sessionStorage.removeItem("maaMaraCheckout");
+        navigate("/payment-success", {
+          state: {
+            order: {
+              order_id: responseData.order_id,
+              amount: responseData.payment?.credit_applied,
+              payment_method: "Exchange credit",
+            },
+          },
+        });
+        return;
+      }
+
       // Once a CheckoutSession exists, keep it as the recovery point until
       // payment succeeds. Buy Now is cleared only by the success flow.
       sessionStorage.setItem("maaMaraCheckout", JSON.stringify(responseData));
@@ -299,7 +314,11 @@ const fetchShippingQuote = async () => {
       window.location.assign(responseData.redirect_url);
     } catch (error) {
 
-      showSnackbar("Checkout failed. Please try again.", "error");
+      const serverMessage = error?.response?.data?.error;
+      showSnackbar(
+        typeof serverMessage === "string" && serverMessage.trim() ? serverMessage : "Checkout failed. Please try again.",
+        "error"
+      );
     }
   };
 
