@@ -302,6 +302,14 @@ class ProductFilterOrganicAndSearchTests(TestCase):
         self.assertEqual(data["categories"][0]["subcategories"], ["Mangoes"])
         self.assertEqual(data["total_items"], 2)
 
+    def test_homepage_collections_with_recent_searches_does_not_crash(self):
+        from rest_framework.test import APIClient
+        from ReactSerializers.models import SearchEvent
+
+        SearchEvent.objects.create(visitor_id="vis-search", query="bucket")
+        response = APIClient().get("/api/homepage-collections/", {"visitor_id": "vis-search"})
+        self.assertEqual(response.status_code, 200, response.content[:300])
+
     def test_homepage_collections_exclude_organic_items(self):
         from rest_framework.test import APIClient
 

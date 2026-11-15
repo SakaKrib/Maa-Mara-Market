@@ -680,7 +680,9 @@ def homepage_collections(request):
         search_filter |= _search_term_query(term)
 
     search_interest_items = list(
-        _catalog_queryset().filter(search_filter).only(
+        # select_related(None): .only() defers department/section/brand, which cannot be
+        # combined with the catalog queryset's select_related (FieldError -> HTTP 500).
+        _catalog_queryset().filter(search_filter).select_related(None).only(
             "id", "category_id", "subcategory_id", "brand_id", "section_id"
         )[:100]
     ) if search_filter else []
