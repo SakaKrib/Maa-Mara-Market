@@ -41,7 +41,7 @@ class ExchangeFlowTests(PayoutTestMixin, TestCase):
         return client.post(
             f"/api/returns-request/{line.id}/",
             {"reason": "get_something_else", "customer_preference": "exchange"},
-            format="json",
+            format="multipart",
         )
 
     def approve(self, return_id):
