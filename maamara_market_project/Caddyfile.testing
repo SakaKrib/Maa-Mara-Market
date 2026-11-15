@@ -3,7 +3,14 @@
 }
 
 :9080 {
-  @maamara_backend path /maamara/api/* /maamara/media/* /maamara/static/* /maamara/admin/* /maamara/accounts/* /maamara/google/* /maamara/ws/*
+  # Django admin keeps the /maamara prefix (no strip_prefix) so its login
+  # redirect (next=/maamara/admin/) stays inside Maa Mara instead of landing on
+  # Saka Krib's /admin/.
+  handle /maamara/admin/* {
+    reverse_proxy 127.0.0.1:8000
+  }
+
+  @maamara_backend path /maamara/api/* /maamara/media/* /maamara/static/* /maamara/accounts/* /maamara/google/* /maamara/ws/*
   handle @maamara_backend {
     uri strip_prefix /maamara
     reverse_proxy 127.0.0.1:8000
