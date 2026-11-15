@@ -656,9 +656,10 @@ PAYMENT_GATEWAYS = {
             "initiator_password": env("MPESA_B2B_INITIATOR_PASSWORD", default=""),
             "certificate_path": env("MPESA_B2B_CERTIFICATE_PATH", default=""),
             "url": env("MPESA_B2B_URL", default="") or _default_mpesa_b2b_url(),
-            # Daraja RecieverIdentifierType for Buy Goods: 2 = Till number, 4 = shortcode.
-            # Confirm against your Daraja app/sandbox; override here if Safaricom requires 4.
-            "till_receiver_identifier_type": env("MPESA_B2B_TILL_RECEIVER_IDENTIFIER_TYPE", default="2"),
+            # Daraja requires RecieverIdentifierType "4" for BOTH BusinessBuyGoods
+            # (Till) and BusinessPayBill, so it is not configurable.
+            # Separate result/timeout endpoints per destination type. Each falls
+            # back to the shared MPESA_B2B_* / MPESA_B2C_* URL when not set.
             "result_url": env_resolved(
                 "MPESA_B2B_RESULT_URL",
                 default=env_resolved("MPESA_B2C_RESULT_URL", default=""),
@@ -667,6 +668,10 @@ PAYMENT_GATEWAYS = {
                 "MPESA_B2B_TIMEOUT_URL",
                 default=env_resolved("MPESA_B2C_TIMEOUT_URL", default=""),
             ),
+            "till_result_url": env_resolved("MPESA_B2B_TILL_RESULT_URL", default=""),
+            "till_timeout_url": env_resolved("MPESA_B2B_TILL_TIMEOUT_URL", default=""),
+            "paybill_result_url": env_resolved("MPESA_B2B_PAYBILL_RESULT_URL", default=""),
+            "paybill_timeout_url": env_resolved("MPESA_B2B_PAYBILL_TIMEOUT_URL", default=""),
         },
 
         "c2b": {

@@ -185,7 +185,7 @@ def mpesa_result(request):
                         "payout": payout,
                         "vendor": payout.vendor,
                         "phone_number": getattr(payout.vendor, "mpesa_number", None) if payout.vendor.mpesa_type == "PHONE" else None,
-                        "raw_data": {},
+                        "raw_data": _b2b_result_details(result, payout),
                     },
                 )
 
@@ -253,6 +253,66 @@ def mpesa_timeout(request):
         return JsonResponse({"ResultCode": 1, "ResultDesc": "Timeout received"})
 
     return JsonResponse({"error": "Invalid method"}, status=405)
+
+
+def _result_parameters(result):
+    entries = (result.get("ResultParameters") or {}).get("ResultParameter") or []
+    if isinstance(entries, dict):
+        entries = [entries]
+    return {e.get("Key"): e.get("Value") for e in entries if isinstance(e, dict)}
+
+
+def _destination_kind(vendor):
+    """TILL / PAYBILL / PHONE for a vendor's saved M-Pesa destination."""
+    from vendorDashboard.payout.services.payment_processors import get_vendor_mpesa_type
+    return {"TILL": "TILL", "LIPA_NA_MPESA": "PAYBILL", "PHONE": "PHONE"}.get(
+        get_vendor_mpesa_type(vendor), ""
+    )
+
+
+def _b2b_result_details(result, payout):
+    """Store non-secret result details, including who M-Pesa says was paid."""
+    params = _result_parameters(result)
+    details = {"destination_type": _destination_kind(payout.vendor)}
+    name = params.get("ReceiverPartyPublicName") or params.get("CreditPartyPublicName")
+    if name:
+        details["receiver_party_public_name"] = str(name)[:200]
+    return details
+
+
+def _make_b2b_handlers(expected):
+    """Result/timeout views for one B2B destination type (TILL or PAYBILL)."""
+
+    @csrf_exempt
+    def result_view(request):
+        if request.method == "POST":
+            try:
+                result = json.loads(request.body.decode("utf-8")).get("Result") or {}
+                payout = VendorPayout.objects.select_related("vendor").filter(
+                    mpesa_conversation_id=result.get("ConversationID")
+                ).first() or VendorPayout.objects.select_related("vendor").filter(
+                    mpesa_originator_conversation_id=result.get("OriginatorConversationID")
+                ).first()
+                if payout and _destination_kind(payout.vendor) != expected:
+                    logger.error(
+                        "M-Pesa %s callback received for a payout whose destination is %s.",
+                        expected, _destination_kind(payout.vendor),
+                        extra={"payout_reference": payout.reference},
+                    )
+            except (ValueError, AttributeError):
+                pass
+        return mpesa_result(request)
+
+    @csrf_exempt
+    def timeout_view(request):
+        logger.info("M-Pesa %s B2B timeout callback.", expected)
+        return mpesa_timeout(request)
+
+    return result_view, timeout_view
+
+
+mpesa_b2b_till_result, mpesa_b2b_till_timeout = _make_b2b_handlers("TILL")
+mpesa_b2b_paybill_result, mpesa_b2b_paybill_timeout = _make_b2b_handlers("PAYBILL")
 
 
 

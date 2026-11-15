@@ -273,6 +273,9 @@ def call_mpesa_b2b(vendor, amount, mpesa_config, payout=None):
     paybill_account = str(getattr(vendor, "mpesa_paybill_account", "") or "").strip()
     if mpesa_type == "LIPA_NA_MPESA" and not paybill_account:
         return {"success": False, "error": "Vendor's saved Paybill account number is missing."}
+    if mpesa_type == "LIPA_NA_MPESA" and len(paybill_account) > 13:
+        # Daraja allows at most 13 characters; truncating could credit the wrong account.
+        return {"success": False, "error": "Vendor's Paybill account number is longer than the 13 characters M-Pesa allows."}
 
     if payout.mpesa_result_desc and (
         payout.mpesa_result_desc.startswith("B2B submission outcome unknown")
@@ -290,8 +293,11 @@ def call_mpesa_b2b(vendor, amount, mpesa_config, payout=None):
     short_code = cfg.get("short_code") or b2c_cfg.get("short_code")
     initiator_password = cfg.get("initiator_password") or b2c_cfg.get("initiator_password")
     certificate_path = cfg.get("certificate_path") or b2c_cfg.get("certificate_path")
-    result_url = cfg.get("result_url")
-    timeout_url = cfg.get("timeout_url")
+    # Till (BusinessBuyGoods) and Paybill (BusinessPayBill) each get their own
+    # callback endpoints; fall back to the shared B2B URLs when not configured.
+    kind = "till" if mpesa_type == "TILL" else "paybill"
+    result_url = cfg.get(f"{kind}_result_url") or cfg.get("result_url")
+    timeout_url = cfg.get(f"{kind}_timeout_url") or cfg.get("timeout_url")
     required = {
         "url": cfg.get("url"),
         "initiator_name": initiator_name,
@@ -319,12 +325,13 @@ def call_mpesa_b2b(vendor, amount, mpesa_config, payout=None):
             "SecurityCredential": security_credential,
             "CommandID": "BusinessBuyGoods" if is_till else "BusinessPayBill",
             "SenderIdentifierType": "4",
-            "RecieverIdentifierType": str(cfg.get("till_receiver_identifier_type") or "2") if is_till else "4",
+            # Daraja: both BusinessBuyGoods and BusinessPayBill take type 4.
+            "RecieverIdentifierType": "4",
             "Amount": int(amount),
             "PartyA": short_code,
             "PartyB": destination,
             "AccountReference": (
-                str(payout.reference or "Vendor payout")[:20] if is_till else paybill_account
+                str(payout.reference or "Vendor payout")[:13] if is_till else paybill_account
             ),
             "Remarks": "Vendor payout",
             "QueueTimeOutURL": timeout_url,

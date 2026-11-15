@@ -96,6 +96,11 @@ urlpatterns = [
     # mpesa callbacks
     path("mpesa/result", mpesa_result, name="mpesa_result"),
     path("mpesa/timeout", mpesa_timeout, name="mpesa_timeout"),
+    # Separate B2B callbacks: Till (BusinessBuyGoods) and Paybill (BusinessPayBill).
+    path("mpesa/b2b/till/result", mpesa_b2b_till_result, name="mpesa_b2b_till_result"),
+    path("mpesa/b2b/till/timeout", mpesa_b2b_till_timeout, name="mpesa_b2b_till_timeout"),
+    path("mpesa/b2b/paybill/result", mpesa_b2b_paybill_result, name="mpesa_b2b_paybill_result"),
+    path("mpesa/b2b/paybill/timeout", mpesa_b2b_paybill_timeout, name="mpesa_b2b_paybill_timeout"),
 
     # bank
     path('kcb/callback/',kcb_oauth_callback, name='kcb_oauth_callback'),
