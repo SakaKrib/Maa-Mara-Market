@@ -304,7 +304,7 @@ class ProductFilterOrganicAndSearchTests(TestCase):
 
     def test_homepage_collections_with_recent_searches_does_not_crash(self):
         from rest_framework.test import APIClient
-        from ReactSerializers.models import SearchEvent
+        from core.models import SearchEvent
 
         SearchEvent.objects.create(visitor_id="vis-search", query="bucket")
         response = APIClient().get("/api/homepage-collections/", {"visitor_id": "vis-search"})
