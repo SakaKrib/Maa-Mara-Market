@@ -31,13 +31,13 @@ class ReturnPolicyTests(PayoutTestMixin, TestCase):
             order=order, item=item, user=self.customer, price_at_purchase=Decimal("500.00"), quantity=1
         )
 
-    def client(self):
+    def api(self):
         c = APIClient()
         c.force_authenticate(self.customer)
         return c
 
     def submit(self, line):
-        return self.client().post(
+        return self.api().post(
             f"/api/returns-request/{line.id}/",
             {"reason": "get_something_else", "customer_preference": "exchange"},
             format="multipart",
@@ -63,12 +63,12 @@ class ReturnPolicyTests(PayoutTestMixin, TestCase):
         self.assertEqual(self.submit(self.line(ordered_days_ago=13)).status_code, 200)
 
     def test_eligibility_endpoint_matches_the_submit_rules(self):
-        ok = self.client().get(f"/api/returns-eligibility/{self.line().id}/").json()
+        ok = self.api().get(f"/api/returns-eligibility/{self.line().id}/").json()
         self.assertTrue(ok["eligible"])
-        no = self.client().get(f"/api/returns-eligibility/{self.line(returnable=False).id}/").json()
+        no = self.api().get(f"/api/returns-eligibility/{self.line(returnable=False).id}/").json()
         self.assertFalse(no["eligible"])
         self.assertEqual(no["code"], "NOT_RETURNABLE")
-        late = self.client().get(f"/api/returns-eligibility/{self.line(ordered_days_ago=20).id}/").json()
+        late = self.api().get(f"/api/returns-eligibility/{self.line(ordered_days_ago=20).id}/").json()
         self.assertEqual(late["code"], "RETURN_WINDOW_EXPIRED")
 
     def test_other_customers_item_is_not_visible(self):
