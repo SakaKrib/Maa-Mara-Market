@@ -18,3 +18,13 @@ class AppLinksTests(TestCase):
         d = self.client.get("/.well-known/apple-app-site-association").json()
         self.assertEqual(d["applinks"]["details"][0]["appID"], "TEAM123456.com.x.app")
         self.assertEqual(d["applinks"]["details"][0]["paths"], ["/maamara/*"])
+
+
+class AdminPrefixRedirectTests(TestCase):
+    def test_admin_login_redirect_keeps_public_prefix(self):
+        from django.test import override_settings
+
+        with override_settings(FORCE_SCRIPT_NAME="/maamara"):
+            response = self.client.get("/admin/")
+        self.assertEqual(response.status_code, 302)
+        self.assertIn("next=/maamara/admin/", response["Location"])

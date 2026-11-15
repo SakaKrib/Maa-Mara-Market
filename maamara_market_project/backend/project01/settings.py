@@ -198,6 +198,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     "corsheaders.middleware.CorsMiddleware",
+    "project01.middleware.public_prefix.AdminPublicPrefixMiddleware",
     "django.middleware.security.SecurityMiddleware",
     # Runs after the response has been created, including Django auth/CSRF
     # cookies, so cross-origin native WebView requests can send them securely.
