@@ -25,6 +25,7 @@ from .returns import (
     return_eligibility_api,
 )
 from .shipping import get_shipping_rates
+from .billing_memory import previous_billing_address
 from .views import (
     add_to_cart_api,
     get_cart_view,
@@ -108,6 +109,7 @@ urlpatterns = [
 
     # PayPal checkout webhook must remain reachable during maintenance.
     path("api/paypal/webhook/", paypal_webhook, name="paypal-checkout-webhook"),
+    path("api/checkout/previous-billing/", previous_billing_address, name="previous-billing-address"),
 
     # mpesa payment gateways (B2C)
     path("mpesa/b2c/", mpesa_b2c_payment, name="mpesa_b2c"),

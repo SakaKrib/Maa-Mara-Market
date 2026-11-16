@@ -126,22 +126,14 @@ export default function CheckoutPage() {
         // A stale checkout must never prevent a fresh checkout.
       }
 
+      // Offer the billing details from the customer's last paid order, for signed-in
+      // users and for guests (matched by their visitor token). They review it and
+      // choose to reuse it or enter a new address.
       try {
-        const authResponse = await api.get("/api/check-auth/");
-        if (!authResponse.data?.isAuthenticated) return;
-
-        const accountResponse = await api.get("/api/user/account/");
-        const completedOrder = (accountResponse.data?.orders || []).find(
-          (item) =>
-            ["PAID", "PROCESSING", "PACKING", "READY_TO_SHIP", "SHIPPED",
-              "IN_TRANSIT", "OUT_FOR_DELIVERY", "DELIVERED",
-              "AWAITING_CONFIRMATION", "COMPLETED", "completed"].includes(
-              String(item.status || "").toUpperCase()
-            ) && item.billing_address
-        );
-
-        if (!cancelled && completedOrder?.billing_address) {
-          setPreviousDetails(completedOrder.billing_address);
+        await ensureCheckoutIdentity();
+        const { data } = await api.get("/api/checkout/previous-billing/");
+        if (!cancelled && data?.billing_address) {
+          setPreviousDetails(data.billing_address);
           setShowPreviousDetails(true);
         }
       } catch (error) {
