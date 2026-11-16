@@ -1487,9 +1487,12 @@ def sync_pending_shipments():
             ],
         )
     )
+    # "OTHER" carriers have no tracking API, so staff enter their milestones. They
+    # are excluded here: otherwise they are never marked as synced, sort first, and
+    # could use up the per-run cap and starve DHL/FedEx shipments.
     qs = Shipment.objects.filter(active_shipments | post_delivery_watch).filter(
         Q(last_synced_at__isnull=True) | Q(last_synced_at__lt=cutoff)
-    ).exclude(tracking_number="").distinct().order_by(
+    ).exclude(tracking_number="").exclude(carrier="OTHER").distinct().order_by(
         F("last_synced_at").asc(nulls_first=True)
     )[:max_per_run]
     results = {"checked": 0, "updated": 0, "skipped_unconfigured": 0, "errors": 0, "rate_limited": False}

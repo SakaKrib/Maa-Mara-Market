@@ -368,3 +368,21 @@ class CarrierDeliveredTrackingSyncTests(TestCase):
         self.assertEqual(result["checked"], 1)
         sync_mock.assert_called_once()
 
+
+
+    @override_settings(
+        SHIPMENT_TRACKING_MIN_INTERVAL_MINUTES=120,
+        SHIPMENT_TRACKING_MAX_PER_RUN=25,
+        SHIPMENT_TRACKING_CALL_SPACING_SECONDS=0,
+    )
+    @patch("order.fulfillment.sync_shipment_tracking", return_value={"events_applied": 0})
+    def test_manual_other_carrier_shipments_are_not_polled(self, sync_mock):
+        self.shipment.carrier = "OTHER"
+        self.shipment.status = "IN_TRANSIT"
+        self.shipment.last_synced_at = None
+        self.shipment.save(update_fields=["carrier", "status", "last_synced_at", "updated_at"])
+
+        result = sync_pending_shipments()
+
+        self.assertEqual(result["checked"], 0)
+        sync_mock.assert_not_called()
