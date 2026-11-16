@@ -49,6 +49,10 @@ export default function CheckoutPage() {
   const [buyNowItem, setBuyNowItem] = useState(null);
   const [shippingOptions, setShippingOptions] = useState([]);
   const [selectedShipping, setSelectedShipping] = useState(null);
+  // idle | loading | ready | unavailable | error  (rates load by themselves once the address is filled)
+  const [shippingState, setShippingState] = useState("idle");
+  // The customer chose to collect the order or send their own courier/rider.
+  const [ownDelivery, setOwnDelivery] = useState(false);
   const countries = getData();
   const navigate = useNavigate();
   const [totalOrder, setTotalOrder] = useState(0);
@@ -196,55 +200,78 @@ export default function CheckoutPage() {
   }, [checkoutItems.length, buyNowItem, order?.items]);
   
 
-  // shipping rstes
+  // Delivery options load automatically when the address is complete, so the
+  // customer never has to press a "get quote" button.
+  const watchedCountry = watch("country");
+  const watchedCity = watch("city");
+  const watchedZip = watch("zip");
+  const watchedAddress = watch("address");
+  const watchedPhone = watch("phone");
+  const itemsKey = JSON.stringify(checkoutItems.map((item) => [item.id, item.quantity]));
 
-const fetchShippingQuote = async () => {
-  const addressData = watch(); // get current form values
-
-  if (!addressData.country || !addressData.city || !addressData.zip) {
-    showSnackbar("Please fill country, city, and ZIP code to get a shipping quote", "warning");
-    return;
-  }
-
-  try {
-    await ensureCheckoutIdentity();
-
-    const payload = {
-      order_id: order?.order?.id || null,
-      address: addressData.address,
-      apartment: addressData.apartment || "",
-      city: addressData.city,
-      state: addressData.state || "",
-      zip: addressData.zip,
-      country: addressData.country,
-      phone: addressData.phone,
-      items: checkoutItems.map(item => ({
-        id: item.id,
-        quantity: item.quantity,
-        weight: item.weight || 0.5,
-        length: item.length || 5,
-        width: item.width || 5,
-        height: item.height || 5,
-      })),
-    };
-
-    const res = await api.post("/api/shipping-rates", payload);
-    const data = res.data;
-    setShippingOptions(data.rates || []);
-    if (data.rates?.length) {
-      showSnackbar("Shipping quote fetched successfully.", "success");
-    } else {
-      showSnackbar("Shipping quotes are temporarily unavailable while DHL/FedEx integration is muted.", "info");
+  useEffect(() => {
+    if (!watchedCountry || !watchedCity || !watchedZip || checkoutItems.length === 0) {
+      setShippingOptions([]);
+      setSelectedShipping(null);
+      setShippingState("idle");
+      return undefined;
     }
-  } catch (err) {
-
-    showSnackbar("Failed to get shipping quote. Try again.", "error");
-  }
-};
-  
-  
+    let active = true;
+    setShippingState("loading");
+    const timer = setTimeout(async () => {
+      try {
+        await ensureCheckoutIdentity();
+        const { data } = await api.post("/api/shipping-rates", {
+          order_id: order?.order?.id || null,
+          address: watchedAddress || "",
+          apartment: "",
+          city: watchedCity,
+          state: "",
+          zip: watchedZip,
+          country: watchedCountry,
+          phone: watchedPhone || "",
+          items: checkoutItems.map((item) => ({
+            id: item.id,
+            quantity: item.quantity,
+            weight: item.weight || 0.5,
+            length: item.length || 5,
+            width: item.width || 5,
+            height: item.height || 5,
+          })),
+        });
+        if (!active) return;
+        const rates = Array.isArray(data.rates) ? data.rates : [];
+        setShippingOptions(rates);
+        // Keep the customer's choice only if it is still on offer.
+        setSelectedShipping((current) =>
+          current && rates.some((rate) => rate.provider === current.provider && rate.service === current.service && rate.price === current.price)
+            ? current
+            : null
+        );
+        setShippingState(rates.length ? "ready" : "unavailable");
+      } catch (err) {
+        if (!active) return;
+        setShippingOptions([]);
+        setSelectedShipping(null);
+        setShippingState("error");
+      }
+    }, 700);
+    return () => {
+      active = false;
+      clearTimeout(timer);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [watchedCountry, watchedCity, watchedZip, itemsKey]);
 
   const onSubmit = async (data) => {
+    if (shippingState === "loading") {
+      showSnackbar("Delivery options are still loading. Please wait a moment.", "error");
+      return;
+    }
+    if (shippingState === "ready" && !selectedShipping && !ownDelivery) {
+      showSnackbar("Please choose a delivery option, or choose to arrange your own delivery.", "error");
+      return;
+    }
     const payload = {
       first_name: data.firstName || "",
       last_name: data.lastName || "",
@@ -544,37 +571,93 @@ const fetchShippingQuote = async () => {
 
               <div className="border-t border-border pt-7">
                 <h2 className="text-lg font-semibold">Delivery</h2>
-                <p className="mt-1 text-sm text-muted-foreground">Get an available shipping quote for this address.</p>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  Delivery options for your address appear here automatically.
+                </p>
 
-                <Button type="button" onClick={fetchShippingQuote} className="primary-button mm-button-fit mt-4 rounded-full px-5 text-white font-semibold">
-                  Get shipping quote
-                </Button>
+                <div className="mt-4 space-y-3" aria-live="polite">
+                  {shippingState === "idle" && (
+                    <div className="rounded-xl border border-dashed border-border bg-muted/20 px-4 py-4 text-sm text-muted-foreground">
+                      Enter your country, city and ZIP code above to see delivery options.
+                    </div>
+                  )}
 
-                {shippingOptions.length > 0 && (
-                  <div className="mt-5 space-y-3">
-                    {shippingOptions.map((option, idx) => (
+                  {shippingState === "loading" && (
+                    <div className="space-y-3" role="status" aria-label="Loading delivery options">
+                      {[0, 1].map((n) => (
+                        <div key={n} className="h-14 animate-pulse rounded-xl border border-border bg-muted/40" />
+                      ))}
+                    </div>
+                  )}
+
+                  {shippingState === "ready" && shippingOptions.map((option) => {
+                    const chosen = selectedShipping === option;
+                    return (
                       <label
-                        key={idx}
-                        className="flex cursor-pointer items-center justify-between gap-4 rounded-xl border border-border bg-background px-4 py-3 text-sm transition hover:bg-muted/30"
+                        key={`${option.provider}-${option.service}-${option.price}`}
+                        className={`flex cursor-pointer items-center justify-between gap-4 rounded-xl border px-4 py-3 text-sm transition ${
+                          chosen ? "border-gray-900 bg-muted/40 ring-1 ring-gray-900" : "border-border bg-background hover:bg-muted/30"
+                        }`}
                       >
                         <span className="flex items-center gap-3">
                           <input
                             type="radio"
-                            value={option.service}
-                            {...register("shippingMethod")}
-                            onChange={() => setSelectedShipping(option)}
+                            name="delivery-option"
+                            checked={chosen}
+                            onChange={() => { setSelectedShipping(option); setOwnDelivery(false); }}
                             className="h-4 w-4"
                           />
-                          <span className="font-medium">{option.service}</span>
+                          <span>
+                            <span className="block font-medium">{option.service}</span>
+                            {option.provider && <span className="block text-xs text-muted-foreground">{option.provider}</span>}
+                          </span>
                         </span>
                         <span className="font-semibold">
                           KES {Number(option.price_kes ?? option.price ?? 0).toLocaleString()}
                         </span>
                       </label>
-                    ))}
-                    {errors.shippingMethod && <p className="text-sm text-red-500">{errors.shippingMethod.message}</p>}
-                  </div>
-                )}
+                    );
+                  })}
+
+                  {shippingState === "ready" && (
+                    <label
+                      className={`flex cursor-pointer items-center justify-between gap-4 rounded-xl border px-4 py-3 text-sm transition ${
+                        ownDelivery ? "border-gray-900 bg-muted/40 ring-1 ring-gray-900" : "border-border bg-background hover:bg-muted/30"
+                      }`}
+                    >
+                      <span className="flex items-center gap-3">
+                        <input
+                          type="radio"
+                          name="delivery-option"
+                          checked={ownDelivery}
+                          onChange={() => { setOwnDelivery(true); setSelectedShipping(null); }}
+                          className="h-4 w-4"
+                        />
+                        <span>
+                          <span className="block font-medium">I will arrange my own delivery</span>
+                          <span className="block text-xs text-muted-foreground">
+                            Collect it, or send your own courier or rider. We will contact you to agree on handover.
+                          </span>
+                        </span>
+                      </span>
+                      <span className="font-semibold">KES 0</span>
+                    </label>
+                  )}
+
+                  {(shippingState === "unavailable" || shippingState === "error") && (
+                    <div className="rounded-xl border border-border bg-muted/20 px-4 py-4 text-sm">
+                      <p className="font-medium text-card-foreground">
+                        {shippingState === "error"
+                          ? "We could not load delivery prices just now."
+                          : "No courier prices are available for this address yet."}
+                      </p>
+                      <p className="mt-1 text-muted-foreground">
+                        You can still place your order. No delivery fee is added, and we will contact you
+                        to agree on delivery or collection (your own courier or rider also works).
+                      </p>
+                    </div>
+                  )}
+                </div>
               </div>
 
               <div className="border-t border-border pt-7">
@@ -665,11 +748,17 @@ const fetchShippingQuote = async () => {
               <div className="flex justify-between">
                 <span>Shipping</span>
                 <span className="font-semibold">
-                  {shippingOptions.length === 0
-                    ? "--"
+                  {shippingState === "loading"
+                    ? "Calculating…"
                     : selectedShipping
                     ? `KES ${Number(selectedShipping.price_kes ?? selectedShipping.price ?? 0).toLocaleString()}`
-                    : "Select shipping"}
+                    : ownDelivery
+                    ? "Arranged by you"
+                    : shippingState === "ready"
+                    ? "Choose delivery"
+                    : shippingState === "unavailable" || shippingState === "error"
+                    ? "Agreed after order"
+                    : "--"}
                 </span>
               </div>
             </div>

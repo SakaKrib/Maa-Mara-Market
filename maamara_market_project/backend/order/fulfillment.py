@@ -301,6 +301,46 @@ CUSTOMER_EVENT_NOTES = {
 }
 
 
+def _carrier_code(provider):
+    """Map the provider name a customer paid for to the dispatch carrier codes."""
+    name = str(provider or "").strip().upper()
+    if name.startswith("DHL"):
+        return "DHL"
+    if name.startswith("FEDEX"):
+        return "FEDEX"
+    return "OTHER" if name else ""
+
+
+def shipping_summary(order):
+    """
+    What the customer chose and paid for at checkout, so dispatch books the same thing.
+
+    arrangement "carrier": a courier rate was paid for (provider/service/amount).
+    arrangement "customer_arranged": no courier fee was charged (local pickup, the
+    customer's own courier or rider, or no rates were available for the address).
+    needs_attention: an overseas order with no courier paid for, so staff must agree
+    delivery and its cost with the customer before dispatch.
+    """
+    provider = str(order.shipping_provider or "").strip()
+    address = order.billing_address
+    country = str(getattr(address, "country", "") or "").strip().upper()
+    if hasattr(getattr(address, "country", None), "code"):
+        country = str(address.country.code).upper()
+    paid_carrier = bool(provider)
+    return {
+        "arrangement": "carrier" if paid_carrier else "customer_arranged",
+        "provider": provider,
+        "carrier_code": _carrier_code(provider),
+        "service": str(order.shipping_service or ""),
+        "amount_kes": str(order.shipping_amount or 0),
+        "provider_amount": str(order.shipping_provider_amount) if order.shipping_provider_amount is not None else None,
+        "currency": str(order.shipping_currency or ""),
+        "destination_country": country,
+        "destination_city": str(getattr(address, "city", "") or ""),
+        "needs_attention": (not paid_carrier) and country not in {"", "KE"},
+    }
+
+
 def _fulfillment_payload(fulfillment, include_internal=False, audience=None):
     """Serialize a fulfilment record for one audience: customer, vendor or staff.
 
@@ -397,6 +437,7 @@ def _fulfillment_payload(fulfillment, include_internal=False, audience=None):
                 order.user.get_username() if order.user_id else
                 (f"Guest {order.visitor_id[:8]}" if order.visitor_id else "Unknown")
             ),
+            "shipping": shipping_summary(order),
         })
     return result
 
@@ -653,6 +694,20 @@ def create_shipment(request):
     if any(item.status != "DISPATCH_INSPECTED" or item.inspection_status != "PASSED" for item in fulfillments):
         return Response({"detail": "Every selected item must pass dispatch inspection before shipment creation."}, status=409)
     order = fulfillments[0].order_item.order
+    paid = shipping_summary(order)
+    # The courier booked must be the one the customer paid for, unless staff say otherwise.
+    confirmed = str(request.data.get("confirm_mismatch")).lower() in {"true", "1"}
+    if paid["arrangement"] == "carrier" and paid["carrier_code"] != carrier and not confirmed:
+        return Response({
+            "detail": (
+                f"The customer paid for {paid['provider']} ({paid['service'] or 'service not recorded'}) "
+                f"but you selected {carrier}. Confirm if you really mean to ship with a different carrier."
+            ),
+            "code": "CARRIER_MISMATCH",
+            "expected_carrier": paid["carrier_code"],
+        }, status=409)
+    if not service and paid["arrangement"] == "carrier":
+        service = paid["service"][:120]
     tracking_url = str(request.data.get("tracking_url") or "").strip()
     if not tracking_url:
         tracking_url = CARRIER_URLS.get(carrier, "")

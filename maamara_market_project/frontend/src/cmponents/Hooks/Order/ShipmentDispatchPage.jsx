@@ -23,6 +23,37 @@ const ISSUE_RESOLUTION_OPTIONS = [
   { value: "complete_after_review", label: "Complete after staff review" },
 ];
 
+const money = (value) => `KES ${Number(value || 0).toLocaleString()}`;
+
+// What the customer chose and paid for at checkout, so dispatch books the same thing.
+function PaidShippingNote({ shipping }) {
+  if (!shipping) return null;
+  if (shipping.arrangement === "carrier") {
+    return (
+      <div className="mt-3 rounded-xl border border-blue-200 bg-blue-50 p-3 text-sm text-blue-900">
+        <p className="font-semibold">Customer paid for {shipping.provider} delivery{shipping.service ? ` · ${shipping.service}` : ""}</p>
+        <p className="mt-0.5">
+          {money(shipping.amount_kes)}
+          {shipping.provider_amount ? ` (${shipping.currency} ${shipping.provider_amount} quoted)` : ""}
+          {shipping.destination_city || shipping.destination_country ? ` · to ${[shipping.destination_city, shipping.destination_country].filter(Boolean).join(", ")}` : ""}
+        </p>
+        <p className="mt-1 text-xs text-blue-800">Book this carrier and service. Choosing another carrier asks for confirmation.</p>
+      </div>
+    );
+  }
+  return shipping.needs_attention ? (
+    <div className="mt-3 rounded-xl border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900">
+      <p className="font-semibold">Overseas order with no courier fee paid ({[shipping.destination_city, shipping.destination_country].filter(Boolean).join(", ")})</p>
+      <p className="mt-0.5">Contact the customer to agree delivery and who pays for it before you book a carrier.</p>
+    </div>
+  ) : (
+    <div className="mt-3 rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm text-slate-700">
+      <p className="font-semibold">No courier fee paid: the customer arranges collection or their own courier or rider</p>
+      <p className="mt-0.5">Agree the handover with them. If you book a local rider, record it with the carrier set to Other.</p>
+    </div>
+  );
+}
+
 export default function ShipmentDispatchPage() {
   const [records, setRecords] = useState([]);
   const [shipments, setShipments] = useState([]);
@@ -82,19 +113,33 @@ export default function ShipmentDispatchPage() {
   };
 
   const updateShipmentForm = (id, field, value) => setShipmentForms((current) => ({ ...current, [id]: { ...(current[id] || {}), [field]: value } }));
-  const createShipment = async (record) => {
+  // Default to the carrier and service the customer paid for.
+  const formFor = (record) => {
+    const paid = record.shipping?.arrangement === "carrier" ? record.shipping : null;
     const form = shipmentForms[record.fulfillment_id] || {};
+    return {
+      carrier: form.carrier || paid?.carrier_code || (record.shipping ? "OTHER" : "DHL"),
+      tracking_number: form.tracking_number || "",
+      service: form.service ?? paid?.service ?? "",
+    };
+  };
+  const createShipment = async (record, confirmMismatch = false) => {
+    const form = formFor(record);
     try {
       await api.post("/api/fulfillment/shipments/", {
         order_id: record.order_id,
         fulfillment_ids: [record.fulfillment_id],
-        carrier: form.carrier || "DHL",
-        tracking_number: form.tracking_number || "",
-        service: form.service || "",
+        carrier: form.carrier,
+        tracking_number: form.tracking_number,
+        service: form.service,
+        confirm_mismatch: confirmMismatch,
       }, { withCredentials: true });
       setNotice(`Carrier tracking record created for order #${record.order_id}. Confirm handover only after the carrier has accepted the parcel.`);
       await load();
     } catch (e) {
+      if (e?.response?.data?.code === "CARRIER_MISMATCH" && window.confirm(`${e.response.data.detail}\n\nShip with ${form.carrier} anyway?`)) {
+        return createShipment(record, true);
+      }
       setError(e?.response?.data?.detail || "Shipment record could not be created.");
     }
   };
@@ -169,6 +214,7 @@ export default function ShipmentDispatchPage() {
         {readyForInspection.length ? readyForInspection.map((record) => (
           <article key={record.fulfillment_id} className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
             <div className="flex flex-wrap justify-between gap-2"><div><p className="text-xs uppercase tracking-wide text-slate-500">Order #{record.order_id} · Item #{record.order_item_id}</p><h3 className="mt-1 text-base font-semibold leading-snug text-slate-900">{record.item_name}</h3><p className="mt-1 text-sm text-slate-600">Vendor/customer: {record.customer_name || "Customer"} · Quantity {record.quantity}</p></div><span className="rounded-full bg-amber-50 px-3 py-1 text-xs font-bold text-amber-800">Ready for inspection</span></div>
+            <PaidShippingNote shipping={record.shipping} />
             <label className="mt-3 block text-sm font-semibold text-slate-700">Inspection notes<textarea value={notes[record.order_item_id] || ""} onChange={(e) => setNotes((current) => ({ ...current, [record.order_item_id]: e.target.value }))} rows={2} maxLength={2000} className="mt-1 w-full rounded-xl border border-slate-300 p-3 text-sm" placeholder="Correct item/variant, quantity, condition, packaging…" /></label>
             <div className="mt-3 flex flex-col gap-2 sm:flex-row"><button type="button" onClick={() => inspect(record, true)} className="inline-flex items-center justify-center gap-2 rounded-xl bg-green-700 px-4 py-2.5 text-sm font-bold text-white hover:bg-green-800"><CheckCircle2 className="h-4 w-4" /> Pass inspection</button><button type="button" onClick={() => inspect(record, false)} className="inline-flex items-center justify-center gap-2 rounded-xl border border-red-200 px-4 py-2.5 text-sm font-bold text-red-700 hover:bg-red-50"><AlertTriangle className="h-4 w-4" /> Fail and hold item</button></div>
           </article>
@@ -180,7 +226,8 @@ export default function ShipmentDispatchPage() {
         {inspected.length ? inspected.map((record) => (
           <article key={record.fulfillment_id} className="rounded-xl border border-green-200 bg-white p-4 shadow-sm">
             <div className="flex flex-wrap justify-between gap-2"><div><p className="text-xs uppercase tracking-wide text-slate-500">Order #{record.order_id} · Item #{record.order_item_id}</p><h3 className="mt-1 text-base font-semibold leading-snug text-slate-900">{record.item_name}</h3></div><span className="rounded-full bg-green-50 px-3 py-1 text-xs font-bold text-green-700">Inspection passed</span></div>
-            {record.shipments?.length ? <div className="mt-3 space-y-2">{record.shipments.map((shipment) => <div key={shipment.id} className="rounded-xl border border-slate-200 bg-slate-50 p-3"><p className="font-semibold text-slate-800">{shipment.carrier} · {shipment.tracking_number}</p><p className="mt-1 text-sm text-slate-600">Status: {shipment.status} · {shipment.latest_event_description}</p>{shipment.tracking_url && <a href={shipment.tracking_url} target="_blank" rel="noreferrer" className="mt-1 inline-block text-sm font-semibold text-blue-700 underline">Open carrier tracking</a>}{shipment.status === "LABEL_CREATED" && <button type="button" onClick={() => handover(shipment)} className="mt-3 block rounded-xl bg-blue-700 px-4 py-2 text-sm font-bold text-white hover:bg-blue-800">Confirm physical carrier handover</button>}</div>)}</div> : <div className="mt-3 grid gap-3 sm:grid-cols-3"><label className="text-sm font-semibold text-slate-700">Carrier<NativeAwareSelect value={shipmentForms[record.fulfillment_id]?.carrier || "DHL"} onChange={(e) => updateShipmentForm(record.fulfillment_id, "carrier", e.target.value)} options={CARRIER_OPTIONS} aria-label="Carrier" className="mt-1 w-full rounded-xl border border-slate-300 bg-white p-2.5" /></label><label className="text-sm font-semibold text-slate-700">Tracking number<input value={shipmentForms[record.fulfillment_id]?.tracking_number || ""} onChange={(e) => updateShipmentForm(record.fulfillment_id, "tracking_number", e.target.value)} className="mt-1 w-full rounded-xl border border-slate-300 p-2.5" placeholder="Carrier-issued number" /></label><label className="text-sm font-semibold text-slate-700">Service (optional)<input value={shipmentForms[record.fulfillment_id]?.service || ""} onChange={(e) => updateShipmentForm(record.fulfillment_id, "service", e.target.value)} className="mt-1 w-full rounded-xl border border-slate-300 p-2.5" placeholder="Express / Economy" /></label><div className="sm:col-span-3"><button type="button" onClick={() => createShipment(record)} className="rounded-xl bg-blue-700 px-4 py-2.5 text-sm font-bold text-white hover:bg-blue-800">Save shipment details</button></div></div>}
+            <PaidShippingNote shipping={record.shipping} />
+            {record.shipments?.length ? <div className="mt-3 space-y-2">{record.shipments.map((shipment) => <div key={shipment.id} className="rounded-xl border border-slate-200 bg-slate-50 p-3"><p className="font-semibold text-slate-800">{shipment.carrier} · {shipment.tracking_number}</p><p className="mt-1 text-sm text-slate-600">Status: {shipment.status} · {shipment.latest_event_description}</p>{shipment.tracking_url && <a href={shipment.tracking_url} target="_blank" rel="noreferrer" className="mt-1 inline-block text-sm font-semibold text-blue-700 underline">Open carrier tracking</a>}{shipment.status === "LABEL_CREATED" && <button type="button" onClick={() => handover(shipment)} className="mt-3 block rounded-xl bg-blue-700 px-4 py-2 text-sm font-bold text-white hover:bg-blue-800">Confirm physical carrier handover</button>}</div>)}</div> : <div className="mt-3 grid gap-3 sm:grid-cols-3"><label className="text-sm font-semibold text-slate-700">Carrier<NativeAwareSelect value={formFor(record).carrier} onChange={(e) => updateShipmentForm(record.fulfillment_id, "carrier", e.target.value)} options={CARRIER_OPTIONS} aria-label="Carrier" className="mt-1 w-full rounded-xl border border-slate-300 bg-white p-2.5" /></label><label className="text-sm font-semibold text-slate-700">Tracking number<input value={shipmentForms[record.fulfillment_id]?.tracking_number || ""} onChange={(e) => updateShipmentForm(record.fulfillment_id, "tracking_number", e.target.value)} className="mt-1 w-full rounded-xl border border-slate-300 p-2.5" placeholder="Carrier-issued number" /></label><label className="text-sm font-semibold text-slate-700">Service (optional)<input value={formFor(record).service} onChange={(e) => updateShipmentForm(record.fulfillment_id, "service", e.target.value)} className="mt-1 w-full rounded-xl border border-slate-300 p-2.5" placeholder="Express / Economy" /></label><div className="sm:col-span-3"><button type="button" onClick={() => createShipment(record)} className="rounded-xl bg-blue-700 px-4 py-2.5 text-sm font-bold text-white hover:bg-blue-800">Save shipment details</button></div></div>}
           </article>
         )) : <p className="rounded-xl border border-dashed border-slate-300 bg-white p-5 text-sm text-slate-500">No inspected items are waiting for carrier handover.</p>}
       </section>
