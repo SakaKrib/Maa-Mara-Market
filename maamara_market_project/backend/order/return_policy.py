@@ -17,6 +17,12 @@ from django.utils import timezone
 SUPPORT_URL = "/support"
 NOT_RETURNABLE = "NOT_RETURNABLE"
 WINDOW_EXPIRED = "RETURN_WINDOW_EXPIRED"
+NOT_COMPLETED = "ITEM_NOT_COMPLETED"
+PAYMENT_NOT_CONFIRMED = "PAYMENT_NOT_CONFIRMED"
+
+# Payment states that still mean "this customer paid". PARTIALLY_REFUNDED matters:
+# after one line of an order is refunded, the other lines remain returnable.
+PAID_PAYMENT_STATUSES = {"paid", "completed", "partially_refunded"}
 
 
 def return_window_days():
@@ -67,3 +73,31 @@ def return_eligibility(order_item, now=None):
             ),
         )
     return result
+
+
+def readiness_problem(order_item):
+    """
+    Return (code, message) when the item is not yet in a returnable state, else None.
+
+    "Completed" is the item's own fulfilment status: the customer confirmed
+    delivery, or the confirmation window passed after delivery was reported.
+    A paid order alone is not enough, and neither is the order-level label.
+    """
+    order = order_item.order
+    payment = getattr(order, "payment", None)
+    if not payment or str(payment.status).lower() not in PAID_PAYMENT_STATUSES:
+        return (
+            PAYMENT_NOT_CONFIRMED,
+            "We have not confirmed payment for this item yet, so it cannot be returned.",
+        )
+    fulfillment = getattr(order_item, "fulfillment", None)
+    current = str(fulfillment.status).upper() if fulfillment is not None else str(order.status).upper()
+    if current != "COMPLETED":
+        label = fulfillment.get_status_display() if fulfillment is not None else current.title()
+        return (
+            NOT_COMPLETED,
+            f"This item is not completed yet (current status: {label}). "
+            "A return can be requested once you confirm delivery, or automatically "
+            "after the confirmation window that follows delivery.",
+        )
+    return None

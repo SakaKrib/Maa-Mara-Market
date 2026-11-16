@@ -75,3 +75,25 @@ class ReturnPolicyTests(PayoutTestMixin, TestCase):
         other = User.objects.create_user("rp-other", "o@example.com", "pw")
         c = APIClient(); c.force_authenticate(other)
         self.assertEqual(c.get(f"/api/returns-eligibility/{self.line().id}/").status_code, 404)
+
+
+class ReturnReadinessTests(ReturnPolicyTests):
+    def test_not_completed_item_gets_a_specific_message(self):
+        line = self.line()
+        line.order.status = "SHIPPED"
+        line.order.save()
+        body = self.submit(line).json()
+        self.assertEqual(body["code"], "ITEM_NOT_COMPLETED")
+        self.assertIn("not completed yet", body["error"])
+
+    def test_unpaid_order_gets_a_payment_message(self):
+        line = self.line()
+        line.order.payment.status = "PENDING"
+        line.order.payment.save()
+        self.assertEqual(self.submit(line).json()["code"], "PAYMENT_NOT_CONFIRMED")
+
+    def test_other_line_is_returnable_after_part_of_the_order_was_refunded(self):
+        line = self.line()
+        line.order.payment.status = "PARTIALLY_REFUNDED"
+        line.order.payment.save()
+        self.assertEqual(self.submit(line).status_code, 200)

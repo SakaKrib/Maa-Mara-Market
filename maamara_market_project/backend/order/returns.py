@@ -23,7 +23,7 @@ from django.conf import settings
 from .refund_tasks import process_refund_task
 from .payment_labels import canonical_provider, is_refundable_status
 from .models import Order, Refund
-from .return_policy import return_eligibility
+from .return_policy import readiness_problem, return_eligibility
 
 User = get_user_model()
 logger = logging.getLogger(__name__)
@@ -97,20 +97,13 @@ def return_request_handler_api(request, item_id):
 
         # Item-level completion is authoritative for a split/multi-vendor order:
         # another item may still be in transit while this item has been accepted.
-        fulfillment = getattr(item, "fulfillment", None)
-        item_completed = (
-            str(fulfillment.status).upper() == "COMPLETED"
-            if fulfillment is not None
-            else str(order.status).upper() == "COMPLETED"
-        )
-        payment_confirmed = bool(
-            order.payment
-            and str(order.payment.status).lower() in {"paid", "completed"}
-        )
-        if not item_completed or not payment_confirmed:
+        problem = readiness_problem(item)
+        if problem:
             return Response({
                 "success": False,
-                "error": "Only a completed, paid order item can be returned.",
+                "error": problem[1],
+                "code": problem[0],
+                "support_url": "/support",
             }, status=status.HTTP_409_CONFLICT)
 
         # Vendor "returnable" choice and the return window.
@@ -958,5 +951,8 @@ def return_eligibility_api(request, item_id):
     if not item:
         return Response({"error": "No matching ordered item found."}, status=status.HTTP_404_NOT_FOUND)
     data = return_eligibility(item)
+    problem = readiness_problem(item)
+    if problem:
+        data.update(eligible=False, code=problem[0], message=problem[1])
     data["window_ends_at"] = data["window_ends_at"].isoformat()
     return Response(data)
