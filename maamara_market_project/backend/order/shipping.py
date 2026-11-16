@@ -85,6 +85,15 @@ def _dimensions(order):
     }
 
 
+def _dhl_authorization(config):
+    """Basic key:secret when a secret is configured, otherwise the legacy bearer key."""
+    if config.get("api_secret"):
+        import base64
+        raw = f"{config['api_key']}:{config['api_secret']}".encode()
+        return "Basic " + base64.b64encode(raw).decode()
+    return f"Bearer {config['api_key']}"
+
+
 def _dhl_rates(order, destination):
     config = settings.PAYMENT_GATEWAYS.get("shipping", {}).get("dhl", {})
     if not config.get("api_url") or not config.get("api_key"):
@@ -100,6 +109,7 @@ def _dhl_rates(order, destination):
             },
             "receiverDetails": destination,
         },
+        **({"accounts": [{"typeCode": "shipper", "number": config["account_number"]}]} if config.get("account_number") else {}),
         "plannedShippingDateAndTime": timezone.localtime().strftime("%Y-%m-%dT%H:%M:%S%z"),
         "unitOfMeasurement": "metric",
         "packages": [{
@@ -116,7 +126,8 @@ def _dhl_rates(order, destination):
         config["api_url"],
         json=payload,
         headers={
-            "Authorization": f"Bearer {config['api_key']}",
+            # DHL Express (MyDHL) uses the API key and secret as Basic credentials.
+            "Authorization": _dhl_authorization(config),
             "Content-Type": "application/json",
         },
         timeout=20,
@@ -221,19 +232,20 @@ def get_rates_for_destination(order, destination):
     rates = []
     provider_errors = []
 
-    # Shipping-provider APIs are intentionally muted while the business is
-    # waiting for its DHL/FedEx credentials. Keep the provider implementations
-    # above intact so they can be re-enabled when API access is available.
-    #
-    # for provider_name, provider in (("DHL", _dhl_rates), ("FedEx", _fedex_rates)):
-    #     try:
-    #         rates.extend(provider(order, destination))
-    #     except requests.exceptions.RequestException:
-    #         logger.exception("%s shipping provider request failed", provider_name)
-    #         provider_errors.append(provider_name)
-    #     except (ValueError, KeyError, TypeError):
-    #         logger.exception("%s returned an invalid shipping response", provider_name)
-    #         provider_errors.append(provider_name)
+    # Live carrier prices are switched on with SHIPPING_RATES_ENABLED=True once real
+    # DHL/FedEx credentials are configured. Each provider also returns nothing when
+    # its own credentials are missing, so one carrier can be enabled without the other.
+    if getattr(settings, "SHIPPING_RATES_ENABLED", False):
+        for provider_name, provider in (("DHL", _dhl_rates), ("FedEx", _fedex_rates)):
+            try:
+                rates.extend(provider(order, destination))
+            except requests.exceptions.RequestException:
+                logger.exception("%s shipping provider request failed", provider_name)
+                provider_errors.append(provider_name)
+            except (ValueError, KeyError, TypeError):
+                logger.exception("%s returned an invalid shipping response", provider_name)
+                provider_errors.append(provider_name)
+
     normalized_rates = []
     usd_to_kes_rate = None
     for rate in rates:

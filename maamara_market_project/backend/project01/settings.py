@@ -726,21 +726,25 @@ PAYMENT_GATEWAYS = {
     },
 
     "shipping": {
+        # One set of credentials per carrier. Endpoints are derived from the *_BASE_URL
+        # values, so changing sandbox <-> production only needs a new base URL and keys.
+        # The individual *_URL variables remain as optional overrides.
         "dhl": {
-            "api_url": env("DHL_RATES_URL", default=""),
+            "api_url": env("DHL_RATES_URL", default=(env("DHL_BASE_URL", default="").rstrip("/") + "/rates") if env("DHL_BASE_URL", default="") else ""),
             "api_key": env("DHL_API_KEY", default=""),
-            # Tracking endpoint is separate from the rate-quote endpoint.
-            "tracking_api_url": env("DHL_TRACKING_API_URL", default="https://api-eu.dhl.com/track/shipments"),
+            "api_secret": env("DHL_API_SECRET", default=""),
+            "account_number": env("DHL_ACCOUNT_NUMBER", default=""),
+            "tracking_api_url": env("DHL_TRACKING_API_URL", default=(env("DHL_BASE_URL", default="").rstrip("/") + "/track/shipments") if env("DHL_BASE_URL", default="") else "https://api-eu.dhl.com/track/shipments"),
+            # Optional override; by default tracking uses DHL_API_KEY.
             "tracking_api_key": env("DHL_TRACKING_API_KEY", default=env("DHL_API_KEY", default="")),
             "origin_postal_code": env("SHIPPING_ORIGIN_POSTAL_CODE", default="00100"),
             "origin_city": env("SHIPPING_ORIGIN_CITY", default="Nairobi"),
             "origin_country": env("SHIPPING_ORIGIN_COUNTRY", default="KE"),
         },
         "fedex": {
-            "auth_url": env("FEDEX_OAUTH_URL", default=""),
-            "api_url": env("FEDEX_RATES_URL", default=""),
-            # Tracking endpoint is separate from the rate-quote endpoint.
-            "tracking_api_url": env("FEDEX_TRACKING_API_URL", default="https://apis.fedex.com/track/v1/trackingnumbers"),
+            "auth_url": env("FEDEX_OAUTH_URL", default=(env("FEDEX_BASE_URL", default="").rstrip("/") + "/oauth/token") if env("FEDEX_BASE_URL", default="") else ""),
+            "api_url": env("FEDEX_RATES_URL", default=(env("FEDEX_BASE_URL", default="").rstrip("/") + "/rate/v1/rates/quotes") if env("FEDEX_BASE_URL", default="") else ""),
+            "tracking_api_url": env("FEDEX_TRACKING_API_URL", default=(env("FEDEX_BASE_URL", default="").rstrip("/") + "/track/v1/trackingnumbers") if env("FEDEX_BASE_URL", default="") else "https://apis.fedex.com/track/v1/trackingnumbers"),
             "client_id": env("FEDEX_CLIENT_ID", default=""),
             "client_secret": env("FEDEX_CLIENT_SECRET", default=""),
             "account_number": env("FEDEX_ACCOUNT_NUMBER", default=""),
@@ -750,6 +754,10 @@ PAYMENT_GATEWAYS = {
         },
     },
 }
+
+# Live courier prices at checkout. Keep False until real DHL/FedEx credentials are
+# in .env; then set SHIPPING_RATES_ENABLED=True (no code change needed).
+SHIPPING_RATES_ENABLED = env.bool("SHIPPING_RATES_ENABLED", default=False)
 
 # =========================================================
 # EXTERNAL SERVICES
