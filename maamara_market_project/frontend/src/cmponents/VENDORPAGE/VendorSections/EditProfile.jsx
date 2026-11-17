@@ -11,6 +11,7 @@ import {
 import { Input } from "../../../../components/ui/input";
 import { Button } from "../../../../components/ui/button";
 import { useMemo, useState } from "react";
+import { resolveApiAssetUrl } from "../../../Services/Api";
 
 export default function VendorProfileSheet({ vendor = {}, onSave }) {
   const [formData, setFormData] = useState({
@@ -20,34 +21,24 @@ export default function VendorProfileSheet({ vendor = {}, onSave }) {
     email: vendor.email || "",
     phone_number: vendor.phone_number || "",
     id_number: vendor.id_number || "",
-    vendor_code: vendor.vendor_code || "",
     address: vendor.address || "",
     address_2: vendor.address_2 || "",
     city: vendor.city || "",
     country: vendor.country || "",
     company_name: vendor.company_name || "",
-    company_logo_existing: vendor.vendor_company_logo || null,
+    company_logo_existing: resolveApiAssetUrl(vendor.vendor_company_logo),
     company_logo_new: null,
     workshop_location: vendor.workshop_location || "",
     product_type: vendor.product_type || "",
     is_food: vendor.is_food ?? false,
     Are_You_KEBS_certified: vendor.Are_You_KEBS_certified ?? false,
     product_description: vendor.product_description || "",
-    payment_method: vendor.payment_method || "",
-    bank_account_number: vendor.bank_account_number || "",
-    mpesa_type: vendor.mpesa_type || "",
-    mpesa_number: vendor.mpesa_number || "",
-    mpesa_till: vendor.mpesa_till || "",
-    mpesa_paybill: vendor.mpesa_paybill || "",
-    mpesa_paybill_account: vendor.mpesa_paybill_account || "",
-    paypal_email: vendor.paypal_email || "",
-    tax_number: vendor.tax_number || "",
     website_url: vendor.website_url || "",
-    profile_picture_existing: vendor.profile_picture || null,
+    profile_picture_existing: resolveApiAssetUrl(vendor.profile_picture_url || vendor.profile_picture),
     profile_picture_new: null,
     brand_name: vendor.brand?.name || "",
     brand_description: vendor.brand?.description || "",
-    brand_logo_existing: vendor.brand?.logo?.url || vendor.brand?.logo || null,
+    brand_logo_existing: resolveApiAssetUrl(vendor.brand?.logo?.url || vendor.brand?.logo),
     brand_logo_new: null,
   });
 
@@ -77,6 +68,12 @@ export default function VendorProfileSheet({ vendor = {}, onSave }) {
     }
   };
 
+  const previewFor = (keyExisting, keyNew) => {
+    const file = formData[keyNew];
+    if (file instanceof File) return URL.createObjectURL(file);
+    return formData[keyExisting];
+  };
+
   const imageFields = [
     {
       keyExisting: "company_logo_existing",
@@ -103,7 +100,6 @@ export default function VendorProfileSheet({ vendor = {}, onSave }) {
       ["email", "Email"],
       ["phone_number", "Phone number"],
       ["id_number", "National ID"],
-      ["vendor_code", "Vendor code"],
       ["address", "Address"],
       ["address_2", "Address 2"],
       ["city", "City"],
@@ -112,15 +108,6 @@ export default function VendorProfileSheet({ vendor = {}, onSave }) {
       ["workshop_location", "Workshop location"],
       ["product_type", "Product type"],
       ["product_description", "Product description"],
-      ["payment_method", "Payment method"],
-      ["bank_account_number", "Bank account number"],
-      ["mpesa_type", "M-Pesa type"],
-      ["mpesa_number", "M-Pesa number"],
-      ["mpesa_till", "M-Pesa till"],
-      ["mpesa_paybill", "M-Pesa paybill"],
-      ["mpesa_paybill_account", "M-Pesa paybill account number"],
-      ["paypal_email", "PayPal email"],
-      ["tax_number", "Tax number"],
       ["website_url", "Website URL"],
       ["brand_name", "Brand name"],
       ["brand_description", "Brand description"],
@@ -143,7 +130,7 @@ export default function VendorProfileSheet({ vendor = {}, onSave }) {
               Edit Vendor Profile
             </SheetTitle>
             <SheetDescription className="text-sm text-gray-500">
-              Update your business, contact, payout, brand, and profile details.
+              Update your business, contact, brand, and profile details. Payment details and tax number are managed in Settings.
             </SheetDescription>
           </SheetHeader>
         </div>
@@ -216,9 +203,9 @@ export default function VendorProfileSheet({ vendor = {}, onSave }) {
                   className="rounded-xl border border-gray-200 bg-white p-4"
                 >
                   <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
-                    {formData[keyExisting] ? (
+                    {previewFor(keyExisting, keyNew) ? (
                       <img
-                        src={formData[keyExisting]}
+                        src={previewFor(keyExisting, keyNew)}
                         alt={label}
                         className="h-20 w-20 rounded-lg border border-gray-200 object-cover"
                       />

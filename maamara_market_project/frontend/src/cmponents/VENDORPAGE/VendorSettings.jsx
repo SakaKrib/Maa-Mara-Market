@@ -5,6 +5,7 @@ import { useAuth } from "../Auth/AuthContext/Context.jsx";
 import { useAdminPreferences } from "../Settings/AdminPreferencesContext";
 import api from "../../Services/Api";
 import LogoutConfirmationModal from "../Auth/LogoutConfirmationModal";
+import VendorPaymentDetails from "./VendorPaymentDetails";
 
 const VendorSettings = () => {
   const navigate = useNavigate();
@@ -254,6 +255,8 @@ const VendorSettings = () => {
                 </button>
               </form>
             </div>
+
+            <VendorPaymentDetails />
 
             <div className="rounded-2xl border border-[#e6e6e4] bg-white p-4 shadow-sm sm:p-5">
               <h2 className="text-sm font-semibold text-gray-900">Account</h2>

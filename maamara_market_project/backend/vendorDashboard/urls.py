@@ -7,8 +7,11 @@ from .sales_overview import admin_payout_readiness, vendor_sale_detail, vendor_s
 from .views import AdminPayoutAPIView, VendorPayoutAPIView, monthly_sales_report
 from .payout.services.vendor_monthly_payout_runner import process_payouts_by_group, pay_single_vendor_payout, generate_monthly_payouts, reconcile_single_vendor_payout, reconcile_bank_vendor_payout
 from .calback import *
+from .vendor_self_service import VendorPaymentDetailsView, VendorProfileUpdateView
 from . GlobalSearchEngine import GlobalSearchView
 urlpatterns = [
+    path("api/vendor-update-profile/<int:pk>/", VendorProfileUpdateView.as_view(), name="vendor-update-profile"),
+    path("api/vendor/payment-details/", VendorPaymentDetailsView.as_view(), name="vendor-payment-details"),
     path("api/vendor-draft/", views.VendorDraftView.as_view(), name="vendor-draft"),
     path("api/item-draft/", views.ItemDraftView.as_view(), name="item-draft"),
     path('', views.dashboard, name='vendor-dashboard'),  # Replace with your actual view
