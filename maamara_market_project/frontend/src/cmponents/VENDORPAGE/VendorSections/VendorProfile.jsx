@@ -420,9 +420,13 @@ const SingleVendorProfile = () => {
                     />
                   ) : null;
                 })()}
-                <div className="hidden">
-                  <div className="grid h-56 w-full place-items-center rounded-xl border border-gray-200 bg-black text-5xl font-bold tracking-wide text-white">
-                    {(vendor.first_name?.[0] || vendor.company_name?.[0] || vendor.username?.[0] || "V").toUpperCase()}
+                <div className={[vendor.profile_picture_url, vendor.profile_picture, vendor.vendor_company_logo, vendor.company_logo, vendor.brand?.logo].some(Boolean) ? "hidden" : ""}>
+                  <div
+                    role="img"
+                    aria-label="No profile picture"
+                    className="grid h-56 w-full place-items-center rounded-xl border border-gray-200 bg-[#f8f8f6] text-7xl"
+                  >
+                    <span aria-hidden="true">👤</span>
                   </div>
                 </div>
               </div>

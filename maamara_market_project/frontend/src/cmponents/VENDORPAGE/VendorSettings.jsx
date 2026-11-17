@@ -84,11 +84,28 @@ const VendorSettings = () => {
       const body = new FormData();
       Object.entries(profile).forEach(([key, value]) => body.append(key, value || ""));
       await api.post("/api/user/update/", body, { withCredentials: true });
+      // Keep the Vendor record in step with the account details (PATCH only what changed here).
+      const vendorRes = await api.get("/api/vendor-profile/single-page/", { withCredentials: true });
+      const vendorPatch = {
+        phone_number: profile.phone_number,
+        city: profile.city,
+        country: profile.country,
+        address: profile.address,
+      };
+      if (profile.first_name.trim()) vendorPatch.first_name = profile.first_name.trim();
+      if (profile.last_name.trim()) vendorPatch.surname_name = profile.last_name.trim();
+      Object.keys(vendorPatch).forEach((key) => { if (!String(vendorPatch[key] || "").trim()) delete vendorPatch[key]; });
+      await api.patch(`/api/vendor-update-profile/${vendorRes.data.id}/`, vendorPatch, { withCredentials: true });
       await refreshAuth();
       setMessage("Account details saved successfully.");
     } catch (err) {
       console.error("Failed to save vendor settings:", err);
-      setError(err.response?.data?.detail || "Could not save your account details.");
+      const fieldErrors = err.response?.data?.errors;
+      setError(
+        (fieldErrors && Object.values(fieldErrors)[0]) ||
+          err.response?.data?.detail ||
+          "Could not save your account details."
+      );
     } finally {
       setSaving(false);
     }

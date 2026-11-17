@@ -19,7 +19,8 @@ import {
   ShoppingBag,
   Undo2,
 } from "lucide-react";
-import api from "../../../../../../Services/Api";
+import api, { resolveApiAssetUrl } from "../../../../../../Services/Api";
+import { useVendorCompleteItems } from "../../../../../../cmponents/Hooks/Order/OrderComplete";
 import { Avatar } from "@mui/material";
 import AppSnackbar from "../../../../../../../components/ui/app-snackbar";
 import DatePicker from "../../../../../../../components/ui/date-picker";
@@ -36,6 +37,9 @@ export default function UserAccount() {
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState(false);
   const [orders, setOrders] = useState([]);
+  const [isVendor, setIsVendor] = useState(false);
+  const [avatarFailed, setAvatarFailed] = useState(false);
+  const vendorSales = useVendorCompleteItems(isVendor);
   const [formData, setFormData] = useState({
     first_name: "",
     last_name: "",
@@ -69,6 +73,7 @@ export default function UserAccount() {
           setReferral(data.referral || null);
           setProfile(data.profile);
           setOrders(data.orders || []);
+          setIsVendor(Boolean(data.is_vendor));
   
           setFormData({
             first_name: data.user.first_name || "",
@@ -95,6 +100,8 @@ export default function UserAccount() {
   }, []);
   
 
+  const avatarSrc = preview || resolveApiAssetUrl(profile?.profile_picture);
+
   // Handle form field changes
   const handleChange = (e) =>
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -104,6 +111,7 @@ export default function UserAccount() {
     const file = e.target.files[0];
     if (file) {
       setFormData({ ...formData, profile_picture: file });
+      setAvatarFailed(false);
       setPreview(URL.createObjectURL(file));
     }
   };
@@ -188,11 +196,22 @@ export default function UserAccount() {
 
             {/* Profile Picture */}
             <div className="mm-account-profile flex items-center gap-4 mt-4">
-              <img
-                src={preview || profile?.profile_picture || "/default-avatar.png"}
-                alt="Profile"
-                className="mm-account-avatar w-24 h-24 rounded-full object-cover border-2 border-gray-300"
-              />
+              {avatarSrc && !avatarFailed ? (
+                <img
+                  src={avatarSrc}
+                  alt="Profile"
+                  onError={() => setAvatarFailed(true)}
+                  className="mm-account-avatar w-24 h-24 rounded-full object-cover border-2 border-gray-300"
+                />
+              ) : (
+                <div
+                  role="img"
+                  aria-label="No profile picture"
+                  className="mm-account-avatar grid w-24 h-24 place-items-center rounded-full border-2 border-gray-300 bg-gray-100 text-5xl"
+                >
+                  <span aria-hidden="true">👤</span>
+                </div>
+              )}
               {editing && (
                 <label className="mm-account-upload flex items-center gap-2 text-sm cursor-pointer text-blue-500">
                   <ImagePlus className="w-4 h-4" />
@@ -320,7 +339,7 @@ export default function UserAccount() {
             </div>
 
             <div className="mm-account-invite flex justify-center">
-              <Button className='mm-account-primary-button w-full sm:w-auto' >
+              <Button type="button" onClick={() => navigate("/send-invitation")} className='mm-account-primary-button w-full sm:w-auto' >
                 Invite a Friend
               </Button>
             </div>
@@ -334,8 +353,11 @@ export default function UserAccount() {
             >
               <h3 className="font-semibold text-lg flex items-center gap-2 text-gray-800 dark:text-gray-100">
                 <ShoppingBag className="w-5 h-5 text-indigo-500" />
-                Completed Orders
+                {isVendor ? "My Completed Purchases" : "Completed Orders"}
               </h3>
+              {isVendor && (
+                <p className="-mt-2 text-xs text-gray-500">Orders you bought as a customer.</p>
+              )}
 
               {orders.length ? (
                 <div className="space-y-3 max-h-[30vh] overflow-y-auto pr-2">
@@ -356,7 +378,7 @@ export default function UserAccount() {
                         {o.items.map((itemObj) => {
                           const item = itemObj.item;
                           const price =
-                            item.final_discounted_price || item.final_price;
+                            Number(itemObj.price_at_purchase) || 0;
                           return (
                             <div
                               key={itemObj.id}
@@ -383,17 +405,61 @@ export default function UserAccount() {
 
                         <div className="flex justify-between text-sm font-medium mt-2 border-t pt-1">
                           <span>Total</span>
-                          <span>KES {o.final_total.toFixed(2)}</span>
+                          <span>KES {Number(o.final_total || 0).toFixed(2)}</span>
                         </div>
                       </div>
                     ))}
                 </div>
               ) : (
                 <p className="text-sm text-muted-foreground">
-                  No completed orders yet.
+                  {isVendor ? "No completed purchases yet." : "No completed orders yet."}
                 </p>
               )}
             </motion.div>
+
+            {isVendor && (
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.4 }}
+                className="mm-account-section bg-gray-50 dark:bg-gray-800 p-4 md:p-5 rounded-xl shadow-sm space-y-4"
+              >
+                <h3 className="font-semibold text-lg flex items-center gap-2 text-gray-800 dark:text-gray-100">
+                  <ShoppingBag className="w-5 h-5 text-emerald-500" />
+                  Completed Customer Orders
+                </h3>
+                <p className="-mt-2 text-xs text-gray-500">Completed sales of your products to customers.</p>
+                {vendorSales.loading ? (
+                  <p className="text-sm text-muted-foreground">Loading...</p>
+                ) : (vendorSales.data?.pending_items || []).length ? (
+                  <>
+                    <div className="space-y-2 max-h-[30vh] overflow-y-auto pr-2">
+                      {vendorSales.data.pending_items.map((row, index) => (
+                        <div key={`${row.order_id}-${index}`} className="flex justify-between gap-3 rounded-lg border bg-white p-3 text-sm">
+                          <div className="min-w-0">
+                            <p className="truncate font-medium">{row.item_name}</p>
+                            <p className="text-xs text-gray-500">
+                              Order #{row.order_id} · {row.customer || "Customer"} · {row.quantity} × KES {Number(row.item_price || 0).toFixed(2)}
+                            </p>
+                          </div>
+                          <span className="shrink-0 font-semibold">
+                            KES {(Number(row.item_price || 0) * Number(row.quantity || 0)).toFixed(2)}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                    <div className="flex justify-between border-t pt-2 text-sm font-medium">
+                      <span>{vendorSales.data.total_quantity} items sold</span>
+                      <Button type="button" size="sm" variant="outline" onClick={() => navigate("/vendors-dashboard/orders")}>
+                        Manage orders
+                      </Button>
+                    </div>
+                  </>
+                ) : (
+                  <p className="text-sm text-muted-foreground">No completed customer orders yet.</p>
+                )}
+              </motion.div>
+            )}
 
             {/* Wallet Info */}
             <motion.div
@@ -459,6 +525,10 @@ export default function UserAccount() {
                     : "—"}
                 </span>
               </div>
+
+              <Button type="button" onClick={() => navigate("/send-invitation")} className="mm-account-primary-button w-full sm:w-auto">
+                Refer a Friend
+              </Button>
 
               {/* Optional: Copy referral code */}
               {referral?.referral_code && (

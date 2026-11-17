@@ -177,16 +177,18 @@ def user_account_view(request):
         "authType": "user" if request.user.is_authenticated else "visitor",
         "user": user_data,
         "profile": profile_data,
+        "is_vendor": bool(request.user.is_authenticated and hasattr(request.user, "vendor")),
         "orders": [{
             "id": order.id,
             "paypal_order_id": order.paypal_order_id,
             "status": order.status,
             "ordered_date": order.ordered_date,
             "created_at": order.created_at,
-            "final_total": order.final_total_of_cart(),
+            "final_total": float(order.final_total_of_cart() or 0),
             "items": [{
                 "id": item.id,
                 "quantity": item.quantity,
+                "price_at_purchase": float(item.price_at_purchase),
                 "item": {
                     "id": item.item.id,
                     "name": item.item.name,
@@ -208,6 +210,7 @@ def user_account_view(request):
         "referral": referral and {
             "referral_code": referral.referral_code,
             "total_referrals": referral_count,
+            "created_at": referral.created_at,
         },
     })
 

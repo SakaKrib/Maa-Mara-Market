@@ -1,4 +1,5 @@
 from django.core.files.uploadedfile import SimpleUploadedFile
+from django.core import mail
 from django.test import TestCase
 from rest_framework.test import APIClient
 
@@ -93,3 +94,27 @@ class VendorSelfServiceTests(PayoutTestMixin, TestCase):
     def test_non_vendor_rejected(self):
         client = APIClient()
         self.assertIn(client.get("/api/vendor/payment-details/").status_code, (401, 403))
+
+    def test_destination_change_sends_email_once(self):
+        with self.captureOnCommitCallbacks(execute=True):
+            res = self.api.patch("/api/vendor/payment-details/", {
+                "payment_method": "PAYPAL", "paypal_email": "pay@example.com",
+            }, format="json")
+        self.assertEqual(res.status_code, 200, res.content)
+        self.assertEqual(len(mail.outbox), 1)
+        self.assertIn("payout details were changed", mail.outbox[0].subject)
+        self.assertNotIn("pay@example.com", mail.outbox[0].body)
+
+    def test_tax_only_change_sends_no_email(self):
+        with self.captureOnCommitCallbacks(execute=True):
+            self.api.patch("/api/vendor/payment-details/", {"tax_number": "P0512"}, format="json")
+        self.assertEqual(len(mail.outbox), 0)
+
+    def test_account_payload_flags_vendor_and_referral_date(self):
+        from core.models import Referral
+        Referral.objects.create(referrer=self.vendor.user)
+        res = self.api.get("/api/user/account/")
+        self.assertEqual(res.status_code, 200, res.content)
+        data = res.json()
+        self.assertTrue(data["is_vendor"])
+        self.assertTrue(data["referral"]["created_at"])

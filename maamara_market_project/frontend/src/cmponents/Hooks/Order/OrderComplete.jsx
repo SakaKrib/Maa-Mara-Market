@@ -2,7 +2,7 @@
 import { useEffect, useState } from "react";
 import api from "../../../Services/Api";
 
-export const useVendorCompleteItems = () => {
+export const useVendorCompleteItems = (enabled = true) => {
   const [data, setData] = useState({
     total_pending_items: 0,
     total_quantity: 0,
@@ -12,7 +12,12 @@ export const useVendorCompleteItems = () => {
   const [error, setError] = useState(null);
 
   useEffect(() => {
+    if (!enabled) {
+      setLoading(false);
+      return undefined;
+    }
     const fetchPendingItems = async () => {
+      setLoading(true);
       try {
         const response = await api.get("/api/vendor-complete-order/items/", {
           withCredentials: true,
@@ -27,7 +32,7 @@ export const useVendorCompleteItems = () => {
     };
 
     fetchPendingItems();
-  }, []);
+  }, [enabled]);
 
   return { data, loading, error };
 };

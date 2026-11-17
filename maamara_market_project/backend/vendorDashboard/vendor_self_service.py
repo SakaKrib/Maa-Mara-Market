@@ -5,10 +5,13 @@ identity. Payment details live in their own endpoint; saving a changed payout
 destination goes through ``Vendor.save()`` which starts the cooling-off hold.
 """
 import json
+import logging
 import re
 
 from django.core.validators import validate_email
 from django.core.exceptions import ValidationError as DjangoValidationError
+from django.conf import settings
+from django.core.mail import send_mail
 from django.db import transaction
 from rest_framework import status
 from rest_framework.parsers import FormParser, JSONParser, MultiPartParser
@@ -21,6 +24,8 @@ from ReactSerializers.models import Brand
 from ReactSerializers.Serializers import VendorSerializer
 from vendorDashboard.models import Vendor
 from vendorDashboard.payout.services import payout_guard
+
+logger = logging.getLogger(__name__)
 
 PROFILE_TEXT_FIELDS = (
     "first_name", "middle_name", "surname_name", "email", "phone_number",
@@ -196,6 +201,59 @@ def validate_payment_details(merged):
     return errors
 
 
+def _mask(value):
+    value = str(value or "").strip()
+    return value if len(value) <= 4 else "*" * (len(value) - 4) + value[-4:]
+
+
+def _destination_label(vendor):
+    method = (vendor.payment_method or "").upper()
+    if method == "BANK_TRANSFER":
+        return f"Bank transfer - {vendor.bank_name or 'bank'} account {_mask(vendor.bank_account_number)}"
+    if method == "PAYPAL":
+        return "PayPal"
+    mtype = (vendor.mpesa_type or "").upper()
+    if mtype == "TILL":
+        return f"M-Pesa Till {_mask(vendor.mpesa_till)}"
+    if mtype == "LIPA_NA_MPESA":
+        return f"M-Pesa Paybill {_mask(vendor.mpesa_paybill)}"
+    return f"M-Pesa {_mask(vendor.mpesa_number)}"
+
+
+def notify_destination_changed(vendor, hold_hours, hold_until):
+    """Email the vendor (and their login address) that payout details changed.
+
+    Never raises: a mail failure must not undo a saved change.
+    """
+    recipients = {addr for addr in (vendor.email, getattr(vendor.user, "email", "")) if addr}
+    if not recipients:
+        return False
+    until = hold_until.strftime("%d %b %Y, %H:%M UTC") if hold_until else f"{hold_hours} hours"
+    name = vendor.first_name or vendor.company_name or "vendor"
+    body = (
+        f"Hello {name},\n\n"
+        f"The payout details on your Maa Mara Market vendor account were just changed.\n\n"
+        f"New destination: {_destination_label(vendor)}\n"
+        f"For your security, payouts to new details are held until {until}. "
+        f"If a payout date arrives before then, it will be postponed.\n\n"
+        f"If you did not make this change, sign in and change your password immediately, "
+        f"then contact Maa Mara support.\n\n"
+        f"Maa Mara Market"
+    )
+    try:
+        send_mail(
+            "Your payout details were changed",
+            body,
+            getattr(settings, "DEFAULT_FROM_EMAIL", None),
+            sorted(recipients),
+            fail_silently=False,
+        )
+        return True
+    except Exception:
+        logger.exception("Could not send payout-destination change email for vendor %s", vendor.pk)
+        return False
+
+
 class VendorPaymentDetailsView(APIView):
     """GET/PATCH /api/vendor/payment-details/ — payout destination + tax number."""
 
@@ -227,6 +285,9 @@ class VendorPaymentDetailsView(APIView):
         vendor.refresh_from_db()
         body = _payment_snapshot(vendor)
         body["destination_changed"] = changed
+        if changed:
+            until = payout_guard.destination_hold_until(vendor)
+            transaction.on_commit(lambda: notify_destination_changed(vendor, body["hold_hours"], until))
         body["detail"] = (
             f"Payment details saved. Payouts to the new destination are held for {body['hold_hours']} hours."
             if changed else "Payment details saved."

@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useAuth } from "../../../../../../cmponents/Auth/AuthContext/Context";
 import { useNavigate } from "react-router-dom";
-import api from "../../../../../../Services/Api";
+import api, { resolveApiAssetUrl } from "../../../../../../Services/Api";
 
 import { Card, CardHeader, CardContent } from "../../../../../../../components/ui/card";
 import { Separator } from "../../../../../../../components/ui/separator";
@@ -96,12 +96,11 @@ export default function PublicProfile() {
         <CardHeader className="flex flex-col items-center text-center space-y-3 border-b border-[#eee8de] bg-white px-6 py-8">
           <Avatar className="h-24 w-24">
             <AvatarImage
-              src={profileDetails?.profile_picture || user?.profile_picture || "/default-avatar.png"}
+              src={resolveApiAssetUrl(profileDetails?.profile_picture || user?.profile_picture) || undefined}
               alt={user?.first_name || "User"}
             />
             <AvatarFallback>
-              {user?.first_name?.[0] || "?"}
-              {user?.last_name?.[0] || ""}
+              <span aria-hidden="true" className="text-4xl">👤</span>
             </AvatarFallback>
           </Avatar>
           <div>
