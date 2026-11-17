@@ -15,6 +15,9 @@ class VendorSelfServiceTests(PayoutTestMixin, TestCase):
         self.vendor.bank_name = "KCB"
         self.vendor.bank_account_name = "Test Vendor"
         self.vendor.save()
+        # setUp's own edit is not a vendor change: start with no hold.
+        Vendor.objects.filter(pk=self.vendor.pk).update(payout_destination_changed_at=None)
+        self.vendor.refresh_from_db()
         self.api = APIClient()
         self.api.force_authenticate(self.vendor.user)
 
