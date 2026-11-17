@@ -1129,6 +1129,7 @@ class UserAccountView(APIView):
             "wallet": wallet_serializer.data,
             "vouchers": voucher_data,
             "referral": referral_data,
+            "is_vendor": hasattr(user, "vendor"),
             "orders": order_serializer.data,
         })
 

@@ -378,7 +378,7 @@ export default function UserAccount() {
                         {o.items.map((itemObj) => {
                           const item = itemObj.item;
                           const price =
-                            Number(itemObj.price_at_purchase) || 0;
+                            Number(item.final_discounted_price || item.final_price) || 0;
                           return (
                             <div
                               key={itemObj.id}
