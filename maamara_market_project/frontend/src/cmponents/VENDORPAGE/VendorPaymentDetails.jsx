@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { AlertTriangle, Landmark, Pencil, Save } from "lucide-react";
 import api from "../../Services/Api";
+import NativeAwareSelect from "../../components/NativeAwareSelect";
 
 const EMPTY = {
   payment_method: "BANK_TRANSFER", bank_name: "", bank_branch: "", bank_account_name: "",
@@ -153,11 +154,17 @@ export default function VendorPaymentDetails() {
         <form onSubmit={onSubmit} className="space-y-3">
           <label className="block">
             <span className="mb-1.5 block text-xs font-semibold text-gray-600">Payment method</span>
-            <select value={method} onChange={set("payment_method")} disabled={!editing} className={`${inputClass} ${editing ? "" : "cursor-default bg-gray-50 text-gray-700"}`}>
-              <option value="BANK_TRANSFER">Bank transfer</option>
-              <option value="MOBILE_MONEY">M-Pesa</option>
-              <option value="PAYPAL">PayPal</option>
-            </select>
+            <NativeAwareSelect
+              value={method}
+              onChange={set("payment_method")}
+              disabled={!editing}
+              options={[
+                { value: "BANK_TRANSFER", label: "Bank transfer" },
+                { value: "MOBILE_MONEY", label: "M-Pesa" },
+                { value: "PAYPAL", label: "PayPal" },
+              ]}
+              className={`${inputClass} ${editing ? "" : "cursor-default bg-gray-50 text-gray-700"}`}
+            />
             {fieldErrors.payment_method && <span className="mt-1 block text-[11px] text-red-600">{fieldErrors.payment_method}</span>}
           </label>
 
@@ -180,12 +187,19 @@ export default function VendorPaymentDetails() {
             <div className="grid gap-3 sm:grid-cols-2">
               <label className="block sm:col-span-2">
                 <span className="mb-1.5 block text-xs font-semibold text-gray-600">M-Pesa type</span>
-                <select value={form.mpesa_type} onChange={set("mpesa_type")} disabled={!editing} className={`${inputClass} ${editing ? "" : "cursor-default bg-gray-50 text-gray-700"}`}>
-                  <option value="">Select type</option>
-                  <option value="PHONE">Phone number</option>
-                  <option value="TILL">Till number (Buy Goods)</option>
-                  <option value="LIPA_NA_MPESA">Paybill</option>
-                </select>
+                <NativeAwareSelect
+                  value={form.mpesa_type}
+                  onChange={set("mpesa_type")}
+                  disabled={!editing}
+                  placeholder="Select type"
+                  options={[
+                    { value: "", label: "Select type" },
+                    { value: "PHONE", label: "Phone number" },
+                    { value: "TILL", label: "Till number (Buy Goods)" },
+                    { value: "LIPA_NA_MPESA", label: "Paybill" },
+                  ]}
+                  className={`${inputClass} ${editing ? "" : "cursor-default bg-gray-50 text-gray-700"}`}
+                />
                 {fieldErrors.mpesa_type && <span className="mt-1 block text-[11px] text-red-600">{fieldErrors.mpesa_type}</span>}
               </label>
               {form.mpesa_type === "PHONE" && input("M-Pesa number", "mpesa_number", { inputMode: "tel", placeholder: "0712345678" })}
