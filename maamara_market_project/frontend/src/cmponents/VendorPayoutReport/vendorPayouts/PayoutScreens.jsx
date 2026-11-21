@@ -233,16 +233,22 @@ const SendButton = ({ disabled, loading, onClick, children }) => (
   </button>
 );
 
-const LoadState = ({ loading, error, onRetry }) => {
+const GONE_MESSAGE = "This payout no longer exists. It may have been deleted or regenerated. Go back to the payouts list to open the current one.";
+
+const LoadState = ({ loading, error, onRetry, notFound, onBack }) => {
   if (loading) {
     return <p className="rounded-2xl border border-border bg-card p-6 text-sm text-muted-foreground">Loading payout details…</p>;
   }
   if (error) {
     return (
       <div className="rounded-2xl border border-destructive/30 bg-destructive/5 p-5 text-sm text-destructive">
-        <p>{error}</p>
-        <button type="button" onClick={onRetry} className="mt-3 rounded-full border border-destructive/40 px-3 py-1.5 text-xs font-semibold">
-          Try again
+        <p>{notFound ? GONE_MESSAGE : error}</p>
+        <button
+          type="button"
+          onClick={notFound ? onBack : onRetry}
+          className="mt-3 rounded-full border border-destructive/40 px-3 py-1.5 text-xs font-semibold"
+        >
+          {notFound ? "Back to payouts" : "Try again"}
         </button>
       </div>
     );
@@ -277,6 +283,7 @@ export function SinglePayoutScreen({ title, subtitle, logo, successPath, watchRe
   const [item, setItem] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [notFound, setNotFound] = useState(false);
   const [sending, setSending] = useState(false);
   const [showSnackbar, snackbarNode] = useSnackbar();
   const [confirm, confirmNode] = useConfirmDialog();
@@ -327,10 +334,12 @@ export function SinglePayoutScreen({ title, subtitle, logo, successPath, watchRe
     }
     setLoading(true);
     setError("");
+    setNotFound(false);
     try {
       const res = await api.get(`/api/admin/payouts/${encodeURIComponent(reference)}/review/`);
       setItem(res.data);
     } catch (err) {
+      setNotFound(err?.response?.status === 404);
       setError(errorText(err, "Unable to load this payout."));
     } finally {
       setLoading(false);
@@ -417,7 +426,7 @@ export function SinglePayoutScreen({ title, subtitle, logo, successPath, watchRe
     <PayoutPage title={title} subtitle={subtitle} logo={logo}>
       {snackbarNode}
       {confirmNode}
-      <LoadState loading={loading} error={error} onRetry={load} />
+      <LoadState loading={loading} error={error} onRetry={load} notFound={notFound} onBack={() => navigate(PAYOUTS_HOME)} />
       {item && (
         <>
           {awaiting && <AwaitingConfirmation item={item} waitedSeconds={waitedSeconds} checking={checking} onCheck={checkNow} />}

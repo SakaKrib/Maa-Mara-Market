@@ -25,13 +25,16 @@ export default function PayoutSuccess() {
   const navigate = useNavigate();
   const [item, setItem] = useState(null);
   const [error, setError] = useState("");
+  const [notFound, setNotFound] = useState(false);
 
   const load = useCallback(async () => {
     try {
       const res = await api.get(`/api/admin/payouts/${encodeURIComponent(reference)}/review/`);
       setItem(res.data);
       setError("");
+      setNotFound(false);
     } catch (err) {
+      setNotFound(err?.response?.status === 404);
       setError(err?.response?.data?.error || "Unable to load this payout.");
     }
   }, [reference]);
@@ -58,9 +61,13 @@ export default function PayoutSuccess() {
     <PayoutPage title="Payout result" subtitle="The provider's confirmation for this vendor payment.">
       {error && (
         <div className="rounded-2xl border border-destructive/30 bg-destructive/5 p-5 text-sm text-destructive">
-          <p>{error}</p>
-          <button type="button" onClick={load} className="mt-3 rounded-full border border-destructive/40 px-3 py-1.5 text-xs font-semibold">
-            Try again
+          <p>{notFound ? "This payout no longer exists. It may have been deleted or regenerated. Go back to the payouts list to open the current one." : error}</p>
+          <button
+            type="button"
+            onClick={notFound ? () => navigate(PAYOUTS_HOME) : load}
+            className="mt-3 rounded-full border border-destructive/40 px-3 py-1.5 text-xs font-semibold"
+          >
+            {notFound ? "Back to payouts" : "Try again"}
           </button>
         </div>
       )}
