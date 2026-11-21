@@ -603,6 +603,8 @@ CRISPY_TEMPLATE_PACK = "bootstrap4"
 # admin to approve and send. Set to 0 to require two admins for every payout.
 # Shared secret appended to Daraja callback URLs as ?token=... (see callback_security).
 MPESA_CALLBACK_TOKEN = env("MPESA_CALLBACK_TOKEN", default="")
+# Secret ?token= on payout (B2C/B2B) result/timeout callback URLs. Empty = not enforced.
+MPESA_PAYOUT_CALLBACK_TOKEN = env("MPESA_PAYOUT_CALLBACK_TOKEN", default="")
 
 PAYOUT_TWO_PERSON_THRESHOLD = env.float("PAYOUT_TWO_PERSON_THRESHOLD", default=50000)
 # A changed payout destination (phone, Till, Paybill/account, PayPal email, bank

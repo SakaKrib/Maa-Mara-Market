@@ -1,3 +1,4 @@
+import hmac
 from django.http import JsonResponse, HttpResponseForbidden
 from django.views.decorators.csrf import csrf_exempt
 from django.utils import timezone
@@ -10,6 +11,7 @@ from channels.layers import get_channel_layer
 from asgiref.sync import async_to_sync
 
 import json
+from django.conf import settings
 import logging
 import ipaddress
 from vendorDashboard.models import VendorPayout
@@ -49,11 +51,27 @@ def is_valid_mpesa_ip(ip):
 from asgiref.sync import async_to_sync
 from channels.layers import get_channel_layer
 
+def payout_callback_token_ok(request):
+    """Check the secret ``?token=`` on payout (B2C/B2B) callback URLs.
+
+    Enforced only when MPESA_PAYOUT_CALLBACK_TOKEN is set, so existing
+    deployments keep working until their callback URLs include the token.
+    """
+    expected = str(getattr(settings, "MPESA_PAYOUT_CALLBACK_TOKEN", "") or "")
+    if not expected:
+        logger.warning("MPESA_PAYOUT_CALLBACK_TOKEN is not set: payout callbacks are not token protected.")
+        return True
+    return hmac.compare_digest(str(request.GET.get("token", "")), expected)
+
+
 @csrf_exempt
 def mpesa_result(request):
     """Handle a Daraja B2C result callback without trusting the callback as payment proof."""
     if request.method != "POST":
         return JsonResponse({"error": "Invalid method"}, status=405)
+    if not payout_callback_token_ok(request):
+        logger.warning("Rejected M-Pesa payout result callback with a missing or wrong token.")
+        return HttpResponseForbidden("Invalid token")
 
     try:
         data = json.loads(request.body.decode("utf-8"))
@@ -235,6 +253,9 @@ def mpesa_result(request):
 @csrf_exempt
 def mpesa_timeout(request):
     if request.method == "POST":
+        if not payout_callback_token_ok(request):
+            logger.warning("Rejected M-Pesa payout timeout callback with a missing or wrong token.")
+            return HttpResponseForbidden("Invalid token")
         ip = get_client_ip(request)
         logger.info("Incoming M-Pesa timeout callback.")
 
