@@ -43,7 +43,7 @@ const OrderProgress = ({ status }) => {
   if (currentIndex < 0) return null;
 
   return (
-    <div className="mt-4 rounded-lg border border-blue-100 bg-blue-50/50 p-3">
+    <div className="mt-4 min-w-0 rounded-lg border border-blue-100 bg-blue-50/50 p-3">
       <div className="mb-3 flex items-center justify-between gap-3">
         <p className="text-xs font-semibold uppercase tracking-wide text-blue-700">
           Fulfillment progress
@@ -53,7 +53,7 @@ const OrderProgress = ({ status }) => {
         </span>
       </div>
 
-      <div className="overflow-x-auto pb-1">
+      <div className="max-w-full overflow-x-auto pb-1">
         <div className="flex min-w-[720px] items-start">
           {TRACKING_STEPS.map((step, index) => {
             const reached = currentIndex >= index;
@@ -106,7 +106,7 @@ const OrderCard = ({ order, status }) => {
   const normalizedStatus = normalizeStatus(order.status);
 
   return (
-    <article className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm sm:p-5">
+    <article className="min-w-0 max-w-full rounded-xl border border-gray-200 bg-white p-4 shadow-sm sm:p-5">
       <div className="flex flex-col gap-3 border-b border-gray-100 pb-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">
@@ -205,7 +205,7 @@ const VendorOrdersPage = () => {
   );
 
   return (
-    <div className="mx-auto w-full max-w-[1500px] space-y-6">
+    <div className="mx-auto w-full min-w-0 max-w-[1500px] space-y-6">
       <VendorFulfillmentWorkflow />
       <section className="flex flex-col gap-4 rounded-xl border border-gray-200 bg-white p-5 shadow-sm sm:p-6 lg:flex-row lg:items-center lg:justify-between">
         <div>
@@ -220,7 +220,7 @@ const VendorOrdersPage = () => {
           </p>
         </div>
 
-        <div className="grid grid-cols-3 gap-3 sm:min-w-[460px]">
+        <div className="grid grid-cols-3 gap-2 sm:min-w-[460px] sm:gap-3">
           <div className="rounded-lg border border-amber-100 bg-amber-50 p-3">
             <p className="text-xs font-semibold uppercase text-amber-700">Pending</p>
             <p className="mt-1 text-xl font-bold text-gray-900">{pending.length}</p>
@@ -253,7 +253,7 @@ const VendorOrdersPage = () => {
         </div>
 
         {inProcess.length ? (
-          <div className="grid gap-4 xl:grid-cols-2">
+          <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
             {inProcess.map((order) => (
               <OrderCard key={order.id} order={order} status="in_process" />
             ))}
@@ -278,7 +278,7 @@ const VendorOrdersPage = () => {
         </div>
 
         {pending.length ? (
-          <div className="grid gap-4 xl:grid-cols-2">
+          <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
             {pending.map((order) => (
               <OrderCard key={order.id} order={order} status="pending" />
             ))}
@@ -302,7 +302,7 @@ const VendorOrdersPage = () => {
         </div>
 
         {completed.length ? (
-          <div className="grid gap-4 xl:grid-cols-2">
+          <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
             {completed.map((order) => (
               <OrderCard key={order.id} order={order} status="completed" />
             ))}

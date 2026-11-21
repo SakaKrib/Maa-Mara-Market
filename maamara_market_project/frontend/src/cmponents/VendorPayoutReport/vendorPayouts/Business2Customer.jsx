@@ -10,6 +10,7 @@ import {
 } from "ionicons/icons";
 import { useGenerateMonthlyPayouts } from "../../Hooks/Payouts/GeneratePayoutHook";
 import { useNavigate } from "react-router-dom";
+import PayoutReviewTable from "./PayoutReviewTable";
 
 const METHOD_LABELS = {
   MOBILE_MONEY: "M-Pesa",
@@ -148,6 +149,8 @@ export default function AdminPayoutTriggerPayment() {
               </p>
             </article>
           </div>
+
+          {groups.length > 0 && <PayoutReviewTable groups={groups} period={data.period} />}
 
           {!groups.length ? (
             <section className="rounded-2xl border border-border bg-card p-8 text-center shadow-sm sm:p-12">

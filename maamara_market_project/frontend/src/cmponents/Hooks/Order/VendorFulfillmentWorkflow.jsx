@@ -135,13 +135,13 @@ export default function VendorFulfillmentWorkflow() {
           <p className="mt-1 text-sm text-slate-500">Paid customer orders will appear here.</p>
         </div>
       ) : (
-        <div className="grid gap-4 xl:grid-cols-2">
+        <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
           {records.map((record) => {
             const status = normalize(record.status);
             const action = ACTIONS[status];
             const progress = STAGES.indexOf(status);
             return (
-              <article key={record.fulfillment_id} className="rounded-xl border border-slate-200 p-4">
+              <article key={record.fulfillment_id} className="min-w-0 max-w-full rounded-xl border border-slate-200 p-4">
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div>
                     <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Order #{record.order_id} · Item #{record.order_item_id}</p>
