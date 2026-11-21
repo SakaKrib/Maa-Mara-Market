@@ -56,12 +56,29 @@ def payout_callback_token_ok(request):
 
     Enforced only when MPESA_PAYOUT_CALLBACK_TOKEN is set, so existing
     deployments keep working until their callback URLs include the token.
+    The shared MPESA_CALLBACK_TOKEN (used by the STK callbacks) is also
+    accepted, so one secret in the URLs is enough. Surrounding whitespace or
+    quotes in the env value are ignored.
     """
-    expected = str(getattr(settings, "MPESA_PAYOUT_CALLBACK_TOKEN", "") or "")
-    if not expected:
+    def clean(value):
+        return str(value or "").strip().strip("'\"")
+
+    payout_token = clean(getattr(settings, "MPESA_PAYOUT_CALLBACK_TOKEN", ""))
+    if not payout_token:
         logger.warning("MPESA_PAYOUT_CALLBACK_TOKEN is not set: payout callbacks are not token protected.")
         return True
-    return hmac.compare_digest(str(request.GET.get("token", "")), expected)
+    accepted = [payout_token]
+    shared = clean(getattr(settings, "MPESA_CALLBACK_TOKEN", ""))
+    if shared:
+        accepted.append(shared)
+    supplied = clean(request.GET.get("token", ""))
+    if any(hmac.compare_digest(supplied, token) for token in accepted):
+        return True
+    logger.warning(
+        "Payout callback token mismatch (supplied %s characters; configured %s).",
+        len(supplied), ", ".join(str(len(t)) for t in accepted),
+    )
+    return False
 
 
 @csrf_exempt

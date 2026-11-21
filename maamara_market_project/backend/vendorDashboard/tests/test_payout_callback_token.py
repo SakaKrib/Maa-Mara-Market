@@ -28,3 +28,13 @@ class PayoutCallbackTokenTests(TestCase):
     @override_settings(MPESA_PAYOUT_CALLBACK_TOKEN="")
     def test_not_enforced_when_unset(self):
         self.assertEqual(self.post("/mpesa/b2b/paybill/result").status_code, 200)
+
+    @override_settings(MPESA_PAYOUT_CALLBACK_TOKEN="payout-secret", MPESA_CALLBACK_TOKEN="shared-secret")
+    def test_shared_token_also_accepted(self):
+        self.assertEqual(self.post("/mpesa/b2b/till/result?token=shared-secret").status_code, 200)
+        self.assertEqual(self.post("/mpesa/b2b/till/result?token=payout-secret").status_code, 200)
+        self.assertEqual(self.post("/mpesa/b2b/till/result?token=other").status_code, 403)
+
+    @override_settings(MPESA_PAYOUT_CALLBACK_TOKEN=' "s3cret" ')
+    def test_quotes_and_spaces_in_env_ignored(self):
+        self.assertEqual(self.post("/mpesa/b2b/till/result?token=s3cret").status_code, 200)
