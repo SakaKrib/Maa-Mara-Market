@@ -29,6 +29,11 @@ maamaramarket.com, www.maamaramarket.com {
         reverse_proxy backend:8000
     }
 
+    # Safaricom Daraja result/timeout callbacks (B2C and B2B Till/Paybill)
+    handle /mpesa/* {
+        reverse_proxy backend:8000
+    }
+
     handle /media/* {
         reverse_proxy backend:8000
     }

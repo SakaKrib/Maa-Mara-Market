@@ -3,7 +3,7 @@
 }
 
 :9080 {
-  @maamara_backend path /maamara/api/* /maamara/media/* /maamara/static/* /maamara/admin/* /maamara/accounts/* /maamara/google/* /maamara/ws/*
+  @maamara_backend path /maamara/api/* /maamara/media/* /maamara/static/* /maamara/admin/* /maamara/mpesa/* /maamara/accounts/* /maamara/google/* /maamara/ws/*
   handle @maamara_backend {
     uri strip_prefix /maamara
     reverse_proxy 127.0.0.1:8000
